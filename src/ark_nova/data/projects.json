@@ -1,0 +1,2144 @@
+[
+    {
+        "id": "101",
+        "name": "SPECIES DIVERSITY",
+        "type": "Base",
+        "tag": "all-animals",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "all-animals",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "all-animals",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "all-animals",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 3
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_101",
+            "text": "Requires different **animal** **category** icons in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P101",
+        "bga_id": null
+    },
+    {
+        "id": "102",
+        "name": "HABITAT DIVERSITY",
+        "type": "Base",
+        "tag": "all-continents",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "all-animals",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "all-animals",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "all-animals",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 3
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_102",
+            "text": "Requires different **continent** icons in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P102",
+        "bga_id": null
+    },
+    {
+        "id": "103",
+        "name": "AFRICA",
+        "type": "Base",
+        "tag": "africa",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "africa",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "africa",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "africa",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_103",
+            "text": "Requires **Africa** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P103",
+        "bga_id": null
+    },
+    {
+        "id": "104",
+        "name": "AMERICAS",
+        "type": "Base",
+        "tag": "americas",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "americas",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "americas",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "americas",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_104",
+            "text": "Requires **Americas** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P104",
+        "bga_id": null
+    },
+    {
+        "id": "105",
+        "name": "AUSTRALIA",
+        "type": "Base",
+        "tag": "australia",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "australia",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "australia",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "australia",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_105",
+            "text": "Requires **Australia** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P105",
+        "bga_id": null
+    },
+    {
+        "id": "106",
+        "name": "ASIA",
+        "type": "Base",
+        "tag": "asia",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "asia",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "asia",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "asia",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_106",
+            "text": "Requires **Asia** icons in <br> your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P106",
+        "bga_id": null
+    },
+    {
+        "id": "107",
+        "name": "EUROPE",
+        "type": "Base",
+        "tag": "europe",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "europe",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "europe",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "europe",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_107",
+            "text": "Requires **Europe** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P107",
+        "bga_id": null
+    },
+    {
+        "id": "108",
+        "name": "PRIMATES",
+        "type": "Base",
+        "tag": "primate",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "primate",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "primate",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "primate",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_108",
+            "text": "Requires **primate** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P108",
+        "bga_id": null
+    },
+    {
+        "id": "109",
+        "name": "REPTILES",
+        "type": "Base",
+        "tag": "reptile",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "reptile",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "reptile",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "reptile",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_109",
+            "text": "Requires **reptile** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P109",
+        "bga_id": null
+    },
+    {
+        "id": "110",
+        "name": "PREDATORS",
+        "type": "Base",
+        "tag": "predator",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "predator",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "predator",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "predator",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_110",
+            "text": "Requires **predator** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P110",
+        "bga_id": null
+    },
+    {
+        "id": "111",
+        "name": "HERBIVORES",
+        "type": "Base",
+        "tag": "herbivore",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "herbivore",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "herbivore",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "herbivore",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_111",
+            "text": "Requires **herbivore** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P111",
+        "bga_id": null
+    },
+    {
+        "id": "112",
+        "name": "BIRDS",
+        "type": "Base",
+        "tag": "bird",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "bird",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "bird",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "bird",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_112",
+            "text": "Requires **bird** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P112",
+        "bga_id": null
+    },
+    {
+        "id": "113",
+        "name": "BAVARIAN FOREST NATIONAL PARK",
+        "type": "Release",
+        "tag": "europe",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_113",
+            "text": "**Release** 1 animal with <br> **Europe** icon into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P113",
+        "bga_id": null
+    },
+    {
+        "id": "114",
+        "name": "YOSEMITE NATIONAL PARK",
+        "type": "Release",
+        "tag": "americas",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_114",
+            "text": "**Release** 1 animal with <br> **Americas** icon into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P114",
+        "bga_id": null
+    },
+    {
+        "id": "115",
+        "name": "ANGTHONG NATIONAL PARK",
+        "type": "Release",
+        "tag": "asia",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_115",
+            "text": "**Release** 1 animal with <br> **Asia** icon into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P115",
+        "bga_id": null
+    },
+    {
+        "id": "116",
+        "name": "SERENGETI NATIONAL PARK",
+        "type": "Release",
+        "tag": "africa",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_116",
+            "text": "**Release** 1 animal with <br> **Africa** icon into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P116",
+        "bga_id": null
+    },
+    {
+        "id": "117",
+        "name": "BLUE MOUNTAINS NATIONAL PARK",
+        "type": "Release",
+        "tag": "australia",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_117",
+            "text": "**Release** 1 animal with <br> **Australia** icon into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P117",
+        "bga_id": null
+    },
+    {
+        "id": "118",
+        "name": "SAVANNA",
+        "type": "Release",
+        "tag": "predator",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_118",
+            "text": "**Release** **1** **predator** <br> into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P118",
+        "bga_id": null
+    },
+    {
+        "id": "119",
+        "name": "LOW MOUNTAIN RANGE",
+        "type": "Release",
+        "tag": "bird",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_119",
+            "text": "**Release** **1** **bird** <br> into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P119",
+        "bga_id": null
+    },
+    {
+        "id": "120",
+        "name": "BAMBOO FOREST",
+        "type": "Release",
+        "tag": "herbivore",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_120",
+            "text": "**Release** **1** **herbivore** <br> into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P120",
+        "bga_id": null
+    },
+    {
+        "id": "121",
+        "name": "SEA CAVE",
+        "type": "Release",
+        "tag": "reptile",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_121",
+            "text": "**Release** **1** **reptile** <br> into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P121",
+        "bga_id": null
+    },
+    {
+        "id": "122",
+        "name": "JUNGLE",
+        "type": "Release",
+        "tag": "primate",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 5
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 4
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "release",
+                        "bonusValue": 3
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_122",
+            "text": "**Release** **1** **primate** <br> into the wild."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P122",
+        "bga_id": null
+    },
+    {
+        "id": "123",
+        "name": "BIRD BREEDING PROGRAM",
+        "type": "Breed",
+        "tag": "bird",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 1
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_123",
+            "text": "Requires 1 **bird** and a **partner** <br> **zoo** of the same continent."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P123",
+        "bga_id": null
+    },
+    {
+        "id": "124",
+        "name": "PREDATOR BREEDING PROGRAM",
+        "type": "Breed",
+        "tag": "predator",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 1
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_124",
+            "text": "Requires 1 **predator** and a **partner** <br> **zoo** of the same continent."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P124",
+        "bga_id": null
+    },
+    {
+        "id": "125",
+        "name": "REPTILE BREEDING PROGRAM",
+        "type": "Breed",
+        "tag": "reptile",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 1
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_125",
+            "text": "Requires 1 **reptile** and a **partner** <br> **zoo** of the same continent."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P125",
+        "bga_id": null
+    },
+    {
+        "id": "126",
+        "name": "HERBIVORE BREEDING PROGRAM",
+        "type": "Breed",
+        "tag": "herbivore",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 1
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_126",
+            "text": "Requires 1 **herbivore** and a **partner** <br> **zoo** of the same continent."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P126",
+        "bga_id": null
+    },
+    {
+        "id": "127",
+        "name": "PRIMATE BREEDING PROGRAM",
+        "type": "Breed",
+        "tag": "primate",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 1
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_127",
+            "text": "Requires 1 **primate** and a **partner** <br> **zoo** of the same continent."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P127",
+        "bga_id": null
+    },
+    {
+        "id": "128",
+        "name": "AQUATIC",
+        "type": "Normal",
+        "tag": "water",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "water",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "water",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "water",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_128",
+            "text": "Requires **water** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P128",
+        "bga_id": null
+    },
+    {
+        "id": "129",
+        "name": "GEOLOGICAL",
+        "type": "Normal",
+        "tag": "rock",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "rock",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "rock",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "rock",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_129",
+            "text": "Requires **rock** icons <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P129",
+        "bga_id": null
+    },
+    {
+        "id": "130",
+        "name": "SMALL ANIMALS",
+        "type": "Normal",
+        "tag": "animal-size-2",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "animal-size-2",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 8
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "animal-size-2",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "animal-size-2",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_130",
+            "text": "Requires **small** **animals** <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P130",
+        "bga_id": null
+    },
+    {
+        "id": "131",
+        "name": "LARGE ANIMALS",
+        "type": "Normal",
+        "tag": "animal-size-4",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "animal-size-4",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "animal-size-4",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 3
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "animal-size-4",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_131",
+            "text": "Requires **large** **animals** <br> in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P131",
+        "bga_id": null,
+        "variants": {
+            "marine_worlds": {
+                "slots": [
+                    {
+                        "position": 1,
+                        "bonuses": [
+                            {
+                                "bonusType": "Conservation Point",
+                                "bonusRequirement": "animal-size-4",
+                                "bonusValue": 4
+                            }
+                        ],
+                        "indicator": 3
+                    },
+                    {
+                        "position": 2,
+                        "bonuses": [
+                            {
+                                "bonusType": "Conservation Point",
+                                "bonusRequirement": "animal-size-4",
+                                "bonusValue": 3
+                            }
+                        ],
+                        "indicator": 2
+                    },
+                    {
+                        "position": 3,
+                        "bonuses": [
+                            {
+                                "bonusType": "Conservation Point",
+                                "bonusRequirement": "animal-size-4",
+                                "bonusValue": 2
+                            }
+                        ],
+                        "indicator": 1
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "id": "132",
+        "name": "RESEARCH",
+        "type": "Normal",
+        "tag": "science",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "science",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "science",
+                        "bonusValue": 3
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "science",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "project.desc_132",
+            "text": "Requires **research** icons in your zoo."
+        },
+        "source": "base",
+        "card_type": "project",
+        "key": "P132",
+        "bga_id": null
+    },
+    {
+        "id": "133",
+        "name": "SEA ANIMALS",
+        "type": "Normal",
+        "tag": "seaAnimal",
+        "source": "marine_worlds",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "seaAnimal",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "seaAnimal",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "seaAnimal",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": ""
+        },
+        "verified": true,
+        "card_type": "project",
+        "key": "P133",
+        "bga_id": null
+    },
+    {
+        "id": "134",
+        "name": "PREDATOR MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "predator",
+        "source": "marine_worlds",
+        "requirement": {
+            "tag": "predator",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "hunter",
+                        "per": {
+                            "tag": "predator",
+                            "every": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "predator"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "hunter",
+                "per": {
+                    "tag": "predator",
+                    "every": 1
+                }
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": ""
+        },
+        "verified": true,
+        "card_type": "project",
+        "key": "P134",
+        "bga_id": null
+    },
+    {
+        "id": "135",
+        "name": "BIRD MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "bird",
+        "source": "marine_worlds",
+        "requirement": {
+            "tag": "bird",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "posturing",
+                        "bonusValue": 1
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "bird"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "posturing",
+                "bonusValue": 1
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": ""
+        },
+        "verified": true,
+        "card_type": "project",
+        "key": "P135",
+        "bga_id": null
+    },
+    {
+        "id": "136",
+        "name": "REPTILE MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "reptile",
+        "source": "marine_worlds",
+        "requirement": {
+            "tag": "reptile",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "sunbathing",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "reptile"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "sunbathing",
+                "bonusValue": 2
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": ""
+        },
+        "verified": true,
+        "card_type": "project",
+        "key": "P136",
+        "bga_id": null
+    },
+    {
+        "id": "137",
+        "name": "HERBIVORE MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "herbivore",
+        "source": "marine_worlds",
+        "requirement": {
+            "tag": "herbivore",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "digging",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "herbivore"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "digging",
+                "bonusValue": 2
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": ""
+        },
+        "verified": true,
+        "card_type": "project",
+        "key": "P137",
+        "bga_id": null
+    },
+    {
+        "id": "138",
+        "name": "SEA ANIMAL MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "seaAnimal",
+        "source": "marine_worlds",
+        "requirement": {
+            "tag": "seaAnimal",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Activate Reef"
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "seaAnimal"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Reputation",
+                "bonusValue": 1
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": ""
+        },
+        "verified": true,
+        "card_type": "project",
+        "key": "P138",
+        "bga_id": null
+    },
+    {
+        "id": "139",
+        "name": "PRIMATE MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "primate",
+        "source": "marine_worlds",
+        "requirement": {
+            "tag": "primate",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "clever"
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "primate"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "clever"
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": ""
+        },
+        "verified": true,
+        "card_type": "project",
+        "key": "P139",
+        "bga_id": null
+    }
+]

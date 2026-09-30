@@ -1,0 +1,1362 @@
+[
+    {
+        "id": "001",
+        "name": "Large Animal Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc1",
+            "text": "Gain {ConservationPoint} for **large** **animals** in your zoo."
+        },
+        "topIcon": {
+            "iconName": "Size",
+            "params": {
+                "value": "4",
+                "type": "Animal"
+            }
+        },
+        "bottomIcon": {
+            "iconName": "Size",
+            "params": {
+                "value": "4",
+                "type": "Animal"
+            }
+        },
+        "scoreArray": [
+            {
+                "requirement": 1,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 2,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 3,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 4
+            }
+        ],
+        "originalArray": [
+            {
+                "requirement": 1,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 2,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F001",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 1,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 2,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 1,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 2,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 3,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "002",
+        "name": "Small Animal Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc2",
+            "text": "Gain {ConservationPoint} for **small** **animals** in your zoo."
+        },
+        "topIcon": {
+            "iconName": "Size",
+            "params": {
+                "value": "2",
+                "type": "Animal"
+            }
+        },
+        "bottomIcon": {
+            "iconName": "Size",
+            "params": {
+                "value": "2",
+                "type": "Animal"
+            }
+        },
+        "scoreArray": [
+            {
+                "requirement": 3,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 8,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 10,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F002",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 8,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 10,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 8,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 10,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "003",
+        "name": "Research Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc3",
+            "text": "Gain {ConservationPoint} for **research** **icons** in your zoo."
+        },
+        "topIcon": {
+            "iconName": "Science"
+        },
+        "bottomIcon": {
+            "iconName": "Science"
+        },
+        "scoreArray": [
+            {
+                "requirement": 3,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 7,
+                "conservationPoint": 4
+            }
+        ],
+        "originalArray": [
+            {
+                "requirement": 3,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F003",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 7,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "004",
+        "name": "Architectural Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc4",
+            "text": "Gain {ConservationPoint} for **building** of your zoo."
+        },
+        "topIcon": {
+            "iconName": "Size",
+            "params": {
+                "value": "",
+                "type": "Empty"
+            }
+        },
+        "bottomIcon": {
+            "iconName": "Size",
+            "params": {
+                "value": "",
+                "type": "Empty"
+            }
+        },
+        "scoreArray": [
+            {
+                "requirement": "endgame.desc4-1",
+                "conservationPoint": 1
+            },
+            {
+                "requirement": "endgame.desc4-2",
+                "conservationPoint": 1
+            },
+            {
+                "requirement": "endgame.desc4-3",
+                "conservationPoint": 1
+            },
+            {
+                "requirement": "endgame.desc4-4",
+                "conservationPoint": 1
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F004",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": "endgame.desc4-1",
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": "endgame.desc4-2",
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": "endgame.desc4-3",
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": "endgame.desc4-4",
+                    "conservationPoint": 1
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": "endgame.desc4-1",
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": "endgame.desc4-2",
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": "endgame.desc4-3",
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": "endgame.desc4-4",
+                    "conservationPoint": 1
+                }
+            ]
+        }
+    },
+    {
+        "id": "005",
+        "name": "Conservation Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc5",
+            "text": "Gain {ConservationPoint} for **supporting** **conservation** **projects**"
+        },
+        "topIcon": {
+            "iconName": "Conservation Project"
+        },
+        "bottomIcon": {
+            "iconName": "Conservation Project"
+        },
+        "scoreArray": [
+            {
+                "requirement": 2,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 3,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 4
+            }
+        ],
+        "originalArray": [
+            {
+                "requirement": 3,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F005",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 2,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 3,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "006",
+        "name": "Naturalists Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc6",
+            "text": "Gain {ConservationPoint} for **empty** **building** **spaces** in your zo0."
+        },
+        "topIcon": {
+            "iconName": "Empty Enclosure"
+        },
+        "bottomIcon": {
+            "iconName": "Empty Enclosure"
+        },
+        "scoreArray": [
+            {
+                "requirement": 6,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 12,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 18,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 24,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F006",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 6,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 12,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 18,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 24,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 6,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 12,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 18,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 24,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "007",
+        "name": "Favorite Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc7",
+            "text": "Gain {ConservationPoint} for the **reputation** of your zoo."
+        },
+        "topIcon": {
+            "iconName": "Reputation"
+        },
+        "bottomIcon": {
+            "iconName": "Reputation"
+        },
+        "scoreArray": [
+            {
+                "requirement": 6,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 9,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 12,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 15,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F007",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 6,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 9,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 12,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 15,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 6,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 9,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 12,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 15,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "008",
+        "name": "Sponsored Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc8",
+            "text": "Gain {ConservationPoint} for **sponsors** **cards** in your zoo."
+        },
+        "topIcon": {
+            "iconName": "Sponsor Card"
+        },
+        "bottomIcon": {
+            "iconName": "Sponsor Card"
+        },
+        "scoreArray": [
+            {
+                "requirement": 3,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 7,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 9,
+                "conservationPoint": 4
+            }
+        ],
+        "originalArray": [
+            {
+                "requirement": 3,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 8,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 10,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F008",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 8,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 10,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 7,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 9,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "009",
+        "name": "Diverse Species Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc9",
+            "text": "endgame.desc9"
+        },
+        "topIcon": {
+            "iconName": "Animal Categories",
+            "params": {
+                "value": "Animal Categories",
+                "type": "Right"
+            }
+        },
+        "bottomIcon": {
+            "iconName": "Animal Categories"
+        },
+        "scoreArray": [
+            {
+                "requirement": "endgame.desc9-1",
+                "conservationPoint": 1
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F009",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": "endgame.desc9-1",
+                    "conservationPoint": 1
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": "endgame.desc9-1",
+                    "conservationPoint": 1
+                }
+            ]
+        }
+    },
+    {
+        "id": "010",
+        "name": "Climbing Park",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc10",
+            "text": "Gain {ConservationPoint} for **rock** **icons** in your zoo."
+        },
+        "topIcon": {
+            "iconName": "Rock"
+        },
+        "bottomIcon": {
+            "iconName": "Rock"
+        },
+        "scoreArray": [
+            {
+                "requirement": 1,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 3,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 4
+            }
+        ],
+        "originalArray": [
+            {
+                "requirement": 1,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 3,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 7,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F010",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 1,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 3,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 7,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 1,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 3,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "011",
+        "name": "Aquatic Park",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc11",
+            "text": "Gain {ConservationPoint} for **water** **icons** in your zoo."
+        },
+        "topIcon": {
+            "iconName": "Water"
+        },
+        "bottomIcon": {
+            "iconName": "Water"
+        },
+        "scoreArray": [
+            {
+                "requirement": 2,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 7,
+                "conservationPoint": 4
+            }
+        ],
+        "originalArray": [
+            {
+                "requirement": 2,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 8,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "base",
+        "card_type": "endgame",
+        "key": "F011",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 2,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 8,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 2,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 7,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "012",
+        "name": "Designer Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc12",
+            "text": "Gain {ConservationPoint} for **different** **shaped** **buildings** in your zoo."
+        },
+        "topIcon": {
+            "iconName": "Different Shape"
+        },
+        "bottomIcon": {
+            "iconName": "Different Shape"
+        },
+        "scoreArray": [
+            {
+                "requirement": 4,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 7,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 8,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "endgame",
+        "key": "F012",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 4,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 7,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 8,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 4,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 7,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 8,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "013",
+        "name": "Specialized Habitat Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc13",
+            "text": "Choose 1 **continent** **icon** you did **not** **support** a **Base** **Conservation** **Project** with. Gain {ConservationPoint} for those icons."
+        },
+        "topIcon": {
+            "iconName": "One Continent Tag"
+        },
+        "bottomIcon": {
+            "iconName": "One Continent Tag"
+        },
+        "scoreArray": [
+            {
+                "requirement": 3,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "endgame",
+        "key": "F013",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "014",
+        "name": "Specialized Species Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc14",
+            "text": "Choose 1 **animal** **category** **icon** you did **not** **support** a **Base** **Conservation** **Project** with. Gain {ConservationPoint} for those icons."
+        },
+        "topIcon": {
+            "iconName": "One Animal Tag"
+        },
+        "bottomIcon": {
+            "iconName": "One Animal Tag"
+        },
+        "scoreArray": [
+            {
+                "requirement": 3,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 6,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "endgame",
+        "key": "F014",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 3,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 6,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "015",
+        "name": "Catered Picnic Areas",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc15",
+            "text": "Gain {ConservationPoint} for **sets** **of** **kiosk** **and** **pavilion** (do not have to be adjacent)."
+        },
+        "topIcon": {
+            "iconName": "Kiosk and Pavilion Pair"
+        },
+        "bottomIcon": {
+            "iconName": "Kiosk and Pavilion Pair"
+        },
+        "scoreArray": [
+            {
+                "requirement": 2,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 3,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 4,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 5,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "endgame",
+        "key": "F015",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 2,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 3,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 2,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 3,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 4,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 5,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "016",
+        "name": "Accessible Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc16",
+            "text": "Gain {ConservationPoint} for **conditions** **on** **cards** in your zoo."
+        },
+        "topIcon": {
+            "iconName": "Condition"
+        },
+        "bottomIcon": {
+            "iconName": "Condition"
+        },
+        "scoreArray": [
+            {
+                "requirement": 4,
+                "conservationPoint": 1
+            },
+            {
+                "requirement": 7,
+                "conservationPoint": 2
+            },
+            {
+                "requirement": 10,
+                "conservationPoint": 3
+            },
+            {
+                "requirement": 12,
+                "conservationPoint": 4
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "endgame",
+        "key": "F016",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": 4,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 7,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 10,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 12,
+                    "conservationPoint": 4
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": 4,
+                    "conservationPoint": 1
+                },
+                {
+                    "requirement": 7,
+                    "conservationPoint": 2
+                },
+                {
+                    "requirement": 10,
+                    "conservationPoint": 3
+                },
+                {
+                    "requirement": 12,
+                    "conservationPoint": 4
+                }
+            ]
+        }
+    },
+    {
+        "id": "017",
+        "name": "International Zoo",
+        "image": "",
+        "description": {
+            "effectType": "endgame",
+            "effectDesc": "endgame.desc17",
+            "text": "endgame.desc17"
+        },
+        "topIcon": {
+            "iconName": "Continent Categories",
+            "params": {
+                "value": "Continent Categories",
+                "type": "Right"
+            }
+        },
+        "bottomIcon": {
+            "iconName": "Continent Categories"
+        },
+        "scoreArray": [
+            {
+                "requirement": "endgame.desc17-1",
+                "conservationPoint": 1
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "endgame",
+        "key": "F017",
+        "bga_id": null,
+        "scoring": {
+            "base": [
+                {
+                    "requirement": "endgame.desc17-1",
+                    "conservationPoint": 1
+                }
+            ],
+            "marine_worlds": [
+                {
+                    "requirement": "endgame.desc17-1",
+                    "conservationPoint": 1
+                }
+            ]
+        }
+    }
+]

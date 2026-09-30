@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+docs/images/*
+
+# Secrets / local config
+.env
+.env.*
+*.key
+*.pem
+service-account*.json
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Node (only used transiently by scripts/import_data.py)
+node_modules/
+
+# Third-party clone used as an import source (has its own .git; re-create with the command in scripts/import_data.py)
+vendor/
+
+# Raw BGA logs: ~400 MB, keep out of git (they live in GCS; the golden tests read them from here locally)
+log_examples/

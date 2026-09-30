@@ -1,0 +1,1 @@
+"""Web layer (FastAPI)."""

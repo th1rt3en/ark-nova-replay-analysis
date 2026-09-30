@@ -1,0 +1,2459 @@
+[
+    {
+        "id": "201",
+        "name": "SCIENCE LAB",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "sponsorsII"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s201_desc1",
+                "text": "Take 1 card from the deck or in reputation range."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s201_desc2",
+                "display": false,
+                "text": "Take 1 card from the deck or in reputation range."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s201_desc3",
+                "text": "Gain {ConservationPoint-1} / {ConservationPoint-2} for 3 / 6 research icons."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S201",
+        "bga_id": "S201_ScienceLab"
+    },
+    {
+        "id": "202",
+        "name": "SPOKESPERSON",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s202_desc1",
+                "fontSize": "lg",
+                "text": "Each time you play a research icon into your zoo, gain {Reputation-1} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S202",
+        "bga_id": "S202_Spokesperson"
+    },
+    {
+        "id": "203",
+        "name": "VETERINARIAN",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s203_desc1",
+                "fontSize": "lg",
+                "text": "Supporting a conservation project requires only {Slot-4} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S203",
+        "bga_id": "S203_Veterinarian"
+    },
+    {
+        "id": "204",
+        "name": "SCIENCE MUSEUM",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "science",
+            "science",
+            "science",
+            "science"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s204_desc1",
+                "fontSize": "lg",
+                "text": "Each time you play a research icon into your zoo, gain {ConservationPoint-1} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S204",
+        "bga_id": "S204_ScienceMuseum"
+    },
+    {
+        "id": "205",
+        "name": "GORILLA FIELD RESEARCH",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "science",
+            "science",
+            "science"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [],
+        "reputation": 2,
+        "appeal": 0,
+        "conservationPoint": 1,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S205",
+        "bga_id": "S205_GorillaFieldResearch"
+    },
+    {
+        "id": "206",
+        "name": "MEDICAL BREAKTHROUGH",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "science",
+            "science",
+            "science",
+            "science"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s206_desc1",
+                "fontSize": "lg",
+                "text": "Income: Gain {ConservationPoint-1} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S206",
+        "bga_id": "S206_MedicalBreakthrough"
+    },
+    {
+        "id": "207",
+        "name": "BASIC RESEARCH",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "sponsorsII",
+            "appeal"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s207_desc1",
+                "fontSize": "sm",
+                "text": "Gain {ConservationPoint-1} each for 2 different continent and/or animal category icons. For each {ConservationPoint-1} that you gain this way, all other players gain {Money-2} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S207",
+        "bga_id": "S207_BasicResearch"
+    },
+    {
+        "id": "208",
+        "name": "SCIENCE LIBRARY",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s208_desc1",
+                "text": "Each time a research icon is played into any zoo, gain {Money-2} ."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s208_desc2",
+                "display": false,
+                "text": "sponsors.s208_desc2"
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s208_desc3",
+                "text": "Gain {ConservationPoint-1} for 5 different animal category icons."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S208",
+        "bga_id": "S208_ScienceLibrary"
+    },
+    {
+        "id": "209",
+        "name": "TECHNOLOGY INSTITUTE",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s209_desc1",
+                "fontSize": "lg",
+                "text": "Income: Gain 1 {XToken} -token."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S209",
+        "bga_id": "S209_TechnologyInstitute"
+    },
+    {
+        "id": "210",
+        "name": "EXPERT ON THE AMERICAS",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "americas"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s210_desc1",
+                "fontSize": "lg",
+                "text": "Each time you play an Americas icon into your zoo, you may build 1 kiosk for free."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S210",
+        "bga_id": "S210_ExpertOnTheAmericas"
+    },
+    {
+        "id": "211",
+        "name": "EXPERT ON EUROPE",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "europe"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s211_desc1",
+                "fontSize": "lg",
+                "text": "Each time you play a Europe icon into your zoo, you may build a 1-space enclosure for free."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S211",
+        "bga_id": "S211_ExpertOnEurope"
+    },
+    {
+        "id": "212",
+        "name": "EXPERT ON AUSTRALIA",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "australia"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s212_desc1",
+                "fontSize": "lg",
+                "text": "Each time you play an Australia icon into your zoo, you may place 1 card from your hand under this card to gain {Appeal-2} (pouch 1)."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S212",
+        "bga_id": "S212_ExpertOnAustralia"
+    },
+    {
+        "id": "213",
+        "name": "EXPERT ON ASIA",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "asia"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s213_desc1",
+                "fontSize": "lg",
+                "text": "Each time you play an Asia icon into your zoo, you may build 1 pavilion for free."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S213",
+        "bga_id": "S213_ExpertOnAsia"
+    },
+    {
+        "id": "214",
+        "name": "EXPERT ON AFRICA",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "africa"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s214_desc1",
+                "fontSize": "lg",
+                "text": "Each time you play an Africa icon into your zoo, you may place any action card on {Slot-1} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S214",
+        "bga_id": "S214_ExpertOnAfrica"
+    },
+    {
+        "id": "215",
+        "name": "BREEDING COOPERATION",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "Partner Zoo",
+            "Partner Zoo"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s215_desc1",
+                "fontSize": "md",
+                "text": "When playing this card, place 2 player tokens on it. When supporting a **base** conservation project, you may discard exactly 1 token as any icon."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s215_desc2",
+                "fontSize": "md",
+                "text": "Gain {ConservationPoint-1} for 5 <br> supports of <br> conservation projects."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S215",
+        "bga_id": "S215_BreedingCooperation"
+    },
+    {
+        "id": "216",
+        "name": "TALENTED COMMUNICATOR",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "sponsorsII"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s216_desc1",
+                "fontSize": "lg",
+                "text": "Hire 1 association worker. <br> (Full-throated)."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S216",
+        "bga_id": "S216_TalentedCommunicator"
+    },
+    {
+        "id": "217",
+        "name": "ENGINEER",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s217_desc1",
+                "fontSize": "lg",
+                "text": "Each time you build at least 1 building with a Build action {BuildActionCard} . you may build exactly 1 more of the same kind (except for special enclosures) <br> at the normal cost."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S217",
+        "bga_id": "S217_Engineer"
+    },
+    {
+        "id": "218",
+        "name": "BREEDING PROGRAM",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "science",
+            "science"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s218_desc1",
+                "fontSize": "md",
+                "text": "When playing this card, place 2 player tokens on it. When supporting a **base** conservation project, you may discard exactly 1 token as any icon."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s218_desc2",
+                "fontSize": "md",
+                "text": "Gain {ConservationPoint-1} for 5 <br> supports of <br> conservation projects."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S218",
+        "bga_id": "S218_BreedingProgram"
+    },
+    {
+        "id": "219",
+        "name": "DIVERSITY RESEARCHER",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "sponsorsII"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s219_desc1",
+                "fontSize": "lg",
+                "text": "You may build over water and rock spaces. Ignore all requirements for water and rock spaces."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s219_desc2",
+                "fontSize": "md",
+                "text": "Gain {Money-2} for each water and rock requirement."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S219",
+        "bga_id": "S219_DiversityResearcher"
+    },
+    {
+        "id": "220",
+        "name": "FEDERAL GRANTS",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s220_desc1",
+                "fontSize": "lg",
+                "text": "**Income:** Gain {Money-3} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S220",
+        "bga_id": "S220_FederalGrants"
+    },
+    {
+        "id": "221",
+        "name": "ARCHEOLOGIST",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s221_desc1",
+                "fontSize": "lg",
+                "text": "Each time you gain the placement bonus of a border space in your zoo, you additionally gain another free placement bonus."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S221",
+        "bga_id": "S221_Archeologist"
+    },
+    {
+        "id": "222",
+        "name": "RELEASE OF PATENTS",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "appeal"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s222_desc1",
+                "fontSize": "sm",
+                "text": "Gain {ConservationPoint-1} each for each research icon. For each {ConservationPoint-1} that you gain this way, all other players gain {Money-2} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S222",
+        "bga_id": "S222_ReleaseOfPatents"
+    },
+    {
+        "id": "223",
+        "name": "SCIENCE INSTITUTE",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "science",
+            "science"
+        ],
+        "effects": [],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S223",
+        "bga_id": "S223_ScienceInstitute"
+    },
+    {
+        "id": "224",
+        "name": "MIGRATION RECORDING",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s224_desc1",
+                "fontSize": "lg",
+                "text": "Each time you support a Release into the Wild conservation project, additionally gain {ConservationPoint-1} . You may support every Release into the Wild conservation project more than once."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S224",
+        "bga_id": "S224_MigrationRecording"
+    },
+    {
+        "id": "225",
+        "name": "QUARANTINE LAB",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s225_desc1",
+                "fontSize": "lg",
+                "text": "The effects of Venom, Constriction, Hypnosis, and Pilfering do not affect you."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s225_desc2",
+                "fontSize": "lg",
+                "text": "Gain {ConservationPoint-1} for 5 different continent icons."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S225",
+        "bga_id": "S225_QuarantineLab"
+    },
+    {
+        "id": "226",
+        "name": "FOREIGN INSTITUTE",
+        "strength": 6,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s226_desc1",
+                "fontSize": "lg",
+                "text": "Gain {ConservationPoint-1} for 5 different continent icons."
+            }
+        ],
+        "reputation": 2,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S226",
+        "bga_id": "S226_ForeignInstitute"
+    },
+    {
+        "id": "227",
+        "name": "WAZA SPECIAL ASSIGNMENT",
+        "strength": 6,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "reputation"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s227_desc1",
+                "fontSize": "sm",
+                "start": 1,
+                "text": "Choose and mark on this card. Successively reveal cards from the deck and take the first card of the chosen kind."
+            },
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s227_desc2",
+                "fontSize": "sm",
+                "start": 1,
+                "text": "You must not play the other kind any more. Each time you play a small or large animal, you gain {Appeal-2} or {Appeal-4} respectively."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S227",
+        "bga_id": "S227_WazaSpecialAssignment"
+    },
+    {
+        "id": "228",
+        "name": "WAZA SMALL ANIMAL PROGRAM",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "reputation"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s228_desc1",
+                "fontSize": "md",
+                "text": "Each time you play only small animals in the Animals action {AnimalActionCard} , you may play 1 further small animal at the normal cost. After that, take 1 small animal from the <br> display (if available)."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S228",
+        "bga_id": "S228_WazaSmallAnimalProgram"
+    },
+    {
+        "id": "229",
+        "name": "EXPERT IN SMALL ANIMALS",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s229_desc1",
+                "fontSize": "lg",
+                "text": "Your cost to play a small animal is reduced by {Money-3} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S229",
+        "bga_id": "S229_ExpertInSmallAnimals"
+    },
+    {
+        "id": "230",
+        "name": "EXPERT IN LARGE ANIMALS",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s230_desc1",
+                "fontSize": "lg",
+                "text": "Your cost to play a large animal is reduced by {Money-4} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S230",
+        "bga_id": "S230_ExpertInLargeAnimals"
+    },
+    {
+        "id": "231",
+        "name": "SPONSORSHIP: PRIMATES",
+        "strength": 3,
+        "requirements": [
+            "primate"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s231_desc1",
+                "fontSize": "lg",
+                "text": "**Income:** <br> Gain {Money-3} / {Money-6} / {Money-9} for 1/3/5 primate icons in your zoo."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s231_desc2",
+                "display": false,
+                "text": "sponsors.s231_desc2"
+            }
+        ],
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S231",
+        "bga_id": "S231_SponsorshipPrimates"
+    },
+    {
+        "id": "232",
+        "name": "SPONSORSHIP: REPTILES",
+        "strength": 3,
+        "requirements": [
+            "reptile"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s232_desc1",
+                "fontSize": "lg",
+                "text": "**Income:** <br> Gain {Money-3} / {Money-6} / {Money-9} for 1/3/5 reptile icons in your zoo."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s232_desc2",
+                "display": false,
+                "text": "sponsors.s232_desc2"
+            }
+        ],
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S232",
+        "bga_id": "S232_SponsorshipReptiles"
+    },
+    {
+        "id": "233",
+        "name": "SPONSORSHIP: VULTURES",
+        "strength": 3,
+        "requirements": [
+            "bird"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s233_desc1",
+                "fontSize": "lg",
+                "text": "**Income:** <br> Gain {Money-3} / {Money-6} / {Money-9} for 1/3/5 bird icons in your zoo."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s233_desc2",
+                "display": false,
+                "text": "sponsors.s233_desc2"
+            }
+        ],
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S233",
+        "bga_id": "S233_SponsorshipVultures"
+    },
+    {
+        "id": "234",
+        "name": "SPONSORSHIP: LIONS",
+        "strength": 3,
+        "requirements": [
+            "predator"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s234_desc1",
+                "fontSize": "lg",
+                "text": "**Income:** <br> Gain {Money-3} / {Money-6} / {Money-9} for 1/3/5 predator icons in your zoo."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s234_desc2",
+                "display": false,
+                "text": "sponsors.s234_desc2"
+            }
+        ],
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S234",
+        "bga_id": "S234_SponsorshipLions"
+    },
+    {
+        "id": "235",
+        "name": "SPONSORSHIP: ELEPHANTS",
+        "strength": 3,
+        "requirements": [
+            "herbivore"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s235_desc1",
+                "fontSize": "lg",
+                "text": "**Income:** <br> Gain {Money-3} / {Money-6} / {Money-9} for 1/3/5 herbivore icons in your zoo."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s235_desc2",
+                "display": false,
+                "text": "sponsors.s235_desc2"
+            }
+        ],
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S235",
+        "bga_id": "S235_SponsorshipElephants"
+    },
+    {
+        "id": "236",
+        "name": "PRIMATOLOGIST",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "primate"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s236_desc1",
+                "fontSize": "lg",
+                "text": "Each time a primate icon is played into **any** zoo, gain {Money-3} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S236",
+        "bga_id": "S236_Primatologist"
+    },
+    {
+        "id": "237",
+        "name": "HERPETOLOGIST",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "reptile"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s237_desc1",
+                "fontSize": "lg",
+                "text": "Each time a reptile icon is played into **any** zoo, gain {Money-3} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S237",
+        "bga_id": "S237_Herpetologist"
+    },
+    {
+        "id": "238",
+        "name": "ORNITHOLOGIST",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "bird"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s238_desc1",
+                "fontSize": "lg",
+                "text": "Each time a bird icon is played into **any** zoo, gain {Money-3} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S238",
+        "bga_id": "S238_Ornithologist"
+    },
+    {
+        "id": "239",
+        "name": "EXPERT IN PREDATORS",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "predator"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s239_desc1",
+                "fontSize": "lg",
+                "text": "Each time a predator icon is played into **any** zoo, gain {Money-3} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S239",
+        "bga_id": "S239_ExpertInPredators"
+    },
+    {
+        "id": "240",
+        "name": "EXPERT IN HERBIVORES",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "herbivore"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s240_desc1",
+                "fontSize": "lg",
+                "text": "Each time a herbivore icon is played into **any** zoo, gain {Money-3} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S240",
+        "bga_id": "S240_ExpertInHerbivores"
+    },
+    {
+        "id": "241",
+        "name": "HYDROLOGIST",
+        "strength": 5,
+        "rock": 0,
+        "water": 1,
+        "requirements": [],
+        "tags": [
+            "water"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s241_desc1",
+                "text": "For each space you cover that is next to a water space, gain {Money-1} ."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s241_desc2",
+                "display": false,
+                "text": "sponsors.s241_desc2"
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s241_desc3",
+                "text": "Gain {ConservationPoint-1} , if all water spaces are connected."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S241",
+        "bga_id": "S241_Hydrologist"
+    },
+    {
+        "id": "242",
+        "name": "GEOLOGIST",
+        "strength": 5,
+        "rock": 1,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "rock"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s242_desc1",
+                "text": "For each space you cover that is next to a rock space, gain {Money-1} ."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s242_desc2",
+                "display": false,
+                "text": "sponsors.s242_desc2"
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s242_desc3",
+                "text": "Gain {ConservationPoint-1} , if all rock spaces are connected."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S242",
+        "bga_id": "S242_Geologist"
+    },
+    {
+        "id": "243",
+        "name": "MEERKAT DEN",
+        "strength": 5,
+        "rock": 1,
+        "water": 0,
+        "requirements": [
+            "reputation"
+        ],
+        "tags": [
+            "herbivore"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s243_desc1",
+                "text": "Each time you play a herbivore icon into your zoo, gain {Appeal-2} ."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s243_desc2",
+                "display": false,
+                "text": "sponsors.s243_desc2"
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s243_desc3",
+                "text": "Place next to at least 1 rock space."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S243",
+        "bga_id": "S243_MeerkatDen"
+    },
+    {
+        "id": "244",
+        "name": "PENGUIN POOL",
+        "strength": 5,
+        "rock": 0,
+        "water": 1,
+        "requirements": [
+            "reputation"
+        ],
+        "tags": [
+            "bird"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s244_desc1",
+                "text": "Each time you play a bird icon into your zoo, gain {Appeal-2} ."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s243_desc2",
+                "display": false,
+                "text": "sponsors.s243_desc2"
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s244_desc3",
+                "text": "Place next to at least 1 water space."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S244",
+        "bga_id": "S244_PenguinPool"
+    },
+    {
+        "id": "245",
+        "name": "AQUARIUM",
+        "strength": 5,
+        "rock": 0,
+        "water": 2,
+        "requirements": [
+            "reputation"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s245_desc1",
+                "text": "Each time you play a water icon into your zoo, gain {Appeal-2} ."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s245_desc2",
+                "display": false,
+                "text": "sponsors.s245_desc2"
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s245_desc3",
+                "text": "Place next to at least 2 water spaces."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S245",
+        "bga_id": "S245_Aquarium"
+    },
+    {
+        "id": "246",
+        "name": "CABLE CAR",
+        "strength": 6,
+        "rock": 2,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s246_desc1",
+                "text": "Each time you play a rock icon into your zoo, gain {Appeal-2} ."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s246_desc2",
+                "display": false,
+                "text": "sponsors.s246_desc2"
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s246_desc3",
+                "text": "Place next to at least 2 rock spaces."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S246",
+        "bga_id": "S246_CableCar"
+    },
+    {
+        "id": "247",
+        "name": "BABOON ROCK",
+        "strength": 6,
+        "rock": 1,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "primate"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s247_desc1",
+                "text": "Each time you play a primate icon into your zoo, gain {Appeal-2} ."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s247_desc2",
+                "display": false,
+                "text": "sponsors.s247_desc2"
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s247_desc3",
+                "text": "Place next to at least 1 rock space."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S247",
+        "bga_id": "S247_BaboonRock"
+    },
+    {
+        "id": "248",
+        "name": "RHESUS MONKEY PARK",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "primate"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s248_desc1",
+                "fontSize": "lg",
+                "text": "Each time you play a primate icon into your zoo, gain 1 {XToken} -token."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s248_desc2",
+                "display": false,
+                "text": "sponsors.s248_desc2"
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S248",
+        "bga_id": "S248_RhesusMonkeyPark"
+    },
+    {
+        "id": "249",
+        "name": "BARRED OWL HUT",
+        "strength": 6,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "bird"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s249_desc1",
+                "text": "Each time you play a bird icon into your zoo, draw 2 cards from the deck. Keep 1 and discard the other (Perception 2)."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s249_desc2",
+                "display": false,
+                "text": "sponsors.s249_desc2"
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S249",
+        "bga_id": "S249_BarredOwlHut"
+    },
+    {
+        "id": "250",
+        "name": "SEA TURTLE TANK",
+        "strength": 5,
+        "rock": 0,
+        "water": 1,
+        "requirements": [],
+        "tags": [
+            "reptile"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s250_desc1",
+                "text": "Each time you play a reptile icon into your zoo, you may sell up to 2 cards from your hand for each (Sunbathing 2)."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s250_desc2",
+                "display": false,
+                "text": "sponsors.s250_desc2"
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S250",
+        "bga_id": "S250_SeaTurtleTank",
+        "variants": {
+            "marine_worlds": {
+                "water": 2,
+                "tags": [
+                    "reptile",
+                    "seaAnimal"
+                ]
+            }
+        }
+    },
+    {
+        "id": "251",
+        "name": "POLAR BEAR EXHIBIT",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "bear",
+            "predator"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s251_desc1",
+                "fontSize": "lg",
+                "text": "Each time a bear icon is played into any zoo, gain {Appeal-2} ."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s251_desc2",
+                "display": false,
+                "text": "sponsors.s251_desc2"
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S251",
+        "bga_id": "S251_PolarBearExhibit"
+    },
+    {
+        "id": "252",
+        "name": "SPOTTED HYENA COMPOUND",
+        "strength": 5,
+        "rock": 1,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "predator"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s252_desc1",
+                "text": "Each time you play a predator icon into your zoo, reveal the topmost X cards of the deck. Add 1 animal card to your hand. Discard the other cards. (X = number of your predator icons) ."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s252_desc2",
+                "display": false,
+                "text": "sponsors.s252_desc2"
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S252",
+        "bga_id": "S252_SpottedHyenaCompound"
+    },
+    {
+        "id": "253",
+        "name": "OKAPI STABLE",
+        "strength": 6,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "herbivore"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s253_desc1",
+                "text": "Place 3 player tokens on this card. Each time you play a Herbivore icon into your zoo, you may remove 1 token and play a sponsors card for {Money-X} ( {Money-X} = {Slot-X} )."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s253_desc2",
+                "display": false,
+                "text": "sponsors.s253_desc2"
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S253",
+        "bga_id": "S253_OkapiStable"
+    },
+    {
+        "id": "254",
+        "name": "ZOO SCHOOL",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s254_desc1",
+                "fontSize": "lg",
+                "text": "Place on at least 2 border spaces. Take 1 card from the deck or in reputation range."
+            }
+        ],
+        "reputation": 1,
+        "appeal": 0,
+        "conservationPoint": 1,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S254",
+        "bga_id": "S254_ZooSchool"
+    },
+    {
+        "id": "255",
+        "name": "ADVENTURE PLAYGROUND",
+        "strength": 3,
+        "rock": 1,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s255_desc1",
+                "fontSize": "lg",
+                "text": "Place next to at least 1 rock space."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 4,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S255",
+        "bga_id": "S255_AdventurePlayground"
+    },
+    {
+        "id": "256",
+        "name": "WATER PLAYGROUND",
+        "strength": 3,
+        "rock": 0,
+        "water": 1,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s256_desc1",
+                "fontSize": "lg",
+                "text": "Place next to at least 1 water space."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S256",
+        "bga_id": "S256_WaterPlayground"
+    },
+    {
+        "id": "257",
+        "name": "SIDE ENTRANCE",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s257_desc1",
+                "text": "Place on 2 border spaces. Need not be adjacent to other buildings."
+            },
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s257_desc2",
+                "text": "**Income:** Gain {Money-2} for each building, except empty standard enclosures, next to the side entrance."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s257_desc3",
+                "display": false,
+                "text": "Gain {Appeal-5} if zoo is completely covered."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S257",
+        "bga_id": "S257_SideEntrance"
+    },
+    {
+        "id": "258",
+        "name": "NATIVE SEABIRDS",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "appeal"
+        ],
+        "tags": [
+            "bird"
+        ],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s258_desc1",
+                "fontSize": "lg",
+                "text": "Gain {Appeal-1} for each connected water space."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s258_desc2",
+                "fontSize": "lg",
+                "text": "Gain {ConservationPoint-1} for each 2 unconnected water spaces."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S258",
+        "bga_id": "S258_NativeSeabirds"
+    },
+    {
+        "id": "259",
+        "name": "NATIVE LIZARDS",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "appeal"
+        ],
+        "tags": [
+            "reptile"
+        ],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s259_desc1",
+                "fontSize": "lg",
+                "text": "Gain {Appeal-1} for each connected rock space."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s259_desc2",
+                "fontSize": "lg",
+                "text": "Gain {ConservationPoint-1} for each 2 unconnected rock spaces."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S259",
+        "bga_id": "S259_NativeLizards"
+    },
+    {
+        "id": "260",
+        "name": "NATIVE FARM ANIMALS",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "appeal"
+        ],
+        "tags": [
+            "herbivore"
+        ],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s260_desc1",
+                "text": "Gain {Appeal-1} for each connected border space without buildings."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s260_desc2",
+                "text": "Gain {ConservationPoint-1} for each group of 6 spaces without buildings."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S260",
+        "bga_id": "S260_NativeFarmAnimals"
+    },
+    {
+        "id": "261",
+        "name": "GUIDED SCHOOL TOURS",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s261_desc1",
+                "fontSize": "lg",
+                "text": "Gain {ConservationPoint-1} for 5 different animal category icons."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S261",
+        "bga_id": "S261_GuidedSchoolTours"
+    },
+    {
+        "id": "262",
+        "name": "EXPLORER",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "sponsorsII"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s262_desc1",
+                "fontSize": "lg",
+                "text": "Each time you gain a continent or animal category icon that is not yet in your zoo, gain {Appeal-1} and {Money-2} ."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s262_desc2",
+                "start": 48,
+                "text": "{Money-2} for each different continent or animal category icon in your zoo."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S262",
+        "bga_id": "S262_Explorer"
+    },
+    {
+        "id": "263",
+        "name": "WAZA LARGE ANIMAL PROGRAM",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "sponsorsII",
+            "reputation"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s263_desc1",
+                "text": "If you play a large animal, you may ignore 1 condition of your choice."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s263_desc2",
+                "text": "You may place 1 5-space enclosure for free."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S263",
+        "bga_id": "S263_WazaLargeAnimalProgram"
+    },
+    {
+        "id": "264",
+        "name": "FREE-RANGE NEW WORLD MONKEYS",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "appeal"
+        ],
+        "tags": [
+            "primate"
+        ],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s264_desc1",
+                "text": "Gain {Appeal-1} for each connected space with a placement bonus."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s264_desc2",
+                "text": "Gain {ConservationPoint-1} for each 2 unconnected spaces with a placement bonus."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 0,
+        "conservationPoint": 0,
+        "source": "base",
+        "card_type": "sponsor",
+        "key": "S264",
+        "bga_id": "S264_FreerangeNewWorldMonkeys"
+    },
+    {
+        "id": "265",
+        "name": "FRANCHISE BUSINESS",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "kiosk"
+        ],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s265_desc1",
+                "fontSize": "lg",
+                "text": "Gain {Money-1} for each kiosk in other zoos."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s265_desc2",
+                "display": false,
+                "text": "Place a kiosk."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s265_desc3",
+                "display": false,
+                "fontSize": "lg",
+                "text": "If you have 5 kiosks, gain {ConservationPoint-1} ."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 2,
+        "conservationPoint": 0,
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S265",
+        "bga_id": "S265_FranchiseBusiness"
+    },
+    {
+        "id": "266",
+        "name": "MARINE BIOLOGIST",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [
+            "seaAnimal"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s266_desc1",
+                "fontSize": "lg",
+                "text": "Each time a sea animal icon <br> is played into any zoo, gain {Money-3} ."
+            }
+        ],
+        "source": "marine_worlds",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S266",
+        "bga_id": "S266_MarineBiologist"
+    },
+    {
+        "id": "267",
+        "name": "FARM CAT",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [
+            "appeal"
+        ],
+        "tags": [
+            "predator"
+        ],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "",
+                "display": false,
+                "text": ""
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s267_desc1",
+                "fontSize": "lg",
+                "text": "Gain {ConservationPoint-1} for each {Kiosk} with at least 3 empty building spaces next to it (max. {ConservationPoint-3} )."
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S267",
+        "bga_id": "S267_FarmCat"
+    },
+    {
+        "id": "268",
+        "name": "CONFERENCE ON EUROPE",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "tags": [
+            "europe"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s268_desc1",
+                "display": true,
+                "fontSize": "lg",
+                "text": "Each time you play a Europe icon into your zoo, you may mark 1 Animal card after finishing the current action."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s268_desc2",
+                "display": true,
+                "fontSize": "lg",
+                "text": "Gain {ConservationPoint-1} if you did 3 donations."
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S268",
+        "bga_id": "S268_ConferenceOnEurope"
+    },
+    {
+        "id": "269",
+        "name": "CONFERENCE ON AUSTRALIA",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "tags": [
+            "australia"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s269_desc1",
+                "display": true,
+                "fontSize": "md",
+                "text": "Each time you play an Australia icon into your zoo, you may increase the size of a standard enclosure by 1 for free. If the enclosure is occupied, gain {Appeal-2} ."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s269_desc2",
+                "display": true,
+                "fontSize": "md",
+                "text": "Gain {Appeal-1} for each <br> card **pouched** (max. 5)."
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S269",
+        "bga_id": "S269_ConferenceOnAustralia"
+    },
+    {
+        "id": "270",
+        "name": "MARINE RESEARCH EXPEDITION",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "tags": [
+            "science",
+            "seaAnimal"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s270_desc1",
+                "display": true,
+                "fontSize": "lg",
+                "text": "**Expedition** | You may send a **person** <br> Sponsor card in your zoo away (discard) to gain {ConservationPoint-1} <br> OR <br> **Scuba** **Dive** **3** | Reveal the 3 topmost cards of the deck. Choose 1 Sponsor card and add it to your hand. Discard the other cards."
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S270",
+        "bga_id": "S270_MarineResearchExpedition"
+    },
+    {
+        "id": "271",
+        "name": "EXCAVATION SITE",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "tags": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s271_desc1",
+                "display": true,
+                "fontSize": "md",
+                "text": "Gain placement bonuses twice for placing this building."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s271_desc2",
+                "display": true,
+                "fontSize": "md",
+                "text": "Gain {ConservationPoint-1} if all placement bonuses are covered."
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S271",
+        "bga_id": "S271_ExcavationSite"
+    },
+    {
+        "id": "272",
+        "name": "EXPANSION AREA",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "tags": [],
+        "requirements": [
+            "sponsorsII"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s272_desc1",
+                "display": true,
+                "fontSize": "md",
+                "text": "Treat all 3-space enclosures on at least 1 border space as 5-space enclosures."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s272_desc2",
+                "display": true,
+                "fontSize": "md",
+                "text": "Gain {ConservationPoint-1} if all border spaces are covered."
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S272",
+        "bga_id": "S272_ExpansionArea"
+    },
+    {
+        "id": "273",
+        "name": "PUBLICATIONS",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "tags": [
+            "science"
+        ],
+        "requirements": [
+            "science"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s273_desc1",
+                "display": true,
+                "fontSize": "lg",
+                "text": "When making a donation, pay {Money-1} less for each {ScienceIcon} in your zoo."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s273_desc2",
+                "display": true,
+                "fontSize": "lg",
+                "text": "You may make 1 donation."
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S273",
+        "bga_id": "S273_Publications"
+    },
+    {
+        "id": "274",
+        "name": "MASCOT STATUE",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "tags": [],
+        "requirements": [],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s274_desc1",
+                "display": true,
+                "fontSize": "lg",
+                "text": "**Income:** Gain {Appeal-1} ."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s274_desc2",
+                "display": true,
+                "fontSize": "lg",
+                "text": "Gain {Appeal-2} for each zoo with higher appeal (score last)."
+            }
+        ],
+        "appeal": 1,
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S274",
+        "bga_id": "S274_MascotStatue"
+    },
+    {
+        "id": "275",
+        "name": "HORSE WHISPERER",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "tags": [
+            "pet"
+        ],
+        "requirements": [
+            "reputation"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s275_desc1",
+                "display": true,
+                "fontSize": "md",
+                "text": "Each time a Petting Zoo Animal icon is played into **any** **zoo** , gain {Money-2} ."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s275_desc2",
+                "display": true,
+                "fontSize": "md",
+                "text": "Search the **discard** **pile** for 1 Petting Zoo Animal and take it into hand."
+            }
+        ],
+        "source": "marine_worlds",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S275",
+        "bga_id": "S275_HorseWhisperer"
+    },
+    {
+        "id": "276",
+        "name": "LANDSCAPE GARDENER",
+        "strength": 6,
+        "rock": 0,
+        "water": 0,
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s276_desc1",
+                "display": true,
+                "fontSize": "lg",
+                "text": "Each time you build a pavilion, gain 1 {XToken} -marker (max. 1 per action)."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s276_desc2",
+                "display": false,
+                "fontSize": "lg",
+                "text": "sponsors.s276_desc2"
+            }
+        ],
+        "source": "marine_worlds",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S276",
+        "bga_id": "S276_LandscapeGardener"
+    },
+    {
+        "id": "277",
+        "name": "FIELD RESEARCH TYPE D ORCAS",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "tags": [
+            "science"
+        ],
+        "requirements": [
+            "science",
+            "science",
+            "seaAnimal"
+        ],
+        "effects": [],
+        "reputation": 3,
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S277",
+        "bga_id": "S277_FieldResearchTypeDOrcas"
+    },
+    {
+        "id": "278",
+        "name": "AMAZON HOUSE",
+        "strength": 6,
+        "rock": 1,
+        "water": 1,
+        "tags": [
+            "seaAnimal",
+            "herbivore",
+            "primate"
+        ],
+        "requirements": [
+            "sponsorsII",
+            "americas",
+            "reputation"
+        ],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s278_desc1",
+                "display": true,
+                "fontSize": "lg",
+                "text": "Place next to at least 1 water space and 1 rock space."
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S278",
+        "bga_id": "S278_AmazonHouse"
+    },
+    {
+        "id": "279",
+        "name": "UNDERWATER TUNNEL",
+        "strength": 4,
+        "rock": 0,
+        "water": 0,
+        "tags": [],
+        "requirements": [
+            "sponsorsII"
+        ],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s279_desc1",
+                "display": true,
+                "fontSize": "md",
+                "text": "Can accommodate {SeaAnimalTag} (max. 2 markers)."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s279_desc2",
+                "display": true,
+                "fontSize": "md",
+                "text": "Place **on** 2 water spaces."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s279_desc3",
+                "display": true,
+                "fontSize": "md",
+                "text": "Gain {Appeal-3} / {Appeal-5} for 1/2 adjacent aquariums."
+            }
+        ],
+        "appeal": 2,
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S279",
+        "bga_id": "S279_UnderwaterTunnel"
+    },
+    {
+        "id": "280",
+        "name": "RECONSTRUCTION",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s280_desc1",
+                "display": true,
+                "fontSize": "md",
+                "text": "Do not gain placement bonuses anymore."
+            },
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s280_desc2",
+                "display": true,
+                "fontSize": "md",
+                "text": "You may reposition up to 3 buildings. You may build 1 pavilion and 1 kiosk."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s280_desc3",
+                "display": false,
+                "fontSize": "md",
+                "text": "sponsors.s280_desc3"
+            }
+        ],
+        "source": "marine_worlds",
+        "card_type": "sponsor",
+        "key": "S280",
+        "bga_id": "S280_Reconstruction"
+    },
+    {
+        "id": "281",
+        "name": "ARCADE",
+        "strength": 3,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "income",
+                "effectDesc": "sponsors.s281_desc1",
+                "display": true,
+                "fontSize": "md",
+                "text": "**Income:** Gain {Money-1} per {Appeal-10} ."
+            },
+            {
+                "effectType": "endgame",
+                "effectDesc": "sponsors.s281_desc2",
+                "display": true,
+                "fontSize": "md",
+                "text": "Gain 2 {Appeal-2} for each zoo with less appeal (score first)."
+            }
+        ],
+        "reputation": 0,
+        "appeal": 2,
+        "conservationPoint": 0,
+        "source": "promo",
+        "card_type": "sponsor",
+        "key": "S281",
+        "bga_id": "S281_Arcade"
+    },
+    {
+        "id": "282",
+        "name": "PROMOTION TEAM",
+        "strength": 5,
+        "rock": 0,
+        "water": 0,
+        "requirements": [],
+        "tags": [],
+        "effects": [
+            {
+                "effectType": "immediate",
+                "effectDesc": "sponsors.s282_desc1",
+                "display": true,
+                "fontSize": "md",
+                "text": "Find a **person** Sponsor card."
+            },
+            {
+                "effectType": "passive",
+                "effectDesc": "sponsors.s282_desc2",
+                "display": true,
+                "fontSize": "md",
+                "text": "Each time a **person** Sponsor card is played into **any** **zoo** , gain {Money-2} and {Appeal-1} ."
+            }
+        ],
+        "source": "promo",
+        "type": "HUMAN",
+        "card_type": "sponsor",
+        "key": "S282",
+        "bga_id": "S282_PromotionTeam"
+    }
+]

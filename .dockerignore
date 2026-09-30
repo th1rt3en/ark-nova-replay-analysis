@@ -1,0 +1,25 @@
+.git/
+.gitignore
+.gcloudignore
+
+# Python / local env
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.env
+.env.*
+
+# Large or build-time-only inputs
+log_examples/
+vendor/
+node_modules/
+docs/
+data_manual/
+tests/
+scripts/
+*.md

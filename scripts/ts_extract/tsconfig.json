@@ -1,0 +1,1 @@
+{ "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["../../vendor/Next-Ark-Nova-Cards/src/*"], "zod": ["./zod_stub.js"] } } }

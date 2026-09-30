@@ -1,0 +1,5662 @@
+[
+    {
+        "id": "341",
+        "name": "CAPYBARA",
+        "latinName": "Hydrochoerus hydrochaeris",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Water Affinity",
+                    "descriptionTemplate": "abilities.water_affinity_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 0,
+        "source": "promo",
+        "card_type": "animal",
+        "key": "A341",
+        "bga_id": "A341_Capybara"
+    },
+    {
+        "id": "401",
+        "name": "CHEETAH",
+        "latinName": "Acinonyx jubatus",
+        "endangeredCategory": "Vulnerable",
+        "size": 5,
+        "price": 17,
+        "tags": [
+            "predator",
+            "predator",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sprint",
+                    "descriptionTemplate": "abilities.sprint_description",
+                    "model": 2.5
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A401",
+        "bga_id": "A401_Cheetah"
+    },
+    {
+        "id": "402",
+        "name": "LION",
+        "latinName": "Panthera leo",
+        "endangeredCategory": "Vulnerable",
+        "size": 4,
+        "price": 16,
+        "requirements": [
+            "predator",
+            "predator",
+            "predator"
+        ],
+        "tags": [
+            "predator",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pack",
+                    "descriptionTemplate": "abilities.pack_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A402",
+        "bga_id": "A402_Lion"
+    },
+    {
+        "id": "403",
+        "name": "LEOPARD",
+        "latinName": "Panthera pardus",
+        "endangeredCategory": "Vulnerable",
+        "size": 3,
+        "rock": 1,
+        "price": 20,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "predator",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Hunter",
+                    "descriptionTemplate": "abilities.hunter_description",
+                    "model": 1
+                },
+                "value": 4
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A403",
+        "bga_id": "A403_Leopard"
+    },
+    {
+        "id": "404",
+        "name": "CARACAL",
+        "latinName": "Caracal caracal",
+        "size": 2,
+        "price": 9,
+        "tags": [
+            "predator",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Hunter",
+                    "descriptionTemplate": "abilities.hunter_description",
+                    "model": 1
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A404",
+        "bga_id": "A404_Caracal"
+    },
+    {
+        "id": "405",
+        "name": "FENNEC FOX",
+        "latinName": "Heteractis magnifica",
+        "size": 1,
+        "price": 8,
+        "tags": [
+            "predator",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Clever",
+                    "descriptionTemplate": "abilities.clever_description",
+                    "model": 1,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 3
+                    }
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "soloEffect": [],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A405",
+        "bga_id": "A405_FennecFox"
+    },
+    {
+        "id": "406",
+        "name": "SIBERIAN TIGER",
+        "latinName": "Panthera tigris altaica",
+        "endangeredCategory": "Endangered",
+        "size": 5,
+        "price": 30,
+        "requirements": [
+            "asia",
+            "asia",
+            "asia"
+        ],
+        "tags": [
+            "predator",
+            "asia"
+        ],
+        "reputation": 1,
+        "conservationPoint": 2,
+        "appeal": 10,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A406",
+        "bga_id": "A406_SiberianTiger"
+    },
+    {
+        "id": "407",
+        "name": "SUMATRAN TIGER",
+        "latinName": "Panthera tigris sumatrae",
+        "size": 4,
+        "price": 26,
+        "water": 2,
+        "requirements": [
+            "science",
+            "science"
+        ],
+        "tags": [
+            "predator",
+            "asia"
+        ],
+        "reputation": 1,
+        "conservationPoint": 2,
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A407",
+        "bga_id": "A407_SumatranTiger"
+    },
+    {
+        "id": "408",
+        "name": "SLOTH BEAR",
+        "latinName": "Melursus ursinus",
+        "size": 3,
+        "price": 14,
+        "requirements": [],
+        "tags": [
+            "predator",
+            "bear",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Association",
+                    "descriptionTemplate": "abilities.boost_association_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A408",
+        "bga_id": "A408_SlothBear"
+    },
+    {
+        "id": "409",
+        "name": "SUN BEAR",
+        "latinName": "Helarctos malayanus",
+        "endangeredCategory": "Vulnerable",
+        "size": 2,
+        "price": 16,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "predator",
+            "bear",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Action: Association",
+                    "descriptionTemplate": "abilities.action_association_description",
+                    "model": 14,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A409",
+        "bga_id": "A409_SunBear"
+    },
+    {
+        "id": "410",
+        "name": "YELLOW-THROATED MARTEN",
+        "latinName": "Martes flavigula",
+        "size": 1,
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "predator",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Hunter",
+                    "descriptionTemplate": "abilities.hunter_description",
+                    "model": 1
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A410",
+        "bga_id": "A410_YellowthroatedMarten"
+    },
+    {
+        "id": "411",
+        "name": "GRIZZLY BEAR",
+        "latinName": "Ursus arctos horribilis",
+        "size": 5,
+        "price": 22,
+        "requirements": [
+            "predator",
+            "predator",
+            "animalsII"
+        ],
+        "tags": [
+            "predator",
+            "bear",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Inventive: Bear",
+                    "descriptionTemplate": "abilities.inventive_bear_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Full-throated",
+                    "descriptionTemplate": "abilities.full_throated_description",
+                    "model": 10,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A411",
+        "bga_id": "A411_GrizzlyBear"
+    },
+    {
+        "id": "412",
+        "name": "JAGUAR",
+        "latinName": "Panthera onca",
+        "size": 4,
+        "price": 16,
+        "requirements": [
+            "americas"
+        ],
+        "tags": [
+            "predator",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Hunter",
+                    "descriptionTemplate": "abilities.hunter_description",
+                    "model": 1
+                },
+                "value": 4
+            }
+        ],
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A412",
+        "bga_id": "A412_Jaguar"
+    },
+    {
+        "id": "413",
+        "name": "COUGAR",
+        "latinName": "Puma concolor",
+        "size": 3,
+        "rock": 1,
+        "price": 10,
+        "requirements": [],
+        "tags": [
+            "predator",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Jumping",
+                    "descriptionTemplate": "abilities.jumping_description",
+                    "model": 1
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A413",
+        "bga_id": "A413_Cougar"
+    },
+    {
+        "id": "414",
+        "name": "SOUTH AMERICAN COATI",
+        "latinName": "Nasua nasua",
+        "size": 2,
+        "rock": 1,
+        "price": 11,
+        "requirements": [],
+        "tags": [
+            "predator",
+            "bear",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Inventive",
+                    "descriptionTemplate": "abilities.inventive_description",
+                    "model": 3
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A414",
+        "bga_id": "A414_SouthAmericanCoati"
+    },
+    {
+        "id": "415",
+        "name": "RACCOON",
+        "latinName": "Procyon lotor",
+        "size": 1,
+        "price": 11,
+        "tags": [
+            "predator",
+            "bear",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Association",
+                    "descriptionTemplate": "abilities.boost_association_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A415",
+        "bga_id": "A415_Raccoon"
+    },
+    {
+        "id": "416",
+        "name": "EURASIAN BROWN BEAR",
+        "latinName": "Ursus arctos arctos",
+        "size": 5,
+        "water": 1,
+        "price": 20,
+        "requirements": [
+            "bear",
+            "animalsII"
+        ],
+        "tags": [
+            "predator",
+            "bear",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Multiplier: Association",
+                    "descriptionTemplate": "abilities.multiplier_association_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Full-throated",
+                    "descriptionTemplate": "abilities.full_throated_description",
+                    "model": 10,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "conservationPoint": 0,
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A416",
+        "bga_id": "A416_EurasianBrownBear"
+    },
+    {
+        "id": "417",
+        "name": "WOLF",
+        "latinName": "Canis lupus",
+        "size": 4,
+        "price": 12,
+        "tags": [
+            "predator",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pack",
+                    "descriptionTemplate": "abilities.pack_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A417",
+        "bga_id": "A417_Wolf"
+    },
+    {
+        "id": "418",
+        "name": "EURASIAN LYNX",
+        "latinName": "Lynx lynx",
+        "size": 3,
+        "price": 11,
+        "requirements": [
+            "europe",
+            "europe"
+        ],
+        "tags": [
+            "predator",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Iconic Animal",
+                    "descriptionTemplate": "abilities.iconic_animal_description",
+                    "model": 12,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": "Europe"
+            }
+        ],
+        "appeal": 2,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A418",
+        "bga_id": "A418_EurasianLynx"
+    },
+    {
+        "id": "419",
+        "name": "EUROPEAN BADGER",
+        "latinName": "Meles meles",
+        "size": 2,
+        "price": 5,
+        "tags": [
+            "predator",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Animal",
+                    "descriptionTemplate": "abilities.boost_animal_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A419",
+        "bga_id": "A419_EuropeanBadger"
+    },
+    {
+        "id": "420",
+        "name": "STOAT",
+        "latinName": "Mustela erminea",
+        "size": 1,
+        "price": 4,
+        "requirements": [
+            "europe"
+        ],
+        "tags": [
+            "predator",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Hunter",
+                    "descriptionTemplate": "abilities.hunter_description",
+                    "model": 1
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A420",
+        "bga_id": "A420_Stoat"
+    },
+    {
+        "id": "421",
+        "name": "NEW ZEALAND FUR SEAL",
+        "latinName": "Arctocephalus forsteri",
+        "size": 5,
+        "rock": 1,
+        "water": 1,
+        "price": 17,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "predator",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Full-throated",
+                    "descriptionTemplate": "abilities.full_throated_description",
+                    "model": 10,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A421",
+        "bga_id": "A421_NewZealandFurSeal"
+    },
+    {
+        "id": "422",
+        "name": "AUSTRALIAN SEA LION",
+        "latinName": "Neophoca cinerea",
+        "size": 4,
+        "water": 1,
+        "price": 18,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "predator",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sun Bathing",
+                    "descriptionTemplate": "abilities.sun_bathing_description",
+                    "model": 1,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 2
+                    }
+                },
+                "value": 3
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A422",
+        "bga_id": "A422_AustralianSeaLion"
+    },
+    {
+        "id": "423",
+        "name": "NEW ZEALAND SEA LION",
+        "latinName": "Phocarctos hookeri",
+        "size": 3,
+        "water": 1,
+        "price": 17,
+        "requirements": [],
+        "tags": [
+            "predator",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pack",
+                    "descriptionTemplate": "abilities.pack_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A423",
+        "bga_id": "A423_NewZealandSeaLion"
+    },
+    {
+        "id": "424",
+        "name": "AUSTRALIAN DINGO",
+        "latinName": "Canis lupus dingo",
+        "size": 2,
+        "price": 13,
+        "tags": [
+            "predator",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pack",
+                    "descriptionTemplate": "abilities.pack_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A424",
+        "bga_id": "A424_AustralianDingo"
+    },
+    {
+        "id": "425",
+        "name": "TASMANIAN DEVIL",
+        "latinName": "Sarcophilus harrisii",
+        "size": 1,
+        "price": 11,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "predator",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pouch",
+                    "descriptionTemplate": "abilities.pouch_description",
+                    "model": 3
+                },
+                "value": 1
+            }
+        ],
+        "reputation": 1,
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A425",
+        "bga_id": "A425_TasmanianDevil"
+    },
+    {
+        "id": "426",
+        "name": "AFRICAN BUSH ELEPHANT",
+        "latinName": "Loxodonta africana",
+        "size": 5,
+        "price": 36,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "herbivore",
+            "africa",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Resistance",
+                    "descriptionTemplate": "abilities.resistance_description",
+                    "model": 15,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "reputation": 1,
+        "appeal": 10,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A426",
+        "bga_id": "A426_AfricanBushElephant"
+    },
+    {
+        "id": "427",
+        "name": "WHITE RHINOCEROS",
+        "latinName": "Ceratotherium simum",
+        "size": 4,
+        "rock": 1,
+        "price": 24,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "herbivore",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Assertion",
+                    "descriptionTemplate": "abilities.assertion_description",
+                    "model": 15,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A427",
+        "bga_id": "A427_WhiteRhinoceros"
+    },
+    {
+        "id": "428",
+        "name": "GIRAFFE",
+        "latinName": "Giraffa",
+        "size": 3,
+        "price": 16,
+        "tags": [
+            "herbivore",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Sponsors",
+                    "descriptionTemplate": "abilities.boost_sponsors_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A428",
+        "bga_id": "A428_NorthernGiraffe"
+    },
+    {
+        "id": "429",
+        "name": "GREVY'S ZEBRA",
+        "latinName": "Equus grevyi",
+        "size": 2,
+        "price": 12,
+        "requirements": [
+            "africa",
+            "africa",
+            "africa"
+        ],
+        "tags": [
+            "herbivore",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Sponsors",
+                    "descriptionTemplate": "abilities.boost_sponsors_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Flock Animal",
+                    "descriptionTemplate": "abilities.flock_animal_description",
+                    "model": 2
+                },
+                "value": 2
+            }
+        ],
+        "reputation": 1,
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A429",
+        "bga_id": "A429_GrevysZebra"
+    },
+    {
+        "id": "430",
+        "name": "PYGMY HIPPOPOTAMUS",
+        "latinName": "Choeropsis liberiensis",
+        "size": 2,
+        "water": 1,
+        "price": 15,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "herbivore",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Action: Sponsors",
+                    "descriptionTemplate": "abilities.action_sponsors_description",
+                    "model": 7,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A430",
+        "bga_id": "A430_PygmyHippopotamus"
+    },
+    {
+        "id": "431",
+        "name": "ASIAN ELEPHANT",
+        "latinName": "Elephas maximus",
+        "size": 5,
+        "water": 1,
+        "price": 33,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "herbivore",
+            "asia",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Resistance",
+                    "descriptionTemplate": "abilities.resistance_description",
+                    "model": 15,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A431",
+        "bga_id": "A431_AsianElephant"
+    },
+    {
+        "id": "432",
+        "name": "INDIAN RHINOCEROS",
+        "latinName": "Rhinoceros unicornis",
+        "size": 4,
+        "price": 25,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "herbivore",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Assertion",
+                    "descriptionTemplate": "abilities.assertion_description",
+                    "model": 15,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A432",
+        "bga_id": "A432_IndianRhinoceros"
+    },
+    {
+        "id": "433",
+        "name": "GIANT PANDA",
+        "latinName": "Ailuropoda melanoleuca",
+        "size": 3,
+        "price": 27,
+        "requirements": [
+            "herbivore",
+            "bear",
+            "Partner Zoo"
+        ],
+        "tags": [
+            "herbivore",
+            "bear",
+            "asia"
+        ],
+        "reputation": 1,
+        "conservationPoint": 2,
+        "appeal": 10,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A433",
+        "bga_id": "A433_GiantPanda"
+    },
+    {
+        "id": "434",
+        "name": "RED PANDA",
+        "latinName": "Ailurus fulgens",
+        "size": 2,
+        "price": 16,
+        "requirements": [
+            "science",
+            "science"
+        ],
+        "tags": [
+            "herbivore",
+            "bear",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Multiplier: Sponsors",
+                    "descriptionTemplate": "abilities.multiplier_sponsors_description",
+                    "model": 7,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A434",
+        "bga_id": "A434_RedPanda"
+    },
+    {
+        "id": "435",
+        "name": "MALAYAN TAPIR",
+        "latinName": "Tapirus indicus",
+        "size": 2,
+        "price": 17,
+        "tags": [
+            "herbivore",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Digging",
+                    "descriptionTemplate": "abilities.digging_description",
+                    "model": 1.5
+                },
+                "value": 3
+            }
+        ],
+        "reputation": 1,
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A435",
+        "bga_id": "A435_MalayanTapir"
+    },
+    {
+        "id": "436",
+        "name": "AMERICAN BISON",
+        "latinName": "Bos bison",
+        "size": 5,
+        "price": 18,
+        "requirements": [
+            "americas",
+            "americas",
+            "americas"
+        ],
+        "tags": [
+            "herbivore",
+            "americas",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Iconic Animal",
+                    "descriptionTemplate": "abilities.iconic_animal_description",
+                    "model": 12,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": "Americas"
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A436",
+        "bga_id": "A436_AmericanBison"
+    },
+    {
+        "id": "437",
+        "name": "MUSKOX",
+        "latinName": "Ovibos moschatus",
+        "size": 4,
+        "price": 13,
+        "requirements": [
+            "americas"
+        ],
+        "tags": [
+            "herbivore",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sponsor Magnet",
+                    "descriptionTemplate": "abilities.sponsor_magnet_description"
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A437",
+        "bga_id": "A437_Muskox"
+    },
+    {
+        "id": "438",
+        "name": "REINDEER",
+        "latinName": "Rangifer tarandus",
+        "size": 3,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "herbivore",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Flock Animal",
+                    "descriptionTemplate": "abilities.flock_animal_description",
+                    "model": 2
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A438",
+        "bga_id": "A438_Reindeer"
+    },
+    {
+        "id": "439",
+        "name": "LAMA",
+        "latinName": "Lama glama",
+        "size": 2,
+        "price": 10,
+        "requirements": [],
+        "tags": [
+            "herbivore",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Flock Animal",
+                    "descriptionTemplate": "abilities.flock_animal_description",
+                    "model": 2
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A439",
+        "bga_id": "A439_Llama"
+    },
+    {
+        "id": "440",
+        "name": "MOUNTAIN TAPIR",
+        "latinName": "Tapirus pinchaque",
+        "size": 2,
+        "rock": 1,
+        "price": 15,
+        "requirements": [],
+        "tags": [
+            "herbivore",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Digging",
+                    "descriptionTemplate": "abilities.digging_description",
+                    "model": 1.5
+                },
+                "value": 2
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A440",
+        "bga_id": "A440_MountainTapir"
+    },
+    {
+        "id": "441",
+        "name": "EUROPEAN BISON",
+        "latinName": "Bos bonasus",
+        "size": 5,
+        "price": 19,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "herbivore",
+            "europe",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sponsor Magnet",
+                    "descriptionTemplate": "abilities.sponsor_magnet_description"
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A441",
+        "bga_id": "A441_EuropeanBison"
+    },
+    {
+        "id": "442",
+        "name": "MOOSE",
+        "latinName": "Alces alces",
+        "size": 4,
+        "price": 19,
+        "requirements": [
+            "herbivore",
+            "herbivore"
+        ],
+        "tags": [
+            "herbivore",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Multiplier: Sponsors",
+                    "descriptionTemplate": "abilities.multiplier_sponsors_description",
+                    "model": 7,
+                    "multiply": false
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Flock Animal",
+                    "descriptionTemplate": "abilities.flock_animal_description",
+                    "model": 2
+                },
+                "value": 4
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A442",
+        "bga_id": "A442_Moose"
+    },
+    {
+        "id": "443",
+        "name": "RED DEER",
+        "latinName": "Cervus elaphus",
+        "size": 3,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "herbivore",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Flock Animal",
+                    "descriptionTemplate": "abilities.flock_animal_description",
+                    "model": 2
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A443",
+        "bga_id": "A443_RedDeer"
+    },
+    {
+        "id": "444",
+        "name": "ALPINE IBEX",
+        "latinName": "Capra ibex",
+        "size": 2,
+        "rock": 2,
+        "price": 10,
+        "requirements": [],
+        "tags": [
+            "herbivore",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Jumping",
+                    "descriptionTemplate": "abilities.jumping_description",
+                    "model": 1
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A444",
+        "bga_id": "A444_AlpineIbex"
+    },
+    {
+        "id": "445",
+        "name": "CRESTED PORCUPINE",
+        "latinName": "Hystric cristata",
+        "size": 1,
+        "price": 8,
+        "requirements": [],
+        "tags": [
+            "herbivore",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Digging",
+                    "descriptionTemplate": "abilities.digging_description",
+                    "model": 1.5
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A445",
+        "bga_id": "A445_CrestedPorcupine"
+    },
+    {
+        "id": "446",
+        "name": "DUGONG",
+        "latinName": "Dugong dugon",
+        "size": 5,
+        "water": 2,
+        "price": 25,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "herbivore",
+            "australia",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Digging",
+                    "descriptionTemplate": "abilities.digging_description",
+                    "model": 1.5
+                },
+                "value": 4
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A446",
+        "bga_id": "A446_Dugong"
+    },
+    {
+        "id": "447",
+        "name": "RED KANGAROO",
+        "latinName": "Macropus rufus",
+        "size": 4,
+        "price": 23,
+        "requirements": [],
+        "tags": [
+            "herbivore",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pouch",
+                    "descriptionTemplate": "abilities.pouch_description",
+                    "model": 3
+                },
+                "value": 2
+            },
+            {
+                "keyword": {
+                    "name": "Flock Animal",
+                    "descriptionTemplate": "abilities.flock_animal_description",
+                    "model": 2
+                },
+                "value": 4
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A447",
+        "bga_id": "A447_RedKangaroo"
+    },
+    {
+        "id": "448",
+        "name": "KOALA",
+        "latinName": "Phascolarctos cinereus",
+        "size": 3,
+        "rock": 1,
+        "price": 21,
+        "requirements": [
+            "australia"
+        ],
+        "tags": [
+            "herbivore",
+            "bear",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pouch",
+                    "descriptionTemplate": "abilities.pouch_description",
+                    "model": 3
+                },
+                "value": 2
+            }
+        ],
+        "reputation": 1,
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A448",
+        "bga_id": "A448_Koala"
+    },
+    {
+        "id": "449",
+        "name": "PLATYPUS",
+        "latinName": "Ornithorhynchus anatinus",
+        "size": 2,
+        "water": 1,
+        "price": 10,
+        "requirements": [],
+        "tags": [
+            "herbivore",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Venom",
+                    "descriptionTemplate": "abilities.venom_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A449",
+        "bga_id": "A449_Platypus"
+    },
+    {
+        "id": "450",
+        "name": "COMMON WOMBAT",
+        "latinName": "Vombatus ursinus",
+        "size": 2,
+        "price": 9,
+        "tags": [
+            "herbivore",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pouch",
+                    "descriptionTemplate": "abilities.pouch_description",
+                    "model": 3
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A450",
+        "bga_id": "A450_CommonWombat"
+    },
+    {
+        "id": "451",
+        "name": "PROBOSCIS MONKEY",
+        "latinName": "Nasalis larvatus",
+        "size": 5,
+        "rock": 1,
+        "price": 32,
+        "requirements": [
+            "primate",
+            "primate",
+            "animalsII"
+        ],
+        "tags": [
+            "primate",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Dominance",
+                    "descriptionTemplate": "abilities.dominance_description",
+                    "model": 10,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "conservationPoint": 2,
+        "appeal": 10,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A451",
+        "bga_id": "A451_ProboscisMonkey"
+    },
+    {
+        "id": "452",
+        "name": "SENEGAL BUSHBABY",
+        "latinName": "Galago senegalensis",
+        "size": 1,
+        "price": 10,
+        "requirements": [
+            "africa",
+            "africa"
+        ],
+        "tags": [
+            "primate",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Iconic Animal",
+                    "descriptionTemplate": "abilities.iconic_animal_description",
+                    "model": 12,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": "africa"
+            }
+        ],
+        "appeal": 1,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A452",
+        "bga_id": "A452_SenegalBushbaby"
+    },
+    {
+        "id": "453",
+        "name": "COLLARED MANGABEY",
+        "latinName": "Cercocebus torquatus",
+        "size": 4,
+        "price": 20,
+        "requirements": [
+            "africa"
+        ],
+        "tags": [
+            "primate",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Action: Cards",
+                    "descriptionTemplate": "abilities.action_cards_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A453",
+        "bga_id": "A453_CollaredMangabey"
+    },
+    {
+        "id": "454",
+        "name": "RING-TAILED LEMUR",
+        "latinName": "Lemur catta",
+        "size": 3,
+        "rock": 1,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "primate",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sun Bathing",
+                    "descriptionTemplate": "abilities.sun_bathing_description",
+                    "model": 1,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 2
+                    }
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A454",
+        "bga_id": "A454_RingtailedLemur"
+    },
+    {
+        "id": "455",
+        "name": "MANTLED GUEREZA",
+        "latinName": "Colobus guereza",
+        "size": 3,
+        "price": 13,
+        "requirements": [],
+        "tags": [
+            "primate",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Clever",
+                    "descriptionTemplate": "abilities.clever_description",
+                    "model": 1,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 3
+                    }
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A455",
+        "bga_id": "A455_MantledGuereza"
+    },
+    {
+        "id": "456",
+        "name": "BARBARY MACAQUE",
+        "latinName": "Macaca sylvanus",
+        "size": 2,
+        "price": 13,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "primate",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pilfering 1",
+                    "descriptionTemplate": "abilities.pilfering_1_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A456",
+        "bga_id": "A456_BarbaryMacaque"
+    },
+    {
+        "id": "457",
+        "name": "MANDRILL",
+        "latinName": "Mandrillus sphinx",
+        "size": 5,
+        "price": 28,
+        "requirements": [
+            "primate",
+            "primate",
+            "primate"
+        ],
+        "tags": [
+            "primate",
+            "primate",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Multiplier: Card",
+                    "descriptionTemplate": "abilities.multiplier_card_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "conservationPoint": 2,
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A457",
+        "bga_id": "A457_Mandrill"
+    },
+    {
+        "id": "458",
+        "name": "JAPANESE MACAQUE",
+        "latinName": "Macaca fuscata",
+        "size": 3,
+        "water": 1,
+        "price": 18,
+        "requirements": [
+            "asia"
+        ],
+        "tags": [
+            "primate",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pilfering 2",
+                    "descriptionTemplate": "abilities.pilfering_2_description",
+                    "model": 10,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A458",
+        "bga_id": "A458_JapaneseMacaque"
+    },
+    {
+        "id": "459",
+        "name": "RED-SHANKED DOUC",
+        "latinName": "Pygathrix nemaeus",
+        "size": 4,
+        "price": 17,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "primate",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Inventive: Primary",
+                    "descriptionTemplate": "abilities.inventive_primary_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "reputation": 1,
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A459",
+        "bga_id": "A459_RedshankedDouc"
+    },
+    {
+        "id": "460",
+        "name": "DUSKY-LEAF MONKEY",
+        "latinName": "Trachypithecus obscurus",
+        "size": 2,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "primate",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Clever",
+                    "descriptionTemplate": "abilities.clever_description",
+                    "model": 1,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 3
+                    }
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A460",
+        "bga_id": "A460_DuskyleafMonkey"
+    },
+    {
+        "id": "461",
+        "name": "HORSFIELD'S TARSIER",
+        "latinName": "Cephalopachus bancanus",
+        "size": 1,
+        "price": 14,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "primate",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Jumping",
+                    "descriptionTemplate": "abilities.jumping_description",
+                    "model": 1
+                },
+                "value": 4
+            }
+        ],
+        "reputation": 2,
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A461",
+        "bga_id": "A461_HorsfieldsTarsier"
+    },
+    {
+        "id": "462",
+        "name": "NORTHERN PLAINS GRAY LANGUR",
+        "latinName": "Semnopithecus entellus",
+        "size": 3,
+        "rock": 1,
+        "price": 13,
+        "requirements": [],
+        "tags": [
+            "primate",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Jumping",
+                    "descriptionTemplate": "abilities.jumping_description",
+                    "model": 1
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A462",
+        "bga_id": "A462_NorthernPlainsGrayLangur"
+    },
+    {
+        "id": "463",
+        "name": "PANAMANIAN WHITE-FACED CAPUCHIN",
+        "latinName": "Cebus imitator",
+        "size": 2,
+        "price": 11,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "primate",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pilfering 1",
+                    "descriptionTemplate": "abilities.pilfering_1_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A463",
+        "bga_id": "A463_PanamanianWhitefacedCapuchin"
+    },
+    {
+        "id": "464",
+        "name": "BROWN SPIDER MONKEY",
+        "latinName": "Ateles hybridus",
+        "size": 4,
+        "rock": null,
+        "price": 17,
+        "requirements": [
+            "primate"
+        ],
+        "tags": [
+            "primate",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Inventive: Primary",
+                    "descriptionTemplate": "abilities.inventive_primary_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A464",
+        "bga_id": "A464_BrownSpiderMonkey"
+    },
+    {
+        "id": "465",
+        "name": "GOLDEN LION TAMARIN",
+        "latinName": "Leontopithecus rosalia",
+        "size": 1,
+        "price": 10,
+        "tags": [
+            "primate",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Clever",
+                    "descriptionTemplate": "abilities.clever_description",
+                    "model": 1,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 3
+                    }
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A465",
+        "bga_id": "A465_GoldenLionTamarin"
+    },
+    {
+        "id": "466",
+        "name": "BOLIVIAN RED HOWLER",
+        "latinName": "Alouatta sara",
+        "size": 3,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "primate",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Card",
+                    "descriptionTemplate": "abilities.boost_card_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A466",
+        "bga_id": "A466_BolivianRedHowler"
+    },
+    {
+        "id": "467",
+        "name": "ECUADORIAN SQUIRELL MONKEY",
+        "latinName": "Saimiri macrodon",
+        "size": 2,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "primate",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Clever",
+                    "descriptionTemplate": "abilities.clever_description",
+                    "model": 1,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 3
+                    }
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A467",
+        "bga_id": "A467_EcuadorianSquirellMonkey"
+    },
+    {
+        "id": "468",
+        "name": "COTTON-TOP TAMARIN",
+        "latinName": "Saguinus oedipus",
+        "size": 1,
+        "price": 15,
+        "requirements": [
+            "science",
+            "science"
+        ],
+        "tags": [
+            "primate",
+            "americas"
+        ],
+        "reputation": 1,
+        "conservationPoint": 1,
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A468",
+        "bga_id": "A468_CottontopTamarin"
+    },
+    {
+        "id": "469",
+        "name": "NILE CROCODILE",
+        "latinName": "Crocodylus niloticus",
+        "size": 5,
+        "water": 1,
+        "price": 13,
+        "requirements": [
+            "reptile",
+            "reptile",
+            "reptile"
+        ],
+        "tags": [
+            "reptile",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 3
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Snapping 2",
+                    "descriptionTemplate": "abilities.snapping_2_description",
+                    "model": 8,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A469",
+        "bga_id": "A469_NileCrocodile"
+    },
+    {
+        "id": "470",
+        "name": "WESTERN GREEN MAMBA",
+        "latinName": "Dendroaspis viridis",
+        "size": 2,
+        "price": 13,
+        "requirements": [
+            "africa",
+            "reptile"
+        ],
+        "tags": [
+            "reptile",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Venom",
+                    "descriptionTemplate": "abilities.venom_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A470",
+        "bga_id": "A470_WesternGreenMamba"
+    },
+    {
+        "id": "471",
+        "name": "AFRICAN SPURRED TORTOISE",
+        "latinName": "Centrochelys sulcata",
+        "size": 3,
+        "price": 22,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sun Bathing",
+                    "descriptionTemplate": "abilities.sun_bathing_description",
+                    "model": 1,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 2
+                    }
+                },
+                "value": 3
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A471",
+        "bga_id": "A471_AfricanSpurredTortoise"
+    },
+    {
+        "id": "472",
+        "name": "ROCK MONITOR",
+        "latinName": "Varanus albigularis",
+        "size": 2,
+        "rock": 1,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sun Bathing",
+                    "descriptionTemplate": "abilities.sun_bathing_description",
+                    "model": 1,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 2
+                    }
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A472",
+        "bga_id": "A472_RockMonitor"
+    },
+    {
+        "id": "473",
+        "name": "COMMON AGAMA",
+        "latinName": "Agama agama",
+        "size": 1,
+        "price": 9,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 0
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sun Bathing",
+                    "descriptionTemplate": "abilities.sun_bathing_description",
+                    "model": 1,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 2
+                    }
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A473",
+        "bga_id": "A473_CommonAgama"
+    },
+    {
+        "id": "474",
+        "name": "INDIAN ROCK PYTHON",
+        "latinName": "Python molurus",
+        "size": 2,
+        "price": 14,
+        "requirements": [
+            "reptile",
+            "reptile"
+        ],
+        "tags": [
+            "reptile",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Constriction",
+                    "descriptionTemplate": "abilities.constriction_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A474",
+        "bga_id": "A474_IndianRockPython"
+    },
+    {
+        "id": "475",
+        "name": "KING COBRA",
+        "latinName": "Ophiophagus hannah",
+        "size": 2,
+        "price": 13,
+        "requirements": [
+            "science",
+            "science",
+            "animalsII"
+        ],
+        "tags": [
+            "reptile",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Hypnosis",
+                    "descriptionTemplate": "abilities.hypnosis_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A475",
+        "bga_id": "A475_IndianCobra"
+    },
+    {
+        "id": "476",
+        "name": "KOMODO DRAGON",
+        "latinName": "Varanus komodoensis",
+        "size": 3,
+        "price": 14,
+        "requirements": [
+            "asia",
+            "asia"
+        ],
+        "tags": [
+            "reptile",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Iconic Animal",
+                    "descriptionTemplate": "abilities.iconic_animal_description",
+                    "model": 12,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": "asia"
+            }
+        ],
+        "appeal": 2,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A476",
+        "bga_id": "A476_KomodoDragon"
+    },
+    {
+        "id": "477",
+        "name": "VEILED CHAMELEON",
+        "latinName": "Chamaeleo calyptratus",
+        "size": 1,
+        "price": 14,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 0
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Snapping 1",
+                    "descriptionTemplate": "abilities.snapping_1_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A477",
+        "bga_id": "A477_VeiledChameleon"
+    },
+    {
+        "id": "478",
+        "name": "CHINESE WATER DRAGON",
+        "latinName": "Physignathus cocincinus",
+        "size": 1,
+        "water": 1,
+        "price": 8,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 0
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sun Bathing",
+                    "descriptionTemplate": "abilities.sun_bathing_description",
+                    "model": 1,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 2
+                    }
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A478",
+        "bga_id": "A478_ChineseWaterDragon"
+    },
+    {
+        "id": "479",
+        "name": "AMERICAN ALLIGATOR",
+        "latinName": "Alligator mississippiensis",
+        "size": 4,
+        "water": 1,
+        "price": 18,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Snapping 1",
+                    "descriptionTemplate": "abilities.snapping_1_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A479",
+        "bga_id": "A479_AmericanAlligator"
+    },
+    {
+        "id": "480",
+        "name": "BROAD-SNOUTED CAIMAN",
+        "latinName": "Caiman latirostris",
+        "size": 4,
+        "water": 1,
+        "price": 16,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Snapping 1",
+                    "descriptionTemplate": "abilities.snapping_1_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A480",
+        "bga_id": "A480_BroadsnoutedCaiman"
+    },
+    {
+        "id": "481",
+        "name": "GALAPAGOS GIANT TORTOISE",
+        "latinName": "Chelonoidis nigra",
+        "size": 3,
+        "price": 30,
+        "requirements": [
+            "americas",
+            "americas",
+            "animalsII"
+        ],
+        "tags": [
+            "reptile",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sun Bathing",
+                    "descriptionTemplate": "abilities.sun_bathing_description",
+                    "model": 1,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 2
+                    }
+                },
+                "value": 4
+            }
+        ],
+        "reputation": 1,
+        "conservationPoint": 2,
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A481",
+        "bga_id": "A481_GalApagosGiantTortoise"
+    },
+    {
+        "id": "482",
+        "name": "ANACONDA",
+        "latinName": "Eunectes murinus",
+        "size": 2,
+        "price": 13,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "reptile",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Constriction",
+                    "descriptionTemplate": "abilities.constriction_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A482",
+        "bga_id": "A482_Anaconda"
+    },
+    {
+        "id": "483",
+        "name": "BOA CONSTRICTOR",
+        "latinName": "Boa constrictor",
+        "size": 2,
+        "price": 16,
+        "requirements": [
+            "science",
+            "science"
+        ],
+        "tags": [
+            "reptile",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Constriction",
+                    "descriptionTemplate": "abilities.constriction_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A483",
+        "bga_id": "A483_BoaConstrictor"
+    },
+    {
+        "id": "484",
+        "name": "EUROPEAN POND TURTLE",
+        "latinName": "Emys orbicularis",
+        "size": 1,
+        "water": 1,
+        "price": 9,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A484",
+        "bga_id": "A484_EuropeanPondTurtle"
+    },
+    {
+        "id": "485",
+        "name": "COMMON EUROPEAN ADDER",
+        "latinName": "Vipera berus",
+        "size": 1,
+        "price": 10,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "reptile",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 0
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Hypnosis",
+                    "descriptionTemplate": "abilities.hypnosis_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 2,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A485",
+        "bga_id": "A485_CommonEuropeanAdder"
+    },
+    {
+        "id": "486",
+        "name": "COMMON WALL LIZARD",
+        "latinName": "Podarcis muralis",
+        "size": 1,
+        "rock": 1,
+        "price": 4,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 0
+            }
+        ],
+        "appeal": 2,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A486",
+        "bga_id": "A486_CommonWallLizard"
+    },
+    {
+        "id": "487",
+        "name": "EUROPEAN GRASS SNAKE",
+        "latinName": "Natrix natrix",
+        "size": 1,
+        "water": 1,
+        "price": 8,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 0
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Clever",
+                    "descriptionTemplate": "abilities.clever_description",
+                    "model": 1,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 3
+                    }
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A487",
+        "bga_id": "A487_EuropeanGrassSnake"
+    },
+    {
+        "id": "488",
+        "name": "SLOW WORM",
+        "latinName": "Anguis fragilis",
+        "size": 1,
+        "water": 1,
+        "price": 4,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 0
+            }
+        ],
+        "appeal": 2,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A488",
+        "bga_id": "A488_SlowWorm"
+    },
+    {
+        "id": "489",
+        "name": "SALTWATER CROCODILE",
+        "latinName": "Crocodylus porosus",
+        "size": 5,
+        "water": 1,
+        "price": 23,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "reptile",
+            "reptile",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 3
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Snapping 2",
+                    "descriptionTemplate": "abilities.snapping_2_description",
+                    "model": 8,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A489",
+        "bga_id": "A489_SaltwaterCrocodile"
+    },
+    {
+        "id": "490",
+        "name": "GOULD'S MONITOR",
+        "latinName": "Varanus gouldii",
+        "size": 3,
+        "price": 15,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Scavenging",
+                    "descriptionTemplate": "abilities.scavenging_description",
+                    "model": 3,
+                    "multiply": false,
+                    "options": {}
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A490",
+        "bga_id": "A490_GouldsMonitor"
+    },
+    {
+        "id": "491",
+        "name": "FRILLED LIZARD",
+        "latinName": "Chlamydosaurus kingii",
+        "size": 2,
+        "rock": 1,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sprint",
+                    "descriptionTemplate": "abilities.sprint_description",
+                    "model": 2.5
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A491",
+        "bga_id": "A491_FrilledLizard"
+    },
+    {
+        "id": "492",
+        "name": "INLAND TAIPAN",
+        "latinName": "Oxyuranus microlepidotus",
+        "size": 2,
+        "rock": 1,
+        "price": 10,
+        "requirements": [
+            "australia",
+            "science"
+        ],
+        "tags": [
+            "reptile",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Venom",
+                    "descriptionTemplate": "abilities.venom_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A492",
+        "bga_id": "A492_InlandTaipan"
+    },
+    {
+        "id": "493",
+        "name": "THORNY DEVIL",
+        "latinName": "Moloch horridus",
+        "size": 1,
+        "rock": 1,
+        "price": 6,
+        "requirements": [],
+        "tags": [
+            "reptile",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Reptile House",
+                "size": 0
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A493",
+        "bga_id": "A493_ThornyDevil"
+    },
+    {
+        "id": "494",
+        "name": "AFRICAN OSTRICH",
+        "latinName": "Struthio camelus",
+        "size": 5,
+        "price": 20,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 4
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sprint",
+                    "descriptionTemplate": "abilities.sprint_description",
+                    "model": 2.5
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A494",
+        "bga_id": "A494_AfricanOstrich"
+    },
+    {
+        "id": "495",
+        "name": "SECRETARY BIRD",
+        "latinName": "Sagittarius serpentarius",
+        "size": 4,
+        "price": 14,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A495",
+        "bga_id": "A495_SecretaryBird"
+    },
+    {
+        "id": "496",
+        "name": "MARABOU",
+        "latinName": "Leptoptilos crumenifer",
+        "size": 3,
+        "price": 10,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Scavenging",
+                    "descriptionTemplate": "abilities.scavenging_description",
+                    "model": 3,
+                    "multiply": false,
+                    "options": {}
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A496",
+        "bga_id": "A496_Marabou"
+    },
+    {
+        "id": "497",
+        "name": "LESSER FLAMINGO",
+        "latinName": "Phoeniconaias minor",
+        "size": 2,
+        "water": 1,
+        "price": 15,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Posturing",
+                    "descriptionTemplate": "abilities.posturing_description",
+                    "model": 3,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A497",
+        "bga_id": "A497_LesserFlamingo"
+    },
+    {
+        "id": "498",
+        "name": "SHOEBILL",
+        "latinName": "Balaeniceps rex",
+        "size": 1,
+        "price": 9,
+        "requirements": [
+            "science",
+            "science"
+        ],
+        "tags": [
+            "bird",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "conservationPoint": 1,
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A498",
+        "bga_id": "A498_Shoebill"
+    },
+    {
+        "id": "499",
+        "name": "CINEREOUS VULTURE",
+        "latinName": "Aegypius monachus",
+        "size": 5,
+        "price": 16,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Scavenging",
+                    "descriptionTemplate": "abilities.scavenging_description",
+                    "model": 3,
+                    "multiply": false,
+                    "options": {}
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A499",
+        "bga_id": "A499_CinereousVulture"
+    },
+    {
+        "id": "500",
+        "name": "LONG-BILLED VULTURE",
+        "latinName": "Gyps indicus",
+        "size": 4,
+        "rock": 1,
+        "price": 20,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "bird",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Scavenging",
+                    "descriptionTemplate": "abilities.scavenging_description",
+                    "model": 3,
+                    "multiply": false,
+                    "options": {}
+                },
+                "value": 3
+            }
+        ],
+        "reputation": 1,
+        "conservationPoint": 1,
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A500",
+        "bga_id": "A500_LongbilledVulture"
+    },
+    {
+        "id": "501",
+        "name": "INDIAN PEAFOWL",
+        "latinName": "Pavo cristatus",
+        "size": 3,
+        "price": 18,
+        "requirements": [
+            "asia"
+        ],
+        "tags": [
+            "bird",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Posturing",
+                    "descriptionTemplate": "abilities.posturing_description",
+                    "model": 3,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": 2
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A501",
+        "bga_id": "A501_IndianPeafowl"
+    },
+    {
+        "id": "502",
+        "name": "GREAT HORNBILL",
+        "latinName": "Buceros bicornis",
+        "size": 2,
+        "price": 13,
+        "tags": [
+            "bird",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Building",
+                    "descriptionTemplate": "abilities.boost_building_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A502",
+        "bga_id": "A502_GreatHornbill"
+    },
+    {
+        "id": "503",
+        "name": "SNOWY OWL",
+        "latinName": "Bubo scandiacus",
+        "size": 1,
+        "price": 11,
+        "requirements": [
+            "bird",
+            "bird"
+        ],
+        "tags": [
+            "bird",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Perception 4",
+                    "descriptionTemplate": "abilities.perception_4_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "reputation": 1,
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A503",
+        "bga_id": "A503_SnowyOwl"
+    },
+    {
+        "id": "504",
+        "name": "ANDEAN CONDOR",
+        "latinName": "Vultur gryphus",
+        "size": 5,
+        "rock": 1,
+        "price": 17,
+        "requirements": [
+            "bird"
+        ],
+        "tags": [
+            "bird",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Scavenging",
+                    "descriptionTemplate": "abilities.scavenging_description",
+                    "model": 3,
+                    "multiply": false,
+                    "options": {}
+                },
+                "value": 4
+            }
+        ],
+        "reputation": 1,
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A504",
+        "bga_id": "A504_AndeanCondor"
+    },
+    {
+        "id": "505",
+        "name": "BALD EAGLE",
+        "latinName": "Haliaeetus leucocephalus",
+        "size": 4,
+        "water": 1,
+        "price": 23,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "bird",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Determination",
+                    "descriptionTemplate": "abilities.determination_description",
+                    "model": 18,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 8,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A505",
+        "bga_id": "A505_BaldEagle"
+    },
+    {
+        "id": "506",
+        "name": "KING VULTURE",
+        "latinName": "Sarcoramphus papa",
+        "size": 3,
+        "price": 12,
+        "requirements": [
+            "bird",
+            "bird",
+            "bird"
+        ],
+        "tags": [
+            "bird",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Scavenging",
+                    "descriptionTemplate": "abilities.scavenging_description",
+                    "model": 3,
+                    "multiply": false,
+                    "options": {}
+                },
+                "value": 5
+            }
+        ],
+        "appeal": 9,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A506",
+        "bga_id": "A506_KingVulture"
+    },
+    {
+        "id": "507",
+        "name": "GREATER RHEA",
+        "latinName": "Rhea americana",
+        "size": 2,
+        "price": 12,
+        "tags": [
+            "bird",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sprint",
+                    "descriptionTemplate": "abilities.sprint_description",
+                    "model": 2.5
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A507",
+        "bga_id": "A507_GreaterRhea"
+    },
+    {
+        "id": "508",
+        "name": "SCARLET MACAW",
+        "latinName": "Ara macao",
+        "size": 1,
+        "price": 16,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "bird",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Posturing",
+                    "descriptionTemplate": "abilities.posturing_description",
+                    "model": 3,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": 3
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A508",
+        "bga_id": "A508_ScarletMacaw"
+    },
+    {
+        "id": "509",
+        "name": "GOLDEN EAGLE",
+        "latinName": "Aquila chrysaetos",
+        "size": 5,
+        "rock": 1,
+        "price": 20,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "bird",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Determination",
+                    "descriptionTemplate": "abilities.determination_description",
+                    "model": 18,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A509",
+        "bga_id": "A509_GoldenEagle"
+    },
+    {
+        "id": "510",
+        "name": "WHITE STORK",
+        "latinName": "Ciconia ciconia",
+        "size": 4,
+        "price": 9,
+        "requirements": [
+            "europe"
+        ],
+        "tags": [
+            "bird",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Multiplier: Building",
+                    "descriptionTemplate": "abilities.multiplier_building_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A510",
+        "bga_id": "A510_WhiteStork"
+    },
+    {
+        "id": "511",
+        "name": "GREATER FLAMINGO",
+        "latinName": "Phoenicopterus roseus",
+        "size": 3,
+        "water": 1,
+        "price": 16,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Posturing",
+                    "descriptionTemplate": "abilities.posturing_description",
+                    "model": 3,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A511",
+        "bga_id": "A511_GreaterFlamingo"
+    },
+    {
+        "id": "512",
+        "name": "EURASIAN EAGLE-OWL",
+        "latinName": "Bubo bubo",
+        "size": 2,
+        "price": 10,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "bird",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Perception 4",
+                    "descriptionTemplate": "abilities.perception_4_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 4,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A512",
+        "bga_id": "A512_EurasianEagleowl"
+    },
+    {
+        "id": "513",
+        "name": "BARN OWL",
+        "latinName": "Tyto alba",
+        "size": 1,
+        "price": 12,
+        "tags": [
+            "bird",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Perception 4",
+                    "descriptionTemplate": "abilities.perception_4_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 3,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A513",
+        "bga_id": "A513_BarnOwl"
+    },
+    {
+        "id": "514",
+        "name": "EMU",
+        "latinName": "Dromaius novaehollandiae",
+        "size": 5,
+        "price": 22,
+        "requirements": [
+            "australia",
+            "australia"
+        ],
+        "tags": [
+            "bird",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Peacocking",
+                    "descriptionTemplate": "abilities.peacocking_description",
+                    "model": 10,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 7,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A514",
+        "bga_id": "A514_Emu"
+    },
+    {
+        "id": "515",
+        "name": "AUSTRALIAN PELICAN",
+        "latinName": "Pelecaus conspicillatus",
+        "size": 4,
+        "water": 2,
+        "price": 13,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Action: Building",
+                    "descriptionTemplate": "abilities.action_building_description",
+                    "model": 6,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A515",
+        "bga_id": "A515_AustralianPelican"
+    },
+    {
+        "id": "516",
+        "name": "NORTHERN CASSOWARY",
+        "latinName": "Casuarius unappendiculatus",
+        "size": 3,
+        "price": 12,
+        "requirements": [
+            "Partner Zoo"
+        ],
+        "tags": [
+            "bird",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Multiplier: Building",
+                    "descriptionTemplate": "abilities.multiplier_building_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 6,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A516",
+        "bga_id": "A516_NorhternCassowary"
+    },
+    {
+        "id": "517",
+        "name": "LAUGHING KOOKABURRA",
+        "latinName": "Dacelo novaeguineae",
+        "size": 2,
+        "price": 9,
+        "requirements": [
+            "australia"
+        ],
+        "tags": [
+            "bird",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Iconic Animal",
+                    "descriptionTemplate": "abilities.iconic_animal_description",
+                    "model": 12,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": "australia"
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A517",
+        "bga_id": "A517_LaughingKookaburra"
+    },
+    {
+        "id": "518",
+        "name": "LESSER BIRD-OF-PARADISE",
+        "latinName": "Paradisaea minor",
+        "size": 1,
+        "price": 15,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "australia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Posturing",
+                    "descriptionTemplate": "abilities.posturing_description",
+                    "model": 3,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": 1
+            }
+        ],
+        "appeal": 5,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A518",
+        "bga_id": "A518_LesserBirdofparadise"
+    },
+    {
+        "id": "519",
+        "name": "(DOMESTIC) GOAT",
+        "latinName": "Capra aegagrus hircus",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A519",
+        "bga_id": "A519_domesticGoat"
+    },
+    {
+        "id": "520",
+        "name": "SHEEP",
+        "latinName": "Ovis gmelini aries",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A520",
+        "bga_id": "A520_Sheep"
+    },
+    {
+        "id": "521",
+        "name": "HORSE",
+        "latinName": "Equus caballus",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "reputation": 1,
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A521",
+        "bga_id": "A521_Horse"
+    },
+    {
+        "id": "522",
+        "name": "DONKEY",
+        "latinName": "Equus asinus asinus",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Inventive",
+                    "descriptionTemplate": "abilities.inventive_description",
+                    "model": 3
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A522",
+        "bga_id": "A522_Donkey"
+    },
+    {
+        "id": "523",
+        "name": "DOMESTIC RABBIT",
+        "latinName": "Oryctolagus cuniculus",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A523",
+        "bga_id": "A523_DomesticRabbit"
+    },
+    {
+        "id": "524",
+        "name": "MANGALICA",
+        "latinName": "Sus scrofa form. domestica",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Digging",
+                    "descriptionTemplate": "abilities.digging_description",
+                    "model": 1.5
+                },
+                "value": 1
+            },
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A524",
+        "bga_id": "A524_Mangalica"
+    },
+    {
+        "id": "525",
+        "name": "GUINEA PIG",
+        "latinName": "Cavia porcellus form. domestica",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A525",
+        "bga_id": "A525_GuineaPig"
+    },
+    {
+        "id": "526",
+        "name": "ALPACA",
+        "latinName": "Vicugna pacos",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A526",
+        "bga_id": "A526_Alpaca"
+    },
+    {
+        "id": "527",
+        "name": "COCONUT LORIKEET",
+        "latinName": "Trichoglossus haematodus",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A527",
+        "bga_id": "A527_CoconutLorikeet"
+    },
+    {
+        "id": "528",
+        "name": "BENNETT'S WALLABY",
+        "latinName": "Macropus rufooriseus",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pouch",
+                    "descriptionTemplate": "abilities.pouch_description",
+                    "model": 3
+                },
+                "value": 1
+            },
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "base",
+        "card_type": "animal",
+        "key": "A528",
+        "bga_id": "A528_BennettsWallaby"
+    },
+    {
+        "id": "529",
+        "name": "MAGNIFICENT SEA ANEMONE",
+        "latinName": "Heteractis magnifica",
+        "size": 1,
+        "rock": 0,
+        "water": 0,
+        "price": 6,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Mark",
+                    "descriptionTemplate": "abilities.mark_description",
+                    "model": 2
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Mark",
+                    "descriptionTemplate": "abilities.mark_description",
+                    "model": 2
+                },
+                "value": ""
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 3,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A529",
+        "bga_id": "A529_MagnificentSeaAnemone"
+    },
+    {
+        "id": "530",
+        "name": "ORANGE CLOWNFISH",
+        "latinName": "Amphiprion percula",
+        "size": 1,
+        "rock": 0,
+        "water": 0,
+        "price": 10,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Appeal",
+                    "descriptionTemplate": "abilities.appeal_description",
+                    "model": 3,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 2
+                    }
+                },
+                "value": 2
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 3,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A530",
+        "bga_id": "A530_OrangeClownfish"
+    },
+    {
+        "id": "531",
+        "name": "PALETTE SURGEONFISH",
+        "latinName": "Paracanthurus hepatus",
+        "size": 1,
+        "rock": 0,
+        "water": 0,
+        "price": 9,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Trade",
+                    "descriptionTemplate": "abilities.trade_description",
+                    "model": 2
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Trade",
+                    "descriptionTemplate": "abilities.trade_description",
+                    "model": 2
+                },
+                "value": ""
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 4,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A531",
+        "bga_id": "A531_PaletteSurgeonfish"
+    },
+    {
+        "id": "532",
+        "name": "ZOOPLANKTON",
+        "size": 1,
+        "rock": 0,
+        "water": 0,
+        "price": 4,
+        "requirements": [],
+        "tags": [
+            "seaAnimal"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 0
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Sea Animal Magnet",
+                    "descriptionTemplate": "abilities.sea_animal_magnet_description"
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 1,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A532",
+        "bga_id": "A532_Zooplankton"
+    },
+    {
+        "id": "533",
+        "name": "BLACKSIDE HAWKFISH",
+        "latinName": "Paracirrhitforsteri",
+        "size": 2,
+        "rock": 0,
+        "water": 0,
+        "price": 11,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Posturing",
+                    "descriptionTemplate": "abilities.posturing_description",
+                    "model": 3,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": 1
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Posturing",
+                    "descriptionTemplate": "abilities.posturing_description",
+                    "model": 3,
+                    "multiply": true,
+                    "options": {
+                        "laterModel": 12
+                    }
+                },
+                "value": 1
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 4,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A533",
+        "bga_id": "A533_BlacksideHawkfish"
+    },
+    {
+        "id": "534",
+        "name": "SOUTHERN BLUE-RINGED OCTOPUS",
+        "latinName": "Hapalochlaena maculosa",
+        "size": 2,
+        "rock": 0,
+        "water": 0,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Venom",
+                    "descriptionTemplate": "abilities.venom_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": 1
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Money",
+                    "descriptionTemplate": "abilities.reef_money_description",
+                    "model": 1
+                },
+                "value": 3
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 4,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A534",
+        "bga_id": "A534_SouthernBlue-RingedOctopl"
+    },
+    {
+        "id": "535",
+        "name": "SHARKNOSE GOBY",
+        "latinName": "Flacatinus evelynae",
+        "size": 1,
+        "rock": 0,
+        "water": 0,
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Symbiosis",
+                    "descriptionTemplate": "abilities.symbiosis_description"
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Helpful",
+                    "descriptionTemplate": "abilities.helpful_description"
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Helpful",
+                    "descriptionTemplate": "abilities.helpful_description"
+                },
+                "value": ""
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 2,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A535",
+        "bga_id": "A535_SharknoseGoby"
+    },
+    {
+        "id": "536",
+        "name": "LONGHORN COWFISH",
+        "latinName": "Lactoria cornuta",
+        "size": 2,
+        "rock": 0,
+        "water": 0,
+        "price": 9,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Sponsors",
+                    "descriptionTemplate": "abilities.boost_sponsors_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Boost: Sponsors",
+                    "descriptionTemplate": "abilities.boost_sponsors_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 4,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A536",
+        "bga_id": "A536_LonghornCowfish"
+    },
+    {
+        "id": "537",
+        "name": "BLACKBAR TRIGGERFISH",
+        "latinName": "Rhinecanthus aculeatus",
+        "size": 2,
+        "rock": 0,
+        "water": 0,
+        "price": 14,
+        "requirements": [
+            "university"
+        ],
+        "tags": [
+            "seaAnimal",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Constriction",
+                    "descriptionTemplate": "abilities.constriction_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Take Card in Range",
+                    "descriptionTemplate": "abilities.take_card_in_range_description",
+                    "model": 3
+                },
+                "value": ""
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 5,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A537",
+        "bga_id": "A537_BlackbarTriggerfish"
+    },
+    {
+        "id": "538",
+        "name": "DEVIL FIREFISH",
+        "latinName": "Pterois miles",
+        "size": 2,
+        "rock": 0,
+        "water": 0,
+        "price": 16,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "seaAnimal",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Venom",
+                    "descriptionTemplate": "abilities.venom_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": 1
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Inventive",
+                    "descriptionTemplate": "abilities.inventive_description",
+                    "model": 3
+                },
+                "value": ""
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 6,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A538",
+        "bga_id": "A538_DevilFirefish"
+    },
+    {
+        "id": "539",
+        "name": "AMERICAN WHITESPOTTED FILEFISH",
+        "latinName": "Cantherhinmacrocerus",
+        "size": 1,
+        "rock": 0,
+        "water": 0,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Clever",
+                    "descriptionTemplate": "abilities.clever_description",
+                    "model": 1,
+                    "multiply": false,
+                    "options": {
+                        "laterModel": 3
+                    }
+                },
+                "value": 1
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 5,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A539",
+        "bga_id": "A539_MericanWhitespottedFilefis"
+    },
+    {
+        "id": "540",
+        "name": "GUINEAFOWL PUFFER",
+        "latinName": "Arothron meleagris",
+        "size": 2,
+        "rock": 0,
+        "water": 0,
+        "price": 15,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Venom",
+                    "descriptionTemplate": "abilities.venom_description",
+                    "model": 2,
+                    "multiply": false
+                },
+                "value": 1
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Reputation",
+                    "descriptionTemplate": "abilities.reputation_description",
+                    "model": 4
+                },
+                "value": 1
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 5,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A540",
+        "bga_id": "A540_GuineafowlPuffer"
+    },
+    {
+        "id": "541",
+        "name": "BLUESPOTTED RIBBONTAIL RAY",
+        "latinName": "Jaeniura lymma",
+        "size": 2,
+        "rock": 0,
+        "water": 0,
+        "price": 16,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Digging",
+                    "descriptionTemplate": "abilities.digging_description",
+                    "model": 1.5
+                },
+                "value": 1
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Digging",
+                    "descriptionTemplate": "abilities.digging_description",
+                    "model": 1.5
+                },
+                "value": 1
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 7,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A541",
+        "bga_id": "A541_BluespottedRibbontailRay"
+    },
+    {
+        "id": "542",
+        "name": "HUMPHEAD WRASSE",
+        "latinName": "Cheilinus undulatus",
+        "size": 3,
+        "rock": 0,
+        "water": 0,
+        "price": 22,
+        "requirements": [
+            "university"
+        ],
+        "tags": [
+            "seaAnimal",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Extra Shift",
+                    "descriptionTemplate": "abilities.extra_shift_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Extra Shift",
+                    "descriptionTemplate": "abilities.extra_shift_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 6,
+        "conservationPoint": 1,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A542",
+        "bga_id": "A542_Humpheadwrasse"
+    },
+    {
+        "id": "543",
+        "name": "COASTAL MANTA RAY",
+        "latinName": "Mobula alfredi",
+        "size": 5,
+        "rock": 0,
+        "water": 0,
+        "price": 23,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "seaAnimal",
+            "asia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 4
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Glide",
+                    "descriptionTemplate": "abilities.glide_description"
+                },
+                "value": 3
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Conservation Point",
+                    "descriptionTemplate": "abilities.conservation_point_description",
+                    "model": 9
+                },
+                "value": 1
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 1,
+        "appeal": 8,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A543",
+        "bga_id": "A543_CoastalMantaRay"
+    },
+    {
+        "id": "544",
+        "name": "CARIBBEAN REEF SHARK",
+        "latinName": "Carcharhinus perezii",
+        "size": 4,
+        "rock": 0,
+        "water": 0,
+        "price": 20,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "predator",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 3
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Shark Attack",
+                    "descriptionTemplate": "abilities.shark_attack_description",
+                    "model": 9
+                },
+                "value": 1
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [
+            {
+                "keyword": {
+                    "name": "Shark Attack",
+                    "descriptionTemplate": "abilities.shark_attack_description",
+                    "model": 9
+                },
+                "value": 1
+            }
+        ],
+        "soloEffect": [],
+        "reputation": 1,
+        "appeal": 5,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A544",
+        "bga_id": "A544_CaribbeanReefShark"
+    },
+    {
+        "id": "545",
+        "name": "LONGCOMB SAWFISH",
+        "latinName": "Pristis zijsron",
+        "size": 4,
+        "rock": 0,
+        "water": 0,
+        "price": 21,
+        "requirements": [
+            "seaAnimal"
+        ],
+        "tags": [
+            "seaAnimal",
+            "seaAnimal",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 3
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Cut Down",
+                    "descriptionTemplate": "abilities.cut_down_description"
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 9,
+        "conservationPoint": 1,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A545",
+        "bga_id": "A545_LongcombSawfish"
+    },
+    {
+        "id": "546",
+        "name": "SAND TIGER SHARK",
+        "latinName": "Carcharias taurus",
+        "size": 5,
+        "rock": 1,
+        "water": 0,
+        "price": 32,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "seaAnimal",
+            "predator",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 4
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Shark Attack",
+                    "descriptionTemplate": "abilities.shark_attack_description",
+                    "model": 9
+                },
+                "value": 2
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 8,
+        "conservationPoint": 1,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A546",
+        "bga_id": "A546_SandTigerShark"
+    },
+    {
+        "id": "547",
+        "name": "MEDITERRANEAN RAINBOW",
+        "latinName": "Coris julis",
+        "size": 1,
+        "rock": 1,
+        "water": 0,
+        "price": 8,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 0
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Symbiosis",
+                    "descriptionTemplate": "abilities.symbiosis_description"
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 3,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A547",
+        "bga_id": "A547_MediterraneanRainbow"
+    },
+    {
+        "id": "548",
+        "name": "LINED SEAHORSE",
+        "latinName": "Hippocampus erectus",
+        "size": 1,
+        "rock": 1,
+        "water": 0,
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Camouflage",
+                    "descriptionTemplate": "abilities.camouflage_description"
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Pouch",
+                    "descriptionTemplate": "abilities.pouch_description",
+                    "model": 3
+                },
+                "value": 1
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 2,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A548",
+        "bga_id": "A548_LinedSeahorse"
+    },
+    {
+        "id": "549",
+        "name": "COMMON OCTOPUS",
+        "latinName": "Octopus vulgaris",
+        "size": 3,
+        "rock": 1,
+        "water": 0,
+        "price": 9,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "seaAnimal",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Camouflage",
+                    "descriptionTemplate": "abilities.camouflage_description"
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 5,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A549",
+        "bga_id": "A549_MmonOctopus"
+    },
+    {
+        "id": "550",
+        "name": "COMPASS JELLYFISH",
+        "latinName": "Chrysaora hysoscella",
+        "size": 3,
+        "rock": 0,
+        "water": 0,
+        "price": 10,
+        "requirements": [
+            "reputation_3"
+        ],
+        "tags": [
+            "seaAnimal",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Glide",
+                    "descriptionTemplate": "abilities.glide_description"
+                },
+                "value": 2
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 6,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A550",
+        "bga_id": "A550_CompassJellyfish"
+    },
+    {
+        "id": "551",
+        "name": "LOGGERHEAD SEA TURTLE",
+        "latinName": "Caretta caretta",
+        "size": 4,
+        "rock": 0,
+        "water": 0,
+        "price": 23,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "reptile",
+            "europe"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 3
+            },
+            {
+                "type": "Reptile House",
+                "size": 3
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Scuba Dive X",
+                    "descriptionTemplate": "abilities.scuba_dive_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Marketing",
+                    "descriptionTemplate": "abilities.marketing_description"
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 8,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A551",
+        "bga_id": "A551_LoggerheadSeaTurtle"
+    },
+    {
+        "id": "552",
+        "name": "GREEN SEA TURTLE",
+        "latinName": "Chelonia mydas",
+        "size": 3,
+        "rock": 0,
+        "water": 0,
+        "price": 17,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "reptile",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 2
+            },
+            {
+                "type": "Reptile House",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Scuba Dive X",
+                    "descriptionTemplate": "abilities.scuba_dive_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 6,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A552",
+        "bga_id": "A552_GreenSeaTurtle"
+    },
+    {
+        "id": "553",
+        "name": "TAMBAQUI",
+        "latinName": "Colossoma macropomum",
+        "size": 1,
+        "rock": 0,
+        "water": 0,
+        "price": 15,
+        "requirements": [],
+        "tags": [
+            "seaAnimal",
+            "herbivore",
+            "americas"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Adapt",
+                    "descriptionTemplate": "abilities.adapt_description"
+                },
+                "value": 1
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 5,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": false,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A553",
+        "bga_id": "A553_Tambaqui"
+    },
+    {
+        "id": "554",
+        "name": "AFRICAN PENGUIN",
+        "latinName": "Spheniscus demersus",
+        "size": 3,
+        "rock": 1,
+        "water": 1,
+        "price": 18,
+        "requirements": [
+            "animalsII"
+        ],
+        "tags": [
+            "seaAnimal",
+            "bird",
+            "africa"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Aquarium",
+                "size": 2
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Adapt",
+                    "descriptionTemplate": "abilities.adapt_description"
+                },
+                "value": 2
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 1,
+        "appeal": 6,
+        "conservationPoint": 0,
+        "wave": true,
+        "canBeInStandardEnclosure": true,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A554",
+        "bga_id": "A554_AfricanPenguin"
+    },
+    {
+        "id": "555",
+        "name": "GOLDEN SNUB-NOSED MONKEY",
+        "latinName": "Rhinopithecus roxellana",
+        "size": 3,
+        "rock": 1,
+        "water": 0,
+        "price": 18,
+        "requirements": [
+            "science"
+        ],
+        "tags": [
+            "primate",
+            "asia"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Pilfering 1",
+                    "descriptionTemplate": "abilities.pilfering_1_description",
+                    "model": 5,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 6,
+        "conservationPoint": 1,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A555",
+        "bga_id": "A555_SoldenSnub-NosedMonkey"
+    },
+    {
+        "id": "556",
+        "name": "WOLVERINE",
+        "latinName": "Gulo gulo",
+        "size": 3,
+        "rock": 1,
+        "water": 0,
+        "price": 15,
+        "requirements": [],
+        "tags": [
+            "bear",
+            "predator",
+            "europe"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Boost: Association",
+                    "descriptionTemplate": "abilities.boost_association_description",
+                    "model": 3,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 1,
+        "appeal": 5,
+        "conservationPoint": 0,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A556",
+        "bga_id": "A556_Wolverine"
+    },
+    {
+        "id": "557",
+        "name": "VIETNAMESE POT-BELLIED PIG",
+        "latinName": "Sus scrofa f. domestica",
+        "size": 1,
+        "canBeInStandardEnclosure": false,
+        "specialEnclosures": [
+            {
+                "type": "Petting Zoo",
+                "size": 1
+            }
+        ],
+        "price": 7,
+        "requirements": [],
+        "tags": [
+            "pet"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Petting Zoo Animal",
+                    "descriptionTemplate": "abilities.petting_zoo_animal_description",
+                    "model": 9,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "appeal": 0,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A557",
+        "bga_id": "A557_IetnamesePot-BelliedPig"
+    },
+    {
+        "id": "558",
+        "name": "NORTHERN MURIQUI",
+        "latinName": "Brachytelhypoxanthus",
+        "size": 4,
+        "rock": 1,
+        "water": 0,
+        "price": 16,
+        "requirements": [
+            "university"
+        ],
+        "tags": [
+            "primate",
+            "americas"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Monkey Gang",
+                    "descriptionTemplate": "abilities.monkey_gang_description",
+                    "model": 4,
+                    "multiply": false
+                },
+                "value": ""
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 6,
+        "conservationPoint": 1,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A558",
+        "bga_id": "A558_NorthernMuriqui"
+    },
+    {
+        "id": "559",
+        "name": "COQUERELS SIFAKA",
+        "latinName": "Propithecus coquereli",
+        "size": 3,
+        "rock": 1,
+        "water": 0,
+        "price": 17,
+        "requirements": [],
+        "tags": [
+            "primate",
+            "africa"
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Monkey Gang",
+                    "descriptionTemplate": "abilities.monkey_gang_description",
+                    "model": 4,
+                    "multiply": false
+                },
+                "value": ""
+            },
+            {
+                "keyword": {
+                    "name": "Jumping",
+                    "descriptionTemplate": "abilities.jumping_description",
+                    "model": 1
+                },
+                "value": 2
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 7,
+        "conservationPoint": 0,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A559",
+        "bga_id": "A559_CoquerelsSifaka"
+    },
+    {
+        "id": "560",
+        "name": "BRAHMINY KITE",
+        "latinName": "Haliastur indus",
+        "size": 3,
+        "rock": 1,
+        "water": 1,
+        "price": 12,
+        "requirements": [],
+        "tags": [
+            "bird",
+            "australia"
+        ],
+        "specialEnclosures": [
+            {
+                "type": "Large Bird Aviary",
+                "size": 1
+            }
+        ],
+        "abilities": [
+            {
+                "keyword": {
+                    "name": "Hunter",
+                    "descriptionTemplate": "abilities.hunter_description",
+                    "model": 1
+                },
+                "value": 2
+            }
+        ],
+        "description": "",
+        "reefDwellerEffect": [],
+        "soloEffect": [],
+        "reputation": 0,
+        "appeal": 6,
+        "conservationPoint": 0,
+        "source": "marine_worlds",
+        "card_type": "animal",
+        "key": "A560",
+        "bga_id": "A560_BrahminyKite"
+    }
+]

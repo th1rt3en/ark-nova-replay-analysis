@@ -1,0 +1,475 @@
+{
+    "map_id": "14",
+    "verified": true,
+    "hexes": [
+        {
+            "x": 0,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 3,
+            "terrain": "rock"
+        },
+        {
+            "x": 0,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 4,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 8,
+            "terrain": "rock"
+        },
+        {
+            "x": 1,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 12,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 9,
+            "terrain": "water"
+        },
+        {
+            "x": 2,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 2,
+            "terrain": "water"
+        },
+        {
+            "x": 3,
+            "y": 4,
+            "terrain": "rock"
+        },
+        {
+            "x": 3,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 12,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 4,
+            "terrain": "rock"
+        },
+        {
+            "x": 5,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 10,
+            "terrain": "water"
+        },
+        {
+            "x": 5,
+            "y": 12,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 1,
+            "terrain": "water"
+        },
+        {
+            "x": 6,
+            "y": 3,
+            "terrain": "rock"
+        },
+        {
+            "x": 6,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 0,
+            "terrain": "rock"
+        },
+        {
+            "x": 7,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 4,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 12,
+            "terrain": "water"
+        },
+        {
+            "x": 8,
+            "y": 1,
+            "terrain": "water"
+        },
+        {
+            "x": 8,
+            "y": 3,
+            "terrain": "water"
+        },
+        {
+            "x": 8,
+            "y": 5,
+            "terrain": "rock"
+        },
+        {
+            "x": 8,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 9,
+            "terrain": "water"
+        },
+        {
+            "x": 8,
+            "y": 11,
+            "terrain": "water"
+        }
+    ],
+    "placement_bonuses": [
+        {
+            "x": 0,
+            "y": 7,
+            "bonus": {
+                "type": "take-in-range-or-deck",
+                "value": 1
+            }
+        },
+        {
+            "x": 1,
+            "y": 2,
+            "bonus": {
+                "type": "reputation",
+                "value": 1
+            }
+        },
+        {
+            "x": 1,
+            "y": 10,
+            "bonus": {
+                "type": "xtoken",
+                "value": 1
+            }
+        },
+        {
+            "x": 2,
+            "y": 7,
+            "bonus": {
+                "type": "xtoken",
+                "value": 1
+            }
+        },
+        {
+            "x": 3,
+            "y": 0,
+            "bonus": {
+                "type": "Clever",
+                "value": 1
+            }
+        },
+        {
+            "x": 3,
+            "y": 8,
+            "bonus": null,
+            "note": "blue wave icon"
+        },
+        {
+            "x": 5,
+            "y": 2,
+            "bonus": {
+                "type": "take-in-range-or-deck",
+                "value": 1
+            }
+        },
+        {
+            "x": 5,
+            "y": 12,
+            "bonus": {
+                "type": "money",
+                "value": 5
+            }
+        },
+        {
+            "x": 6,
+            "y": 5,
+            "bonus": null,
+            "note": "blue wave icon"
+        },
+        {
+            "x": 7,
+            "y": 2,
+            "bonus": null,
+            "note": "black pennant icon"
+        },
+        {
+            "x": 7,
+            "y": 10,
+            "bonus": null,
+            "note": "black pennant icon"
+        },
+        {
+            "x": 8,
+            "y": 7,
+            "bonus": null,
+            "note": "blue wave icon"
+        }
+    ],
+    "special_hexes": [
+        {
+            "x": 1,
+            "y": 4,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": 5,
+            "y": 8,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": 6,
+            "y": 11,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        }
+    ],
+    "bonus_slots": [
+        {
+            "index": 0,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "Snapping",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 1,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "size-2",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 2,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "money",
+                "value": 5
+            },
+            "note": ""
+        },
+        {
+            "index": 3,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "sponsor-person-card",
+                "value": 1
+            },
+            "note": "@ + person card: find a person sponsor card"
+        },
+        {
+            "index": 4,
+            "kind": "instant",
+            "bonus": {
+                "type": "Worker",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 5,
+            "kind": "instant",
+            "bonus": {
+                "type": "money",
+                "value": 12
+            },
+            "note": ""
+        },
+        {
+            "index": 6,
+            "kind": "instant",
+            "bonus": {
+                "type": "xtoken",
+                "value": 3
+            },
+            "note": ""
+        }
+    ],
+    "map_rules": [
+        "Find a person sponsor card (including 1x at start of game) and take it into your hand."
+    ]
+}

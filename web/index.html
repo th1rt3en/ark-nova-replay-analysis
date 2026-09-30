@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ark Nova Replay</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; }
+  input, button { font-size: 1rem; padding: .5rem; }
+  dialog { border: 1px solid #888; border-radius: 8px; padding: 1.5rem; }
+</style>
+</head>
+<body>
+<h1>Ark Nova Replay</h1>
+<p>Enter a BGA table id of a finished game to replay it and fork alternative lines.</p>
+<form id="f">
+  <input id="table" inputmode="numeric" pattern="[0-9]+" placeholder="Table id" required>
+  <button>Open</button>
+</form>
+<dialog id="notLogged">
+  <p>That table has not been logged to the database yet. A request has been submitted.</p>
+  <button onclick="notLogged.close()">OK</button>
+</dialog>
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('table').value.trim();
+  const res = await fetch('/api/tables/' + encodeURIComponent(id));
+  if (res.status === 404) { document.getElementById('notLogged').showModal(); return; }
+  if (res.ok) { location.href = '/replay.html?table=' + encodeURIComponent(id); }  // replay page: not built yet
+});
+</script>
+</body>
+</html>

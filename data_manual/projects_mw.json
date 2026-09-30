@@ -1,0 +1,472 @@
+[
+    {
+        "id": "133",
+        "name": "SEA ANIMALS",
+        "type": "Normal",
+        "tag": "seaAnimal",
+        "source": "Marine World",
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "seaAnimal",
+                        "bonusValue": 5
+                    }
+                ],
+                "indicator": 5
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "seaAnimal",
+                        "bonusValue": 4
+                    }
+                ],
+                "indicator": 4
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusRequirement": "seaAnimal",
+                        "bonusValue": 2
+                    }
+                ],
+                "indicator": 2
+            }
+        ],
+        "placeBonuses": [],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": "Requires **sea animal** icons in your zoo."
+        },
+        "verified": true
+    },
+    {
+        "id": "134",
+        "name": "PREDATOR MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "predator",
+        "source": "Marine World",
+        "requirement": {
+            "tag": "predator",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "hunter",
+                        "per": {
+                            "tag": "predator",
+                            "every": 1
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "predator"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "hunter",
+                "per": {
+                    "tag": "predator",
+                    "every": 1
+                }
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": "Requires 2 **predator** icons in your zoo."
+        },
+        "verified": true
+    },
+    {
+        "id": "135",
+        "name": "BIRD MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "bird",
+        "source": "Marine World",
+        "requirement": {
+            "tag": "bird",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "posturing",
+                        "bonusValue": 1
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "bird"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "posturing",
+                "bonusValue": 1
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": "Requires 2 **bird** icons in your zoo."
+        },
+        "verified": true
+    },
+    {
+        "id": "136",
+        "name": "REPTILE MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "reptile",
+        "source": "Marine World",
+        "requirement": {
+            "tag": "reptile",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "sunbathing",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "reptile"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "sunbathing",
+                "bonusValue": 2
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": "Requires 2 **reptile** icons in your zoo."
+        },
+        "verified": true
+    },
+    {
+        "id": "137",
+        "name": "HERBIVORE MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "herbivore",
+        "source": "Marine World",
+        "requirement": {
+            "tag": "herbivore",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "digging",
+                        "bonusValue": 2
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "herbivore"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "digging",
+                "bonusValue": 2
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": "Requires 2 **herbivore** icons in your zoo."
+        },
+        "verified": true
+    },
+    {
+        "id": "138",
+        "name": "SEA ANIMAL MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "seaAnimal",
+        "source": "Marine World",
+        "requirement": {
+            "tag": "seaAnimal",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Activate Reef"
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "seaAnimal"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Reputation",
+                "bonusValue": 1
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": "Requires 2 **seaAnimal** icons in your zoo."
+        },
+        "verified": true
+    },
+    {
+        "id": "139",
+        "name": "PRIMATE MANAGEMENT PLAN",
+        "type": "Management",
+        "tag": "primate",
+        "source": "Marine World",
+        "requirement": {
+            "tag": "primate",
+            "count": 2
+        },
+        "slots": [
+            {
+                "position": 1,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Keyword",
+                        "keyword": "clever"
+                    }
+                ]
+            },
+            {
+                "position": 2,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Reputation",
+                        "bonusValue": 1,
+                        "per": {
+                            "tag": "science",
+                            "every": 2
+                        }
+                    }
+                ]
+            },
+            {
+                "position": 3,
+                "bonuses": [
+                    {
+                        "bonusType": "Conservation Point",
+                        "bonusValue": 2
+                    },
+                    {
+                        "bonusType": "Tutor",
+                        "tag": "primate"
+                    }
+                ]
+            }
+        ],
+        "placeBonuses": [
+            {
+                "bonusType": "Keyword",
+                "keyword": "clever"
+            }
+        ],
+        "description": {
+            "effectType": "conservation",
+            "effectDesc": "",
+            "text": "Requires 2 **primate** icons in your zoo."
+        },
+        "verified": true
+    }
+]

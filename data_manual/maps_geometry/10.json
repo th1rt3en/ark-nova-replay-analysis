@@ -1,0 +1,498 @@
+{
+    "map_id": "10",
+    "verified": true,
+    "hexes": [
+        {
+            "x": 0,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 3,
+            "terrain": "water"
+        },
+        {
+            "x": 0,
+            "y": 5,
+            "terrain": "water"
+        },
+        {
+            "x": 0,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 4,
+            "terrain": "water"
+        },
+        {
+            "x": 1,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 12,
+            "terrain": "rock"
+        },
+        {
+            "x": 2,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 11,
+            "terrain": "rock"
+        },
+        {
+            "x": 3,
+            "y": 0,
+            "terrain": "water"
+        },
+        {
+            "x": 3,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 4,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 12,
+            "terrain": "rock"
+        },
+        {
+            "x": 4,
+            "y": 1,
+            "terrain": "water"
+        },
+        {
+            "x": 4,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 7,
+            "terrain": "rock"
+        },
+        {
+            "x": 4,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 4,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 6,
+            "terrain": "rock"
+        },
+        {
+            "x": 5,
+            "y": 8,
+            "terrain": "water"
+        },
+        {
+            "x": 5,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 12,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 4,
+            "terrain": "rock"
+        },
+        {
+            "x": 7,
+            "y": 6,
+            "terrain": "water"
+        },
+        {
+            "x": 7,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 12,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 7,
+            "terrain": "water"
+        },
+        {
+            "x": 8,
+            "y": 9,
+            "terrain": "water"
+        },
+        {
+            "x": 8,
+            "y": 11,
+            "terrain": "plain"
+        }
+    ],
+    "placement_bonuses": [
+        {
+            "x": 0,
+            "y": 1,
+            "bonus": {
+                "type": "Digging",
+                "value": 1
+            }
+        },
+        {
+            "x": 1,
+            "y": 6,
+            "bonus": {
+                "type": "xtoken",
+                "value": 1
+            }
+        },
+        {
+            "x": 1,
+            "y": 10,
+            "bonus": {
+                "type": "xtoken",
+                "value": 1
+            }
+        },
+        {
+            "x": 2,
+            "y": 3,
+            "bonus": {
+                "type": "take-in-range-or-deck",
+                "value": 1
+            }
+        },
+        {
+            "x": 4,
+            "y": 11,
+            "bonus": {
+                "type": "Digging",
+                "value": 1
+            }
+        },
+        {
+            "x": 5,
+            "y": 2,
+            "bonus": {
+                "type": "xtoken",
+                "value": 1
+            }
+        },
+        {
+            "x": 6,
+            "y": 5,
+            "bonus": {
+                "type": "take-in-range-or-deck",
+                "value": 1
+            }
+        },
+        {
+            "x": 7,
+            "y": 8,
+            "bonus": {
+                "type": "money",
+                "value": 5
+            }
+        },
+        {
+            "x": 8,
+            "y": 1,
+            "bonus": {
+                "type": "Digging",
+                "value": 1
+            }
+        },
+        {
+            "x": 8,
+            "y": 5,
+            "bonus": {
+                "type": "reputation",
+                "value": 1
+            }
+        },
+        {
+            "x": 8,
+            "y": 11,
+            "bonus": {
+                "type": "Clever",
+                "value": 1
+            }
+        }
+    ],
+    "special_hexes": [
+        {
+            "x": 2,
+            "y": 5,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": 5,
+            "y": 4,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": 4,
+            "y": 9,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": 0,
+            "y": -1,
+            "kind": "digging_card_slot",
+            "off_board": true,
+            "note": "yellow arrow above the map: a discarded animal card can be slid under the zoo map here (approximate coordinate)"
+        },
+        {
+            "x": 4,
+            "y": -1,
+            "kind": "digging_card_slot",
+            "off_board": true,
+            "note": "yellow arrow above the map: a discarded animal card can be slid under the zoo map here (approximate coordinate)"
+        },
+        {
+            "x": 8,
+            "y": -1,
+            "kind": "digging_card_slot",
+            "off_board": true,
+            "note": "yellow arrow above the map: a discarded animal card can be slid under the zoo map here (approximate coordinate)"
+        }
+    ],
+    "bonus_slots": [
+        {
+            "index": 0,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "Snapping",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 1,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "size-2",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 2,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "money",
+                "value": 5
+            },
+            "note": ""
+        },
+        {
+            "index": 3,
+            "kind": "instant",
+            "bonus": {
+                "type": "reputation",
+                "value": 2
+            },
+            "note": "graduation cap with 2"
+        },
+        {
+            "index": 4,
+            "kind": "instant",
+            "bonus": {
+                "type": "Worker",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 5,
+            "kind": "instant",
+            "bonus": {
+                "type": "money",
+                "value": 12
+            },
+            "note": ""
+        },
+        {
+            "index": 6,
+            "kind": "instant",
+            "bonus": {
+                "type": "xtoken",
+                "value": 3
+            },
+            "note": ""
+        }
+    ],
+    "map_rules": [
+        "Gaining a Digging placement bonus gives Digging 1: discard 1 hand card and draw 1, or discard 1 display card and refill. A discarded non-petting-zoo animal card may be slid under the zoo map at one of the 3 arrow slots."
+    ]
+}

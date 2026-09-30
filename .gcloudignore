@@ -1,0 +1,17 @@
+# Used by `gcloud run deploy --source .` (Cloud Build upload). Keep in sync with .dockerignore.
+#!include:.gitignore
+
+.git/
+.gitignore
+.gcloudignore
+.dockerignore
+
+# Not needed at runtime
+log_examples/
+vendor/
+docs/
+data_manual/
+tests/
+scripts/
+*.md
+!README.md

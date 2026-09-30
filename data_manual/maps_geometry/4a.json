@@ -1,0 +1,480 @@
+{
+    "map_id": "4a",
+    "verified": true,
+    "hexes": [
+        {
+            "x": 0,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 0,
+            "y": 9,
+            "terrain": "water"
+        },
+        {
+            "x": 0,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 4,
+            "terrain": "water"
+        },
+        {
+            "x": 1,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 1,
+            "y": 12,
+            "terrain": "water"
+        },
+        {
+            "x": 2,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 3,
+            "terrain": "water"
+        },
+        {
+            "x": 2,
+            "y": 5,
+            "terrain": "water"
+        },
+        {
+            "x": 2,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 2,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 4,
+            "terrain": "water"
+        },
+        {
+            "x": 3,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 3,
+            "y": 8,
+            "terrain": "rock"
+        },
+        {
+            "x": 3,
+            "y": 10,
+            "terrain": "rock"
+        },
+        {
+            "x": 3,
+            "y": 12,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 4,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 0,
+            "terrain": "water"
+        },
+        {
+            "x": 5,
+            "y": 2,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 4,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 10,
+            "terrain": "plain"
+        },
+        {
+            "x": 5,
+            "y": 12,
+            "terrain": "rock"
+        },
+        {
+            "x": 6,
+            "y": 1,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 3,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 5,
+            "terrain": "rock"
+        },
+        {
+            "x": 6,
+            "y": 7,
+            "terrain": "rock"
+        },
+        {
+            "x": 6,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 6,
+            "y": 11,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 0,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 2,
+            "terrain": "rock"
+        },
+        {
+            "x": 7,
+            "y": 4,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 6,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 8,
+            "terrain": "plain"
+        },
+        {
+            "x": 7,
+            "y": 10,
+            "terrain": "rock"
+        },
+        {
+            "x": 7,
+            "y": 12,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 1,
+            "terrain": "water"
+        },
+        {
+            "x": 8,
+            "y": 3,
+            "terrain": "water"
+        },
+        {
+            "x": 8,
+            "y": 5,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 7,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 9,
+            "terrain": "plain"
+        },
+        {
+            "x": 8,
+            "y": 11,
+            "terrain": "plain"
+        }
+    ],
+    "placement_bonuses": [
+        {
+            "x": 0,
+            "y": 5,
+            "bonus": {
+                "type": "take-in-range-or-deck",
+                "value": 1
+            }
+        },
+        {
+            "x": 1,
+            "y": 2,
+            "bonus": {
+                "type": "bonus-sponsor",
+                "value": 1
+            }
+        },
+        {
+            "x": 1,
+            "y": 10,
+            "bonus": {
+                "type": "take-in-range-or-deck",
+                "value": 1
+            }
+        },
+        {
+            "x": 3,
+            "y": 2,
+            "bonus": {
+                "type": "xtoken",
+                "value": 1
+            }
+        },
+        {
+            "x": 3,
+            "y": 6,
+            "bonus": {
+                "type": "take-in-range-or-deck",
+                "value": 1
+            }
+        },
+        {
+            "x": 4,
+            "y": 11,
+            "bonus": {
+                "type": "take-in-range-or-deck",
+                "value": 1
+            }
+        },
+        {
+            "x": 5,
+            "y": 4,
+            "bonus": {
+                "type": "xtoken",
+                "value": 1
+            }
+        },
+        {
+            "x": 6,
+            "y": 1,
+            "bonus": {
+                "type": "reputation",
+                "value": 1
+            }
+        },
+        {
+            "x": 6,
+            "y": 9,
+            "bonus": {
+                "type": "Clever",
+                "value": 1
+            }
+        },
+        {
+            "x": 7,
+            "y": 4,
+            "bonus": {
+                "type": "Multiplier",
+                "value": 2
+            }
+        }
+    ],
+    "special_hexes": [
+        {
+            "x": 0,
+            "y": 1,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": 6,
+            "y": 3,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": 8,
+            "y": 5,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": 5,
+            "y": 6,
+            "kind": "upgrade_flag",
+            "off_board": false,
+            "note": ""
+        },
+        {
+            "x": -1,
+            "y": 12,
+            "kind": "commercial_harbor",
+            "off_board": true,
+            "note": "grey pylon hex left of (0,11); connected once a building is placed on the adjacent building space (0,11)"
+        }
+    ],
+    "bonus_slots": [
+        {
+            "index": 0,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "Snapping",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 1,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "size-2",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 2,
+            "kind": "instant_income",
+            "bonus": {
+                "type": "money",
+                "value": 5
+            },
+            "note": ""
+        },
+        {
+            "index": 3,
+            "kind": "instant",
+            "bonus": null,
+            "note": "building/temple facade icon: unidentified"
+        },
+        {
+            "index": 4,
+            "kind": "instant",
+            "bonus": {
+                "type": "Worker",
+                "value": 1
+            },
+            "note": ""
+        },
+        {
+            "index": 5,
+            "kind": "instant",
+            "bonus": {
+                "type": "money",
+                "value": 12
+            },
+            "note": ""
+        },
+        {
+            "index": 6,
+            "kind": "instant",
+            "bonus": {
+                "type": "xtoken",
+                "value": 3
+            },
+            "note": ""
+        }
+    ],
+    "map_rules": [
+        "Active if Harbor is connected: once during your turn, discard 1 hand card for 3 money (at any time)."
+    ]
+}
