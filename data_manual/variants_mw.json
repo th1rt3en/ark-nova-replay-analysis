@@ -1,5 +1,5 @@
 {
-    "_comment": "Marine Worlds reprint variants. `patches` fix upstream data in place; `variants.marine_worlds` holds field overrides applied on top of the base card when the game has Marine Worlds (BGA log ids ending in _MW).",
+    "_comment": "Marine Worlds reprint variants. `patches` fix upstream data in place; `variants.marine_worlds` holds field overrides applied on top of the base card when the game has Marine Worlds (BGA log ids ending in _MW). S274 (Victory Column) and S281 (Arcade) are part of the base game on BGA (upstream marks them marine_worlds/promo), so they are patched to source 'base'. A341 (Capybara) and S282 (Promotion Team) are not in the game on BGA: patched to inactive (never in a deck).",
     "patches": {
         "P131": {
             "slots": [
@@ -37,6 +37,18 @@
                     "indicator": 2
                 }
             ]
+        },
+        "S274": {
+            "source": "base"
+        },
+        "S281": {
+            "source": "base"
+        },
+        "A341": {
+            "active": false
+        },
+        "S282": {
+            "active": false
         }
     },
     "variants": {

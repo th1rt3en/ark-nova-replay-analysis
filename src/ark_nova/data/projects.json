@@ -48,7 +48,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P101",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "102",
@@ -99,7 +101,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P102",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "103",
@@ -150,7 +154,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P103",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "104",
@@ -201,7 +207,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P104",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "105",
@@ -252,7 +260,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P105",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "106",
@@ -303,7 +313,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P106",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "107",
@@ -354,7 +366,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P107",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "108",
@@ -405,7 +419,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P108",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "109",
@@ -456,7 +472,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P109",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "110",
@@ -507,7 +525,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P110",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "111",
@@ -558,7 +578,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P111",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "112",
@@ -609,7 +631,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P112",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "113",
@@ -657,7 +681,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P113",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "114",
@@ -705,7 +731,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P114",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "115",
@@ -753,7 +781,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P115",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "116",
@@ -801,7 +831,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P116",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "117",
@@ -849,7 +881,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P117",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "118",
@@ -897,7 +931,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P118",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "119",
@@ -945,7 +981,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P119",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "120",
@@ -993,7 +1031,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P120",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "121",
@@ -1041,7 +1081,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P121",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "122",
@@ -1089,7 +1131,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P122",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "123",
@@ -1142,7 +1186,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P123",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "124",
@@ -1195,7 +1241,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P124",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "125",
@@ -1248,7 +1296,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P125",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "126",
@@ -1301,7 +1351,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P126",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "127",
@@ -1354,7 +1406,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P127",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "128",
@@ -1405,7 +1459,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P128",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "129",
@@ -1456,7 +1512,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P129",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "130",
@@ -1507,7 +1565,9 @@
         "source": "base",
         "card_type": "project",
         "key": "P130",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "131",
@@ -1597,7 +1657,9 @@
                     }
                 ]
             }
-        }
+        },
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "132",
@@ -1648,12 +1710,14 @@
         "source": "base",
         "card_type": "project",
         "key": "P132",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "133",
         "name": "SEA ANIMALS",
-        "type": "Normal",
+        "type": "Base",
         "tag": "seaAnimal",
         "source": "marine_worlds",
         "slots": [
@@ -1700,7 +1764,9 @@
         "verified": true,
         "card_type": "project",
         "key": "P133",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "base_project"
     },
     {
         "id": "134",
@@ -1779,7 +1845,9 @@
         "verified": true,
         "card_type": "project",
         "key": "P134",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "135",
@@ -1852,7 +1920,9 @@
         "verified": true,
         "card_type": "project",
         "key": "P135",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "136",
@@ -1925,7 +1995,9 @@
         "verified": true,
         "card_type": "project",
         "key": "P136",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "137",
@@ -1998,7 +2070,9 @@
         "verified": true,
         "card_type": "project",
         "key": "P137",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "138",
@@ -2068,7 +2142,9 @@
         "verified": true,
         "card_type": "project",
         "key": "P138",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "139",
@@ -2139,6 +2215,8 @@
         "verified": true,
         "card_type": "project",
         "key": "P139",
-        "bga_id": null
+        "bga_id": null,
+        "active": true,
+        "deck": "main"
     }
 ]

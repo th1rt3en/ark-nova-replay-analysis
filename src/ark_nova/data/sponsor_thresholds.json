@@ -1,0 +1,149 @@
+{
+    "S207": {
+        "name": "BASIC RESEARCH",
+        "appeal": {
+            "value": 25,
+            "observed_min": 12,
+            "plays": 7,
+            "verified": true,
+            "op": "max"
+        }
+    },
+    "S222": {
+        "name": "RELEASE OF PATENTS",
+        "appeal": {
+            "value": 25,
+            "observed_min": 1,
+            "plays": 7,
+            "verified": true,
+            "op": "max"
+        }
+    },
+    "S227": {
+        "name": "WAZA SPECIAL ASSIGNMENT",
+        "reputation": {
+            "value": 6,
+            "observed_min": 7,
+            "plays": 5,
+            "verified": true,
+            "op": "min"
+        }
+    },
+    "S228": {
+        "name": "WAZA SMALL ANIMAL PROGRAM",
+        "reputation": {
+            "value": 3,
+            "observed_min": 3,
+            "plays": 7,
+            "verified": true,
+            "op": "min"
+        }
+    },
+    "S243": {
+        "name": "MEERKAT DEN",
+        "reputation": {
+            "value": 3,
+            "observed_min": 2,
+            "plays": 20,
+            "verified": true,
+            "op": "min"
+        }
+    },
+    "S244": {
+        "name": "PENGUIN POOL",
+        "reputation": {
+            "value": 3,
+            "observed_min": 2,
+            "plays": 17,
+            "verified": true,
+            "op": "min"
+        }
+    },
+    "S245": {
+        "name": "AQUARIUM",
+        "reputation": {
+            "value": 3,
+            "observed_min": 2,
+            "plays": 18,
+            "verified": true,
+            "op": "min"
+        }
+    },
+    "S258": {
+        "name": "NATIVE SEABIRDS",
+        "appeal": {
+            "value": 25,
+            "observed_min": 1,
+            "plays": 11,
+            "verified": true,
+            "op": "max"
+        }
+    },
+    "S259": {
+        "name": "NATIVE LIZARDS",
+        "appeal": {
+            "value": 25,
+            "observed_min": 0,
+            "plays": 14,
+            "verified": true,
+            "op": "max"
+        }
+    },
+    "S260": {
+        "name": "NATIVE FARM ANIMALS",
+        "appeal": {
+            "value": 25,
+            "observed_min": 0,
+            "plays": 13,
+            "verified": true,
+            "op": "max"
+        }
+    },
+    "S263": {
+        "name": "WAZA LARGE ANIMAL PROGRAM",
+        "reputation": {
+            "value": null,
+            "observed_min": 5,
+            "plays": 9,
+            "verified": false
+        }
+    },
+    "S264": {
+        "name": "FREE-RANGE NEW WORLD MONKEYS",
+        "appeal": {
+            "value": 25,
+            "observed_min": 0,
+            "plays": 6,
+            "verified": true,
+            "op": "max"
+        }
+    },
+    "S267": {
+        "name": "FARM CAT",
+        "appeal": {
+            "value": 25,
+            "observed_min": 0,
+            "plays": 3,
+            "verified": true,
+            "op": "max"
+        }
+    },
+    "S275": {
+        "name": "HORSE WHISPERER",
+        "reputation": {
+            "value": null,
+            "observed_min": 5,
+            "plays": 11,
+            "verified": false
+        }
+    },
+    "S278": {
+        "name": "AMAZON HOUSE",
+        "reputation": {
+            "value": null,
+            "observed_min": 5,
+            "plays": 23,
+            "verified": false
+        }
+    }
+}

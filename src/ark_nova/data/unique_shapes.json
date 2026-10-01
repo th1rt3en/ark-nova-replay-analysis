@@ -1,0 +1,522 @@
+{
+    "adventure": {
+        "cards": [
+            "S255"
+        ],
+        "size": 2,
+        "cells": [
+            [
+                4,
+                5
+            ],
+            [
+                4,
+                7
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "amazon": {
+        "cards": [
+            "S278"
+        ],
+        "size": 5,
+        "cells": [
+            [
+                3,
+                4
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                4
+            ],
+            [
+                5,
+                6
+            ],
+            [
+                6,
+                3
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "aquarium": {
+        "cards": [
+            "S245"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                3,
+                6
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ],
+            [
+                5,
+                8
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "arcade": {
+        "cards": [
+            "S281"
+        ],
+        "size": 1,
+        "cells": [
+            [
+                4,
+                5
+            ]
+        ],
+        "verified": false,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "baboon": {
+        "cards": [
+            "S247"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                3,
+                6
+            ],
+            [
+                4,
+                3
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                4,
+                7
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "cable": {
+        "cards": [
+            "S246"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                4,
+                3
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                4,
+                7
+            ],
+            [
+                4,
+                9
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "entrance": {
+        "cards": [
+            "S257"
+        ],
+        "size": 2,
+        "cells": [
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "excavation": {
+        "cards": [
+            "S271"
+        ],
+        "size": 5,
+        "cells": [
+            [
+                3,
+                6
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ],
+            [
+                6,
+                3
+            ],
+            [
+                6,
+                5
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "hyena": {
+        "cards": [
+            "S252"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                4,
+                5
+            ],
+            [
+                4,
+                7
+            ],
+            [
+                4,
+                9
+            ],
+            [
+                5,
+                4
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "meerkat": {
+        "cards": [
+            "S243"
+        ],
+        "size": 3,
+        "cells": [
+            [
+                3,
+                6
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "monkey": {
+        "cards": [
+            "S248"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                3,
+                4
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                4,
+                7
+            ],
+            [
+                4,
+                9
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "okapi": {
+        "cards": [
+            "S253"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                2,
+                5
+            ],
+            [
+                3,
+                6
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "owl": {
+        "cards": [
+            "S249"
+        ],
+        "size": 3,
+        "cells": [
+            [
+                4,
+                3
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                4,
+                7
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "penguin": {
+        "cards": [
+            "S244"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                3,
+                4
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                4
+            ],
+            [
+                5,
+                6
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "polar-bear": {
+        "cards": [
+            "S251"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                3,
+                6
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ],
+            [
+                6,
+                5
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "sea-turtle": {
+        "cards": [
+            "S250"
+        ],
+        "size": 4,
+        "cells": [
+            [
+                3,
+                6
+            ],
+            [
+                4,
+                3
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "underwater-tunnel": {
+        "cards": [
+            "S279"
+        ],
+        "size": 2,
+        "cells": [
+            [
+                4,
+                5
+            ],
+            [
+                4,
+                7
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "victory": {
+        "cards": [
+            "S274"
+        ],
+        "size": 1,
+        "cells": [
+            [
+                4,
+                5
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "water-playground": {
+        "cards": [
+            "S256"
+        ],
+        "size": 2,
+        "cells": [
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    },
+    "zoo-school": {
+        "cards": [
+            "S254"
+        ],
+        "size": 3,
+        "cells": [
+            [
+                3,
+                6
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ]
+        ],
+        "verified": true,
+        "anchor": [
+            4,
+            5
+        ]
+    }
+}

@@ -30,7 +30,7 @@ Cloud Run service (Python, FastAPI or Flask)
 
 Design principles:
 - **Engine is pure and deterministic**: `state' = apply(state, action)`; all randomness comes from one seeded RNG stored in the state. Immutable/copy-on-write state makes backward stepping and forking trivial.
-- **Replay = precomputed list of states (or snapshots + events)**. Stepping back is an index change, not an inverse operation.
+- **Replay = precomputed list of states built from the log events** (`replay/builder.py`), not by running the engine. Stepping back is an index change. The engine is tested transition by transition against these states, so a rule that is not implemented yet never blocks a replay, and a fork loads the state of the chosen step.
 - **Stateless service, client-side sessions**: fork sessions are ephemeral and live in the browser (in-memory, optionally `sessionStorage` per tab). The client holds `(table_id, fork_move, seed, action list)` or a full serialized state and sends it with each request; the server rebuilds/validates the state and returns legal actions and the next state. Nothing is stored server-side, so Cloud Run can scale to zero. Closing the tab loses the fork.
 
 ## 3. Repo Layout
@@ -65,7 +65,7 @@ ark-nova-replay-analysis/
 ### Flow 1 — Table lookup
 1. User submits table ID on the landing page.
 2. Backend queries BigQuery (`table_logs` table: `table_id`, `gcs_path`, `downloaded_at`, `players`, per-player `map` (source of truth for maps; the log usually omits it), `marine_worlds` flag (source of truth for whether the expansion is in play; also drives engine setup), `parse_status`).
-3. **Found:** read log from GCS → parser → replay builder → redirect to `/replay/{table_id}`.
+3. **Found:** the user confirms/enters the **3 base conservation projects** (the log does not reliably contain them; pre-filled with what the log reveals), then read log from GCS → parser → replay builder → redirect to `/replay/{table_id}`. The 3 ids are part of the replay request/URL (and of the fork), never inferred or randomised.
 4. **Not found:** return `404 not_logged`; frontend shows a modal: "That table hasn't been logged yet, a request has been submitted."
    - **TODO:** request mechanism (options: insert row into a BigQuery `log_requests` table, Pub/Sub topic consumed by a downloader job, or a Cloud Tasks queue). For now, stub `request_log(table_id)` that only logs it.
 
@@ -113,7 +113,7 @@ Goal: engine seed whose first *x* drawn cards match the real game's observed ord
 
 Details to define:
 - Separate decks: main animal/sponsor deck, conservation projects, final scoring cards, base tiles, etc.: each gets its own prefix.
-- Hidden information: the logs reveal everything (both players' draws, hands, display refills, discards), so the full deck order is reconstructable up to the last card drawn in the game. Correctly deriving that order is the critical piece; everything after it is random. Derive it by replaying events chronologically and recording each card as it leaves the deck (drawCards/pDrawCards, fillPool, snapCard, deck reshuffles). Watch for: the initial deal, the discard pile being reshuffled when the deck runs out (the post-reshuffle order is not a deck prefix of the original deck), and cards seen in the display before being drawn.
+- Hidden information: the logs reveal the cards both players draw, hands, display refills and discards. Checked on 114 logs (see `docs/log_format.md`, "Deck exits"): no game ever reshuffled the deck; search/tutor effects (university, monkey gang, Map 8, management plan, ...) log only the found card, but the rule (first match in deck order, everything else keeps its order) keeps one consistent deck permutation; see the Seed construction section of `docs/log_format.md`. There are three decks (main, endgame, base projects; 3 random base projects are put in play at the start): see 'The three decks' in `docs/log_format.md`. `deck` is a field on every card in the data. Correctly deriving that order is the critical piece; everything after it is random. Derive it by replaying events chronologically and recording each card as it leaves the deck (drawCards/pDrawCards, fillPool, snapCard, deck reshuffles). Watch for: the initial deal, the discard pile being reshuffled when the deck runs out (the post-reshuffle order is not a deck prefix of the original deck), and cards seen in the display before being drawn.
 - Consistency check: after forking, the engine state at move *n* must equal the replay state at move *n*.
 
 ## 7. Log Parsing
@@ -150,10 +150,10 @@ Details to define:
 |---|---|---|
 | 0 | Repo scaffold, CLAUDE.md, Dockerfile, hello-world on Cloud Run | Deployed URL responds |
 | 1 | Data import for cards and maps | JSON validated by schema, counts match known totals |
-| 2 | Engine core (base game, 1 map) | Simple scripted game plays to the end |
+| 2 | Engine core (base game, 1 map) | Simple scripted game plays to the end. Setup done and verified on 113 logs; turn loop + Cards action done and checked turn by turn against the logs (588 turns); Build, Sponsors (60 of 81 cards), Association (icon based projects) and Animals (74 of 160 animals) done and compared with 1478 turns of the logs; icon counters and breaks done; animal abilities, the other action card variants, end of game and the release / breed / management projects next |
 | 3 | All base cards + all base maps | Rules tests pass per card |
 | 4 | Marine Worlds + remaining maps | Rules tests pass per card and map |
-| 5 | Log parser + replay builder | Real logs replay with final scores matching |
+| 5 | Log parser + replay builder | Real logs replay with final scores matching. Parser, deck-order extraction and the log-driven replay builder done: all 113 usable logs replay with 0 mismatches against the log's hand/money/score oracles; the move -> Action mapping comes with the rules |
 | 6 | Web replay page + Flow 1 (BigQuery/GCS) | Enter a table ID and step forwards/backwards |
 | 7 | Seed finder + fork + play UI | Fork, play both sides, game-end scoring |
 | 8 | Polish: request mechanism, error handling, perf | Request TODO resolved |
@@ -176,4 +176,4 @@ Phases 2–4 (the engine) are the bulk of the work; phases 5–6 can start in pa
 2. Analyze `log_examples/` and write `docs/log_format.md` (event catalogue, move_id semantics, where setup/map info lives, deck-draw events). This de-risks the parser and the seed finder.
 3. Clone/inspect the Next-Ark-Nova-Cards repo and write the card/map import scripts.
 4. Scaffold the repo and the Dockerfile, deploy "hello world" to Cloud Run.
-5. Design and lock down `GameState`, `Action` and serialization schemas before writing rules.
+5. ~~Design and lock down `GameState`, `Action` and serialization schemas~~ done: `docs/engine_design.md`, `src/ark_nova/engine/`.

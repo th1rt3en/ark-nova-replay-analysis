@@ -94,11 +94,29 @@ def main() -> None:
     for key, variants in vm["variants"].items():
         by_key[key]["variants"] = variants
 
+    for c in animals + sponsors + projects + endgames:
+        c.setdefault("active", True)   # inactive cards exist upstream but are not in the BGA game (see data_manual/variants_mw.json)
+
+    # Which of the three decks a card belongs to (see docs/log_format.md, "The three decks").
+    for c in animals + sponsors:
+        c["deck"] = "main"
+    for c in projects:
+        c["deck"] = "base_project" if c["type"] == "Base" else "main"
+    for c in endgames:
+        c["deck"] = "endgame"
+
     dump("animals.json", animals)
     dump("sponsors.json", sponsors)
     dump("projects.json", projects)
     dump("endgames.json", endgames)
     dump("project_bonuses.json", raw["projectBonuses"])
+    # action card faces: for every category and variant, the rule lines of level I and II (upstream i18n keys resolved to English)
+    dump("action_cards.json", [{
+        "category": a["category"], "variant": a["variant"],
+        "name": resolve(a["nameKey"], en),
+        "level1": [resolve(k, en) for k in a["level1Keys"]],
+        "level2": [resolve(k, en) for k in a["level2Keys"]],
+    } for a in raw["actionCards"]])
 
     maps = []
     for m in raw["maps"]:

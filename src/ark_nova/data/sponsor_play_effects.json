@@ -1,0 +1,795 @@
+{
+    "S201": {
+        "name": "SCIENCE LAB",
+        "kind": "complex",
+        "plays": 25,
+        "events": {
+            "pDrawCards": 16,
+            "snapCard": 9,
+            "gainMarked": 2
+        }
+    },
+    "S202": {
+        "name": "SPOKESPERSON",
+        "kind": "variable",
+        "plays": 16,
+        "examples": [
+            "{\"reputation\": 1}",
+            "{}"
+        ]
+    },
+    "S203": {
+        "name": "VETERINARIAN",
+        "kind": "variable",
+        "plays": 26,
+        "examples": [
+            "{\"money\": 10}",
+            "{\"money\": 2}",
+            "{\"money\": 5}",
+            "{}"
+        ]
+    },
+    "S204": {
+        "name": "SCIENCE MUSEUM",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "pDiscardCards": 2,
+            "snapCard": 3
+        }
+    },
+    "S205": {
+        "name": "GORILLA FIELD RESEARCH",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "pDrawCards": 4,
+            "snapCard": 2
+        }
+    },
+    "S206": {
+        "name": "MEDICAL BREAKTHROUGH",
+        "kind": "variable",
+        "plays": 12,
+        "examples": [
+            "{\"appeal\": 2}",
+            "{\"appeal\": 4}",
+            "{\"appeal\": 6}",
+            "{}"
+        ]
+    },
+    "S207": {
+        "name": "BASIC RESEARCH",
+        "kind": "variable",
+        "plays": 6,
+        "examples": [
+            "{\"conservation\": 2, \"money\": 4}",
+            "{\"conservation\": 3, \"money\": 6}",
+            "{\"conservation\": 4, \"money\": 8}"
+        ]
+    },
+    "S208": {
+        "name": "SCIENCE LIBRARY",
+        "kind": "variable",
+        "plays": 22,
+        "examples": [
+            "{\"appeal\": 1, \"money\": 2}",
+            "{\"appeal\": 2, \"money\": 2}",
+            "{\"appeal\": 3, \"money\": 2}",
+            "{\"appeal\": 4, \"money\": 2}"
+        ]
+    },
+    "S209": {
+        "name": "TECHNOLOGY INSTITUTE",
+        "kind": "fixed",
+        "plays": 23,
+        "gain": {
+            "xtoken": 1
+        }
+    },
+    "S210": {
+        "name": "EXPERT ON THE AMERICAS",
+        "kind": "complex",
+        "plays": 18,
+        "events": {
+            "buyBuilding": 18,
+            "pDrawCards": 2,
+            "endOfGame": 1
+        }
+    },
+    "S211": {
+        "name": "EXPERT ON EUROPE",
+        "kind": "complex",
+        "plays": 11,
+        "events": {
+            "buyBuilding": 11,
+            "pDrawCards": 1,
+            "endOfGame": 1,
+            "snapCard": 1
+        }
+    },
+    "S212": {
+        "name": "EXPERT ON AUSTRALIA",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "pDiscardCards": 14
+        }
+    },
+    "S213": {
+        "name": "EXPERT ON ASIA",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "buyBuilding": 21,
+            "snapCard": 1,
+            "pDiscardCards": 1,
+            "discardCardsOnDisplay": 1,
+            "markAssign": 1
+        }
+    },
+    "S214": {
+        "name": "EXPERT ON AFRICA",
+        "kind": "variable",
+        "plays": 18,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 2}",
+            "{\"appeal\": 4}",
+            "{\"appeal\": 5}"
+        ]
+    },
+    "S215": {
+        "name": "BREEDING COOPERATION",
+        "kind": "fixed",
+        "plays": 8,
+        "gain": {}
+    },
+    "S216": {
+        "name": "TALENTED COMMUNICATOR",
+        "kind": "complex",
+        "plays": 27,
+        "events": {
+            "pDrawCards": 8,
+            "snapCard": 1,
+            "pDiscardCards": 2
+        }
+    },
+    "S217": {
+        "name": "ENGINEER",
+        "kind": "complex",
+        "plays": 4,
+        "events": {
+            "pDiscardCards": 1
+        }
+    },
+    "S218": {
+        "name": "BREEDING PROGRAM",
+        "kind": "fixed",
+        "plays": 12,
+        "gain": {}
+    },
+    "S219": {
+        "name": "DIVERSITY RESEARCHER",
+        "kind": "variable",
+        "plays": 25,
+        "examples": [
+            "{\"money\": 10}",
+            "{\"money\": 12}",
+            "{\"money\": 22}",
+            "{\"money\": 2}"
+        ]
+    },
+    "S220": {
+        "name": "FEDERAL GRANTS",
+        "kind": "fixed",
+        "plays": 25,
+        "gain": {
+            "money": 3
+        }
+    },
+    "S221": {
+        "name": "ARCHEOLOGIST",
+        "kind": "fixed",
+        "plays": 18,
+        "gain": {}
+    },
+    "S222": {
+        "name": "RELEASE OF PATENTS",
+        "kind": "variable",
+        "plays": 6,
+        "examples": [
+            "{\"conservation\": 2, \"money\": 4}",
+            "{\"conservation\": 3, \"money\": 6}"
+        ]
+    },
+    "S223": {
+        "name": "SCIENCE INSTITUTE",
+        "kind": "fixed",
+        "plays": 9,
+        "gain": {}
+    },
+    "S224": {
+        "name": "MIGRATION RECORDING",
+        "kind": "fixed",
+        "plays": 10,
+        "gain": {
+            "xtoken": 1
+        }
+    },
+    "S225": {
+        "name": "QUARANTINE LAB",
+        "kind": "fixed",
+        "plays": 18,
+        "gain": {
+            "xtoken": 1
+        }
+    },
+    "S226": {
+        "name": "FOREIGN INSTITUTE",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "snapCard": 3,
+            "pDrawCards": 3,
+            "pDiscardCards": 1
+        }
+    },
+    "S227": {
+        "name": "WAZA SPECIAL ASSIGNMENT",
+        "kind": "complex",
+        "plays": 5,
+        "events": {
+            "pDrawCards": 5,
+            "wazaSpecial": 5
+        }
+    },
+    "S228": {
+        "name": "WAZA SMALL ANIMAL PROGRAM",
+        "kind": "variable",
+        "plays": 5,
+        "examples": [
+            "{\"money\": 10}",
+            "{\"money\": 12}",
+            "{\"money\": 6}"
+        ]
+    },
+    "S229": {
+        "name": "EXPERT IN SMALL ANIMALS",
+        "kind": "variable",
+        "plays": 5,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 2}",
+            "{\"appeal\": 5}",
+            "{\"appeal\": 7}"
+        ]
+    },
+    "S230": {
+        "name": "EXPERT IN LARGE ANIMALS",
+        "kind": "variable",
+        "plays": 5,
+        "examples": [
+            "{\"appeal\": 2}",
+            "{\"appeal\": 6}",
+            "{}"
+        ]
+    },
+    "S231": {
+        "name": "SPONSORSHIP: PRIMATES",
+        "kind": "variable",
+        "plays": 6,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 2}",
+            "{\"appeal\": 3}",
+            "{\"appeal\": 4}"
+        ]
+    },
+    "S232": {
+        "name": "SPONSORSHIP: REPTILES",
+        "kind": "complex",
+        "plays": 3,
+        "events": {
+            "endOfGame": 1
+        }
+    },
+    "S233": {
+        "name": "SPONSORSHIP: VULTURES",
+        "kind": "variable",
+        "plays": 4,
+        "examples": [
+            "{\"appeal\": 2}",
+            "{\"appeal\": 3}",
+            "{\"appeal\": 4}"
+        ]
+    },
+    "S234": {
+        "name": "SPONSORSHIP: LIONS",
+        "kind": "variable",
+        "plays": 6,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 4}",
+            "{\"appeal\": 7}"
+        ]
+    },
+    "S235": {
+        "name": "SPONSORSHIP: ELEPHANTS",
+        "kind": "variable",
+        "plays": 5,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 2}",
+            "{\"appeal\": 4}"
+        ]
+    },
+    "S236": {
+        "name": "PRIMATOLOGIST",
+        "kind": "fixed",
+        "plays": 13,
+        "gain": {
+            "money": 3
+        }
+    },
+    "S237": {
+        "name": "HERPETOLOGIST",
+        "kind": "fixed",
+        "plays": 15,
+        "gain": {
+            "money": 3
+        }
+    },
+    "S238": {
+        "name": "ORNITHOLOGIST",
+        "kind": "fixed",
+        "plays": 9,
+        "gain": {
+            "money": 3
+        }
+    },
+    "S239": {
+        "name": "EXPERT IN PREDATORS",
+        "kind": "fixed",
+        "plays": 13,
+        "gain": {
+            "money": 3
+        }
+    },
+    "S240": {
+        "name": "EXPERT IN HERBIVORES",
+        "kind": "fixed",
+        "plays": 15,
+        "gain": {
+            "money": 3
+        }
+    },
+    "S241": {
+        "name": "HYDROLOGIST",
+        "kind": "variable",
+        "plays": 14,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 2}",
+            "{\"appeal\": 3}",
+            "{\"appeal\": 4}"
+        ]
+    },
+    "S242": {
+        "name": "GEOLOGIST",
+        "kind": "variable",
+        "plays": 25,
+        "examples": [
+            "{\"appeal\": 3}",
+            "{\"appeal\": 6}",
+            "{}"
+        ]
+    },
+    "S243": {
+        "name": "MEERKAT DEN",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "buyBuilding": 19,
+            "snapCard": 2,
+            "discardTokens": 2
+        }
+    },
+    "S244": {
+        "name": "PENGUIN POOL",
+        "kind": "complex",
+        "plays": 16,
+        "events": {
+            "buyBuilding": 16,
+            "pDrawCards": 7,
+            "pDiscardCards": 2,
+            "discardTokens": 1,
+            "snapCard": 1
+        }
+    },
+    "S245": {
+        "name": "AQUARIUM",
+        "kind": "complex",
+        "plays": 18,
+        "events": {
+            "buyBuilding": 19,
+            "pStoreCard": 1,
+            "pDrawCards": 2,
+            "snapCard": 1,
+            "pDiscardCards": 1
+        }
+    },
+    "S246": {
+        "name": "CABLE CAR",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "buyBuilding": 14,
+            "pDrawCards": 3,
+            "pDiscardCards": 1
+        }
+    },
+    "S247": {
+        "name": "BABOON ROCK",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "buyBuilding": 14,
+            "snapCard": 2,
+            "pDiscardCards": 3,
+            "pDrawCards": 1
+        }
+    },
+    "S248": {
+        "name": "RHESUS MONKEY PARK",
+        "kind": "complex",
+        "plays": 12,
+        "events": {
+            "buyBuilding": 12,
+            "pDiscardCards": 1,
+            "snapCard": 1,
+            "discardTokens": 1,
+            "pDrawCards": 3
+        }
+    },
+    "S249": {
+        "name": "BARRED OWL HUT",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "pDrawCards": 11,
+            "pDiscardCards": 12,
+            "buyBuilding": 10,
+            "snapCard": 1,
+            "discardCardsOnDisplay": 1
+        }
+    },
+    "S250": {
+        "name": "SEA TURTLE TANK",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "buyBuilding": 10,
+            "pDiscardCards": 9,
+            "snapCard": 2,
+            "pDrawCards": 2
+        }
+    },
+    "S251": {
+        "name": "POLAR BEAR EXHIBIT",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "buyBuilding": 10,
+            "pDrawCards": 3,
+            "snapCard": 1
+        }
+    },
+    "S252": {
+        "name": "SPOTTED HYENA COMPOUND",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "buyBuilding": 10,
+            "snapCard": 2,
+            "pDrawCards": 10,
+            "pDiscardCards": 9,
+            "discardCardsOnDisplay": 1
+        }
+    },
+    "S253": {
+        "name": "OKAPI STABLE",
+        "kind": "complex",
+        "plays": 11,
+        "events": {
+            "buyBuilding": 10,
+            "discardTokens": 7,
+            "pStoreCard": 1,
+            "discardCardsOnDisplay": 1,
+            "snapCard": 1
+        }
+    },
+    "S254": {
+        "name": "ZOO SCHOOL",
+        "kind": "complex",
+        "plays": 20,
+        "events": {
+            "snapCard": 8,
+            "buyBuilding": 20,
+            "pDrawCards": 15,
+            "pDiscardCards": 3
+        }
+    },
+    "S255": {
+        "name": "ADVENTURE PLAYGROUND",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "buyBuilding": 14,
+            "pDrawCards": 2,
+            "discardCardsOnDisplay": 1
+        }
+    },
+    "S256": {
+        "name": "WATER PLAYGROUND",
+        "kind": "complex",
+        "plays": 26,
+        "events": {
+            "buyBuilding": 26,
+            "snapCard": 2,
+            "pDiscardCards": 1,
+            "pDrawCards": 1,
+            "discardCardsOnDisplay": 1
+        }
+    },
+    "S257": {
+        "name": "SIDE ENTRANCE",
+        "kind": "complex",
+        "plays": 12,
+        "events": {
+            "buyBuilding": 12,
+            "pDiscardCards": 1,
+            "snapCard": 1,
+            "pDrawCards": 1
+        }
+    },
+    "S258": {
+        "name": "NATIVE SEABIRDS",
+        "kind": "variable",
+        "plays": 10,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 2}",
+            "{\"appeal\": 5}",
+            "{\"appeal\": 6}"
+        ]
+    },
+    "S259": {
+        "name": "NATIVE LIZARDS",
+        "kind": "variable",
+        "plays": 11,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 2}",
+            "{\"appeal\": 4}",
+            "{\"appeal\": 5}"
+        ]
+    },
+    "S260": {
+        "name": "NATIVE FARM ANIMALS",
+        "kind": "variable",
+        "plays": 11,
+        "examples": [
+            "{\"appeal\": 10}",
+            "{\"appeal\": 13}",
+            "{\"appeal\": 3}",
+            "{\"appeal\": 5}"
+        ]
+    },
+    "S261": {
+        "name": "GUIDED SCHOOL TOURS",
+        "kind": "fixed",
+        "plays": 18,
+        "gain": {
+            "appeal": 1,
+            "conservation": 1
+        }
+    },
+    "S262": {
+        "name": "EXPLORER",
+        "kind": "variable",
+        "plays": 19,
+        "examples": [
+            "{\"money\": 10}",
+            "{\"money\": 12}",
+            "{\"money\": 14}",
+            "{\"money\": 16}"
+        ]
+    },
+    "S263": {
+        "name": "WAZA LARGE ANIMAL PROGRAM",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "buyBuilding": 9,
+            "snapCard": 1,
+            "gainMarked": 1
+        }
+    },
+    "S264": {
+        "name": "FREE-RANGE NEW WORLD MONKEYS",
+        "kind": "variable",
+        "plays": 6,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{\"appeal\": 2}",
+            "{\"appeal\": 6}",
+            "{}"
+        ]
+    },
+    "S265": {
+        "name": "FRANCHISE BUSINESS",
+        "kind": "complex",
+        "plays": 2,
+        "events": {
+            "buyBuilding": 2
+        }
+    },
+    "S266": {
+        "name": "MARINE BIOLOGIST",
+        "kind": "fixed",
+        "plays": 20,
+        "gain": {
+            "money": 3
+        }
+    },
+    "S267": {
+        "name": "FARM CAT",
+        "kind": "variable",
+        "plays": 3,
+        "examples": [
+            "{\"appeal\": 1}",
+            "{}"
+        ]
+    },
+    "S268": {
+        "name": "CONFERENCE ON EUROPE",
+        "kind": "variable",
+        "plays": 17,
+        "examples": [
+            "{\"money\": 2}",
+            "{\"money\": 5}"
+        ]
+    },
+    "S269": {
+        "name": "CONFERENCE ON AUSTRALIA",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "increaseSize": 9,
+            "pDiscardCards": 2
+        }
+    },
+    "S270": {
+        "name": "MARINE RESEARCH EXPEDITION",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "pDrawCards": 12,
+            "pDiscardCards": 13,
+            "discardCardsOnDisplay": 2
+        }
+    },
+    "S271": {
+        "name": "EXCAVATION SITE",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "buyBuilding": 14,
+            "pDrawCards": 7,
+            "pStoreCard": 2,
+            "pDiscardCards": 2,
+            "discardCardsOnDisplay": 13,
+            "discardTokens": 1,
+            "snapCard": 2
+        }
+    },
+    "S272": {
+        "name": "EXPANSION AREA",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "buyBuilding": 15,
+            "pDrawCards": 3,
+            "pDiscardCards": 1,
+            "snapCard": 1
+        }
+    },
+    "S273": {
+        "name": "PUBLICATIONS",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "donation": 17,
+            "pDiscardCards": 2
+        }
+    },
+    "S274": {
+        "name": "MASCOT STATUE",
+        "kind": "complex",
+        "plays": 11,
+        "events": {
+            "buyBuilding": 11
+        }
+    },
+    "S275": {
+        "name": "HORSE WHISPERER",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "pDrawCards": 7
+        }
+    },
+    "S276": {
+        "name": "LANDSCAPE GARDENER",
+        "kind": "complex",
+        "plays": 16,
+        "events": {
+            "buyBuilding": 16,
+            "endOfGame": 1,
+            "discardCardsOnDisplay": 1
+        }
+    },
+    "S277": {
+        "name": "FIELD RESEARCH TYPE D ORCAS",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "snapCard": 6,
+            "pDrawCards": 6
+        }
+    },
+    "S278": {
+        "name": "AMAZON HOUSE",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "buyBuilding": 25,
+            "discardCardsOnDisplay": 1,
+            "snapCard": 8,
+            "pDrawCards": 8,
+            "pDiscardCards": 7,
+            "discardTokens": 1,
+            "pStoreCard": 1,
+            "endOfGame": 1
+        }
+    },
+    "S279": {
+        "name": "UNDERWATER TUNNEL",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "buyBuilding": 15
+        }
+    },
+    "S280": {
+        "name": "RECONSTRUCTION",
+        "kind": "complex",
+        "plays": 1,
+        "events": {
+            "reconstructionRemove": 1,
+            "reconstructionPlaceBack": 3,
+            "buyBuilding": 2
+        }
+    },
+    "S281": {
+        "name": "ARCADE",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "buyBuilding": 15,
+            "discardCardsOnDisplay": 1,
+            "snapCard": 1
+        }
+    }
+}

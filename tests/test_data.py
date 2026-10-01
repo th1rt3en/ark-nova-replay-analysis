@@ -42,3 +42,19 @@ def test_every_log_card_is_known():
         seen |= set(pat.findall(Path(g).read_text("utf8")))
     unknown = {i for i in seen if data.parse_bga_card_id(i)[0] not in data.cards_by_key()}
     assert not unknown
+
+
+def test_inactive_cards():
+    inactive = sorted(k for k, c in data.cards_by_key().items() if not c["active"])
+    assert inactive == ["A341", "S282"]
+    assert data.cards_by_key()["S274"]["source"] == "base" and data.cards_by_key()["S281"]["source"] == "base"
+
+
+def test_three_decks():
+    from collections import Counter
+
+    c = Counter((x["deck"], x["source"] == "marine_worlds") for x in data.cards_by_key().values())
+    assert c[("base_project", False)] == 12 and c[("base_project", True)] == 1
+    assert c[("endgame", False)] == 11 and c[("endgame", True)] == 6
+    base = sorted(k for k, x in data.cards_by_key().items() if x["deck"] == "base_project")
+    assert base == [f"P{n}" for n in list(range(101, 113)) + [133]]

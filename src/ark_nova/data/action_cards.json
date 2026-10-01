@@ -1,0 +1,401 @@
+[
+    {
+        "category": "build",
+        "variant": 1,
+        "name": "Pavillion Build",
+        "level1": [
+            "Build 1 building with a maximum size of X.",
+            "Pay 2 for each hexagon.",
+            "Buildable: Kiosk, Pavilion, Aquarium, Standard Enclosure, Petting Zoo.",
+            "You may pay 3 to build 1 additional Pavilion.",
+            "Level I: You may build 1 additional Pavilion. Even if you already built a Pavilion in this action, or this Pavilion would exceed your action strength by 1, you may still do so. Pay a total of 3 for this additional Pavilion (2 regular cost plus 1 additional cost). You may build all buildings in any order you choose (including the additional Pavilion)."
+        ],
+        "level2": [
+            "Build 1 or more different buildings with a total maximum size of X.",
+            "Pay 2 for each hexagon.",
+            "Additional buildable: Large Bird Aviary and Reptile House.",
+            "You may pay 2 to build 1 additional Pavilion.",
+            "Level II: Same as Level I, but the cost of the additional Pavilion is reduced to 2 (regular cost)."
+        ]
+    },
+    {
+        "category": "build",
+        "variant": 2,
+        "name": "Kiosk Build",
+        "level1": [
+            "Build 1 building with a maximum size of X.",
+            "Pay 2 for each hexagon.",
+            "Buildable: Kiosk, Pavilion, Aquarium, Standard Enclosure, Petting Zoo.",
+            "You may pay 3 to build 1 additional Kiosk.",
+            "Level I: You may build 1 additional Kiosk. Even if you already built a Kiosk in this action, or this Kiosk would exceed your action strength by 1, you may still do so. Pay a total of 3 for this additional Kiosk (2 regular cost plus 1 additional cost). You may build all buildings in any order you choose (including the additional Kiosk)."
+        ],
+        "level2": [
+            "Build 1 or more different buildings with a total maximum size of X.",
+            "Pay 2 for each hexagon.",
+            "Additional buildable: Large Bird Aviary and Reptile House.",
+            "You may pay 2 to build 1 additional Kiosk.",
+            "Level II: Same as Level I, but the cost of the additional Kiosk is reduced to 2 (regular cost)."
+        ]
+    },
+    {
+        "category": "build",
+        "variant": 3,
+        "name": "+1 Build",
+        "level1": [
+            "Build 1 building with a maximum size of X+1.",
+            "Pay 2 for each hexagon.",
+            "Buildable: Kiosk, Pavilion, Aquarium, Standard Enclosure, Petting Zoo.",
+            "Level I: You may build with strength X+1."
+        ],
+        "level2": [
+            "Build 1 or more different buildings with a total maximum size of X+1.",
+            "Pay 2 for each hexagon.",
+            "Additional buildable: Large Bird Aviary and Reptile House.",
+            "You may build multiple identical Standard Enclosures.",
+            "Level II: Same as Level I, but you may build as many of each type of Standard Enclosure as you wish (X+1 strength limit still applies). This action does not allow you to build more than 1 Kiosk and 1 Pavilion."
+        ]
+    },
+    {
+        "category": "build",
+        "variant": 4,
+        "name": "Terrain Build",
+        "level1": [
+            "Build 1 building with a maximum size of X.",
+            "Pay 2 for each hexagon.",
+            "Buildable: Kiosk, Pavilion, Aquarium, Standard Enclosure, Petting Zoo.",
+            "You may pay 2 to cover 1 rock or water space.",
+            "Level I: You may pay 2 to cover 1 water or rock space as if it were a buildable space. This only applies to building with this action, not to any other way of building or placing unique buildings."
+        ],
+        "level2": [
+            "Build 1 or more different buildings with a total maximum size of X.",
+            "Pay 2 for each hexagon.",
+            "Additional buildable: Large Bird Aviary and Reptile House.",
+            "You may cover 1 rock or water space. If you do, gain 2.",
+            "Level II: Same as Level I, but when you cover a water or rock space, you gain 2 instead of paying 2. You may still only build on 1 water or rock space per action."
+        ]
+    },
+    {
+        "category": "animals",
+        "variant": 1,
+        "name": "Ignore Animals",
+        "level1": [
+            "Play Animal cards.",
+            "Table: Strength 1 = 0; Strength 2/3/4 = 1; Strength 5 = 2 (or 1 can be -1)",
+            "If you play only 1 animal at strength 5 or higher, you may ignore 1 condition.",
+            "At Level I, you may only play Animal cards from your hand. At Level II, you may also play Animal cards from within reputation range by paying the folder number as an additional cost.",
+            "If the action strength allows you to play 2 Animal cards but you only play 1, you may ignore 1 condition on that Animal card. (Level I: Strength 5; Level II: Strength 3+)"
+        ],
+        "level2": [
+            "Play Animal cards.",
+            "Table: Strength 1/2 = 1; Strength 3 = 2 (or 1 can be -1); Strength 4 = 2 (or 1 can be -1); Strength 5 = 1 Reputation+2 (or 1 Reputation+1 can be -1)",
+            "If you play only 1 animal at strength 3 or higher, you may ignore 1 condition.",
+            "At Level I, you may only play Animal cards from your hand. At Level II, you may also play Animal cards from within reputation range by paying the folder number as an additional cost.",
+            "If the action strength allows you to play 2 Animal cards but you only play 1, you may ignore 1 condition on that Animal card. (Level I: Strength 5; Level II: Strength 3+)"
+        ]
+    },
+    {
+        "category": "animals",
+        "variant": 2,
+        "name": "Hunter Animals",
+        "level1": [
+            "Play Animal cards.",
+            "Table: Strength 1 = 0; Strength 2/3/4 = 1; Strength 5 = 2",
+            "If you have no Animal cards in hand after this action: Hunter 4.",
+            "At Level I, you may only play Animal cards from your hand. At Level II, you may also play Animal cards from within reputation range by paying the folder number as an additional cost.",
+            "After this action, you may reveal your hand to show you have no Animal cards. If you do, reveal the top X cards of the deck. Choose 1 Animal card and add it to your hand. Discard the rest. (Hunter X ability) (Level I: X=4 cards; Level II: X=6 cards)"
+        ],
+        "level2": [
+            "Play Animal cards.",
+            "Table: Strength 1/2 = 1; Strength 3/4 = 2; Strength 5 = 1 Reputation+-2",
+            "If you have no Animal cards in hand after this action: Hunter 6.",
+            "At Level I, you may only play Animal cards from your hand. At Level II, you may also play Animal cards from within reputation range by paying the folder number as an additional cost.",
+            "After this action, you may reveal your hand to show you have no Animal cards. If you do, reveal the top X cards of the deck. Choose 1 Animal card and add it to your hand. Discard the rest. (Hunter X ability) (Level I: X=4 cards; Level II: X=6 cards)"
+        ]
+    },
+    {
+        "category": "animals",
+        "variant": 3,
+        "name": "Discount Animals",
+        "level1": [
+            "Play Animal cards.",
+            "Table: Strength 1 = 0; Strength 2/3/4 = 1; Strength 5 = 2.",
+            "Reduce the cost of your first played animal by 2.",
+            "At Level I, you may only play Animal cards from your hand. At Level II, you may also play Animal cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: Reduce the cost of the first animal played with this action by 2 (minimum 0)."
+        ],
+        "level2": [
+            "Play Animal cards.",
+            "Table: Strength 1/2 = 1; Strength 3/4 = 2; Strength 5 = 1 Reputation+-2",
+            "Additionally, for each animal you play, you may pay 2 to gain 1 Appeal",
+            "At Level I, you may only play Animal cards from your hand. At Level II, you may also play Animal cards from within reputation range by paying the folder number as an additional cost.",
+            "Level II: For each animal you play with this action (once per animal), you may pay 2 additional to gain 1 additional Appeal. (Unlike Level I, you no longer get a discount on the first animal played.)"
+        ]
+    },
+    {
+        "category": "animals",
+        "variant": 4,
+        "name": "Mark Animals",
+        "level1": [
+            "Play Animal cards.",
+            "Table: Strength 1 = 0; Strength 2/3/4 = 1; Strength 5 = 2.",
+            "(Mark)",
+            "At Level I, you may only play Animal cards from your hand. At Level II, you may also play Animal cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: After this action, place 1 of your player markers on an Animal card in the display that does not yet have any player markers. When a card with your player marker is discarded from the display, that card goes to your hand instead. When a card with your player marker leaves the display in any other way (drawn to hand, or played directly from the display by any player), you gain 2 from the supply. In either case, return your player marker to your supply. (Mark ability)"
+        ],
+        "level2": [
+            "Play Animal cards.",
+            "Table: Strength 1/2 = 1; Strength 3/4 = 2; Strength 5 = 1 Reputation+-2",
+            "When you play any marked Animal card from the display, gain 1 Reputation. (Mark)",
+            "At Level I, you may only play Animal cards from your hand. At Level II, you may also play Animal cards from within reputation range by paying the folder number as an additional cost.",
+            "Level II: When playing a marked Animal card from the display, in addition to the 2 from the Mark ability, you also gain 1 Reputation. Then, after this action, perform the Mark animal ability."
+        ]
+    },
+    {
+        "category": "association",
+        "variant": 1,
+        "name": "Supply Association",
+        "level1": [
+            "Perform 1 Association task with a maximum task strength of X.",
+            "Take a Partner Zoo from the supply (not from the Association board).",
+            "You may take a Partner Zoo you already have.",
+            "At Level I, you may support 1 conservation project that is in play or from your hand. At Level II, you may also play conservation project cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: If you use this action to take a Partner Zoo, you must take it from the supply, not from the Association board. You may take a Partner Zoo you already have (even if you already have multiple). If there are no Partner Zoos in the supply, you can no longer take it, even if there are still Partner Zoos on the Association board. If you have multiple Partner Zoos from the same continent, each reduces the cost of playing each animal from that continent."
+        ],
+        "level2": [
+            "Perform 1 or more different Association tasks with a total maximum task strength of X.",
+            "Additionally, you may make 1 donation.",
+            "Take Partner Zoos and Universities from the supply.",
+            "You may take those you already have.",
+            "At Level I, you may support 1 conservation project that is in play or from your hand. At Level II, you may also play conservation project cards from within reputation range by paying the folder number as an additional cost.",
+            "Level II: Same as Level I, but also applies to Universities. You may also take any still available new Universities. Take from beside the Association board, leaving the generic University in place. Having multiple Universities that raise your hand limit to 5 does not further increase your hand limit."
+        ]
+    },
+    {
+        "category": "association",
+        "variant": 2,
+        "name": "Hire Association",
+        "level1": [
+            "Perform 1 Association task with a maximum task strength of X.",
+            "At strength 5, you may hire 1 new Association worker instead of supporting a conservation project. (Place the new worker at strength 5)",
+            "At Level I, you may support 1 conservation project that is in play or from your hand. At Level II, you may also play conservation project cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: When performing a conservation project work task, you may hire an Association worker instead of supporting a conservation project. Place the new worker next to the worker performing the task. In the next break, return these workers to your notepad. You cannot perform the same task again before the break because you already have 2 Association workers there. You do not need to be able to support a conservation project to hire a new worker instead."
+        ],
+        "level2": [
+            "Perform 1 or more different Association tasks with a total maximum task strength of X.",
+            "Additionally, you may make 1 donation.",
+            "You may place additional workers to reduce the required strength, each additional worker reduces strength by 2.",
+            "At Level I, you may support 1 conservation project that is in play or from your hand. At Level II, you may also play conservation project cards from within reputation range by paying the folder number as an additional cost.",
+            "Level II: When performing an Association task, you may place 1 additional worker to reduce the strength requirement by 2. You may do this multiple times."
+        ]
+    },
+    {
+        "category": "association",
+        "variant": 3,
+        "name": "X Association",
+        "level1": [
+            "Perform 1 Association task with a maximum task strength of X.",
+            "If X is higher than the strength of the performed task, gain 1 X token.",
+            "At Level I, you may support 1 conservation project that is in play or from your hand. At Level II, you may also play conservation project cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: If your action strength is higher than the strength required for your task (not just equal), gain 1 X token."
+        ],
+        "level2": [
+            "Perform 1 or more different Association tasks with a total maximum task strength of X.",
+            "Additionally, you may make 1 donation.",
+            "For each X token you have, pay 1 less.",
+            "At Level I, you may support 1 conservation project that is in play or from your hand. At Level II, you may also play conservation project cards from within reputation range by paying the folder number as an additional cost.",
+            "Level II: Each time you use this action to make a donation, pay 1 less for each X token on your notepad (minimum 0). You do not discard X tokens."
+        ]
+    },
+    {
+        "category": "association",
+        "variant": 4,
+        "name": "Self-clever Association",
+        "level1": [
+            "Perform 1 Association task with a maximum task strength of X.",
+            "At strength 5, you may place this action card at strength 1 and perform another action instead.",
+            "At Level I, you may support 1 conservation project that is in play or from your hand. At Level II, you may also play conservation project cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: When using this action card at strength 5, you may choose to do nothing and move the action card to slot 1, then perform another action after this (Determination ability). You do not need to have Association workers on your notepad to perform this action."
+        ],
+        "level2": [
+            "Perform 1 or more different Association tasks with a total maximum task strength of X.",
+            "Additionally, you may make 1 donation.",
+            "You may take a card from the deck or within reputation range instead of donating.",
+            "At Level I, you may support 1 conservation project that is in play or from your hand. At Level II, you may also play conservation project cards from within reputation range by paying the folder number as an additional cost.",
+            "Level II: You may take 1 card from the deck or within reputation range instead of making a donation. Do this at the end of the Association action, and you must have performed at least 1 Association task in this action to do so (just as if you were making a donation)."
+        ]
+    },
+    {
+        "category": "cards",
+        "variant": 1,
+        "name": "Keep Cards",
+        "level1": [
+            "Break 2",
+            "Table: Draw: Strength 1/2 = 1; Strength 3/4 = 2; Strength 5 = 3.",
+            "Or Snap: Only at strength 5, snap 1 card from within reputation range.",
+            "At Level I, you may only draw cards from the deck. At Level II, you may draw cards from the deck or within reputation range.",
+            "Regardless of your action strength, keep all drawn cards. You do not need to discard cards."
+        ],
+        "level2": [
+            "Break 2",
+            "Table: Draw: Strength 1 = 1; Strength 2/3 = 2; Strength 4 = 3; Strength 5 = 4.",
+            "Or Snap: At strength 3/4/5, snap 1 card from within reputation range.",
+            "At Level I, you may only draw cards from the deck. At Level II, you may draw cards from the deck or within reputation range.",
+            "Regardless of your action strength, keep all drawn cards. You do not need to discard cards."
+        ]
+    },
+    {
+        "category": "cards",
+        "variant": 2,
+        "name": "Digging Cards",
+        "level1": [
+            "First: 1 (Digging 1)",
+            "Break 2",
+            "Table: Draw: Strength 1/2 = 1; Strength 3/4 = 2; Strength 5 = 3.",
+            "Discard: Strength 1 = 1; Strength 3 = 1; Strength 5 = 1.",
+            "Or Snap: Only at strength 5, snap 1 card from within reputation range.",
+            "At Level I, you may only draw cards from the deck. At Level II, you may draw cards from the deck or within reputation range.",
+            "Choose up to X times: Discard 1 card from the display and replenish the display; OR discard 1 card from your hand to draw 1 card from the deck (Digging effect). Do this before drawing new cards. (Level I: X=1; Level II: X=2)"
+        ],
+        "level2": [
+            "First: 2 (Digging 2)",
+            "Break 2",
+            "Table: Draw: Strength 1 = 1; Strength 2/3 = 2; Strength 4 = 3; Strength 5 = 4.",
+            "Discard: Strength 2 = 1; Strength 4 = 1; Strength 5 = 1.",
+            "Or Snap: At strength 3/4/5, snap 1 card from within reputation range.",
+            "At Level I, you may only draw cards from the deck. At Level II, you may draw cards from the deck or within reputation range.",
+            "Choose up to X times: Discard 1 card from the display and replenish the display; OR discard 1 card from your hand to draw 1 card from the deck (Digging effect). Do this before drawing new cards. (Level I: X=1; Level II: X=2)"
+        ]
+    },
+    {
+        "category": "cards",
+        "variant": 3,
+        "name": "Snap Cards",
+        "level1": [
+            "Break 2",
+            "Draw: Strength 1/2 = 1; Strength 3/4 = 2; Strength 5 = 3.",
+            "Discard: Strength 1 = 1; Strength 3 = 1; Strength 5 = 1.",
+            "Or Snap: At strength 3/4/5, snap 1 card from within reputation range.",
+            "At Level I, you may only draw cards from the deck. At Level II, you may draw cards from the deck or within reputation range.",
+            "You may snap instead of drawing cards at lower than normal strength (Level I: Strength 3+; Level II: Strength 2+)."
+        ],
+        "level2": [
+            "Break 2",
+            "Draw: Strength 1 = 1; Strength 2/3 = 2; Strength 4 = 3; Strength 5 = 4.",
+            "Discard: Strength 2 = 1; Strength 4 = 1; Strength 5 = 1.",
+            "Or Snap: At strength 2/3/4, snap 1 card from within reputation range; at strength 5, snap 2 cards.",
+            "At Level I, you may only draw cards from the deck. At Level II, you may draw cards from the deck or within reputation range.",
+            "You may snap instead of drawing cards at lower than normal strength (Level I: Strength 3+; Level II: Strength 2+).",
+            "Level II: When your action strength is 5, you may snap 2 cards. Do not replenish during snapping."
+        ]
+    },
+    {
+        "category": "cards",
+        "variant": 4,
+        "name": "Clever Cards",
+        "level1": [
+            "Break 2",
+            "Table: Draw: Strength 1/2 = 1; Strength 3/4 = 2; Strength 5 = 3.",
+            "Discard: Strength 1 = 1; Strength 3 = 1; Strength 5 = 1.",
+            "Or Snap: Only at strength 5, snap 1 card from within reputation range.",
+            "Pay 2: To place any action card on card slot 1.",
+            "At Level I, you may only draw cards from the deck. At Level II, you may draw cards from the deck or within reputation range.",
+            "Level I: After this action, you may pay 2 to place any action card on card slot 1 (Clever effect)."
+        ],
+        "level2": [
+            "Break 2",
+            "Table: Draw: Strength 1 = 1; Strength 2/3 = 2; Strength 4 = 3; Strength 5 = 4.",
+            "Discard: Strength 2 = 1; Strength 4 = 1; Strength 5 = 1.",
+            "Or Snap: At strength 3/4/5, snap 1 card from within reputation range.",
+            "Place any action card on card slot 1.",
+            "At Level I, you may only draw cards from the deck. At Level II, you may draw cards from the deck or within reputation range.",
+            "Level II: Same as Level I, but you do not need to pay money to place the action card on card slot 1."
+        ]
+    },
+    {
+        "category": "sponsors",
+        "variant": 1,
+        "name": "Money Sponsors",
+        "level1": [
+            "Blue area (Level I)",
+            "Play 1 Sponsor card with a maximum level of X.",
+            "Or",
+            "Break X, gain X money. Additionally, you may trade 1 X token for 5 money, or vice versa.",
+            "At Level I, you may only play Sponsor cards from your hand. At Level II, you may also play cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: In addition to your action, you may pay 1 X token to gain 5 money; or pay 5 money to gain 1 X token. You may do this before or after your Sponsor action. You may do this regardless of whether you play Sponsor cards or choose the break option. You cannot use newly gained X tokens to increase this Sponsor action strength."
+        ],
+        "level2": [
+            "Play 1 or more Sponsor cards with a total maximum level of X+1.",
+            "Or",
+            "Break X, gain 2x X money.",
+            "Additionally, you may trade 1 X token for 5 money, or vice versa; or pay either to gain 1 Reputation.",
+            "At Level I, you may only play Sponsor cards from your hand. At Level II, you may also play cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: In addition to your action, you may pay 1 X token to gain 5 money; or pay 5 money to gain 1 X token. You may do this before or after your Sponsor action. You may do this regardless of whether you play Sponsor cards or choose the break option. You cannot use newly gained X tokens to increase this Sponsor action strength.",
+            "Level II: Same as Level I, or you may pay 1 X token or 5 money to gain 1 Reputation."
+        ]
+    },
+    {
+        "category": "sponsors",
+        "variant": 2,
+        "name": "Money Sponsors",
+        "level1": [
+            "Play 1 Sponsor card with a maximum level of X.",
+            "Or",
+            "Break X, gain X money.",
+            "If you gain money in this action, gain 3 additional money.",
+            "At Level I, you may only play Sponsor cards from your hand. At Level II, you may also play cards from within reputation range by paying the folder number as an additional cost.",
+            "When you gain money from this Sponsor action, gain X additional money (regardless of amount and source). This includes using the break option, playing Sponsor cards that give you money, and any money-giving effects triggered by Sponsor cards you play. (Level I: X=3 money; Level II: X=5 money)"
+        ],
+        "level2": [
+            "Play 1 or more Sponsor cards with a total maximum level of X+1.",
+            "Or",
+            "Break X, gain 2x X money.",
+            "If you gain money in this action, gain 5 additional money.",
+            "At Level I, you may only play Sponsor cards from your hand. At Level II, you may also play cards from within reputation range by paying the folder number as an additional cost.",
+            "When you gain money from this Sponsor action, gain X additional money (regardless of amount and source). This includes using the break option, playing Sponsor cards that give you money, and any money-giving effects triggered by Sponsor cards you play. (Level I: X=3 money; Level II: X=5 money)"
+        ]
+    },
+    {
+        "category": "sponsors",
+        "variant": 3,
+        "name": "Sunbathing Sponsors",
+        "level1": [
+            "Play 1 Sponsor card with a maximum level of X.",
+            "Or",
+            "Break X, gain X money.",
+            "Additionally, you may discard 1 Sponsor card to gain 4 money.",
+            "At Level I, you may only play Sponsor cards from your hand. At Level II, you may also play cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: In addition to your action, you may discard 1 Sponsor card to gain 4 money. You may do this before or after your Sponsor action. You may do this regardless of whether you play Sponsor cards or choose the break option."
+        ],
+        "level2": [
+            "Play 1 or more Sponsor cards with a total maximum level of X+1.",
+            "Or",
+            "Break X, gain 2x X money.",
+            "Additionally, you may discard 1 card: gain 4 money, or reduce a card to be played by strength 2.",
+            "At Level I, you may only play Sponsor cards from your hand. At Level II, you may also play cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: In addition to your action, you may discard 1 Sponsor card to gain 4 money. You may do this before or after your Sponsor action. You may do this regardless of whether you play Sponsor cards or choose the break option.",
+            "Level II: Same as Level I, but you may discard any card (not just Sponsor cards) to gain 4 money (as in Level I), or reduce the level of a Sponsor card you play with this action by 2."
+        ]
+    },
+    {
+        "category": "sponsors",
+        "variant": 4,
+        "name": "Snap Sponsors",
+        "level1": [
+            "Play 1 Sponsor card with a maximum level of X.",
+            "Or",
+            "Break X, gain X money.",
+            "Additionally, you may discard 1 Sponsor card to take 1 Sponsor card from the display into your hand.",
+            "At Level I, you may only play Sponsor cards from your hand. At Level II, you may also play cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: In addition to your action, you may discard 1 Sponsor card to snap any Sponsor card from the display. You may do this before or after your action. You may do this regardless of whether you play Sponsor cards or choose the break option."
+        ],
+        "level2": [
+            "Play 1 or more Sponsor cards with a total maximum level of X+1.",
+            "Or",
+            "Break X, gain 2x X money.",
+            "Instead of breaking, you may discard 1 card to play a Sponsor card and pay X money.",
+            "At Level I, you may only play Sponsor cards from your hand. At Level II, you may also play cards from within reputation range by paying the folder number as an additional cost.",
+            "Level I: In addition to your action, you may discard 1 Sponsor card to snap any Sponsor card from the display. You may do this before or after your action. You may do this regardless of whether you play Sponsor cards or choose the break option.",
+            "Level II: When choosing the break option, you may discard any card (not just Sponsor cards) to play a Sponsor card from your hand and pay X money, where X equals the card level. You may do this before or after gaining money from the break option."
+        ]
+    }
+]

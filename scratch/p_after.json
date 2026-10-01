@@ -1,0 +1,1632 @@
+[
+ {
+  "game": "763400083",
+  "turn": 63,
+  "msg": "turn 63: .players[1].conservation: engine 12 != replay 14",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "764428757",
+  "turn": 38,
+  "msg": "turn 38: .active_player: engine 1 != replay 0",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "767219482",
+  "turn": 20,
+  "msg": "turn 20: take_cards {'mode': 'deck', 'count': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "767999885",
+  "turn": 31,
+  "msg": "turn 31: .players[0].reputation: engine 6 != replay 8",
+  "animals": [],
+  "chosen": [
+   "Association3"
+  ]
+ },
+ {
+  "game": "767999885",
+  "turn": 12,
+  "msg": "turn 12: place_building {'type': 'size-2', 'x': 3, 'y': 4, 'rotation': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association3"
+  ]
+ },
+ {
+  "game": "767999885",
+  "turn": 23,
+  "msg": "turn 23: take_cards {'mode': 'snap', 'card': 'A432'} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "768592840",
+  "turn": 62,
+  "msg": "turn 62: .players[0].appeal: engine 68 != replay 66; .players[0].reputation: engine 15 != replay 17",
+  "animals": [
+   "A482",
+   "A526"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "768592840",
+  "turn": 23,
+  "msg": "turn 23: play_animal {'card': 'A412', 'from_display': False, 'x': 3, 'y': 6} not in legal_actions",
+  "animals": [
+   "A412",
+   "A493"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "768592840",
+  "turn": 50,
+  "msg": "turn 50: take_cards {'mode': 'deck', 'count': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "768795366",
+  "turn": 14,
+  "msg": "turn 14: perform a task first",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "768795366",
+  "turn": 47,
+  "msg": "turn 47: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "768795366",
+  "turn": 52,
+  "msg": "turn 52: take_cards {'mode': 'snap', 'card': 'A432'} not in legal_actions",
+  "animals": [
+   "A480",
+   "A469"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "770037458",
+  "turn": 16,
+  "msg": "turn 16: place_building {'type': 'size-2', 'x': 2, 'y': 5, 'rotation': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "770037458",
+  "turn": 46,
+  "msg": "turn 46: association_task {'task': 'conservation', 'project': 'P108', 'source': 'play', 'slot': 1, 'bonus': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "770478977",
+  "turn": 69,
+  "msg": "turn 69: choose_effect {'hand': 'A442'} not in legal_actions",
+  "animals": [
+   "A485",
+   "A415",
+   "A524"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "770898336",
+  "turn": 17,
+  "msg": "turn 17: placements after move 80: kiosk: engine-only [(1, 4, 0), (1, 12, 0), (2, 5, 0)] bga-only [(5, 6, 0)]",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "770898336",
+  "turn": 41,
+  "msg": "turn 41: .players[0].appeal: engine 24 != replay 22",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "780458510",
+  "turn": 7,
+  "msg": "turn 7: placements after move 30: sea-turtle: engine-only [(2, 7, 1), (2, 7, 3), (2, 7, 5)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Sponsors2"
+  ]
+ },
+ {
+  "game": "790136149",
+  "turn": 7,
+  "msg": "turn 7: .players[0].hand: engine ['A413', 'A424', 'A434', 'A456'] != replay ['A405', 'A413', 'A424', 'A434', 'A456', 'A473']; .players[0].marks: engine [(0, 'A405'), (0, 'A473')] != replay []; .display: engine ['S258', 'A405', 'A442', 'A473', 'S232', 'P132'] != replay ['S258', 'A442', 'S232', 'P132'",
+  "animals": [
+   "A440"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "790136149",
+  "turn": 25,
+  "msg": "turn 25: .players[1].appeal: engine 5 != replay 7",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "790136149",
+  "turn": 29,
+  "msg": "turn 29: .players[0].money: engine 18 != replay 21",
+  "animals": [
+   "A456",
+   "A539"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "790136149",
+  "turn": 46,
+  "msg": "turn 46: play_animal {'card': 'A484', 'from_display': False, 'x': 4, 'y': 5} not in legal_actions",
+  "animals": [
+   "A484",
+   "A511"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "790136149",
+  "turn": 66,
+  "msg": "turn 66: association_task {'task': 'conservation', 'project': 'P108', 'source': 'play', 'slot': 0, 'bonus': {'type': 'xtoken', 'value': 2}} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association1"
+  ]
+ },
+ {
+  "game": "790170866",
+  "turn": 39,
+  "msg": "turn 39: association_task {'task': 'conservation', 'project': 'P101', 'source': 'play', 'slot': 1, 'bonus': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "790191492",
+  "turn": 19,
+  "msg": "turn 19: .players[0].money: engine 21 != replay 23; .players[1].money: engine 14 != replay 18",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "790810860",
+  "turn": 28,
+  "msg": "turn 28: play_sponsor {'card': 'S281', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "790810860",
+  "turn": 34,
+  "msg": "turn 34: play_sponsor {'card': 'S206', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "790810860",
+  "turn": 48,
+  "msg": "turn 48: play_sponsor {'card': 'S223', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "790810860",
+  "turn": 73,
+  "msg": "turn 73: a mandatory effect is still pending: [{'kind': 'gain', 'source': 'A459', 'res': 'reputation', 'n': 1, 'optional': False}]",
+  "animals": [
+   "A475",
+   "A459"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "791295095",
+  "turn": 25,
+  "msg": "turn 25: .players[0].tokens: engine [('fac-rep-hand', 'university_1'), ('fac-science-marine', 'university_2'), ('token', 'P131_LargeAnimals_2'), ('worker', 'association_5'), ('worker', 'supply_1'), ('worker', 'supply_2'), ('worker', 'supply_3')] != replay [('fac-rep-hand', 'university_1'), ('fac-sci",
+  "animals": [],
+  "chosen": [
+   "Association3"
+  ]
+ },
+ {
+  "game": "791295095",
+  "turn": 43,
+  "msg": "turn 43: .display: engine ['A434', 'A506', 'S255', 'A511', 'A539', 'A466'] != replay ['A477', 'A434', None, 'A506', 'S255', 'A511']; .main_deck: engine ['A480', 'A475', 'S264', 'A453', 'S214', 'S262', 'A557', 'S253', 'S213', 'A543', 'S237', 'A508', 'A503', 'A440', 'A456', 'A542', 'S272', 'A406', 'A5",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "791295095",
+  "turn": 35,
+  "msg": "turn 35: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "791338307",
+  "turn": 43,
+  "msg": "turn 43: .players[0].appeal: engine 33 != replay 35",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "791338307",
+  "turn": 55,
+  "msg": "turn 55: .players[0].money: engine 7 != replay 10",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "792169867",
+  "turn": 14,
+  "msg": "turn 14: perform a task first",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "792169867",
+  "turn": 48,
+  "msg": "turn 48: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "792633294",
+  "turn": 33,
+  "msg": "turn 33: .active_player: engine 1 != replay 0; .turn: engine 31 != replay 30",
+  "animals": [],
+  "chosen": [
+   "Sponsors2"
+  ]
+ },
+ {
+  "game": "792633294",
+  "turn": 42,
+  "msg": "turn 42: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "792633294",
+  "turn": 59,
+  "msg": "turn 59: association_task {'task': 'conservation', 'project': 'P133', 'source': 'play', 'slot': 1, 'bonus': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "793048470",
+  "turn": 20,
+  "msg": "turn 20: play_animal {'card': 'A465', 'from_display': False, 'x': 0, 'y': 5} not in legal_actions",
+  "animals": [
+   "A458",
+   "A465"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "793537146",
+  "turn": 10,
+  "msg": "turn 10: .players[1].action_cards: engine [('build', 0, 1, ()), ('animals', 0, 1, ()), ('sponsors', 4, 1, ()), ('cards', 2, 1, ()), ('association', 0, 1, ())] != replay [('animals', 0, 1, ()), ('build', 0, 1, ()), ('sponsors', 4, 1, ()), ('cards', 2, 1, ()), ('association', 0, 1, ())]",
+  "animals": [
+   "A502"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "793949124",
+  "turn": 32,
+  "msg": "turn 32: .players[0].action_cards: engine [('sponsors', 0, 2, ()), ('animals', 0, 1, ()), ('build', 0, 1, ()), ('cards', 2, 1, ()), ('association', 3, 1, ())] != replay [('animals', 0, 1, ()), ('build', 0, 1, ()), ('cards', 2, 1, ()), ('sponsors', 0, 2, ()), ('association', 3, 1, ())]",
+  "animals": [
+   "A556",
+   "A536"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "793949124",
+  "turn": 51,
+  "msg": "turn 51: .active_player: engine 0 != replay 1; .turn: engine 46 != replay 45",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "793949124",
+  "turn": 35,
+  "msg": "turn 35: place_building {'type': 'penguin', 'x': 0, 'y': 7, 'rotation': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "793949124",
+  "turn": 50,
+  "msg": "turn 50: play_animal {'card': 'A498', 'from_display': False, 'x': 1, 'y': 10} not in legal_actions",
+  "animals": [
+   "A485",
+   "A498"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "793949124",
+  "turn": 58,
+  "msg": "turn 58: choose_effect {'type': 'sponsors'} not in legal_actions",
+  "animals": [
+   "A499",
+   "A537"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "793949124",
+  "turn": 71,
+  "msg": "turn 71: a mandatory effect is still pending: [{'kind': 'gain', 'source': 'A435', 'res': 'reputation', 'n': 1, 'optional': False}]",
+  "animals": [
+   "A409",
+   "A435"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "794174663",
+  "turn": 16,
+  "msg": "turn 16: .players[1].money: engine 11 != replay 6; placements after move 63: size-1: engine-only [(4, 3, 0), (5, 0, 0), (7, 0, 0)] bga-only [(3, 0, 0), (6, 7, 0)]",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "794533083",
+  "turn": 43,
+  "msg": "turn 43: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "794533083",
+  "turn": 64,
+  "msg": "turn 64: choose_effect {'bonus_type': 'size-3', 'n': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association3"
+  ]
+ },
+ {
+  "game": "795240335",
+  "turn": 3,
+  "msg": "turn 3: .players[1].appeal: engine 1 != replay 4",
+  "animals": [],
+  "chosen": [
+   "Sponsors3"
+  ]
+ },
+ {
+  "game": "795240335",
+  "turn": 9,
+  "msg": "turn 9: play_animal {'card': 'A435', 'from_display': False, 'x': 4, 'y': 5} not in legal_actions",
+  "animals": [
+   "A435"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "795621374",
+  "turn": 43,
+  "msg": "turn 43: .projects_in_play: engine ['P128', 'P118'] != replay ['P118', 'P128']",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "795715523",
+  "turn": 58,
+  "msg": "turn 58: .active_player: engine 0 != replay 1; .turn: engine 52 != replay 51",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "795743721",
+  "turn": 37,
+  "msg": "turn 37: association_task {'task': 'conservation', 'project': 'P102', 'source': 'play', 'slot': 1, 'bonus': 4} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "795750526",
+  "turn": 32,
+  "msg": "turn 32: play_sponsor {'card': 'S257', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "795750526",
+  "turn": 40,
+  "msg": "turn 40: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "795750526",
+  "turn": 44,
+  "msg": "turn 44: play_sponsor {'card': 'S272', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "795750526",
+  "turn": 53,
+  "msg": "turn 53: play_sponsor {'card': 'S213', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "796192448",
+  "turn": 6,
+  "msg": "turn 6: placements after move 13: large-aquarium: engine-only [(1, 6, 1), (1, 6, 5), (3, 0, 2)] bga-only []; small-aquarium: engine-only [(2, 5, 5), (2, 7, 4), (3, 2, 5)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "796192448",
+  "turn": 9,
+  "msg": "turn 9: placements after move 23: large-aquarium: engine-only [(1, 6, 1), (1, 10, 5), (2, 1, 2)] bga-only []; small-aquarium: engine-only [(0, 1, 4), (0, 1, 5), (0, 7, 0)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "796192448",
+  "turn": 16,
+  "msg": "turn 16: placements after move 49: large-aquarium: engine-only [(1, 6, 1), (1, 6, 5), (3, 12, 4)] bga-only []; small-aquarium: engine-only [(2, 5, 5), (2, 7, 4), (3, 6, 1)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "796192448",
+  "turn": 19,
+  "msg": "turn 19: placements after move 55: large-aquarium: engine-only [(2, 3, 5)] bga-only []; small-aquarium: engine-only [(3, 2, 5), (3, 4, 4), (4, 3, 0)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "796192448",
+  "turn": 28,
+  "msg": "turn 28: placements after move 85: small-aquarium: engine-only [(1, 0, 5), (1, 2, 4), (1, 2, 5)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "796192448",
+  "turn": 63,
+  "msg": "turn 63: association_task {'task': 'conservation', 'project': 'P103', 'source': 'play', 'slot': 0, 'bonus': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "796266447",
+  "turn": 5,
+  "msg": "turn 5: place_building {'type': 'owl', 'x': 8, 'y': 3, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "796266447",
+  "turn": 17,
+  "msg": "turn 17: place_building {'type': 'polar-bear', 'x': 7, 'y': 4, 'rotation': 2} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "796972675",
+  "turn": 3,
+  "msg": "turn 3: place_building {'type': 'zoo-school', 'x': 0, 'y': 1, 'rotation': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "797138724",
+  "turn": 15,
+  "msg": "turn 15: .projects_in_play: engine ['P129', 'P114'] != replay ['P114', 'P129']",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "797350569",
+  "turn": 3,
+  "msg": "turn 3: placements after move 11: small-aquarium: engine-only [(0, 3, 4), (0, 7, 0), (0, 7, 4)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "797350569",
+  "turn": 6,
+  "msg": "turn 6: placements after move 19: large-aquarium: engine-only [(1, 0, 1), (1, 12, 5), (2, 7, 4)] bga-only []; small-aquarium: engine-only [(0, 3, 4), (0, 7, 0), (0, 7, 4)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "797350569",
+  "turn": 12,
+  "msg": "turn 12: placements after move 38: small-aquarium: engine-only [(1, 2, 4), (1, 6, 4), (2, 1, 1)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "797350569",
+  "turn": 13,
+  "msg": "turn 13: placements after move 40: small-aquarium: engine-only [(2, 5, 4), (3, 4, 0), (3, 4, 1)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "797350569",
+  "turn": 23,
+  "msg": "turn 23: placements after move 65: large-aquarium: engine-only [(1, 0, 1), (3, 6, 2), (3, 8, 1)] bga-only []; small-aquarium: engine-only [(1, 6, 4), (2, 5, 0), (2, 5, 1)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "797350569",
+  "turn": 31,
+  "msg": "turn 31: placements after move 99: small-aquarium: engine-only [(1, 6, 4), (1, 6, 5), (2, 5, 0)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "797350569",
+  "turn": 41,
+  "msg": "turn 41: placements after move 132: large-aquarium: engine-only [(3, 8, 1), (3, 10, 5), (4, 11, 4)] bga-only []; small-aquarium: engine-only [(1, 2, 4), (1, 6, 4), (1, 6, 5)] bga-only []; placements after move 133: small-aquarium: engine-only [(1, 2, 4), (1, 6, 4), (1, 6, 5)] bga-only []; placements",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "797350569",
+  "turn": 73,
+  "msg": "turn 73: placements after move 298: small-aquarium: engine-only [(7, 8, 0), (7, 8, 5), (7, 10, 3)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "797684147",
+  "turn": 16,
+  "msg": "turn 16: .players[1].reputation: engine 5 != replay 6",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "798300935",
+  "turn": 1,
+  "msg": "turn 1: place_building {'type': 'polar-bear', 'x': 6, 'y': 9, 'rotation': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "798535070",
+  "turn": 20,
+  "msg": "turn 20: .players[1].reputation: engine 1 != replay 2",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "798535070",
+  "turn": 11,
+  "msg": "turn 11: place_building {'type': 'water-playground', 'x': 5, 'y': 12, 'rotation': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "799584838",
+  "turn": 24,
+  "msg": "turn 24: .players[1].action_cards: engine [('association', 0, 1, ()), ('animals', 0, 1, ()), ('build', 0, 1, ()), ('cards', 0, 1, ()), ('sponsors', 0, 1, ())] != replay [('animals', 0, 1, ()), ('build', 0, 1, ()), ('association', 0, 1, ()), ('cards', 0, 1, ()), ('sponsors', 0, 1, ())]",
+  "animals": [
+   "A408"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "799844775",
+  "turn": 36,
+  "msg": "turn 36: .players[1].appeal: engine 27 != replay 26",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "799844775",
+  "turn": 38,
+  "msg": "turn 38: .players[1].x_tokens: engine 2 != replay 1",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "799844775",
+  "turn": 0,
+  "msg": "turn 0: place_building {'type': 'water-playground', 'x': 3, 'y': 10, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "799844775",
+  "turn": 52,
+  "msg": "turn 52: take_cards {'mode': 'deck', 'count': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "800003565",
+  "turn": 1,
+  "msg": "turn 1: place_building {'type': 'water-playground', 'x': 8, 'y': 7, 'rotation': 2} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "800231247",
+  "turn": 40,
+  "msg": "turn 40: .players[1].reputation: engine 7 != replay 9",
+  "animals": [],
+  "chosen": [
+   "Association1"
+  ]
+ },
+ {
+  "game": "800231247",
+  "turn": 55,
+  "msg": "turn 55: .players[1].money: engine 7 != replay 10; .players[1].reputation: engine 9 != replay 11",
+  "animals": [
+   "A482"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "800231247",
+  "turn": 62,
+  "msg": "turn 62: .players[1].money: engine 6 != replay 9",
+  "animals": [
+   "A483"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "800231247",
+  "turn": 72,
+  "msg": "turn 72: .players[1].money: engine 6 != replay 9; .players[1].reputation: engine 9 != replay 11",
+  "animals": [
+   "A443",
+   "A440"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "800231247",
+  "turn": 75,
+  "msg": "turn 75: .projects_in_play: engine ['P133', 'P138'] != replay ['P138', 'P133']",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "800311265",
+  "turn": 3,
+  "msg": "turn 3: place_building {'type': 'aquarium', 'x': 4, 'y': 3, 'rotation': 2} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors3"
+  ]
+ },
+ {
+  "game": "800374204",
+  "turn": 28,
+  "msg": "turn 28: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "800374204",
+  "turn": 38,
+  "msg": "turn 38: take_cards {'mode': 'deck', 'count': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "800452548",
+  "turn": 43,
+  "msg": "turn 43: a mandatory effect is still pending: [{'kind': 'mark', 'source': 'S268', 'optional': False}]",
+  "animals": [
+   "A509"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "800472652",
+  "turn": 65,
+  "msg": "turn 65: place_building {'type': 'zoo-school', 'x': 4, 'y': 11, 'rotation': 2} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "800524938",
+  "turn": 15,
+  "msg": "turn 15: .players[0].appeal: engine 6 != replay 7",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "800524938",
+  "turn": 6,
+  "msg": "turn 6: place_building {'type': 'monkey', 'x': 6, 'y': 11, 'rotation': 3} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "800524938",
+  "turn": 47,
+  "msg": "turn 47: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "800629934",
+  "turn": 45,
+  "msg": "turn 45: .players[1].tokens: engine [('fac-science-marine', 'university_2'), ('fac-science-rep', 'university_1'), ('partner-Americas', 'partner_1'), ('token', 'P104_Americas_0'), ('token', 'P133_SeaAnimals_2'), ('worker', 'association_5'), ('worker', 'supply_1'), ('worker', 'supply_2'), ('worker', '",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "800629934",
+  "turn": 11,
+  "msg": "turn 11: place_building {'type': 'size-2', 'x': 2, 'y': 3, 'rotation': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "800669330",
+  "turn": 19,
+  "msg": "turn 19: .players[0].tokens: engine [('partner-Americas', 'partner_1'), ('token', 'P131_LargeAnimals_2'), ('worker', 'association_5'), ('worker', 'supply_1'), ('worker', 'supply_2'), ('worker', 'supply_3')] != replay [('partner-Americas', 'partner_1'), ('token', 'P131_LargeAnimals_MW_2'), ('worker',",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "800783574",
+  "turn": 60,
+  "msg": "turn 60: play_animal {'card': 'A483', 'from_display': False, 'x': 5, 'y': 0} not in legal_actions",
+  "animals": [
+   "A542",
+   "A483"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "800896521",
+  "turn": 2,
+  "msg": "turn 2: place_building {'type': 'zoo-school', 'x': 3, 'y': 0, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "800896521",
+  "turn": 13,
+  "msg": "turn 13: place_building {'type': 'adventure', 'x': 4, 'y': 3, 'rotation': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "800896521",
+  "turn": 19,
+  "msg": "turn 19: choose_effect {'keep': 'S279'} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "800933848",
+  "turn": 16,
+  "msg": "turn 16: perform a task first",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "800980926",
+  "turn": 66,
+  "msg": "turn 66: .players[1].reputation: engine 5 != replay 6",
+  "animals": [],
+  "chosen": [
+   "Build"
+  ]
+ },
+ {
+  "game": "800980926",
+  "turn": 22,
+  "msg": "turn 22: association_task {'task': 'conservation', 'project': 'P106', 'source': 'play', 'slot': 2, 'bonus': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association1"
+  ]
+ },
+ {
+  "game": "801039788",
+  "turn": 0,
+  "msg": "turn 0: place_building {'type': 'monkey', 'x': 8, 'y': 5, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "801039788",
+  "turn": 82,
+  "msg": "turn 82: play_sponsor {'card': 'S256', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "801051135",
+  "turn": 30,
+  "msg": "turn 30: .players[0].reputation: engine 3 != replay 4",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "801051135",
+  "turn": 71,
+  "msg": "turn 71: association_task {'task': 'conservation', 'project': 'P106', 'source': 'play', 'slot': 0, 'bonus': 6} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "801053808",
+  "turn": 47,
+  "msg": "turn 47: perform a task first",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "801075869",
+  "turn": 71,
+  "msg": "turn 71: .players[0].reputation: engine 15 != replay 16",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "801082957",
+  "turn": 3,
+  "msg": "turn 3: .players[1].action_cards: engine [('cards', 0, 1, ()), ('animals', 0, 1, ()), ('build', 2, 1, ()), ('sponsors', 1, 1, ()), ('association', 0, 1, ())] != replay [('animals', 0, 1, ()), ('build', 2, 1, ()), ('cards', 0, 1, ()), ('sponsors', 1, 1, ()), ('association', 0, 1, ())]",
+  "animals": [
+   "A466"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "801082957",
+  "turn": 46,
+  "msg": "turn 46: association_task {'task': 'conservation', 'project': 'P106', 'source': 'play', 'slot': 0, 'bonus': 2} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "801084865",
+  "turn": 44,
+  "msg": "turn 44: association_task {'task': 'conservation', 'project': 'P103', 'source': 'play', 'slot': 0, 'bonus': {'type': 'Snapping'}} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association3"
+  ]
+ },
+ {
+  "game": "801090816",
+  "turn": 12,
+  "msg": "turn 12: .players[0].money: engine 16 != replay 18",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "801090816",
+  "turn": 73,
+  "msg": "turn 73: .players[1].x_tokens: engine 2 != replay 1; placements after move 283: entrance: engine-only [(0, 11, 0), (1, 12, 3), (1, 12, 5)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "801090816",
+  "turn": 3,
+  "msg": "turn 3: place_building {'type': 'adventure', 'x': 5, 'y': 6, 'rotation': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "801090816",
+  "turn": 10,
+  "msg": "turn 10: play_animal {'card': 'A408', 'from_display': False, 'x': 0, 'y': 9} not in legal_actions",
+  "animals": [
+   "A450",
+   "A408"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "801090816",
+  "turn": 31,
+  "msg": "turn 31: place_building {'type': 'sea-turtle', 'x': 4, 'y': 3, 'rotation': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "830477397",
+  "turn": 9,
+  "msg": "turn 9: perform a task first",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "830477397",
+  "turn": 14,
+  "msg": "turn 14: choose_effect {'keep': None} not in legal_actions",
+  "animals": [
+   "A537"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "830477397",
+  "turn": 18,
+  "msg": "turn 18: choose_effect {'keep': 'S229'} not in legal_actions",
+  "animals": [
+   "A545"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "830485382",
+  "turn": 38,
+  "msg": "turn 38: placements after move 144: ; placements after move 145: ",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "830485382",
+  "turn": 12,
+  "msg": "turn 12: perform a task first",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "830485382",
+  "turn": 26,
+  "msg": "turn 26: perform a task first",
+  "animals": [],
+  "chosen": [
+   "Association4"
+  ]
+ },
+ {
+  "game": "830941401",
+  "turn": 66,
+  "msg": "turn 66: .players[0].tokens: engine [('fac-rep-hand', 'university_3'), ('fac-science-bird', 'university_1'), ('fac-science-rep', 'university_2'), ('partner-Americas', 'partner_1'), ('token', 'P102_HabitatDiversity_0'), ('token', 'P112_Birds_2'), ('token', 'P131_LargeAnimals_1'), ('worker', 'associat",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "830941401",
+  "turn": 24,
+  "msg": "turn 24: choose_effect {'hire': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "840844588",
+  "turn": 35,
+  "msg": "turn 35: association_task {'task': 'conservation', 'project': 'P102', 'source': 'play', 'slot': 0, 'bonus': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "845311539",
+  "turn": 8,
+  "msg": "turn 8: place_building {'type': 'size-1', 'x': 8, 'y': 5, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "845311539",
+  "turn": 14,
+  "msg": "turn 14: place_building {'type': 'size-1', 'x': 8, 'y': 7, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors4"
+  ]
+ },
+ {
+  "game": "845311539",
+  "turn": 29,
+  "msg": "turn 29: place_building {'type': 'size-1', 'x': 4, 'y': 7, 'rotation': 0} not in legal_actions",
+  "animals": [
+   "A485",
+   "A538"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "846167123",
+  "turn": 12,
+  "msg": "turn 12: .players[1].hand: engine ['A451', 'P127'] != replay ['A451', 'A554', 'P127']; .players[1].marks: engine [(1, 'A554')] != replay []; .display: engine ['A472', 'A448', 'A410', 'A405', 'A554', 'A495'] != replay ['A472', 'A448', 'A410', 'A405', 'A495', 'P129']",
+  "animals": [
+   "A473",
+   "A524"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "846167123",
+  "turn": 86,
+  "msg": "turn 86: choose_effect {'boost': 'sponsors'} not in legal_actions",
+  "animals": [
+   "A429"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "851291351",
+  "turn": 73,
+  "msg": "turn 73: .projects_in_play: engine ['P128', 'P126'] != replay ['P126', 'P128']",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "851291351",
+  "turn": 29,
+  "msg": "turn 29: association_task {'task': 'conservation', 'project': 'P101', 'source': 'play', 'slot': 0, 'bonus': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "851376088",
+  "turn": 31,
+  "msg": "turn 31: placements after move 131: ; placements after move 132: ",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "851376088",
+  "turn": 43,
+  "msg": "turn 43: .players[1].tokens: engine [('partner-Africa', 'partner_2'), ('partner-Europe', 'partner_1'), ('token', 'P107_Europe_0'), ('token', 'P131_LargeAnimals_0'), ('worker', 'association_5'), ('worker', 'reserve'), ('worker', 'supply_2'), ('worker', 'supply_3')] != replay [('partner-Africa', 'part",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "851610592",
+  "turn": 11,
+  "msg": "turn 11: .active_player: engine 0 != replay 1; .turn: engine 10 != replay 9",
+  "animals": [],
+  "chosen": [
+   "Cards"
+  ]
+ },
+ {
+  "game": "851610592",
+  "turn": 14,
+  "msg": "turn 14: .players[0].money: engine 29 != replay 34; .players[1].money: engine 26 != replay 28",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "851610592",
+  "turn": 29,
+  "msg": "turn 29: .players[1].appeal: engine 8 != replay 12",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "851610592",
+  "turn": 66,
+  "msg": "turn 66: placements after move 271: entrance: engine-only [(5, 0, 0), (6, 1, 3)] bga-only []",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "851610592",
+  "turn": 0,
+  "msg": "turn 0: place_building {'type': 'water-playground', 'x': 1, 'y': 6, 'rotation': 2} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "851610592",
+  "turn": 3,
+  "msg": "turn 3: place_building {'type': 'hyena', 'x': 2, 'y': 5, 'rotation': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "851610592",
+  "turn": 8,
+  "msg": "turn 8: play_sponsor {'card': 'S245', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "851610592",
+  "turn": 60,
+  "msg": "turn 60: place_building {'type': 'penguin', 'x': 5, 'y': 8, 'rotation': 2} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "851639241",
+  "turn": 44,
+  "msg": "turn 44: take_cards {'mode': 'deck', 'count': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association3"
+  ]
+ },
+ {
+  "game": "852321139",
+  "turn": 9,
+  "msg": "turn 9: .players[1].hand: engine ['A510', 'S201', 'S251', 'S274'] != replay ['A450', 'A510', 'S201', 'S251', 'S274']; .players[1].appeal: engine 6 != replay 8; .players[1].marks: engine [(1, 'A450')] != replay []",
+  "animals": [
+   "A544"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "852321139",
+  "turn": 30,
+  "msg": "turn 30: take_cards {'mode': 'snap', 'card': 'A407'} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "852321139",
+  "turn": 46,
+  "msg": "turn 46: play_sponsor {'card': 'S245', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "852321139",
+  "turn": 52,
+  "msg": "turn 52: play_sponsor {'card': 'S204', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "852321139",
+  "turn": 60,
+  "msg": "turn 60: play_sponsor {'card': 'S241', 'from_display': False} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "852321139",
+  "turn": 64,
+  "msg": "turn 64: play_sponsor {'card': 'S228', 'from_display': True} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "852628736",
+  "turn": 26,
+  "msg": "turn 26: .players[1].action_cards: engine [('association', 0, 1, ()), ('animals', 0, 1, ()), ('cards', 0, 1, ()), ('build', 2, 2, ()), ('sponsors', 2, 2, ())] != replay [('animals', 0, 1, ()), ('association', 0, 1, ()), ('cards', 0, 1, ()), ('build', 2, 2, ()), ('sponsors', 2, 2, ())]",
+  "animals": [
+   "A408",
+   "A533"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "852754803",
+  "turn": 0,
+  "msg": "turn 0: place_building {'type': 'monkey', 'x': 1, 'y': 10, 'rotation': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "852754803",
+  "turn": 29,
+  "msg": "turn 29: place_building {'type': 'penguin', 'x': 2, 'y': 1, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "888587994",
+  "turn": 95,
+  "msg": "turn 95: association_task {'task': 'conservation', 'project': 'P112', 'source': 'play', 'slot': 2, 'bonus': {'type': 'xtoken', 'value': 2}} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ },
+ {
+  "game": "893574750",
+  "turn": 2,
+  "msg": "turn 2: place_building {'type': 'arcade', 'x': 0, 'y': 9, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "897585112",
+  "turn": 26,
+  "msg": "turn 26: placements after move 111: ; placements after move 112: ",
+  "animals": [],
+  "chosen": [
+   "Association3"
+  ]
+ },
+ {
+  "game": "903548562",
+  "turn": 28,
+  "msg": "turn 28: .players[0].appeal: engine 10 != replay 14",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "903548562",
+  "turn": 44,
+  "msg": "turn 44: .players[0].money: engine 8 != replay 3",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "903714215",
+  "turn": 4,
+  "msg": "turn 4: .players[1].reputation: engine 1 != replay 2; placements after move 23: size-1: engine-only [(0, 11, 0), (1, 12, 0), (2, 11, 0)] bga-only [(0, 5, 0), (0, 7, 0), (2, 1, 0)]",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "903714215",
+  "turn": 11,
+  "msg": "turn 11: choose_effect {'keep': 'S246'} not in legal_actions",
+  "animals": [
+   "A532",
+   "A537"
+  ],
+  "chosen": [
+   "Animals"
+  ]
+ },
+ {
+  "game": "903714215",
+  "turn": 29,
+  "msg": "turn 29: place_building {'type': 'hyena', 'x': 4, 'y': 7, 'rotation': 5} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "903714215",
+  "turn": 59,
+  "msg": "turn 59: place_building {'type': 'underwater-tunnel', 'x': 6, 'y': 3, 'rotation': 1} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors"
+  ]
+ },
+ {
+  "game": "904792899",
+  "turn": 34,
+  "msg": "turn 34: place_building {'type': 'kiosk', 'x': 0, 'y': 5, 'rotation': 0} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "904792899",
+  "turn": 69,
+  "msg": "turn 69: place_building {'type': 'monkey', 'x': 5, 'y': 12, 'rotation': 2} not in legal_actions",
+  "animals": [],
+  "chosen": [
+   "Sponsors1"
+  ]
+ },
+ {
+  "game": "905640765",
+  "turn": 30,
+  "msg": "turn 30: .players[0].tokens: engine [('fac-science-rep', 'university_1'), ('fac-science-science', 'university_2'), ('token', 'P131_LargeAnimals_2'), ('worker', 'association_5'), ('worker', 'reserve'), ('worker', 'supply_2'), ('worker', 'supply_3')] != replay [('fac-science-rep', 'university_1'), ('f",
+  "animals": [],
+  "chosen": [
+   "Association"
+  ]
+ }
+]

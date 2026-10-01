@@ -1,0 +1,140 @@
+{
+    "1": {
+        "verified": true,
+        "last_worker": 0,
+        "partner4": 2,
+        "university3": 1
+    },
+    "1a": {
+        "verified": true,
+        "last_worker": 0,
+        "partner4": 2,
+        "university3": 1
+    },
+    "2": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 0,
+        "university3": 2
+    },
+    "2a": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 0,
+        "university3": 2
+    },
+    "3": {
+        "verified": true,
+        "last_worker": 0,
+        "partner4": 1,
+        "university3": 2
+    },
+    "3a": {
+        "verified": true,
+        "last_worker": 0,
+        "partner4": 1,
+        "university3": 2
+    },
+    "4": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 1,
+        "university3": 1
+    },
+    "4a": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 1,
+        "university3": 1
+    },
+    "5": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 2,
+        "university3": 0
+    },
+    "5a": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 2,
+        "university3": 0
+    },
+    "6": {
+        "verified": true,
+        "last_worker": 2,
+        "partner4": 1,
+        "university3": 0
+    },
+    "6a": {
+        "verified": true,
+        "last_worker": 2,
+        "partner4": 1,
+        "university3": 0
+    },
+    "7": {
+        "verified": true,
+        "last_worker": 2,
+        "partner4": 0,
+        "university3": 1
+    },
+    "7a": {
+        "verified": true,
+        "last_worker": 2,
+        "partner4": 0,
+        "university3": 1
+    },
+    "8": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 1,
+        "university3": 1
+    },
+    "8a": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 1,
+        "university3": 1
+    },
+    "9": {
+        "verified": true,
+        "last_worker": 0,
+        "partner4": 2,
+        "university3": 1
+    },
+    "10": {
+        "verified": true,
+        "last_worker": 2,
+        "partner4": 1,
+        "university3": 0
+    },
+    "11": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 1,
+        "university3": 0
+    },
+    "12": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 2,
+        "university3": 0
+    },
+    "13": {
+        "verified": true,
+        "last_worker": 0,
+        "partner4": 1,
+        "university3": 2
+    },
+    "14": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 1,
+        "university3": 1
+    },
+    "T1": {
+        "verified": true,
+        "last_worker": 1,
+        "partner4": 1,
+        "university3": 1
+    }
+}

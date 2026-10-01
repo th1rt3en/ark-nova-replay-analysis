@@ -99,7 +99,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "002",
@@ -183,7 +185,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "003",
@@ -277,7 +281,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "004",
@@ -361,7 +367,9 @@
                     "conservationPoint": 1
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "005",
@@ -455,7 +463,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "006",
@@ -531,7 +541,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "007",
@@ -607,7 +619,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "008",
@@ -701,7 +715,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "009",
@@ -745,7 +761,9 @@
                     "conservationPoint": 1
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "010",
@@ -839,7 +857,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "011",
@@ -933,7 +953,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "012",
@@ -1009,7 +1031,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "013",
@@ -1085,7 +1109,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "014",
@@ -1161,7 +1187,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "015",
@@ -1237,7 +1265,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "016",
@@ -1313,7 +1343,9 @@
                     "conservationPoint": 4
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     },
     {
         "id": "017",
@@ -1357,6 +1389,8 @@
                     "conservationPoint": 1
                 }
             ]
-        }
+        },
+        "active": true,
+        "deck": "endgame"
     }
 ]

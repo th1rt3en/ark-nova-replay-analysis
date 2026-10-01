@@ -7,6 +7,7 @@ import { MapBoards } from '@/data/MapBoards';
 import { AlternativeMapBoards } from '@/data/AlternativeMapBoards';
 import { PROJECT_BONUSES } from '@/data/ProjectBonuses';
 import { cardNames } from '@/data/CardNames';
+import { ACTION_CARD_DESCRIPTIONS } from '@/data/ActionCardDescriptions';
 
 process.stdout.write(
   JSON.stringify({
@@ -17,5 +18,6 @@ process.stdout.write(
     maps: [...MapBoards, ...AlternativeMapBoards],
     projectBonuses: PROJECT_BONUSES,
     cardNames,
+    actionCards: ACTION_CARD_DESCRIPTIONS,
   }),
 );

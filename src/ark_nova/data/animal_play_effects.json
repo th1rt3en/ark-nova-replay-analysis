@@ -1,0 +1,1480 @@
+{
+    "A401": {
+        "name": "CHEETAH",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "pDrawCards": 9,
+            "pDiscardCards": 1
+        }
+    },
+    "A402": {
+        "name": "LION",
+        "kind": "complex",
+        "plays": 7,
+        "events": {
+            "pDrawCards": 1,
+            "pDiscardCards": 1,
+            "shift": 1
+        }
+    },
+    "A403": {
+        "name": "LEOPARD",
+        "kind": "complex",
+        "plays": 7,
+        "events": {
+            "pDrawCards": 7,
+            "pDiscardCards": 7,
+            "gainMarked": 1
+        }
+    },
+    "A404": {
+        "name": "CARACAL",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "pDrawCards": 14,
+            "pDiscardCards": 15,
+            "gainMarked": 2,
+            "shift": 2
+        }
+    },
+    "A405": {
+        "name": "FENNEC FOX",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "shift": 15
+        }
+    },
+    "A406": {
+        "name": "SIBERIAN TIGER",
+        "kind": "complex",
+        "plays": 8,
+        "events": {
+            "shift": 1,
+            "pDrawCards": 1,
+            "pDiscardCards": 1
+        }
+    },
+    "A407": {
+        "name": "SUMATRAN TIGER",
+        "kind": "complex",
+        "plays": 22,
+        "events": {
+            "endOfGame": 2,
+            "snapCard": 1,
+            "shift": 1,
+            "pDrawCards": 1,
+            "pDiscardCards": 2
+        }
+    },
+    "A408": {
+        "name": "SLOTH BEAR",
+        "kind": "complex",
+        "plays": 18,
+        "events": {
+            "shift": 11
+        }
+    },
+    "A409": {
+        "name": "SUN BEAR",
+        "kind": "complex",
+        "plays": 28,
+        "events": {
+            "shift": 1,
+            "pDrawCards": 5,
+            "pDiscardCards": 5,
+            "snapCard": 1,
+            "endOfGame": 1
+        }
+    },
+    "A410": {
+        "name": "YELLOW-THROATED MARTEN",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "pDrawCards": 20,
+            "pDiscardCards": 20,
+            "gainMarked": 1
+        }
+    },
+    "A411": {
+        "name": "GRIZZLY BEAR",
+        "kind": "fixed",
+        "plays": 8,
+        "gain": {}
+    },
+    "A412": {
+        "name": "JAGUAR",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "pDrawCards": 14,
+            "pDiscardCards": 15,
+            "shift": 3,
+            "gainMarked": 1
+        }
+    },
+    "A413": {
+        "name": "COUGAR",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "advanceBreak": 14,
+            "shift": 1,
+            "pDrawCards": 2,
+            "pDiscardCards": 2
+        }
+    },
+    "A414": {
+        "name": "SOUTH AMERICAN COATI",
+        "kind": "fixed",
+        "plays": 20,
+        "gain": {}
+    },
+    "A415": {
+        "name": "RACCOON",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "pDrawCards": 4,
+            "pDiscardCards": 4,
+            "shift": 11,
+            "gainMarked": 1
+        }
+    },
+    "A416": {
+        "name": "EURASIAN BROWN BEAR",
+        "kind": "fixed",
+        "plays": 9,
+        "gain": {}
+    },
+    "A417": {
+        "name": "WOLF",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "pDrawCards": 2,
+            "pDiscardCards": 2
+        }
+    },
+    "A418": {
+        "name": "EURASIAN LYNX",
+        "kind": "fixed",
+        "plays": 5,
+        "gain": {}
+    },
+    "A419": {
+        "name": "EUROPEAN BADGER",
+        "kind": "complex",
+        "plays": 12,
+        "events": {
+            "shift": 4,
+            "pDrawCards": 1,
+            "pDiscardCards": 1
+        }
+    },
+    "A420": {
+        "name": "STOAT",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "pDrawCards": 9,
+            "pDiscardCards": 9,
+            "gainMarked": 1
+        }
+    },
+    "A421": {
+        "name": "NEW ZEALAND FUR SEAL",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "pDrawCards": 3,
+            "endOfGame": 1,
+            "pDiscardCards": 1
+        }
+    },
+    "A422": {
+        "name": "AUSTRALIAN SEA LION",
+        "kind": "complex",
+        "plays": 8,
+        "events": {
+            "pDiscardCards": 6,
+            "increaseSize": 1,
+            "endOfGame": 1
+        }
+    },
+    "A423": {
+        "name": "NEW ZEALAND SEA LION",
+        "kind": "fixed",
+        "plays": 12,
+        "gain": {}
+    },
+    "A424": {
+        "name": "AUSTRALIAN DINGO",
+        "kind": "fixed",
+        "plays": 13,
+        "gain": {}
+    },
+    "A425": {
+        "name": "TASMANIAN DEVIL",
+        "kind": "complex",
+        "plays": 29,
+        "events": {
+            "snapCard": 1,
+            "pDiscardCards": 29,
+            "shift": 5,
+            "increaseSize": 2,
+            "pDrawCards": 2
+        }
+    },
+    "A426": {
+        "name": "AFRICAN BUSH ELEPHANT",
+        "kind": "complex",
+        "plays": 18,
+        "events": {
+            "pDrawCards": 18,
+            "pDiscardCards": 18,
+            "snapCard": 3,
+            "endOfGame": 2,
+            "playSponsor": 1
+        }
+    },
+    "A427": {
+        "name": "WHITE RHINOCEROS",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "pDrawCards": 21,
+            "endOfGame": 1,
+            "playSponsor": 1
+        }
+    },
+    "A428": {
+        "name": "GIRAFFE",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "shift": 8,
+            "endOfGame": 1
+        }
+    },
+    "A429": {
+        "name": "GREVY'S ZEBRA",
+        "kind": "complex",
+        "plays": 11,
+        "events": {
+            "shift": 6,
+            "snapCard": 1
+        }
+    },
+    "A430": {
+        "name": "PYGMY HIPPOPOTAMUS",
+        "kind": "fixed",
+        "plays": 14,
+        "gain": {}
+    },
+    "A431": {
+        "name": "ASIAN ELEPHANT",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "playSponsor": 2,
+            "pDrawCards": 15,
+            "pDiscardCards": 15
+        }
+    },
+    "A432": {
+        "name": "INDIAN RHINOCEROS",
+        "kind": "complex",
+        "plays": 23,
+        "events": {
+            "pDrawCards": 23,
+            "shift": 2,
+            "snapCard": 1
+        }
+    },
+    "A433": {
+        "name": "GIANT PANDA",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "pDiscardCards": 2,
+            "snapCard": 2,
+            "shift": 4,
+            "pDrawCards": 2,
+            "endOfGame": 1,
+            "discardCardsOnDisplay": 2
+        }
+    },
+    "A434": {
+        "name": "RED PANDA",
+        "kind": "fixed",
+        "plays": 31,
+        "gain": {}
+    },
+    "A435": {
+        "name": "MALAYAN TAPIR",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "discardCardsOnDisplay": 22,
+            "pDiscardCards": 35,
+            "pDrawCards": 36,
+            "endOfGame": 1
+        }
+    },
+    "A436": {
+        "name": "AMERICAN BISON",
+        "kind": "fixed",
+        "plays": 7,
+        "gain": {}
+    },
+    "A437": {
+        "name": "MUSKOX",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "sponsorMagnet": 10
+        }
+    },
+    "A438": {
+        "name": "REINDEER",
+        "kind": "fixed",
+        "plays": 11,
+        "gain": {}
+    },
+    "A439": {
+        "name": "LAMA",
+        "kind": "fixed",
+        "plays": 15,
+        "gain": {}
+    },
+    "A440": {
+        "name": "MOUNTAIN TAPIR",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "discardCardsOnDisplay": 22,
+            "markAssign": 2,
+            "pDiscardCards": 20,
+            "pDrawCards": 21,
+            "shift": 1
+        }
+    },
+    "A441": {
+        "name": "EUROPEAN BISON",
+        "kind": "complex",
+        "plays": 8,
+        "events": {
+            "sponsorMagnet": 5
+        }
+    },
+    "A442": {
+        "name": "MOOSE",
+        "kind": "fixed",
+        "plays": 11,
+        "gain": {}
+    },
+    "A443": {
+        "name": "RED DEER",
+        "kind": "fixed",
+        "plays": 10,
+        "gain": {}
+    },
+    "A444": {
+        "name": "ALPINE IBEX",
+        "kind": "complex",
+        "plays": 19,
+        "events": {
+            "advanceBreak": 19,
+            "gainMarked": 1
+        }
+    },
+    "A445": {
+        "name": "CRESTED PORCUPINE",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "endOfGame": 1,
+            "discardCardsOnDisplay": 11,
+            "pDiscardCards": 9,
+            "pDrawCards": 9
+        }
+    },
+    "A446": {
+        "name": "DUGONG",
+        "kind": "complex",
+        "plays": 8,
+        "events": {
+            "discardCardsOnDisplay": 9,
+            "pDiscardCards": 17,
+            "pDrawCards": 16
+        }
+    },
+    "A447": {
+        "name": "RED KANGAROO",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "pDiscardCards": 15,
+            "endOfGame": 2
+        }
+    },
+    "A448": {
+        "name": "KOALA",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "pDiscardCards": 13,
+            "snapCard": 1,
+            "pDrawCards": 1
+        }
+    },
+    "A449": {
+        "name": "PLATYPUS",
+        "kind": "fixed",
+        "plays": 18,
+        "gain": {}
+    },
+    "A450": {
+        "name": "COMMON WOMBAT",
+        "kind": "complex",
+        "plays": 20,
+        "events": {
+            "pDiscardCards": 21,
+            "shift": 1,
+            "gainMarked": 1,
+            "increaseSize": 1
+        }
+    },
+    "A451": {
+        "name": "PROBOSCIS MONKEY",
+        "kind": "complex",
+        "plays": 3,
+        "events": {
+            "pDrawCards": 3
+        }
+    },
+    "A452": {
+        "name": "SENEGAL BUSHBABY",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "endOfGame": 3,
+            "shift": 1,
+            "snapCard": 1
+        }
+    },
+    "A453": {
+        "name": "COLLARED MANGABEY",
+        "kind": "fixed",
+        "plays": 12,
+        "gain": {}
+    },
+    "A454": {
+        "name": "RING-TAILED LEMUR",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "pDiscardCards": 12
+        }
+    },
+    "A455": {
+        "name": "MANTLED GUEREZA",
+        "kind": "complex",
+        "plays": 11,
+        "events": {
+            "shift": 11
+        }
+    },
+    "A456": {
+        "name": "BARBARY MACAQUE",
+        "kind": "complex",
+        "plays": 6,
+        "events": {
+            "pilfering": 6,
+            "pDiscardCards": 2,
+            "pDrawCards": 1,
+            "pilferingCard": 1,
+            "pilferingMoney": 5
+        }
+    },
+    "A457": {
+        "name": "MANDRILL",
+        "kind": "complex",
+        "plays": 4,
+        "events": {
+            "endOfGame": 1
+        }
+    },
+    "A458": {
+        "name": "JAPANESE MACAQUE",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "pilfering": 11,
+            "pilferingMoney": 13,
+            "discardCardsOnDisplay": 1,
+            "pDiscardCards": 2,
+            "pDrawCards": 3,
+            "pilferingCard": 2
+        }
+    },
+    "A459": {
+        "name": "RED-SHANKED DOUC",
+        "kind": "fixed",
+        "plays": 11,
+        "gain": {}
+    },
+    "A460": {
+        "name": "DUSKY-LEAF MONKEY",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "shift": 10
+        }
+    },
+    "A461": {
+        "name": "HORSFIELD'S TARSIER",
+        "kind": "complex",
+        "plays": 26,
+        "events": {
+            "advanceBreak": 26,
+            "snapCard": 2,
+            "pDrawCards": 1
+        }
+    },
+    "A462": {
+        "name": "NORTHERN PLAINS GRAY LANGUR",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "advanceBreak": 14,
+            "snapCard": 1,
+            "gainMarked": 1
+        }
+    },
+    "A463": {
+        "name": "PANAMANIAN WHITE-FACED CAPUCHIN",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "pilfering": 10,
+            "pilferingMoney": 7,
+            "pDiscardCards": 3,
+            "pDrawCards": 3,
+            "pilferingCard": 3
+        }
+    },
+    "A464": {
+        "name": "BROWN SPIDER MONKEY",
+        "kind": "fixed",
+        "plays": 6,
+        "gain": {}
+    },
+    "A465": {
+        "name": "GOLDEN LION TAMARIN",
+        "kind": "complex",
+        "plays": 19,
+        "events": {
+            "shift": 15
+        }
+    },
+    "A466": {
+        "name": "BOLIVIAN RED HOWLER",
+        "kind": "complex",
+        "plays": 8,
+        "events": {
+            "shift": 2
+        }
+    },
+    "A467": {
+        "name": "ECUADORIAN SQUIRELL MONKEY",
+        "kind": "complex",
+        "plays": 24,
+        "events": {
+            "shift": 20
+        }
+    },
+    "A468": {
+        "name": "COTTON-TOP TAMARIN",
+        "kind": "complex",
+        "plays": 31,
+        "events": {
+            "playerConcedeGame": 1,
+            "pDrawCards": 4,
+            "pDiscardCards": 1,
+            "shift": 1,
+            "endOfGame": 1
+        }
+    },
+    "A469": {
+        "name": "NILE CROCODILE",
+        "kind": "complex",
+        "plays": 4,
+        "events": {
+            "snapCard": 8,
+            "pDiscardCards": 1
+        }
+    },
+    "A470": {
+        "name": "WESTERN GREEN MAMBA",
+        "kind": "fixed",
+        "plays": 8,
+        "gain": {}
+    },
+    "A471": {
+        "name": "AFRICAN SPURRED TORTOISE",
+        "kind": "complex",
+        "plays": 3,
+        "events": {
+            "pDiscardCards": 1
+        }
+    },
+    "A472": {
+        "name": "ROCK MONITOR",
+        "kind": "complex",
+        "plays": 20,
+        "events": {
+            "pDiscardCards": 16,
+            "gainMarked": 1,
+            "shift": 1
+        }
+    },
+    "A473": {
+        "name": "COMMON AGAMA",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "pDiscardCards": 16,
+            "shift": 2,
+            "gainMarked": 1
+        }
+    },
+    "A474": {
+        "name": "INDIAN ROCK PYTHON",
+        "kind": "complex",
+        "plays": 7,
+        "events": {
+            "snapCard": 1,
+            "shift": 1
+        }
+    },
+    "A475": {
+        "name": "KING COBRA",
+        "kind": "complex",
+        "plays": 25,
+        "events": {
+            "hypnosis": 20,
+            "pDrawCards": 1
+        }
+    },
+    "A476": {
+        "name": "KOMODO DRAGON",
+        "kind": "fixed",
+        "plays": 8,
+        "gain": {}
+    },
+    "A477": {
+        "name": "VEILED CHAMELEON",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "snapCard": 15,
+            "gainMarked": 3
+        }
+    },
+    "A478": {
+        "name": "CHINESE WATER DRAGON",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "pDiscardCards": 15,
+            "shift": 1
+        }
+    },
+    "A479": {
+        "name": "AMERICAN ALLIGATOR",
+        "kind": "complex",
+        "plays": 8,
+        "events": {
+            "snapCard": 8
+        }
+    },
+    "A480": {
+        "name": "BROAD-SNOUTED CAIMAN",
+        "kind": "complex",
+        "plays": 12,
+        "events": {
+            "snapCard": 12,
+            "pDiscardCards": 1
+        }
+    },
+    "A481": {
+        "name": "GALAPAGOS GIANT TORTOISE",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "pDiscardCards": 14,
+            "pDrawCards": 3,
+            "shift": 1,
+            "snapCard": 1,
+            "playerConcedeGame": 1
+        }
+    },
+    "A482": {
+        "name": "ANACONDA",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "gainMarked": 1,
+            "shift": 2,
+            "pDiscardCards": 1
+        }
+    },
+    "A483": {
+        "name": "BOA CONSTRICTOR",
+        "kind": "fixed",
+        "plays": 16,
+        "gain": {}
+    },
+    "A484": {
+        "name": "EUROPEAN POND TURTLE",
+        "kind": "fixed",
+        "plays": 12,
+        "gain": {}
+    },
+    "A485": {
+        "name": "COMMON EUROPEAN ADDER",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "hypnosis": 10
+        }
+    },
+    "A486": {
+        "name": "COMMON WALL LIZARD",
+        "kind": "fixed",
+        "plays": 10,
+        "gain": {}
+    },
+    "A487": {
+        "name": "EUROPEAN GRASS SNAKE",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "shift": 3
+        }
+    },
+    "A488": {
+        "name": "SLOW WORM",
+        "kind": "complex",
+        "plays": 11,
+        "events": {
+            "shift": 3
+        }
+    },
+    "A489": {
+        "name": "SALTWATER CROCODILE",
+        "kind": "complex",
+        "plays": 5,
+        "events": {
+            "snapCard": 10
+        }
+    },
+    "A490": {
+        "name": "GOULD'S MONITOR",
+        "kind": "complex",
+        "plays": 4,
+        "events": {
+            "pDrawCards": 4,
+            "pDiscardCards": 6,
+            "increaseSize": 1,
+            "endOfGame": 1
+        }
+    },
+    "A491": {
+        "name": "FRILLED LIZARD",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "pDrawCards": 15,
+            "pDiscardCards": 2
+        }
+    },
+    "A492": {
+        "name": "INLAND TAIPAN",
+        "kind": "fixed",
+        "plays": 16,
+        "gain": {}
+    },
+    "A493": {
+        "name": "THORNY DEVIL",
+        "kind": "fixed",
+        "plays": 15,
+        "gain": {}
+    },
+    "A494": {
+        "name": "AFRICAN OSTRICH",
+        "kind": "complex",
+        "plays": 4,
+        "events": {
+            "pDrawCards": 4,
+            "shift": 2
+        }
+    },
+    "A495": {
+        "name": "SECRETARY BIRD",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "pDrawCards": 3,
+            "snapCard": 1
+        }
+    },
+    "A496": {
+        "name": "MARABOU",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "pDrawCards": 13,
+            "pDiscardCards": 14,
+            "shift": 1
+        }
+    },
+    "A497": {
+        "name": "LESSER FLAMINGO",
+        "kind": "complex",
+        "plays": 22,
+        "events": {
+            "pDrawCards": 6,
+            "pDiscardCards": 4,
+            "shift": 1,
+            "playerConcedeGame": 1,
+            "snapCard": 2,
+            "playSponsor": 1
+        }
+    },
+    "A498": {
+        "name": "SHOEBILL",
+        "kind": "complex",
+        "plays": 18,
+        "events": {
+            "shift": 4,
+            "pDiscardCards": 2
+        }
+    },
+    "A499": {
+        "name": "CINEREOUS VULTURE",
+        "kind": "complex",
+        "plays": 8,
+        "events": {
+            "pDrawCards": 8,
+            "pDiscardCards": 8
+        }
+    },
+    "A500": {
+        "name": "LONG-BILLED VULTURE",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "pDrawCards": 16,
+            "pDiscardCards": 15,
+            "endOfGame": 3,
+            "shift": 1
+        }
+    },
+    "A501": {
+        "name": "INDIAN PEAFOWL",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "shift": 2,
+            "endOfGame": 1,
+            "discardCardsOnDisplay": 2,
+            "pDrawCards": 1,
+            "pDiscardCards": 1
+        }
+    },
+    "A502": {
+        "name": "GREAT HORNBILL",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "pDrawCards": 4,
+            "pDiscardCards": 4,
+            "shift": 13,
+            "endOfGame": 1
+        }
+    },
+    "A503": {
+        "name": "SNOWY OWL",
+        "kind": "complex",
+        "plays": 5,
+        "events": {
+            "pDrawCards": 6,
+            "pDiscardCards": 6,
+            "snapCard": 1
+        }
+    },
+    "A504": {
+        "name": "ANDEAN CONDOR",
+        "kind": "complex",
+        "plays": 5,
+        "events": {
+            "pDrawCards": 6,
+            "pDiscardCards": 5,
+            "discardCardsOnDisplay": 1,
+            "endOfGame": 1
+        }
+    },
+    "A505": {
+        "name": "BALD EAGLE",
+        "kind": "fixed",
+        "plays": 18,
+        "gain": {}
+    },
+    "A506": {
+        "name": "KING VULTURE",
+        "kind": "complex",
+        "plays": 7,
+        "events": {
+            "pDrawCards": 8,
+            "pDiscardCards": 8,
+            "shift": 1
+        }
+    },
+    "A507": {
+        "name": "GREATER RHEA",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "pDrawCards": 18,
+            "pUnstoreCard": 1,
+            "pDiscardCards": 1
+        }
+    },
+    "A508": {
+        "name": "SCARLET MACAW",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "pStoreCard": 1,
+            "discardCardsOnDisplay": 1,
+            "shift": 1,
+            "pDrawCards": 3,
+            "pDiscardCards": 2,
+            "snapCard": 1,
+            "endOfGame": 1
+        }
+    },
+    "A509": {
+        "name": "GOLDEN EAGLE",
+        "kind": "fixed",
+        "plays": 26,
+        "gain": {}
+    },
+    "A510": {
+        "name": "WHITE STORK",
+        "kind": "fixed",
+        "plays": 4,
+        "gain": {}
+    },
+    "A511": {
+        "name": "GREATER FLAMINGO",
+        "kind": "complex",
+        "plays": 18,
+        "events": {
+            "pStoreCard": 2,
+            "snapCard": 1,
+            "shift": 1
+        }
+    },
+    "A512": {
+        "name": "EURASIAN EAGLE-OWL",
+        "kind": "complex",
+        "plays": 5,
+        "events": {
+            "pDrawCards": 5,
+            "pDiscardCards": 5
+        }
+    },
+    "A513": {
+        "name": "BARN OWL",
+        "kind": "complex",
+        "plays": 21,
+        "events": {
+            "pDrawCards": 22,
+            "pDiscardCards": 22,
+            "gainMarked": 1,
+            "shift": 1,
+            "endOfGame": 1
+        }
+    },
+    "A514": {
+        "name": "EMU",
+        "kind": "complex",
+        "plays": 3,
+        "events": {
+            "moveAnimal": 1,
+            "snapCard": 1
+        }
+    },
+    "A515": {
+        "name": "AUSTRALIAN PELICAN",
+        "kind": "complex",
+        "plays": 7,
+        "events": {
+            "pDiscardCards": 2,
+            "pDrawCards": 1
+        }
+    },
+    "A516": {
+        "name": "NORTHERN CASSOWARY",
+        "kind": "fixed",
+        "plays": 3,
+        "gain": {}
+    },
+    "A517": {
+        "name": "LAUGHING KOOKABURRA",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "endOfGame": 1,
+            "pDrawCards": 2,
+            "pDiscardCards": 4,
+            "increaseSize": 1,
+            "playSponsor": 1,
+            "snapCard": 1
+        }
+    },
+    "A518": {
+        "name": "LESSER BIRD-OF-PARADISE",
+        "kind": "complex",
+        "plays": 16,
+        "events": {
+            "snapCard": 1,
+            "pDiscardCards": 2,
+            "increaseSize": 1,
+            "pStoreCard": 1,
+            "pDrawCards": 1
+        }
+    },
+    "A519": {
+        "name": "(DOMESTIC) GOAT",
+        "kind": "fixed",
+        "plays": 7,
+        "gain": {}
+    },
+    "A520": {
+        "name": "SHEEP",
+        "kind": "fixed",
+        "plays": 6,
+        "gain": {}
+    },
+    "A521": {
+        "name": "HORSE",
+        "kind": "fixed",
+        "plays": 17,
+        "gain": {}
+    },
+    "A522": {
+        "name": "DONKEY",
+        "kind": "fixed",
+        "plays": 12,
+        "gain": {}
+    },
+    "A523": {
+        "name": "DOMESTIC RABBIT",
+        "kind": "fixed",
+        "plays": 12,
+        "gain": {}
+    },
+    "A524": {
+        "name": "MANGALICA",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "discardCardsOnDisplay": 8,
+            "pDiscardCards": 4,
+            "pDrawCards": 4,
+            "snapCard": 1,
+            "markAssign": 1
+        }
+    },
+    "A525": {
+        "name": "GUINEA PIG",
+        "kind": "fixed",
+        "plays": 6,
+        "gain": {}
+    },
+    "A526": {
+        "name": "ALPACA",
+        "kind": "fixed",
+        "plays": 9,
+        "gain": {}
+    },
+    "A527": {
+        "name": "COCONUT LORIKEET",
+        "kind": "fixed",
+        "plays": 4,
+        "gain": {}
+    },
+    "A528": {
+        "name": "BENNETT'S WALLABY",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "pDiscardCards": 11,
+            "snapCard": 1
+        }
+    },
+    "A529": {
+        "name": "MAGNIFICENT SEA ANEMONE",
+        "kind": "complex",
+        "plays": 22,
+        "events": {
+            "shift": 3,
+            "pDrawCards": 6,
+            "discardCardsOnDisplay": 2,
+            "pDiscardCards": 3,
+            "gainMarked": 1,
+            "snapCard": 1
+        }
+    },
+    "A530": {
+        "name": "ORANGE CLOWNFISH",
+        "kind": "complex",
+        "plays": 22,
+        "events": {
+            "shift": 2,
+            "pDrawCards": 7,
+            "pDiscardCards": 1,
+            "snapCard": 1,
+            "discardCardsOnDisplay": 1
+        }
+    },
+    "A531": {
+        "name": "PALETTE SURGEONFISH",
+        "kind": "complex",
+        "plays": 23,
+        "events": {
+            "snapCard": 1,
+            "shift": 4,
+            "discardCardsOnDisplay": 7,
+            "markAssign": 1,
+            "pDrawCards": 1
+        }
+    },
+    "A532": {
+        "name": "ZOOPLANKTON",
+        "kind": "complex",
+        "plays": 6,
+        "events": {
+            "sponsorMagnet": 4,
+            "pDrawCards": 1,
+            "pDiscardCards": 1
+        }
+    },
+    "A533": {
+        "name": "BLACKSIDE HAWKFISH",
+        "kind": "complex",
+        "plays": 16,
+        "events": {
+            "shift": 2,
+            "snapCard": 1,
+            "gainMarked": 1,
+            "pDrawCards": 4,
+            "pDiscardCards": 3
+        }
+    },
+    "A534": {
+        "name": "SOUTHERN BLUE-RINGED OCTOPUS",
+        "kind": "complex",
+        "plays": 15,
+        "events": {
+            "snapCard": 1,
+            "shift": 5,
+            "endOfGame": 1,
+            "pDiscardCards": 1,
+            "increaseSize": 1,
+            "discardCardsOnDisplay": 2,
+            "gainMarked": 1
+        }
+    },
+    "A535": {
+        "name": "SHARKNOSE GOBY",
+        "kind": "complex",
+        "plays": 16,
+        "events": {
+            "discardCardsOnDisplay": 2,
+            "pDrawCards": 6,
+            "pDiscardCards": 4,
+            "playSponsor": 2,
+            "shift": 1
+        }
+    },
+    "A536": {
+        "name": "LONGHORN COWFISH",
+        "kind": "complex",
+        "plays": 12,
+        "events": {
+            "shift": 8
+        }
+    },
+    "A537": {
+        "name": "BLACKBAR TRIGGERFISH",
+        "kind": "complex",
+        "plays": 28,
+        "events": {
+            "snapCard": 14,
+            "pDrawCards": 18,
+            "shift": 2,
+            "gainMarked": 2,
+            "pDiscardCards": 4,
+            "discardCardsOnDisplay": 1
+        }
+    },
+    "A538": {
+        "name": "DEVIL FIREFISH",
+        "kind": "complex",
+        "plays": 16,
+        "events": {
+            "snapCard": 2,
+            "gainMarked": 1,
+            "shift": 1,
+            "endOfGame": 1
+        }
+    },
+    "A539": {
+        "name": "AMERICAN WHITESPOTTED FILEFISH",
+        "kind": "complex",
+        "plays": 17,
+        "events": {
+            "shift": 17,
+            "snapCard": 1,
+            "discardCardsOnDisplay": 1
+        }
+    },
+    "A540": {
+        "name": "GUINEAFOWL PUFFER",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "discardCardsOnDisplay": 1,
+            "snapCard": 3,
+            "pDrawCards": 2,
+            "pDiscardCards": 1,
+            "shift": 1
+        }
+    },
+    "A541": {
+        "name": "BLUESPOTTED RIBBONTAIL RAY",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "pDiscardCards": 7,
+            "pDrawCards": 8,
+            "discardCardsOnDisplay": 10,
+            "snapCard": 3,
+            "shift": 1
+        }
+    },
+    "A542": {
+        "name": "HUMPHEAD WRASSE",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "playSponsor": 1,
+            "snapCard": 1,
+            "pDrawCards": 4,
+            "pDiscardCards": 2,
+            "shift": 3
+        }
+    },
+    "A543": {
+        "name": "COASTAL MANTA RAY",
+        "kind": "complex",
+        "plays": 8,
+        "events": {
+            "pDrawCards": 2,
+            "pDiscardCards": 3
+        }
+    },
+    "A544": {
+        "name": "CARIBBEAN REEF SHARK",
+        "kind": "complex",
+        "plays": 12,
+        "events": {
+            "discardCardsOnDisplay": 12,
+            "markAssign": 2,
+            "snapCard": 1,
+            "shift": 1,
+            "pDrawCards": 1
+        }
+    },
+    "A545": {
+        "name": "LONGCOMB SAWFISH",
+        "kind": "complex",
+        "plays": 7,
+        "events": {
+            "cutDown": 6,
+            "discardCardsOnDisplay": 2,
+            "endOfGame": 1,
+            "pDrawCards": 4,
+            "pDiscardCards": 4
+        }
+    },
+    "A546": {
+        "name": "SAND TIGER SHARK",
+        "kind": "complex",
+        "plays": 5,
+        "events": {
+            "discardCardsOnDisplay": 5,
+            "markAssign": 1,
+            "endOfGame": 1
+        }
+    },
+    "A547": {
+        "name": "MEDITERRANEAN RAINBOW",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "discardCardsOnDisplay": 1,
+            "pDrawCards": 1,
+            "pDiscardCards": 2
+        }
+    },
+    "A548": {
+        "name": "LINED SEAHORSE",
+        "kind": "complex",
+        "plays": 6,
+        "events": {
+            "gainMarked": 2,
+            "pDiscardCards": 5
+        }
+    },
+    "A549": {
+        "name": "COMMON OCTOPUS",
+        "kind": "fixed",
+        "plays": 7,
+        "gain": {}
+    },
+    "A550": {
+        "name": "COMPASS JELLYFISH",
+        "kind": "complex",
+        "plays": 13,
+        "events": {
+            "pDrawCards": 2,
+            "pDiscardCards": 8,
+            "snapCard": 2
+        }
+    },
+    "A551": {
+        "name": "LOGGERHEAD SEA TURTLE",
+        "kind": "complex",
+        "plays": 9,
+        "events": {
+            "pDrawCards": 12,
+            "pDiscardCards": 13,
+            "playSponsor": 7,
+            "shift": 1,
+            "increaseSize": 1,
+            "endOfGame": 1,
+            "snapCard": 1
+        }
+    },
+    "A552": {
+        "name": "GREEN SEA TURTLE",
+        "kind": "complex",
+        "plays": 11,
+        "events": {
+            "pDrawCards": 11,
+            "pDiscardCards": 11
+        }
+    },
+    "A553": {
+        "name": "TAMBAQUI",
+        "kind": "complex",
+        "plays": 19,
+        "events": {
+            "pDrawCards": 19,
+            "pDiscardCards": 19,
+            "endOfGame": 1
+        }
+    },
+    "A554": {
+        "name": "AFRICAN PENGUIN",
+        "kind": "complex",
+        "plays": 12,
+        "events": {
+            "pDrawCards": 16,
+            "pDiscardCards": 12,
+            "shift": 2,
+            "gainMarked": 1,
+            "snapCard": 1
+        }
+    },
+    "A555": {
+        "name": "GOLDEN SNUB-NOSED MONKEY",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "pilfering": 11,
+            "pDiscardCards": 6,
+            "pDrawCards": 6,
+            "pilferingCard": 5,
+            "pilferingMoney": 6,
+            "snapCard": 1
+        }
+    },
+    "A556": {
+        "name": "WOLVERINE",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "shift": 4,
+            "pDrawCards": 3,
+            "pDiscardCards": 2
+        }
+    },
+    "A557": {
+        "name": "VIETNAMESE POT-BELLIED PIG",
+        "kind": "fixed",
+        "plays": 6,
+        "gain": {}
+    },
+    "A558": {
+        "name": "NORTHERN MURIQUI",
+        "kind": "complex",
+        "plays": 6,
+        "events": {
+            "pDrawCards": 6,
+            "snapCard": 1,
+            "pDiscardCards": 3
+        }
+    },
+    "A559": {
+        "name": "COQUERELS SIFAKA",
+        "kind": "complex",
+        "plays": 14,
+        "events": {
+            "advanceBreak": 14,
+            "pDrawCards": 14,
+            "endOfGame": 1
+        }
+    },
+    "A560": {
+        "name": "BRAHMINY KITE",
+        "kind": "complex",
+        "plays": 10,
+        "events": {
+            "pDrawCards": 10,
+            "pDiscardCards": 10,
+            "increaseSize": 1,
+            "shift": 1
+        }
+    }
+}

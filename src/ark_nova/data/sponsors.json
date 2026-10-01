@@ -35,7 +35,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S201",
-        "bga_id": "S201_ScienceLab"
+        "bga_id": "S201_ScienceLab",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "202",
@@ -64,7 +66,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S202",
-        "bga_id": "S202_Spokesperson"
+        "bga_id": "S202_Spokesperson",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "203",
@@ -91,7 +95,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S203",
-        "bga_id": "S203_Veterinarian"
+        "bga_id": "S203_Veterinarian",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "204",
@@ -122,7 +128,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S204",
-        "bga_id": "S204_ScienceMuseum"
+        "bga_id": "S204_ScienceMuseum",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "205",
@@ -145,7 +153,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S205",
-        "bga_id": "S205_GorillaFieldResearch"
+        "bga_id": "S205_GorillaFieldResearch",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "206",
@@ -176,7 +186,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S206",
-        "bga_id": "S206_MedicalBreakthrough"
+        "bga_id": "S206_MedicalBreakthrough",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "207",
@@ -205,7 +217,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S207",
-        "bga_id": "S207_BasicResearch"
+        "bga_id": "S207_BasicResearch",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "208",
@@ -241,7 +255,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S208",
-        "bga_id": "S208_ScienceLibrary"
+        "bga_id": "S208_ScienceLibrary",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "209",
@@ -267,7 +283,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S209",
-        "bga_id": "S209_TechnologyInstitute"
+        "bga_id": "S209_TechnologyInstitute",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "210",
@@ -294,7 +312,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S210",
-        "bga_id": "S210_ExpertOnTheAmericas"
+        "bga_id": "S210_ExpertOnTheAmericas",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "211",
@@ -321,7 +341,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S211",
-        "bga_id": "S211_ExpertOnEurope"
+        "bga_id": "S211_ExpertOnEurope",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "212",
@@ -348,7 +370,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S212",
-        "bga_id": "S212_ExpertOnAustralia"
+        "bga_id": "S212_ExpertOnAustralia",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "213",
@@ -375,7 +399,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S213",
-        "bga_id": "S213_ExpertOnAsia"
+        "bga_id": "S213_ExpertOnAsia",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "214",
@@ -402,7 +428,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S214",
-        "bga_id": "S214_ExpertOnAfrica"
+        "bga_id": "S214_ExpertOnAfrica",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "215",
@@ -435,7 +463,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S215",
-        "bga_id": "S215_BreedingCooperation"
+        "bga_id": "S215_BreedingCooperation",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "216",
@@ -462,7 +492,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S216",
-        "bga_id": "S216_TalentedCommunicator"
+        "bga_id": "S216_TalentedCommunicator",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "217",
@@ -487,7 +519,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S217",
-        "bga_id": "S217_Engineer"
+        "bga_id": "S217_Engineer",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "218",
@@ -520,7 +554,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S218",
-        "bga_id": "S218_BreedingProgram"
+        "bga_id": "S218_BreedingProgram",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "219",
@@ -555,7 +591,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S219",
-        "bga_id": "S219_DiversityResearcher"
+        "bga_id": "S219_DiversityResearcher",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "220",
@@ -581,7 +619,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S220",
-        "bga_id": "S220_FederalGrants"
+        "bga_id": "S220_FederalGrants",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "221",
@@ -610,7 +650,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S221",
-        "bga_id": "S221_Archeologist"
+        "bga_id": "S221_Archeologist",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "222",
@@ -636,7 +678,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S222",
-        "bga_id": "S222_ReleaseOfPatents"
+        "bga_id": "S222_ReleaseOfPatents",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "223",
@@ -656,7 +700,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S223",
-        "bga_id": "S223_ScienceInstitute"
+        "bga_id": "S223_ScienceInstitute",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "224",
@@ -684,7 +730,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S224",
-        "bga_id": "S224_MigrationRecording"
+        "bga_id": "S224_MigrationRecording",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "225",
@@ -716,7 +764,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S225",
-        "bga_id": "S225_QuarantineLab"
+        "bga_id": "S225_QuarantineLab",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "226",
@@ -742,7 +792,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S226",
-        "bga_id": "S226_ForeignInstitute"
+        "bga_id": "S226_ForeignInstitute",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "227",
@@ -776,7 +828,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S227",
-        "bga_id": "S227_WazaSpecialAssignment"
+        "bga_id": "S227_WazaSpecialAssignment",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "228",
@@ -802,7 +856,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S228",
-        "bga_id": "S228_WazaSmallAnimalProgram"
+        "bga_id": "S228_WazaSmallAnimalProgram",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "229",
@@ -827,7 +883,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S229",
-        "bga_id": "S229_ExpertInSmallAnimals"
+        "bga_id": "S229_ExpertInSmallAnimals",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "230",
@@ -852,7 +910,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S230",
-        "bga_id": "S230_ExpertInLargeAnimals"
+        "bga_id": "S230_ExpertInLargeAnimals",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "231",
@@ -879,7 +939,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S231",
-        "bga_id": "S231_SponsorshipPrimates"
+        "bga_id": "S231_SponsorshipPrimates",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "232",
@@ -906,7 +968,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S232",
-        "bga_id": "S232_SponsorshipReptiles"
+        "bga_id": "S232_SponsorshipReptiles",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "233",
@@ -933,7 +997,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S233",
-        "bga_id": "S233_SponsorshipVultures"
+        "bga_id": "S233_SponsorshipVultures",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "234",
@@ -960,7 +1026,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S234",
-        "bga_id": "S234_SponsorshipLions"
+        "bga_id": "S234_SponsorshipLions",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "235",
@@ -987,7 +1055,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S235",
-        "bga_id": "S235_SponsorshipElephants"
+        "bga_id": "S235_SponsorshipElephants",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "236",
@@ -1014,7 +1084,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S236",
-        "bga_id": "S236_Primatologist"
+        "bga_id": "S236_Primatologist",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "237",
@@ -1041,7 +1113,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S237",
-        "bga_id": "S237_Herpetologist"
+        "bga_id": "S237_Herpetologist",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "238",
@@ -1068,7 +1142,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S238",
-        "bga_id": "S238_Ornithologist"
+        "bga_id": "S238_Ornithologist",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "239",
@@ -1095,7 +1171,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S239",
-        "bga_id": "S239_ExpertInPredators"
+        "bga_id": "S239_ExpertInPredators",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "240",
@@ -1122,7 +1200,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S240",
-        "bga_id": "S240_ExpertInHerbivores"
+        "bga_id": "S240_ExpertInHerbivores",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "241",
@@ -1159,7 +1239,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S241",
-        "bga_id": "S241_Hydrologist"
+        "bga_id": "S241_Hydrologist",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "242",
@@ -1196,7 +1278,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S242",
-        "bga_id": "S242_Geologist"
+        "bga_id": "S242_Geologist",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "243",
@@ -1234,7 +1318,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S243",
-        "bga_id": "S243_MeerkatDen"
+        "bga_id": "S243_MeerkatDen",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "244",
@@ -1272,7 +1358,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S244",
-        "bga_id": "S244_PenguinPool"
+        "bga_id": "S244_PenguinPool",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "245",
@@ -1308,7 +1396,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S245",
-        "bga_id": "S245_Aquarium"
+        "bga_id": "S245_Aquarium",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "246",
@@ -1342,7 +1432,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S246",
-        "bga_id": "S246_CableCar"
+        "bga_id": "S246_CableCar",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "247",
@@ -1378,7 +1470,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S247",
-        "bga_id": "S247_BaboonRock"
+        "bga_id": "S247_BaboonRock",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "248",
@@ -1410,7 +1504,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S248",
-        "bga_id": "S248_RhesusMonkeyPark"
+        "bga_id": "S248_RhesusMonkeyPark",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "249",
@@ -1441,7 +1537,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S249",
-        "bga_id": "S249_BarredOwlHut"
+        "bga_id": "S249_BarredOwlHut",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "250",
@@ -1481,7 +1579,9 @@
                     "seaAnimal"
                 ]
             }
-        }
+        },
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "251",
@@ -1514,7 +1614,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S251",
-        "bga_id": "S251_PolarBearExhibit"
+        "bga_id": "S251_PolarBearExhibit",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "252",
@@ -1545,7 +1647,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S252",
-        "bga_id": "S252_SpottedHyenaCompound"
+        "bga_id": "S252_SpottedHyenaCompound",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "253",
@@ -1576,7 +1680,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S253",
-        "bga_id": "S253_OkapiStable"
+        "bga_id": "S253_OkapiStable",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "254",
@@ -1600,7 +1706,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S254",
-        "bga_id": "S254_ZooSchool"
+        "bga_id": "S254_ZooSchool",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "255",
@@ -1624,7 +1732,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S255",
-        "bga_id": "S255_AdventurePlayground"
+        "bga_id": "S255_AdventurePlayground",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "256",
@@ -1648,7 +1758,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S256",
-        "bga_id": "S256_WaterPlayground"
+        "bga_id": "S256_WaterPlayground",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "257",
@@ -1682,7 +1794,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S257",
-        "bga_id": "S257_SideEntrance"
+        "bga_id": "S257_SideEntrance",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "258",
@@ -1716,7 +1830,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S258",
-        "bga_id": "S258_NativeSeabirds"
+        "bga_id": "S258_NativeSeabirds",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "259",
@@ -1750,7 +1866,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S259",
-        "bga_id": "S259_NativeLizards"
+        "bga_id": "S259_NativeLizards",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "260",
@@ -1782,7 +1900,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S260",
-        "bga_id": "S260_NativeFarmAnimals"
+        "bga_id": "S260_NativeFarmAnimals",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "261",
@@ -1806,7 +1926,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S261",
-        "bga_id": "S261_GuidedSchoolTours"
+        "bga_id": "S261_GuidedSchoolTours",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "262",
@@ -1839,7 +1961,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S262",
-        "bga_id": "S262_Explorer"
+        "bga_id": "S262_Explorer",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "263",
@@ -1870,7 +1994,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S263",
-        "bga_id": "S263_WazaLargeAnimalProgram"
+        "bga_id": "S263_WazaLargeAnimalProgram",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "264",
@@ -1902,7 +2028,9 @@
         "source": "base",
         "card_type": "sponsor",
         "key": "S264",
-        "bga_id": "S264_FreerangeNewWorldMonkeys"
+        "bga_id": "S264_FreerangeNewWorldMonkeys",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "265",
@@ -1941,7 +2069,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S265",
-        "bga_id": "S265_FranchiseBusiness"
+        "bga_id": "S265_FranchiseBusiness",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "266",
@@ -1965,7 +2095,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S266",
-        "bga_id": "S266_MarineBiologist"
+        "bga_id": "S266_MarineBiologist",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "267",
@@ -1996,7 +2128,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S267",
-        "bga_id": "S267_FarmCat"
+        "bga_id": "S267_FarmCat",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "268",
@@ -2026,7 +2160,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S268",
-        "bga_id": "S268_ConferenceOnEurope"
+        "bga_id": "S268_ConferenceOnEurope",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "269",
@@ -2056,7 +2192,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S269",
-        "bga_id": "S269_ConferenceOnAustralia"
+        "bga_id": "S269_ConferenceOnAustralia",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "270",
@@ -2080,7 +2218,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S270",
-        "bga_id": "S270_MarineResearchExpedition"
+        "bga_id": "S270_MarineResearchExpedition",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "271",
@@ -2110,7 +2250,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S271",
-        "bga_id": "S271_ExcavationSite"
+        "bga_id": "S271_ExcavationSite",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "272",
@@ -2141,7 +2283,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S272",
-        "bga_id": "S272_ExpansionArea"
+        "bga_id": "S272_ExpansionArea",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "273",
@@ -2174,7 +2318,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S273",
-        "bga_id": "S273_Publications"
+        "bga_id": "S273_Publications",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "274",
@@ -2201,10 +2347,12 @@
             }
         ],
         "appeal": 1,
-        "source": "marine_worlds",
+        "source": "base",
         "card_type": "sponsor",
         "key": "S274",
-        "bga_id": "S274_MascotStatue"
+        "bga_id": "S274_MascotStatue",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "275",
@@ -2238,7 +2386,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S275",
-        "bga_id": "S275_HorseWhisperer"
+        "bga_id": "S275_HorseWhisperer",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "276",
@@ -2267,7 +2417,9 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S276",
-        "bga_id": "S276_LandscapeGardener"
+        "bga_id": "S276_LandscapeGardener",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "277",
@@ -2288,7 +2440,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S277",
-        "bga_id": "S277_FieldResearchTypeDOrcas"
+        "bga_id": "S277_FieldResearchTypeDOrcas",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "278",
@@ -2318,7 +2472,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S278",
-        "bga_id": "S278_AmazonHouse"
+        "bga_id": "S278_AmazonHouse",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "279",
@@ -2357,7 +2513,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S279",
-        "bga_id": "S279_UnderwaterTunnel"
+        "bga_id": "S279_UnderwaterTunnel",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "280",
@@ -2392,7 +2550,9 @@
         "source": "marine_worlds",
         "card_type": "sponsor",
         "key": "S280",
-        "bga_id": "S280_Reconstruction"
+        "bga_id": "S280_Reconstruction",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "281",
@@ -2421,10 +2581,12 @@
         "reputation": 0,
         "appeal": 2,
         "conservationPoint": 0,
-        "source": "promo",
+        "source": "base",
         "card_type": "sponsor",
         "key": "S281",
-        "bga_id": "S281_Arcade"
+        "bga_id": "S281_Arcade",
+        "active": true,
+        "deck": "main"
     },
     {
         "id": "282",
@@ -2454,6 +2616,8 @@
         "type": "HUMAN",
         "card_type": "sponsor",
         "key": "S282",
-        "bga_id": "S282_PromotionTeam"
+        "bga_id": "S282_PromotionTeam",
+        "active": false,
+        "deck": "main"
     }
 ]
