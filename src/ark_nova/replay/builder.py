@@ -25,7 +25,7 @@ from ark_nova.parser.setup import SetupInfo
 
 @dataclass
 class Replay:
-    states: list[GameState]                     # states[i] = state after moves[i] (setup moves share the state after setup)
+    states: list[GameState]                     # states[i] = state after moves[i] (setup steps: nothing dealt, then the dealt hands, then the finished setup; see _setup_state)
     moves: list[Move]
     setup_moves: int                            # moves before the first turn
     unhandled: Counter = field(default_factory=Counter)
@@ -357,6 +357,15 @@ def h_discard_display(ctx: _Ctx, e: Event) -> None:
     s = ctx.state
     for c in e.args.get("cards", []):
         k = _key(c["id"])
+        if k in s.projects_in_play:                                        # "The rightmost project card is discarded": its tokens go with it
+            s.projects_in_play.remove(k)
+            gone = {int(i) for i in e.args.get("tokenIds") or []}
+            for q in s.players:
+                mine = [t for t in q.tokens if t.id in gone or (t.type == "token" and t.location.startswith(k + "_"))]
+                q.flags["supports_gone"] = q.flags.get("supports_gone", 0) + len(mine)         # the supports still count at the end of the game
+                q.tokens = [t for t in q.tokens if t not in mine]
+            s.main_discard.append(k)
+            continue
         _remove_from_display(s, k)
         s.main_discard.append(k)
 
@@ -427,6 +436,7 @@ def h_play_sponsor(ctx: _Ctx, e: Event) -> None:
     k = _key(a["card"]["id"])
     _take_from_source(s, p, k, bool(a.get("fromDisplay")))
     p.sponsors.append(k)
+    _place_meeples(ctx, a.get("meeples"))                                   # the 2 tokens of Breeding Cooperation / Breeding Program
 
 
 def h_buy_building(ctx: _Ctx, e: Event) -> None:
@@ -445,7 +455,7 @@ def h_move_projects(ctx: _Ctx, e: Event) -> None:
         k = _key(c["id"])
         _take_from_source(s, p, k, bool(a.get("fromDisplay")))
         if k not in s.projects_in_play:
-            s.projects_in_play.append(k)
+            s.projects_in_play.insert(0, k)                          # BGA: the new card is `projects_0`, the others move one place to the right
 
 
 def h_release_animal(ctx: _Ctx, e: Event) -> None:
@@ -517,7 +527,7 @@ HANDLERS: dict[str, Callable[[_Ctx, Event], None]] = {
 }
 # events that carry no state change the builder needs
 IGNORED = {"startBreak", "updateBreakDiscardSelection", "enableMultiplier",
-           "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame"}
+           "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame", "gameStateChangePrivateArg"}
 
 
 def _sync(ctx: _Ctx) -> None:
@@ -535,8 +545,31 @@ def _sync(ctx: _Ctx) -> None:
             c.tokens.sort()
 
 
+def _setup_state(parsed: ParsedLog, first_turn: int, index: int, dealt: GameState, final: GameState) -> GameState:
+    """The state at setup step `index`, as the log tells it: nothing before the deal (the cards are put back on top of their decks, in dealing order; a Map 14 sponsor goes on top too), the dealt hands until the initial
+    discard, and the display only once the first `fillPool` has happened. Logs without these events fall back to the finished setup."""
+    def first(pred) -> int:
+        return next((m.index for m in parsed.moves[:first_turn] if any(pred(e) for e in m.events)), 0)
+
+    deal_at = first(lambda e: e.type == "pDrawCards" and "from the deck" in e.log)
+    discard_at = first(lambda e: e.type == "pDiscardCards")
+    fill_at = first(lambda e: e.type == "fillPool")
+    st = copy.deepcopy(dealt if index < discard_at else final)
+    if index < deal_at:                                                  # nothing dealt yet: back on the top of the decks
+        st.main_deck = [c for p in st.players for c in p.hand] + st.main_deck
+        st.endgame_deck = [c for p in st.players for c in p.endgame_hand] + st.endgame_deck
+        for p in st.players:
+            p.hand, p.endgame_hand, p.initial_offer = [], [], []
+    if index < fill_at:                                                  # the display is filled at the end of the setup
+        shown = [c for c in st.display if c]
+        st.main_deck = shown + st.main_deck
+        st.display = [None] * len(st.display)
+    return st
+
+
 def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: SeedSpec) -> Replay:
     state = start_game(config, seed)
+    dealt = copy.deepcopy(state)                                         # the hands as dealt (8 cards, 9 with Map 14's sponsor), before the initial discard
     for pid in setup.seats:
         state = apply(state, Action(setup.seats.index(pid), "initial_discard", {"cards": setup.discarded[pid]}))
     ctx = _Ctx(state, setup)
@@ -566,7 +599,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
                 rep.mismatches.append((m.index, msg))
             ctx.mismatches = []
             _check_oracles(ctx, m, rep)
-        rep.states.append(copy.deepcopy(ctx.state))
+        rep.states.append(_setup_state(parsed, first_turn, m.index, dealt, ctx.state) if m.index < first_turn else copy.deepcopy(ctx.state))
     _sync(ctx)
     while next_marker < len(markers):                                   # markers after the last event: the final state
         rep.turn_snapshots.append(copy.deepcopy(ctx.state))

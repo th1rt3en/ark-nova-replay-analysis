@@ -52,7 +52,7 @@ def card(key: str) -> dict:
     return data.cards_by_key()[key]
 
 
-def max_animals(level: int, strength: int) -> int:
+def max_animals(level: int, strength: int, variant: int = 0) -> int:
     return (1 if strength < 5 else 2) if level < 2 else (1 if strength < 3 else 2)
 
 
@@ -155,6 +155,9 @@ def cost(state: GameState, seat: int, key: str) -> int:
         price -= 3
     if "S230" in p.sponsors and is_large(c):                 # Expert in Large Animals
         price -= 4
+    a = state.prompt.args if state.prompt is not None and state.prompt.kind == "animals_play" else {}
+    if a.get("variant") == 3 and a.get("level") == 1 and not a.get("played"):     # Discount Animals, level I: the first animal costs 2 less
+        price -= 2
     return max(0, price)
 
 
@@ -190,8 +193,25 @@ def conditions_met(state: GameState, seat: int, key: str, level: int) -> bool:
     if not waza_allows(state.players[seat], card(key)):
         return False
     failed = failed_conditions(state, seat, key, level)
-    credit = bool(state.current_action and state.current_action.get("camouflage"))
+    credit = bool(state.current_action and state.current_action.get("camouflage")) or ignore_credit(state)
     return not failed or (credit and len(failed) == 1)
+
+
+def ignore_credit(state) -> bool:
+    """Ignore Animals: when the strength allows 2 animals the player may choose, before playing any, to play only 1 and ignore 1 of its conditions."""
+    a = state.prompt.args if state.prompt is not None and state.prompt.kind == "animals_play" else {}
+    return bool(a.get("single")) and not a["played"]
+
+
+def can_single(a) -> bool:
+    return a.get("variant") == 1 and max_animals(a["level"], a["strength"]) == 2 and not a["played"] and not a.get("single")
+
+
+def choose_single(state: GameState, action: Action) -> None:
+    a = state.prompt.args
+    if not can_single(a):
+        raise _fx().IllegalEffect("no single animal choice now")
+    a["single"] = True
 
 
 def effective_size(p, b, bd) -> int:
@@ -209,16 +229,18 @@ def _around(bd, cells) -> set:
 
 def enclosure_options(state: GameState, seat: int, key: str) -> list:
     """[(x, y)] anchors of the buildings the animal can go to."""
-    from ark_nova.engine.build_action import footprint
+    from ark_nova.engine.build_action import footprint, knows_shape
     p = state.players[seat]
     c = card(key)
     bd = board(p.map_id)
     overbuild = "S219" in p.sponsors                          # Diversity Researcher ignores water and rock requirements
     out = []
 
+    covered = {c for b in p.buildings if knows_shape(b.type) for c in footprint(b.type, b.x, b.y, b.rotation)}      # a rock / water hex under a building (Terrain Build) no longer counts
+
     def near_ok(b) -> bool:
         cells = footprint(b.type, b.x, b.y, b.rotation)
-        around = _around(bd, set(cells))
+        around = _around(bd, set(cells)) - covered
         return overbuild or (sum(bd.terrain.get(n) == "water" for n in around) >= requirement(key, "water")
                              and sum(bd.terrain.get(n) == "rock" for n in around) >= requirement(key, "rock"))
 
@@ -266,11 +288,13 @@ def playable(state: GameState, seat: int, level: int) -> list:
 
 # ---- the action ------------------------------------------------------------------------------------------------------------------
 
-def open_action(state: GameState, seat: int, level: int, strength: int) -> None:
+def open_action(state: GameState, seat: int, level: int, strength: int, variant: int = 0) -> None:
     from ark_nova.engine.state import Prompt
     if level >= 2 and strength >= 5:
         _g()._gain(state, seat, reputation=1)                 # at the very beginning, so that the reputation range is already higher
-    state.prompt = Prompt(kind="animals_play", player=seat, args={"level": level, "strength": strength, "played": []})
+    state.prompt = Prompt(kind="animals_play", player=seat, args={"level": level, "strength": strength, "played": [], "variant": variant})
+    if variant == 4:                                          # Mark Animals: a mark at the end of the action
+        state.current_action.setdefault("after", []).append({"kind": "mark", "source": "animals4", "optional": False})
 
 
 def small_extra(p, a) -> bool:
@@ -283,7 +307,9 @@ def legal(state: GameState, p) -> list:
     a = state.prompt.args
     acts = []
     extra = small_extra(p, a)
-    if len(a["played"]) < max_animals(a["level"], a["strength"]) or extra:
+    if can_single(a):                                       # Ignore Animals: the choice has to be made before the first animal is played
+        acts.append(Action(p.seat, "animals_single", {}))
+    if (len(a["played"]) < (1 if a.get("single") else max_animals(a["level"], a["strength"])) and not a.get("capped")) or extra:
         for k, d, folder in playable(state, p.seat, a["level"]):
             if extra and (d or sponsor_extras.size_class(card(k)) != "small"):
                 continue
@@ -303,14 +329,19 @@ def play(state: GameState, action: Action) -> None:
     k, from_display = action.args["card"], bool(action.args["from_display"])
     if not implemented(k):
         raise NotImplementedError(f"the play of animal {k} ({card(k)['name']}) is not implemented yet: {unsupported_abilities(k)} (see ISSUES.md)")
-    if state.current_action.get("camouflage") and failed_conditions(state, p.seat, k, a["level"]):
-        state.current_action.pop("camouflage")               # the Camouflage credit is used
+    if failed_conditions(state, p.seat, k, a["level"]):
+        if ignore_credit(state):
+            a["capped"] = True                               # Ignore Animals: that was the only animal of the action
+        elif state.current_action.get("camouflage"):
+            state.current_action.pop("camouflage")           # the Camouflage credit is used
     c = card(k)
     price = cost(state, p.seat, k)
     if from_display:
         i = state.display.index(k)
         price += i + 1
         state.display[i] = None
+        if a.get("variant") == 4 and a["level"] >= 2 and marks.owner(state, k) is not None:      # Mark Animals, level II: 1 reputation for a marked animal
+            g._gain(state, p.seat, reputation=1)
         marks.taken(state, k)
     else:
         p.hand.remove(k)
@@ -332,6 +363,8 @@ def play(state: GameState, action: Action) -> None:
                for res, n in (("appeal", (c.get("appeal") or 0) + own.get("appeal", 0)), ("reputation", (c.get("reputation") or 0) + own.get("reputation", 0)),
                               ("conservation", (c.get("conservationPoint") or 0) + own.get("conservation", 0))) if n]
     g._gain(state, p.seat, money=own.get("money", 0), x_tokens=own.get("xtoken", 0))
+    if a.get("variant") == 3 and a["level"] >= 2:            # Discount Animals, level II: pay 2 for 1 appeal, once per animal
+        printed.append({"kind": "pay_appeal", "source": k, "optional": True})
     pending = printed + ability_effects(state, k, pairs) + reef_effects(state, k, b) + fx.fire_icons(state, p.seat, k)
     if not g._open_effects(state, p.seat, pending, {"kind": "animals_play", "args": a}):
         after_step(state, p.seat)
@@ -347,12 +380,15 @@ def _end(state: GameState, seat: int) -> None:
     """End of the action; Waza Small Animal Program: after only small animals one small animal may be snapped from the display."""
     p = state.players[seat]
     a = state.prompt.args
+    if a.get("variant") == 2 and not any(k.startswith("A") for k in p.hand):    # Hunter Animals: no animals left in hand: Hunter 4 (level I) / 6 (level II)
+        state.current_action.setdefault("after", []).append({"kind": "reveal", "source": "animals2", "x": 4 if a["level"] == 1 else 6,
+                                                              "filter": "animal", "optional": True})
     if "S228" in p.sponsors and a["played"] and all(sponsor_extras.size_class(card(k)) == "small" for k in a["played"]):
         state.current_action.setdefault("after", []).append({"kind": "take", "source": "S228", "snap": True, "small": True, "optional": True})
     _g()._end_turn(state)
 
 
 def after_step(state: GameState, seat: int) -> None:
-    acts = legal(state, state.players[seat])
+    acts = [x for x in legal(state, state.players[seat]) if x.kind != "animals_single"]
     if not acts or all(x.kind == "finish_animals" for x in acts):
         _end(state, seat)

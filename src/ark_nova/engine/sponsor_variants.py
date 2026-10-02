@@ -5,7 +5,7 @@ Side actions (`sponsor_side`, one per action, before or after the sponsors are p
 - variant 2 (Money): the first money the player gains in the action (the break option, a sponsor, an effect of a sponsor) comes with 3 more
   money at level I, 5 at level II (`game._gain` does it, source "Sponsors2 effect" in the logs);
 - variant 3 (Sunbathing): discard 1 sponsor from the hand for 4 money; level II: any card, or instead discard any card to play a sponsor
-  with a level lower by 2;
+  increase the action strength by 2;
 - variant 4 (Snap): discard 1 sponsor from the hand to take any sponsor of the display; level II: after the break option discard any card to
   play a sponsor of the hand and pay money equal to its level.
 """
@@ -16,7 +16,7 @@ from ark_nova.engine.actions import Action
 SIDE_VARIANTS = (1, 3, 4)
 TRADE_MONEY = 5
 SUNBATHING_MONEY = 4
-REDUCTION = 2
+STRENGTH_BONUS = 2
 S2_BONUS = {1: 3, 2: 5}
 
 
@@ -27,10 +27,6 @@ def _g():
 
 def has_side(a) -> bool:
     return a.get("variant", 0) in SIDE_VARIANTS
-
-
-def level_cost(a, k: str) -> int:
-    return max(0, sponsors_action.level_of(k) - (REDUCTION if a.get("reduce") else 0))
 
 
 def legal(state, p) -> list:
@@ -56,7 +52,7 @@ def legal(state, p) -> list:
             if level >= 2 or c.startswith("S"):
                 out.append(Action(p.seat, "sponsor_side", {"op": "discard_money", "card": c}))
             if level >= 2:
-                out.append(Action(p.seat, "sponsor_side", {"op": "discard_reduce", "card": c}))
+                out.append(Action(p.seat, "sponsor_side", {"op": "discard_strength", "card": c}))
     elif v == 4:
         if level == 1:
             shown = [c for c in dict.fromkeys(state.display) if c and c.startswith("S")]
@@ -94,13 +90,13 @@ def apply(state, action: Action) -> None:
         g._gain(state, p.seat, x_tokens=-1, reputation=1)
     elif op == "rep_money":
         g._gain(state, p.seat, money=-TRADE_MONEY, reputation=1)
-    elif op in ("discard_money", "discard_reduce", "discard_snap", "discard_play"):
+    elif op in ("discard_money", "discard_strength", "discard_snap", "discard_play"):
         p.hand.remove(args["card"])
         state.main_discard.append(args["card"])
         if op == "discard_money":
             g._gain(state, p.seat, money=SUNBATHING_MONEY)
-        elif op == "discard_reduce":
-            a["reduce"] = True
+        elif op == "discard_strength":
+            a["left"] += STRENGTH_BONUS
         elif op == "discard_snap":
             i = state.display.index(args["take"])
             state.display[i] = None

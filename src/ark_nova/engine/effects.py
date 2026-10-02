@@ -10,7 +10,7 @@ from collections import Counter
 from itertools import combinations
 
 from ark_nova import data
-from ark_nova.engine import animal_abilities, bonuses, marks, sponsor_extras, venom, build_action, card_programs as prog, cards_action
+from ark_nova.engine import animal_abilities, bonuses, marks, project_effects, sponsor_extras, venom, build_action, card_programs as prog, cards_action
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board
 from ark_nova.engine.icons import card_icons, icon_counts, requirement
@@ -176,6 +176,12 @@ def legal(state, p0) -> list:
         if k in bonuses.KINDS:
             out += bonuses.legal(state, e, i, p.seat)
             continue
+        if k in project_effects.KINDS:
+            mine = project_effects.legal(state, e, i, p.seat)
+            out += mine
+            if not mine:
+                out.append(Action(p.seat, "skip_effect", {"index": i}))          # nothing to do (no animal to release, no aquarium with Reef Dwellers)
+            continue
         if k in sponsor_extras.KINDS:
             out += sponsor_extras.legal(state, e, i, p.seat)
             if e.get("optional"):
@@ -331,6 +337,9 @@ def resolve_choice(state, action: Action) -> None:
     if k in bonuses.KINDS:
         bonuses.resolve(state, action, e, i)
         return
+    if k in project_effects.KINDS:
+        project_effects.resolve(state, action, e, i)
+        return
     if k in sponsor_extras.KINDS:
         sponsor_extras.resolve(state, action, e, i)
         return
@@ -401,6 +410,8 @@ def skip(state, action: Action) -> None:
 
 def _nothing_to_do(state, e: dict, i: int) -> bool:
     """A mandatory animal ability effect without any legal choice can be skipped."""
+    if e["kind"] in project_effects.KINDS:
+        return not project_effects.legal(state, e, i, state.prompt.player)
     return e["kind"] in animal_abilities.KINDS and not animal_abilities.legal(state, e, i, state.prompt.player)
 
 

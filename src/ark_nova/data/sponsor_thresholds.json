@@ -102,10 +102,11 @@
     "S263": {
         "name": "WAZA LARGE ANIMAL PROGRAM",
         "reputation": {
-            "value": null,
+            "value": 6,
             "observed_min": 5,
             "plays": 9,
-            "verified": false
+            "verified": true,
+            "op": "min"
         }
     },
     "S264": {
@@ -131,19 +132,21 @@
     "S275": {
         "name": "HORSE WHISPERER",
         "reputation": {
-            "value": null,
+            "value": 6,
             "observed_min": 5,
             "plays": 11,
-            "verified": false
+            "verified": true,
+            "op": "min"
         }
     },
     "S278": {
         "name": "AMAZON HOUSE",
         "reputation": {
-            "value": null,
+            "value": 6,
             "observed_min": 5,
             "plays": 23,
-            "verified": false
+            "verified": true,
+            "op": "min"
         }
     }
 }

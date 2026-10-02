@@ -68,4 +68,4 @@ def test_conservation_bonuses_recoverable_from_logs():
             incomplete += 1
         else:
             complete += 1
-    assert complete >= 110 and incomplete <= 3         # 3 games need user input for a 5-conservation option
+    assert complete >= 110 and incomplete <= 4         # 4 games need user input for a 5-conservation option

@@ -4,30 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ark Nova Replay</title>
-<style>
-  body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; }
-  input, button { font-size: 1rem; padding: .5rem; }
-  dialog { border: 1px solid #888; border-radius: 8px; padding: 1.5rem; }
-</style>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <h1>Ark Nova Replay</h1>
-<p>Enter a BGA table id of a finished game to replay it and fork alternative lines.</p>
+<p class="muted">Step through a finished 2-player Ark Nova game and fork it at any point to play out an alternative line.</p>
 <form id="f">
-  <input id="table" inputmode="numeric" pattern="[0-9]+" placeholder="Table id" required>
-  <button>Open</button>
+  <input type="text" id="q" placeholder="Table id or table url" autocomplete="off" autofocus required
+         aria-label="BGA table id or url">
+  <button id="go">Open</button>
 </form>
-<dialog id="notLogged">
-  <p>That table has not been logged to the database yet. A request has been submitted.</p>
-  <button onclick="notLogged.close()">OK</button>
-</dialog>
+<p class="muted">Paste a BGA table id (<code>924000095</code>) or a table url
+  (<code>https://boardgamearena.com/table?table=924000095</code>).</p>
+<div id="msg" role="status" hidden></div>
 <script>
+const msg = document.getElementById('msg');
+function show(text, kind) { msg.textContent = text; msg.className = kind; msg.hidden = false; }
 document.getElementById('f').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const id = document.getElementById('table').value.trim();
-  const res = await fetch('/api/tables/' + encodeURIComponent(id));
-  if (res.status === 404) { document.getElementById('notLogged').showModal(); return; }
-  if (res.ok) { location.href = '/replay.html?table=' + encodeURIComponent(id); }  // replay page: not built yet
+  const go = document.getElementById('go');
+  go.disabled = true; show('Checking the table…', 'loading');
+  try {
+    const res = await fetch('/api/lookup?q=' + encodeURIComponent(document.getElementById('q').value));
+    const body = await res.json();
+    if (body.status === 'ready') { show('Table found, opening the replay…', 'loading'); location.href = body.next; }
+    else if (body.status === 'needs_log') {
+      show('This table is indexed but its log has not been collected. Taking you to the log submission page…', 'ok');
+      setTimeout(() => { location.href = body.next; }, 1200);
+    } else { show(body.message || 'Something went wrong.', 'error'); }
+  } catch (err) { show('Could not reach the server, try again.', 'error'); }
+  finally { go.disabled = false; }
 });
 </script>
 </body>

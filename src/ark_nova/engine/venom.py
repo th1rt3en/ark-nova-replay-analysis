@@ -12,6 +12,11 @@ VENOM_COST = 2
 CONSTRICTION_PENALTY = 2
 
 
+def _tracks():
+    from ark_nova.engine import tracks
+    return tracks
+
+
 def _g():
     from ark_nova.engine import game
     return game
@@ -43,9 +48,10 @@ def settle(state, seat: int) -> None:
         p.flags["venom_paid"] = 1
 
 
-def remove_tokens(p, card) -> None:
-    """The action of this card is performed (or put back for an X token): its Venom and Constriction tokens go."""
-    if "Venom" in card.tokens:
+def remove_tokens(p, card, owner_paid: bool = True) -> None:
+    """The action of this card is performed (or put back for an X token): its Venom and Constriction tokens go. At the end of a Hypnosis the
+    tokens of the opponent's card go too, without counting as the owner's Venom removal (`owner_paid` False)."""
+    if "Venom" in card.tokens and owner_paid:
         p.flags["venom_removed"] = 1
     card.tokens = [t for t in card.tokens if t not in ("Venom", "Constriction")]
 
@@ -66,13 +72,15 @@ def finish_turn(state, seat: int) -> None:
 def give_venom(state, seat: int, n: int) -> None:
     """Venom n by `seat`: the other player gets a token on their cards at strength 1 (and 2) when they are ahead on appeal."""
     me, other = state.players[seat], state.players[1 - seat]
-    if other.appeal > me.appeal:
+    if other.appeal > me.appeal and not _tracks().is_protected(other.appeal):
         for card in other.action_cards[:n]:
             card.tokens.append("Venom")
 
 
 def give_constriction(state, seat: int) -> None:
     me, other = state.players[seat], state.players[1 - seat]
+    if _tracks().is_protected(other.appeal):                            # below 5 appeal a player is protected
+        return
     ahead = (other.appeal > me.appeal) + (other.conservation > me.conservation)
     for card in other.action_cards[::-1][:ahead]:                       # the cards at strength 5, then 4
         card.tokens.append("Constriction")

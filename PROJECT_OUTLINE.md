@@ -63,11 +63,12 @@ ark-nova-replay-analysis/
 ## 4. Flows
 
 ### Flow 1 — Table lookup
-1. User submits table ID on the landing page.
-2. Backend queries BigQuery (`table_logs` table: `table_id`, `gcs_path`, `downloaded_at`, `players`, per-player `map` (source of truth for maps; the log usually omits it), `marine_worlds` flag (source of truth for whether the expansion is in play; also drives engine setup), `parse_status`).
-3. **Found:** the user confirms/enters the **3 base conservation projects** (the log does not reliably contain them; pre-filled with what the log reveals), then read log from GCS → parser → replay builder → redirect to `/replay/{table_id}`. The 3 ids are part of the replay request/URL (and of the fork), never inferred or randomised.
-4. **Not found:** return `404 not_logged`; frontend shows a modal: "That table hasn't been logged yet, a request has been submitted."
-   - **TODO:** request mechanism (options: insert row into a BigQuery `log_requests` table, Pub/Sub topic consumed by a downloader job, or a Cloud Tasks queue). For now, stub `request_log(table_id)` that only logs it.
+1. Landing page: text box for a BGA table id or a `boardgamearena.com/...?table=<id>` url (`api/tableid.py` extracts the id). `GET /api/lookup?q=`.
+2. BigQuery `table_logs` lookup. **Indexed** = a row exists (game, config, result acknowledged); **logged** = the row has a `gcs_path` and `parse_status` is NULL/`ok`. Only 2-player tables are accepted.
+3. **Indexed + logged:** `/replay.html?table=<id>`; the page loads the config (`GET /api/tables/{id}`: maps, `marine_worlds`) and the raw log (`GET /api/tables/{id}/log`, downloaded from GCS) and enters the replay flow.
+4. **Indexed, not logged:** `/submit.html?table=<id>` (links to `/guide.html`, how to get the log). `POST /api/tables/{id}/verify` checks the upload (`parser/verify.py`: BGA envelope, same table, 2 players, Ark Nova, finished, parses), then `/replay.html?table=<id>&source=upload` reads the log from IndexedDB in the browser. Uploads are not stored server side.
+5. **Not indexed:** `404 not_indexed`; the landing page says an index request has been raised, check back later. `request_log(table_id)` is still a stub (TODO: BigQuery `log_requests` insert, Pub/Sub or Cloud Tasks).
+6. TODO: the 3 base conservation projects are still to be entered/confirmed by the user before the replay is built (not part of this flow yet).
 
 ### Flow 2 — Replay page
 Buttons: **A** forward 1 move, **B** back 1 move, **C** jump to move #, **D** fork from here. Also keyboard arrows, a move list sidebar, and both players' zoos/hands/tableau shown at each step (no animation, instant re-render).

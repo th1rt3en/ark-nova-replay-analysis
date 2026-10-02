@@ -55,7 +55,8 @@ def end_triggered(appeal: int, conservation: int) -> bool:
 
 MAX_REPUTATION = 15
 # reputation track bonuses, gained when a step is reached (verified on the logs: single-step gains fire exactly these)
-REPUTATION_BONUSES = {5: {"upgrade": 1}, 10: {"conservation": 1}, 11: {"xtoken": 1}, 13: {"conservation": 1}, 14: {"xtoken": 1}}
+REPUTATION_BONUSES = {5: {"upgrade": 1}, 8: {"worker": 1}, 10: {"take": 1}, 11: {"conservation": 1}, 12: {"xtoken": 1}, 13: {"take": 1},
+                     14: {"conservation": 1}, 15: {"xtoken": 1}}
 # gaining reputation beyond 15 is lost but pays 1 appeal per point lost (rulebook p.13, confirmed)
 
 # Conservation thresholds (see docs/engine_design.md): 2 -> worker or action card upgrade; 5 and 8 -> one of 2 random bonuses

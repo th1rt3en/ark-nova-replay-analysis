@@ -142,11 +142,25 @@ The upgraded action does several different tasks up to the strength and one dona
   entered by the user for every map). The logs agree with this rule (the earlier mismatches on maps 10-12 came from swapping Caves and AI), university tiles: reputation 1 / 2, research
   icons, category universities search the deck for an animal of the category (a random tile is drawn from the bag). Tiles and partner zoos
   are 'played into the zoo': their icons fire the triggers of the cards in play (e.g. Expert on Africa).
-- Conservation projects (icon based Base / Normal projects; release, breed and management projects raise NotImplementedError): a project in
-  play, from the hand or (upgraded) from the display for the folder cost; the slot's conservation points and the notepad bonus of the map
-  (`bonus_slots`, token chosen by the player). Two players: base project card k has its slot k covered; two project cards above the board.
+- Conservation projects (`association.py`, `project_effects.py`; rules given by the user). Supporting a project is a sequence of choices:
+  1. `association_task {task: conservation, project, source}`: the project (the ones in play incl. the base projects, in the hand, or - upgraded
+     Association - in the display within the reputation range, for the folder cost) that the zoo satisfies; workers and strength are spent, a card from
+     the hand / display joins the two projects in play (the rightmost one is discarded with its tokens, which still count as supports at the end);
+  2. `choose_slot {slot[, icon | token]}`: a free slot whose requirement the zoo meets (Base / Normal: the icon count of the slot; Release: an animal with
+     the icon of the project whose size fits the slot, large / medium / small for the 1st / 2nd / 3rd slot; Breeding: an animal with the icon and a
+     partner zoo of one of its continents; Management plan: 2 icons of its kind); a bonus-icon token or a token of Breeding Cooperation / Program
+     (base projects) counts as one more icon;
+  3. `choose_bonus {bonus}`: one of the notepad bonuses that are left;
+  4. every effect is a pending effect, resolved in any order: conservation points (always), the reputation of the slot, the notepad bonus
+     (`project_bonus`), the effect of the type (`release`: release an animal of the slot's size, losing its appeal; management plans: Hunter / Posturing /
+     Sunbathing / Digging / Clever, the Tutor of slot 3, `reef`: every Reef Dweller effect of the animals of one aquarium), the place bonus of a card
+     that was just added (Release: 1 reputation; management plans: their keyword), Migration Recording (S224: +1 conservation per Release project, and
+     Release projects may be supported more than once);
+  5. then, with an upgraded Association action, more tasks while strength and workers are left, and at the end one donation.
+  Two players: base project card k has its slot k covered; two project cards above the board. BGA's own list of the supportable projects and slots
+  (the private state of the move, `slots['5']`) is compared with the engine's in the differential test.
 - Conservation thresholds (`bonuses.py`): 2 = upgrade an action card or hire a worker, 5 / 8 = one of the two random bonuses or 5 money
-  (also: Posturing 3 = 3 free kiosks / pavilions, each skippable; Adapt 3 = draw 3 final scoring cards, then discard 3), 10 = every player discards an endgame card. Reputation 5 upgrades an action card; reputation stops at 9
+  (also: Posturing 3 = 3 free kiosks / pavilions, each skippable; Adapt 3 = draw 3 final scoring cards, then discard 3), 10 = every player discards an endgame card. Reputation track (checked on the logs): 5 upgrade an action card, 8 hire a worker, 10 and 13 take a card (deck or reputation range), 11 and 14 one conservation, 12 and 15 one X token; reputation stops at 9
   until the Cards action is upgraded. Threshold effects wait in `current_action["threshold"]` and open the prompt `effects` when the step ends.
 - Differential: 153 association tasks, 66 effect choices and 6 donations are compared with the logs (1273 turns, 70 discrepancies).
 
@@ -263,3 +277,17 @@ All 160 animals can be played (was 74). Abilities are pending effects of the pro
   Conference on Europe marks once per Europe icon.
 - **Marketing**: pay the strength of a sponsor of the hand to play it (all requirements).
 - Marine Worlds sponsors S266, S270, S277, S279 have a Wave icon (the card data has it on animals only); a display refill that reveals them removes the leftmost card.
+
+## Action card variants and peaceful mode
+
+- Every played animal's printed appeal / reputation / conservation is a pending `gain` effect (not optional) next to the ability effects; the player
+  resolves them in any order. Reputation at the cap resolves without effect.
+- All five action cards and their variants 1-4 are implemented (`cards_action`, `sponsor_variants`, `association`, `build_action`, `animals_action`);
+  variant side actions are prompts of the open action (`sponsor_side`, `self_clever`, `take_instead`, `finish_*`). Animals 4 appends a `mark` after-effect;
+  Animals 2 appends the Hunter reveal; Animals 3 level II adds optional `pay_appeal` effects.
+- `GameConfig.peaceful` (inferred from the logs, `replay/config.py`) swaps the hostile abilities for `animal_abilities.peaceful_effects`.
+- Not implemented: marketing sponsors variant, map abilities (AI 12 gives +1 free strength).
+
+- Updates: Animals 1 has an explicit `animals_single` choice before the first animal (play 1, ignore a condition); the Multiplier repetition is a new
+  `choose_action_card` before the card's cleanup (the logs show each repetition as its own turn marker, the differential test joins them); a hypnotised card
+  keeps its Constriction penalty and loses its Venom / Constriction tokens at the end; covered rock / water hexes do not count for animal requirements.

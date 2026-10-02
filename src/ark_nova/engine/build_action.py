@@ -101,7 +101,10 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
             cells = footprint(t, x, y, k)
             wanted = "water" if rules.get("on_water") else "plain"
             overbuild = rules.get("overbuild")           # Diversity Researcher: water and rock spaces can be built on
-            if any(c not in bd.cells or (bd.terrain[c] != wanted and not overbuild) or c in occupied or c in bd.blocked for c in cells):
+            if any(c not in bd.cells or c in occupied or c in bd.blocked for c in cells):
+                continue
+            wrong = [c for c in cells if bd.terrain[c] != wanted]
+            if wrong and not overbuild and not (rules.get("terrain_hexes") and len(wrong) == 1):   # Terrain Build: 1 rock / water space
                 continue
             if level < 2 and not rules.get("flags") and any(c in bd.flags for c in cells):
                 continue
@@ -112,8 +115,8 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
                 continue
             if sum(c in bd.border for c in cells) < rules.get("border", 0):
                 continue
-            if t in AQUARIUMS and not overbuild and not any(bd.terrain.get(n) == "water" for c in cells for n in neighbours(c)):
-                continue
+            if t in AQUARIUMS and not overbuild and not any(bd.terrain[c] == "water" for c in cells)                     and not any(bd.terrain.get(n) == "water" and n not in occupied for c in cells for n in neighbours(c)):
+                continue                                  # (a water space that is covered by a building (Terrain Build) does not count; an aquarium on water needs no other)
             if t == "kiosk" and any(hex_distance(cells[0], o) < KIOSK_DISTANCE for o in kiosks):
                 continue
             touches_building = any(n in occupied for c in cells for n in neighbours(c))

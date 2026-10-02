@@ -11,12 +11,12 @@ Not implemented (rulings unclear, see ISSUES.md): Venom, Constriction, Multiplie
 from itertools import combinations
 
 from ark_nova import data
-from ark_nova.engine import bonuses, build_action, cards_action, marks, venom
+from ark_nova.engine import bonuses, build_action, cards_action, marks, tracks, venom
 from ark_nova.engine.actions import Action
 from ark_nova.engine.icons import card_icons, icon_counts
 from ark_nova.engine.rng import Rng
 
-KINDS = ("digging", "scavenge", "glide", "glide_gain", "shark", "symbiosis", "cut_down", "trade", "extra_shift", "assertion", "pilfer", "venom", "constrict", "gain", "ability", "hypnosis", "mark", "marketing")
+KINDS = ("digging", "scavenge", "glide", "glide_gain", "shark", "symbiosis", "cut_down", "trade", "extra_shift", "assertion", "pilfer", "venom", "constrict", "gain", "ability", "hypnosis", "mark", "marketing", "pay_appeal")
 SIMPLE = {"Pack", "Petting Zoo Animal", "Iconic Animal", "Sprint", "Jumping", "Inventive", "Inventive: Bear", "Inventive: Primary", "Full-throated",
           "Helpful", "Posturing", "Peacocking", "Pouch", "Digging", "Scavenging", "Glide", "Shark Attack", "Symbiosis", "Cut Down", "Trade",
           "Extra Shift", "Assertion", "Dominance", "Resistance", "Adapt", "Scuba Dive X", "Monkey Gang", "Sea Animal Magnet", "Sponsor Magnet",
@@ -151,6 +151,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         targets = [opp.appeal >= p.appeal]                               # the player with the most appeal (a tie counts: unclear, ISSUES.md)
         if name == "Pilfering 2":
             targets.append(opp.conservation >= p.conservation)           # and the player with the most conservation points
+        if tracks.is_protected(opp.appeal):                              # below 5 appeal a player is protected
+            targets = []
         return [{"kind": "pilfer", "source": key, "player": opp.seat, "to": seat, "optional": False} for hit in targets if hit]
     elif name == "Cut Down":
         return [{"kind": "cut_down", "source": key, "optional": True}]
@@ -244,6 +246,8 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         return [Action(seat, "choose_effect", {"index": i, "apply": k})]
     if k == "hypnosis":
         return [Action(seat, "choose_effect", {"index": i, "apply": "hypnosis"})]
+    if k == "pay_appeal":
+        return [Action(seat, "choose_effect", {"index": i, "apply": "pay_appeal"})] if p.money >= 2 else []
     if k == "mark":
         return [Action(seat, "choose_effect", {"index": i, "card": c}) for c in marks.markable(state)]
     if k == "marketing":
@@ -280,9 +284,13 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     if k == "assertion":
         return [Action(seat, "choose_effect", {"index": i, "card": c}) for c in state.base_projects_unused]
     if k == "pilfer":
-        out = [Action(seat, "choose_effect", {"index": i, "give": c}) for c in sorted(set(p.hand))]
-        if p.money >= 5:
+        out = []
+        if p.money < 5 or p.hand:                                 # with 5 money and cards the victim chooses; short of money they must give a card
+            out += [Action(seat, "choose_effect", {"index": i, "give": c}) for c in sorted(set(p.hand))]
+        if p.money >= 5 or (not p.hand and p.money > 0):          # without cards they pay 5, or what they have left
             out.append(Action(seat, "choose_effect", {"index": i, "pay": True}))
+        if not out:                                               # 0 money and no cards: nothing happens
+            out.append(Action(seat, "choose_effect", {"index": i, "nothing": True}))
         return out
     return []
 
@@ -318,8 +326,13 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     a = action.args
     k = e["kind"]
     if k == "hypnosis":
-        if state.players[1 - action.player].appeal >= p.appeal:           # the other player is not behind: one of their first 3 action cards
+        other = state.players[1 - action.player]
+        if other.appeal >= p.appeal and not tracks.is_protected(other.appeal):           # the other player is not behind (and not protected): one of their first 3 action cards
             state.current_action["extra"] = {"types": [], "optional": True, "hypnosis": True}
+    elif k == "pay_appeal":
+        if p.money < 2:
+            raise fx.IllegalEffect("not enough money")
+        g._gain(state, p.seat, money=-2, appeal=1)
     elif k == "mark":
         if a["card"] not in marks.markable(state):
             raise fx.IllegalEffect("mark an animal of the display that has no mark")
@@ -427,9 +440,12 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if "give" in a and a["give"] in p.hand:
             p.hand.remove(a["give"])
             to.hand.append(a["give"])
-        elif a.get("pay") and p.money >= 5:
-            g._gain(state, p.seat, money=-5)
-            g._gain(state, to.seat, money=5)
+        elif a.get("pay") and p.money >= 5 or a.get("pay") and not p.hand and p.money > 0:
+            paid = min(5, p.money)
+            g._gain(state, p.seat, money=-paid)
+            g._gain(state, to.seat, money=paid)
+        elif a.get("nothing") and not p.hand and p.money == 0:
+            pass
         else:
             raise fx.IllegalEffect("give a card from the hand or pay 5 money")
     elif k == "assertion":

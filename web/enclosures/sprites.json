@@ -1,0 +1,449 @@
+{
+    "hex_radius": 136,
+    "sprites": {
+        "size-1_empty": {
+            "image": "size-1_empty.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                236
+            ],
+            "cells": 1
+        },
+        "size-1_occupied": {
+            "image": "size-1_occupied.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                236
+            ],
+            "cells": 1
+        },
+        "size-2_empty": {
+            "image": "size-2_empty.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                472
+            ],
+            "cells": 2
+        },
+        "size-2_occupied": {
+            "image": "size-2_occupied.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                472
+            ],
+            "cells": 2
+        },
+        "size-3_empty": {
+            "image": "size-3_empty.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                476,
+                471
+            ],
+            "cells": 3
+        },
+        "size-3_occupied": {
+            "image": "size-3_occupied.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                476,
+                471
+            ],
+            "cells": 3
+        },
+        "size-4_empty": {
+            "image": "size-4_empty.webp",
+            "anchor": [
+                136,
+                353
+            ],
+            "size": [
+                476,
+                589
+            ],
+            "cells": 4
+        },
+        "size-4_occupied": {
+            "image": "size-4_occupied.webp",
+            "anchor": [
+                136,
+                353
+            ],
+            "size": [
+                476,
+                589
+            ],
+            "cells": 4
+        },
+        "size-5_empty": {
+            "image": "size-5_empty.webp",
+            "anchor": [
+                340,
+                353
+            ],
+            "size": [
+                476,
+                707
+            ],
+            "cells": 5
+        },
+        "size-5_occupied": {
+            "image": "size-5_occupied.webp",
+            "anchor": [
+                340,
+                353
+            ],
+            "size": [
+                476,
+                707
+            ],
+            "cells": 5
+        },
+        "petting-zoo": {
+            "image": "petting-zoo.webp",
+            "anchor": [
+                136,
+                236
+            ],
+            "size": [
+                476,
+                590
+            ],
+            "cells": 3
+        },
+        "reptile-house": {
+            "image": "reptile-house.webp",
+            "anchor": [
+                340,
+                236
+            ],
+            "size": [
+                680,
+                472
+            ],
+            "cells": 5
+        },
+        "large-bird-aviary": {
+            "image": "large-bird-aviary.webp",
+            "anchor": [
+                340,
+                235
+            ],
+            "size": [
+                680,
+                589
+            ],
+            "cells": 5
+        },
+        "small-aquarium": {
+            "image": "small-aquarium.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                472
+            ],
+            "cells": 2
+        },
+        "large-aquarium": {
+            "image": "large-aquarium.webp",
+            "anchor": [
+                136,
+                471
+            ],
+            "size": [
+                476,
+                943
+            ],
+            "cells": 5
+        },
+        "kiosk": {
+            "image": "kiosk.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                236
+            ],
+            "cells": 1
+        },
+        "pavilion": {
+            "image": "pavilion.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                236
+            ],
+            "cells": 1
+        },
+        "victory": {
+            "image": "victory.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                236
+            ],
+            "cells": 1
+        },
+        "victory_mw": {
+            "image": "victory_mw.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                236
+            ],
+            "cells": 1
+        },
+        "arcade": {
+            "image": "arcade.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                236
+            ],
+            "cells": 1
+        },
+        "meerkat": {
+            "image": "meerkat.webp",
+            "anchor": [
+                340,
+                118
+            ],
+            "size": [
+                680,
+                354
+            ],
+            "cells": 3
+        },
+        "penguin": {
+            "image": "penguin.webp",
+            "anchor": [
+                340,
+                236
+            ],
+            "size": [
+                680,
+                471
+            ],
+            "cells": 4
+        },
+        "polar-bear": {
+            "image": "polar-bear.webp",
+            "anchor": [
+                340,
+                118
+            ],
+            "size": [
+                884,
+                354
+            ],
+            "cells": 4
+        },
+        "owl": {
+            "image": "owl.webp",
+            "anchor": [
+                136,
+                354
+            ],
+            "size": [
+                272,
+                707
+            ],
+            "cells": 3
+        },
+        "sea-turtle": {
+            "image": "sea-turtle.webp",
+            "anchor": [
+                340,
+                354
+            ],
+            "size": [
+                680,
+                589
+            ],
+            "cells": 4
+        },
+        "okapi": {
+            "image": "okapi.webp",
+            "anchor": [
+                544,
+                118
+            ],
+            "size": [
+                884,
+                354
+            ],
+            "cells": 4
+        },
+        "water-playground": {
+            "image": "water-playground.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                476,
+                354
+            ],
+            "cells": 2
+        },
+        "monkey": {
+            "image": "monkey.webp",
+            "anchor": [
+                340,
+                235
+            ],
+            "size": [
+                476,
+                825
+            ],
+            "cells": 4
+        },
+        "hyena": {
+            "image": "hyena.webp",
+            "anchor": [
+                136,
+                235
+            ],
+            "size": [
+                476,
+                825
+            ],
+            "cells": 4
+        },
+        "adventure": {
+            "image": "adventure.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                471
+            ],
+            "cells": 2
+        },
+        "aquarium": {
+            "image": "aquarium.webp",
+            "anchor": [
+                340,
+                118
+            ],
+            "size": [
+                680,
+                589
+            ],
+            "cells": 4
+        },
+        "baboon": {
+            "image": "baboon.webp",
+            "anchor": [
+                340,
+                353
+            ],
+            "size": [
+                476,
+                707
+            ],
+            "cells": 4
+        },
+        "cable": {
+            "image": "cable.webp",
+            "anchor": [
+                136,
+                354
+            ],
+            "size": [
+                272,
+                943
+            ],
+            "cells": 4
+        },
+        "entrance": {
+            "image": "entrance.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                476,
+                353
+            ],
+            "cells": 2
+        },
+        "excavation": {
+            "image": "excavation.webp",
+            "anchor": [
+                340,
+                354
+            ],
+            "size": [
+                884,
+                590
+            ],
+            "cells": 5
+        },
+        "zoo-school": {
+            "image": "zoo-school.webp",
+            "anchor": [
+                340,
+                118
+            ],
+            "size": [
+                680,
+                354
+            ],
+            "cells": 3
+        },
+        "underwater-tunnel": {
+            "image": "underwater-tunnel.webp",
+            "anchor": [
+                136,
+                118
+            ],
+            "size": [
+                272,
+                472
+            ],
+            "cells": 2
+        }
+    }
+}

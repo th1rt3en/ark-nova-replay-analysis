@@ -160,11 +160,16 @@ def test_determination_and_action_x_give_a_second_action():
         s = apply(s, Action(0, "skip_effect", {"index": 0}))
     s = apply(s, Action(0, "finish_animals", {})) if s.prompt.kind == "animals_play" else s
     assert s.prompt.kind == "choose_action_card" and s.prompt.player == 0 and "animals" not in s.prompt.args["only"]
-    assert not any(a.kind == "skip_action" for a in legal_actions(s)) and not any(a.kind == "skip_extra" for a in legal_actions(s))
+    acts = legal_actions(s)                                                             # Determination: can be skipped, and any action can be put back for an X token
+    assert any(a.kind == "skip_extra" for a in acts) and any(a.kind == "skip_action" for a in acts)
+    x = s.players[0].x_tokens
+    t = apply(s, Action(0, "skip_action", {"type": "sponsors"}))
+    assert t.players[0].x_tokens == min(5, x + 1) and t.active_player == 1
     s = _start(_zoo("A430"))                                                           # Pygmy Hippopotamus: Action: Sponsors (optional)
     s = _play(s, "A430")
     s = apply(s, Action(0, "finish_animals", {})) if s.prompt.kind == "animals_play" else s
     assert s.prompt.args["only"] == ["sponsors"] and Action(0, "skip_extra", {}) in legal_actions(s)
+    assert not any(a.kind == "skip_action" for a in legal_actions(s))                   # Action: X cannot be put back for an X token
     s = apply(s, Action(0, "skip_extra", {}))
     assert s.active_player == 1 and s.prompt.kind == "choose_action_card" and "only" not in s.prompt.args
 
@@ -212,6 +217,22 @@ def test_pilfering_lets_the_opponent_choose_card_or_money():
     assert {a.player for a in acts if a.kind == "choose_effect"} == {1}
     s = apply(s, Action(1, "choose_effect", {"index": 0, "give": "A402"}))
     assert "A402" in s.players[0].hand and not s.players[1].hand
+
+
+def test_pilfering_with_little_money_or_no_cards():
+    def victim(money, hand):
+        s = _zoo("A456")
+        s.players[1].appeal, s.players[1].money, s.players[1].hand = 50, money, list(hand)
+        s = _play(_start(s), "A456")
+        return s, {tuple(sorted((a.args.get("give") or ("pay" if a.args.get("pay") else "nothing") for a in legal_actions(s) if a.kind == "choose_effect")))}
+    assert victim(9, ["A402"])[1] == {("A402", "pay")}                                  # a choice
+    assert victim(3, ["A402"])[1] == {("A402",)}                                        # short of money: a card
+    assert victim(9, [])[1] == {("pay",)}                                               # no cards: 5 money
+    s, _ = victim(3, [])                                                                # no cards, 3 money: the rest
+    mine = s.players[0].money
+    s = apply(s, Action(1, "choose_effect", {"index": 0, "pay": True}))
+    assert s.players[1].money == 0 and s.players[0].money == mine + 3
+    assert victim(0, [])[1] == {("nothing",)}
 
 
 def test_all_animals_are_implemented():
@@ -407,3 +428,66 @@ def test_marketing_plays_a_sponsor_from_the_hand_for_its_strength():
     assert "S241" in opts                                                              # strength 5, money enough, no requirements
     s = apply(s, Action(0, "choose_effect", {"index": i, "card": "S241"}))
     assert "S241" in s.players[0].sponsors and s.players[0].money == money - 5
+
+
+def test_printed_gains_are_effects_resolvable_in_any_order():
+    s = _play(_start(_zoo("A439")), "A439", settle=False)                               # Lama: printed appeal 4
+    pending = s.prompt.args["pending"]
+    gains = [i for i, e in enumerate(pending) if e["kind"] == "gain"]
+    assert gains and all(not pending[i]["optional"] for i in gains)
+    before = s.players[0].appeal
+    s = apply(s, Action(0, "choose_effect", {"index": gains[-1], "apply": "gain", "res": pending[gains[-1]]["res"]}))
+    assert s.players[0].appeal >= before
+
+
+def test_animals4_places_a_mark_at_the_end_of_the_action():
+    s = _zoo("A439")
+    next(c for c in s.players[0].action_cards if c.type == "animals").variant = 4
+    s = _play(_start(s), "A439")
+    while s.prompt.kind == "effects" and not any(e["kind"] == "mark" for e in s.prompt.args["pending"]):
+        s = apply(s, Action(0, "skip_effect", {"index": 0}))
+    if s.prompt.kind == "animals_play":
+        s = apply(s, Action(0, "finish_animals", {}))
+    assert any(e["kind"] == "mark" for e in s.prompt.args["pending"])
+
+
+def test_peaceful_mode_replaces_hostile_effects():
+    assert {"Venom", "Constriction", "Pilfering 1", "Pilfering 2", "Hypnosis"} == ab.PEACEFUL
+    s = _start(_zoo("A414"))
+    eff = ab.peaceful_effects(s, 0, "A414", "Venom", 2)
+    assert eff == [{"kind": "gain", "source": "A414", "res": "xtoken", "n": 2, "optional": False}]
+
+
+def test_hypnosis_applies_constriction_and_clears_tokens_at_the_end():
+    s = _zoo("A485")
+    s.players[0].buildings.append(Building(id=3, type="reptile-house", x=6, y=5))
+    s.players[1].appeal = 5
+    s = _play(_start(s), "A485", 6, 5)
+    s = _resolve(s, **{"apply": "hypnosis"})
+    while s.prompt.kind == "effects":
+        s = apply(s, Action(0, "skip_effect", {"index": 0}))
+    s = apply(s, Action(0, "finish_animals", {})) if s.prompt.kind == "animals_play" else s
+    card = s.players[1].action_cards[2]
+    card.tokens = ["Constriction", "Venom"]
+    s = apply(s, Action(0, "choose_action_card", {"type": card.type, "spend": 0, "hypnosis": True}))
+    assert s.current_action["strength"] == 1                                            # slot 3 - 2 (min 1)
+    t = s.players[1].action_cards
+    assert "Constriction" in next(c for c in t if c.type == card.type).tokens
+    from ark_nova.engine import venom
+    c2 = next(c for c in s.players[1].action_cards if c.type == card.type)
+    money = s.players[1].money
+    venom.remove_tokens(s.players[1], c2, owner_paid=False)
+    assert c2.tokens == [] and not s.players[1].flags.get("venom_removed") and s.players[1].money == money      # the owner pays nothing: not their turn
+
+
+def test_animals1_single_animal_choice_before_playing_ignores_a_condition():
+    s = _zoo("A439", level=1, slot=5)
+    next(c for c in s.players[0].action_cards if c.type == "animals").variant = 1
+    s = _start(s)
+    assert Action(0, "animals_single", {}) in legal_actions(s)
+    s = apply(s, Action(0, "animals_single", {}))
+    assert not any(a.kind == "animals_single" for a in legal_actions(s))
+    s = _play(s, "A439")
+    while s.prompt.kind == "effects":
+        s = apply(s, Action(0, "skip_effect", {"index": 0}))
+    assert s.prompt.kind != "animals_play" or not any(a.kind == "play_animal" for a in legal_actions(s))      # only one animal

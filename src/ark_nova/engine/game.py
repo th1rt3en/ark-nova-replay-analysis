@@ -125,8 +125,11 @@ def legal_actions(state: GameState) -> list[Action]:
                     + [Action(p.seat, "skip_extra", {})])
         chosen = [Action(p.seat, "choose_action_card", {"type": c.type, "spend": k})
                   for c in p.action_cards if only is None or c.type in only for k in range(0, p.x_tokens + 1)]
-        if only is not None:                                     # a second action: no skipping, declining only when it is optional
-            return chosen + ([Action(p.seat, "skip_extra", {})] if pr.args.get("optional") else [])
+        if only is not None:                                     # a second action: Action: X can be declined (not put back for an X token), Determination can put any action back
+            if pr.args.get("optional"):
+                return chosen + [Action(p.seat, "skip_extra", {})]
+            return chosen + [Action(p.seat, "skip_extra", {})] + [Action(p.seat, "skip_action", {"type": c.type, **({"repeat": m} if m else {})})
+                                                                  for c in p.action_cards if c.type in only for m in range(0, c.tokens.count("Multiplier") + 1)]
         return chosen + [Action(p.seat, "skip_action", {"type": c.type, **({"repeat": m} if m else {})})
                          for c in p.action_cards for m in range(0, c.tokens.count("Multiplier") + 1)]
     if pr.kind == "cards_take":
@@ -163,7 +166,7 @@ def legal_actions(state: GameState) -> list[Action]:
 def _sponsor_actions(state: GameState, p) -> list[Action]:
     a = state.prompt.args
     acts = [Action(p.seat, "play_sponsor", {"card": k, "from_display": d})
-            for k, d in sponsors_action.playable(state, p.seat, a["level"], a["left"] + (sponsor_variants.REDUCTION if a.get("reduce") else 0), p.money)
+            for k, d in sponsors_action.playable(state, p.seat, a["level"], a["left"], p.money)
             if (a["level"] >= 2 or not a["played"]) and not a.get("broke")]
     if not a["played"] and not a.get("broke"):
         acts.append(Action(p.seat, "sponsor_break", {}))
@@ -172,23 +175,48 @@ def _sponsor_actions(state: GameState, p) -> list[Action]:
     return acts + sponsor_variants.legal(state, p)
 
 
+BUILD_EXTRA_COST = {1: 3, 2: 2}       # Pavilion / Kiosk Build: the additional pavilion / kiosk costs 3 at level I, 2 at level II
+TERRAIN_COST = 2                       # Terrain Build, level I: covering a rock / water space costs 2 more; level II: it gives 2 money
+EXTRA_TYPE = {1: "pavilion", 2: "kiosk"}
+
+
+def _build_rules(p, a) -> dict:
+    rules = dict(_player_rules(p))
+    if a.get("variant") == 4 and not a.get("terrain_used"):
+        rules["terrain_hexes"] = 1
+    return rules
+
+
 def _build_actions(state: GameState, p) -> list[Action]:
     a = state.prompt.args
     bd = board(p.map_id)
     mine = [(b.type, b.x, b.y, b.rotation) for b in p.buildings]
+    rules = _build_rules(p, a)
+    variant = a.get("variant", 0)
     acts = []
     for t, size in build_action.SIZES.items():
-        if size > a["remaining"] or t in a["placed"] or build_action.cost(t) > p.money:
-            continue
         if t in build_action.AQUARIUMS and not state.config.marine_worlds:      # aquariums belong to Marine Worlds
             continue
         if t in build_action.UNIQUE and any(b.type == t for b in p.buildings):
             continue
-        for x, y, k in build_action.valid_placements(bd, mine, t, a["level"], _player_rules(p)):
-            acts.append(Action(p.seat, "place_building", {"type": t, "x": x, "y": y, "rotation": k}))
+        again = variant == 3 and a["level"] >= 2 and t.startswith("size-")        # +1 Build, level II: several identical standard enclosures
+        normal = size <= a["remaining"] and (t not in a["placed"] or again) and not (a["level"] < 2 and a["placed"])
+        extra = variant in EXTRA_TYPE and EXTRA_TYPE[variant] == t and not a.get("extra_used")
+        if not normal and not extra:
+            continue
+        for x, y, k in build_action.valid_placements(bd, mine, t, a["level"], rules):
+            tcost = TERRAIN_COST if _covers_terrain(bd, t, x, y, k) and variant == 4 and a["level"] == 1 else 0
+            if normal and build_action.cost(t) + tcost <= p.money:
+                acts.append(Action(p.seat, "place_building", {"type": t, "x": x, "y": y, "rotation": k}))
+            if extra and BUILD_EXTRA_COST[a["level"]] <= p.money:
+                acts.append(Action(p.seat, "place_building", {"type": t, "x": x, "y": y, "rotation": k, "extra": True}))
     if a["placed"]:
         acts.append(Action(p.seat, "finish_build", {}))
     return acts
+
+
+def _covers_terrain(bd, t: str, x: int, y: int, k: int) -> bool:
+    return any(bd.terrain[c] != "plain" for c in build_action.footprint(t, x, y, k) if c in bd.terrain)
 
 
 def apply(state: GameState, action: Action) -> GameState:
@@ -235,17 +263,16 @@ def _choose_action_card(state: GameState, action: Action) -> None:
     supported = ((card.type == "cards" and card.variant in cards_action.SUPPORTED_VARIANTS)
                  or (card.type == "sponsors")
                  or (card.type == "association")
-                 or (card.type in ("build", "animals") and card.variant == 0))
+                 or (card.type == "build")
+                 or (card.type == "animals"))
     if not supported:
         raise NotImplementedError(f"action card {card.type} variant {card.variant} is not implemented yet")
     if args.get("repeat"):                                      # Multiplier: the action once more, using up a token
         if "Multiplier" not in card.tokens:
             raise IllegalAction("no Multiplier token left")
         card.tokens.remove("Multiplier")
-    if hypnosis:
-        strength = idx + 1 + spend
-    else:
-        strength = max(1, idx + 1 + spend - venom.strength_penalty(card))          # Constriction: -2 strength
+    strength = max(1, idx + 1 + spend - venom.strength_penalty(card))              # Constriction: -2 strength (on a hypnotised card too)
+    if not hypnosis:
         venom.remove_tokens(p, card)
     p.x_tokens -= spend
     carry = args.get("carry") or {}
@@ -254,13 +281,14 @@ def _choose_action_card(state: GameState, action: Action) -> None:
     if hypnosis:
         state.current_action.update(owner=owner.seat, hypnosis=True, extra=None)
     if card.type == "build":
-        state.prompt = Prompt(kind="build_place", player=p.seat, args={"level": card.level, "remaining": strength, "placed": []})
+        state.prompt = Prompt(kind="build_place", player=p.seat, args={
+            "level": card.level, "remaining": strength + (1 if card.variant == 3 else 0), "placed": [], "variant": card.variant})
         return
     if card.type == "association":
         association.open_action(state, p.seat, card.level, strength, card.variant)
         return
     if card.type == "animals":
-        animals_action.open_action(state, p.seat, card.level, strength)
+        animals_action.open_action(state, p.seat, card.level, strength, card.variant)
         return
     if card.type == "sponsors":
         state.prompt = Prompt(kind="sponsors_play", player=p.seat, args={
@@ -304,6 +332,10 @@ def _gain(state: GameState, seat: int, money: int = 0, appeal: int = 0, x_tokens
             _gain(state, seat, x_tokens=bonus.get("xtoken", 0), conservation=bonus.get("conservation", 0))
             if bonus.get("upgrade"):
                 bonuses.defer(state, {"kind": "upgrade", "player": seat, "source": "reputation track", "optional": False})
+            if bonus.get("worker"):
+                bonuses.hire_worker(state, seat)
+            if bonus.get("take"):
+                bonuses.defer(state, {"kind": "take", "source": "reputation track", "optional": False, "player": seat})
         if old + reputation > bonuses.reputation_cap(p) == tracks.MAX_REPUTATION:      # beyond the end of the track: 1 appeal per point lost
             _gain(state, seat, appeal=old + reputation - tracks.MAX_REPUTATION)      # (at 9 until the Cards action is upgraded nothing is paid: logs)
 
@@ -316,23 +348,33 @@ def _place_building(state: GameState, action: Action) -> None:
         raise NotImplementedError(f"building type {t} is not implemented yet")
     if t in build_action.AQUARIUMS and not state.config.marine_worlds:
         raise IllegalAction("aquariums need Marine Worlds")
-    if t in build_action.UNIQUE and any(b.type == t for b in p.buildings):
-        raise IllegalAction(f"only one {t} per player")
-    if (x, y, k) not in build_action.valid_placements(board(p.map_id), [(b.type, b.x, b.y, b.rotation) for b in p.buildings], t, a["level"], _player_rules(p)):
-        raise IllegalAction(f"{t} cannot be placed at {(x, y, k)}")
-    size = build_action.SIZES[t]
-    if size > a["remaining"] or t in a["placed"]:
-        raise IllegalAction("not enough size left / building type already used in this action")
-    if build_action.cost(t) > p.money:
-        raise IllegalAction("not enough money")
+    if Action(p.seat, "place_building", dict(action.args)) not in _build_actions(state, p):
+        if t in build_action.UNIQUE and any(b.type == t for b in p.buildings):
+            raise IllegalAction(f"only one {t} per player")
+        raise IllegalAction(f"{t} cannot be placed at {(x, y, k)} (or not enough size / money, or the type was used in this action)")
     for name, why in card_programs.UNSUPPORTED_IN_BUILD.items():
         if name in p.sponsors:
             raise NotImplementedError(f"Build action with {why}")
-    p.money -= build_action.cost(t)
+    bd = board(p.map_id)
+    variant = a.get("variant", 0)
+    if action.args.get("extra"):                          # the additional pavilion / kiosk of Pavilion / Kiosk Build
+        p.money -= BUILD_EXTRA_COST[a["level"]]
+        a["extra_used"] = True
+    else:
+        p.money -= build_action.cost(t)
+        a["remaining"] -= build_action.SIZES[t]
+        a["placed"].append(t)
+    if variant == 4 and _covers_terrain(bd, t, x, y, k):  # Terrain Build: 2 more at level I, level II: gain 2 money
+        a["terrain_used"] = True
+        if a["level"] == 1:
+            p.money -= TERRAIN_COST
+        else:
+            _gain(state, p.seat, money=2)
     _put_building(state, p.seat, t, x, y, k)
-    a["remaining"] -= size
-    a["placed"].append(t)
-    if a["level"] < 2 or a["remaining"] == 0 or not _build_actions(state, p)[:-1]:
+    more = [x for x in _build_actions(state, p) if x.kind == "place_building"]
+    if a["level"] < 2:                                    # level I: one building, only the additional one of Pavilion / Kiosk Build may follow
+        more = [x for x in more if x.args.get("extra")]
+    if not more:
         _end_turn(state)
 
 
@@ -359,6 +401,10 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     for sponsor, terrain in (("S241", "water"), ("S242", "rock")):         # Hydrologist / Geologist: money for covered spaces next to water / rock
         if sponsor in p.sponsors:
             _gain(state, seat, money=sum(any(bd.terrain.get(n) == terrain for n in neighbours(c)) for c in cells))
+    if t in build_action.AQUARIUMS:                                     # an aquarium is a water icon played into the zoo (Aquarium sponsor: 2 appeal)
+        from collections import Counter
+        for eff in effects.fire_icon_counter(state, seat, Counter({"Water": 1})):
+            bonuses.defer(state, eff)
     if t == "pavilion":
         _gain(state, seat, appeal=1)
         if "S276" in p.sponsors and state.current_action is not None and not state.current_action.get("gardener"):
@@ -368,13 +414,21 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
         _gain(state, seat, appeal=build_action.FULL_MAP_APPEAL)
 
 
+def _put_sponsor_tokens(state: GameState, p, k: str) -> None:
+    """Breeding Cooperation / Breeding Program: 2 player tokens on the card."""
+    if k in association.SPONSOR_TOKENS:
+        ids = [t.id for q in state.players for t in q.tokens] + [t.id for t in state.board_tokens]
+        for i in range(2):
+            p.tokens.append(Token(max(ids, default=0) + 1 + i, "token", association.token_location(k)))
+
+
 def _play_sponsor(state: GameState, action: Action) -> None:
     p = state.players[action.player]
     a = state.prompt.args
     k, from_display = action.args["card"], bool(action.args.get("from_display"))
     if a["played"] and a["level"] < 2:
         raise IllegalAction("a level I Sponsors action plays exactly one sponsor")
-    if (k, from_display) not in sponsors_action.playable(state, p.seat, a["level"], a["left"] + (sponsor_variants.REDUCTION if a.get("reduce") else 0), p.money):
+    if (k, from_display) not in sponsors_action.playable(state, p.seat, a["level"], a["left"], p.money):
         raise IllegalAction(f"{k} cannot be played now")
     if sponsors_action.has_unimplemented_effect(k):
         raise NotImplementedError(f"the effect of sponsor {k} is not implemented yet")
@@ -386,8 +440,8 @@ def _play_sponsor(state: GameState, action: Action) -> None:
     else:
         p.hand.remove(k)
     p.sponsors.append(k)
-    a["left"] -= sponsor_variants.level_cost(a, k)
-    a["reduce"] = False
+    _put_sponsor_tokens(state, p, k)
+    a["left"] -= sponsors_action.level_of(k)
     a["played"].append(k)
     own = sponsors_action.own_gain(k)
     printed = card_programs.PRINTED_OVERRIDE.get(k) or {"appeal": card.get("appeal") or 0, "reputation": card.get("reputation") or 0,
@@ -613,6 +667,8 @@ def _end_turn(state: GameState) -> None:
 
 def _complete(state: GameState, seat: int, owner, card_type: str, after: list, extra) -> None:
     i = next(i for i, c in enumerate(owner.action_cards) if c.type == card_type)
+    if state.current_action is not None and state.current_action.get("hypnosis"):
+        venom.remove_tokens(owner, owner.action_cards[i], owner_paid=False)            # the Venom / Constriction tokens of the hypnotised card go at the end
     owner.action_cards = [owner.action_cards[i]] + owner.action_cards[:i] + owner.action_cards[i + 1:]
     state.current_action = None
     if after:                                        # effects that wait for the end of the action (Expert on Africa, marks)
@@ -628,14 +684,15 @@ def _after_action(state: GameState, seat: int, extra) -> None:
         state.prompt = Prompt(kind="choose_action_card", player=seat, args={"hypnosis": True, "optional": True})
         return
     if extra:
-        state.prompt = Prompt(kind="choose_action_card", player=seat, args={"only": list(extra["types"]), "optional": bool(extra["optional"])})
+        state.prompt = Prompt(kind="choose_action_card", player=seat, args={"only": list(extra["types"]), "optional": bool(extra["optional"]),
+                                                                                        "determination": not extra["optional"]})
         return
     _finish_turn(state, seat)
 
 
 def _skip_extra(state: GameState, action: Action) -> None:
     args = state.prompt.args
-    if not args.get("optional"):
+    if not args.get("optional") and not args.get("determination"):
         raise IllegalAction("the second action is not optional")
     if args.get("repeat"):                                       # no more Multiplier repetitions: the action is over
         p = state.players[action.player]
@@ -691,8 +748,11 @@ _TURN_HANDLERS = {
     ("sponsors_play", "sponsor_side"): lambda st, act: sponsor_variants.apply(st, act),
     ("sponsors_play", "sponsor_break"): _sponsor_break,
     ("animals_play", "play_animal"): lambda st, act: animals_action.play(st, act),
+    ("animals_play", "animals_single"): lambda st, act: animals_action.choose_single(st, act),
     ("animals_play", "finish_animals"): lambda st, act: animals_action.finish(st, act),
     ("association_tasks", "association_task"): lambda st, act: association.do_task(st, act),
+    ("association_tasks", "choose_slot"): lambda st, act: association.choose_slot(st, act),
+    ("association_tasks", "choose_bonus"): lambda st, act: association.choose_bonus(st, act),
     ("association_tasks", "donate"): lambda st, act: association.donate(st, act),
     ("association_tasks", "finish_association"): lambda st, act: association.finish(st, act),
     ("association_tasks", "self_clever"): lambda st, act: association.self_clever(st, act),

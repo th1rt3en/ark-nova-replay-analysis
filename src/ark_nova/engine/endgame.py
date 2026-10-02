@@ -114,7 +114,7 @@ def supports(state, seat: int) -> list:
         m = re.match(r"(P\d+)_", t.location)
         if t.type == "token" and m:
             keys.append(m.group(1))
-    return keys
+    return keys + ["gone"] * state.players[seat].flags.get("supports_gone", 0)           # projects that were discarded keep their supports
 
 
 def donations(state, seat: int) -> int:

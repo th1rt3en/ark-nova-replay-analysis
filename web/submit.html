@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Submit a log - Ark Nova Replay</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1>Submit the game log</h1>
+<p>Table <strong id="tid"></strong> is known to us, but its log has not been collected yet. Upload the log yourself to start the replay.
+  <a href="/guide.html">How do I get the log?</a></p>
+<form id="f">
+  <input type="file" id="file" accept=".json,application/json" required aria-label="Log file">
+  <button id="go">Verify and open</button>
+</form>
+<div id="msg" role="status" hidden></div>
+<p><a href="/">Back</a></p>
+<script src="/js/logstore.js"></script>
+<script>
+const table = new URLSearchParams(location.search).get('table');
+const msg = document.getElementById('msg');
+function show(text, kind, errors) {
+  msg.textContent = text;
+  if (errors && errors.length) {
+    const ul = document.createElement('ul'); ul.className = 'errors';
+    for (const e of errors) { const li = document.createElement('li'); li.textContent = e; ul.appendChild(li); }
+    msg.appendChild(ul);
+  }
+  msg.className = kind; msg.hidden = false;
+}
+if (!/^\d+$/.test(table || '')) { location.replace('/'); }
+document.getElementById('tid').textContent = table;
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const go = document.getElementById('go');
+  go.disabled = true; show('Verifying the log…', 'loading');
+  try {
+    const text = await document.getElementById('file').files[0].text();
+    const res = await fetch('/api/tables/' + table + '/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: text });
+    const body = await res.json();
+    if (body.ok) {
+      show('Log verified, opening the replay…', 'loading');
+      await LogStore.put(table, text);
+      location.href = '/replay.html?table=' + table + '&source=upload';
+    } else if (body.errors) { show('This log cannot be used:', 'error', body.errors); }
+    else { show(body.message || 'Something went wrong.', 'error'); }
+  } catch (err) { show('Could not verify the file, try again.', 'error'); }
+  finally { go.disabled = false; }
+});
+</script>
+</body>
+</html>

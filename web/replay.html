@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Replay - Ark Nova Replay</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/replay.css">
+</head>
+<body class="viewer">
+<div id="loading" class="status loading" role="status">Loading the table and log…</div>
+<div id="app" hidden>
+  <header class="bar">
+    <a href="/" class="home" title="Back to the start page">Ark Nova Replay</a>
+    <span id="tableInfo" class="muted"></span>
+    <div class="controls" role="group" aria-label="Replay controls">
+      <button id="first" title="First step (Home)" aria-label="First step">&#9198;</button>
+      <button id="prev" title="Back one step (Left arrow)" aria-label="Back one step">&#9664;</button>
+      <button id="play" title="Play / pause (Space)" aria-label="Play">&#9654;</button>
+      <button id="next" title="Forward one step (Right arrow)" aria-label="Forward one step">&#9654;&#9654;</button>
+      <button id="last" title="Last step (End)" aria-label="Last step">&#9197;</button>
+      <label class="jump">Step <input id="jump" type="number" min="0" aria-label="Jump to step"> / <span id="total"></span></label>
+    </div>
+  </header>
+  <div id="current" class="current" aria-live="polite"></div>
+  <div class="layout">
+    <main>
+      <section id="shared" class="shared"></section>
+      <section id="zoos" class="zoos"></section>
+    </main>
+    <aside>
+      <section id="side" class="side"></section>
+      <h2>Moves</h2>
+      <ol id="moves" class="moves"></ol>
+    </aside>
+  </div>
+</div>
+<img id="preview" class="preview" alt="" hidden>
+<script src="/js/logstore.js"></script>
+<script src="/js/replay.js"></script>
+</body>
+</html>

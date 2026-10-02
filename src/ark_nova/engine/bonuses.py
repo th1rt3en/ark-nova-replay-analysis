@@ -69,6 +69,8 @@ def hire_worker(state, seat: int) -> bool:
     supply[0].location = "reserve"
     if p.map_id == "11" and len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_")) == 3:
         defer(state, {"kind": "upgrade", "player": seat, "optional": False, "source": "third worker (map 11, Caves)"})
+    if p.map_id == "T1" and len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_")) in (2, 3):
+        _g()._gain(state, seat, reputation=1)                          # map T1: the 1st and the 2nd hired worker give 1 reputation (logs)
     if len(supply) == 1:
         from ark_nova.engine import association
         _g()._gain(state, seat, conservation=association.map_bonus(p.map_id, "last_worker"))

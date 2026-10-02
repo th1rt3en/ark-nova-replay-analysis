@@ -18,7 +18,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from ark_nova import data
-from ark_nova.engine import bonuses, cards_action
+from ark_nova.engine import bonuses, cards_action, project_effects
 from ark_nova.engine.actions import Action
 from ark_nova.engine.icons import icon_counts
 from ark_nova.engine.rng import Rng
@@ -159,9 +159,17 @@ def project(key: str, marine_worlds: bool) -> dict:
     return card
 
 
-def project_location(key: str, slot: int) -> str:
-    """BGA's location of a token on a project: `P109_Reptiles_2` (card id + slot)."""
-    name = "".join(w.capitalize() for w in re.split(r"[^A-Za-z]+", card_name(key)) if w)
+BGA_NAME = {"P113": "ReleaseBavarian", "P114": "ReleaseYosemite", "P115": "ReleaseAngthong", "P116": "ReleaseSerengeti", "P117": "ReleaseBlueMountain",
+            "P118": "ReleaseSavanna", "P119": "ReleaseLowMountain", "P120": "ReleaseBambooForest", "P121": "ReleaseSeacave", "P122": "ReleaseJungle",
+            "P123": "BirdBreeding", "P124": "PredatorBreeding", "P125": "ReptileBreeding", "P126": "HerbivoreBreeding", "P127": "PrimateBreeding"}
+
+
+BGA_NAME_MW = {"P131": "LargeAnimals_MW"}
+
+
+def project_location(key: str, slot: int, marine_worlds: bool = False) -> str:
+    """BGA's location of a token on a project: `P109_Reptiles_2` (card id + slot); the release and breeding projects have short names of their own."""
+    name = (BGA_NAME_MW.get(key) if marine_worlds else None) or BGA_NAME.get(key) or "".join(w.capitalize() for w in re.split(r"[^A-Za-z]+", card_name(key)) if w)
     return f"{key}_{name}_{slot}"
 
 
@@ -197,18 +205,40 @@ def project_count(state, seat: int, requirement: str) -> int:
     raise NotImplementedError(f"project requirement {requirement!r}")
 
 
+KNOWN_TYPES = ("Base", "Normal", "Release", "Breed", "Management")
+
+
 def project_supported(card: dict) -> bool:
-    return card["type"] in ("Base", "Normal") and all(s["bonuses"] and s["bonuses"][0].get("bonusRequirement") for s in card["slots"])
+    return card["type"] in KNOWN_TYPES
+
+
+def _breedable(state, p, tag: str) -> bool:
+    """Breeding program: an animal with the icon and a partner zoo of one of its continents."""
+    from ark_nova.engine.icons import card_icons
+    mine = {continent_of(t) for t in partners(p)}
+    icon = project_effects.tag_icon(tag)
+    return any(card_icons(k, state.config.marine_worlds)[icon] > 0 and card_icons(k, state.config.marine_worlds)[c] > 0
+               for k in p.animals for c in mine)
 
 
 def slot_options(state, seat: int, key: str, extra: int = 0) -> list:
-    """Slots of the project the player can claim: [(slot index, conservation, reputation)]. `extra` = icons added by a bonus-icon token."""
+    """Slots of the project the player can claim: [(slot index, conservation, plain reputation)]. `extra` = icons added by a bonus-icon token.
+
+    Base / normal projects: the icon count of the slot; release: an animal with the icon and the size of the slot (large / medium / small); breeding: an animal with the icon
+    and a partner zoo of its continent; management plans: 2 icons of the plan's kind. Every slot that is still free then counts."""
     p = state.players[seat]
     card = project(key, state.config.marine_worlds)
     if not project_supported(card):
         raise NotImplementedError(f"conservation project {key} ({card['type']}) is not implemented yet")
-    if any(t.location.startswith(key + "_") for t in p.tokens if t.type == "token"):
-        return []                                                     # every project can be supported once
+    kind = card["type"]
+    if any(t.location.startswith(key + "_") for t in p.tokens if t.type == "token") and not (kind == "Release" and "S224" in p.sponsors):
+        return []                                                     # every project can be supported once (Migration Recording: Release projects more than once)
+    if kind == "Breed" and not _breedable(state, p, card["tag"]):
+        return []
+    if kind == "Management":
+        need = card["requirement"]
+        if icon_counts(state, seat)[project_effects.tag_icon(need["tag"])] + extra < need["count"]:
+            return []
     taken = {s for _, s in supported_by(state, key)}
     if key in state.base_projects:
         taken.add(BLOCKED_BASE_SLOT[state.base_projects.index(key)])
@@ -217,10 +247,13 @@ def slot_options(state, seat: int, key: str, extra: int = 0) -> list:
         if i in taken:
             continue
         # the card's `tag` names the icon; the slots of Habitat Diversity wrongly say 'all-animals' in the upstream data
-        if project_count(state, seat, card.get("tag") or slot["bonuses"][0]["bonusRequirement"]) + extra >= slot["indicator"]:
-            cons = sum(x["bonusValue"] for x in slot["bonuses"] if x["bonusType"] == "Conservation Point")
-            rep = sum(x["bonusValue"] for x in slot["bonuses"] if x["bonusType"] == "Reputation")
-            out.append((i, cons, rep))
+        if kind in ("Base", "Normal") and project_count(state, seat, card.get("tag") or slot["bonuses"][0]["bonusRequirement"]) + extra < slot["indicator"]:
+            continue
+        if kind == "Release" and not project_effects.releasable(state, seat, card["tag"], i):
+            continue
+        cons = sum(x["bonusValue"] for x in slot["bonuses"] if x["bonusType"] == "Conservation Point")
+        rep = sum(x["bonusValue"] for x in slot["bonuses"] if x["bonusType"] == "Reputation" and not x.get("per"))
+        out.append((i, cons, rep))
     return out
 
 
@@ -245,6 +278,13 @@ def open_action(state, seat: int, level: int, strength: int, variant: int = 0) -
 # nothing and perform another action, level II: a card from the deck or the display instead of the donation.
 SUPPLY_UNIVERSITIES = ("fac-rep-hand", "fac-science-rep", "fac-science-science")
 EXTRA_WORKER_STRENGTH = 2
+COPIES = 4                              # copies of each partner zoo / non-category university tile (the category universities exist once each)
+
+
+def supply_left(state, tile_type: str) -> int:
+    """Copies of a partner zoo / university tile that are not in a zoo or on the board yet."""
+    taken = sum(t.type == tile_type for q in state.players for t in q.tokens) + sum(t.type == tile_type for t in state.board_tokens)
+    return COPIES - taken
 
 
 def _extra_options(p, a, task: str) -> list:
@@ -269,7 +309,7 @@ def task_actions(state, p, a) -> list:
         if need is None:
             continue
         for extra in _extra_options(p, a, task):
-            if max(1, strength_needed(p, task) - EXTRA_WORKER_STRENGTH * extra) > a["left"] or len(bonuses.worker_tokens(p, "reserve")) < need + extra:
+            if max(0, strength_needed(p, task) - EXTRA_WORKER_STRENGTH * extra) > a["left"] or len(bonuses.worker_tokens(p, "reserve")) < need + extra:
                 continue
             mark = {"extra": extra} if extra else {}
             if task == "reputation":
@@ -278,7 +318,8 @@ def task_actions(state, p, a) -> list:
                 room = len(partners(p)) < (MAX_PARTNERS if level >= 2 else LEVEL_I_PARTNERS)
                 mine = {continent_of(t) for t in partners(p)}
                 if room and variant == 1:                       # from the supply, a continent that is already in the zoo too
-                    acts += [Action(p.seat, "association_task", {"task": task, "continent": c, "supply": True, **mark}) for c in CONTINENTS]
+                    acts += [Action(p.seat, "association_task", {"task": task, "continent": c, "supply": True, **mark}) for c in CONTINENTS
+                             if supply_left(state, f"partner-{c}") > 0]
                 elif room:
                     for t in state.board_tokens:
                         if t.location == "association_3" and continent_of(t) not in mine:
@@ -287,7 +328,8 @@ def task_actions(state, p, a) -> list:
                 if len(universities(p)) < MAX_UNIVERSITIES:
                     mine = {university_class(t.type) for t in universities(p)}
                     if variant == 1 and level >= 2:             # from the supply: the tiles of the three kinds, even a kind the zoo has
-                        acts += [Action(p.seat, "association_task", {"task": task, "kind": k, "supply": True, **mark}) for k in SUPPLY_UNIVERSITIES]
+                        acts += [Action(p.seat, "association_task", {"task": task, "kind": k, "supply": True, **mark}) for k in SUPPLY_UNIVERSITIES
+                                 if supply_left(state, k) > 0]
                     for t in state.board_tokens:
                         if t.location == "association_4" and university_class(t.type) not in mine:
                             acts.append(Action(p.seat, "association_task", {"task": task, "kind": t.type, **mark}))
@@ -308,32 +350,55 @@ def task_actions(state, p, a) -> list:
     return acts
 
 
+SPONSOR_TOKENS = ("S215", "S218")        # Breeding Cooperation / Program: 2 tokens, each one can be discarded as any icon for a base project
+
+
+def token_location(key: str) -> str:
+    return data.cards_by_key()[key]["bga_id"]
+
+
+def extra_icon_sources(state, p, card: dict) -> list:
+    """Where one more icon of any kind can come from when a project is supported: a bonus-icon token of the notepad ("icon"), a token of
+    Breeding Cooperation / Breeding Program (base projects only, "S215" / "S218")."""
+    out = []
+    if any(t.type == "bonus-icon" for t in p.tokens):
+        out.append("icon")
+    if card["type"] == "Base":
+        out += [k for k in SPONSOR_TOKENS if k in p.sponsors and any(t.location == token_location(k) for t in p.tokens)]
+    return out
+
+
 def conservation_actions(state, p, level: int) -> list:
+    """Supporting a project starts with the choice of the project (the ones in play, in the hand, in the display within the reputation range at
+    level II) that the zoo satisfies; the slot and the notepad bonus follow (`choose_slot`, `choose_bonus`)."""
     acts = []
     sources = [(k, "play", 0) for k in state.base_projects + state.projects_in_play]
     sources += [(k, "hand", 0) for k in sorted(set(p.hand)) if k.startswith("P") and k not in state.base_projects]
     if level >= 2:
         reach = state.display[:cards_action.reputation_range(p.reputation)]
         sources += [(k, "display", i + 1) for i, k in enumerate(reach) if k and k.startswith("P")]
-    bonus_slots = notepad_bonuses(state, p)
     for key, src, cost in sources:
-        if cost > p.money or not project_supported(project(key, state.config.marine_worlds)):        # release / breed / management: not implemented
+        card = project(key, state.config.marine_worlds)
+        if cost > p.money or not project_supported(card):
             continue
-        plain = slot_options(state, p.seat, key)
-        for slot, cons, rep in plain:
-            for j, _ in bonus_slots:
-                acts.append(Action(p.seat, "association_task", {"task": "conservation", "project": key, "source": src, "slot": slot, "bonus": j}))
-        if any(t.type == "bonus-icon" for t in p.tokens):          # a bonus-icon token counts as one more icon of the project
-            for slot, cons, rep in slot_options(state, p.seat, key, extra=1):
-                if (slot, cons, rep) not in plain:
-                    for j, _ in bonus_slots:
-                        acts.append(Action(p.seat, "association_task", {"task": "conservation", "project": key, "source": src, "slot": slot,
-                                                                         "bonus": j, "icon": True}))
+        if slot_options(state, p.seat, key) or (extra_icon_sources(state, p, card) and slot_options(state, p.seat, key, extra=1)):
+            acts.append(Action(p.seat, "association_task", {"task": "conservation", "project": key, "source": src}))
     return acts
 
 
 def legal(state, p) -> list:
-    return task_actions(state, p, state.prompt.args)
+    a = state.prompt.args
+    pr = a.get("project")
+    if pr is None:
+        return task_actions(state, p, a)
+    if pr["step"] == "slot":                                       # which slot of the project (the ones the zoo satisfies)
+        plain = slot_options(state, p.seat, pr["key"])
+        out = [Action(p.seat, "choose_slot", {"slot": i}) for i, _, _ in plain]
+        for src in extra_icon_sources(state, p, project(pr["key"], state.config.marine_worlds)):      # a token counts as one more icon of the project
+            out += [Action(p.seat, "choose_slot", {"slot": i, **({"icon": True} if src == "icon" else {"token": src})})
+                    for i, c, r in slot_options(state, p.seat, pr["key"], extra=1) if (i, c, r) not in plain]
+        return out
+    return [Action(p.seat, "choose_bonus", {"bonus": j}) for j, _ in notepad_bonuses(state, p)]
 
 
 def do_task(state, action: Action) -> None:
@@ -350,7 +415,7 @@ def do_task(state, action: Action) -> None:
     need = workers_needed(p, kind)
     for w in bonuses.worker_tokens(p, "reserve")[:need + extra]:
         w.location = f"association_{TASK_VALUE[kind]}"
-    paid = max(1, strength_needed(p, kind) - EXTRA_WORKER_STRENGTH * extra)
+    paid = max(0, strength_needed(p, kind) - EXTRA_WORKER_STRENGTH * extra)
     a["left"] -= paid
     a["done"].append(kind)
     if a.get("variant") == 3 and a["level"] == 1 and a["strength"] > strength_needed(p, kind):      # X Association: strength above the task's
@@ -404,7 +469,8 @@ def do_task(state, action: Action) -> None:
         for eff in fx.fire_icon_counter(state, p.seat, tile_icons(tok.type)):
             bonuses.defer(state, eff)
     elif task == "conservation":
-        support_project(state, p, args)
+        start_project(state, p, args)
+        return
     after_step(state, p.seat)
 
 
@@ -440,12 +506,13 @@ def space_bonuses(state, p, kind: str, k: int) -> None:
         g._gain(state, p.seat, conservation=map_bonus(p.map_id, "university3"))
 
 
-def support_project(state, p, args: dict) -> None:
-    g, fx = _g(), _fx()
-    key, src, slot, j = args["project"], args["source"], int(args["slot"]), int(args["bonus"])
+def start_project(state, p, args: dict) -> None:
+    """The project is chosen: a card from the hand / display joins the projects in play (the rightmost one is discarded with its tokens) and
+    has its place bonus (release projects: 1 reputation; management plans: their keyword), an effect that waits for the end of the choices."""
+    g = _g()
+    key, src = args["project"], args["source"]
     card = project(key, state.config.marine_worlds)
-    if args.get("icon"):
-        p.tokens.remove(next(t for t in p.tokens if t.type == "bonus-icon"))
+    pending_place = []
     if src == "hand":
         p.hand.remove(key)
     elif src == "display":
@@ -457,24 +524,58 @@ def support_project(state, p, args: dict) -> None:
         while len(state.projects_in_play) > PROJECTS_IN_PLAY:
             gone = state.projects_in_play.pop()
             for q in state.players:
-                q.tokens = [t for t in q.tokens if not (t.location.startswith(gone + "_") and t.type == "token")]
+                mine = [t for t in q.tokens if t.location.startswith(gone + "_") and t.type == "token"]
+                q.flags["supports_gone"] = q.flags.get("supports_gone", 0) + len(mine)         # the supports still count at the end of the game
+                q.tokens = [t for t in q.tokens if t not in mine]
             state.main_discard.append(gone)
+        pending_place = project_effects.place_effects(state, p.seat, key, card)
+    state.prompt.args["project"] = {"key": key, "source": src, "step": "slot", "place": pending_place}
+
+
+def choose_slot(state, action: Action) -> None:
+    fx = _fx()
+    p = state.players[action.player]
+    a = state.prompt.args
+    pr = a.get("project")
+    if pr is None or pr["step"] != "slot" or action not in legal(state, p):
+        raise fx.IllegalEffect(f"that slot cannot be chosen now: {action.args}")
+    if action.args.get("icon"):
+        p.tokens.remove(next(t for t in p.tokens if t.type == "bonus-icon"))
+    elif action.args.get("token"):
+        loc = token_location(action.args["token"])
+        p.tokens.remove(next(t for t in p.tokens if t.location == loc))
+    slot = int(action.args["slot"])
     ids = [t.id for q in state.players for t in q.tokens]
-    p.tokens.append(Token(max(ids, default=0) + 1, "token", project_location(key, slot)))
-    _, cons, rep = next(o for o in slot_options_with(state, p.seat, key, slot))
-    g._gain(state, p.seat, conservation=cons, reputation=rep)
-    bonus = dict(notepad_bonuses(state, p))[j]
-    p.flags["bonus_used"] = p.flags.get("bonus_used", 0) | (1 << j)
-    bonuses.apply_bonus(state, p.seat, {bonus["type"]: bonus["value"]})
+    p.tokens.append(Token(max(ids, default=0) + 1, "token", project_location(pr["key"], slot, state.config.marine_worlds)))
+    pr["slot"], pr["step"] = slot, "bonus"
+    if not notepad_bonuses(state, p):
+        _finish_project(state, p, None)
 
 
-def slot_options_with(state, seat: int, key: str, slot: int):
-    """The (slot, conservation, reputation) entry of one slot, ignoring that the token has just been placed."""
-    card = project(key, state.config.marine_worlds)
-    s = card["slots"][slot]
-    cons = sum(x["bonusValue"] for x in s["bonuses"] if x["bonusType"] == "Conservation Point")
-    rep = sum(x["bonusValue"] for x in s["bonuses"] if x["bonusType"] == "Reputation")
-    yield (slot, cons, rep)
+def choose_bonus(state, action: Action) -> None:
+    fx = _fx()
+    p = state.players[action.player]
+    pr = state.prompt.args.get("project")
+    if pr is None or pr["step"] != "bonus" or action not in legal(state, p):
+        raise fx.IllegalEffect(f"that bonus cannot be chosen now: {action.args}")
+    _finish_project(state, p, int(action.args["bonus"]))
+
+
+def _finish_project(state, p, j) -> None:
+    """The slot and the notepad bonus are chosen: all effects are pending now, in any order."""
+    g = _g()
+    a = state.prompt.args
+    pr = a.pop("project")
+    bonus = None
+    if j is not None:
+        b = dict(notepad_bonuses(state, p))[j]
+        p.flags["bonus_used"] = p.flags.get("bonus_used", 0) | (1 << j)
+        bonus = {b["type"]: b["value"]}
+    card = project(pr["key"], state.config.marine_worlds)
+    pending = project_effects.slot_effects(state, p.seat, pr["key"], card, pr["slot"], bonus) + pr["place"]
+    if g._open_effects(state, p.seat, pending, {"kind": "association_tasks", "args": a}):
+        return
+    after_step(state, p.seat)
 
 
 def make_donation(state, p, x_discount: bool = False) -> None:
