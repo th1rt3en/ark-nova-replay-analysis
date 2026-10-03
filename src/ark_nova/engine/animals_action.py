@@ -16,15 +16,16 @@ from functools import lru_cache
 from pathlib import Path
 
 from ark_nova import data
+from ark_nova.data.map_quirks import base_map_id
 from ark_nova.engine import animal_abilities, bonuses, cards_action, marks, sponsor_extras
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board, footprint_cells, neighbours
 from ark_nova.engine.icons import icon_counts, requirement
 from ark_nova.engine.state import GameState
 
-CAPACITY = {"petting-zoo": 3, "reptile-house": 5, "large-bird-aviary": 5, "small-aquarium": 2, "large-aquarium": 5}
+CAPACITY = {"petting-zoo": 3, "reptile-house": 5, "large-bird-aviary": 5, "small-aquarium": 2, "large-aquarium": 5, "underwater-tunnel": 2}
 SPECIAL_TYPES = {"Petting Zoo": ("petting-zoo",), "Reptile House": ("reptile-house",), "Large Bird Aviary": ("large-bird-aviary",),
-                 "Aquarium": ("small-aquarium", "large-aquarium")}
+                 "Aquarium": ("small-aquarium", "large-aquarium", "underwater-tunnel")}      # (the Underwater Tunnel of S279 takes sea animals, 2 markers)
 CONTINENT_TAGS = {"africa": "Africa", "europe": "Europe", "asia": "Asia", "americas": "Americas", "australia": "Australia"}
 _ICON = {"science": "Science", "primate": "Primate", "reptile": "Reptile", "bird": "Bird", "predator": "Predator", "herbivore": "Herbivore",
          "seaAnimal": "SeaAnimal", "americas": "Americas", "africa": "Africa", "europe": "Europe", "asia": "Asia", "australia": "Australia",
@@ -96,18 +97,20 @@ def own_abilities(key: str, b) -> list:
     same effect as the ability: the two lists are identical for some cards)."""
     pairs = abilities(key)
     reef = reef_abilities(key)
-    if b.type in ("small-aquarium", "large-aquarium") and reef != pairs:
+    if b is not None and b.type in ("small-aquarium", "large-aquarium") and reef != pairs:
         pairs = pairs + reef
     return pairs
 
 
 def reef_effects(state, key: str, b) -> list:
-    """A Reef Dweller (a sea animal with a Reef Dweller effect) placed in an aquarium makes every other animal there trigger its Reef Dweller
-    effect. Sea animals without one (their effect is only an ability) neither trigger nor are triggered (checked on the logs)."""
-    if b.type not in ("small-aquarium", "large-aquarium") or not reef_abilities(key):
+    """A Reef Dweller (a sea animal with a Reef Dweller effect) placed in an aquarium makes every other sea animal in the aquariums of the zoo trigger its Reef Dweller
+    effect (confirmed by the user: 724827313 T68, a Cowfish in the small aquarium, the new animal in the large one). Sea animals without one (their effect is only an ability) neither trigger nor are triggered (checked on the logs)."""
+    if b is None or b.type not in ("small-aquarium", "large-aquarium") or not reef_abilities(key):
         return []
     out = []
-    for other in b.animals:
+    seat = next(i for i, pl in enumerate(state.players) if b in pl.buildings)
+    zoo = [o for bb in state.players[seat].buildings if bb.type in ("small-aquarium", "large-aquarium") for o in bb.animals]      # (any aquarium of the zoo)
+    for other in zoo:
         if other != key:
             pairs = reef_abilities(other)
             if any(not supported(n) for n, _ in pairs):
@@ -128,7 +131,7 @@ def ability_effects(state, key: str, pairs=None) -> list:
         elif name == "Sun Bathing":
             out.append({"kind": "sell", "source": key, "max": int(value), "optional": True})
         elif name.startswith("Boost: "):        # the X action card goes to slot 1 or slot 5 at the end of the action (player's choice)
-            state.current_action.setdefault("after", []).append({"kind": "boost", "type": _BOOST_TYPE[name[7:]], "source": key, "optional": False})
+            state.current_action.setdefault("after", []).append({"kind": "boost", "type": _BOOST_TYPE[name[7:]], "source": key, "optional": True})
         elif name == "Clever":                  # any action card may go to slot 1 at the end of the action
             state.current_action.setdefault("after", []).append({"kind": "slot1", "source": key, "optional": True})
         elif name.startswith("Snapping"):
@@ -150,7 +153,7 @@ def cost(state: GameState, seat: int, key: str) -> int:
     p = state.players[seat]
     c = card(key)
     mine = Counter(t.type.split("-", 1)[1].lower() for t in p.tokens if t.type.startswith("partner-"))
-    price = c["price"] - PARTNER_DISCOUNT * sum(1 for tag in c.get("tags", []) if tag in CONTINENT_TAGS and mine[tag])
+    price = c["price"] - PARTNER_DISCOUNT * sum(mine[tag] for tag in c.get("tags", []) if tag in CONTINENT_TAGS)
     if "S229" in p.sponsors and is_small(c):                 # Expert in Small Animals
         price -= 3
     if "S230" in p.sponsors and is_large(c):                 # Expert in Large Animals
@@ -193,8 +196,15 @@ def conditions_met(state: GameState, seat: int, key: str, level: int) -> bool:
     if not waza_allows(state.players[seat], card(key)):
         return False
     failed = failed_conditions(state, seat, key, level)
-    credit = bool(state.current_action and state.current_action.get("camouflage")) or ignore_credit(state)
-    return not failed or (credit and len(failed) == 1)
+    credit = bool(state.current_action and state.current_action.get("camouflage")) or ignore_credit(state) or institute_connected(state.players[seat])
+    token = any(t.type == "bonus-ignore-conditions" for t in state.players[seat].tokens)       # (the rock / water of the enclosure still counts)
+    return not failed or token or (credit and len(failed) == 1)
+
+
+def institute_connected(p) -> bool:
+    """Maps 6 / 6a: while the Research Institute is connected (a building on its space (0, 11)) each animal played ignores 1 condition."""
+    from ark_nova.engine.build_action import footprint, knows_shape
+    return base_map_id(p.map_id) in ("6", "6a") and any((0, 11) in footprint(b.type, b.x, b.y, b.rotation) for b in p.buildings if knows_shape(b.type))
 
 
 def ignore_credit(state) -> bool:
@@ -218,17 +228,34 @@ def effective_size(p, b, bd) -> int:
     """Expansion Area (S272): 3-space enclosures on at least 1 border space count as 5-space enclosures."""
     from ark_nova.engine.build_action import footprint
     n = int(b.type[5:])
-    if n == 3 and "S272" in p.sponsors and any(c in bd.border for c in footprint(b.type, b.x, b.y, b.rotation)):
-        return 5
+    cells = footprint(b.type, b.x, b.y, b.rotation)
+    if n == 3 and "S272" in p.sponsors and any(c in bd.border for c in cells):
+        n = 5
+    if base_map_id(p.map_id) in ("2", "2a") and any(g in neighbours(c) for c in cells for g in _gates(p.map_id)):       # maps 2 / 2a: each standard enclosure next to the gate has +2 capacity (the logs show it on both)
+        n += 2
     return n
+
+
+def _gates(map_id: str) -> list:
+    return [(s["x"], s["y"]) for s in data.map_by_id(map_id)["geometry"]["special_hexes"] if s["kind"] == "gate"]
 
 
 def _around(bd, cells) -> set:
     return {n for c in cells for n in neighbours(c) if n not in cells}
 
 
-def enclosure_options(state: GameState, seat: int, key: str) -> list:
-    """[(x, y)] anchors of the buildings the animal can go to."""
+def flock_free(state: GameState, seat: int, key: str) -> bool:
+    """Flock Animal X: the animal needs no enclosure when the zoo has a herbivore of at least size X (the ability belongs to the animal, not to an enclosure)."""
+    p = state.players[seat]
+    for name, value in abilities(key):
+        if name == "Flock Animal" and any("herbivore" in card(o).get("tags", []) and (card(o).get("size") or 0) >= int(value) for o in p.animals):
+            return True
+    return False
+
+
+def hosts(state: GameState, seat: int, key: str, occupied: bool = False) -> list:
+    """[(building, satisfies the water / rock requirements)] of the enclosures that fit the animal: the empty ones (to play it), or the occupied
+    ones (to release it: the flipped enclosure is not tied to an animal)."""
     from ark_nova.engine.build_action import footprint, knows_shape
     p = state.players[seat]
     c = card(key)
@@ -246,20 +273,19 @@ def enclosure_options(state: GameState, seat: int, key: str) -> list:
 
     if c.get("canBeInStandardEnclosure") is not False:
         for b in p.buildings:
-            if b.type.startswith("size-") and b.animal is None and effective_size(p, b, bd) >= c["size"] and near_ok(b):
-                out.append((b.x, b.y))
-    for name, value in abilities(key):                        # Flock Animal X: share the enclosure of a herbivore of size X+
-        if name == "Flock Animal":
-            for b in p.buildings:
-                if b.type.startswith("size-") and b.animal and not b.animals and "herbivore" in card(b.animal).get("tags", []) \
-                        and effective_size(p, b, bd) >= int(value) and near_ok(b):
-                    out.append((b.x, b.y))
+            if b.type.startswith("size-") and (b.animal is not None) == occupied and effective_size(p, b, bd) >= c["size"]:
+                out.append((b, near_ok(b)))
     for spec in c.get("specialEnclosures") or []:
         for t in SPECIAL_TYPES.get(spec["type"], ()):
             for b in p.buildings:
-                if b.type == t and CAPACITY[t] - sum(_special_size(a) for a in b.animals) >= spec["size"] and near_ok(b):
-                    out.append((b.x, b.y))
+                if b.type == t and ((bool(b.animals) if occupied else CAPACITY[t] - sum(_special_size(a) for a in b.animals) >= spec["size"])):
+                    out.append((b, near_ok(b)))
     return out
+
+
+def enclosure_options(state: GameState, seat: int, key: str) -> list:
+    """[(x, y)] anchors of the buildings the animal can go to."""
+    return [(b.x, b.y) for b, ok in hosts(state, seat, key) if ok]
 
 
 def _special_size(animal_key: str) -> int:
@@ -276,12 +302,12 @@ def playable(state: GameState, seat: int, level: int) -> list:
     out = []
     for k in sorted(set(p.hand)):
         if k.startswith("A") and conditions_met(state, seat, k, level) and _cost_ok(state, seat, k, False, 0) \
-                and enclosure_options(state, seat, k):
+                and (enclosure_options(state, seat, k) or flock_free(state, seat, k)):
             out.append((k, False, 0))
     if level >= 2:
         for folder, k in enumerate(state.display[:cards_action.reputation_range(p.reputation)], start=1):
             if k and k.startswith("A") and conditions_met(state, seat, k, level) and _cost_ok(state, seat, k, True, folder) \
-                    and enclosure_options(state, seat, k):
+                    and (enclosure_options(state, seat, k) or flock_free(state, seat, k)):
                 out.append((k, True, folder))
     return out
 
@@ -292,9 +318,15 @@ def open_action(state: GameState, seat: int, level: int, strength: int, variant:
     from ark_nova.engine.state import Prompt
     if level >= 2 and strength >= 5:
         _g()._gain(state, seat, reputation=1)                 # at the very beginning, so that the reputation range is already higher
-    state.prompt = Prompt(kind="animals_play", player=seat, args={"level": level, "strength": strength, "played": [], "variant": variant})
+    args = {"level": level, "strength": strength, "played": [], "variant": variant}
     if variant == 4:                                          # Mark Animals: a mark at the end of the action
         state.current_action.setdefault("after", []).append({"kind": "mark", "source": "animals4", "optional": False})
+    from ark_nova.engine import bonuses, effects
+    pending = bonuses.drain(state)                            # the reputation of the strength 5 bonus may have reached a track bonus (upgrade ...): resolved first
+    if pending:
+        effects.open_prompt(state, seat, pending, {"kind": "prompt", "prompt_kind": "animals_play", "args": args})
+    else:
+        state.prompt = Prompt(kind="animals_play", player=seat, args=args)
 
 
 def small_extra(p, a) -> bool:
@@ -315,6 +347,8 @@ def legal(state: GameState, p) -> list:
                 continue
             for x, y in enclosure_options(state, p.seat, k):
                 acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": d, "x": x, "y": y}))
+            if flock_free(state, p.seat, k):                      # Flock Animal: no enclosure is flipped
+                acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": d, "flock": True}))
     if a["played"]:
         acts.append(Action(p.seat, "finish_animals", {}))
     return acts
@@ -332,8 +366,12 @@ def play(state: GameState, action: Action) -> None:
     if failed_conditions(state, p.seat, k, a["level"]):
         if ignore_credit(state):
             a["capped"] = True                               # Ignore Animals: that was the only animal of the action
-        elif state.current_action.get("camouflage"):
+        elif institute_connected(p) and len(failed_conditions(state, p.seat, k, a["level"])) == 1:
+            pass                                             # the Research Institute ignores it
+        elif state.current_action.get("camouflage") and len(failed_conditions(state, p.seat, k, a["level"])) == 1:
             state.current_action.pop("camouflage")           # the Camouflage credit is used
+        else:                                                # the bonus token that ignores the conditions is used up
+            p.tokens.remove(next(t for t in p.tokens if t.type == "bonus-ignore-conditions"))
     c = card(k)
     price = cost(state, p.seat, k)
     if from_display:
@@ -346,10 +384,12 @@ def play(state: GameState, action: Action) -> None:
     else:
         p.hand.remove(k)
     p.money -= price
-    b = next(b for b in p.buildings if (b.x, b.y) == (action.args["x"], action.args["y"]))
-    if b.type.startswith("size-") and b.animal is None:
+    b = None if action.args.get("flock") else next(b for b in p.buildings if (b.x, b.y) == (action.args["x"], action.args["y"]))
+    if b is None:
+        pass                                                  # Flock Animal: it lives with the herd, no enclosure is flipped
+    elif b.type.startswith("size-") and b.animal is None:
         b.animal = k
-    else:                                                     # special enclosures, and the shared enclosure of a Flock Animal
+    else:                                                     # special enclosures
         b.animals.append(k)
     p.animals.append(k)
     a["played"].append(k)
@@ -391,4 +431,6 @@ def _end(state: GameState, seat: int) -> None:
 def after_step(state: GameState, seat: int) -> None:
     acts = [x for x in legal(state, state.players[seat]) if x.kind != "animals_single"]
     if not acts or all(x.kind == "finish_animals" for x in acts):
+        if acts and _g().harbor_ready(state, seat) and any(k.startswith("A") for k in state.players[seat].hand):
+            return                                                    # Commercial Harbor: a sale may pay for one more animal, the player ends the action
         _end(state, seat)

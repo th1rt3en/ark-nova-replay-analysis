@@ -435,8 +435,11 @@
         {
             "index": 3,
             "kind": "instant",
-            "bonus": null,
-            "note": "building/temple facade icon: unidentified"
+            "bonus": {
+                "type": "Fac",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "index": 4,

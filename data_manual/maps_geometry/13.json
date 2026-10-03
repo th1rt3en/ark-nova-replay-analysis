@@ -298,7 +298,7 @@
             "x": 1,
             "y": 4,
             "bonus": {
-                "type": "take-in-range-or-deck",
+                "type": "Mark",
                 "value": 1
             }
         },
@@ -306,7 +306,7 @@
             "x": 1,
             "y": 8,
             "bonus": {
-                "type": "take-in-range-or-deck",
+                "type": "Mark",
                 "value": 1
             }
         },
@@ -460,8 +460,11 @@
         {
             "index": 1,
             "kind": "instant_income",
-            "bonus": null,
-            "note": "white card with black wedge and \"1\": unidentified"
+            "bonus": {
+                "type": "cut-down",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "index": 2,
@@ -475,8 +478,11 @@
         {
             "index": 3,
             "kind": "instant",
-            "bonus": null,
-            "note": "\"3x\" + two building icons: unidentified"
+            "bonus": {
+                "type": "bonus-scoring-cards",
+                "value": 3
+            },
+            "note": ""
         },
         {
             "index": 4,

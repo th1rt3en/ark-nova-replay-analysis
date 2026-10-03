@@ -103,7 +103,8 @@ class PlayerState:
     sponsors: list[str] = field(default_factory=list)           # played sponsor cards
     released: list[str] = field(default_factory=list)           # animals released into the wild
     stored: list[str] = field(default_factory=list)             # cards stored under the notepad (Caves)
-    pouched: list[str] = field(default_factory=list)            # cards slid under the map (Rescue Station / pouch)
+    pouched: list[str] = field(default_factory=list)            # cards slid under the map (pouch)
+    rescued: list[str] = field(default_factory=list)            # animals in the Rescued zone of map 10 (Rescue Station): not played, but their icons and size count
     under: dict[str, list[str]] = field(default_factory=dict)   # cards pouched under a card in play (Expert on Australia, some animals)
     buildings: list[Building] = field(default_factory=list)
     tokens: list[Token] = field(default_factory=list)

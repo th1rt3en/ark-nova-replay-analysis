@@ -52,10 +52,12 @@ def main(game: str, turn: str = None) -> None:
             return orig_ta(events, *a, **k)
 
         def ap(state, act):
+            if cur["k"]:
+                print("  try", act.kind, act.args)
             out = orig_apply(state, act)
             if cur["k"]:
                 pl = out.players[act.player]
-                print("  apply", act.kind, act.args, "->", out.prompt.kind if out.prompt else None, (pl.money, pl.appeal, pl.reputation, pl.conservation, pl.x_tokens))
+                print("  apply", act.kind, act.args, "->", out.prompt.kind if out.prompt else None, (pl.money, pl.appeal, pl.reputation, pl.conservation, pl.x_tokens), "display", out.display, "deck", out.main_deck[:2])
             return out
 
         d.turn_actions, d.apply = ta, ap

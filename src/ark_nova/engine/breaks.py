@@ -31,7 +31,8 @@ def _g():
 
 
 def hand_limit(p) -> int:
-    return HAND_LIMIT_UNIVERSITY if any(t.type == "fac-rep-hand" for t in p.tokens if t.location.startswith("university_")) else HAND_LIMIT
+    base = HAND_LIMIT_UNIVERSITY if any(t.type == "fac-rep-hand" for t in p.tokens if t.location.startswith("university_")) else HAND_LIMIT
+    return base + sum(1 for t in p.tokens if t.type == "bonus-increased-hand")                  # the conservation bonus: one more card
 
 
 # ---- the steps -------------------------------------------------------------------------------------------------------------------
@@ -60,6 +61,7 @@ def run(state, initiator: int, step: str) -> None:
             return
         step = "end"
     if step == "end":
+        g._refill_display(state)                                  # cards snapped as income leave gaps
         endgame.check_trigger(state, [initiator, 1 - initiator], False, 1 - initiator)     # the income can reach 100
         state.break_position = 0
         state.current_action = None
@@ -199,19 +201,24 @@ def map_ability_income(state, p) -> int:
         return sum(1 for n in neighbours((rest["x"], rest["y"])) if n in covered)
     if p.map_id == "11":
         return 2 * len(p.stored)
-    if p.map_id in ("7", "7a", "13"):
-        raise NotImplementedError(f"the break income of map {p.map_id} is not implemented yet")
+    if p.map_id in ("7", "7a"):                            # all kiosk placement bonuses covered: 1 more for each kiosk
+        from ark_nova.engine import map_rules
+        return sum(1 for b in p.buildings if b.type == "kiosk") if map_rules.kiosk_hexes_covered(p) else 0
     return 0
 
 
 def _income(state, seat: int) -> None:
     g = _g()
     p = state.players[seat]
-    g._gain(state, seat, money=tracks.income_from_appeal(p.appeal))
+    bonuses.defer(state, {"kind": "income_appeal", "optional": False, "player": seat})      # the money of the appeal track is counted when the player resolves it: appeal gained first counts
     g._gain(state, seat, money=kiosk_income(p))
     g._gain(state, seat, money=map_ability_income(state, p))
+    if p.map_id == "13":                                   # Drawing Board: every covered area pays again
+        from ark_nova.engine import map_rules
+        for name in sorted(map_rules.quarters_done(p)):
+            map_rules.quarter_bonus(state, seat, name)
     for b in map_income(state, p):
-        bonuses.apply_bonus(state, seat, {b["type"]: b["value"]})
+        bonuses.apply_bonus(state, seat, {b["type"]: b["value"]}, income=True)
     inc = sponsor_income(state, p)
     g._gain(state, seat, money=inc["money"], x_tokens=inc["xtoken"], appeal=inc["appeal"], conservation=inc["conservation"])
     if "S201" in p.sponsors:                                     # Science Lab: take 1 card from the deck or within the reputation range

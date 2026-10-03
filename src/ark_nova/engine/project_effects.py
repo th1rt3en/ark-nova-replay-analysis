@@ -101,7 +101,11 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     if k == "project_bonus":
         return [Action(seat, "choose_effect", {"index": i, "apply": "project_bonus"})]
     if k == "release":
-        return [Action(seat, "choose_effect", {"index": i, "release": a}) for a in releasable(state, seat, e["tag"], e["slot"])]
+        out = []
+        for a in releasable(state, seat, e["tag"], e["slot"]):
+            where = release_enclosures(state, seat, a)
+            out += [Action(seat, "choose_effect", {"index": i, "release": a, "building": [b.x, b.y]}) for b in where] or [Action(seat, "choose_effect", {"index": i, "release": a})]
+        return out
     if k == "tutor":
         return [Action(seat, "choose_effect", {"index": i, "apply": "tutor"})]
     if k == "reef":
@@ -115,15 +119,38 @@ def _reef_aquariums(state, seat: int) -> list:
             and any(animals_action.reef_abilities(k) for k in b.animals)]
 
 
-def release_animal(state, seat: int, key: str) -> None:
-    """The animal leaves the zoo for good: its enclosure is empty, its appeal is lost, the card goes to the discard pile."""
+def release_enclosures(state, seat: int, key: str) -> list:
+    """The occupied enclosures that the release of this animal can empty (an animal is not tied to an enclosure; the flipped one is chosen by
+    priority): a special enclosure that meets the water / rock needs, the smallest standard one that does, a special one that does not, the
+    smallest standard one that does not. Empty list: no enclosure is emptied (they are all too small)."""
+    from ark_nova.engine import animals_action
+    from ark_nova.engine.board import board
+    p = state.players[seat]
+    bd = board(p.map_id)
+    cands = animals_action.hosts(state, seat, key, occupied=True)
+    for want in (True, False):
+        special = [b for b, ok in cands if ok == want and not b.type.startswith("size-")]
+        if special:
+            return special
+        standard = [b for b, ok in cands if ok == want and b.type.startswith("size-")]
+        if standard:
+            least = min(animals_action.effective_size(p, b, bd) for b in standard)
+            return [b for b in standard if animals_action.effective_size(p, b, bd) == least]
+    return []
+
+
+def release_animal(state, seat: int, key: str, building=None) -> None:
+    """The animal leaves the zoo for good: the chosen enclosure is empty, its appeal is lost, the card goes to the discard pile."""
     p = state.players[seat]
     p.animals.remove(key)
-    for b in p.buildings:
-        if b.animal == key:
+    b = next((b for b in p.buildings if building is not None and [b.x, b.y] == list(building)), None)
+    if b is not None:
+        if b.type.startswith("size-"):
             b.animal = None
-        if key in b.animals:
+        elif key in b.animals:
             b.animals.remove(key)
+        elif b.animals:
+            b.animals.pop(0)
     p.released.append(key)
     state.main_discard.append(key)
     p.appeal -= data.cards_by_key()[key].get("appeal") or 0
@@ -137,7 +164,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     elif k == "release":
         if a.get("release") not in releasable(state, p.seat, e["tag"], e["slot"]):
             raise _fx().IllegalEffect("release an animal with the icon of the project and the size of the slot")
-        release_animal(state, p.seat, a["release"])
+        where = release_enclosures(state, p.seat, a["release"])
+        if where and list(a.get("building") or []) not in [[b.x, b.y] for b in where]:
+            raise _fx().IllegalEffect("empty one of the enclosures with the highest priority")
+        release_animal(state, p.seat, a["release"], a.get("building"))
     elif k == "reef":
         from ark_nova.engine import animals_action
         b = next((b for b in _reef_aquariums(state, p.seat) if [b.x, b.y] == list(a.get("building") or [])), None)

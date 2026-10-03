@@ -61,7 +61,7 @@ def sync_all(state: GameState) -> None:
 def icon_counts(state: GameState, seat: int) -> Counter:
     p = state.players[seat]
     out: Counter = Counter()
-    for k in list(p.animals) + list(p.sponsors):
+    for k in list(p.animals) + list(p.rescued) + list(p.sponsors):          # (the animals of the Rescued zone count for their icons, rock and water included)
         out.update(card_icons(k, state.config.marine_worlds))
     for t in p.tokens:
         if t.type.startswith("partner-"):

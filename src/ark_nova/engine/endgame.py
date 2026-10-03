@@ -147,9 +147,9 @@ def metric(state, seat: int, key: str) -> int:
     p = state.players[seat]
     icons = icon_counts(state, seat)
     if key == "F001":
-        return sum(_size_class(a, state.config.marine_worlds) == "large" for a in p.animals)
+        return sum(_size_class(a, state.config.marine_worlds) == "large" for a in p.animals + p.rescued)
     if key == "F002":
-        return sum(_size_class(a, state.config.marine_worlds) == "small" for a in p.animals)
+        return sum(_size_class(a, state.config.marine_worlds) == "small" for a in p.animals + p.rescued)
     if key == "F003":
         return icons["Science"]
     if key == "F005":

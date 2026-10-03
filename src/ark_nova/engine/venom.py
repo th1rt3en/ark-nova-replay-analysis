@@ -72,14 +72,14 @@ def finish_turn(state, seat: int) -> None:
 def give_venom(state, seat: int, n: int) -> None:
     """Venom n by `seat`: the other player gets a token on their cards at strength 1 (and 2) when they are ahead on appeal."""
     me, other = state.players[seat], state.players[1 - seat]
-    if other.appeal > me.appeal and not _tracks().is_protected(other.appeal):
+    if other.appeal > me.appeal and not _tracks().is_protected(other.appeal) and "S225" not in other.sponsors:
         for card in other.action_cards[:n]:
             card.tokens.append("Venom")
 
 
 def give_constriction(state, seat: int) -> None:
     me, other = state.players[seat], state.players[1 - seat]
-    if _tracks().is_protected(other.appeal):                            # below 5 appeal a player is protected
+    if _tracks().is_protected(other.appeal) or "S225" in other.sponsors:                            # below 5 appeal a player is protected
         return
     ahead = (other.appeal > me.appeal) + (other.conservation > me.conservation)
     for card in other.action_cards[::-1][:ahead]:                       # the cards at strength 5, then 4

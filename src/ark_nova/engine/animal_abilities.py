@@ -54,7 +54,7 @@ def _draw(state, seat: int, n: int) -> None:
 
 
 def _build(source: str, types, n: int = 1) -> list:
-    return [{"kind": "build", "source": source, "type": types[0], "types": list(types), "rules": {}, "optional": True, "double": False}
+    return [{"kind": "build", "source": source, "type": types[0], "types": list(types), "rules": {"any_level": True}, "optional": True, "double": False}
             for _ in range(n)]
 
 
@@ -151,7 +151,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         targets = [opp.appeal >= p.appeal]                               # the player with the most appeal (a tie counts: unclear, ISSUES.md)
         if name == "Pilfering 2":
             targets.append(opp.conservation >= p.conservation)           # and the player with the most conservation points
-        if tracks.is_protected(opp.appeal):                              # below 5 appeal a player is protected
+        if tracks.is_protected(opp.appeal) or "S225" in opp.sponsors:                              # below 5 appeal a player is protected
             targets = []
         return [{"kind": "pilfer", "source": key, "player": opp.seat, "to": seat, "optional": False} for hit in targets if hit]
     elif name == "Cut Down":
@@ -258,6 +258,10 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         out = [Action(seat, "choose_effect", {"index": i, "display": c}) for c in dict.fromkeys(state.display) if c]
         if state.main_deck and not venom.blocked(state, seat):
             out += [Action(seat, "choose_effect", {"index": i, "hand": c}) for c in sorted(set(p.hand))]
+        if e.get("rescue") and len(p.rescued) < RESCUE_SLOTS:       # map 10: an animal (not a petting zoo one) may go to the Rescued zone instead
+            out += [Action(seat, "choose_effect", {"index": i, "display": c, "rescue": True}) for c in dict.fromkeys(state.display) if c and rescuable(c)]
+            if state.main_deck and not venom.blocked(state, seat):
+                out += [Action(seat, "choose_effect", {"index": i, "hand": c, "rescue": True}) for c in sorted(set(p.hand)) if rescuable(c)]
         return out
     if k == "scavenge":
         return [Action(seat, "choose_effect", {"index": i, "keep": c}) for c in dict.fromkeys(e["cards"])]
@@ -295,12 +299,21 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     return []
 
 
+RESCUE_SLOTS = 3
+
+
+def rescuable(key) -> bool:
+    """Map 10: an animal card, except the animals of the petting zoo, can be rescued."""
+    c = data.cards_by_key().get(key or "")
+    return bool(c) and key.startswith("A") and not any(s["type"] == "Petting Zoo" for s in c.get("specialEnclosures") or [])
+
+
 def _marketing_options(state, seat: int) -> list:
     """Marketing: a sponsor of the hand that can be played (all requirements) for money equal to its strength."""
     from ark_nova.engine import effects, sponsors_action
     p = state.players[seat]
     level = max((c.level for c in p.action_cards if c.type == "sponsors"), default=1)
-    return [k for k in sorted(set(p.hand)) if k.startswith("S") and sponsors_action.level_of(k) <= p.money
+    return [k for k in sorted(set(p.hand)) if k.startswith("S") and sponsors_action.level_for(state, seat, k) <= p.money
             and sponsors_action.requirements_met(state, seat, k, level) and effects.can_play(state, seat, k)
             and not sponsors_action.has_unimplemented_effect(k)]
 
@@ -327,7 +340,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     k = e["kind"]
     if k == "hypnosis":
         other = state.players[1 - action.player]
-        if other.appeal >= p.appeal and not tracks.is_protected(other.appeal):           # the other player is not behind (and not protected): one of their first 3 action cards
+        if other.appeal >= p.appeal and not tracks.is_protected(other.appeal) and "S225" not in other.sponsors:           # the other player is not behind (and not protected): one of their first 3 action cards
             state.current_action["extra"] = {"types": [], "optional": True, "hypnosis": True}
     elif k == "pay_appeal":
         if p.money < 2:
@@ -342,7 +355,11 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if card not in _marketing_options(state, action.player):
             raise fx.IllegalEffect("that sponsor cannot be played with Marketing")
         from ark_nova.engine import sponsors_action
-        g._gain(state, action.player, money=-sponsors_action.level_of(card))
+        g._gain(state, action.player, money=-sponsors_action.level_for(state, action.player, card))
+        if e.get("cube"):                                         # Okapi Stable: the cube is used up
+            from ark_nova.engine import association
+            loc = association.token_location(e["cube"])
+            p.tokens.remove(next(t for t in p.tokens if t.location == loc))
         state.prompt.args["pending"][i + 1:i + 1] = g.play_sponsor_outside_action(state, action.player, card)
     elif k == "venom":
         venom.give_venom(state, action.player, e["n"])
@@ -354,12 +371,19 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         venom.settle(state, action.player)
         state.prompt.args["pending"][i + 1:i + 1] = activate(state, action.player, e["source"], e["name"], e["value"])
     elif k == "digging":
+        rescue = bool(a.get("rescue"))
+        if rescue and (not e.get("rescue") or len(p.rescued) >= RESCUE_SLOTS or not rescuable(a.get("display") or a.get("hand"))):
+            raise fx.IllegalEffect("only an animal that is not a petting zoo animal can be rescued, and the Rescued zone has 3 places")
         if "display" in a:
             c = a["display"]
             if c not in state.display:
                 raise fx.IllegalEffect("that card is not in the display")
             state.display[state.display.index(c)] = None
-            marks.discard(state, c)
+            if rescue:
+                marks.taken(state, c)                           # (taken from the display like a snapped card)
+                p.rescued.append(c)
+            else:
+                marks.discard(state, c)
             g._refill_display(state)
         else:
             c = a["hand"]
@@ -367,7 +391,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
                 raise fx.IllegalEffect("cannot discard that card")
             venom.settle(state, p.seat)
             p.hand.remove(c)
-            state.main_discard.append(c)
+            (p.rescued if rescue else state.main_discard).append(c)
             p.hand.append(state.main_deck.pop(0))
         e["n"] -= 1
         if e["n"] > 0:
@@ -410,7 +434,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             marks.discard(state, c)
             from ark_nova.engine.association import project
             g._gain(state, p.seat, appeal=(project(c, state.config.marine_worlds).get("appeal") or 0) // 2)
-        g._refill_display(state)
+        # (the display is refilled at the end of the action, after the Hunter / Perception effects: the logs' fillPool comes last)
     elif k == "symbiosis":
         from ark_nova.engine import animals_action
         c = a["animal"]

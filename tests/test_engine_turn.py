@@ -14,7 +14,7 @@ from ark_nova.replay.differential import run_differential
 
 
 def test_reputation_range():
-    assert [ca.reputation_range(r) for r in (0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 15)] == [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6]
+    assert [ca.reputation_range(r) for r in (0, 1, 2, 3, 4, 6, 7, 9, 10, 12, 13, 15)] == [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6]
 
 
 def test_cards_action_tables():
@@ -99,8 +99,10 @@ def test_engine_agrees_with_the_log_turn_by_turn():
     # Cards, Sponsors (fixed-effect cards and the break option), skipped turns and most Build turns agree exactly; the remaining
     # discrepancies (5% of the compared turns: aquarium/petting zoo placement details in a few games, some pavilion appeal and money
     # differences) are listed by scripts/engine_summary.py
-    assert len(problems) <= 240, problems[:3]
-    assert checked >= 2000
+    # (the harness also checks the turns with takeBonus / break income cards / placement bonus cards / the Commercial Harbor: 6.5k turns
+    # checked, ~340 known problems, see scripts/engine_coverage.py; this is a ratchet, lower it when the problems are fixed)
+    assert len(problems) <= 265, problems[:3]
+    assert checked >= 6800
 
 
 def _build_state(marine_worlds=True, map_id="1"):
@@ -345,6 +347,8 @@ def test_association_level_one_partner_limit_and_university_tile_effects():
     s = apply(s, Action(0, "choose_action_card", {"type": "association", "spend": 0}))
     assert not any(a.args.get("task") == "partner" for a in legal_actions(s))            # a 3rd partner zoo needs level II
     s = apply(s, Action(0, "association_task", {"task": "university", "kind": "fac-science-rep"}))
+    while s.prompt.kind == "effects":                                                    # the reputation of the tile comes as an effect after the space bonuses
+        s = apply(s, [x for x in legal_actions(s) if x.kind in ("choose_effect", "skip_effect")][0])
     p = s.players[0]
     assert p.reputation == 3 and ("fac-science-rep", "university_1") in [(t.type, t.location) for t in p.tokens]
 
@@ -398,7 +402,7 @@ def test_release_project_slot_by_animal_size_and_release_effect():
     assert {"gain", "project_bonus", "release"} <= kinds
     i = next(i for i, e in enumerate(s.prompt.args["pending"]) if e["kind"] == "release")
     appeal = p.appeal
-    s = apply(s, Action(0, "choose_effect", {"index": i, "release": "A518"}))
+    s = apply(s, Action(0, "choose_effect", {"index": i, "release": "A518", "building": [1, 0]}))      # the enclosure to empty is chosen (here the only one)
     assert s.players[0].animals == [] and s.players[0].released == ["A518"] and s.players[0].buildings[0].animal is None
     assert s.players[0].appeal == appeal - project_effects.data.cards_by_key()["A518"]["appeal"]
 
@@ -501,6 +505,8 @@ def test_break_hand_limit_board_display_income_and_turn_order():
     assert {a.player for a in discards} == {0, 1} and all(len(a.args["cards"]) in (1, 2) for a in discards)
     s = apply(s, [a for a in discards if a.player == 1][0])
     s = apply(s, [a for a in legal_actions(s) if a.kind == "choose_effect" and a.player == 0][0])
+    while s.prompt.kind == "effects":                                                                 # the appeal incomes are effects of their own
+        s = apply(s, [a for a in legal_actions(s) if a.kind == "choose_effect" and a.args.get("apply") == "income_appeal"][0])
     assert s.prompt.kind == "choose_action_card" and s.active_player == 1 and s.break_position == 0
     assert [len(p.hand) for p in s.players] == [3, 3]
     assert all(c not in s.display for c in top) and all(c in s.main_discard for c in top) and len(s.display) == 6

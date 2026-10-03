@@ -13,18 +13,25 @@
   <header class="bar">
     <a href="/" class="home" title="Back to the start page">Ark Nova Replay</a>
     <span id="tableInfo" class="muted"></span>
+    <div id="timeline" class="timeline" role="slider" aria-label="Game timeline" title="Timeline: each | is the start of a round"></div>
     <div class="controls" role="group" aria-label="Replay controls">
       <button id="first" title="First step (Home)" aria-label="First step">&#9198;</button>
-      <button id="prev" title="Back one step (Left arrow)" aria-label="Back one step">&#9664;</button>
-      <button id="play" title="Play / pause (Space)" aria-label="Play">&#9654;</button>
-      <button id="next" title="Forward one step (Right arrow)" aria-label="Forward one step">&#9654;&#9654;</button>
+      <button id="prev" title="Back one step (Left arrow)" aria-label="Back one step">&#9194;&#xFE0E;</button>
+      <button id="play" title="Start / stop autoplay (Space)" aria-label="Start autoplay">&#9654;</button>
+      <button id="next" title="Forward one step (Right arrow)" aria-label="Forward one step">&#9193;&#xFE0E;</button>
       <button id="last" title="Last step (End)" aria-label="Last step">&#9197;</button>
       <label class="jump">Step <input id="jump" type="number" min="0" aria-label="Jump to step"> / <span id="total"></span></label>
+      <span class="speed" role="group" aria-label="Autoplay speed">
+        <button data-speed="1" class="on" title="Autoplay at 1x (one step a second)">1x</button>
+        <button data-speed="2" title="Autoplay at 2x">2x</button>
+        <button data-speed="4" title="Autoplay at 4x">4x</button>
+      </span>
     </div>
   </header>
   <div id="current" class="current" aria-live="polite"></div>
   <div class="layout">
     <main>
+      <div id="actionbar" class="actionbar" hidden></div>
       <section id="shared" class="shared"></section>
       <section id="zoos" class="zoos"></section>
     </main>

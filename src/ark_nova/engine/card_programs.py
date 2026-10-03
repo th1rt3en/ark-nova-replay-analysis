@@ -16,7 +16,7 @@ UNIQUE_BUILD = {
 OPTIONAL_BUILD = {"S265"}                   # Franchise Business: the kiosk may be declined
 DOUBLE_PLACEMENT_BONUS = {"S271"}            # excavation site: placement bonuses are gained twice
 TAKE_ONE_CARD = {"S201", "S254"}             # take 1 card from the deck or within the reputation range
-PRINTED_ONLY = {"S216", "S273", "S205", "S226", "S277", "S217", "S202", "S243", "S244", "S245", "S246", "S247", "S248", "S249", "S250", "S251", "S252",
+PRINTED_ONLY = {"S236", "S237", "S238", "S239", "S240", "S266", "S216", "S273", "S205", "S226", "S277", "S217", "S202", "S243", "S244", "S245", "S246", "S247", "S248", "S249", "S250", "S251", "S252",
                 "S253", "S275", "S201", "S254", "S255", "S256", "S257", "S263", "S265", "S271", "S272", "S274", "S276", "S278", "S279",
                 "S281"}   # nothing beyond the printed values, the placement / cards below and the passive triggers (checked by the differential)
 # gain on play = multiplier x number of icons of that kind in the zoo (the played card included): (resource, icon, multiplier)
@@ -61,9 +61,16 @@ TRIGGERS = {
     "S248": [("Primate", "self", ("gain", {"xtoken": 1}))],
     "S249": [("Bird", "self", ("reveal", 2, False))],
     "S250": [("Reptile", "self", ("sell", 2))],
+    "S236": [("Primate", "any", ("gain", {"money": 3}))],
+    "S237": [("Reptile", "any", ("gain", {"money": 3}))],
+    "S238": [("Bird", "any", ("gain", {"money": 3}))],
+    "S239": [("Predator", "any", ("gain", {"money": 3}))],
+    "S240": [("Herbivore", "any", ("gain", {"money": 3}))],
+    "S266": [("SeaAnimal", "any", ("gain", {"money": 3}))],
+    "S270": [("SeaAnimal", "self", ("reveal", 3, "sponsor"))],           # Marine Research Expedition: Scuba Dive 3 for every sea animal icon (its own too)
     "S251": [("Bear", "any", ("gain", {"appeal": 2}))],
     "S252": [("Predator", "self", ("hunter",))],
-    "S253": [("Herbivore", "self", ("unsupported", "Okapi Stable: play a sponsor for money"))],
+    "S253": [("Herbivore", "self", ("marketing_cube",))],                 # Okapi Stable: 3 cubes, a herbivore icon may remove one for a Marketing effect
     "S262": [("*new*", "self", ("explorer",))],
     "S268": [("Europe", "self", ("mark",))],
     "S269": [("Australia", "self", ("enlarge",))],

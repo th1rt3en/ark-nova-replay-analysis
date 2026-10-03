@@ -102,16 +102,16 @@ def test_scavenging_shuffles_the_discard_and_keeps_one():
     assert keep in s.players[0].hand and sorted(s.main_discard + [keep]) == sorted(["A402", "A403", "A404", "A405"] + [])
 
 
-def test_flock_animal_shares_the_enclosure_of_a_herbivore():
+def test_flock_animal_needs_no_enclosure_with_a_big_enough_herbivore():
     s = _zoo("A438")                                                                  # Reindeer: Flock Animal 3
     p = s.players[0]
-    p.buildings[0].animal = "A439"                                                     # a herbivore in a size-5 enclosure
-    p.animals = ["A439"]
+    p.buildings[0].animal = "A431"                                                     # a herbivore of size 3 or more in the zoo (Asian Elephant, size 5)
+    p.animals = ["A431"]
     s = _start(s)
-    xy = {(a.args["x"], a.args["y"]) for a in legal_actions(s) if a.kind == "play_animal"}
-    assert (1, 0) in xy                                                                # the occupied enclosure
-    s = _play(s, "A438")
-    assert s.players[0].buildings[0].animals == ["A438"] and s.players[0].buildings[0].animal == "A439"
+    flock = Action(0, "play_animal", {"card": "A438", "from_display": False, "flock": True})
+    assert flock in legal_actions(s)                                                   # no enclosure is flipped
+    s = apply(s, flock)
+    assert "A438" in s.players[0].animals and s.players[0].buildings[0].animals == [] and s.players[0].buildings[0].animal == "A431"
 
 
 def test_camouflage_ignores_one_condition_of_the_next_animal():

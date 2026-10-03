@@ -1482,8 +1482,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "circular-arrows + red/blue icon: unidentified"
+                    "bonus": {
+                        "type": "Determination",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "index": 4,
@@ -1966,8 +1969,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "building/temple facade icon: unidentified"
+                    "bonus": {
+                        "type": "Fac",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "index": 4,
@@ -2443,8 +2449,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "free special enclosure choice (two hex shapes crossed): unidentified type"
+                    "bonus": {
+                        "type": "special-enclosure",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "index": 4,
@@ -5475,13 +5484,19 @@
                 {
                     "x": 1,
                     "y": 10,
-                    "bonus": null,
+                    "bonus": {
+                        "type": "store",
+                        "value": 1
+                    },
                     "note": "Store icon (place 1 hand card under the notepad)"
                 },
                 {
                     "x": 3,
                     "y": 2,
-                    "bonus": null,
+                    "bonus": {
+                        "type": "store",
+                        "value": 1
+                    },
                     "note": "Store icon (place 1 hand card under the notepad)"
                 },
                 {
@@ -5527,7 +5542,10 @@
                 {
                     "x": 7,
                     "y": 8,
-                    "bonus": null,
+                    "bonus": {
+                        "type": "store",
+                        "value": 1
+                    },
                     "note": "Store icon (place 1 hand card under the notepad)"
                 },
                 {
@@ -5948,8 +5966,11 @@
                 {
                     "x": 0,
                     "y": 11,
-                    "bonus": null,
-                    "note": "black square: conceal leftmost open action strength"
+                    "bonus": {
+                        "type": "conceal",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "x": 1,
@@ -6010,14 +6031,20 @@
                 {
                     "x": 7,
                     "y": 10,
-                    "bonus": null,
-                    "note": "\"1x 1x\" icon with two building symbols"
+                    "bonus": {
+                        "type": "adapt",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "x": 8,
                     "y": 1,
-                    "bonus": null,
-                    "note": "black square: conceal leftmost open action strength"
+                    "bonus": {
+                        "type": "conceal",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "x": 8,
@@ -6427,7 +6454,7 @@
                     "x": 1,
                     "y": 4,
                     "bonus": {
-                        "type": "take-in-range-or-deck",
+                        "type": "Mark",
                         "value": 1
                     }
                 },
@@ -6435,7 +6462,7 @@
                     "x": 1,
                     "y": 8,
                     "bonus": {
-                        "type": "take-in-range-or-deck",
+                        "type": "Mark",
                         "value": 1
                     }
                 },
@@ -6589,8 +6616,11 @@
                 {
                     "index": 1,
                     "kind": "instant_income",
-                    "bonus": null,
-                    "note": "white card with black wedge and \"1\": unidentified"
+                    "bonus": {
+                        "type": "cut-down",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "index": 2,
@@ -6604,8 +6634,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "\"3x\" + two building icons: unidentified"
+                    "bonus": {
+                        "type": "bonus-scoring-cards",
+                        "value": 3
+                    },
+                    "note": ""
                 },
                 {
                     "index": 4,
@@ -6988,8 +7021,11 @@
                 {
                     "x": 3,
                     "y": 8,
-                    "bonus": null,
-                    "note": "blue wave icon"
+                    "bonus": {
+                        "type": "wave",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "x": 5,
@@ -7010,26 +7046,38 @@
                 {
                     "x": 6,
                     "y": 5,
-                    "bonus": null,
-                    "note": "blue wave icon"
+                    "bonus": {
+                        "type": "wave",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "x": 7,
                     "y": 2,
-                    "bonus": null,
-                    "note": "black pennant icon"
+                    "bonus": {
+                        "type": "shark-attack",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "x": 7,
                     "y": 10,
-                    "bonus": null,
-                    "note": "black pennant icon"
+                    "bonus": {
+                        "type": "shark-attack",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "x": 8,
                     "y": 7,
-                    "bonus": null,
-                    "note": "blue wave icon"
+                    "bonus": {
+                        "type": "wave",
+                        "value": 1
+                    },
+                    "note": ""
                 }
             ],
             "special_hexes": [
@@ -9092,8 +9140,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "circular-arrows + red/blue icon: unidentified"
+                    "bonus": {
+                        "type": "Determination",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "index": 4,
@@ -9584,8 +9635,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "building/temple facade icon: unidentified"
+                    "bonus": {
+                        "type": "Fac",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "index": 4,
@@ -10061,8 +10115,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "free special enclosure choice (two hex shapes crossed): unidentified type"
+                    "bonus": {
+                        "type": "special-enclosure",
+                        "value": 1
+                    },
+                    "note": ""
                 },
                 {
                     "index": 4,

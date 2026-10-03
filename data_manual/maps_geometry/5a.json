@@ -428,8 +428,11 @@
         {
             "index": 3,
             "kind": "instant",
-            "bonus": null,
-            "note": "free special enclosure choice (two hex shapes crossed): unidentified type"
+            "bonus": {
+                "type": "special-enclosure",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "index": 4,

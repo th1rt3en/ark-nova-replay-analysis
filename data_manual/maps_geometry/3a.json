@@ -493,8 +493,11 @@
         {
             "index": 3,
             "kind": "instant",
-            "bonus": null,
-            "note": "circular-arrows + red/blue icon: unidentified"
+            "bonus": {
+                "type": "Determination",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "index": 4,

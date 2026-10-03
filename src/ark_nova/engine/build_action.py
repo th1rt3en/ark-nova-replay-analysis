@@ -92,7 +92,7 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
         for c in footprint(bt, bx, by, br) if knows_shape(bt) else []:
             occupied[c] = bt
     kiosks = [c for c, bt in occupied.items() if bt == "kiosk"]
-    if t in LEVEL_II_ONLY and level < 2:
+    if t in LEVEL_II_ONLY and level < 2 and not rules.get("any_level"):       # (a free building of a bonus does not need the upgraded Build action)
         return []
     rotations = [0] if len(shape_of(t)) == 1 else range(6)
     out = []

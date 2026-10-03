@@ -337,8 +337,11 @@
         {
             "x": 3,
             "y": 8,
-            "bonus": null,
-            "note": "blue wave icon"
+            "bonus": {
+                "type": "wave",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "x": 5,
@@ -359,26 +362,38 @@
         {
             "x": 6,
             "y": 5,
-            "bonus": null,
-            "note": "blue wave icon"
+            "bonus": {
+                "type": "wave",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "x": 7,
             "y": 2,
-            "bonus": null,
-            "note": "black pennant icon"
+            "bonus": {
+                "type": "shark-attack",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "x": 7,
             "y": 10,
-            "bonus": null,
-            "note": "black pennant icon"
+            "bonus": {
+                "type": "shark-attack",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "x": 8,
             "y": 7,
-            "bonus": null,
-            "note": "blue wave icon"
+            "bonus": {
+                "type": "wave",
+                "value": 1
+            },
+            "note": ""
         }
     ],
     "special_hexes": [

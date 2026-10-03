@@ -13,7 +13,6 @@
 
   let replay = null;
   let step = 0;
-  let timer = null;
 
   // ---- loading --------------------------------------------------------------------------------------------------
   async function fetchReplay() {
@@ -59,10 +58,38 @@
     t.append(el('b', '', title(c.name)), el('span', '', key + (c.type && c.type !== 'unknown' ? ' · ' + c.type : '')));
     return t;
   }
-  function cardRow(keys, cls, emptyText) {
+  // A card that was not in its zone (hand, endgame cards, animals, sponsors, display, projects...) at the previous render gets a green border that
+  // fades like the changed numbers of the player tracker (--flash-duration). A card that left the zone stays where it was as a "ghost" with a red
+  // border; card and border fade away in the same time and the ghost is removed. `zoneNew(zone, keys)` returns the test for each card of the zone,
+  // with `.gone` = [{key, index}] of the cards that left (index = their place in the zone before).
+  let prevZones = {}, curZones = {}, prevZoneData = {}, curZoneData = {};       // (the Data ones keep the objects of the zones that need them to draw a ghost)
+  function zoneNew(zone, keys) {
+    const prev = prevZones[zone], cur = {}, seen = {}, left = {};
+    for (const k of keys) if (k) { cur[k] = (cur[k] || 0) + 1; left[k] = (left[k] || 0) + 1; }
+    curZones[zone] = keys.slice();
+    const test = (k) => { seen[k] = (seen[k] || 0) + 1; return !!prev && seen[k] > (prev[k] || 0); };
+    test.gone = [];
+    const count = {};
+    for (const k of prev || []) if (k) count[k] = (count[k] || 0) + 1;
+    test.isNew = (k) => { seen[k] = (seen[k] || 0) + 1; return !!prev && seen[k] > (count[k] || 0); };
+    (prev || []).forEach((k, index) => {
+      if (!k) return;
+      if (left[k] > 0) left[k]--; else test.gone.push({ key: k, index });
+    });
+    return test;
+  }
+  function ghost(key) {
+    const g = card(key, 'card-gone');
+    g.addEventListener('animationend', () => g.remove());
+    return g;
+  }
+  function cardRow(keys, cls, emptyText, zone) {
     const row = el('div', 'cards' + (cls ? ' ' + cls : ''));
     if (!keys.length) row.append(el('span', 'empty', emptyText || 'none'));
-    for (const k of keys) row.append(k ? card(k) : el('div', 'card'));
+    const z = zone ? zoneNew(zone, keys) : null;
+    const items = keys.map((k) => (k ? card(k, z && z.isNew(k) ? 'card-new' : '') : el('div', 'card')));
+    if (z) for (const g of z.gone) items.splice(Math.min(g.index, items.length), 0, ghost(g.key));
+    row.append(...items);
     return row;
   }
   const section = (heading, node, cls) => {
@@ -83,8 +110,9 @@
     pentagon: 'r5c14', flag: 'r6c9',
     // what a placement bonus pentagon shows on top of the yellow base (r5c14); the number is drawn as text
     'bonus:reputation': 'r4c9', 'bonus:money': 'r11c8', 'bonus:xtoken': 'r3c2', 'bonus:take-in-range-or-deck': 'r6c13', 'bonus:Clever': 'r6c6',
-    'bonus:bonus-sponsor': 'r7c6', 'bonus:sponsor-person-card': 'r7c6', 'bonus:Digging': 'r4c11', 'bonus:Partner-Zoo': 'r10c14', 'bonus:Multiplier': 'r6c8',
+    'bonus:bonus-sponsor': 'r7c6', 'bonus:sponsor-person-card': 'r7c6', 'bonus:Digging': 'r9c13', 'bonus:Determination': 'r6c7', 'bonus:cut-down': 'r4c1', 'bonus:bonus-scoring-cards': 'r6c4', 'bonus:Fac': 'r10c2', 'bonus:Partner-Zoo': 'r10c14', 'bonus:Multiplier': 'r6c8',
     'bonus:Worker': 'r5c13', 'bonus:upgrade-card': 'r10c5',
+    'bonus:shark-attack': 'r5c1', 'bonus:wave': 'r11c14', 'bonus:store': 'r5c2', 'bonus:conceal': 'r5c5',
   };
   // BGA's names of the icons (scripts/name_icons.py): the placement bonus of each type shows the icon of the same name
   const BONUS_ICON_NAME = {
@@ -96,7 +124,7 @@
     for (const [type, name] of Object.entries(BONUS_ICON_NAME)) if (names[name]) ICON_IDS['bonus:' + type] = names[name];
     ICON_IDS.money = names.money; ICON_IDS.appeal = names.appeal; ICON_IDS.conservation = names.conservation; ICON_IDS.reputation = names.reputation; ICON_IDS.xtoken_plain = names.xtoken;
   }
-  const SHOW_VALUE = new Set(['money', 'reputation']);     // BGA prints the number on these two only; the icon of every other bonus already says what it is
+  const SHOW_VALUE = new Set(['money', 'reputation', 'appeal']);     // BGA prints the number on these three only (appeal: 2 on the drawing board); the icon of every other bonus already says what it is
   const iconUrl = (id) => '/icons/' + id + '.webp';
   let iconSizes = {};                             // web/icons/icons.json: id -> [width, height]
   function iconImg(name, height) {
@@ -136,7 +164,7 @@
     return sprites[id];
   }
 
-  function zooBoard(map, player) {
+  function zooBoard(map, player, seat) {
     const s = svg('svg', { class: 'board', viewBox: '0 0 1122 976', role: 'img', 'aria-label': 'Zoo map ' + map.name });
     if (map.image) s.append(svg('image', { href: map.image, x: 0, y: 0, width: 1122, height: 976 }));
     const covered = new Set();
@@ -160,9 +188,10 @@
       tip.textContent = bn.type ? bn.type + (bn.value ? ' ' + bn.value : '') : 'bonus';
       iconBox(ICON_IDS.pentagon, cx, cy, 80);
       const icon = ICON_IDS['bonus:' + bn.type];
-      if (bn.type === 'money') moneyTile(s, cx, cy + 3, 48);
-      else if (icon) iconBox(icon, cx, cy + 3, 48);
-      if (bn.type === 'appeal') put('text', { x: cx, y: cy + 6, class: 'bonus-label' }, '★');      // a bonus nobody has identified yet is just the empty pentagon
+      if (bn.type === 'adapt') { iconBox('r10c15', cx - 14, cy + 3, 36); iconBox('r10c16', cx + 15, cy + 3, 36); }      // two endgame card icons side by side
+      else if (bn.type === 'money') moneyTile(s, cx, cy + 3, 48);
+      else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)
+      if (bn.type === 'appeal' && !icon) put('text', { x: cx, y: cy + 6, class: 'bonus-label' }, '★');      // a bonus nobody has identified yet is just the empty pentagon
       if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + 16, class: 'bonus-number' }, bn.value);       // the number sits over the middle of the icon
       s.lastChild.append(tip);
     }
@@ -178,36 +207,76 @@
       put('text', { x: bx, y: by + 20, class: 'flag-label' }, 'II');
     }
 
-    for (const b of player.buildings) {
+    // map 13: the bonus of each quadrant (gained when the area is completely covered and at every break) sits on the edge of the map, on the
+    // yellow / purple tag r8c11; the left one (hunter 4) is not in the geometry data
+    const AREA_TAG = 'r8c11', AREA_AT = { top: [561, 46], bottom: [561, 932], left: [42, 488], right: [1080, 488] };
+    for (const sh of map.special_hexes) {
+      if (sh.kind !== 'area_bonus') continue;
+      const side = sh.y < 0 ? 'top' : sh.y > 12 ? 'bottom' : sh.x < 0 ? 'left' : 'right';
+      const bn = sh.bonus || (side === 'left' ? { type: 'Hunter', value: 4 } : null);
+      if (!bn) continue;
+      const [cx, cy] = AREA_AT[side];
+      iconBox(AREA_TAG, cx, cy, 82);
+      if (bn.type === 'Hunter') {
+        iconBox('r7c7', cx + 7, cy + 2, 54);
+        put('text', { x: cx - 21, y: cy + 16, class: 'bonus-number' }, bn.value);            // white with a black border, near the left edge
+      } else if (bn.type === 'money') {
+        moneyTile(s, cx, cy + 3, 48);
+        put('text', { x: cx, y: cy + 16, class: 'bonus-number' }, bn.value);
+      } else {
+        const icon = ICON_IDS['bonus:' + bn.type];
+        if (icon) iconBox(icon, cx, cy + 3, 48);
+        put('text', { x: cx, y: cy + 16, class: 'bonus-number' }, bn.value);
+      }
+      const tip = svg('title');
+      tip.textContent = 'Area bonus: ' + bn.type + ' ' + bn.value + ' (when the area is completely covered, and at every break)';
+      s.lastChild.append(tip);
+    }
+
+    // the buildings; one that arrived (or changed: another rotation, turned over when an animal is placed / turned back when it is released) gets a green frame round its hexes, one that left (cut down, replaced) stays
+    // as a ghost with a red frame; both fade like the cards
+    const hexPoints = (x, y) => {
+      const [hx, hy] = cellCentre(x, y);
+      return [0, 1, 2, 3, 4, 5].map((i) => (hx + 76 * Math.cos(i * Math.PI / 3)).toFixed(1) + ',' + (hy + 76 * Math.sin(i * Math.PI / 3)).toFixed(1)).join(' ');
+    };
+    const drawBuilding = (b, cls) => {
+      const g = svg('g', cls ? { class: cls } : {});
       const sp = spriteOf(b);
       const animals = b.animal ? [b.animal] : b.animals;
       const title = svg('title');
       title.textContent = b.type + (animals && animals.length ? ': ' + animals.map(cardName).join(', ') : ' (empty)');
       if (!sp) {                                  // a building whose sprite is missing: outline its hexes
-        const g = svg('g');
         g.append(title);
-        for (const [x, y] of b.cells) {
-          const [cx, cy] = cellCentre(x, y);
-          g.append(svg('polygon', { points: [0, 1, 2, 3, 4, 5].map((i) => (cx + 76 * Math.cos(i * Math.PI / 3)).toFixed(1) + ',' + (cy + 76 * Math.sin(i * Math.PI / 3)).toFixed(1)).join(' '), class: 'nosprite' }));
-        }
-        s.append(g);
-        continue;
+        for (const [x, y] of b.cells) g.append(svg('polygon', { points: hexPoints(x, y), class: 'nosprite' }));
+      } else {
+        const [cx, cy] = cellCentre(b.x, b.y);
+        const img = svg('image', {
+          href: '/enclosures/' + sp.image, x: cx - sp.anchor[0] * SPRITE_SCALE, y: cy - sp.anchor[1] * SPRITE_SCALE,
+          width: sp.size[0] * SPRITE_SCALE, height: sp.size[1] * SPRITE_SCALE,
+          transform: 'rotate(' + (b.rotation * 60) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')',
+        });
+        img.append(title);
+        g.append(img);
       }
-      const [cx, cy] = cellCentre(b.x, b.y);
-      const img = svg('image', {
-        href: '/enclosures/' + sp.image, x: cx - sp.anchor[0] * SPRITE_SCALE, y: cy - sp.anchor[1] * SPRITE_SCALE,
-        width: sp.size[0] * SPRITE_SCALE, height: sp.size[1] * SPRITE_SCALE,
-        transform: 'rotate(' + (b.rotation * 60) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')',
-      });
-      img.append(title);
-      s.append(img);
+      if (cls) for (const [x, y] of b.cells) g.append(svg('polygon', { points: hexPoints(x, y), class: 'frame' }));
+      return g;
+    };
+    const keyOf = (b) => [b.type, b.x, b.y, b.rotation, b.animal || (b.animals && b.animals.length) ? 'full' : 'empty'].join('|');
+    const zone = seat + ':buildings';
+    const z = zoneNew(zone, player.buildings.map(keyOf));
+    curZoneData[zone] = Object.fromEntries(player.buildings.map((b) => [keyOf(b), b]));
+    for (const b of player.buildings) {
+      s.append(drawBuilding(b, z.isNew(keyOf(b)) ? 'tok-new' : ''));
       if (params.has('debug')) {                  // ?debug: outline the cells the engine says the building covers
-        for (const [x, y] of b.cells) {
-          const [hx, hy] = cellCentre(x, y);
-          s.append(svg('polygon', { points: [0, 1, 2, 3, 4, 5].map((i) => (hx + 76 * Math.cos(i * Math.PI / 3)).toFixed(1) + ',' + (hy + 76 * Math.sin(i * Math.PI / 3)).toFixed(1)).join(' '),
-            fill: 'none', stroke: '#f0f', 'stroke-width': 3 }));
-        }
+        for (const [x, y] of b.cells) s.append(svg('polygon', { points: hexPoints(x, y), fill: 'none', stroke: '#f0f', 'stroke-width': 3 }));
       }
+    }
+    for (const gone of z.gone) {
+      const b = (prevZoneData[zone] || {})[gone.key];
+      if (!b) continue;
+      const g = drawBuilding(b, 'tok-gone');
+      g.addEventListener('animationend', () => g.remove());
+      s.append(g);
     }
     return s;
   }
@@ -259,6 +328,10 @@
         }
       }
     }
+    const workerAt = (cx, cy, seat, tip) => {          // BGA's worker meeple of the player's colour (282x277), standing on the slot
+      const w = 92, h = w * 277 / 282;
+      put('image', { href: workerUrl(seat), x: cx - w / 2, y: cy - h / 2, width: w, height: h }, undefined, tip);
+    };
     const blocked = unusedColor();                     // 2 players: the left donation cells of 5 / 7 / 10 money are covered by cubes of a colour nobody plays
     for (const k of [1, 3, 5]) {
       const [x, y] = ASSOC.donation[k];
@@ -273,11 +346,11 @@
       s.append(g);
     }
     ASSOC.donation.forEach(([x, y], k) => (at['association_0_' + k] || []).forEach((seat) => {
-      put('circle', { cx: x, cy: y, r: 30, fill: seatColor(seat), stroke: '#fff', 'stroke-width': 6 }, undefined, replay.players[seat].name + ': donation');
+      workerAt(x, y, seat, replay.players[seat].name + ': donation');
     }));
     for (const [n, [cx, cy, xs]] of Object.entries(ASSOC.workers)) {
       (at['association_' + n] || []).slice(0, 3).forEach((seat, i) => {
-        put('circle', { cx: cx + xs[i], cy, r: 30, fill: seatColor(seat), stroke: '#fff', 'stroke-width': 6 }, undefined, replay.players[seat].name + ': worker');
+        workerAt(cx + xs[i], cy, seat, replay.players[seat].name + ': worker');
       });
     }
     return s;
@@ -302,6 +375,20 @@
   const SLOT_ICON = {};   // the slots use the same icons as the placement bonuses (ICON_IDS 'bonus:<type>', named from BGA's stylesheet)
   const SLOT_NUMBER = new Set(['money', 'xtoken', 'reputation', 'conservation']);
 
+  // a conservation icon with its number printed over it, like the conservation tracker in the side panel (nothing for a bonus of 0)
+  function conservationBonus(root, cx, cy, h, value, tip) {
+    if (!value) return null;
+    const id = ICON_IDS.conservation, [w0, h0] = iconSizes[id] || [h, h];
+    const g = svg('g', { class: 'consbonus' });
+    g.append(svg('image', { href: iconUrl(id), x: cx - (w0 * h / h0) / 2, y: cy - h / 2, width: w0 * h / h0, height: h }));
+    const t = svg('text', { x: cx, y: cy + h * 0.18, class: 'cons-number', style: 'font-size:' + (h * 0.5).toFixed(1) + 'px' });
+    t.textContent = value;
+    g.append(t);
+    if (tip) { const tt = svg('title'); tt.textContent = tip; g.append(tt); }
+    root.append(g);
+    return g;
+  }
+
   function bonusPanel(map, p, seat) {
     const color = seatColor(seat);
     const slots = [...map.bonus_slots].sort((a, b) => a.index - b.index);
@@ -319,16 +406,20 @@
     // locked workers
     add('rect', { x: 14, y: 14, width: 148, height: 92, rx: 14, fill: '#f4a3a3', stroke: '#222', 'stroke-width': 3 });
     const locked = new Set(p.tokens.filter((t) => t.type === 'worker' && /^supply_\d$/.test(t.location)).map((t) => +t.location.slice(7)));
+    const lockbox = add('g', { class: 'lockbox' });          // hovering the box lifts the last worker to show the conservation bonus of the 4th worker under it
+    const lbAdd = (tag, attrs) => { const e = svg(tag, attrs); lockbox.append(e); return e; };
     [1, 2, 3].forEach((k, i) => {
       const cx = 40 + i * 48;     // slots 18..62, 66..110, 114..158 stay inside the box (x 14..162)
-      add('rect', { x: cx - 22, y: 26, width: 44, height: 70, rx: 8, fill: '#f9c9c9' });
+      lbAdd('rect', { x: cx - 22, y: 26, width: 44, height: 70, rx: 8, fill: '#f9c9c9' });
+      if (k === 3) conservationBonus(lockbox, cx, 72, 38, (map.association_bonuses || {}).last_worker, '4th worker: ' + (map.association_bonuses || {}).last_worker + ' conservation');
       if (!locked.has(k)) return;
       const w = 38, h = w * 277 / 282;                     // BGA's worker meeple of the player's colour
-      const img = add('image', { href: workerUrl(seat), x: cx - w / 2, y: 61 - h / 2, width: w, height: h });
+      const img = lbAdd('image', { href: workerUrl(seat), x: cx - w / 2, y: 61 - h / 2, width: w, height: h, class: k === 3 ? 'lift' : '' });
       const tip = svg('title');
       tip.textContent = 'Worker ' + k + ' (locked)';
       img.append(tip);
     });
+    lockbox.append(svg('rect', { x: 14, y: 14, width: 148, height: 92, rx: 14, fill: 'transparent' }));      // hover area: the whole box
 
     const drawGroup = (list, top, height, rowY) => {
       add('rect', { x: 14, y: top, width: 148, height, rx: 14, fill: '#fff', stroke: '#222', 'stroke-width': 3 });
@@ -339,11 +430,24 @@
         const icon = SLOT_ICON[bn.type] || ICON_IDS['bonus:' + bn.type];
         const size = bn.type === 'money' ? (sl.kind === 'instant_income' ? 46 : 42) : (sl.kind === 'instant_income' ? 44 : 50);
         if (bn.type === 'money') moneyTile(s, 109, y + 1, size);
-        else if (icon) {
+        else if (bn.type === 'special-enclosure') {            // the choice of a large bird aviary / reptile house / large aquarium (Marine Worlds): three icons with slashes
+          const ids = ['r9c9', 'r9c11', 'r8c14'], h = 22;
+          let x = 78;
+          ids.forEach((id, n) => {
+            const [w0, h0] = iconSizes[id] || [h, h], w = w0 * h / h0;
+            add('image', { href: iconUrl(id), x, y: y - h / 2 + 1, width: w, height: h });
+            x += w + 2;
+            if (n < ids.length - 1) { add('text', { x: x + 1, y: y + 7, class: 'slot-label', style: 'font-size:18px' }, '/'); x += 8; }
+          });
+        } else if (icon) {
           const [w0, h0] = iconSizes[icon] || [size, size];
           add('image', { href: iconUrl(icon), x: 109 - (w0 * size / h0) / 2, y: y - size / 2 + 1, width: w0 * size / h0, height: size });
         } else add('text', { x: 109, y: y + 8, class: 'slot-label' }, '?');
         if (SLOT_NUMBER.has(bn.type) && bn.value) add('text', { x: 109, y: y + 13, class: 'slot-number' }, bn.value);
+        if (bn.type === 'cut-down' && icon) {                  // the Cut Down ability: a white 1 with a black border near the left edge of the icon
+          const [w0, h0] = iconSizes[icon] || [size, size];
+          add('text', { x: 109 - (w0 * size / h0) / 2 + 8, y: y + 14, class: 'slot-number', style: 'font-size:28px' }, '1');
+        }
         if (!(used & (1 << sl.index))) {                     // the cube is still on the slot: its bonus has not been chosen yet
           const cx = 46, c = add('g', { transform: 'translate(' + cx + ' ' + (y - 1) + ')' });
           const face = (pts, fill) => c.append(svg('polygon', { points: pts, fill, stroke: mix(color, '#000000', .6), 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
@@ -369,22 +473,44 @@
     partner: { 1: 850, 2: 612, 3: 376, 4: 140 },          // y of the middle of the slot picture; x is always 175
     university: { 1: 1610, 2: 1375, 3: 1140 },
   };
-  function associationStrip(p) {
+  function associationStrip(p, map, seat) {
     const s = svg('svg', { class: 'strip', viewBox: '0 0 351 1776', role: 'img', 'aria-label': 'Partner zoos and universities' });
     s.append(svg('image', { href: '/assets/association_player_board.webp', x: 0, y: 0, width: 351, height: 1776 }));
-    for (const t of p.tokens) {
-      const m = /^(partner|university)_(\d)$/.exec(t.location);
-      if (!m) continue;
-      const kind = m[1], y = STRIP[kind][m[2]];
-      const id = ICON_IDS[kind === 'partner' ? t.type.replace('partner-', '') : t.type];
-      if (!y || !id) continue;
+    const bonuses = map.association_bonuses || {};            // conservation points of the 4th partner zoo and the 3rd university, shown on their (empty) slots
+    conservationBonus(s, 175, STRIP.partner[4] + 22, 92, bonuses.partner4, '4th partner zoo: ' + bonuses.partner4 + ' conservation');
+    conservationBonus(s, 175, STRIP.university[3] + 22, 92, bonuses.university3, '3rd university: ' + bonuses.university3 + ' conservation');
+    // the partner zoos and universities of the player; one that arrived gets a green frame, one that left stays as a ghost with a red frame
+    // (the same fade as the cards)
+    const drawToken = (kind, slot, type, cls) => {
+      const y = STRIP[kind][slot];
+      const id = ICON_IDS[kind === 'partner' ? type.replace('partner-', '') : type];
+      if (!y || !id) return null;
       const [w0, h0] = iconSizes[id] || [190, 152];
       const w = kind === 'partner' ? 232 : 250, h = w * h0 / w0;
+      const g = svg('g', cls ? { class: cls } : {});
       const img = svg('image', { href: iconUrl(id), x: 175 - w / 2, y: y - h / 2, width: w, height: h });
       const tip = svg('title');
-      tip.textContent = t.type;
+      tip.textContent = type;
       img.append(tip);
-      s.append(img);
+      g.append(img);
+      if (cls) g.append(svg('rect', { x: 175 - w / 2 - 6, y: y - h / 2 - 6, width: w + 12, height: h + 12, rx: 14, class: 'frame' }));
+      return g;
+    };
+    const toks = p.tokens.filter((t) => /^(partner|university)_\d$/.test(t.location));
+    const keyOf = (t) => t.location + '|' + t.type;
+    const z = zoneNew(seat + ':association', toks.map(keyOf));
+    for (const t of toks) {
+      const [kind, slot] = t.location.split('_');
+      const g = drawToken(kind, slot, t.type, z.isNew(keyOf(t)) ? 'tok-new' : '');
+      if (g) s.append(g);
+    }
+    for (const gone of z.gone) {
+      const [loc, type] = gone.key.split('|');
+      const [kind, slot] = loc.split('_');
+      const g = drawToken(kind, slot, type, 'tok-gone');
+      if (!g) continue;
+      g.addEventListener('animationend', () => g.remove());
+      s.append(g);
     }
     return s;
   }
@@ -435,8 +561,8 @@
   // a beige panel with a shield icon and `count` slots, like BGA's project holders; the cards in `keys` go left to right
   // a cube (colour nobody plays) over one of the three slots of a base project card; in a 2 player game card k has its slot k covered: left, middle, right
   const SLOT_X = [0.18, 0.51, 0.83];
-  function blockedCube(i) {
-    const c = unusedColor();
+  function blockedCube(i, colour, title) {            // colour / title: a cube of a player who supports the project at slot i
+    const c = colour || unusedColor();
     const e = mix(c, '#000000', .6);
     const g = svg('svg', { class: 'blockcube', viewBox: '-24 -24 48 48' });
     g.style.left = (SLOT_X[i] * 100) + '%';
@@ -444,7 +570,7 @@
       g.append(svg('polygon', { points: pts, fill, stroke: e, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
     }
     const tip = svg('title');
-    tip.textContent = 'Blocked in a 2 player game';
+    tip.textContent = title || 'Blocked in a 2 player game';
     g.append(tip);
     return g;
   }
@@ -455,22 +581,28 @@
     const icon = el('img', 'icon projicon');
     icon.src = iconUrl(iconNames[iconName] || ''); icon.alt = title; icon.height = 44;
     panel.append(icon);
+    const zn = zoneNew('projects:' + iconName, keys), isNew = zn.isNew;
     for (let i = 0; i < count; i++) {
       const slot = el('div', 'projslot');
       if (keys[i]) {
         const wrap = el('div', 'withtokens');
-        const holder = el('div', 'cardwrap');
+        const bar = el('div', 'projbar');                  // dark green bar with the project's icon(s): the top left corner of the card art
+        const pc = info(keys[i]);
+        if (pc.image) {
+          bar.style.backgroundImage = 'url(' + pc.image + ')';
+          bar.addEventListener('mouseenter', () => showPreview(pc.large || pc.image));
+          bar.addEventListener('mouseleave', hidePreview);
+        }
+        const holder = el('div', 'cardwrap projcrop');       // only the bottom of the card (cubes and slots) shows; hovering still previews the whole card
         holder.append(card(keys[i]));
         if (blocked) holder.append(blockedCube(i));
-        wrap.append(holder);
-        const dots = el('div', 'dots');
-        for (const t of projectTokens(st, keys[i])) {
-          const d = el('span', 'dot', t.slot + 1);
-          d.style.background = seatColor(t.seat);
-          d.title = replay.players[t.seat].name + ': slot ' + (t.slot + 1);
-          dots.append(d);
+        for (const t of projectTokens(st, keys[i])) {         // a supporter's cube blocks its slot
+          holder.append(blockedCube(0, seatColor(t.seat), replay.players[t.seat].name + ': slot ' + (t.slot + 1)));
+          holder.lastChild.style.left = (SLOT_X[t.slot] * 100) + '%';
         }
-        wrap.append(dots);
+        const line = el('div', 'projline' + (isNew(keys[i]) ? ' card-new' : ''));
+        line.append(bar, holder);
+        wrap.append(line);
         slot.append(wrap);
       }
       panel.append(slot);
@@ -478,24 +610,236 @@
     return panel;
   }
 
+  // the player whose Mark cube is on this display card (a token located on `A###_Name`), or -1
+  function markOwner(st, key) {
+    return st.players.findIndex((p) => p.tokens.some((t) => t.type === 'token' && t.location.slice(0, 5) === key + '_'));
+  }
+  function markCube(seat) {
+    const c = seatColor(seat), e = mix(c, '#000000', .6);
+    const g = svg('svg', { class: 'markcube', viewBox: '-24 -24 48 48' });
+    for (const [pts, fill] of [['0,-19 19,-9 0,2 -19,-9', mix(c, '#ffffff', .45)], ['-19,-9 0,2 0,21 -19,10', c], ['19,-9 0,2 0,21 19,10', mix(c, '#000000', .3)]]) {
+      g.append(svg('polygon', { points: pts, fill, stroke: e, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
+    }
+    const tip = svg('title');
+    tip.textContent = 'Marked by ' + replay.players[seat].name;
+    g.append(tip);
+    return g;
+  }
+
+  // the bar above the boards, like BGA's: what the active player can do now. Before an action card is chosen: the five action cards (the number is the
+  // strength of its space) and the X tokens that could raise it
+  // The decision comes from the rules engine (`step.options`: its prompt and a summary of legal_actions) on the steps the engine played; on the other
+  // steps the bar is guessed from the log-built state (only the choice of an action card).
+  const PROMPT_TEXT = {
+    build_place: 'must place a building', cards_take: 'must take cards', cards_discard: 'must discard cards', sponsors_play: 'may play a sponsor',
+    animals_play: 'may play an animal', association_tasks: 'may perform an association task', effects: 'must resolve an effect',
+  };
+  const KIND_LABEL = {
+    place_building: 'Place a building', finish_build: 'Done building', take_cards: 'Take a card', play_animal: 'Play an animal', finish_animals: 'Done with animals',
+    play_sponsor: 'Play a sponsor', sponsor_break: 'Advance the break', finish_sponsors: 'Done with sponsors', association_task: 'Association task', donate: 'Donate',
+    finish_association: 'Done with association', discard_cards: 'Discard', choose_effect: 'Resolve an effect', skip_effect: 'Skip the effect', take_instead: 'Take a card instead',
+    self_clever: 'Do nothing (Self-clever)', skip_extra: 'No second action', sponsor_side: 'Sponsors side action', animals_single: 'Play a single animal', choose_slot: 'Choose a slot',
+    choose_bonus: 'Choose a bonus', upgrade_action_card: 'Upgrade an action card',
+  };
+  function actionBar(st) {
+    const bar = $('actionbar');
+    bar.replaceChildren();
+    const cur = replay.steps[step], o = cur.options;
+    const fromEngine = cur.engine && cur.engine.source === 'engine';
+    const seat = o ? o.seat : st.active_player;
+    const choosing = o ? true : !fromEngine && (st.phase === 'turn' || st.phase === 'final_turns') && !st.current_action && st.players[seat] && st.players[seat].action_cards;
+    bar.hidden = !choosing;
+    if (!choosing) return;
+    if (o && o.prompt !== 'choose_action_card') { genericBar(bar, st, o, seat); return; }
+    const p = st.players[seat];
+    // X tokens already paid for this action ("pays 1 xtoken for increasing card strength" comes before the card is chosen): they raise every strength
+    let spent = 0;
+    for (let j = step; j >= 0; j--) {
+      const m = /pays (\d+) xtoken for increasing card strength/.exec(replay.steps[j].label || '');
+      if (!m) break;
+      spent += +m[1];
+    }
+    const who = el('span', 'who', replay.players[seat].name);
+    who.style.color = seatColor(seat);
+    bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : ' must choose an action card'));
+    p.action_cards.forEach((a, i) => {
+      const b = el('span', 'abtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
+      b.title = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + ', strength ' + (i + 1 + spent) + ' (up to ' + (i + 1 + spent + p.x_tokens) + ' with X tokens)';
+      b.append(pic(ACTION_ICON[a.type], 26), el('b', '', i + 1 + spent));
+      if (replay.marine_worlds && a.variant) {          // the variant's silver effect badge, like on the action card in the tracker
+        const v = el('img', 'variant');
+        v.src = '/action_icons/' + a.type + '_' + a.variant + '_' + (a.level === 2 ? 2 : 1) + '.webp'; v.alt = 'Variant ' + a.variant;
+        b.append(v);
+      }
+      bar.append(b);
+    });
+    // spending X tokens raises the strength of the chosen card: - (nothing spent yet, so greyed out) | X tokens | + (greyed out without tokens)
+    const xs = (sign, label, off) => {
+      const btn = el('button', 'xstep', sign);
+      btn.type = 'button'; btn.title = label; btn.disabled = off; btn.setAttribute('aria-label', label);
+      return btn;
+    };
+    const maxSpend = o ? Math.max(0, ...Object.values(o.cards).flat()) : p.x_tokens;       // the most X tokens the engine lets the player spend
+    const x = el('span', 'abtn xbtn');
+    x.title = 'X tokens that can raise the strength of the chosen card';
+    x.append(el('b', '', p.x_tokens), pic('xtoken', 26));
+    bar.append(xs('−', 'Spend one X token less', spent === 0), x, xs('+', 'Spend one more X token to raise the strength', o ? maxSpend - spent <= 0 : p.x_tokens === 0));
+    // or put one of the action cards back to slot 1 and gain an X token (not possible at the maximum of 5)
+    const canGain = o ? o.skip.length > 0 : p.x_tokens < 5;
+    const gain = el('span', 'abtn gainx' + (canGain ? '' : ' off'));
+    gain.title = !canGain ? 'Not possible now (the maximum is 5 X tokens)' : 'Instead of an action: put one action card back to slot 1 and gain an X token';
+    const rawIcon = (id, h) => { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = h; return i; };
+    gain.append(rawIcon('r6c6', 30), el('b', '', ':'), rawIcon('r5c6', 26));
+    bar.append(gain);
+  }
+
+  // the building pieces the engine lets the player place now (affordable with the money and the strength left); the extra kiosk / pavilion of a Build
+  // variant comes first, with the variant's silver badge to tell it from a normal one
+  const PIECE_SCALE = 0.3;
+  function piecesRow(o) {
+    const row = el('span', 'pieces');
+    for (const piece of o.pieces) {
+      const sp = spriteOf({ type: piece.type });
+      const name = piece.type.replace(/-/g, ' ') + (piece.extra ? ' (additional, from the Build variant)' : '');
+      const w = el('span', 'piece' + (piece.extra ? ' extra' : ''));
+      w.title = name;
+      if (sp) {
+        const img = el('img');
+        img.src = '/enclosures/' + sp.image; img.alt = name;
+        const k = Math.min(PIECE_SCALE, 240 / sp.size[1]);                        // (the tallest pieces are scaled down to fit the bar)
+        img.style.width = (sp.size[0] * k) + 'px'; img.style.height = (sp.size[1] * k) + 'px';
+        w.append(img);
+      } else {
+        w.append(el('span', 'abtn gen', piece.type));
+      }
+      if (piece.extra && o.build && o.build.variant) {
+        const v = el('img', 'variant');
+        v.src = '/action_icons/build_' + o.build.variant + '_' + (o.build.level === 2 ? 2 : 1) + '.webp'; v.alt = 'Build variant ' + o.build.variant;
+        w.append(v);
+      }
+      row.append(w);
+    }
+    return row;
+  }
+
+  // taking cards: what it is for, and the button to draw from the deck; the display cards that can be taken are the ones not greyed out
+  const SOURCE_TEXT = { bonus: 'placement bonus', 'reputation track': 'reputation track', association4: 'association', map13: 'map bonus' };
+  function takeBar(bar, o, seat) {
+    const t = o.take;
+    let text;
+    if (t.remaining !== undefined) text = ' must take ' + t.remaining + (t.remaining === 1 ? ' card' : ' cards') + (t.snapping ? ' (a snap is possible)' : '');
+    else {
+      const src = t.source ? (SOURCE_TEXT[t.source] || (/^[ASPF]\d{3}$/.test(t.source) ? cardName(t.source) : t.source)) : '';
+      text = ' must ' + (t.is_snap ? 'snap 1 card from the display' + (t.small ? ' (a small animal)' : '') : 'take 1 card from display in reputation range') + (src ? ' (' + src + ')' : '');
+    }
+    bar.append(el('b', '', text));
+    if (t.deck && !t.range_only) {
+      const b = el('span', 'abtn deckbtn');
+      b.title = 'Draw from the deck';
+      b.append(el('b', '', t.deck > 1 ? 'Draw up to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
+      bar.append(b);
+    }
+  }
+
+  // any other decision of the engine: who must do what, and the kinds of action it offers (with how many options each)
+  function genericBar(bar, st, o, seat) {
+    const who = el('span', 'who', replay.players[seat].name);
+    who.style.color = seatColor(seat);
+    if (o.take) { bar.append(who); takeBar(bar, o, seat); return; }
+    bar.append(who, el('b', '', ' ' + (PROMPT_TEXT[o.prompt] || 'must decide (' + o.prompt + ')')));
+    if (o.pending) for (const k of o.pending) bar.append(el('span', 'chip pend', k));
+    if (o.pieces && o.pieces.length) bar.append(piecesRow(o));
+    for (const [kind, n] of Object.entries(o.kinds)) {
+      if (kind === 'place_building' && o.pieces && o.pieces.length) continue;       // shown as the pieces themselves
+      const b = el('span', 'abtn gen');
+      b.title = kind + ': ' + n + (n === 1 ? ' option' : ' options');
+      b.append(el('b', '', KIND_LABEL[kind] || kind.replace(/_/g, ' ')));
+      if (n > 1) b.append(el('i', '', '×' + n));
+      bar.append(b);
+    }
+    if (!Object.keys(o.kinds).length) bar.append(el('span', 'abtn gen off', 'nothing to choose'));
+  }
+
+  // the cards of the display a player can reach at this reputation (engine cards_action.reputation_range)
+  const repRange = (rep) => (rep <= 1 ? 1 : rep <= 3 ? 2 : rep <= 6 ? 3 : rep <= 9 ? 4 : rep <= 12 ? 5 : 6);
+
+  // The conservation track for the first 10 points, above the display (BGA's picture); a cube per player. It goes away when both players are past 10.
+  // At 5 and 8 the two random bonuses of the game still on offer lie to the left and right of the arrows, like the upgrade / worker at 2.
+  const CT_X = (n) => (88 + 182.4 * n) / 2000;                       // centre of the space n on the picture (2000 px wide version)
+  const CT_BONUS_X = { 5: [905, 1095], 8: [1457, 1643] };            // where the two random bonus tiles lie under the arrows
+  function conservationTrack(st) {
+    if (Math.min(...st.players.map((p) => p.conservation)) > 10) return null;
+    const wrap = el('div', 'ctrackwrap');
+    const img = el('img', 'ctrack');
+    img.src = '/assets/conservation_track.webp'; img.alt = 'Conservation track';
+    wrap.append(img);
+    const first = replay.steps[0].state.conservation_options || {};     // the options of the game as dealt: a taken one leaves its place empty
+    for (const th of ['5', '8']) {
+      const left = (st.conservation_options || {})[th] || [];
+      (first[th] || []).forEach((opt, i) => {
+        if (!left.some((o) => JSON.stringify(o) === JSON.stringify(opt))) return;
+        const [name] = Object.keys(opt);
+        const id = iconNames[name];
+        if (!id) return;
+        const t = el('img', 'ctbonus');
+        t.src = iconUrl(id); t.alt = name; t.title = 'Bonus at ' + th + ' conservation: ' + name.replace(/^bonus-/, '').replace(/-/g, ' ') + (opt[name] ? ' (' + opt[name] + ')' : '');
+        t.style.left = (CT_BONUS_X[th][i] / 2000 * 100) + '%';
+        wrap.append(t);
+      });
+    }
+    st.players.forEach((p, seat) => {
+      if (p.conservation > 10) return;                                   // past the end of this track
+      const same = st.players.filter((q) => q.conservation === p.conservation);
+      const cube = blockedCube(0, seatColor(seat), replay.players[seat].name + ': conservation ' + p.conservation);
+      cube.setAttribute('class', 'trackcube');
+      cube.style.left = ((CT_X(p.conservation) + (same.length > 1 ? (seat - 0.5) * 0.03 : 0)) * 100) + '%';
+      cube.style.top = '26%';
+      wrap.append(cube);
+    });
+    return wrap;
+  }
+
   function renderShared(st) {
+    actionBar(st);
     const root = $('shared');
     root.replaceChildren();
     // the display: each card lies in a folder, numbered 1-6 on the brown tab (the number is the cost in reputation range / position of the slot)
     const row = el('div', 'cards folders');
+    const displayNew = zoneNew('display', st.display);
+    const displayGone = displayNew.gone;
     st.display.forEach((k, i) => {
       const f = el('div', 'folder');
-      if (k) f.append(card(k));
+      const allowed = (replay.steps[step].options || {}).take;                       // while taking cards, the cards that cannot be taken are greyed out
+      const dim = allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k);
+      if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '')));
+      for (const g of displayGone) if (g.index === i) f.append(ghost(g.key));       // the card that left this slot fades away on top of it
       f.append(el('span', 'folnum', i + 1));
+      const owner = k ? markOwner(st, k) : -1;                         // a Mark cube of a player lies on the animal
+      if (owner >= 0) f.append(markCube(owner));
       row.append(f);
     });
     const box = el('div', 'displaybox');
+    const ctrack = conservationTrack(st);
+    if (ctrack) box.append(ctrack);
     box.append(row);
     // the reputation track under the folders: its 6 equal stretches (hat | 2-3 | 4-6 | 7-9 | 10-12 | 13-15) lie under folders 1-6, i.e. the cards a player can reach
-    // at 0 | 1-2 | 3-5 | 6-8 | 9-11 | 12+ reputation (engine cards_action.reputation_range)
+    // at 1 | 2-3 | 4-6 | 7-9 | 10-12 | 13-15 reputation (engine cards_action.reputation_range)
     const track = el('img', 'reptrack');
     track.src = '/assets/reputation_track.webp'; track.alt = 'Reputation track'; track.title = 'Reputation track: the cards under each stretch can be taken at that reputation';
-    box.append(track);
+    const repWrap = el('div', 'reptrackwrap');
+    repWrap.append(track);
+    // a cube per player on the stretch of the track they can draw from (the cell with their reputation lies under the last folder in reach)
+    const repX = [163, 163, 406, 568, 703, 811, 919, 1027, 1135, 1242, 1351, 1459, 1567, 1675, 1783, 1891];       // centres of the cells 1..15 (+ the first one again) on the 2000 px wide picture
+    const repCubes = st.players.map((p, seat) => ({ seat, x: repX[Math.max(0, Math.min(15, p.reputation))] / 2000, rep: p.reputation }));
+    repCubes.forEach((c, i) => {
+      const same = repCubes.filter((o) => o.x === c.x);
+      const cube = blockedCube(0, seatColor(c.seat), replay.players[c.seat].name + ': reputation ' + c.rep + ', draws from the first ' + repRange(c.rep) + ' cards of the display');
+      cube.setAttribute('class', 'trackcube');
+      cube.style.left = ((c.x + (same.length > 1 ? (same.indexOf(c) - 0.5) * 0.026 : 0)) * 100) + '%';
+      cube.style.top = '50%';
+      repWrap.append(cube);
+    });
+    box.append(repWrap);
     root.append(section('Display', box, 'sect displaycol'));
     const col = el('div', 'tablecol');
     // projects played during the game: the newest enters on the left and pushes the others right; a third one pushes the oldest off to the discard
@@ -555,21 +899,31 @@
     }
     return income;
   }
+  // number changes in the tracker flash green (up) or red (down); the length is --flash-duration in replay.css
+  let lastNums = {};
   function sidePanel(st) {
     const root = $('side');
     root.replaceChildren();
+    const nums = {};
+    const flash = (key, value, node) => {
+      nums[key] = value;
+      const old = lastNums[key];
+      if (old !== undefined && old !== value) node.classList.add(value > old ? 'flash-up' : 'flash-down');
+      return node;
+    };
     const top = el('div', 'sidetop');
     const brk = el('div', 'breaktrack');
     brk.title = 'Break track';
     const bi = el('img', 'icon'); bi.src = iconUrl('r3c14'); bi.alt = 'Break'; bi.height = 40;
-    brk.append(el('b', '', st.break_position + ' / 9'), bi);
+    brk.append(flash('break', st.break_position, el('b', '', st.break_position + ' / 9')), bi);
     top.append(brk);
     const counts = el('div', 'deckcounts');
-    counts.append(deckIcon(st.main_deck_size), discardIcon(st.main_discard_size));
+    counts.append(flash('deck', st.main_deck_size, deckIcon(st.main_deck_size)), flash('discard', st.main_discard_size, discardIcon(st.main_discard_size)));
     const eg = el('span', 'dc');
     eg.title = 'Endgame cards left';
     const ei = el('img', 'icon'); ei.src = iconUrl('r10c15'); ei.alt = 'Endgame cards'; ei.height = 32;
     eg.append(ei, el('b', '', st.endgame_deck_size));
+    flash('egdeck', st.endgame_deck_size, eg);
     counts.append(eg);
     top.append(counts);
     root.append(top);
@@ -580,7 +934,9 @@
       name.style.color = seatColor(seat);
       const score = el('span', 'ppscore');
       score.title = 'Score (appeal + conservation points)';
-      score.append(document.createTextNode((p.score !== undefined ? p.score : trackScore(p)) + ' ★'));
+      const scoreValue = p.score !== undefined ? p.score : trackScore(p);
+      score.append(document.createTextNode(scoreValue + ' ★'));
+      flash(seat + ':score', scoreValue, score);
       head.append(name, score);
       box.append(head);
 
@@ -588,10 +944,12 @@
       const xr = el('span', 'rs xr');               // X tokens: the number sits to the left of the token
       xr.title = 'X tokens';
       xr.append(el('b', '', p.x_tokens), pic('xtoken', 40));
+      flash(seat + ':x', p.x_tokens, xr);
       for (const [icon, n, label] of [['money', p.money, 'Money'], ['reputation', p.reputation, 'Reputation'], ['appeal', p.appeal, 'Appeal'], ['conservation', p.conservation, 'Conservation']]) {
         const r = el('span', 'rs inside' + (icon === 'money' ? ' money' : ''));    // the number is printed over the icon
         r.title = label;
         r.append(pic(icon, 42), el('b', '', n));
+        flash(seat + ':' + icon, n, r);
         if (icon === 'appeal') {                       // a small money icon on top of the appeal icon: the income this player gets at a break
           const inc = el('span', 'income money');       // the standard money tile: number inside the icon, white rounded border
           inc.title = 'Income at the next break (from the appeal track)';
@@ -608,17 +966,21 @@
       const wr = el('span', 'rs xr');                // workers ready to use (the ones in the reserve); the number sits left of the meeple like the X tokens
       wr.title = 'Workers available (' + p.tokens.filter((t) => t.type === 'worker' && /^supply_/.test(t.location)).length + ' still locked)';
       const wi = el('img', 'icon'); wi.src = workerUrl(seat); wi.alt = 'Workers'; wi.height = 40;
-      wr.append(el('b', '', p.tokens.filter((t) => t.type === 'worker' && t.location === 'reserve').length), wi);
+      const ready = p.tokens.filter((t) => t.type === 'worker' && t.location === 'reserve').length;
+      wr.append(el('b', '', ready), wi);
+      flash(seat + ':workers', ready, wr);
       const hand = el('span', 'rs handcount');         // cards in hand / hand size (3, or 5 with the hand-size university)
       const limit = p.hand_limit !== undefined ? p.hand_limit : (p.tokens.some((t) => t.type === 'fac-rep-hand' && /^university_/.test(t.location)) ? 5 : 3);
       hand.title = 'Cards in hand / hand size';
       const hi = el('img', 'icon'); hi.src = iconUrl('r10c8'); hi.alt = 'Cards in hand'; hi.height = 40;
       const hb = el('b', p.hand.length > limit ? 'over' : '', p.hand.length + '/' + limit);   // red while the hand is over the limit, as on BGA
       hand.append(hi, hb);
+      flash(seat + ':hand', p.hand.length, hand);
       const eg = el('span', 'rs handcount');          // endgame scoring cards held: 2 at the start, 1 after the discard at 10 conservation, more with Resistance
       eg.title = 'Endgame scoring cards';
       const ei = el('img', 'icon'); ei.src = iconUrl('r10c15'); ei.alt = 'Endgame cards'; ei.height = 40;
       eg.append(ei, el('b', '', p.endgame_hand.length));
+      flash(seat + ':endgame', p.endgame_hand.length, eg);
       res2.append(wr, hand, eg);
       box.append(res2);
 
@@ -649,11 +1011,13 @@
         const img = el('img', 'badge');
         img.src = '/badges/' + k + '.webp'; img.alt = k; img.width = 30; img.height = 30;
         c.append(el('b', '', n), img);
+        flash(seat + ':icon:' + k, n, c);
         grid.append(c);
       }
       box.append(grid);
       root.append(box);
     });
+    lastNums = nums;
   }
 
   function renderZoo(st, seat) {
@@ -665,26 +1029,42 @@
     box.append(h);
 
     const row = el('div', 'zooRow');
-    row.append(bonusPanel(map, p, seat), zooBoard(map, p), associationStrip(p));
+    row.append(bonusPanel(map, p, seat), zooBoard(map, p, seat), associationStrip(p, map, seat));
     box.append(row);
 
-    box.append(section('Hand (' + p.hand.length + ')', cardRow(p.hand, '', 'empty')));
-    box.append(section('Endgame cards', cardRow(p.endgame_hand, 'small', 'none')));
-    box.append(section('Animals (' + p.animals.length + ')', cardRow(p.animals, 'small', 'none')));
-    box.append(section('Sponsors (' + p.sponsors.length + ')', cardRow(p.sponsors, 'small', 'none')));
-    if (p.released.length) box.append(section('Released (' + p.released.length + ')', cardRow(p.released, 'small')));
+    box.append(section('Hand (' + p.hand.length + ')', cardRow(p.hand, '', 'empty', seat + ':hand')));
+    box.append(section('Endgame cards', cardRow(p.endgame_hand, 'small', 'none', seat + ':endgame')));
+    box.append(section('Animals (' + p.animals.length + ')', cardRow(p.animals, 'small', 'none', seat + ':animals')));
+    box.append(section('Sponsors (' + p.sponsors.length + ')', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors')));
+    if (p.released.length) box.append(section('Released (' + p.released.length + ')', cardRow(p.released, 'small', undefined, seat + ':released')));
     return box;
   }
 
+  const ENGINE_MARK = { engine: ['✓', 'Played by the rules engine; it agrees with the log'], mismatch: ['≠', 'The engine played this turn but ended in a different state than the log (shown: log state)'],
+                        illegal: ['!', 'A logged action is not legal for the engine (shown: log state)'], skipped: ['–', 'Not supported by the engine yet (shown: log state)'], log: ['', ''] };
+  function engineBadge(eng) {
+    if (!eng) return document.createTextNode('');
+    const key = eng.source === 'engine' ? 'engine' : (eng.status in ENGINE_MARK ? eng.status : 'log');
+    const [mark, tip] = ENGINE_MARK[key];
+    const b = el('span', 'engine-badge ' + key, mark);
+    b.title = tip + (eng.detail ? '\n' + eng.detail : '');
+    return b;
+  }
+
   function render() {
+    const scrollY = window.scrollY, scrollX = window.scrollX;       // rebuilding the boards must not move the page
     const s = replay.steps[step], st = s.state;
     const cur = $('current');
     cur.replaceChildren();
     cur.textContent = s.label || '(state update)';
+    const eg = engineBadge(s.engine);
+    cur.append(' ', eg);
+    if (s.engine && s.engine.detail && s.engine.source === 'log') cur.append(el('div', 'engine-detail', 'Engine: ' + s.engine.detail));
     renderShared(st);
     sidePanel(st);
     const zoos = $('zoos');
     zoos.replaceChildren(renderZoo(st, 0), renderZoo(st, 1));
+    prevZones = curZones; curZones = {}; prevZoneData = curZoneData; curZoneData = {};
     $('jump').value = step;
     for (const id of ['first', 'prev']) $(id).disabled = step === 0;
     for (const id of ['next', 'last']) $(id).disabled = step === replay.steps.length - 1;
@@ -692,50 +1072,118 @@
     list.querySelector('.on')?.classList.remove('on');
     const li = list.children[step];
     li.classList.add('on');
-    li.scrollIntoView({ block: 'nearest' });
+    if (li.offsetTop < list.scrollTop) list.scrollTop = li.offsetTop;                     // scroll the list only, never the page
+    else if (li.offsetTop + li.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = li.offsetTop + li.offsetHeight - list.clientHeight;
     history.replaceState(null, '', '#' + step);
+    fitAside();
+    updateTimeline();
+    window.scrollTo(scrollX, scrollY);
+  }
+
+  // Fit the right column (break track, both player trackers, move list) into the window: the aside gets the free height, the trackers are
+  // scaled down (CSS zoom) when they would not leave room for the list, and the list scrolls inside its box.
+  let naturalTop = null;
+  function fitAside() {
+    const aside = document.querySelector('aside'), side = $('side'), bar = document.querySelector('.bar');
+    if (!aside || !side) return;
+    if (!window.matchMedia('(min-width: 1101px)').matches) { aside.style.height = ''; side.style.zoom = ''; return; }
+    const top = bar.offsetHeight + 8;
+    aside.style.top = top + 'px';
+    if (naturalTop === null) naturalTop = aside.getBoundingClientRect().top + window.scrollY;      // where the column sits at the top of the page
+    const avail = window.innerHeight - Math.max(top, naturalTop) - 10;
+    const MIN_ZOOM = 0.62, MIN_LIST = Math.max(250, avail * 0.33);                                                        // a usable list, trackers that stay readable
+    side.style.zoom = 1;
+    const need = side.scrollHeight;
+    const zoom = Math.min(1, Math.max(MIN_ZOOM, (avail - MIN_LIST) / need));
+    side.style.zoom = zoom;
+    if (need * zoom + MIN_LIST <= avail) {                    // fits the window: the column is as tall as the window, the list takes what the trackers leave
+      aside.style.position = '';
+      aside.style.height = avail + 'px';
+    } else {                                                  // a short window: no sticky column, the page scrolls and the list keeps a decent height
+      aside.style.position = 'static';
+      aside.style.height = (need * zoom + MIN_LIST + 40) + 'px';
+    }
+  }
+  window.addEventListener('resize', fitAside);
+
+  // ---- autoplay: one step a second at 1x ------------------------------------------------------------------------
+  let timer = null, speed = 1;
+  function setPlaying(on) {
+    if (timer) { clearInterval(timer); timer = null; }
+    if (on && step >= replay.steps.length - 1) go(0);                  // started at the end: play again from the start
+    if (on) timer = setInterval(() => { if (step >= replay.steps.length - 1) setPlaying(false); else go(step + 1); }, 1000 / speed);
+    const b = $('play');
+    b.textContent = on ? '⏸︎' : '▶︎';
+    b.title = on ? 'Stop autoplay (Space)' : 'Start autoplay (Space)';
+    b.setAttribute('aria-label', on ? 'Stop autoplay' : 'Start autoplay');
+    b.classList.toggle('on', on);
+  }
+  function setSpeed(x) {
+    speed = x;
+    for (const b of document.querySelectorAll('.speed button')) b.classList.toggle('on', +b.dataset.speed === x);
+    if (timer) setPlaying(true);                                       // restart the timer at the new rate
+  }
+
+  // ---- timeline: |----|------|----|, each | is the start of a round (the step after a break ends) ---------------------
+  function roundStarts() {
+    const starts = [0];
+    replay.steps.forEach((s, i) => { if (/^End of the break/i.test(s.label || '') && i + 1 < replay.steps.length) starts.push(i + 1); });
+    return starts;
+  }
+  function buildTimeline() {
+    const tl = $('timeline'), n = replay.steps.length, starts = roundStarts();
+    tl.replaceChildren();
+    starts.forEach((a, k) => {
+      const b = k + 1 < starts.length ? starts[k + 1] : n;
+      const seg = el('div', 'tlseg');
+      seg.style.flexGrow = b - a;
+      seg.title = 'Round ' + (k + 1) + ': steps ' + a + '–' + (b - 1);
+      tl.append(seg);
+    });
+    tl.append(el('div', 'tlhead'));
+    tl.onclick = (e) => {
+      const r = tl.getBoundingClientRect();
+      go(Math.round((e.clientX - r.left) / r.width * (n - 1)));
+    };
+  }
+  function updateTimeline() {
+    const head = document.querySelector('#timeline .tlhead');
+    if (head) head.style.left = (replay.steps.length > 1 ? step / (replay.steps.length - 1) * 100 : 0) + '%';
   }
 
   function go(n) {
     step = Math.max(0, Math.min(replay.steps.length - 1, n));
-    if (step === replay.steps.length - 1) stop();
     render();
   }
-  function stop() {
-    clearInterval(timer); timer = null;
-    $('play').innerHTML = '&#9654;'; $('play').setAttribute('aria-label', 'Play');
-  }
-  function togglePlay() {
-    if (timer) { stop(); return; }
-    if (step === replay.steps.length - 1) step = 0;
-    $('play').innerHTML = '&#10074;&#10074;'; $('play').setAttribute('aria-label', 'Pause');
-    timer = setInterval(() => go(step + 1), 900);
-    go(step + 1);
-  }
-
   function init() {
     $('tableInfo').textContent = 'Table #' + replay.table_id + (replay.marine_worlds ? ' · Marine Worlds' : '') + ' · ' + replay.players.map((p) => p.name).join(' vs ');
     $('total').textContent = replay.steps.length - 1;
+    const es = replay.engine;
+    if (es) $('tableInfo').append(' · engine: ' + es.ok + '/' + es.turns + ' turns replayed' + (es.mismatch + es.illegal ? ', ' + (es.mismatch + es.illegal) + ' differ from the log' : '') + (es.skipped ? ', ' + es.skipped + ' not supported yet' : ''));
     $('jump').max = replay.steps.length - 1;
     const list = $('moves');
     replay.steps.forEach((s, i) => {
-      const li = el('li', 'seat' + s.state.active_player);
-      li.style.borderLeftColor = seatColor(s.state.active_player);
-      li.append(el('span', 'n', i), el('span', '', s.label || '…'));
-      li.onclick = () => { stop(); go(i); };
+      // the step that finishes an action passes the turn in its state, but it still belongs to the player who acted
+      const prev = i > 0 ? replay.steps[i - 1].state : null;
+      const actor = prev && s.state.turn > prev.turn && s.state.active_player !== prev.active_player ? prev.active_player : s.state.active_player;
+      const li = el('li', 'seat' + actor);
+      li.style.borderLeftColor = seatColor(actor);
+      li.append(el('span', 'n', i), el('span', '', s.label || '…'), engineBadge(s.engine));
+      li.onclick = () => { go(i); };
       list.append(li);
     });
-    $('first').onclick = () => { stop(); go(0); };
-    $('prev').onclick = () => { stop(); go(step - 1); };
-    $('next').onclick = () => { stop(); go(step + 1); };
-    $('last').onclick = () => { stop(); go(replay.steps.length - 1); };
-    $('play').onclick = togglePlay;
-    $('jump').onchange = (e) => { stop(); go(parseInt(e.target.value, 10) || 0); };
+    buildTimeline();
+    $('first').onclick = () => { go(0); };
+    $('prev').onclick = () => { go(step - 1); };
+    $('next').onclick = () => { go(step + 1); };
+    $('play').onclick = () => { setPlaying(!timer); };
+    for (const b of document.querySelectorAll('.speed button')) b.onclick = () => { setSpeed(+b.dataset.speed); };
+    $('last').onclick = () => { go(replay.steps.length - 1); };
+    $('jump').onchange = (e) => { go(parseInt(e.target.value, 10) || 0); };
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.altKey || e.ctrlKey || e.metaKey) return;
-      const keys = { ArrowLeft: () => go(step - 1), ArrowRight: () => go(step + 1), Home: () => go(0), End: () => go(replay.steps.length - 1) };
-      if (keys[e.key]) { e.preventDefault(); stop(); keys[e.key](); }
-      else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+      const keys = { ArrowLeft: () => go(step - 1), ArrowRight: () => go(step + 1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!timer); }, Home: () => go(0), End: () => go(replay.steps.length - 1) };
+      if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
     });
     const start = parseInt(location.hash.slice(1), 10);
     $('loading').hidden = true;

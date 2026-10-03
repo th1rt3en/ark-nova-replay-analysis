@@ -10,7 +10,7 @@ from collections import Counter
 from itertools import combinations
 
 from ark_nova import data
-from ark_nova.engine import animal_abilities, bonuses, marks, project_effects, sponsor_extras, venom, build_action, card_programs as prog, cards_action
+from ark_nova.engine import association, animal_abilities, bonuses, marks, project_effects, sponsor_extras, venom, build_action, card_programs as prog, cards_action
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board
 from ark_nova.engine.icons import card_icons, icon_counts, requirement
@@ -94,8 +94,6 @@ def on_play(state, seat: int, card_key: str) -> list:
                         "double": card_key in prog.DOUBLE_PLACEMENT_BONUS})
     if card_key in prog.TAKE_ONE_CARD:
         pending.append({"kind": "take", "source": card_key, "optional": False})
-    if card_key in prog.SCUBA_DIVE:
-        pending.append({"kind": "reveal", "source": card_key, "x": 3, "filter": "sponsor", "optional": False})
     if card_key in prog.HIRE_WORKER:
         bonuses.hire_worker(state, seat)
     if card_key in prog.DONATION:
@@ -139,7 +137,7 @@ def fire_icon_counter(state, seat: int, own: Counter) -> list:
                     elif eff[0] == "build":
                         pending.append({"kind": "build", "source": s, "type": eff[1], "rules": {}, "optional": True, "double": False})
                     elif eff[0] == "reveal":
-                        pending.append({"kind": "reveal", "source": s, "x": eff[1], "filter": "any", "optional": False})
+                        pending.append({"kind": "reveal", "source": s, "x": eff[1], "filter": eff[2] if len(eff) > 2 and isinstance(eff[2], str) else "any", "optional": False})
                     elif eff[0] == "hunter":
                         pending.append({"kind": "reveal", "source": s, "x": total["Predator"], "filter": "animal", "optional": False})
                     elif eff[0] == "sell":
@@ -152,6 +150,11 @@ def fire_icon_counter(state, seat: int, own: Counter) -> list:
                         state.current_action.setdefault("after", []).append({"kind": "mark", "source": s, "optional": False})
                     elif eff[0] == "enlarge":
                         pending.append({"kind": "enlarge", "source": s, "optional": True})
+                    elif eff[0] == "marketing_cube":                # a cube of the card pays for one Marketing effect (optional)
+                        loc = association.token_location(s)
+                        left = sum(1 for t in state.players[owner].tokens if t.location == loc) - sum(1 for e in pending if e.get("cube") == s)
+                        if left > 0:
+                            pending.append({"kind": "marketing", "source": s, "optional": True, "cube": s, "player": owner})
                     elif eff[0] == "unsupported":
                         raise NotImplementedError(eff[1])
     if explorer:
@@ -201,6 +204,8 @@ def legal(state, p0) -> list:
             if e.get("snap"):                              # Snapping: any card of the display (Waza Small Animal Program: a small animal)
                 out += [Action(p.seat, "take_cards", {"mode": "snap", "card": c}) for c in dict.fromkeys(state.display)
                         if c and (not e.get("small") or _small_animal(c))]
+                if None in state.display:                  # Snapping 2: the player may refill the display before the second snap
+                    out.append(Action(p.seat, "choose_effect", {"index": i, "refill": True}))
                 continue
             if state.main_deck and not venom.blocked(state, p.seat):
                 out.append(Action(p.seat, "take_cards", {"mode": "deck", "count": 1}))
@@ -263,9 +268,12 @@ def _find(state, kind: str, match=None) -> int:
 
 def _done(state, i: int) -> None:
     a = state.prompt.args
+    seat = a["pending"][i].get("player", state.prompt.player)
     a["pending"].pop(i)
     if not a["pending"]:
         _g()._resume_after_effects(state)
+    elif state.current_action is not None and state.current_action.get("type") == "break"             and not any(e.get("player", state.prompt.player) == seat for e in a["pending"]):
+        _g()._refill_display(state)                 # break income: BGA refills the display when a player's income is done (before the other player's cards)
 
 
 def resolve_build(state, action: Action) -> None:
@@ -334,6 +342,9 @@ def resolve_choice(state, action: Action) -> None:
     k = e["kind"]
     if e.get("player", state.prompt.player) != action.player:
         raise IllegalEffect("this effect belongs to the other player")
+    if action.args.get("refill") and k == "take" and e.get("snap") and None in state.display:
+        _g()._refill_display(state)
+        return
     if k in bonuses.KINDS:
         bonuses.resolve(state, action, e, i)
         return
@@ -405,6 +416,8 @@ def skip(state, action: Action) -> None:
     e = state.prompt.args["pending"][i]
     if not e.get("optional") and e["kind"] not in bonuses.KINDS and not _nothing_to_do(state, e, i):
         raise IllegalEffect("this effect is mandatory")
+    if e["kind"] == "rep_bonus":                        # at 15 reputation: the point is not wasted but pays 1 appeal when the bonus is declined
+        _g()._gain(state, state.prompt.args["pending"][i].get("player", state.prompt.player), appeal=1)
     _done(state, i)
 
 

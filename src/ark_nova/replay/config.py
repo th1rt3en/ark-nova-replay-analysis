@@ -1,7 +1,11 @@
 """Turn a parsed log into an engine `GameConfig` + `SeedSpec` (+ the setup facts)."""
+import json
+from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from ark_nova import data
+from ark_nova.data import map_quirks
 from ark_nova.engine.board import board
 from ark_nova.engine.build_action import SIZES, valid_placements
 from ark_nova.engine.game import deck_cards
@@ -88,12 +92,26 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
     return bool(played) and not hostile
 
 
+@lru_cache(maxsize=None)
+def _sample_maps() -> dict:
+    """data_manual/sample_maps.json: the index's maps of the tables in log_examples/ (scripts/fetch_sample_maps.py); offline stand-in for BigQuery."""
+    path = Path(__file__).resolve().parents[3] / "data_manual" / "sample_maps.json"
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
 def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_projects: Optional[list[str]] = None,
                   marine_worlds: Optional[bool] = None, from_seq: int = 0) -> tuple[SetupInfo, GameConfig, SeedSpec]:
     """`maps`, `base_projects` and `marine_worlds` come from the BigQuery index / the user in production. When they are not
     given (tests) they are inferred: Marine Worlds if any known card is a Marine Worlds card, Map 14 if the log shows its
     start-of-game sponsor search, map 1 otherwise, and the first 3 base projects."""
     setup = extract_setup(parsed)
+    sample = _sample_maps().get(str(parsed.table_id))
+    if sample and maps is None and all(pid in sample["maps"] for pid in setup.seats):
+        mapped = [sample["maps"][pid] for pid in setup.seats]
+        if all(data.map_by_id(m)["geometry"] for m in mapped):         # (maps without a geometry file cannot be played: infer as before)
+            maps = mapped
+        if marine_worlds is None:
+            marine_worlds = sample["marine_worlds"]
     exits = extract_exits(parsed)
     main, endgame = known_order(exits, "main", from_seq), known_order(exits, "endgame", from_seq)
     if marine_worlds is None:       # Marine Worlds cards in the log, or BGA offering aquariums (a Marine Worlds building) to build
@@ -106,11 +124,13 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
                    if e.type == "pDrawCards" and e.player == pid and isinstance(e.args, dict)):
                 maps[i] = "14"
     known = [m is not None for m in maps]
-    maps = [m or "1" for m in maps]
+    maps = [map_quirks.played_map_id(m or "1", parsed.table_id) for m in maps]
     if base_projects is None:
         base_projects = infer_base_projects(parsed, marine_worlds)
     cb = extract_conservation_bonuses(parsed)
     options = {th: cb.random.get(th, []) for th in ("5", "8")}
+    if marine_worlds and cb.random.get("99"):
+        options["99"] = cb.random["99"][:1]                  # the bonus on 16 reputation (Marine Worlds)
     cfg = GameConfig(marine_worlds=marine_worlds, player_ids=setup.seats, maps=maps, base_projects=base_projects,
                      action_cards=[[ActionCardChoice(t, v) for t, v in setup.action_cards[p]] for p in setup.seats],
                      conservation_bonuses=options, map_known=known, peaceful=infer_peaceful(parsed))

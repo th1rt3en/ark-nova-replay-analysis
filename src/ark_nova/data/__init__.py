@@ -47,7 +47,16 @@ def parse_bga_card_id(bga_id: str) -> tuple[str, bool]:
     return f"{m.group(1)}{int(m.group(2)):03d}", bool(m.group(4))
 
 
+@lru_cache(maxsize=None)
+def _legacy_map(map_id: str) -> dict:
+    from ark_nova.data import map_quirks
+    return map_quirks.legacy_map(map_by_id(map_quirks.base_map_id(map_id)), map_id)
+
+
 def map_by_id(map_id: str) -> dict:
+    """`map_id` may be a legacy id ('6a-legacy', see data/map_quirks.py): the map as BGA played it in older tables."""
+    if str(map_id).endswith("-legacy"):
+        return _legacy_map(str(map_id))
     for m in maps():
         if m["id"] == str(map_id):
             return m

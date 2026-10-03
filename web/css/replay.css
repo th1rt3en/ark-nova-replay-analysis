@@ -252,3 +252,216 @@ aside { max-height: calc(100vh - 5.5rem); overflow-y: auto; }
 /* the action card of the running action: red border, lifted a little */
 .ac { transition: none; }
 .ac.chosen { border-color: #d92d20; transform: translateY(-5px); box-shadow: 0 0 0 1px #d92d20, 0 5px 6px rgba(0, 0, 0, .45); }
+
+/* map name: bold and a little bigger */
+.zoo h2 .map { font-weight: 700; font-size: .98rem; }
+
+/* base / played conservation projects: only the bottom of the card (the cubes and the slots) shows, 240x335 card cut at 70% of its height */
+.projcrop { width: 7.6rem; aspect-ratio: 240 / 100.5; overflow: hidden; border-radius: 6px; }
+.projcrop > .card { position: absolute; left: 0; bottom: 0; width: 100%; }
+.projcrop .blockcube { top: 50%; }
+.projslot { min-height: calc(7.6rem * 100.5 / 240 + 1.45rem); }
+
+/* conservation bonuses of the map (4th worker, 4th partner zoo, 3rd university): the icon and number look like the conservation tracker */
+.cons-number { font-family: system-ui, sans-serif; font-weight: 800; fill: #fff; stroke: #222; stroke-width: 0.12em; paint-order: stroke; stroke-linejoin: round; text-anchor: middle; pointer-events: none; }
+.bonuspanel .lift { transition: transform .18s ease-out; }
+.bonuspanel .lockbox:hover .lift { transform: translateY(-30px); }
+
+/* player tracker: a changed number flashes green (up) or red (down) and fades; change the duration here */
+body.viewer { --flash-duration: 0.8s; }
+.pp .flash-up, .sidetop .flash-up { animation: flash-up var(--flash-duration) ease-out; }
+.pp .flash-down, .sidetop .flash-down { animation: flash-down var(--flash-duration) ease-out; }
+.pp .flash-up, .pp .flash-down, .sidetop .flash-up, .sidetop .flash-down { border-radius: 8px; }
+@keyframes flash-up { from { background-color: rgba(46, 190, 84, .65); } to { background-color: rgba(46, 190, 84, 0); } }
+@keyframes flash-down { from { background-color: rgba(222, 48, 38, .65); } to { background-color: rgba(222, 48, 38, 0); } }
+
+/* round 4: bigger display and association zone, project slots hugging the cropped cards, dark green icon bar left of each project */
+.folder { width: 11.6rem; margin-right: -.38rem; }
+.shared .displaycol .cards .folder > .card, .folder > .card { left: .8rem; top: 2.6rem; width: 9.7rem; }
+.reptrack { width: calc(2752 / 2676 * 6 * 11.32rem); }
+.tablecol { flex: 0 1 38rem; min-width: 28rem; max-width: 38rem; }
+.projline { display: flex; align-items: stretch; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, .45); }
+.projbar { flex: 0 0 2rem; background: #2f5d34 no-repeat 0 0 / 7.27rem auto; }           /* 2rem of the 66 px wide icon strip of a 240 px card */
+.projcrop { width: 8rem; }
+.projslot { box-sizing: border-box; width: auto; min-height: 0; padding: .2rem; border-width: 1px; align-items: flex-start; }
+.projslot .card { width: 100%; }
+.projcrop .blockcube { top: 50%; }
+
+/* round 5: a much bigger association zone; every project slot has the size of a full one (empty ones too), the project fills it with a small gap */
+.tablecol { flex: 0 1 44rem; min-width: 30rem; max-width: 44rem; }
+.projpanel { justify-content: space-evenly; gap: .4rem; padding: .45rem .5rem; }
+.projslot { width: 12.2rem; height: calc(9.4rem * 100.5 / 240 + 1.5rem + .5rem); padding: .25rem; box-sizing: border-box; justify-content: center; align-items: flex-start; flex: 0 0 auto; }
+.projbar { flex: 0 0 2.5rem; background-size: 9.09rem auto; }
+.projcrop { width: 9.4rem; }
+.projslot .withtokens { gap: 2px; }
+.projicon { height: 3.2rem; width: auto; }
+
+/* round 6: project slots as tall as the cropped project (no reserved room for supporter dots when there are none) */
+.projslot { height: auto; min-height: calc(9.4rem * 100.5 / 240 + .5rem); }
+.projpanel { align-items: flex-start; }
+.dots { min-height: 0; }
+.moves { position: relative; }
+
+/* round 7: projects about 30% bigger (crop 9.4rem -> 12.3rem, bar 2.5rem -> 3.3rem), slots and the association column follow */
+.tablecol { flex: 0 1 56rem; min-width: 30rem; max-width: 56rem; }
+.projslot { width: 16.1rem; min-height: calc(12.3rem * 100.5 / 240 + .5rem); }
+.projbar { flex: 0 0 3.3rem; background-size: 12rem auto; }
+.projcrop { width: 12.3rem; }
+.projicon { height: 4rem; }
+@media (max-width: 2150px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 56rem; } }
+
+/* round 8: projects another 10% bigger (crop 13.5rem, bar 3.6rem) */
+.tablecol { flex: 0 1 61.6rem; min-width: 30rem; max-width: 61.6rem; }
+.projslot { width: 17.7rem; min-height: calc(13.5rem * 100.5 / 240 + .5rem); }
+.projbar { flex: 0 0 3.6rem; background-size: 13.09rem auto; }
+.projcrop { width: 13.5rem; }
+.projicon { height: 4.4rem; }
+@media (max-width: 2250px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 61.6rem; } }
+
+/* Mark cube on a display card */
+.markcube { position: absolute; left: 12%; top: 38%; width: 2.6rem; transform: translate(-50%, -50%); z-index: 2; pointer-events: auto; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .7)); }
+
+/* the action bar above the boards */
+.actionbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: .5rem .7rem; margin-bottom: .8rem; padding: .55rem 1rem; min-height: 2.6rem;
+  background: rgba(244, 236, 210, .96); color: #2b1d12; border: 2px solid #1b110a; border-radius: 6px; box-shadow: 0 3px 10px rgba(0, 0, 0, .5); font-size: 1.05rem; }
+.actionbar[hidden] { display: none; }
+.actionbar .who { font-weight: 800; }
+.abtn { display: inline-flex; align-items: center; gap: .35rem; padding: .15rem .6rem; border-radius: 6px; background: #1e6fd0; color: #fff; border: 2px solid #0b2f66; font-weight: 800; }
+.abtn.lvl2 { background: #7a3fb0; border-color: #3d1c5e; }
+.abtn.xbtn { background: #5a5856; border-color: #222; }
+.abtn img { filter: drop-shadow(0 0 1px #000); }
+
+.engine-badge { display: inline-block; min-width: 1.1em; text-align: center; margin-left: auto; padding: 0 .25em; border-radius: 3px; font-size: .8em; font-weight: 700; cursor: help; }
+.engine-badge.engine { color: #1c6b2a; }
+.engine-badge.mismatch { color: #fff; background: #b3261e; }
+.engine-badge.illegal { color: #fff; background: #c2185b; }
+.engine-badge.skipped { color: #777; }
+.current .engine-badge { margin-left: .4rem; }
+.engine-detail { font-size: .8rem; font-weight: 400; color: #8a3b12; margin-top: .15rem; word-break: break-word; }
+
+/* side column fits the window: the trackers are scaled down if needed (fitAside in replay.js) and the move list takes the rest and scrolls inside */
+@media (min-width: 1101px) {
+  aside { display: flex; flex-direction: column; overflow: hidden; max-height: none; }
+  aside .side { flex: 0 0 auto; margin-bottom: .5rem; }
+  aside h2 { flex: 0 0 auto; margin-bottom: .3rem; }
+  aside .moves { flex: 1 1 0; min-height: 5rem; max-height: none; }
+}
+
+/* shorter player trackers (side column, wide layout) */
+@media (min-width: 1101px) {
+  aside .sidetop { padding: .2rem .5rem; }
+  aside .breaktrack { font-size: 1.3rem; }
+  aside .deckcounts { margin-top: .15rem; padding-top: .15rem; }
+  aside .pp { padding: .3rem .45rem .35rem; }
+  aside .pphead { margin-bottom: .15rem; }
+  aside .pp .ppres, aside .pp .ppres2, aside .pp .ppactions { padding-bottom: .25rem; margin-bottom: .25rem; }
+  aside .ppres { margin-top: 1.5rem; }
+  aside .ppicons { gap: .15rem .2rem; }
+}
+
+/* display (folders + reputation track) 10% larger */
+.displaybox { zoom: 1.1; }
+
+/* round 9: projects another 20% bigger (crop 16.2rem, bar 4.3rem), icon and projects centred in the panel */
+.tablecol { flex: 0 1 74rem; min-width: 30rem; max-width: 74rem; }
+.projpanel { align-items: center; }
+.projslot { width: 21.2rem; min-height: calc(16.2rem * 100.5 / 240 + .5rem); align-items: center; }
+.projbar { flex: 0 0 4.3rem; background-size: 15.7rem auto; }
+.projcrop { width: 16.2rem; }
+.projicon { height: 5.3rem; }
+@media (max-width: 2750px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 74rem; } }
+@media (max-width: 1250px) { .tablecol { flex-basis: 100%; max-width: 100%; } .projslot { width: auto; flex: 1 1 0; } }
+
+/* round 10: the association zone always sits right of the display; it takes the space left and its projects shrink with it */
+.shared { flex-wrap: nowrap; }
+.displaycol { flex: 0 0 auto; }
+.tablecol { flex: 1 1 0; min-width: 0; max-width: 74rem; }
+.projpanel { gap: .3rem; padding: .35rem; }
+.projicon { flex: 0 1 auto; height: auto; max-height: 5.3rem; min-width: 0; max-width: 3.4rem; }
+.projslot { width: auto; flex: 1 1 0; min-width: 0; }
+.projslot .withtokens, .projline { width: 100%; }
+.projcrop { width: auto; flex: 1 1 0; min-width: 0; }
+
+/* autoplay button and speed control */
+.controls button.on { background: #8fd1a8; }
+.speed { display: inline-flex; gap: .2rem; margin-left: .9rem; }
+.speed button { min-width: 2.2rem; font-weight: 700; }
+
+/* timeline of the game: one segment per round, the | is the start of a round */
+.timeline { position: relative; display: flex; flex: 1 1 12rem; min-width: 8rem; max-width: 38rem; height: 1.6rem; margin-left: auto; cursor: pointer;
+  border-right: 2px solid #f1d9a0; }
+.timeline::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #c9b690; transform: translateY(-50%); }
+.tlseg { position: relative; flex-basis: 0; min-width: 0; border-left: 2px solid #f1d9a0; }
+.tlseg:hover { background: rgba(255, 255, 255, .12); }
+.tlhead { position: absolute; top: -2px; bottom: -2px; width: 4px; margin-left: -2px; border-radius: 2px; background: #8fd1a8; pointer-events: none; box-shadow: 0 0 4px rgba(143, 209, 168, .9); }
+.timeline + .controls { margin-left: 0; }
+
+/* action buttons: the blue / purple of the unupgraded / upgraded action cards (.ac) */
+.abtn { background: #1d9ad6; border-color: #0f5f87; }
+.abtn.lvl2 { background: #a53ea5; border-color: #5e215e; }
+
+.abtn { position: relative; }
+.abtn .variant { position: absolute; left: -9px; top: -9px; width: 25px; height: 25px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .6); pointer-events: none; }
+
+/* X token controls of the action bar */
+.xstep { width: 1.9rem; height: 1.9rem; border-radius: 6px; border: 2px solid #222; background: #e8dcb8; color: #3a2616; font: 800 1.2rem/1 system-ui, sans-serif; padding: 0; cursor: default; }
+.xstep:disabled { opacity: .35; }
+.abtn.gainx { background: #5a5856; border-color: #222; margin-left: .6rem; gap: .25rem; }
+.abtn.gainx.off { opacity: .4; }
+.abtn.gainx b { font-size: 1.3rem; }
+
+/* a card that just arrived in its zone: green border that fades in the same time as the changed numbers of the player tracker */
+.card.card-new, .projline.card-new { animation: card-new var(--flash-duration, .8s) ease-out; }
+@keyframes card-new {
+  from { box-shadow: 0 0 0 4px rgba(46, 190, 84, 1), 0 0 10px 3px rgba(46, 190, 84, .8), 0 2px 5px rgba(0, 0, 0, .5); }
+  to { box-shadow: 0 0 0 4px rgba(46, 190, 84, 0), 0 0 10px 3px rgba(46, 190, 84, 0), 0 2px 5px rgba(0, 0, 0, .5); }
+}
+
+/* a card that left its zone: it stays as a ghost, red border and card fade away together (same duration), then it is removed */
+.card.card-gone { animation: card-gone var(--flash-duration, .8s) ease-out forwards; pointer-events: none; z-index: 3; }
+@keyframes card-gone {
+  from { opacity: 1; box-shadow: 0 0 0 4px rgba(222, 48, 38, 1), 0 0 10px 3px rgba(222, 48, 38, .8); }
+  to { opacity: 0; box-shadow: 0 0 0 4px rgba(222, 48, 38, 0), 0 0 10px 3px rgba(222, 48, 38, 0); }
+}
+
+/* partner zoos and universities that arrive / leave: a green / red frame; the whole token fades away when it leaves (same duration as the cards) */
+.strip .frame, .board .frame { fill: none; stroke-width: 7; pointer-events: none; }
+.strip .tok-new .frame, .board .tok-new .frame { stroke: #2ebe54; animation: tok-fade var(--flash-duration, .8s) ease-out forwards; }
+.strip .tok-gone, .board .tok-gone { pointer-events: none; animation: tok-fade var(--flash-duration, .8s) ease-out forwards; }
+.strip .tok-gone .frame, .board .tok-gone .frame { stroke: #de3026; }
+@keyframes tok-fade { from { opacity: 1; } to { opacity: 0; } }
+
+/* the action bar keeps its place when it has nothing to show, so the page does not move between steps */
+.actionbar[hidden] { display: flex; visibility: hidden; height: 63px; }
+
+/* bar built from the engine's legal actions */
+.abtn.off { opacity: .4; }
+.abtn.gen { background: #5a5856; border-color: #222; padding: .15rem .7rem; }
+.abtn.gen i { font-style: normal; font-weight: 600; opacity: .85; }
+.actionbar .chip.pend { background: rgba(255, 255, 255, .5); border: 1px solid #6f5749; border-radius: 999px; padding: .05rem .5rem; font-size: .8rem; color: #2b1d12; }
+
+/* reputation track and conservation track above / below the display, with a cube for each player */
+.reptrackwrap, .ctrackwrap { position: relative; width: calc(2752 / 2676 * 6 * 11.32rem); }
+.reptrackwrap { margin-top: .45rem; }
+.ctrackwrap { margin-bottom: .45rem; }
+.reptrackwrap .reptrack { width: 100%; margin-top: 0; }
+.ctrack { display: block; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.trackcube { position: absolute; width: 2.6%; transform: translate(-50%, -50%); pointer-events: auto; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .7)); }
+.ctbonus { position: absolute; top: 76%; height: 44%; transform: translate(-50%, -50%); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)); }
+
+/* the building pieces in the action bar */
+.actionbar { min-height: 92px; padding-top: .3rem; padding-bottom: .3rem; box-sizing: border-box; }
+.actionbar[hidden] { height: 92px; }
+.pieces { display: inline-flex; align-items: center; gap: .6rem; }
+.piece { position: relative; display: inline-flex; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5)); }
+.piece img { display: block; }
+.piece .variant { position: absolute; left: -9px; top: -9px; width: 25px; height: 25px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+.piece.extra { margin-right: .5rem; }
+.pieces { margin-left: .8rem; }
+
+.piece .variant { width: 50px; height: 50px; left: -16px; top: -16px; }
+.pieces { gap: 1.2rem; }
+
+/* taking cards: the button to draw from the deck, and the display cards that cannot be taken */
+.abtn.deckbtn { background: #4a76b8; border-color: #1f3a66; }
+.card.dim { opacity: .35; filter: grayscale(1); }

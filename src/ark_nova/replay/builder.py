@@ -9,6 +9,7 @@ for every card and effect the log contains, and the engine can be tested transit
 Handlers only exist for the events listed in HANDLERS; adding one is the way to extend fidelity.
 """
 import copy
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Callable
@@ -31,6 +32,7 @@ class Replay:
     unhandled: Counter = field(default_factory=Counter)
     first_unhandled: dict[str, int] = field(default_factory=dict)      # event type -> first move index
     mismatches: list[tuple[int, str]] = field(default_factory=list)    # (move index, description)
+    substates: dict = field(default_factory=dict)        # move index -> states after each sub-step but the last (see build_replay)
     turn_snapshots: list[GameState] = field(default_factory=list)      # state at each turn marker (start of every player turn)
     notes: list[tuple[int, str]] = field(default_factory=list)         # known-imprecise oracles (strength modifiers of Venom/Constriction/hypnosis)
 
@@ -49,6 +51,8 @@ class _Ctx:
             for slot in range(1, 6):
                 t, v = setup.action_cards[pid][slot - 1]
                 self.card_of_id[by_slot[slot]] = (self.seat_of[pid], t, v)
+        self.threshold_snaps = 0                                  # snaps that belong to a conservation bonus (extra hand size), not to the notepad
+        self.support = None                                        # player id whose supported project is still waiting for its notepad bonus
         self.rep_task = False                                      # a reputation task was counted at its worker move; newer logs add a getBonuses for it
         self.markers: list = []                                    # (order, player id) of every turn marker
         self.mismatches: list[str] = []
@@ -127,6 +131,7 @@ def _swap_placeholder_worker(p, destination: str) -> None:
 # ---- turn flow -----------------------------------------------------------------------------------------------------
 
 def h_choose_action_card(ctx: _Ctx, e: Event) -> None:
+    ctx.support = None
     a = e.args
     ac = a["actionCard"]
     ctx.state.current_action = {"seat": ctx.seat(a["player_id"]), "id": int(ac["id"]), "slot": int(ac["strength"]),
@@ -136,6 +141,8 @@ def h_choose_action_card(ctx: _Ctx, e: Event) -> None:
 def h_action_card_cleanup(ctx: _Ctx, e: Event) -> None:
     s = ctx.state
     a = e.args
+    if "Clever effect" in e.log:                             # a Clever notepad bonus of a supported project: its slot is used up (an income slot gives it again at every break)
+        _support_bonus(ctx, e, "Clever")
     seat = ctx.seat(a["player_id"])
     p = s.players[seat]
     by_id = {cid: (t, v) for cid, (sd, t, v) in ctx.card_of_id.items() if sd == seat}
@@ -150,12 +157,13 @@ def h_action_card_cleanup(ctx: _Ctx, e: Event) -> None:
         p.action_cards.append(c)
     if "action card" not in e.log and s.current_action is None:      # a card placed on slot 1 by an effect (Expert on Africa), not a turn end
         return
+    actor = (s.current_action or {}).get("seat", seat)           # (Hypnosis: the card that is placed belongs to the other player)
     s.current_action = None
     nxt = next((pid for order, pid in ctx.markers if order > e.order), None)
-    if nxt is not None and ctx.seat(nxt) == seat:                # a second action of the same player (Determination, Action: X)
+    if nxt is not None and ctx.seat(nxt) == actor:               # a second action of the same player (Determination, Action: X)
         return
     s.turn += 1
-    s.active_player = 1 - seat
+    s.active_player = 1 - actor
 
 
 def h_increase_size(ctx: _Ctx, e: Event) -> None:
@@ -195,7 +203,7 @@ def h_final_scoring(ctx: _Ctx, e: Event) -> None:
 
 # ---- resources -----------------------------------------------------------------------------------------------------
 
-def _mark_income_slot(p, kind: str, value) -> None:
+def _mark_income_slot(p, kind: str, value) -> bool:
     """The player has used a notepad token of the map (its bonus is gained again in every break when it is an income slot)."""
     slots = data.map_by_id(p.map_id)["geometry"]["bonus_slots"]
     used = p.flags.get("bonus_used", 0)
@@ -203,7 +211,15 @@ def _mark_income_slot(p, kind: str, value) -> None:
         b = s.get("bonus")
         if b and not used >> s["index"] & 1 and b["type"].lower() == str(kind).lower() and (value is None or b["value"] == value):
             p.flags["bonus_used"] = used | (1 << s["index"])
-            return
+            return True
+    return False
+
+
+def _support_bonus(ctx: _Ctx, e: Event, kind: str) -> None:
+    """The notepad bonus of a supported project that BGA only logs through its consequence (a snap, a free building, a card): the slot is used up."""
+    pid = str(e.args.get("player_id"))
+    if ctx.support == pid and _mark_income_slot(ctx.player(pid), kind, None):
+        ctx.support = None                                   # (an event that is no notepad bonus, e.g. a card of the reputation track, leaves the project waiting)
 
 
 def h_get_bonuses(ctx: _Ctx, e: Event) -> None:
@@ -219,6 +235,8 @@ def h_get_bonuses(ctx: _Ctx, e: Event) -> None:
 
 def h_take_bonus(ctx: _Ctx, e: Event) -> None:
     bd = (e.args.get("bonus_desc") or {}).get("args") or {}
+    if bd.get("bonus_type") == "bonus-increased-hand" and bd.get("bonus_source_type") == "bonus":
+        ctx.threshold_snaps += 1
     if bd.get("bonus_source_type") == "incomeBonusSpace" and e.args.get("player_id") is not None:
         _mark_income_slot(ctx.player(e.args["player_id"]), bd.get("bonus_type"), bd.get("bonus_n"))
     h_meeples(ctx, e)
@@ -254,6 +272,10 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
         for holder in [ctx.state.board_tokens] + [q.tokens for q in ctx.state.players]:
             holder[:] = [t for t in holder if t.id not in gone]
         return
+    if e.type == "slideMeeples":
+        for m in a.get("meeples") or []:
+            if m["type"] == "token" and re.match(r"^P\d{3}_.*_\d$", m["location"]) and m.get("pId") not in (None, 0, "0"):
+                ctx.support = str(m["pId"])
     _place_meeples(ctx, a.get("meeples"))
     if isinstance(a.get("meeple"), dict):
         _place_meeples(ctx, [a["meeple"]])
@@ -336,6 +358,10 @@ def h_snap_card(ctx: _Ctx, e: Event) -> None:
         k = _key(c["id"])
         _remove_from_display(s, k)
         p.hand.append(k)
+    if e.type == "snapCard" and ctx.threshold_snaps and "snaps" in e.log:
+        ctx.threshold_snaps -= 1
+    elif e.type == "snapCard":
+        _support_bonus(ctx, e, "take-in-range-or-deck" if "reputation range" in e.log else "Snapping")
 
 
 def h_fill_pool(ctx: _Ctx, e: Event) -> None:
@@ -417,6 +443,10 @@ def h_buy_animal(ctx: _Ctx, e: Event) -> None:
     a = e.args
     p = ctx.player(a["player_id"])
     k = _key(a["card"]["id"])
+    if a["card"].get("location") == "rescueStation":         # map 10: the animal is tucked into the Rescued zone, nothing is played or paid
+        _take_from_source(s, p, k, bool(a.get("fromDisplay")))
+        p.rescued.append(k)
+        return
     _take_from_source(s, p, k, bool(a.get("fromDisplay")))
     p.animals.append(k)
     p.money = int(a["total"])
@@ -445,6 +475,10 @@ def h_buy_building(ctx: _Ctx, e: Event) -> None:
     b = a["building"]
     p.buildings.append(Building(id=b["id"], type=b["type"], x=b["x"], y=b["y"], rotation=b.get("rotation", 0)))
     p.money = int(a["total"])
+    if "adds" in e.log and b["type"] == "size-2":
+        _support_bonus(ctx, e, "size-2")
+    elif "adds" in e.log and b["type"] in ("large-bird-aviary", "reptile-house", "large-aquarium"):
+        _support_bonus(ctx, e, "special-enclosure")
 
 
 def h_move_projects(ctx: _Ctx, e: Event) -> None:
@@ -467,15 +501,15 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
         p.animals.remove(k)
     p.released.append(k)
     s.main_discard.append(k)
-    for b in a.get("buildings") or []:
+    for b in a.get("buildings") or []:                       # the enclosure that was emptied (an animal is not tied to an enclosure)
         for mine in p.buildings:
             if mine.id == b["id"]:
-                mine.animal = None
-                if k in mine.animals:
+                if mine.type.startswith("size-"):
+                    mine.animal = None
+                elif k in mine.animals:
                     mine.animals.remove(k)
-    for mine in p.buildings:
-        if k in mine.animals:
-            mine.animals.remove(k)
+                elif mine.animals:
+                    mine.animals.pop(0)
     p.appeal -= (a.get("bonuses") or {}).get("appeal", 0)
 
 
@@ -567,7 +601,9 @@ def _setup_state(parsed: ParsedLog, first_turn: int, index: int, dealt: GameStat
     return st
 
 
-def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: SeedSpec) -> Replay:
+def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: SeedSpec, split_before: frozenset = frozenset()) -> Replay:
+    """`split_before`: `order`s of events that start a new sub-step of their move (the viewer shows one step per effect);
+    `Replay.substates[move index]` then holds the state before each of them, i.e. the states of all sub-steps but the last."""
     state = start_game(config, seed)
     dealt = copy.deepcopy(state)                                         # the hands as dealt (8 cards, 9 with Map 14's sponsor), before the initial discard
     for pid in setup.seats:
@@ -578,6 +614,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
     first_order = markers[0][0] if markers else 10 ** 12
     first_turn = next((m.index for m in parsed.moves if any(e.order > first_order for e in m.events)), len(parsed.moves))
     rep = Replay(states=[], moves=parsed.moves, setup_moves=first_turn)
+    rep.substates = {}
     next_marker = 0
     for m in parsed.moves:
         if m.index >= first_turn:
@@ -586,6 +623,9 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
                     _sync(ctx)
                     rep.turn_snapshots.append(copy.deepcopy(ctx.state))     # the state when this turn started
                     next_marker += 1
+                if e.order in split_before:
+                    _sync(ctx)
+                    rep.substates.setdefault(m.index, []).append(copy.deepcopy(ctx.state))
                 _pre_oracles(ctx, e, m, rep)
                 h = HANDLERS.get(e.type)
                 if h is not None:

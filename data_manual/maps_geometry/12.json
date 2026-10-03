@@ -305,8 +305,11 @@
         {
             "x": 0,
             "y": 11,
-            "bonus": null,
-            "note": "black square: conceal leftmost open action strength"
+            "bonus": {
+                "type": "conceal",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "x": 1,
@@ -367,14 +370,20 @@
         {
             "x": 7,
             "y": 10,
-            "bonus": null,
-            "note": "\"1x 1x\" icon with two building symbols"
+            "bonus": {
+                "type": "adapt",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "x": 8,
             "y": 1,
-            "bonus": null,
-            "note": "black square: conceal leftmost open action strength"
+            "bonus": {
+                "type": "conceal",
+                "value": 1
+            },
+            "note": ""
         },
         {
             "x": 8,

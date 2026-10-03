@@ -28,6 +28,7 @@ Python (engine, API), HTML + vanilla JS. Cloud Run. BigQuery (log index) + GCS (
 - Icons: `PlayerState.icons` counters (`engine/icons.py`), breaks: `engine/breaks.py`; both are compared with the logs by the differential test.
 - Sponsor effects live in `engine/card_programs.py` (data) + `engine/effects.py` (pending effects, triggers); text of every card: `vendor/Next-Ark-Nova-Cards/public/locales/en/common.json`.
 - End of game: `engine/endgame.py` (trigger, last turns, final scoring incl. the sponsors' endgame effects, fitted to the logs by `scripts/check_endgame_cards.py`).
+- Engine-driven replay: `replay/engine_replay.py` runs `run_differential(chain=True)`; the viewer (`replay/view.py`) shows the engine's state for every step of a turn the engine replayed and matched, else the log-built state with a flag (`step.engine` = source/status/detail; badges in the move list). Flags are the to-do list for the rules; the next goal is to shrink them to zero and drop the log-built states.
 - Golden tests: replay `log_examples/*.json` through parser + engine, final scores must match `finalScoring` (5 sample games were conceded and have none).
 - Rate limiting: middleware hook exists but is disabled.
 

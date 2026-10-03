@@ -29,16 +29,17 @@ def _g():
 
 
 def reputation_range(reputation: int) -> int:
-    """Number of display slots (counted from slot 1) a player can take cards from."""
-    if reputation <= 0:
+    """Number of display slots (counted from slot 1) a player can take cards from: the stretches of the reputation track under the display,
+    1 | 2-3 | 4-6 | 7-9 | 10-12 | 13-15 (checked on the logs: the cards taken in the reputation range never lie further out)."""
+    if reputation <= 1:
         return 1
-    if reputation <= 2:
+    if reputation <= 3:
         return 2
-    if reputation <= 5:
+    if reputation <= 6:
         return 3
-    if reputation <= 8:
+    if reputation <= 9:
         return 4
-    if reputation <= 11:
+    if reputation <= 12:
         return 5
     return 6
 

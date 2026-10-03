@@ -313,13 +313,19 @@
         {
             "x": 1,
             "y": 10,
-            "bonus": null,
+            "bonus": {
+                "type": "store",
+                "value": 1
+            },
             "note": "Store icon (place 1 hand card under the notepad)"
         },
         {
             "x": 3,
             "y": 2,
-            "bonus": null,
+            "bonus": {
+                "type": "store",
+                "value": 1
+            },
             "note": "Store icon (place 1 hand card under the notepad)"
         },
         {
@@ -365,7 +371,10 @@
         {
             "x": 7,
             "y": 8,
-            "bonus": null,
+            "bonus": {
+                "type": "store",
+                "value": 1
+            },
             "note": "Store icon (place 1 hand card under the notepad)"
         },
         {

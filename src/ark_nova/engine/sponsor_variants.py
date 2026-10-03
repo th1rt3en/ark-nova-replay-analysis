@@ -69,7 +69,7 @@ def legal(state, p) -> list:
 
 def _playable(state, p, k: str, a) -> bool:
     from ark_nova.engine import effects
-    return (sponsors_action.level_of(k) <= p.money and sponsors_action.requirements_met(state, p.seat, k, a["level"])
+    return (sponsors_action.level_for(state, p.seat, k) <= p.money and sponsors_action.requirements_met(state, p.seat, k, a["level"])
             and effects.can_play(state, p.seat, k) and not sponsors_action.has_unimplemented_effect(k))
 
 
@@ -102,7 +102,7 @@ def apply(state, action: Action) -> None:
             state.display[i] = None
             p.hand.append(args["take"])
         else:
-            g._gain(state, p.seat, money=-sponsors_action.level_of(args["play"]))
+            g._gain(state, p.seat, money=-sponsors_action.level_for(state, p.seat, args["play"]))
             pending = g.play_sponsor_outside_action(state, p.seat, args["play"])
             if g._open_effects(state, p.seat, pending, {"kind": "sponsors_play", "args": a}):
                 return

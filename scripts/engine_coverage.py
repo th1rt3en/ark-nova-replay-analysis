@@ -32,7 +32,7 @@ for f in sorted(glob.glob("log_examples/*.json"))[:limit]:
     mism += [f[-14:] + " " + x for x in rep.mismatches]
 print(f"turns {turns}, checked by the engine {checked}, illegal {len(illegal)}, mismatches {len(mism)}, BGA placement lists compared {plists}")
 print("actions compared:", dict(kinds))
-print("skipped:", skipped.most_common(12))
+print("skipped:", skipped.most_common(30))
 for x in illegal[:6]:
     print("ILLEGAL", x)
 for x in mism[:6]:

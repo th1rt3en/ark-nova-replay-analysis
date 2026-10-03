@@ -42,6 +42,12 @@ def level_of(card_key: str) -> int:
     return int(data.cards_by_key()[card_key]["strength"])
 
 
+def level_for(state, seat: int, card_key: str) -> int:
+    """The strength of a sponsor card as this player plays it (maps 8 / 8a: every H covered makes it 1 less)."""
+    from ark_nova.engine import map_rules
+    return max(0, level_of(card_key) - (1 if map_rules.hollywood_complete(state.players[seat]) else 0))
+
+
 def budget(action_level: int, strength: int) -> int:
     """Total sponsor levels playable with this action: the strength (one card) at level I, strength + 1 (several) at level II."""
     return strength + (1 if action_level >= 2 else 0)
@@ -91,12 +97,12 @@ def playable(state: GameState, seat: int, action_level: int, left: int, money: i
     out = []
     cards = data.cards_by_key()
     for k in sorted(set(p.hand)):
-        if k.startswith("S") and level_of(k) <= left and requirements_met(state, seat, k, action_level) and effects.can_play(state, seat, k):
+        if k.startswith("S") and level_for(state, seat, k) <= left and requirements_met(state, seat, k, action_level) and effects.can_play(state, seat, k):
             out.append((k, False))
     if action_level >= 2:
         reach = state.display[:cards_action.reputation_range(p.reputation)]
         for folder, k in enumerate(reach, start=1):
-            if k and k.startswith("S") and cards[k]["card_type"] == "sponsor" and level_of(k) <= left and folder <= money \
+            if k and k.startswith("S") and cards[k]["card_type"] == "sponsor" and level_for(state, seat, k) <= left and folder <= money \
                     and requirements_met(state, seat, k, action_level) and effects.can_play(state, seat, k):
                 out.append((k, True))
     return out

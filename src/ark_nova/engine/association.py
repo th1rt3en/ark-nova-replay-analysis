@@ -18,6 +18,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from ark_nova import data
+from ark_nova.data import map_quirks
 from ark_nova.engine import bonuses, cards_action, project_effects
 from ark_nova.engine.actions import Action
 from ark_nova.engine.icons import icon_counts
@@ -60,9 +61,14 @@ def _map_bonuses() -> dict:
     return json.loads(_BONUSES.read_text()) if _BONUSES.exists() else {}
 
 
+def map_bonuses(map_id: str) -> dict:
+    """The map's conservation bonuses (`partner4`, `university3`, `last_worker`), as far as they are known; for the viewer."""
+    return {k: v for k, v in _map_bonuses().get(map_quirks.base_map_id(map_id), {}).items() if k != "verified"}
+
+
 def map_bonus(map_id: str, key: str) -> int:
     """Conservation points of the map dependent zoo-map bonuses (`partner4`, `university3`, `last_worker`), see data/association_bonuses.json."""
-    v = _map_bonuses().get(map_id, {}).get(key)
+    v = _map_bonuses().get(map_quirks.base_map_id(map_id), {}).get(key)
     if v is None:
         raise NotImplementedError(f"the {key} bonus of map {map_id} is not known (input needed in data/association_bonuses.json)")
     return int(v)
@@ -197,9 +203,9 @@ def project_count(state, seat: int, requirement: str) -> int:
     if requirement == "all-continents":
         return sum(1 for c in CONTINENTS if icons[c])
     if requirement == "animal-size-2":
-        return sum(1 for k in p.animals if (cards[k].get("size") or 9) <= 2)
+        return sum(1 for k in p.animals + p.rescued if (cards[k].get("size") or 9) <= 2)
     if requirement == "animal-size-4":
-        return sum(1 for k in p.animals if (cards[k].get("size") or 0) >= 4)
+        return sum(1 for k in p.animals + p.rescued if (cards[k].get("size") or 0) >= 4)
     if requirement in _ICON:
         return icons[_ICON[requirement]]
     raise NotImplementedError(f"project requirement {requirement!r}")
@@ -434,12 +440,7 @@ def do_task(state, action: Action) -> None:
         else:
             tok = next(t for t in state.board_tokens if t.location == "association_3" and continent_of(t) == args["continent"])
             state.board_tokens.remove(tok)
-        k = free_space(p.tokens, "partner_", MAX_PARTNERS)
-        tok.location = f"partner_{k}"
-        p.tokens.append(tok)
-        space_bonuses(state, p, "partner", k)
-        for eff in fx.fire_icon_counter(state, p.seat, Counter({continent_of(tok): 1})):
-            bonuses.defer(state, eff)
+        place_partner(state, p, tok)
     elif task == "university":
         if args.get("supply"):
             ids = [t.id for q in state.players for t in q.tokens] + [t.id for t in state.board_tokens]
@@ -447,31 +448,71 @@ def do_task(state, action: Action) -> None:
         else:
             tok = next(t for t in state.board_tokens if t.location == "association_4" and t.type == args["kind"])
             state.board_tokens.remove(tok)
-        if tok.type == "fac-generic":
-            pool = category_pool(state)
-            if category is not None and category not in pool:
-                raise fx.IllegalEffect("that university is not left")
-            if category is None:                                  # the tile is drawn at random from the bag
-                rng = Rng(state.rng)
-                category = pool[rng.randbelow(len(pool))]
-                state.rng = rng.state
-            tok.type = f"fac-science-{category}"
-        k = free_space(p.tokens, "university_", MAX_UNIVERSITIES)
-        tok.location = f"university_{k}"
-        p.tokens.append(tok)
-        rep = _TILE_REPUTATION.get(tok.type, 0)
-        if rep:
-            g._gain(state, p.seat, reputation=rep)
-        space_bonuses(state, p, "university", k)
-        cat =tok.type.split("-", 2)[2] if tok.type.count("-") == 2 else None
-        if cat in CATEGORY_TILES:
-            fx.search_for_category(state, p.seat, cat)
-        for eff in fx.fire_icon_counter(state, p.seat, tile_icons(tok.type)):
-            bonuses.defer(state, eff)
+        place_university(state, p, tok, category)
     elif task == "conservation":
         start_project(state, p, args)
         return
     after_step(state, p.seat)
+
+
+def place_partner(state, p, tok) -> None:
+    """A partner zoo tile goes on the next free space of the player's board (task or conservation bonus)."""
+    fx = _fx()
+    k = free_space(p.tokens, "partner_", MAX_PARTNERS)
+    tok.location = f"partner_{k}"
+    p.tokens.append(tok)
+    space_bonuses(state, p, "partner", k)
+    for eff in fx.fire_icon_counter(state, p.seat, Counter({continent_of(tok): 1})):
+        bonuses.defer(state, eff)
+
+
+def place_university(state, p, tok, category=None) -> None:
+    g, fx = _g(), _fx()
+    if tok.type == "fac-generic":
+        pool = category_pool(state)
+        if category is not None and category not in pool:
+            raise fx.IllegalEffect("that university is not left")
+        if category is None:                                  # the tile is drawn at random from the bag
+            rng = Rng(state.rng)
+            category = pool[rng.randbelow(len(pool))]
+            state.rng = rng.state
+        tok.type = f"fac-science-{category}"
+    k = free_space(p.tokens, "university_", MAX_UNIVERSITIES)
+    tok.location = f"university_{k}"
+    p.tokens.append(tok)
+    rep = _TILE_REPUTATION.get(tok.type, 0)
+    space_bonuses(state, p, "university", k)                  # (an effect of its own: the player chooses the order, at 9 reputation the point is lost before the upgrade)
+    if rep:
+        bonuses.defer(state, {"kind": "gain", "source": "university", "res": "reputation", "n": rep, "optional": False, "player": p.seat})
+    cat = tok.type.split("-", 2)[2] if tok.type.count("-") == 2 else None
+    if cat in CATEGORY_TILES:
+        fx.search_for_category(state, p.seat, cat)
+    for eff in fx.fire_icon_counter(state, p.seat, tile_icons(tok.type)):
+        bonuses.defer(state, eff)
+
+
+def tile_options(state, p, tile: str) -> list:
+    """The tiles on the association board that a conservation bonus (Partner Zoo / University) can take: the same ones as the task, without workers."""
+    if tile == "partner":
+        if len(partners(p)) >= MAX_PARTNERS:
+            return []
+        mine = {continent_of(t) for t in partners(p)}
+        return [{"partner": continent_of(t)} for t in state.board_tokens if t.location == "association_3" and continent_of(t) not in mine]
+    if len(universities(p)) >= MAX_UNIVERSITIES:
+        return []
+    mine = {university_class(t.type) for t in universities(p)}
+    return [{"university": t.type} for t in state.board_tokens if t.location == "association_4" and university_class(t.type) not in mine]
+
+
+def take_tile(state, p, args: dict) -> None:
+    if "partner" in args:
+        tok = next(t for t in state.board_tokens if t.location == "association_3" and continent_of(t) == args["partner"])
+        state.board_tokens.remove(tok)
+        place_partner(state, p, tok)
+    else:
+        tok = next(t for t in state.board_tokens if t.location == "association_4" and t.type == args["university"])
+        state.board_tokens.remove(tok)
+        place_university(state, p, tok, args.get("category"))
 
 
 SET_MAPS = ("11", "12", "T1")            # maps where the upgrades come with a *set* of partner zoo + university (see space_bonuses)
