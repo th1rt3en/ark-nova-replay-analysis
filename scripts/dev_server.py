@@ -51,10 +51,44 @@ class LocalLogs:
         raise LogNotFound(gcs_path)
 
 
+PLANNING_DIR = Path(__file__).resolve().parents[1] / "data_manual" / "planning"
+PLANNING_SHEETS = ("visibility", "reversibility")
+
+
+def _planning_routes(app) -> None:
+    """Development only: `web/planning.html` reads and saves the planning sheets (data_manual/planning/*.json, 4 space indent) through these."""
+    import json
+
+    from fastapi import HTTPException, Request
+    from fastapi.responses import JSONResponse
+
+    @app.get("/api/dev/planning/{name}")
+    def get_sheet(name: str):
+        if name not in PLANNING_SHEETS or not (PLANNING_DIR / f"{name}.json").exists():
+            raise HTTPException(404)
+        return JSONResponse(json.loads((PLANNING_DIR / f"{name}.json").read_text(encoding="utf-8")))
+
+    @app.put("/api/dev/planning/{name}")
+    async def put_sheet(name: str, request: Request):
+        if name not in PLANNING_SHEETS:
+            raise HTTPException(404)
+        sheet = await request.json()
+        if not isinstance(sheet, dict) or not isinstance(sheet.get("items"), list) or sheet.get("sheet") != name:
+            raise HTTPException(422, "not a planning sheet")
+        (PLANNING_DIR / f"{name}.json").write_text(json.dumps(sheet, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
+        return {"ok": True}
+
+    routes = app.router.routes                       # the static files are mounted at "/": these routes must come first
+    mine = [r for r in routes if getattr(r, "path", "").startswith("/api/dev/")]
+    app.router.routes[:] = mine + [r for r in routes if r not in mine]
+
+
 def build_app():
     settings = Settings()
     index, logs = _remote_index(settings)
-    return create_app(settings, LocalIndex(index), LocalLogs(logs))
+    app = create_app(settings, LocalIndex(index), LocalLogs(logs))
+    _planning_routes(app)
+    return app
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 A step is one kept `move_id` of the log; its state is the replay builder's state after that move (`Replay.states`), without the
 decks (only their sizes) and with the cells every building covers, so the browser needs no board geometry code.
 """
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -24,13 +25,14 @@ from ark_nova.storage.index import TableRecord
 
 _PLACEHOLDER = re.compile(r"\$\{(\w+)\}")
 IMAGE_DIR = {"animal": "animals", "sponsor": "sponsors"}       # fallback art from the vendored upstream repo (/img)
-LARGE_DIR = Path(__file__).resolve().parents[3] / "web" / "cards_large"      # full size sponsor cards for the hover preview (scripts/build_large_art.py)
-CARD_DIR = Path(__file__).resolve().parents[3] / "web" / "cards"    # full card images cut by scripts/build_card_images.py
-TIMED_BY_LOG = ("display", "main_deck_size", "main_discard_size", "main_discard", "endgame_deck", "endgame_deck_size", "current_action", "active_player", "turn")      # shown as the log has them at each step (the refill comes later than the engine's); likewise the order of the action cards
+WEB_DIR = Path(os.environ.get("WEB_DIR") or Path(__file__).resolve().parents[3] / "web")      # the Docker image sets WEB_DIR (the package lives in site-packages there)
+LARGE_DIR = WEB_DIR / "cards_large"      # full size sponsor cards for the hover preview (scripts/build_large_art.py)
+CARD_DIR = WEB_DIR / "cards"    # full card images cut by scripts/build_card_images.py
+TIMED_BY_LOG = ("break_position", "round", "display", "main_deck_size", "main_deck", "main_discard_size", "main_discard", "endgame_deck", "endgame_deck_size", "current_action", "active_player", "turn")      # shown as the log has them at each step (the refill comes later than the engine's); likewise the order of the action cards
 GAIN_FIELDS = ("reputation", "appeal", "conservation")
 LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "hand_limit")      # per player, same reason
 PICTURE_OF = {"6a": "6"}              # map 6a has the same board as map 6; its own picture has the placement bonuses baked in (bugged)
-STATE_DROP = ("main_deck", "endgame_discard", "seed", "config", "rng", "base_projects_unused", "version")
+STATE_DROP = ("endgame_discard", "seed", "config", "rng", "base_projects_unused", "version")
 
 
 def render_log(template: str, args: Any, depth: int = 0) -> str:
@@ -49,10 +51,27 @@ def render_log(template: str, args: Any, depth: int = 0) -> str:
     return re.sub(r"\s+", " ", _PLACEHOLDER.sub(sub, template or "")).strip()
 
 
+def _draft_text(e, names: dict[str, str]) -> str:
+    """The private action card draft events have no log text: say what the player picked / kept (and from what)."""
+    def pretty(v) -> str:
+        v = str(v)
+        return f"{v[:-1].capitalize()} {v[-1]}" if v[-1:].isdigit() else v
+    a = e.args if isinstance(e.args, dict) else {}
+    pv = (a.get("args") or {}).get("_private") or a
+    who = names.get(str(e.player), "A player")
+    cards = [f"{str(c.get('actionType')).lower()}{c.get('number')}" for c in pv.get("cards") or []]
+    if e.type == "updateInitialActionCardSelection" and pv.get("selection"):
+        rnd = "first" if not pv.get("previous") else "second"
+        return f"{who} picks {pretty(pv['selection'])} from {', '.join(pretty(c) for c in cards)} (action card draft, {rnd} pick)"
+    if e.type == "updateInitialActionCardsKeep" and pv.get("selection"):
+        return f"{who} keeps {' and '.join(pretty(v) for v in pv['selection'])} of {', '.join(pretty(c) for c in cards)} (action card draft)"
+    return ""
+
+
 def step_label(move: Move, names: dict[str, str]) -> str:
     texts = []
     for e in move.events:
-        t = render_log(e.log, e.args)
+        t = _draft_text(e, names) if e.type in ("updateInitialActionCardSelection", "updateInitialActionCardsKeep") else render_log(e.log, e.args)
         if e.player and names.get(e.player):          # private events are written for the player: "You draw ..."
             t = re.sub(r"^You", names[e.player], t)
         if t and t not in texts:
@@ -182,6 +201,8 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
     rep: Replay = build_replay(parsed, setup, config, seed, split)
     colors = {str(p["id"]): p.get("color") for p in raw_log["data"].get("players") or [] if isinstance(p, dict)}
     eng = build_engine_replay(parsed, rep, {pid: i for i, pid in enumerate(config.player_ids)})
+    known_prefix = len(seed.main_order)                                       # the cards of the draw pile whose order the log tells; the rest is a random guess
+    full_deck = len(rep.states[0].main_deck) if rep.states else 0
     steps = []
     for mv, final, g in zip(rep.moves, rep.states, groups):
         me = eng.moves[mv.index]
@@ -193,6 +214,7 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
         if me.end is not None:                                              # the engine played this move and agrees with the log
             logged = views[:]
             engine_vals: dict = {}
+            engine_break: dict = {}
             for i, (_, start) in enumerate(g[1:]):                            # sub-step i ends where the next effect starts
                 before = me.state_before(start) if len(g) == len(views) else None
                 if before is not None:
@@ -201,6 +223,7 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
             for i, src in enumerate(source):                                  # the engine refills the display when the action ends, the log at its fillPool event
                 if src == "engine":
                     engine_vals[i] = [{f: p[f] for f in GAIN_FIELDS} for p in views[i]["players"]]
+                    engine_break[i] = views[i]["break_position"]
                     for k in TIMED_BY_LOG:
                         views[i][k] = logged[i][k]
                     for mine, theirs in zip(views[i]["players"], logged[i]["players"]):          # the engine applies some effects earlier than the log shows them
@@ -219,6 +242,8 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
                 seat = o["seat"]
                 shown = [e for e in o["effects"] if not (e.get("kind") == "gain" and e.get("res") in GAIN_FIELDS
                                                          and v["players"][seat][e["res"]] - engine_vals[i][seat][e["res"]] >= e.get("n", 1))]
+                # the same for a Jumping effect: the log already moved the break token, the engine does it when the effect is resolved
+                shown = [e for e in shown if not (e.get("kind") == "jumping" and v["break_position"] - engine_break[i] >= e.get("n", 1))]
                 if len(shown) != len(o["effects"]):
                     options[i] = o = {**o, "effects": shown}
             if o is not None and o["prompt"] == "choose_action_card" and (v["current_action"] or v["active_player"] != o["seat"]):
@@ -226,6 +251,12 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
         actors = group_actors(mv, g, {pid: i for i, pid in enumerate(config.player_ids)}) if len(g) == len(views) else [None] * len(views)
         steps += [{"move_id": mv.move_id, "label": lb, "state": v, "engine": {"source": src, "status": me.status, "detail": me.detail[:300]}, "options": o, "actor": ac}
                   for lb, v, src, o, ac in zip(labels, views, source, options, actors)]
+    # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step. The first step stays.
+    keep = [i == 0 or bool(st["label"].strip()) for i, st in enumerate(steps)]
+    setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])
+    steps = [st for st, k in zip(steps, keep) if k]
+    for st in steps:
+        st["state"]["main_deck_known"] = max(0, min(len(st["state"]["main_deck"]), known_prefix - (full_deck - len(st["state"]["main_deck"]))))
     for i, st in enumerate(steps):
         st["index"] = i
     states = [st["state"] for st in steps]
@@ -239,7 +270,7 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
         "maps": [map_view(m) for m in config.maps],
         "base_projects": config.base_projects,
         "result": [{k: r.get(k) for k in ("id", "name", "score", "rank")} for r in parsed.result or []],
-        "setup_steps": rep.setup_moves,
+        "setup_steps": setup_steps,
         "cards": card_catalog(keys),
         "engine": eng.summary(),
         "steps": steps,

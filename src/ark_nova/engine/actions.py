@@ -41,8 +41,9 @@ def _s(kind: str, summary: str, args: str, *log_events: str) -> tuple[str, Actio
 ACTION_SPECS: dict[str, ActionSpec] = dict([
     # setup
     _s("choose_map", "pick a map (only when the game lets players choose)", "map", "updateInitialMapSelection", "setupPlayer"),
-    _s("choose_action_cards", "pick the action card sides for the game", "choice", "updateInitialActionCardSelection",
-       "updateInitialActionCardsKeep", "setupActionCards"),
+    _s("draft_pick", "action card draft, rounds 1 and 2: pick one of the offered variants (both players at the same time; the rest goes to the opponent)", "variant",
+       "updateInitialActionCardSelection"),
+    _s("draft_keep", "action card draft, last round: keep 2 of the 3 variants, of 2 different action cards", "keep", "updateInitialActionCardsKeep", "setupActionCards"),
     _s("initial_discard", "discard 4 of the 8 dealt cards (the other 4 are kept; both endgame cards are kept until one is discarded later)",
        "cards", "updateInitialSelection", "pDiscardCards"),
     # turn

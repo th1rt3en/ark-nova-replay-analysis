@@ -3,10 +3,37 @@
 The viewer builds the bar at the top of the page from this (instead of guessing from the log-built state). Only a summary is sent: the kinds
 of action with their counts, and for the choice of an action card the cards and the X tokens that can be spent on each.
 """
+from ark_nova import data
 from ark_nova.engine.game import legal_actions
 from ark_nova.engine.state import GameState, Phase
 
 FREE = {"use_token", "harbor_sell"}            # free actions of the notepad / zoo map: possible at any time, not the decision of the prompt
+
+
+# the keyword of the card ability that each kind of pending effect comes from (the button is named like the ability: "Perception 2", "Digging 3", ...)
+ABILITY_PREFIX = {"digging": "Digging", "scavenge": "Scavenging", "glide": "Glide", "glide_gain": "Glide", "shark": "Shark Attack", "symbiosis": "Symbiosis",
+                  "cut_down": "Cut Down", "trade": "Trade", "extra_shift": "Extra Shift", "assertion": "Assertion", "pilfer": "Pilfering", "venom": "Venom",
+                  "constrict": "Constriction", "jumping": "Jumping", "hypnosis": "Hypnosis", "pouch": "Pouch", "mark": "Mark", "boost": "Boost", "marketing": "Marketing", "sell": "Sun Bathing"}
+REVEAL_NAME = {"animal": "Hunter", "any": "Perception", "sponsor": "Scuba Dive"}          # what a reveal-and-keep effect is called, by what it may keep
+
+
+def effect_name(e: dict) -> str | None:
+    """The name of the ability behind a pending effect, as the card writes it ("Perception 2"), None when it is not an ability."""
+    kind, src = e.get("kind"), e.get("source")
+    if kind == "reveal":
+        prefix = REVEAL_NAME.get(e.get("filter", "any"))
+        return f"{prefix} {e['x']}" if prefix and e.get("x") is not None else None
+    prefix = ABILITY_PREFIX.get(kind)
+    if prefix is None:
+        return None
+    card = data.cards_by_key().get(src) if isinstance(src, str) else None
+    for ab in (card or {}).get("abilities") or []:
+        name = ab["keyword"]["name"]
+        if name.startswith(prefix) or name.startswith(prefix.replace(" ", "")):
+            value = ab.get("value")
+            return name if not value or str(value) in name else f"{name} {value}"
+    n = e.get("n") or e.get("x")
+    return f"{prefix} {n}" if isinstance(n, int) and n > 1 else prefix
 
 
 def step_options(state: GameState) -> dict | None:
@@ -79,6 +106,7 @@ def step_options(state: GameState) -> dict | None:
     elif pr.kind == "effects":
         pending = pr.args.get("pending", [])
         out["pending"] = [e.get("kind") for e in pending][:12]
-        out["effects"] = [{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type") if k in e and isinstance(e[k], (str, int, bool))}
+        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type") if k in e and isinstance(e[k], (str, int, bool))},
+                           **({"name": effect_name(e)} if effect_name(e) else {})}
                           for e in pending if e.get("player", pr.player) == pr.player][:12]               # what the player can resolve, in any order
     return out

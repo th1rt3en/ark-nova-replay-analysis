@@ -284,6 +284,10 @@ def _done(state, i: int) -> None:
     a = state.prompt.args
     seat = a["pending"][i].get("player", state.prompt.player)
     a["pending"].pop(i)
+    if any(e.get("source") == "map13" and e.get("area") for e in a["pending"]):          # map 13: an area that is no longer covered (a Cut Down) pays nothing any more
+        from ark_nova.engine import map_rules
+        a["pending"][:] = [e for e in a["pending"] if not (e.get("source") == "map13" and e.get("area")
+                                                           and e["area"] not in map_rules.quarters_done(state.players[e.get("player", state.prompt.player)]))]
     if not a["pending"]:
         _g()._resume_after_effects(state)
     elif state.current_action is not None and state.current_action.get("type") == "break"             and not any(e.get("player", state.prompt.player) == seat for e in a["pending"]):
@@ -311,6 +315,8 @@ def resolve_build(state, action: Action) -> None:
         from ark_nova.engine import map_rules
         areas_before = map_rules.quarters_done(p)
         p.buildings.append(Building(id=pb["id"], type=t, x=x, y=y, rotation=k, animal=pb["animal"], animals=list(pb["animals"])))
+        p.flags.setdefault("built_now", []).append(pb["id"])
+        g.hydrologist_geologist(state, p.seat, build_action.footprint(t, x, y, k))          # (the building that is put back pays the Hydrologist / Geologist again)
         for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: an area that is covered again pays its bonus again
             map_rules.quarter_bonus(state, p.seat, name)
         _done(state, i)

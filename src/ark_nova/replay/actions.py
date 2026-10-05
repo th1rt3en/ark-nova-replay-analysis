@@ -300,6 +300,10 @@ class _AssocMap:
             return None
         if t == "discardTokens" and any(m["type"] in ("bonus-sponsor-gray", "bonus-extra-shift") for m in a.get("meeples") or []):
             return _NOT_HANDLED                                      # a token of the notepad used during the action: a free action of its own
+        if t == "discardTokens" and a.get("continent"):
+            if self.support is not None and self.support.args.get("bonus") is None:
+                self.bonus({"type": "continent"})                    # map 9: the notepad bonus unlocks a continent cube
+            return _NOT_HANDLED                                      # (the choice of the cube's bonus follows as a takeBonus of the "Map 9 effect")
         if t in ("discardTokens", "moveProjects"):
             return None
         if t == "donation":
@@ -308,6 +312,8 @@ class _AssocMap:
         if t == "takeBonus" and a.get("source") == "Association4":      # Self-clever Association: nothing is done, another action follows
             self.add(Action(seat, "self_clever", {}), e)
             return None
+        if t == "takeBonus" and a.get("source") == "Map 9 effect":
+            return _NOT_HANDLED
         if t == "takeBonus":
             bd = (a.get("bonus_desc") or {}).get("args") or {}
             bt = bd.get("bonus_type")
@@ -346,6 +352,20 @@ class _AssocMap:
         if t == "buyBuilding" and "adds" in e.log and a["building"]["type"] in ("large-bird-aviary", "reptile-house", "large-aquarium") and self.support is not None                 and self.support.args.get("bonus") is None:
             self.bonus({"type": "special-enclosure"})                  # map 5 / 5a: the free special enclosure of the notepad
         return _NOT_HANDLED
+
+
+_INCOME_RESOURCE = {"S209": "xtoken", "S220": "money", "S206": "conservation", "S274": "appeal", "S281": "money", "S265": "money", "S257": "money",
+                    "S231": "money", "S232": "money", "S233": "money", "S234": "money", "S235": "money"}
+
+
+def _printed_keys(k: str) -> set:
+    """The resources a sponsor gains when it is played (printed gain), as BGA names them."""
+    from ark_nova.engine import card_programs, sponsors_action
+    card = data.cards_by_key()[k]
+    printed = card_programs.PRINTED_OVERRIDE[k] if k in card_programs.PRINTED_OVERRIDE else {"appeal": card.get("appeal") or 0, "reputation": card.get("reputation") or 0,
+                                                                                         "conservation": card.get("conservationPoint") or 0}
+    own = sponsors_action.own_gain(k)
+    return {r for r, v in list(printed.items()) + list(own.items()) if v}
 
 
 def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_of: dict[int, int], peaceful: bool = False, again: bool = False, extra_follows: bool = False) -> Union[TurnPlan, str]:
@@ -389,6 +409,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
     hire_choice = False                                  # a takeBonus announced the hire of the conservation 2 choice
     t1_card = None                                       # map T1: the hand card discarded for +1 strength before the action card is chosen
     person_open = False                                  # map 14: the person sponsor of the income slot is played by the engine itself
+    printed_seen: set = set()
     marketing_open = False                               # a bonus-sponsor / sponsor token announced a Marketing effect: the next sponsor played is its choice
     gained: set = set()
     assoc = _AssocMap(seat, lambda act, ev: add(act, ev))
@@ -412,6 +433,16 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             continue
         if in_break and t == "getBonuses" and isinstance(a, dict) and a.get("source") == "map income":          # an effect of its own, in the player's order (dropped when the map has none)
             add(Action(seat_of[str(a["player_id"])], "choose_effect", {"apply": "income_map"}), e)
+            continue
+        if in_break and t == "getBonuses" and isinstance(a, dict) and not a.get("source") and a.get("card_id") and _key(a["card_id"]) in __import__("ark_nova.engine.breaks", fromlist=["INCOME_SPONSORS"]).INCOME_SPONSORS:
+            k_ = _key(a["card_id"])
+            res_ = _INCOME_RESOURCE[k_]
+            if set(a["bonuses"]) != {res_}:
+                continue                                              # (a printed gain of the sponsor, not its income)
+            if k_ in played and k_ not in printed_seen and res_ in _printed_keys(k_):
+                printed_seen.add(k_)                                  # (the printed gain of a sponsor played in the break: the engine pays it with the play)
+                continue
+            add(Action(seat_of[str(a["player_id"])], "choose_effect", {"apply": "income_sponsor", "source": _key(a["card_id"])}), e)      # a sponsor's break income: an effect of its own
             continue
         if in_break and t == "getBonuses" and isinstance(a, dict) and a.get("source") == "kiosk income":
             add(Action(seat_of[str(a["player_id"])], "choose_effect", {"apply": "income_kiosk"}), e)
@@ -496,6 +527,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                                                     **({"hypnosis": True} if hypnotised else {})}), e)
         elif t == "getBonuses" and isinstance(a, dict):
             b = a.get("bonuses") or {}
+            if a.get("source") == "Map 1 bonus" and set(b) == {"appeal"}:
+                add(Action(seat, "choose_effect", {"apply": "gain", "res": "appeal"}), e)                  # the Observation Tower
             if a.get("source") == "Cards4 effect" and b.get("money", 0) < 0 and not any(
                     x.type == "actionCardCleanup" and "Clever" in __import__("ark_nova.replay.view", fromlist=["render_log"]).render_log(x.log, x.args) for x in events[events.index(e):]):
                 add(Action(seat, "choose_effect", {"type": chosen}), e)       # Clever Cards: paid, but the card that goes to slot 1 is the one just used (no move in the log)
@@ -612,6 +645,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             # else: Talented Communicator, Full-throated: the worker is hired by the engine itself
         elif t == "slideMeeples" and "worker(s) back" in e.log:
             add(Action(seat, "choose_effect", {"worker": int(a["meeples"][0]["id"])}), e)          # Extra Shift
+        elif t == "pUnstoreCard" and a.get("cards") and _key(a["cards"][0]["id"])[:1] == "S":
+            add(Action(seat_of.get(str(a.get("player_id")), seat), "unstore", {"card": _key(a["cards"][0]["id"])}), e)      # a stored sponsor goes back into the hand (a free action)
         elif t in ("pUnstoreCard", "playerConcedeGame"):
             pass                                                     # map 11: the stored animal is played from the storage by the play itself; the end of a conceded game
         elif t == "discardCardsOnDisplay" and "Wave" in e.log and "Wave bonus placement" not in e.log:
@@ -691,7 +726,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             marketing_open = True                                    # (the choose_effect of the conservation choice follows through the generic takeBonus branch below)
             bd = (a.get("bonus_desc") or {}).get("args") or {}
             if bd.get("bonus_source_type") == "bonus":
-                add(Action(seat, "choose_effect", {"bonus_type": "bonus-sponsor", "n": bd.get("bonus_n")}), e)
+                add(Action(seat_of.get(str(a.get("player_id")), seat), "choose_effect", {"bonus_type": "bonus-sponsor", "n": bd.get("bonus_n")}), e)
         elif t == "discardTokens" and a.get("continent"):
             m9_continent = str(a["continent"]).strip("<>").capitalize()          # map 9: "removes <EUROPE> marker from their map"
         elif t == "takeBonus" and a.get("source") == "Map 9 effect":
@@ -714,7 +749,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             if bt == "add-worker" and a.get("source") != "reputation track bonus":
                 hire_choice = True
             if bt and bd.get("bonus_source_type") == "bonus" and bt not in ("DISCARD_SCORING", "upgrade-card", "add-worker"):
-                add(Action(seat, "choose_effect", {"bonus_type": bt, "n": bd.get("bonus_n")}), e)     # the choice at conservation 5 / 8
+                add(Action(seat_of.get(str(a.get("player_id")), seat), "choose_effect", {"bonus_type": bt, "n": bd.get("bonus_n")}), e)     # the choice at conservation 5 / 8
             # else: "gets <bonus>" of the reputation track, a map bonus space, ... (the engine grants it, a decision shows up as the events that follow)
         elif t == "upgradeCard":
             add(Action(seat, "choose_effect", {"upgrade": parse_action_type(a["actionCard"]["type"])[0]}), e)

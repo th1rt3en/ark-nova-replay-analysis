@@ -183,7 +183,7 @@ def failed_conditions(state: GameState, seat: int, key: str, level: int) -> list
             missing = 0 if any(t.location.startswith("university_") for t in p.tokens) else 1
         elif req == "Partner Zoo":      # a partner zoo (of any continent) or a university, checked on the logs
             tags = {x for x in card(key).get("tags", []) if x in CONTINENT_TAGS}
-            missing = 0 if any(t.type.startswith("partner-") and t.type.split("-", 1)[1].lower() in tags for t in p.tokens) else 1      # (a partner zoo of one of the animal's continents)
+            missing = 0 if any(t.type.startswith("partner-") and t.type.split("-", 1)[1].lower() in tags for t in p.tokens) else 1      # (the partner zoo of one of the animal's continents, given by the user; plays without it use Ignore Animals, the map 6 / 6a Research Institute, the token ...)
         elif req in _ICON:
             missing = max(0, n - icons[_ICON[req]])
         else:
@@ -267,7 +267,7 @@ def hosts(state: GameState, seat: int, key: str, occupied: bool = False) -> list
     overbuild = "S219" in p.sponsors                          # Diversity Researcher ignores water and rock requirements
     out = []
 
-    covered = {c for b in p.buildings if knows_shape(b.type) for c in footprint(b.type, b.x, b.y, b.rotation)}      # a rock / water hex under a building (Terrain Build) no longer counts
+    covered = {c for b in p.buildings if knows_shape(b.type) and b.type != "underwater-tunnel" for c in footprint(b.type, b.x, b.y, b.rotation)}      # a rock / water hex under a building (Terrain Build) no longer counts; the water under a tunnel still does
 
     def near_ok(b) -> bool:
         cells = footprint(b.type, b.x, b.y, b.rotation)
@@ -426,7 +426,9 @@ def play(state: GameState, action: Action) -> None:
     if a.get("variant") == 3 and a["level"] >= 2:            # Discount Animals, level II: pay 2 for 1 appeal, once per animal
         printed.append({"kind": "pay_appeal", "source": k, "optional": True})
     if b is not None and b.type.startswith("size-") and state.config.map_known[p.seat]:        # (a map that had to be guessed is not trusted with the tower)
-        g._gain(state, p.seat, appeal=map_rules.tower_appeal(p, b))              # map 1: the Observation Tower
+        tower = map_rules.tower_appeal(p, b)                                     # map 1: the Observation Tower (an effect of its own: a Venom of the same animal looks at the appeal before it)
+        if tower:
+            printed.append({"kind": "gain", "source": "map1", "res": "appeal", "n": tower, "optional": False})
     pending = printed + ability_effects(state, k, pairs) + reef_effects(state, k, b) + fx.fire_icons(state, p.seat, k) + map_rules.continent_effects(state, p, k, b)
     if not g._open_effects(state, p.seat, pending, {"kind": "animals_play", "args": a}):
         after_step(state, p.seat)

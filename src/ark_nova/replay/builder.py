@@ -230,13 +230,16 @@ def h_get_bonuses(ctx: _Ctx, e: Event) -> None:
     _apply_bonuses(p, e.args.get("bonuses"))
     if e.args.get("source") == "map bonus space":
         for kind, value in (e.args.get("bonuses") or {}).items():
-            _mark_income_slot(p, kind, value)
+            if _mark_income_slot(p, kind, value) and ctx.support == str(e.args.get("player_id")):
+                ctx.support = None                           # (this bonus is the notepad bonus of the project that was just supported)
 
 
 def h_take_bonus(ctx: _Ctx, e: Event) -> None:
     bd = (e.args.get("bonus_desc") or {}).get("args") or {}
     if bd.get("bonus_type") == "bonus-increased-hand" and bd.get("bonus_source_type") == "bonus":
         ctx.threshold_snaps += 1
+    if e.args.get("source") == "reputation track bonus" and bd.get("bonus_type") == "take-in-range-or-deck":
+        ctx.__dict__["rep_take"] = True                      # (the card of the reputation track that follows is no notepad bonus)
     if bd.get("bonus_source_type") == "incomeBonusSpace" and e.args.get("player_id") is not None:
         _mark_income_slot(ctx.player(e.args["player_id"]), bd.get("bonus_type"), bd.get("bonus_n"))
     h_meeples(ctx, e)
@@ -248,6 +251,7 @@ def h_waza(ctx: _Ctx, e: Event) -> None:
 
 def h_finish_break(ctx: _Ctx, e: Event) -> None:
     ctx.state.break_position = 0
+    ctx.state.round += 1                                       # "End of the break": the next round starts
 
 
 def h_donation(ctx: _Ctx, e: Event) -> None:
@@ -368,6 +372,8 @@ def h_snap_card(ctx: _Ctx, e: Event) -> None:
         p.hand.append(k)
     if e.type == "snapCard" and ctx.threshold_snaps and "snaps" in e.log:
         ctx.threshold_snaps -= 1
+    elif e.type == "snapCard" and ctx.__dict__.pop("rep_take", False):
+        pass
     elif e.type == "snapCard":
         _support_bonus(ctx, e, "take-in-range-or-deck" if "reputation range" in e.log else "Snapping")
 
@@ -606,7 +612,62 @@ def _sync(ctx: _Ctx) -> None:
             c.tokens.sort()
 
 
-def _setup_state(parsed: ParsedLog, first_turn: int, index: int, dealt: GameState, final: GameState) -> GameState:
+def _draft_variant(c: dict) -> str:
+    return f"{str(c['actionType']).lower()}{c['number']}"
+
+
+def draft_states(parsed: ParsedLog, seats: list, first_turn: int) -> dict:
+    """The action card draft of the log (`updateInitialActionCardSelection` / `...Keep`, private events of both players), as `GameState.draft` shows it
+    after each setup move: `stage` (pick1 | pick2 | keep | done) is the round the log has reached, `offers` / `picked` / `kept` are what BOTH players choose
+    from and chose in that round. The players choose at the same time, but the log tells their rounds one after the other: the round of the player who comes
+    second is taken from the log ahead of its event, so that both players are always complete."""
+    rounds: list = [[], []]                       # per seat: the events in order: (move index, kind, offers, previous, selection)
+    done_at = None
+    for m in parsed.moves[:first_turn]:
+        for e in m.events:
+            a = e.args if isinstance(e.args, dict) else {}
+            if e.type in ("updateInitialActionCardSelection", "updateInitialActionCardsKeep") and e.player is not None and str(e.player) in seats:
+                seat = seats.index(str(e.player))
+                pv = (a.get("args") or {}).get("_private") or a
+                cards = [_draft_variant(c) for c in pv.get("cards") or []]
+                prev = [_draft_variant(c) for c in pv.get("previous") or []]
+                sel = pv.get("selection")
+                kind = "keep" if e.type == "updateInitialActionCardsKeep" else ("pick1" if not rounds[seat] else "pick2")
+                chosen = [str(v).lower() for v in sel] if isinstance(sel, list) else ([str(sel).lower()] if sel else [])
+                rounds[seat].append((m.index, kind, cards, prev, chosen))
+            elif e.type == "setupActionCards" and done_at is None:
+                done_at = m.index
+    if not any(rounds):
+        return {}
+    order = {"pick1": 1, "pick2": 2, "keep": 3}
+    out: dict = {}
+    for m in parsed.moves[:first_turn]:
+        reached = [ev for seat_events in rounds for ev in seat_events if ev[0] <= m.index]
+        if not reached:
+            continue
+        top = max(order[ev[1]] for ev in reached)
+        stage = {1: "pick1", 2: "pick2", 3: "keep"}[top]
+        if done_at is not None and m.index > done_at:
+            stage = "done"
+        d = {"stage": stage, "offers": [[], []], "picked": [[], []], "kept": [[], []], "choice": [None, None], "auto": [None, None], "pool": []}
+        shown = "keep" if stage == "done" else stage
+        for seat in (0, 1):
+            ev = next((x for x in rounds[seat] if x[1] == shown), None)
+            if ev is None:
+                continue
+            _, kind, cards, prev, chosen = ev
+            d["offers"][seat] = cards
+            if kind == "keep":
+                d["kept"][seat] = chosen
+                pk = next((x for x in rounds[seat] if x[1] == "pick2"), None)
+                d["picked"][seat] = (pk[3] + pk[4]) if pk else []
+            else:
+                d["picked"][seat] = prev + chosen
+        out[m.index] = d
+    return out
+
+
+def _setup_state(parsed: ParsedLog, first_turn: int, index: int, dealt: GameState, final: GameState, drafts: dict = None) -> GameState:
     """The state at setup step `index`, as the log tells it: nothing before the deal (the cards are put back on top of their decks, in dealing order; a Map 14 sponsor goes on top too), the dealt hands until the initial
     discard, and the display only once the first `fillPool` has happened. Logs without these events fall back to the finished setup."""
     def first(pred) -> int:
@@ -621,6 +682,13 @@ def _setup_state(parsed: ParsedLog, first_turn: int, index: int, dealt: GameStat
         st.endgame_deck = [c for p in st.players for c in p.endgame_hand] + st.endgame_deck
         for p in st.players:
             p.hand, p.endgame_hand, p.initial_offer = [], [], []
+    if drafts and index in drafts:                                       # the action card draft that the log shows (the standard cards until it is over)
+        st.draft = copy.deepcopy(drafts[index])
+        if st.draft["stage"] != "done":
+            from ark_nova.engine.state import ActionCardState
+            from ark_nova.engine.draft import ACTION_TYPES
+            for p in st.players:
+                p.action_cards = [ActionCardState(type=t) for t in ACTION_TYPES]
     if index < fill_at:                                                  # the display is filled at the end of the setup
         shown = [c for c in st.display if c]
         st.main_deck = shown + st.main_deck
@@ -641,6 +709,13 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
     first_order = markers[0][0] if markers else 10 ** 12
     first_turn = next((m.index for m in parsed.moves if any(e.order > first_order for e in m.events)), len(parsed.moves))
     rep = Replay(states=[], moves=parsed.moves, setup_moves=first_turn)
+    drafts = draft_states(parsed, [str(s) for s in setup.seats], first_turn)
+    if drafts:                                                           # the moves after the draft keep showing its result
+        last = None
+        for i in range(first_turn):
+            last = drafts.get(i, last)
+            if last is not None:
+                drafts[i] = last
     rep.substates = {}
     next_marker = 0
     for m in parsed.moves:
@@ -666,7 +741,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
                 rep.mismatches.append((m.index, msg))
             ctx.mismatches = []
             _check_oracles(ctx, m, rep)
-        rep.states.append(_setup_state(parsed, first_turn, m.index, dealt, ctx.state) if m.index < first_turn else copy.deepcopy(ctx.state))
+        rep.states.append(_setup_state(parsed, first_turn, m.index, dealt, ctx.state, drafts) if m.index < first_turn else copy.deepcopy(ctx.state))
     _sync(ctx)
     while next_marker < len(markers):                                   # markers after the last event: the final state
         rep.turn_snapshots.append(copy.deepcopy(ctx.state))

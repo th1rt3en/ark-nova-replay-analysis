@@ -82,7 +82,8 @@ def special_on_play(state, seat: int, key: str, total: Counter) -> list:
     elif key == "S203":                          # Veterinarian: 0 / 2 / 5 / 10 money for 0 / 1 / 2 / 3 universities
         g._gain(state, seat, money=(0, 2, 5, 10)[min(3, sum(t.location.startswith("university_") for t in state.players[seat].tokens))])
     elif key == "S206":                          # Medical Breakthrough: 2 appeal per supported project
-        g._gain(state, seat, appeal=2 * sum(1 for t in state.players[seat].tokens if t.type == "token" and re.match(r"P\d+_", t.location)))
+        p_ = state.players[seat]          # (a support on a project that was discarded since still counts)
+        g._gain(state, seat, appeal=2 * (sum(1 for t in p_.tokens if t.type == "token" and re.match(r"P\d+_", t.location)) + p_.flags.get("supports_gone", 0)))
     elif key == "S219":                          # Diversity Researcher: 2 money per rock / water icon
         g._gain(state, seat, money=2 * (total["Rock"] + total["Water"]))
     elif key == "S258":

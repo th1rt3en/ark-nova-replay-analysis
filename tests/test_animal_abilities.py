@@ -63,7 +63,7 @@ def test_direct_gains_pack_petting_zoo_iconic_sprint_jumping_inventive():
     n = dict(aa.abilities("A413"))["Jumping"]
     s0 = _start(_zoo("A413"))
     money, brk = s0.players[0].money, s0.break_position
-    s = _play(s0, "A413")
+    s = _resolve(_play(s0, "A413"), apply="jumping")                                  # an effect of its own (the log shows its break token and money as lines of their own)
     assert s.break_position == brk + n and s.players[0].money == money - aa.cost(s0, 0, "A413") + n
     # Inventive: 1 X token
     s0 = _start(_zoo("A414"))

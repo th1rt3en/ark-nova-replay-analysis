@@ -120,10 +120,10 @@ def quarter_bonus(state, seat: int, name: str) -> None:
     from ark_nova.engine import game as g
     bonus = QUARTER_BONUS[name]
     if "hunter" in bonus:
-        bonuses.defer(state, {"kind": "reveal", "source": "map13", "x": bonus["hunter"], "filter": "animal", "optional": False, "player": seat})
+        bonuses.defer(state, {"kind": "reveal", "source": "map13", "area": name, "x": bonus["hunter"], "filter": "animal", "optional": False, "player": seat})
     else:                                                                 # an effect that the player resolves (it cannot be skipped)
         for res, n in bonus.items():
-            bonuses.defer(state, {"kind": "gain", "source": "map13", "res": res, "n": n, "optional": False, "player": seat})
+            bonuses.defer(state, {"kind": "gain", "source": "map13", "area": name, "res": res, "n": n, "optional": False, "player": seat})
 
 
 # ---- maps 7 / 7a (Ice Cream Parlors): the kiosk placement bonuses -------------------------------------------------------------------

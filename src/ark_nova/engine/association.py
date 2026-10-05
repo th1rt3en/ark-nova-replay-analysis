@@ -283,7 +283,7 @@ def notepad_bonuses(state, p) -> list:
     """(index, bonus) of the notepad tokens still on the map."""
     slots = data.map_by_id(p.map_id)["geometry"]["bonus_slots"]
     used = p.flags.get("bonus_used", 0)
-    return [(s["index"], s["bonus"]) for s in slots if (not used >> s["index"] & 1 or (p.map_id == "T1" and s["index"] == 0)) and s.get("bonus")]      # (T1: the card space can be taken again and again, 17 of 20 logged supports)
+    return [(s["index"], s["bonus"]) for s in slots if not used >> s["index"] & 1 and s.get("bonus")]
 
 
 # ---- the action --------------------------------------------------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 """FastAPI app: /healthz, table lookup (landing page flow), log fetch / verification and the static frontend."""
 import json
 import logging
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -14,11 +15,11 @@ from ark_nova.config import Settings
 from ark_nova.parser.verify import verify_log
 from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
-from ark_nova.storage.logs import LogNotFound, LogStore, NotConfiguredLogStore
+from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
 from ark_nova.storage.requests import request_log
 
 ROOT = Path(__file__).resolve().parents[3]
-WEB_DIR = ROOT / "web"
+WEB_DIR = Path(os.environ.get("WEB_DIR") or ROOT / "web")       # the Docker image installs the package into site-packages, so it sets WEB_DIR
 IMG_DIR = ROOT / "vendor" / "Next-Ark-Nova-Cards" / "public" / "img"       # card / map images; not in the Docker image yet
 
 log = logging.getLogger(__name__)
@@ -29,6 +30,31 @@ def _default_index(settings: Settings) -> TableIndex:
         return NotConfiguredIndex()
     from ark_nova.storage.index import BigQueryIndex
     return BigQueryIndex(settings.bq_table, settings.bq_logs_table)
+
+
+def _code_version() -> str:
+    """Changes whenever the code or its data does (the newest .py / .json under src), so a cached replay of older code is never served."""
+    src = Path(__file__).resolve().parents[1]
+    newest = max((f.stat().st_mtime_ns for pattern in ("*.py", "*.json") for f in src.rglob(pattern)), default=0)
+    return format(newest // 1000, "x")
+
+
+VERSION = _code_version()
+CACHE_CONTROL = "private, max-age=0, must-revalidate"      # the browser asks every time but gets a 304 (no body, no work) while the tag is the same
+
+
+def _etag(kind: str, table_id: int) -> str:
+    return f'"{VERSION}-{kind}-{table_id}"'
+
+
+def _not_modified(request: Request, tag: str) -> Response | None:
+    if tag in [t.strip() for t in request.headers.get("if-none-match", "").split(",")]:
+        return Response(status_code=304, headers={"ETag": tag, "Cache-Control": CACHE_CONTROL})
+    return None
+
+
+def _cache_dir(settings: Settings) -> str | None:
+    return None if settings.cache_dir.strip().lower() == "off" else (settings.cache_dir or default_cache_dir())
 
 
 def _default_logs(settings: Settings) -> LogStore:
@@ -51,6 +77,11 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     app.state.settings = settings or Settings.from_env()
     app.state.index = index or _default_index(app.state.settings)
     app.state.logs = logs or _default_logs(app.state.settings)
+    st = app.state.settings
+    if logs is None and st.cache_mb > 0 and not isinstance(app.state.logs, NotConfiguredLogStore):       # (a store handed in, e.g. by a test, is used as it is)
+        app.state.logs = CachedLogStore(app.state.logs, st.cache_mb * 1024 * 1024 // 2, _cache_dir(st), st.cache_disk_mb * 1024 * 1024 // 2)
+    # the built replays (3-7 MB of JSON, 2-3 s of work each): memory first, files for the rest; the code version is part of the key
+    app.state.replays = ByteLru(st.cache_mb * 1024 * 1024 // 2, _cache_dir(st) if st.cache_mb > 0 else None, st.cache_disk_mb * 1024 * 1024 // 2, namespace="replay")
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.middleware("http")(rate_limit_middleware)
 
@@ -84,16 +115,19 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         return {"status": "logged" if rec.logged else "indexed", **_config(rec)}
 
     @app.get("/api/tables/{table_id}/log")
-    def get_log(table_id: int):
+    def get_log(table_id: int, request: Request):
         """The raw log of a logged table, downloaded from GCS."""
         rec = app.state.index.find(table_id)
         if rec is None or not rec.logged:
             return _error(404, "not_logged", "No log has been collected for this table.", table_id=table_id)
+        tag = _etag("log", table_id)
+        if (cached := _not_modified(request, tag)) is not None:
+            return cached
         try:
             body = app.state.logs.read(rec.gcs_path, table_id)
         except LogNotFound:
             return _error(502, "log_missing", "The log is indexed but could not be found in storage.", table_id=table_id)
-        return Response(content=body, media_type="application/json")
+        return Response(content=body, media_type="application/json", headers={"ETag": tag, "Cache-Control": CACHE_CONTROL})
 
     def _replay(table_id: int, rec: TableRecord, raw: dict) -> JSONResponse:
         try:
@@ -103,16 +137,27 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             return _error(500, "replay_failed", f"The replay could not be built ({type(e).__name__}).", table_id=table_id)
 
     @app.get("/api/tables/{table_id}/replay")
-    def get_replay(table_id: int):
+    def get_replay(table_id: int, request: Request):
         """Replay data (players, maps, cards, one state per step) of a logged table, built from the GCS log."""
         rec = app.state.index.find(table_id)
         if rec is None or not rec.logged:
             return _error(404, "not_logged", "No log has been collected for this table.", table_id=table_id)
-        try:
-            raw = json.loads(app.state.logs.read(rec.gcs_path, table_id))
-        except LogNotFound:
-            return _error(502, "log_missing", "The log is indexed but could not be found in storage.", table_id=table_id)
-        return _replay(table_id, rec, raw)
+        tag = _etag("replay", table_id)
+        if (cached := _not_modified(request, tag)) is not None:                     # the browser has it: nothing is read or built
+            return cached
+        key = (VERSION, rec.gcs_path, table_id, rec.marine_worlds, tuple(sorted((rec.player_maps or {}).items())))
+        body = app.state.replays.get(key)
+        if body is None:
+            try:
+                raw = json.loads(app.state.logs.read(rec.gcs_path, table_id))
+            except LogNotFound:
+                return _error(502, "log_missing", "The log is indexed but could not be found in storage.", table_id=table_id)
+            res = _replay(table_id, rec, raw)
+            if res.status_code != 200:
+                return res
+            body = res.body
+            app.state.replays.put(key, body)
+        return Response(content=body, media_type="application/json", headers={"ETag": tag, "Cache-Control": CACHE_CONTROL})
 
     @app.post("/api/tables/{table_id}/replay")
     async def post_replay(table_id: int, request: Request):

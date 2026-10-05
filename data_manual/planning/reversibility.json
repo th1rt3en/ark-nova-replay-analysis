@@ -1,0 +1,751 @@
+{
+    "sheet": "reversibility",
+    "choices": {
+        "reversible": "Undo / Restart turn may take it back: nothing hidden was revealed and the opponent did not decide anything.",
+        "irreversible": "Cannot be taken back: it reveals hidden information (a draw, a reveal, a search) or the opponent has to answer. Restart turn stops after it.",
+        "depends": "Reversible in some cases only (say when in the note, e.g. display card vs deck card).",
+        "not_applicable": "Not a player decision (an internal step of the engine): nothing to decide."
+    },
+    "items": [
+        {
+            "id": "action:choose_map",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "choose_map",
+            "description": "Pick a map (setup).",
+            "suggested": "reversible",
+            "why": "Before the game.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:draft_pick",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "draft_pick",
+            "description": "Pick a variant in the action card draft (both players at once).",
+            "suggested": "depends",
+            "why": "Can be changed until the other player has chosen; final after.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:draft_keep",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "draft_keep",
+            "description": "Keep 2 of 3 variants.",
+            "suggested": "depends",
+            "why": "Same as draft_pick.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:initial_discard",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "initial_discard",
+            "description": "Discard 4 of the 8 dealt cards.",
+            "suggested": "depends",
+            "why": "Both choose at the same time: reversible until both have chosen.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:choose_action_card",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "choose_action_card",
+            "description": "Choose an action card (and spend X tokens).",
+            "suggested": "reversible",
+            "why": "Nothing hidden is revealed. If the break advance starts a break, see break_start.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:sponsor_side",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "sponsor_side",
+            "description": "Side action of a Sponsors card variant.",
+            "suggested": "reversible",
+            "why": "Cards involved are public (discard, snap from the display).",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:self_clever",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "self_clever",
+            "description": "Self-clever Association: do nothing and act again.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:take_instead",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "take_instead",
+            "description": "A card instead of the donation.",
+            "suggested": "depends",
+            "why": "From the deck: irreversible; from the display: reversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:skip_extra",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "skip_extra",
+            "description": "Decline the optional second action.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:skip_action",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "skip_action",
+            "description": "Put an action card on slot 1 and gain an X token.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:play_animal",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "play_animal",
+            "description": "Play an animal into an enclosure.",
+            "suggested": "reversible",
+            "why": "The card is public; its on-play effects have their own rows.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:place_building",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "place_building",
+            "description": "Place a building.",
+            "suggested": "reversible",
+            "why": "Placement bonuses have their own rows.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:finish_build",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "finish_build",
+            "description": "Stop building.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:take_card",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "take_card",
+            "description": "Take a card from the display or draw from the deck.",
+            "suggested": "depends",
+            "why": "Deck draw irreversible, display reversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:discard_cards",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "discard_cards",
+            "description": "Discard cards from the hand.",
+            "suggested": "reversible",
+            "why": "Public discard pile.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:play_sponsor",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "play_sponsor",
+            "description": "Play a sponsor card.",
+            "suggested": "reversible",
+            "why": "Effects have their own rows.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:sponsor_break",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "sponsor_break",
+            "description": "Sponsors action alternative: advance the break and take money.",
+            "suggested": "depends",
+            "why": "Irreversible if it triggers a break.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:finish_sponsors",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "finish_sponsors",
+            "description": "Stop playing sponsors.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:skip_effect",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "skip_effect",
+            "description": "Decline an optional pending effect.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:association_task",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "association_task",
+            "description": "Perform one association task.",
+            "suggested": "depends",
+            "why": "Tasks that draw (universities with a search) are irreversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:finish_animals",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "finish_animals",
+            "description": "Stop playing animals.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:finish_association",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "finish_association",
+            "description": "Stop performing association tasks.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:donate",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "donate",
+            "description": "Make a donation.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:upgrade_action_card",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "upgrade_action_card",
+            "description": "Flip an action card to level II.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:choose_effect",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "choose_effect",
+            "description": "Resolve one of the pending effects (see the effect rows below).",
+            "suggested": "depends",
+            "why": "As the effect it resolves.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:skip",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "skip",
+            "description": "Decline an optional effect.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "action:confirm_turn",
+            "group": "Player actions (ACTION_SPECS)",
+            "label": "confirm_turn (new)",
+            "description": "End the turn: the display is refilled, a break may start, the turn passes.",
+            "suggested": "irreversible",
+            "why": "The display refill reveals draw pile cards. Everything before it can be undone, nothing after.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:build",
+            "group": "Pending effects (effect kinds)",
+            "label": "build",
+            "description": "Place a (free) building.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:take",
+            "group": "Pending effects (effect kinds)",
+            "label": "take",
+            "description": "Take a card: deck or display.",
+            "suggested": "depends",
+            "why": "Deck: irreversible. Display: reversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:gain",
+            "group": "Pending effects (effect kinds)",
+            "label": "gain",
+            "description": "Money, appeal, conservation, reputation, X tokens.",
+            "suggested": "reversible",
+            "why": "Reputation and conservation thresholds open their own rows.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:reveal",
+            "group": "Pending effects (effect kinds)",
+            "label": "reveal (Hunter, Perception, Scuba Dive)",
+            "description": "Reveal the X topmost cards and keep some.",
+            "suggested": "irreversible",
+            "why": "The cards were revealed to the opponent.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:sell",
+            "group": "Pending effects (effect kinds)",
+            "label": "sell",
+            "description": "Discard cards for money (Sun Bathing).",
+            "suggested": "reversible",
+            "why": "Public discard.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:mark",
+            "group": "Pending effects (effect kinds)",
+            "label": "mark",
+            "description": "Place a mark cube.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:marketing",
+            "group": "Pending effects (effect kinds)",
+            "label": "marketing",
+            "description": "Play a sponsor / bonus through Marketing.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:donation",
+            "group": "Pending effects (effect kinds)",
+            "label": "donation",
+            "description": "Donate.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:digging",
+            "group": "Pending effects (effect kinds)",
+            "label": "digging",
+            "description": "Discard a hand card, draw one (or discard a display card).",
+            "suggested": "depends",
+            "why": "Drawing from the deck: irreversible. Display part: reversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:scavenge",
+            "group": "Pending effects (effect kinds)",
+            "label": "scavenge",
+            "description": "Draw from the discard pile / deck and keep.",
+            "suggested": "irreversible",
+            "why": "Draws from the deck.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:glide",
+            "group": "Pending effects (effect kinds)",
+            "label": "glide / glide_gain",
+            "description": "Glide: discard cards for a gain.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:shark",
+            "group": "Pending effects (effect kinds)",
+            "label": "shark",
+            "description": "Shark Attack: discard sea animals of the display.",
+            "suggested": "depends",
+            "why": "The display refill comes at the end of the turn.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:symbiosis",
+            "group": "Pending effects (effect kinds)",
+            "label": "symbiosis",
+            "description": "Use the ability of another sea animal.",
+            "suggested": "depends",
+            "why": "As the copied ability.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:cut_down",
+            "group": "Pending effects (effect kinds)",
+            "label": "cut_down",
+            "description": "Remove a building.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:trade",
+            "group": "Pending effects (effect kinds)",
+            "label": "trade",
+            "description": "Trade X tokens and money.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:extra_shift",
+            "group": "Pending effects (effect kinds)",
+            "label": "extra_shift",
+            "description": "Take a worker back.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:assertion",
+            "group": "Pending effects (effect kinds)",
+            "label": "assertion",
+            "description": "Take an unused base conservation project.",
+            "suggested": "reversible",
+            "why": "The unused pool is public.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:pilfer",
+            "group": "Pending effects (effect kinds)",
+            "label": "pilfer",
+            "description": "Pilfering: the opponent gives a card or money.",
+            "suggested": "irreversible",
+            "why": "The opponent has to answer.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:venom",
+            "group": "Pending effects (effect kinds)",
+            "label": "venom / constrict",
+            "description": "Give Venom or Constriction tokens.",
+            "suggested": "depends",
+            "why": "Opponent's payment decisions are irreversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:hypnosis",
+            "group": "Pending effects (effect kinds)",
+            "label": "hypnosis",
+            "description": "Use an action card of the opponent.",
+            "suggested": "depends",
+            "why": "Irreversible once the opponent's card does something hidden.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:pay_appeal",
+            "group": "Pending effects (effect kinds)",
+            "label": "pay_appeal",
+            "description": "Pay appeal for an effect.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:jumping",
+            "group": "Pending effects (effect kinds)",
+            "label": "jumping",
+            "description": "Advance the break token and gain money.",
+            "suggested": "depends",
+            "why": "Irreversible if the break starts.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:upgrade",
+            "group": "Pending effects (effect kinds)",
+            "label": "upgrade / threshold2",
+            "description": "Upgrade an action card or hire a worker.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:threshold_bonus",
+            "group": "Pending effects (effect kinds)",
+            "label": "threshold_bonus",
+            "description": "Conservation 5 / 8: pick one of the bonuses.",
+            "suggested": "depends",
+            "why": "As the bonus picked (a draw is irreversible).",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:endgame_discard",
+            "group": "Pending effects (effect kinds)",
+            "label": "endgame_discard",
+            "description": "Conservation 10: discard an endgame card.",
+            "suggested": "depends",
+            "why": "Both players at once: reversible until both have chosen.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:adapt",
+            "group": "Pending effects (effect kinds)",
+            "label": "adapt",
+            "description": "Draw final scoring / base projects and discard.",
+            "suggested": "irreversible",
+            "why": "Draws from the endgame deck.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:break_discard",
+            "group": "Pending effects (effect kinds)",
+            "label": "break_discard",
+            "description": "Discard down to the hand limit in a break.",
+            "suggested": "depends",
+            "why": "Both at once; reversible until both have chosen.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:take_tile",
+            "group": "Pending effects (effect kinds)",
+            "label": "take_tile",
+            "description": "Take a partner zoo / university tile.",
+            "suggested": "reversible",
+            "why": "Replenishing is at the end of the break.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:archaeologist",
+            "group": "Pending effects (effect kinds)",
+            "label": "archaeologist",
+            "description": "Archaeologist.",
+            "suggested": "depends",
+            "why": "Check the rule.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:income",
+            "group": "Pending effects (effect kinds)",
+            "label": "income_appeal / income_kiosk / income_map / income_sponsor",
+            "description": "Choices of the break income.",
+            "suggested": "depends",
+            "why": "Money reversible, cards from the deck irreversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:rep_bonus",
+            "group": "Pending effects (effect kinds)",
+            "label": "rep_bonus",
+            "description": "Reputation track bonus.",
+            "suggested": "depends",
+            "why": "A card to take: see take.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:store",
+            "group": "Pending effects (effect kinds)",
+            "label": "store",
+            "description": "Store a card (map 11).",
+            "suggested": "reversible",
+            "why": "Nobody else learns anything but a count.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:move_in",
+            "group": "Pending effects (effect kinds)",
+            "label": "move_in / continent / multiplier",
+            "description": "Map specific moves (map 9, map 4).",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:wave",
+            "group": "Pending effects (effect kinds)",
+            "label": "wave",
+            "description": "Remove the first display card and replenish.",
+            "suggested": "irreversible",
+            "why": "The replenish reveals a draw pile card.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:release",
+            "group": "Pending effects (effect kinds)",
+            "label": "release",
+            "description": "Release an animal for a project.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:project_bonus",
+            "group": "Pending effects (effect kinds)",
+            "label": "project_bonus / tutor / reef",
+            "description": "Conservation project rewards.",
+            "suggested": "depends",
+            "why": "Tutor (search) is irreversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:waza",
+            "group": "Pending effects (effect kinds)",
+            "label": "waza",
+            "description": "Take the first animal of a size from the deck.",
+            "suggested": "irreversible",
+            "why": "Search of the draw pile.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:reposition",
+            "group": "Pending effects (effect kinds)",
+            "label": "reposition",
+            "description": "Remove up to 3 buildings and place them again.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:boost",
+            "group": "Pending effects (effect kinds)",
+            "label": "boost / slot1",
+            "description": "Move an action card to slot 1 or 5.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:enlarge",
+            "group": "Pending effects (effect kinds)",
+            "label": "enlarge",
+            "description": "Enlarge an enclosure.",
+            "suggested": "reversible",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:expedition",
+            "group": "Pending effects (effect kinds)",
+            "label": "expedition",
+            "description": "Send a person away or Scuba Dive 3.",
+            "suggested": "depends",
+            "why": "Scuba Dive reveals cards: irreversible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:ability_draw",
+            "group": "Pending effects (effect kinds)",
+            "label": "ability (Sprint, Monkey Gang, Scavenging, ...)",
+            "description": "Deferred abilities that draw.",
+            "suggested": "irreversible",
+            "why": "They draw from the deck.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "effect:search_discard",
+            "group": "Pending effects (effect kinds)",
+            "label": "search_discard",
+            "description": "Take a card from the discard pile.",
+            "suggested": "reversible",
+            "why": "The pile is public.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "step:display_refill",
+            "group": "Engine steps (no decision)",
+            "label": "Display refill",
+            "description": "At the end of the turn.",
+            "suggested": "not_applicable",
+            "why": "Part of confirm_turn.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "step:break_start",
+            "group": "Engine steps (no decision)",
+            "label": "Break starts",
+            "description": "The break token reaches the end: income, discards, refill.",
+            "suggested": "irreversible",
+            "why": "The game moves on for both players.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "step:shuffle",
+            "group": "Engine steps (no decision)",
+            "label": "Shuffle / reshuffle",
+            "description": "A deck is shuffled.",
+            "suggested": "irreversible",
+            "why": "Reveals nothing but cannot be undone.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "step:final_scoring",
+            "group": "Engine steps (no decision)",
+            "label": "Final scoring",
+            "description": "",
+            "suggested": "not_applicable",
+            "why": "",
+            "decision": null,
+            "note": ""
+        }
+    ]
+}

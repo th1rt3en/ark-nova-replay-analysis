@@ -103,7 +103,7 @@ def test_engine_agrees_with_the_log_turn_by_turn():
     # differences) are listed by scripts/engine_summary.py
     # (the harness also checks the turns with takeBonus / break income cards / placement bonus cards / the Commercial Harbor: 6.5k turns
     # checked, ~340 known problems, see scripts/engine_coverage.py; this is a ratchet, lower it when the problems are fixed)
-    assert len(problems) <= 65, problems[:3]
+    assert len(problems) <= 30, problems[:3]
     assert checked >= 12100
 
 

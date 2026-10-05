@@ -53,6 +53,7 @@
   }
   function showPreview(src) { const p = $('preview'); p.src = src; p.hidden = false; }
   function hidePreview() { $('preview').hidden = true; }
+  document.addEventListener('DOMContentLoaded', () => { const pv = $('preview'); if (pv) pv.addEventListener('click', hidePreview); });       // (on touch screens a tap closes the preview)
   function textFace(key, c) {
     const t = el('div', 'txt');
     t.append(el('b', '', title(c.name)), el('span', '', key + (c.type && c.type !== 'unknown' ? ' · ' + c.type : '')));
@@ -111,7 +112,7 @@
     // what a placement bonus pentagon shows on top of the yellow base (r5c14); the number is drawn as text
     'bonus:reputation': 'r4c9', 'bonus:money': 'r11c8', 'bonus:xtoken': 'r3c2', 'bonus:take-in-range-or-deck': 'r6c13', 'bonus:Clever': 'r6c6',
     'bonus:bonus-sponsor': 'r7c6', 'bonus:sponsor-person-card': 'r7c6', 'bonus:Digging': 'r9c13', 'bonus:Determination': 'r6c7', 'bonus:cut-down': 'r4c1', 'bonus:bonus-scoring-cards': 'r6c4', 'bonus:Fac': 'r10c2', 'bonus:Partner-Zoo': 'r10c14', 'bonus:Multiplier': 'r6c8',
-    'bonus:Worker': 'r5c13', 'bonus:Pouch': 'r7c11', 'bonus:kiosk': 'r7c3', 'bonus:upgrade-card': 'r10c5',
+    'bonus:Worker': 'r5c13', 'bonus:Scavenging': 'r4c10', 'bonus:Mark': 'r3c3', 'bonus:Pouch': 'r7c11', 'bonus:kiosk': 'r7c3', 'bonus:upgrade-card': 'r10c5',
     'bonus:continent': 'r9c12', 'bonus:shark-attack': 'r5c1', 'bonus:wave': 'r11c14', 'bonus:store': 'r5c2', 'bonus:conceal': 'r5c5',
   };
   // BGA's names of the icons (scripts/name_icons.py): the placement bonus of each type shows the icon of the same name
@@ -191,6 +192,10 @@
       iconBox(ICON_IDS.pentagon, cx, cy, 80);
       if (bn.type === 'adapt') { iconBox('r10c15', cx - 14, cy + 3, 36); iconBox('r10c16', cx + 15, cy + 3, 36); }      // two endgame card icons side by side
       else if (bn.type === 'money') moneyTile(s, cx, cy + 3, 48);
+      else if (bn.type === 'Scavenging' && icon && bn.value > 1) {                 // Scavenging 3: the number to the left of the icon, overlapping it a little
+        iconBox(icon, cx + 9, cy + 3, 44);
+        put('text', { x: cx - 15, y: cy + 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
+      }
       else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)
       if (bn.type === 'appeal' && !icon) put('text', { x: cx, y: cy + 6, class: 'bonus-label' }, '★');      // a bonus nobody has identified yet is just the empty pentagon
       if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
@@ -447,15 +452,25 @@
     // locked workers
     add('rect', { x: 14, y: 14, width: 148, height: 92, rx: 14, fill: '#f4a3a3', stroke: '#222', 'stroke-width': 3 });
     const locked = new Set(p.tokens.filter((t) => t.type === 'worker' && /^supply_\d$/.test(t.location)).map((t) => +t.location.slice(7)));
-    const lockbox = add('g', { class: 'lockbox' });          // hovering the box lifts the last worker to show the conservation bonus of the 4th worker under it
+    const lockbox = add('g', { class: 'lockbox' });          // hovering the box lifts all the workers to show what unlocks under them (conservation of the 4th worker; T1: reputation of the first two)
     const lbAdd = (tag, attrs) => { const e = svg(tag, attrs); lockbox.append(e); return e; };
     [1, 2, 3].forEach((k, i) => {
       const cx = 40 + i * 48;     // slots 18..62, 66..110, 114..158 stay inside the box (x 14..162)
       lbAdd('rect', { x: cx - 22, y: 26, width: 44, height: 70, rx: 8, fill: '#f9c9c9' });
       if (k === 3) conservationBonus(lockbox, cx, 72, 38, (map.association_bonuses || {}).last_worker, '4th worker: ' + (map.association_bonuses || {}).last_worker + ' conservation');
+      else if (map.id === 'T1') {                          // T1: the first and the second worker also give 1 reputation, shown under the worker
+        const id = ICON_IDS.reputation, [w0, h0] = iconSizes[id] || [38, 38], h = 38, w = w0 * h / h0;
+        const g = svg('g', { class: 'consbonus' });
+        g.append(svg('image', { href: iconUrl(id), x: cx - w / 2, y: 72 - h / 2, width: w, height: h }));
+        const t = svg('text', { x: cx, y: 72 + h * 0.18, class: 'cons-number', style: 'font-size:' + (h * 0.5).toFixed(1) + 'px' });
+        t.textContent = '1';
+        g.append(t);
+        const tt = svg('title'); tt.textContent = 'Worker ' + k + ': 1 reputation'; g.append(tt);
+        lockbox.append(g);
+      }
       if (!locked.has(k)) return;
       const w = 38, h = w * 277 / 282;                     // BGA's worker meeple of the player's colour
-      const img = lbAdd('image', { href: workerUrl(seat), x: cx - w / 2, y: 61 - h / 2, width: w, height: h, class: k === 3 ? 'lift' : '' });
+      const img = lbAdd('image', { href: workerUrl(seat), x: cx - w / 2, y: 61 - h / 2, width: w, height: h, class: 'lift' });
       const tip = svg('title');
       tip.textContent = 'Worker ' + k + ' (locked)';
       img.append(tip);
@@ -571,7 +586,7 @@
       if (!y || !id) return null;
       // the token moves from the association board to its slot: scaled so that its visible part (without the transparent edge of the picture) fills the slot
       const [w0, h0] = iconSizes[id] || [190, 152];
-      const [bx, by, bw, bh] = kind === 'partner' ? [5, 4, 179, 142] : id === 'r7c14' ? [1, 1, 119, 84] : [7, 6, 119, 84];       // the drawn part of the picture (no transparent edge / shadow)
+      const [bx, by, bw, bh] = kind === 'partner' ? [5, 4, 179, 142] : w0 === 121 ? [1, 1, 119, 84] : [7, 6, 119, 84];       // (the category universities and the generic one are 121 px wide pictures, the others 137)       // the drawn part of the picture (no transparent edge / shadow)
       const [slotW, slotH] = SLOT_SIZE[kind];
       const kx = slotW / bw, ky = kind === 'partner' ? kx : slotH / bh;               // a university is a little flatter than its slot: stretched to fill it
       const w = w0 * kx, h = h0 * ky;
@@ -729,10 +744,60 @@
     self_clever: 'Do nothing (Self-clever)', skip_extra: 'No second action', sponsor_side: 'Sponsors side action', animals_single: 'Play a single animal', choose_slot: 'Choose a slot',
     choose_bonus: 'Choose a bonus', upgrade_action_card: 'Upgrade an action card',
   };
+  // The action card draft: each player is offered variants of the action cards (full card pictures) and selects the ones to keep; the replay shows what the
+  // players were offered and what they chose (a green frame with a check mark). Both players choose at the same time, so both groups are shown.
+  function draftCardUrl(v) { const m = /^([a-z]+)(\d)$/.exec(v); return m ? '/action_cards/' + m[1] + '_' + m[2] + '_1.webp' : ''; }
+  function draftBar(bar, d) {
+    const groups = [];
+    for (const seat of [0, 1]) {
+      const offers = d.offers[seat] || [];
+      if (!offers.length) continue;
+      const keeping = d.stage === 'keep' || d.stage === 'done';
+      const chosen = keeping ? (d.kept[seat] || []) : (d.picked[seat] || []).slice(-1);
+      const need = keeping ? 2 : 1;
+      const group = el('div', 'draftgroup');
+      const who = el('span', 'who', replay.players[seat].name);
+      who.style.color = seatColor(seat);
+      const head = el('div', 'drafthead');
+      head.append(who, el('b', '', need === 1 ? ' must select the action card you want to keep' : ' must select the 2 action cards you want to keep'));
+      const row = el('div', 'draftcards');
+      if (d.stage === 'pick2' && (d.picked[seat] || []).length) {          // the second pick: the card picked in the first round stays in a green zone to the left
+        const zone = el('div', 'draftkept');
+        zone.title = 'Picked in the first round';
+        const v = d.picked[seat][0];
+        const card = el('div', 'draftcard picked');
+        const img = el('img'); img.src = draftCardUrl(v); img.alt = v;
+        card.append(img, el('span', 'draftcheck', '✓'));
+        card.addEventListener('mouseenter', () => showPreview(draftCardUrl(v)));
+        card.addEventListener('mouseleave', hidePreview);
+        zone.append(card);
+        row.append(zone);
+      }
+      for (const v of offers) {
+        const card = el('div', 'draftcard' + (chosen.includes(v) ? ' picked' : ' passed'));
+        const img = el('img'); img.src = draftCardUrl(v); img.alt = v; img.loading = 'lazy';
+        card.append(img);
+        if (chosen.includes(v)) card.append(el('span', 'draftcheck', '✓'));
+        if (d.auto && d.auto[seat] === v) card.title = 'Added at random: the three variants were of one action card';
+        card.addEventListener('mouseenter', () => showPreview(draftCardUrl(v)));
+        card.addEventListener('mouseleave', hidePreview);
+        row.append(card);
+      }
+      group.append(head, row);
+      groups.push(group);
+    }
+    if (!groups.length) return false;
+    bar.hidden = false;
+    bar.classList.add('draftbar');
+    bar.append(...groups);
+    return true;
+  }
   function actionBar(st) {
     const bar = $('actionbar');
     bar.replaceChildren();
+    bar.classList.remove('draftbar');
     const cur = replay.steps[step], o = cur.options;
+    if (st.phase === 'setup' && st.draft && st.draft.stage !== 'done' && draftBar(bar, st.draft)) return;       // the action card draft at the start of the game
     // the step that puts the action card back on slot 1 ends the turn (the state already passes it on): the player has to confirm it. In the replay the buttons
     // are only shown, greyed out; in the game Confirm passes the turn, Undo takes back the last effect that can be taken back, Restart turn all of them
     const before = step > 0 ? replay.steps[step - 1].state : null;
@@ -914,11 +979,11 @@
     if (e.kind === 'take' || e.kind === 'build') return null;                      // shown as the deck button / the pieces
     const b = el('span', 'abtn deckbtn');
     const src = e.source && /^[ASPF]\d{3}$/.test(e.source) ? cardName(e.source) : '';
-    b.title = (EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
+    b.title = (e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
     if (e.kind === 'gain') {
       b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
     } else {
-      b.append(el('b', '', EFFECT_TEXT[e.kind] || e.kind.replace(/_/g, ' ')));
+      b.append(el('b', '', e.name || EFFECT_TEXT[e.kind] || e.kind.replace(/_/g, ' ')));
     }
     return b;
   }
@@ -967,7 +1032,15 @@
     if (effectsOnly) bar.append(who);
     else bar.append(who, el('b', '', ' ' + (PROMPT_TEXT[o.prompt] || 'must decide (' + o.prompt + ')')));
     let shown = 0;
+    const label = replay.steps[step].label || '';
+    const drawn = /draw .* for (perception|hunter|scuba dive) effect/i.test(label);          // the cards of a reveal-and-keep effect have been drawn: the player now chooses
     for (const e of o.effects || []) {                          // every effect the player can resolve has its own button (in any order); automatic gains have none
+      if (e.kind === 'reveal' && drawn) {
+        const n = e.n || 1;
+        bar.append(el('b', '', ' must choose ' + n + ' card' + (n === 1 ? '' : 's') + ' to keep'));
+        shown++;
+        continue;
+      }
       const b = effectButton(e);
       if (b) { bar.append(b); shown++; }
     }
@@ -982,7 +1055,7 @@
       bar.append(b);
     }
     if (!Object.keys(o.kinds).length) bar.append(el('span', 'abtn gen off', 'nothing to choose'));
-    if (effectsOnly && !bar.querySelector('.abtn')) bar.hidden = true;                // only automatic gains are pending: nothing for the player to do
+    if (effectsOnly && !bar.querySelector('.abtn') && !shown) bar.hidden = true;                // only automatic gains are pending: nothing for the player to do
   }
 
   // the cards of the display a player can reach at this reputation (engine cards_action.reputation_range)
@@ -1121,17 +1194,22 @@
       document.body.append(box);
     }
     const st = replay.steps[step].state;
-    const keys = openedPile === 'discard' ? st.main_discard.slice().reverse() : st.endgame_deck.slice().sort();      // the newest discard first; the endgame deck has no known order
+    const keys = openedPile === 'discard' ? st.main_discard.slice().reverse() : openedPile === 'deck' ? st.main_deck.slice() : st.endgame_deck.slice().sort();      // the newest discard first; the draw pile top first; the endgame deck is shown unordered
     const win = el('div', 'pilewin');
     const head = el('div', 'pilehead');
-    head.append(el('h2', '', (openedPile === 'discard' ? 'Discard pile' : 'Endgame cards left (unordered)') + ' - ' + keys.length + ' card' + (keys.length === 1 ? '' : 's')));
+    head.append(el('h2', '', (openedPile === 'discard' ? 'Discard pile' : openedPile === 'deck' ? 'Draw pile, top first' : 'Endgame cards left (unordered)') + ' - ' + keys.length + ' card' + (keys.length === 1 ? '' : 's')));
     const x = el('button', 'pileclose', '✕');
     x.type = 'button'; x.title = 'Close (Escape)'; x.setAttribute('aria-label', 'Close');
     x.onclick = closePile;
     head.append(x);
     const grid = el('div', 'cards pilegrid');
     if (!keys.length) grid.append(el('span', 'empty', 'no cards'));
-    for (const k of keys) grid.append(card(k));
+    const known = openedPile === 'deck' ? st.main_deck_known || 0 : 0;
+    keys.forEach((k, i) => {
+      if (openedPile === 'deck' && i === 0 && known > 0) grid.append(el('div', 'pilenote', 'The order of these ' + known + ' cards is real: the log shows them being drawn later'));
+      if (openedPile === 'deck' && i === known) grid.append(el('div', 'pilenote guess', 'The log never shows the order of the other ' + (keys.length - known) + ' cards: this order is a random guess'));
+      grid.append(card(k));
+    });
     win.append(head, grid);
     box.replaceChildren(win);
     box.hidden = false;
@@ -1203,14 +1281,20 @@
     const brk = el('div', 'breaktrack');
     brk.title = 'Break track';
     const bi = el('img', 'icon'); bi.src = iconUrl('r3c14'); bi.alt = 'Break'; bi.height = 40;
-    brk.append(flash('break', st.break_position, el('b', '', st.break_position + ' / 9')), bi);
+    const rnd = flash('round', st.round, el('span', 'roundno', 'Round ' + st.round));
+    rnd.title = 'Round ' + st.round + ': a new round starts when a break ends';
+    brk.append(flash('break', st.break_position, el('b', '', st.break_position + ' / 9')), bi, rnd);
     top.append(brk);
     const counts = el('div', 'deckcounts');
     const discardBtn = flash('discard', st.main_discard_size, discardIcon(st.main_discard_size));
     discardBtn.classList.add('pilebtn');
     discardBtn.title = 'Discard pile: click to list its cards';
     discardBtn.onclick = () => openPile('discard');
-    counts.append(flash('deck', st.main_deck_size, deckIcon(st.main_deck_size)), discardBtn);
+    const deckBtn = flash('deck', st.main_deck_size, deckIcon(st.main_deck_size));
+    deckBtn.classList.add('pilebtn');
+    deckBtn.title = 'Draw pile: click to list the cards that are left (in no particular order)';
+    deckBtn.onclick = () => openPile('deck');
+    counts.append(deckBtn, discardBtn);
     const eg = el('span', 'dc');
     eg.title = 'Endgame cards left';
     const ei = el('img', 'icon'); ei.src = iconUrl('r10c15'); ei.alt = 'Endgame cards'; ei.height = 32;
@@ -1340,6 +1424,42 @@
     return box;
   }
 
+  // A log line with the icons the log names written between < >: <SEARCH-HERBIVORE>, <XTOKEN>, <MONEY:5> (with an amount), <APPEAL:1>, <AMERICAS>, <BIRD> ...
+  // Species searches and the other named icons come from BGA's icon sheet (names.json), continents and animal categories are the round badges.
+  const BADGE = { AFRICA: 'Africa', AMERICAS: 'Americas', ASIA: 'Asia', AUSTRALIA: 'Australia', EUROPE: 'Europe', BIRD: 'Bird', HERBIVORE: 'Herbivore', PREDATOR: 'Predator',
+                  PRIMATE: 'Primate', REPTILE: 'Reptile', SEAANIMAL: 'SeaAnimal' };
+  const WITH_AMOUNT = new Set(['MONEY', 'APPEAL', 'REPUTATION', 'CONSERVATION']);           // the amount is printed over the icon, like on the tracker
+  function labelIcon(name, amount) {
+    let src = null;
+    if (BADGE[name]) src = '/badges/' + BADGE[name] + '.webp';
+    else {
+      const key = name.startsWith('SEARCH-') ? 'search-' + name.slice(7).toLowerCase().replace('seaanimal', 'sea-animal') : name.toLowerCase();
+      if (iconNames[key]) src = iconUrl(iconNames[key]);
+    }
+    if (!src) return null;
+    const img = el('img', 'icon labelicon' + (name === 'MONEY' ? ' labelmoney' : ''));
+    img.src = src; img.alt = name.toLowerCase(); img.title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
+    if (amount && WITH_AMOUNT.has(name)) {
+      const box = el('span', 'labelamount');
+      box.append(img, el('b', '', amount));
+      return box;
+    }
+    return amount ? [img, document.createTextNode(amount)] : img;
+  }
+  function labelNode(text) {
+    const span = el('span', '');
+    let last = 0;
+    for (const m of text.matchAll(/<([A-Z][A-Z-]*)(?::(\d+))?>/g)) {
+      const icon = labelIcon(m[1], m[2]);
+      if (!icon) continue;
+      span.append(document.createTextNode(text.slice(last, m.index)));
+      span.append(...(Array.isArray(icon) ? icon : [icon]));
+      last = m.index + m[0].length;
+    }
+    span.append(document.createTextNode(text.slice(last)));
+    return span;
+  }
+
   const ENGINE_MARK = { engine: ['✓', 'Played by the rules engine; it agrees with the log'], mismatch: ['≠', 'The engine played this turn but ended in a different state than the log (shown: log state)'],
                         illegal: ['!', 'A logged action is not legal for the engine (shown: log state)'], skipped: ['–', 'Not supported by the engine yet (shown: log state)'], log: ['', ''] };
   function engineBadge(eng) {
@@ -1356,7 +1476,7 @@
     const s = replay.steps[step], st = s.state;
     const cur = $('current');
     cur.replaceChildren();
-    cur.textContent = s.label || '(state update)';
+    cur.append(labelNode(s.label || '(state update)'));
     const eg = engineBadge(s.engine);
     cur.append(' ', eg);
     if (s.engine && s.engine.detail && s.engine.source === 'log') cur.append(el('div', 'engine-detail', 'Engine: ' + s.engine.detail));
@@ -1376,6 +1496,7 @@
     else if (li.offsetTop + li.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = li.offsetTop + li.offsetHeight - list.clientHeight;
     history.replaceState(null, '', '#' + step);
     fitAside();
+    fitDisplay();
     updateTimeline();
     if (openedPile) renderPile();
     window.scrollTo(scrollX, scrollY);
@@ -1384,10 +1505,16 @@
   // Fit the right column (break track, both player trackers, move list) into the window: the aside gets the free height, the trackers are
   // scaled down (CSS zoom) when they would not leave room for the list, and the list scrolls inside its box.
   let naturalTop = null;
+  const DRAWER_QUERY = '(max-width: 1100px), (max-height: 920px)';          // (the same as in the stylesheet)
   function fitAside() {
     const aside = document.querySelector('aside'), side = $('side'), bar = document.querySelector('.bar');
     if (!aside || !side) return;
-    if (!window.matchMedia('(min-width: 1101px)').matches) { aside.style.height = ''; side.style.zoom = ''; return; }
+    if (window.matchMedia(DRAWER_QUERY).matches) {          // narrow or short screens: the column is a drawer on the right (see setupDrawer), below the top bar
+      aside.style.height = ''; side.style.zoom = ''; aside.style.top = bar.offsetHeight + 'px';
+      const t = $('asideToggle'); if (t) t.style.top = (bar.offsetHeight + 12) + 'px';
+      return;
+    }
+    aside.style.top = bar.offsetHeight + 8 + 'px';
     const top = bar.offsetHeight + 8;
     aside.style.top = top + 'px';
     if (naturalTop === null) naturalTop = aside.getBoundingClientRect().top + window.scrollY;      // where the column sits at the top of the page
@@ -1405,7 +1532,45 @@
       aside.style.height = (need * zoom + MIN_LIST + 40) + 'px';
     }
   }
-  window.addEventListener('resize', fitAside);
+  // Display (folders + reputation track) and the association zone share a row: the association zone keeps at least ASSOC_MIN px, the display is scaled to what
+  // is left (at most 10% bigger than its natural size), so on a small screen both stay visible instead of the association zone shrinking away.
+  const ASSOC_MIN = 460, DISPLAY_MAX = 1.1, DISPLAY_MIN = 0.4, SIDE_BY_SIDE_MIN = 0.78;
+  function fitDisplay() {
+    const box = document.querySelector('.displaybox'), shared = $('shared');
+    if (!box || !shared) return;
+    const narrow = window.matchMedia('(max-width: 1100px)').matches;          // narrow screens: always stacked (the stylesheet wraps them), the display fills the width
+    box.style.zoom = 1;
+    const natural = box.getBoundingClientRect().width;
+    const gap = parseFloat(getComputedStyle(shared).columnGap) || 16;
+    const room = shared.clientWidth - ASSOC_MIN - gap;
+    const fit = room / natural;
+    // when side by side would make the display smaller than SIDE_BY_SIDE_MIN of its size the association zone goes under it (and the display uses the full width)
+    const stacked = narrow || fit < SIDE_BY_SIDE_MIN;
+    shared.classList.toggle('stacked', stacked);
+    box.style.zoom = Math.max(DISPLAY_MIN, Math.min(DISPLAY_MAX, stacked ? shared.clientWidth / natural : fit));
+  }
+  // Narrow screens: the player / round trackers and the move list slide in from the right edge; a tab on the edge brings them in and out
+  function setupDrawer() {
+    const aside = document.querySelector('aside');
+    if (!aside || $('asideToggle')) return;
+    const btn = el('button', 'asidetoggle');
+    btn.id = 'asideToggle'; btn.type = 'button';
+    const apply = (open) => {
+      aside.classList.toggle('open', open);
+      btn.classList.toggle('open', open);
+      btn.textContent = open ? '▶' : '◀';
+      btn.title = open ? 'Hide the trackers and moves' : 'Show the trackers and moves';
+      btn.setAttribute('aria-expanded', String(open));
+      btn.setAttribute('aria-label', btn.title);
+      try { localStorage.setItem('asideOpen', open ? '1' : '0'); } catch (e) { /* private window */ }
+    };
+    btn.onclick = () => apply(!aside.classList.contains('open'));
+    document.body.append(btn);
+    let saved = false;
+    try { saved = localStorage.getItem('asideOpen') === '1'; } catch (e) { /* private window */ }
+    apply(saved);
+  }
+  window.addEventListener('resize', () => { fitAside(); fitDisplay(); });
 
   // ---- autoplay: one step a second at 1x ------------------------------------------------------------------------
   let timer = null, speed = 1;
@@ -1471,11 +1636,12 @@
         : prev && s.state.turn > prev.turn && s.state.active_player !== prev.active_player ? prev.active_player : s.state.active_player;
       const li = el('li', 'seat' + actor);
       li.style.borderLeftColor = seatColor(actor);
-      li.append(el('span', 'n', i), el('span', '', s.label || '…'), engineBadge(s.engine));
+      li.append(el('span', 'n', i), labelNode(s.label || '…'), engineBadge(s.engine));
       li.onclick = () => { go(i); };
       list.append(li);
     });
     buildTimeline();
+    setupDrawer();
     $('first').onclick = () => { go(0); };
     $('prev').onclick = () => { go(step - 1); };
     $('next').onclick = () => { go(step + 1); };

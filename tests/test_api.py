@@ -212,7 +212,7 @@ def test_replay_endpoints_build_steps_from_a_log():
         body = r.json()
         assert len(body["players"]) == 2 and len(body["maps"]) == 2 and body["steps"]
         state = body["steps"][-1]["state"]
-        assert "main_deck" not in state and state["main_deck_size"] >= 0
+        assert state["main_deck_size"] == len(state["main_deck"]) and "seed" not in state and "rng" not in state          # (the draw pile is listed for the pile popup; the seed is not)
         assert all(k in body["cards"] for k in state["display"] if k)
         assert all("cells" in b for p in state["players"] for b in p["buildings"])
     assert c.post(f"/api/tables/{table_id}/replay", content=b"[]").status_code == 422

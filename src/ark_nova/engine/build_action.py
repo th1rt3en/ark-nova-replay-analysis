@@ -111,7 +111,7 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
             around = {n for c in cells for n in neighbours(c) if n not in cells}
             if not overbuild and sum(bd.terrain.get(n) == "rock" and n not in occupied for n in around) < rules.get("rock", 0):
                 continue
-            if not overbuild and sum(bd.terrain.get(n) == "water" and n not in occupied for n in around) < rules.get("water", 0):
+            if not overbuild and sum(bd.terrain.get(n) == "water" and occupied.get(n, "underwater-tunnel") == "underwater-tunnel" for n in around) < rules.get("water", 0):
                 continue
             if sum(c in bd.border for c in cells) < rules.get("border", 0):
                 continue

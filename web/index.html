@@ -6,17 +6,33 @@
 <title>Ark Nova Replay</title>
 <link rel="stylesheet" href="/style.css">
 </head>
-<body>
+<body class="landing">
 <h1>Ark Nova Replay</h1>
-<p class="muted">Step through a finished 2-player Ark Nova game and fork it at any point to play out an alternative line.</p>
-<form id="f">
-  <input type="text" id="q" placeholder="Table id or table url" autocomplete="off" autofocus required
-         aria-label="BGA table id or url">
-  <button id="go">Open</button>
-</form>
-<p class="muted">Paste a BGA table id (<code>924000095</code>) or a table url
-  (<code>https://boardgamearena.com/table?table=924000095</code>).</p>
-<div id="msg" role="status" hidden></div>
+<p class="muted">Step through a finished 2-player Ark Nova game, and soon play it out yourself.</p>
+<div class="modes">
+  <section class="mode" aria-labelledby="m-replay">
+    <h2 id="m-replay">Replay</h2>
+    <p class="muted">Step through a finished 2-player game move by move, and fork it at any point to play out an alternative line.</p>
+    <form id="f">
+      <input type="text" id="q" placeholder="Table id or table url" autocomplete="off" autofocus required
+             aria-label="BGA table id or url">
+      <button id="go">Open</button>
+    </form>
+    <p class="muted small">Paste a BGA table id (<code>924000095</code>) or a table url
+      (<code>https://boardgamearena.com/table?table=924000095</code>).</p>
+    <div id="msg" role="status" hidden></div>
+  </section>
+  <section class="mode unavailable" aria-labelledby="m-sandbox" aria-disabled="true">
+    <h2 id="m-sandbox">Sandbox mode <span class="badge">Coming soon</span></h2>
+    <p class="muted">Set up any position yourself and play both sides to try out a line or test a rule.</p>
+    <button type="button" disabled>Not available yet</button>
+  </section>
+  <section class="mode unavailable" aria-labelledby="m-custom" aria-disabled="true">
+    <h2 id="m-custom">Custom game mode <span class="badge">Coming soon</span></h2>
+    <p class="muted">Start a new game with your own choice of map, expansions and options.</p>
+    <button type="button" disabled>Not available yet</button>
+  </section>
+</div>
 <script>
 const msg = document.getElementById('msg');
 function show(text, kind) { msg.textContent = text; msg.className = kind; msg.hidden = false; }

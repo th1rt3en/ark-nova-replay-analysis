@@ -20,3 +20,17 @@ ul.errors { margin: .5rem 0 0; padding-left: 1.2rem; }
   border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { #msg.loading::before { animation-duration: 3s; } }
+
+/* landing page: three modes */
+body.landing { max-width: 64rem; }
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; margin-top: 1.5rem; align-items: stretch; }
+.mode { display: flex; flex-direction: column; gap: .5rem; padding: 1rem 1.1rem 1.1rem; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--fg) 3%, transparent); }
+.mode h2 { margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.mode p { margin: 0; }
+.mode form { margin: .5rem 0 0; }
+.small { font-size: .85rem; }
+.mode.unavailable { opacity: .65; border-style: dashed; background: transparent; }
+.mode.unavailable h2 { color: var(--muted); }
+.mode.unavailable button { margin-top: auto; align-self: flex-start; background: transparent; color: var(--muted); border-color: var(--border); cursor: not-allowed; }
+.mode.unavailable button:disabled { opacity: 1; cursor: not-allowed; }
+.badge { font-size: .7rem; font-weight: 600; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }

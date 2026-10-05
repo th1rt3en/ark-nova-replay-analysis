@@ -16,7 +16,7 @@ from ark_nova.engine.actions import Action
 from ark_nova.engine.icons import card_icons, icon_counts
 from ark_nova.engine.rng import Rng
 
-KINDS = ("digging", "scavenge", "glide", "glide_gain", "shark", "symbiosis", "cut_down", "trade", "extra_shift", "assertion", "pilfer", "venom", "constrict", "gain", "ability", "hypnosis", "mark", "marketing", "pay_appeal")
+KINDS = ("digging", "scavenge", "glide", "glide_gain", "shark", "symbiosis", "cut_down", "trade", "extra_shift", "assertion", "pilfer", "venom", "constrict", "gain", "ability", "hypnosis", "mark", "marketing", "pay_appeal", "jumping")
 SIMPLE = {"Pack", "Petting Zoo Animal", "Iconic Animal", "Sprint", "Jumping", "Inventive", "Inventive: Bear", "Inventive: Primary", "Full-throated",
           "Helpful", "Posturing", "Peacocking", "Pouch", "Digging", "Scavenging", "Glide", "Shark Attack", "Symbiosis", "Cut Down", "Trade",
           "Extra Shift", "Assertion", "Dominance", "Resistance", "Adapt", "Scuba Dive X", "Monkey Gang", "Sea Animal Magnet", "Sponsor Magnet",
@@ -122,9 +122,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         return [{"kind": "constrict", "source": key, "optional": True}]
     elif name == "Sprint":
         _draw(state, seat, int(value))
-    elif name == "Jumping":
-        g.advance_break(state, seat, int(value))
-        g._gain(state, seat, money=int(value))
+    elif name == "Jumping":                                       # an effect of its own (the player resolves it): the break token moves X spaces and X money
+        return [{"kind": "jumping", "source": key, "n": int(value), "optional": False}]
     elif name == "Inventive":                            # (an effect of its own: a Trade of the same Reef activation may use the token first)
         return [{"kind": "gain", "source": key, "res": "xtoken", "n": 1, "optional": False}]
     elif name == "Inventive: Bear":
@@ -253,6 +252,8 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     k = e["kind"]
     if k == "gain":
         return [Action(seat, "choose_effect", {"index": i, "apply": "gain", "res": e["res"]})]
+    if k == "jumping":
+        return [Action(seat, "choose_effect", {"index": i, "apply": "jumping"})]
     if k in ("venom", "constrict"):
         return [Action(seat, "choose_effect", {"index": i, "apply": k})]
     if k == "hypnosis":
@@ -377,6 +378,9 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             loc = association.token_location(e["cube"])
             p.tokens.remove(next(t for t in p.tokens if t.location == loc))
         state.prompt.args["pending"][i + 1:i + 1] = g.play_sponsor_outside_action(state, action.player, card)
+    elif k == "jumping":
+        g.advance_break(state, action.player, e["n"])
+        g._gain(state, action.player, money=e["n"])
     elif k == "venom":
         venom.give_venom(state, action.player, e["n"])
     elif k == "constrict":

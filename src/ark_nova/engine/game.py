@@ -12,7 +12,7 @@ from itertools import combinations
 
 from ark_nova import data
 from ark_nova.data import map_quirks
-from ark_nova.engine import map_rules, breaks, endgame, icons, marks, sponsor_variants, venom, animals_action, association, bonuses, build_action, card_programs, cards_action, effects, sponsors_action, tracks
+from ark_nova.engine import draft, map_rules, breaks, endgame, icons, marks, sponsor_variants, venom, animals_action, association, bonuses, build_action, card_programs, cards_action, effects, sponsors_action, tracks
 from ark_nova.engine.board import board, neighbours
 from ark_nova.engine.actions import Action
 from ark_nova.engine.cards import search_deck
@@ -92,8 +92,17 @@ def initial_state(config: GameConfig, seed: SeedSpec) -> GameState:
 
 
 def start_game(config: GameConfig, seed: SeedSpec) -> GameState:
-    """Initial deal (seat order: the first player gets the top cards), map start effects, then wait for the initial discards."""
+    """A new game: the action card draft first when `config.draft_action_cards` (the deal follows it), else the initial deal at once."""
     state = initial_state(config, seed)
+    if config.draft_action_cards:
+        draft.begin(state)
+        return state
+    deal_initial(state)
+    return state
+
+
+def deal_initial(state: GameState) -> None:
+    """Initial deal (seat order: the first player gets the top cards), map start effects, then wait for the initial discards."""
     for p in state.players:
         p.hand = [state.main_deck.pop(0) for _ in range(HAND_DEAL)]
         p.endgame_hand = [state.endgame_deck.pop(0) for _ in range(ENDGAME_DEAL)]
@@ -106,7 +115,6 @@ def start_game(config: GameConfig, seed: SeedSpec) -> GameState:
         p.initial_offer = list(p.hand)
     state.phase = Phase.SETUP
     state.prompt = Prompt(kind="initial_discard", player=0, args={"count": INITIAL_DISCARD})
-    return state
 
 
 def harbor_ready(state: GameState, seat: int) -> bool:
@@ -145,12 +153,16 @@ def legal_actions(state: GameState) -> list[Action]:
     if state.prompt is not None and state.phase in (Phase.TURN, Phase.FINAL_TURNS):
         for p in state.players:
             acts = acts + bonuses.token_actions(state, p)
+            if p.stored and bonuses._token_window(state, p):
+                acts = acts + [Action(p.seat, "unstore", {"card": c}) for c in dict.fromkeys(p.stored)]
             if harbor_ready(state, p.seat):
                 acts = acts + [Action(p.seat, "harbor_sell", {"card": c}) for c in dict.fromkeys(p.hand)]
     return acts
 
 
 def _prompt_actions(state: GameState) -> list[Action]:
+    if state.phase is Phase.SETUP and state.draft is not None and state.draft["stage"] != "done":
+        return draft.legal(state)
     if state.phase is Phase.SETUP:
         return [Action(p.seat, "initial_discard", {"cards": list(c)})
                 for p in state.players if p.initial_offer
@@ -270,6 +282,12 @@ def _covers_terrain(bd, t: str, x: int, y: int, k: int) -> bool:
 def apply(state: GameState, action: Action) -> GameState:
     """Returns a new state. Raises IllegalAction for an illegal action and NotImplementedError for rules not written yet."""
     new = copy.deepcopy(state)
+    if new.phase is Phase.SETUP and action.kind in ("draft_pick", "draft_keep"):
+        try:
+            draft.apply(new, action)
+        except draft.DraftError as ex:
+            raise IllegalAction(str(ex)) from None
+        return new
     if new.phase is Phase.SETUP and action.kind == "initial_discard":
         _initial_discard(new, action)
         return new
@@ -278,6 +296,13 @@ def apply(state: GameState, action: Action) -> GameState:
         return new
     if action.kind == "harbor_sell":                     # a free action of the zoo map, possible at any time of the player's own turn
         _harbor_sell(new, action)
+        return new
+    if action.kind == "unstore":                         # map 11 (Caves): a stored card goes back into the hand, a free action during the player's own turn
+        p = new.players[action.player]
+        if action.args.get("card") not in p.stored or not bonuses._token_window(new, p):
+            raise IllegalAction("that card cannot be taken out of the storage now")
+        p.stored.remove(action.args["card"])
+        p.hand.append(action.args["card"])
         return new
     pr = new.prompt
     if pr is not None and pr.kind == "effects" and action.player != pr.player and any(e.get("player") == action.player for e in pr.args["pending"]):
@@ -301,6 +326,7 @@ def _choose_action_card(state: GameState, action: Action) -> None:
     p = state.players[action.player]
     for q in state.players:
         q.flags.pop("turn_window", None)
+        q.flags.pop("post_break", None)
     args = state.prompt.args
     spend = int(action.args.get("spend", 0))
     hypnosis = bool(action.args.get("hypnosis"))               # Hypnosis: an action card of the other player at strength 1-3
@@ -501,6 +527,18 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
         state.current_action.setdefault("after", []).append({"kind": "slot1", "source": "bonus", "optional": True})
 
 
+def hydrologist_geologist(state: GameState, seat: int, cells) -> None:
+    """Hydrologist / Geologist: 1 money for every space of a building just placed that is next to a water / rock space. A water / rock space that a
+    building of an earlier turn covers is gone, except under an underwater tunnel (a building put back by Reconstruction pays too)."""
+    p = state.players[seat]
+    bd = board(p.map_id)
+    for sponsor, terrain in (("S241", "water"), ("S242", "rock")):
+        if sponsor in p.sponsors:
+            now = p.flags.get("built_now", [])
+            covered = {c for b in p.buildings if b.id not in now and b.type != "underwater-tunnel" for c in build_action.footprint(b.type, b.x, b.y, b.rotation)}
+            _gain(state, seat, money=sum(any(bd.terrain.get(n) == terrain and n not in covered for n in neighbours(c)) for c in cells))
+
+
 def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, double: bool = False) -> None:
     """A building goes on the map (paid or free is decided by the caller): placement bonuses (twice with `double`), pavilion appeal,
     the Landscape Gardener's X token, the +7 for covering the whole map."""
@@ -515,6 +553,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     areas_before = map_rules.quarters_done(p)
     first_aquarium = t in ("small-aquarium", "large-aquarium") and not any(b.type in ("small-aquarium", "large-aquarium") for b in p.buildings)
     p.buildings.append(Building(id=max([b.id for b in p.buildings], default=0) + 1, type=t, x=x, y=y, rotation=k))
+    p.flags.setdefault("built_now", []).append(p.buildings[-1].id)          # (Hydrologist / Geologist: spaces covered in this turn still count)
     if t in ("reptile-house", "large-bird-aviary") or first_aquarium:      # animals played before may move into the new enclosure
         bonuses.defer(state, {"kind": "move_in", "building": [x, y], "optional": True, "player": seat})
     for b in gains:
@@ -526,9 +565,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     if "S221" in p.sponsors and "S280" not in p.sponsors:               # Archeologist: every border space with a bonus that is gained gives one more free placement bonus of the player's choice
         for _ in range(sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) * (2 if double else 1)):
             bonuses.defer(state, {"kind": "archaeologist", "source": "S221", "optional": False, "player": seat})
-    for sponsor, terrain in (("S241", "water"), ("S242", "rock")):         # Hydrologist / Geologist: money for covered spaces next to water / rock
-        if sponsor in p.sponsors:
-            _gain(state, seat, money=sum(any(bd.terrain.get(n) == terrain for n in neighbours(c)) for c in cells))
+    hydrologist_geologist(state, seat, cells)
     for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: a completely covered area pays its bonus at once
         map_rules.quarter_bonus(state, seat, name)
     if t in build_action.AQUARIUMS:                                     # an aquarium is a water icon played into the zoo (Aquarium sponsor: 2 appeal)
@@ -591,16 +628,18 @@ def play_sponsor_outside_action(state: GameState, seat: int, k: str) -> list:
     p.hand.remove(k)
     p.sponsors.append(k)
     _put_sponsor_tokens(state, p, k)
-    if state.current_action is not None and state.current_action.get("type") == "break":      # played during the break (a placement bonus of the income): its income is paid at once
-        inc = breaks.sponsor_income(state, p, only=[k])
-        _gain(state, seat, money=inc["money"], x_tokens=inc["xtoken"], appeal=inc["appeal"], conservation=inc["conservation"])
+    in_break = (state.current_action is not None and (state.current_action.get("type") == "break" or (state.current_action.get("type") == "window" and p.flags.get("post_break")))
+                and k in breaks.INCOME_SPONSORS)
     own = sponsors_action.own_gain(k)
     printed = card_programs.PRINTED_OVERRIDE[k] if k in card_programs.PRINTED_OVERRIDE else {"appeal": card.get("appeal") or 0, "reputation": card.get("reputation") or 0,
                                                       "conservation": card.get("conservationPoint") or 0}
     _gain(state, seat, money=own.get("money", 0), x_tokens=own.get("xtoken", 0),
           appeal=printed.get("appeal", 0) + own.get("appeal", 0), reputation=printed.get("reputation", 0) + own.get("reputation", 0),
           conservation=printed.get("conservation", 0) + own.get("conservation", 0))
-    return effects.on_play(state, seat, k)
+    out = effects.on_play(state, seat, k)
+    if in_break:                                                  # played during the break (a placement bonus of the income): its income is an effect to resolve right now
+        out = out + [{"kind": "income_sponsor", "source": k, "optional": False, "player": seat}]
+    return out
 
 
 def _after_sponsor(state: GameState, seat: int) -> None:
@@ -886,6 +925,7 @@ def _skip_extra(state: GameState, action: Action) -> None:
 
 def _finish_turn(state: GameState, seat: int) -> None:
     state.players[seat].flags.pop("t1_used", None)
+    state.players[seat].flags.pop("built_now", None)
     venom.finish_turn(state, seat)
     _refill_display(state)
     state.turn += 1

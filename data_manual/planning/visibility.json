@@ -1,0 +1,562 @@
+{
+    "sheet": "visibility",
+    "choices": {
+        "public": "Everyone sees it: both players and spectators.",
+        "owner_count": "Only the owner sees the contents; the opponent and spectators see how many there are.",
+        "owner_only": "Only the owner sees it; the opponent does not even see a count.",
+        "server_only": "Never leaves the server: not even the owner sees it.",
+        "until_revealed": "Secret until an event reveals it (name the event in the note)."
+    },
+    "items": [
+        {
+            "id": "game.config",
+            "group": "Game",
+            "label": "Configuration",
+            "description": "Maps, Marine Worlds, player names, which base projects were drawn.",
+            "suggested": "public",
+            "why": "Everyone needs it to read the board.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.seed",
+            "group": "Game",
+            "label": "Seed",
+            "description": "The random seed and the known deck prefix: they decide the deck order.",
+            "suggested": "server_only",
+            "why": "Whoever has the seed can compute every future draw.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.rng",
+            "group": "Game",
+            "label": "Random generator state",
+            "description": "The 64 bit state of the engine's random generator.",
+            "suggested": "server_only",
+            "why": "Same reason as the seed.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.counters",
+            "group": "Game",
+            "label": "Phase, turn, active player, round, break track",
+            "description": "Where the game is.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.main_deck",
+            "group": "Game",
+            "label": "Draw pile: contents and order",
+            "description": "The cards still in the draw pile, top first.",
+            "suggested": "server_only",
+            "why": "The order is the secret.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.main_deck_count",
+            "group": "Game",
+            "label": "Draw pile: number of cards",
+            "description": "How many cards are left.",
+            "suggested": "public",
+            "why": "Physical game: the pile is visible.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.main_discard",
+            "group": "Game",
+            "label": "Discard pile",
+            "description": "All discarded cards and their order.",
+            "suggested": "public",
+            "why": "Face up in the physical game.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.endgame_deck",
+            "group": "Game",
+            "label": "Endgame (final scoring) deck: contents",
+            "description": "The final scoring cards not yet dealt.",
+            "suggested": "server_only",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.endgame_deck_count",
+            "group": "Game",
+            "label": "Endgame deck: number of cards",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.endgame_discard",
+            "group": "Game",
+            "label": "Discarded endgame cards",
+            "description": "Final scoring cards discarded at conservation 10 or at the start.",
+            "suggested": "until_revealed",
+            "why": "Face down in the physical game; may be revealed at the end.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.display",
+            "group": "Game",
+            "label": "Display (the 6 folders)",
+            "description": "The cards in reach.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.base_projects",
+            "group": "Game",
+            "label": "Base conservation projects in play",
+            "description": "The 3 base projects of the game.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.base_projects_unused",
+            "group": "Game",
+            "label": "Base projects not in play",
+            "description": "The other base projects (Assertion fetches one of them).",
+            "suggested": "public",
+            "why": "Players can work them out anyway.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.projects_in_play",
+            "group": "Game",
+            "label": "Conservation projects played during the game",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.board_tokens",
+            "group": "Game",
+            "label": "Association board",
+            "description": "Partner zoo and university tiles on offer.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.conservation_options",
+            "group": "Game",
+            "label": "Conservation 5 / 8 reward options",
+            "description": "The random bonuses still on offer.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.current_action",
+            "group": "Game",
+            "label": "Action in progress",
+            "description": "Which action card, strength and variant the active player is using.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.pending",
+            "group": "Game",
+            "label": "Pending effects and the open decision",
+            "description": "What the active player still has to resolve (kinds, not the secret contents).",
+            "suggested": "public",
+            "why": "Opponents see 'X must resolve Perception 2'; the revealed cards follow the reveal rules below.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.draft",
+            "group": "Game",
+            "label": "Action card draft",
+            "description": "The variants each player is offered and picks.",
+            "suggested": "until_revealed",
+            "why": "Both choose at the same time: nothing is shown until both have chosen, or until the draft is over.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.result",
+            "group": "Game",
+            "label": "Result",
+            "description": "Final scores, winner, how the game ended.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "game.end_state",
+            "group": "Game",
+            "label": "End of game trigger, final turns",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.counters",
+            "group": "Each player",
+            "label": "Money, appeal, conservation, reputation, X tokens",
+            "description": "The tracks.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.action_cards",
+            "group": "Each player",
+            "label": "Action cards (order, variants, levels, tokens)",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.hand",
+            "group": "Each player",
+            "label": "Hand (animals, sponsors, projects)",
+            "description": "",
+            "suggested": "owner_count",
+            "why": "The opponent knows how many.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.endgame_hand",
+            "group": "Each player",
+            "label": "Endgame cards in hand",
+            "description": "The player's final scoring cards.",
+            "suggested": "owner_count",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.initial_offer",
+            "group": "Each player",
+            "label": "Initial offer (the 8 dealt cards)",
+            "description": "Before the first discard.",
+            "suggested": "owner_only",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.animals",
+            "group": "Each player",
+            "label": "Animals in the zoo",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.sponsors",
+            "group": "Each player",
+            "label": "Sponsors in the zoo",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.released",
+            "group": "Each player",
+            "label": "Released animals",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.stored",
+            "group": "Each player",
+            "label": "Cards stored (map 11 notepad)",
+            "description": "",
+            "suggested": "owner_count",
+            "why": "Face down.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.pouched",
+            "group": "Each player",
+            "label": "Cards pouched under an animal / cards under another card",
+            "description": "",
+            "suggested": "owner_count",
+            "why": "Face down in the physical game.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.rescued",
+            "group": "Each player",
+            "label": "Rescued animals",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.buildings",
+            "group": "Each player",
+            "label": "Buildings and their animals",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.tokens",
+            "group": "Each player",
+            "label": "Workers, partner zoos, universities, project tokens, marks",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.flags",
+            "group": "Each player",
+            "label": "Internal flags (once per turn markers, map counters)",
+            "description": "Engine bookkeeping.",
+            "suggested": "public",
+            "why": "Check the individual flags before sending them.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "player.icons",
+            "group": "Each player",
+            "label": "Icon counters",
+            "description": "Derived from the zoo.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.draw_deck",
+            "group": "Events that move hidden cards",
+            "label": "Cards drawn from the draw pile",
+            "description": "Draw, Sprint, Cards action, income.",
+            "suggested": "owner_count",
+            "why": "The owner sees the cards, the opponent how many.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.take_display",
+            "group": "Events that move hidden cards",
+            "label": "Cards taken from the display",
+            "description": "Take in range, snap.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.reveal",
+            "group": "Events that move hidden cards",
+            "label": "Reveal the X topmost cards (Hunter, Perception, Scuba Dive)",
+            "description": "All the revealed cards.",
+            "suggested": "public",
+            "why": "'Reveal' means shown to everybody.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.reveal_kept",
+            "group": "Events that move hidden cards",
+            "label": "The card kept after a reveal",
+            "description": "Goes to the hand of the player.",
+            "suggested": "public",
+            "why": "It was shown to all.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.digging",
+            "group": "Events that move hidden cards",
+            "label": "Digging",
+            "description": "Discard one hand card, draw one.",
+            "suggested": "owner_count",
+            "why": "The discarded card is public (discard pile), the new one is not.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.scavenging",
+            "group": "Events that move hidden cards",
+            "label": "Scavenging",
+            "description": "Discard from the discard pile and draw.",
+            "suggested": "owner_count",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.search",
+            "group": "Events that move hidden cards",
+            "label": "Search effects (university, Assertion, Waza, management plans)",
+            "description": "The card found in the draw pile.",
+            "suggested": "public",
+            "why": "The found card is shown; the rest of the pile is not.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.monkey_gang",
+            "group": "Events that move hidden cards",
+            "label": "Monkey Gang",
+            "description": "Look at cards and tuck them under the draw pile.",
+            "suggested": "owner_only",
+            "why": "Contents and order of the tucked cards stay secret.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.pilfering",
+            "group": "Events that move hidden cards",
+            "label": "Pilfering",
+            "description": "A card moves between the hands.",
+            "suggested": "until_revealed",
+            "why": "Name who sees which card in the note.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.discard_hand",
+            "group": "Events that move hidden cards",
+            "label": "Discard from the hand (break limit, Cards action, effects)",
+            "description": "",
+            "suggested": "public",
+            "why": "It goes to the face up discard pile.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.initial_discard",
+            "group": "Events that move hidden cards",
+            "label": "Initial discard (4 of 8)",
+            "description": "",
+            "suggested": "public",
+            "why": "Goes to the discard pile.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.endgame_discard",
+            "group": "Events that move hidden cards",
+            "label": "Endgame card discarded (conservation 10)",
+            "description": "Which final scoring card was discarded.",
+            "suggested": "owner_only",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.play_card",
+            "group": "Events that move hidden cards",
+            "label": "Playing an animal / sponsor / project",
+            "description": "The card leaves the hand and becomes public.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.final_scoring",
+            "group": "Events that move hidden cards",
+            "label": "Final scoring cards at the end",
+            "description": "",
+            "suggested": "public",
+            "why": "Revealed to score them.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.draft_pick",
+            "group": "Events that move hidden cards",
+            "label": "Draft picks and offers",
+            "description": "",
+            "suggested": "until_revealed",
+            "why": "See game.draft.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.display_refill",
+            "group": "Events that move hidden cards",
+            "label": "Display refill",
+            "description": "New cards come from the draw pile onto the display.",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.log_text",
+            "group": "Events that move hidden cards",
+            "label": "Move log text",
+            "description": "The sentence for each move ('X plays Y').",
+            "suggested": "owner_count",
+            "why": "Written per viewer: card names only where the viewer may see them.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.legal_actions",
+            "group": "Events that move hidden cards",
+            "label": "The opponent's legal actions",
+            "description": "",
+            "suggested": "server_only",
+            "why": "They would reveal the hand.",
+            "decision": null,
+            "note": ""
+        },
+        {
+            "id": "event.clocks",
+            "group": "Events that move hidden cards",
+            "label": "Clocks, connection status",
+            "description": "",
+            "suggested": "public",
+            "why": "",
+            "decision": null,
+            "note": ""
+        }
+    ]
+}

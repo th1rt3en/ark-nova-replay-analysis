@@ -169,7 +169,7 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             defer(state, {"kind": "build", "source": "bonus", "type": "size-2", "rules": {}, "optional": income, "double": False, "player": seat})      # (a player may pass on the income enclosure)
         elif k == "take-in-range-or-deck":               # v cards (3 for the conservation bonus)
             for _ in range(int(v)):
-                defer(state, {"kind": "take", "source": "bonus", "optional": p.map_id == "T1", "player": seat})      # (T1: the card space of the notepad may be passed, some logs show no card)
+                defer(state, {"kind": "take", "source": "bonus", "optional": False, "player": seat})
         elif k == "bonus-icon":                          # a token that adds one icon of your choice when you support a project (spent then)
             ids = [t.id for q in state.players for t in q.tokens]
             state.players[seat].tokens.append(Token(max(ids, default=0) + 1, "bonus-icon", "notepad"))
@@ -274,7 +274,7 @@ def upgradable(p) -> list:
     return [c.type for c in p.action_cards if c.level < 2]
 
 
-KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map")
+KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor")
 
 
 def open_break_prompt(state, seat: int, pending: list, resume: dict) -> None:
@@ -322,6 +322,8 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_map"}))
     elif k == "income_appeal":                          # the break income of the appeal track
         out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_appeal"}))
+    elif k == "income_sponsor":                         # the break income of one sponsor
+        out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_sponsor", "source": e["source"]}))
     elif k == "income_kiosk":                           # the break income of the kiosks (a building of the income may change it)
         out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_kiosk"}))
     elif k == "archaeologist":                          # a placement bonus anywhere on the map that no building covers yet
@@ -421,6 +423,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         _g()._gain(state, p.seat, money=breaks.kiosk_income(p))
     elif k == "income_appeal":
         _g()._gain(state, p.seat, money=tracks_module().income_from_appeal(p.appeal))
+    elif k == "income_sponsor":
+        from ark_nova.engine import breaks
+        inc = breaks.sponsor_income(state, p, only=[e["source"]])
+        _g()._gain(state, p.seat, money=inc["money"], x_tokens=inc["xtoken"], appeal=inc["appeal"], conservation=inc["conservation"])
     elif k == "archaeologist":
         cell = tuple(a.get("cell") or ())
         if cell not in archaeologist_cells(state, p):

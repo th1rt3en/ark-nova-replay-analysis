@@ -62,7 +62,7 @@ def project(state: GameState) -> dict:
                      "tokens": sorted((t.type, t.location) for t in p.tokens if _tracked_token(t))} for p in state.players],
         "display": list(state.display), "main_deck": list(state.main_deck), "main_discard": sorted(state.main_discard),
         "projects_in_play": list(state.projects_in_play),
-        "break_position": state.break_position, "active_player": state.active_player, "turn": state.turn,
+        "break_position": state.break_position, "round": state.round, "active_player": state.active_player, "turn": state.turn,
     }
 
 
@@ -177,7 +177,7 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
                         if any(b and b["type"].replace("-", "").lower() == {"extrashift": "worker"}.get(str(typ).replace("-", "").lower(), str(typ).replace("-", "").lower())
                                for b in bd.bonuses[c])), None)
             if cell is None:
-                return state
+                break                                      # (not a bonus of a hex: the choice at conservation 5 / 8 is logged the same way)
             state = ap(state, Action(seat, "choose_effect", {"index": i, "cell": list(cell)}))
     return state
 
@@ -206,6 +206,23 @@ def _fit_income_slots(state: GameState, events: list, seat_of: dict) -> None:
                     used |= 1 << s["index"]
                     break
         p.flags["bonus_used"] = used
+
+
+def _needs_a_token(state: GameState, act: Action) -> bool:
+    """The animal fails a condition that nothing but the ignore-conditions token (or Ignore Animals) would cover: not the Research Institute of map 6 / 6a, Waza Large,
+    Camouflage."""
+    from ark_nova.engine import animals_action as aa, sponsor_extras
+    p = state.players[act.player]
+    failed = aa.failed_conditions(state, act.player, act.args["card"], state.prompt.args["level"])
+    if not failed:
+        return False
+    if aa.institute_connected(p) and len(failed) == 1:
+        return False
+    if "S263" in p.sponsors and sponsor_extras.size_class(aa.card(act.args["card"])) == "large" and len(failed) == 1:
+        return False
+    if state.current_action is not None and state.current_action.get("camouflage") and len(failed) == 1:
+        return False
+    return True
 
 
 def _plain(act: Action) -> Action:
@@ -389,6 +406,9 @@ def _skip_unneeded(state: GameState, act):
             return Action(e["player"], "choose_effect", {"index": i, "apply": "income_kiosk"})
         if e["kind"] == "income_appeal" and not (act is not None and act.args.get("apply") == "income_appeal"):
             return Action(e["player"], "choose_effect", {"index": i, "apply": "income_appeal"})       # (nothing is logged for an income of 0)
+        if e["kind"] == "income_sponsor" and not (act is not None and act.args.get("apply") == "income_sponsor" and act.args.get("source") == e["source"])                 and not any(x.kind == "choose_effect" and x.args.get("apply") == "income_sponsor" and x.args.get("source") == e["source"] and x.player == e["player"]
+                            for x in getattr(_skip_unneeded, "rest", [])):                          # (a sponsor income that the log names later keeps its place in the order)
+            return Action(e["player"], "choose_effect", {"index": i, "apply": "income_sponsor", "source": e["source"]})
     return _project_effect(state, act)
 
 
@@ -399,6 +419,8 @@ def _project_effect(state: GameState, act=None):
             continue                                       # (BGA pays the reputation of a new project last, after the upgrades the project's bonus brings)
         if e["kind"] == "gain" and (e["source"][:1] == "P" or e["source"] == "S224"):
             return Action(state.prompt.player, "choose_effect", {"index": i, "apply": "gain", "res": e["res"]})
+        if e["kind"] == "jumping":                                          # the log shows its results (the break token, the money) as lines of their own
+            return Action(state.prompt.player, "choose_effect", {"index": i, "apply": "jumping"})
         if e["kind"] in ("project_bonus", "tutor"):
             return Action(state.prompt.player, "choose_effect", {"index": i, "apply": e["kind"]})
         if e["kind"] == "reef":
@@ -436,8 +458,6 @@ def _mark_extra_building(state: GameState, seat: int, acts: list, events: list) 
     variant = parse_action_type(ch.args["actionCard"]["type"])[1]
     if variant not in EXTRA_TYPE:
         return acts
-    budget = int(ch.args["strength"])
-    placed = [a for a in acts if a.kind == "place_building"]
     out, done = [], False
     for a in acts:
         if a.kind == "place_building" and not done and a.args["type"] == EXTRA_TYPE[variant] and not a.args.get("extra"):
@@ -613,7 +633,7 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
                 rep.skipped["actor differs from the turn marker"] += 1
                 continue
             seat = seat_of[actor]
-            nxt_events = turns[last + 1] if last + 1 < len(turns) else []
+            nxt_events = next((turns[j] for j in range(last + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[j])), [])      # (the next turn with events: BGA leaves empty markers between)
             again = any(e.type == "chooseActionCard" and str(e.args["player_id"]) == actor for e in nxt_events[:6])       # the same player acts again right away
             queued = carry[0] == k and carry[1] is not None and carry[1].prompt is not None and (carry[1].prompt.args.get("carry") or {}).get("extra")      # (the next action is an extra action of another animal, not a notepad bonus)
             plan = turn_actions(events, seat, seat_of, move_of, snaps[k].config.peaceful, again and not queued, extra_follows=again)
@@ -781,6 +801,22 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
                         act = Action(act.player, act.kind, {**act.args, "engineer": True})           # Engineer: the building beyond the strength
                     if act.kind == "place_building" and _plain(act) not in legal_actions(state)                         and Action(act.player, act.kind, {**act.args, "extra": True}) in legal_actions(state):     # Pavilion / Kiosk Build: the additional building
                         act = Action(act.player, act.kind, {**act.args, "extra": True})
+                    if act.kind == "place_building" and act.args.get("extra") and build_checks.get(mv) and Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "extra"}) in legal_actions(state):
+                        # the additional (free) kiosk / pavilion or the ordinary one? Both cost the same at level II and the log does not say: BGA's list of what can still be
+                        # built afterwards shows how much strength is left
+                        want = {t_ for t_, v_ in build_checks[mv][0]["build"]["options"].items() if v_}
+                        plain = Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "extra"})
+
+                        def after(a_):
+                            s2 = apply(state, a_)
+                            return {t_ for t_ in engine_placements(s2)} if s2.prompt is not None and s2.prompt.kind == "build_place" else None
+                        got_extra, got_plain = after(act), after(plain)
+                        if got_extra is not None and got_plain is not None and got_plain == want and got_extra != want:
+                            act = plain
+                    if (act.kind == "play_animal" and state.prompt is not None and state.prompt.kind == "animals_play" and Action(seat, "animals_single", {}) in legal_actions(state)
+                            and not any(e_.type == "discardTokens" and any(m_.get("type") == "bonus-ignore-conditions" for m_ in (e_.args.get("meeples") or [])) for e_ in events)
+                            and _needs_a_token(state, act)):
+                        state = ap(state, Action(seat, "animals_single", {}))            # Ignore Animals instead of the token (the log shows no token used)
                     if act.kind == "play_animal" and _plain(act) not in legal_actions(state) and Action(seat, "animals_single", {}) in legal_actions(state):
                         state = ap(state, Action(seat, "animals_single", {}))            # Ignore Animals: a single animal that ignores a condition
                     if act.args.get("mark") and not any(e["kind"] == "mark" for e in (state.prompt.args.get("pending") or [] if state.prompt is not None else []))                         and not (state.prompt is not None and state.prompt.kind == "effects" and _plain(act) in legal_actions(state)):
@@ -802,12 +838,12 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
                         done_with = next((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pouch" and e.get("source") == "map" and e.get("player") not in (None, act.player)
                                           and not any(x.player == e["player"] and _fits(e, x) for x in acts[ai:])), None)
                         if done_with is None:
-                            auto = next((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] in ("income_kiosk", "income_map", "income_appeal") and e.get("player") not in (None, act.player)
-                                         and not any(x.player == e["player"] and x.kind == "choose_effect" and x.args.get("apply") == e["kind"] for x in acts[ai:])), None)
+                            auto = next((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] in ("income_kiosk", "income_map", "income_appeal", "income_sponsor") and e.get("player") not in (None, act.player)
+                                         and not any(x.player == e["player"] and x.kind == "choose_effect" and x.args.get("apply") == e["kind"] and x.args.get("source") == e.get("source") for x in acts[ai:])), None)
                             if auto is None:
                                 break
                             e = state.prompt.args["pending"][auto]                          # (nothing is logged for an income of 0: the first player's income is over when the other one's goes on)
-                            state = ap(state, Action(e["player"], "choose_effect", {"index": auto, "apply": e["kind"]}))
+                            state = ap(state, Action(e["player"], "choose_effect", {"index": auto, "apply": e["kind"], **({"source": e["source"]} if e["kind"] == "income_sponsor" else {})}))
                             if act.kind == "choose_effect" and "index" in act.args:
                                 act = _normalise(state, Action(act.player, act.kind, {x: y for x, y in act.args.items() if x != "index"}), endsnap)
                             continue
@@ -885,6 +921,8 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
+                        if any(e_.type == "playerConcedeGame" for e_ in events):
+                            raise _Stop
                         rep.illegal.append(f"turn {k}: a mandatory effect is still pending: {state.prompt.args['pending']}")
                         raise _Stop
                     state = ap(state, skip)
@@ -906,6 +944,8 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
+                        if any(e_.type == "playerConcedeGame" for e_ in events):
+                            raise _Stop
                         rep.illegal.append(f"turn {k}: a mandatory effect is still pending: {state.prompt.args['pending']}")
                         raise _Stop
                     state = ap(state, skip)
@@ -920,10 +960,12 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
                     for d_ in (mine, theirs):
                         for pl_ in d_["players"]:
                             pl_["marks"] = []
-                nxt = turns[last + 1] if last + 1 < len(turns) else []
+                nxt = next((turns[j] for j in range(last + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[j])), [])
                 if any(e.type == "chooseActionCard" and str(e.args["player_id"]) == actor for e in nxt[:6]):
                     for d in (mine, theirs):              # the same player acts again (an extra action of an animal, Hypnosis ...): the engine's turn ended, the log's goes on
                         d.pop("active_player"), d.pop("turn")
+                        for f in ("display", "main_deck", "main_discard"):          # (BGA refills the display, with its Wave cards, only when the whole turn is over)
+                            d.pop(f, None)
                     if state.players[seat].flags.get("venom_paid"):       # BGA logs the Venom payment at the end of the whole turn, the engine pays before the first draw
                         mine["players"][seat]["money"] += 2 if mine["players"][seat]["money"] + 2 == theirs["players"][seat]["money"] else 0
                 if state.result is not None:                   # the final scoring is added to the tracks by the engine; the log-built state keeps the tracks as played
@@ -934,7 +976,7 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
                 for e_ in events:
                     if e_.type == "playerConcedeGame" and str(e_.args.get("player_id")) in seat_of:        # the player left in the middle of the break: the rest of their income is not logged
                         for d in (mine, theirs):
-                            for f in ("break_position", "active_player", "turn", "display", "main_deck", "main_discard"):
+                            for f in ("break_position", "active_player", "turn", "round", "display", "main_deck", "main_discard"):
                                 d.pop(f, None)
                             for pl_ in d["players"]:                       # (the game ends in the middle of the break: neither player's remaining income is logged)
                                 for f in ("appeal", "conservation", "x_tokens", "money", "hand", "marks", "tokens", "buildings"):

@@ -65,6 +65,10 @@ def run(state, initiator: int, step: str) -> None:
         g._refill_display(state)                                  # cards snapped as income leave gaps
         endgame.check_trigger(state, [initiator, 1 - initiator], False, 1 - initiator)     # the income can reach 100
         state.break_position = 0
+        state.round += 1                                          # the break is over: the next round starts
+        for q in state.players:
+            q.flags.pop("built_now", None)
+            q.flags["post_break"] = 1                              # (a token used before the next action still belongs to the break in BGA's log: a sponsor played then pays its income)
         state.current_action = None
         state.active_player = 1 - initiator
         from ark_nova.engine.state import Prompt
@@ -151,6 +155,7 @@ def association_building_types():
     return tuple(UNIQUE_SHAPES)
 
 
+INCOME_SPONSORS = {"S209", "S220", "S206", "S274", "S281", "S265", "S257", "S231", "S232", "S233", "S234", "S235"}
 _SPONSORSHIP = {"S231": "Primate", "S232": "Reptile", "S233": "Bird", "S234": "Predator", "S235": "Herbivore"}
 
 
@@ -223,8 +228,9 @@ def _income(state, seat: int) -> None:
             map_rules.quarter_bonus(state, seat, name)
     for b in map_income(state, p):
         bonuses.apply_bonus(state, seat, {b["type"]: b["value"]}, income=True)
-    inc = sponsor_income(state, p)
-    g._gain(state, seat, money=inc["money"], x_tokens=inc["xtoken"], appeal=inc["appeal"], conservation=inc["conservation"])
+    for k in p.sponsors:                                        # every income of a sponsor is an effect of its own, in the order the player likes
+        if k in INCOME_SPONSORS:
+            bonuses.defer(state, {"kind": "income_sponsor", "source": k, "optional": False, "player": seat})
     if "S201" in p.sponsors:                                     # Science Lab: take 1 card from the deck or within the reputation range
         bonuses.defer(state, {"kind": "take", "source": "S201", "optional": False, "player": seat})
 

@@ -19,6 +19,9 @@ class Settings:
     gcs_bucket: str = DEFAULT_GCS_BUCKET  # raw BGA logs, e.g. temp-common-storage
     rate_limit_enabled: bool = False  # hook exists but nothing is limited yet
     rate_limit_per_minute: int = 60
+    cache_mb: int = 256  # memory kept for raw logs and built replays (the rest of what was read stays in files)
+    cache_dir: str = ""  # where the files go; empty = a folder in the temp directory, "off" = no files
+    cache_disk_mb: int = 2048  # the most the files may take (the least recently used go first)
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -28,4 +31,7 @@ class Settings:
             gcs_bucket=os.environ.get("GCS_BUCKET", DEFAULT_GCS_BUCKET),
             rate_limit_enabled=_flag("RATE_LIMIT_ENABLED", False),
             rate_limit_per_minute=int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60")),
+            cache_mb=int(os.environ.get("CACHE_MB", "256")),
+            cache_dir=os.environ.get("CACHE_DIR", ""),
+            cache_disk_mb=int(os.environ.get("CACHE_DISK_MB", "2048")),
         )

@@ -51,6 +51,7 @@ class GameConfig:
     conservation_bonuses: Optional[dict[str, list[dict[str, Any]]]] = None
     map_known: list[bool] = field(default_factory=lambda: [True, True])    # False when a test had to guess the map of a seat
     table_id: int = 0                     # the BGA table (0 = unknown): a few rules were implemented differently by BGA in older tables (data/map_quirks.py)
+    draft_action_cards: bool = False      # a new game: the players draft their action card variants first (engine/draft.py); False = `action_cards` (or the standard cards) are given
     peaceful: bool = False                # the game variant where the hostile effects (Venom, Constriction, Pilfering, Hypnosis) are replaced
 
 
@@ -148,6 +149,7 @@ class GameState:
     turn: int = 0                               # completed turns
     active_player: int = 0
     break_position: int = 0                     # break track marker (max 9 in a 2-player game)
+    round: int = 1                              # starts at 1, +1 at the end of every break
     main_deck: list[str] = field(default_factory=list)          # top first
     main_discard: list[str] = field(default_factory=list)       # any card, incl. base projects discarded after an Assertion
     endgame_deck: list[str] = field(default_factory=list)
@@ -166,6 +168,7 @@ class GameState:
     end_triggered_by: Optional[int] = None
     final_turns: list[int] = field(default_factory=list)       # seats that still have a last turn after the end of the game was triggered
     result: Optional[Result] = None
+    draft: Optional[dict[str, Any]] = None                      # the action card draft of the setup (engine/draft.py); kept after it for the viewer
 
     def to_dict(self) -> dict:
         return to_jsonable(self)
