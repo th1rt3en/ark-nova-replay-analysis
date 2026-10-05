@@ -91,7 +91,7 @@ def _apply_bonuses(p, bonuses) -> None:
         elif k == "appeal":
             p.appeal += v
         elif k == "reputation":
-            p.reputation += v
+            p.reputation = min(15, p.reputation + v)               # (BGA never shows 16: the bonus at 15 replaces the point)
         elif k == "conservation":
             p.conservation += v
         elif k == "xtoken":
@@ -266,6 +266,12 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
         ctx.rep_task = True
     if e.type == "discardTokens":                    # tokens leave the game (the hidden university tile that a player turns over, action card tokens)
         gone = {int(m["id"]) for m in a.get("meeples") or []}
+        if a.get("continent") and a.get("player_id") is not None:        # map 9: "removes <EUROPE> marker from their map" (the markers themselves are not in the log before)
+            from ark_nova.engine.map_rules import CONTINENTS
+            q = ctx.player(a["player_id"])
+            name = str(a["continent"]).strip("<>").capitalize()
+            if name in CONTINENTS:
+                q.flags["m9_removed"] = q.flags.get("m9_removed", 0) | 1 << CONTINENTS.index(name)
         if e.log.startswith("All tokens are removed"):               # the break: every token on the action cards goes
             for q in ctx.state.players:
                 gone |= {t.id for t in q.tokens if t.location.startswith("actionCard_")}
@@ -337,6 +343,8 @@ def h_discard_cards(ctx: _Ctx, e: Event) -> None:
             if k in p.endgame_hand:
                 p.endgame_hand.remove(k)
             s.endgame_discard.append(k)
+            if "(scoring card)" in e.log:                  # the one-time discard at 10 conservation has happened (the Adapt discards are worded differently)
+                s.endgame_discard_done = True
             continue
         if k in p.hand:
             p.hand.remove(k)
@@ -390,6 +398,12 @@ def h_discard_display(ctx: _Ctx, e: Event) -> None:
                 mine = [t for t in q.tokens if t.id in gone or (t.type == "token" and t.location.startswith(k + "_"))]
                 q.flags["supports_gone"] = q.flags.get("supports_gone", 0) + len(mine)         # the supports still count at the end of the game
                 q.tokens = [t for t in q.tokens if t not in mine]
+            s.main_discard.append(k)
+            continue
+        if "expedition" in e.log and e.args.get("player_id") is not None:        # a person sponsor sent away: out of the zoo, its icons go
+            q = s.players[ctx.seat(e.args["player_id"])]
+            if k in q.sponsors:
+                q.sponsors.remove(k)
             s.main_discard.append(k)
             continue
         _remove_from_display(s, k)
@@ -450,7 +464,9 @@ def h_buy_animal(ctx: _Ctx, e: Event) -> None:
     _take_from_source(s, p, k, bool(a.get("fromDisplay")))
     p.animals.append(k)
     p.money = int(a["total"])
-    for b in a.get("buildings") or []:
+    for n, b in enumerate(a.get("buildings") or []):
+        if n and not b["type"].startswith("size-"):
+            break                                        # an aquarium animal spread over several aquariums is kept in the first one
         for mine in p.buildings:
             if mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"]):
                 if mine.type.startswith("size-"):
@@ -503,7 +519,7 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
     s.main_discard.append(k)
     for b in a.get("buildings") or []:                       # the enclosure that was emptied (an animal is not tied to an enclosure)
         for mine in p.buildings:
-            if mine.id == b["id"]:
+            if mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"]):          # (the starting enclosure has an id of its own in the engine)
                 if mine.type.startswith("size-"):
                     mine.animal = None
                 elif k in mine.animals:
@@ -525,10 +541,13 @@ def h_move_animal(ctx: _Ctx, e: Event) -> None:
     p = ctx.player(a["player_id"])
     k = _key(a["card"]["id"])
     freed = {x["id"] for x in a.get("buildings") or []}
+    freed_at = {(x["x"], x["y"]) for x in a.get("buildings") or []}
     for b in p.buildings:
-        if b.id in freed:
+        if b.id in freed or (b.x, b.y) in freed_at:
             b.animal = None
-        if b.id == a["building"]["id"]:
+            if k in b.animals:
+                b.animals.remove(k)                      # the spaces of a special enclosure are free again
+        if b.id == a["building"]["id"] or (b.x, b.y) == (a["building"]["x"], a["building"]["y"]):
             if b.type.startswith("size-"):
                 b.animal = k
             else:                                       # moved into a new special enclosure (reptile house / aviary)
@@ -538,13 +557,21 @@ def h_move_animal(ctx: _Ctx, e: Event) -> None:
 def h_reconstruction_remove(ctx: _Ctx, e: Event) -> None:
     p = ctx.player(e.args["player_id"])
     ids = {b["id"] for b in e.args["buildings"]}
+    removed = getattr(ctx, "removed", None)
+    if removed is None:
+        removed = ctx.removed = {}
+    for b in p.buildings:
+        if b.id in ids:
+            removed[b.id] = b                                      # (the animal of an occupied enclosure goes with it)
     p.buildings = [b for b in p.buildings if b.id not in ids]     # re-placed by the following reconstructionPlaceBack events
 
 
 def h_reconstruction_place_back(ctx: _Ctx, e: Event) -> None:
     b = e.args["building"]
+    old = (getattr(ctx, "removed", None) or {}).pop(b["id"], None)
     ctx.player(e.args["player_id"]).buildings.append(
-        Building(id=b["id"], type=b["type"], x=b["x"], y=b["y"], rotation=b.get("rotation", 0)))
+        Building(id=b["id"], type=b["type"], x=b["x"], y=b["y"], rotation=b.get("rotation", 0),
+                 animal=old.animal if old else None, animals=list(old.animals) if old else []))
 
 
 HANDLERS: dict[str, Callable[[_Ctx, Event], None]] = {
@@ -561,7 +588,7 @@ HANDLERS: dict[str, Callable[[_Ctx, Event], None]] = {
 }
 # events that carry no state change the builder needs
 IGNORED = {"startBreak", "updateBreakDiscardSelection", "enableMultiplier",
-           "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame", "gameStateChangePrivateArg"}
+           "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame", "gameStateChangePrivateArg", "timeJokerUsed"}
 
 
 def _sync(ctx: _Ctx) -> None:

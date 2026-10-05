@@ -22,7 +22,7 @@ from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board, neighbours
 from ark_nova.engine.icons import icon_counts
 
-KINDS = ("waza", "reposition", "boost", "enlarge")
+KINDS = ("waza", "reposition", "boost", "enlarge", "expedition")
 SPECIES = ("Bird", "Predator", "Herbivore", "Primate", "Reptile", "Bear", "Pet", "SeaAnimal")
 CONTINENTS = ("Africa", "Europe", "Asia", "Americas", "Australia")
 WAZA_SMALL, WAZA_LARGE = 1, 2
@@ -109,12 +109,12 @@ def special_on_play(state, seat: int, key: str, total: Counter) -> list:
     return pending
 
 
-def _unique_rules(t: str) -> dict:
+def _unique_rules(t: str, marine_worlds: bool = False) -> dict:
     """The placement rules of the sponsor that brought a unique building (rock / water next to it, ...)."""
     from ark_nova.engine import effects
     for key, (bt, _) in prog.UNIQUE_BUILD.items():
         if bt == t:
-            return effects.build_rules(key)[1]
+            return effects.build_rules(key, marine_worlds)[1]
     return {}
 
 
@@ -146,6 +146,9 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         return [Action(seat, "choose_effect", {"index": i, "waza": w}) for w in ("small", "large")]
     if k == "boost":
         return [Action(seat, "choose_effect", {"index": i, "slot": s}) for s in (1, 5)]
+    if k == "expedition":                                    # Marine Research Expedition: a person away for 1 conservation, or Scuba Dive 3
+        persons = sorted({s for s in p.sponsors if data.cards_by_key()[s].get("type") == "HUMAN"})
+        return [Action(seat, "choose_effect", {"index": i, "send": s}) for s in persons] + [Action(seat, "choose_effect", {"index": i, "scuba": True})]
     if k == "enlarge":
         out = [Action(seat, "choose_effect", {"index": i, "building": [b.x, b.y], "x": x, "y": y, "rotation": r})
                for b in p.buildings for x, y, r in enlarge_options(state, seat, b)]
@@ -169,6 +172,16 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             if key.startswith("A") and size_class(data.cards_by_key()[key]) == a["waza"]:
                 p.hand.append(state.main_deck.pop(j))
                 break
+    elif k == "expedition":
+        if a.get("send"):
+            s = a["send"]
+            if s not in p.sponsors or data.cards_by_key()[s].get("type") != "HUMAN":
+                raise fx.IllegalEffect("send a person sponsor of the zoo away")
+            p.sponsors.remove(s)
+            state.main_discard.append(s)
+            g._gain(state, p.seat, conservation=1)
+        else:                                                    # Scuba Dive 3: the 3 topmost cards, 1 sponsor is kept
+            state.prompt.args["pending"][i + 1:i + 1] = [{"kind": "reveal", "source": e["source"], "x": 3, "filter": "sponsor", "optional": False, "player": p.seat}]
     elif k == "boost":
         j = next(j for j, c in enumerate(p.action_cards) if c.type == e["type"])
         card = p.action_cards.pop(j)
@@ -183,11 +196,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         b.x, b.y, b.rotation = opt
         for c in build_action.footprint(b.type, b.x, b.y, b.rotation):
             if c not in old and "S280" not in p.sponsors:
-                for bon in board(p.map_id).bonuses.get(c, []):
-                    if bon["type"] in ("money", "xtoken", "reputation"):
-                        g._gain(state, action.player, money=bon["value"] if bon["type"] == "money" else 0,
-                                x_tokens=bon["value"] if bon["type"] == "xtoken" else 0,
-                                reputation=bon["value"] if bon["type"] == "reputation" else 0)
+                for bon in board(p.map_id).bonuses.get(c, []):          # (the covered hex pays its placement bonus, a Marketing one included)
+                    g.apply_placement_bonus(state, action.player, bon)
         if b.animal:
             g._gain(state, action.player, appeal=2)
     elif k == "reposition":
@@ -198,6 +208,6 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         p.buildings = [b for b in p.buildings if (b.x, b.y) not in gone]
         for b in held:
             state.prompt.args["pending"].append({
-                "kind": "build", "source": e["source"], "type": b.type, "rules": _unique_rules(b.type), "optional": False, "double": False,
+                "kind": "build", "source": e["source"], "type": b.type, "rules": _unique_rules(b.type, state.config.marine_worlds), "optional": False, "double": False,
                 "placeback": {"id": b.id, "animal": b.animal, "animals": list(b.animals)}})
     fx._done(state, i)

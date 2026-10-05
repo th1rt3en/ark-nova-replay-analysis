@@ -1,6 +1,7 @@
 """Run the differential test on one game and show, for every illegal action, the prompt and the legal actions at that moment:
 python scripts/debug_diff.py GAME [TURN]"""
 import collections
+import os
 import sys
 
 from ark_nova.parser import parse_log
@@ -29,7 +30,7 @@ def main(game: str, turn: str = None) -> None:
                 print("ILLEGAL", x[:300])
                 st, r = ring[-1]
                 pr = st.prompt
-                print("  prompt", pr.kind if pr else None, {k: v for k, v in (pr.args.items() if pr else []) if k != "resume"})
+                print("  break", st.break_position, "x", [q.x_tokens for q in st.players]); print("  prompt", pr.kind if pr else None, {k: v for k, v in (pr.args.items() if pr else []) if k != "resume"})
                 print("  legal", [(a.kind, a.args) for a in r][:10])
             super().append(x)
 
@@ -52,12 +53,14 @@ def main(game: str, turn: str = None) -> None:
             return orig_ta(events, *a, **k)
 
         def ap(state, act):
+            if cur["k"] and os.environ.get("LEGAL"):
+                print("    legal", [(x.kind, x.args) for x in orig(state)][:14])
             if cur["k"]:
-                print("  try", act.kind, act.args)
+                print("  try", act.kind, act.args, "pending", [(e["kind"], e.get("source")) for e in state.prompt.args.get("pending", [])] if state.prompt is not None and state.prompt.kind == "effects" else "")
             out = orig_apply(state, act)
             if cur["k"]:
                 pl = out.players[act.player]
-                print("  apply", act.kind, act.args, "->", out.prompt.kind if out.prompt else None, (pl.money, pl.appeal, pl.reputation, pl.conservation, pl.x_tokens), "display", out.display, "deck", out.main_deck[:2])
+                print("  apply", act.kind, act.args, "->", out.prompt.kind if out.prompt else None, (pl.money, pl.appeal, pl.reputation, pl.conservation, pl.x_tokens), "display", out.display, "deck", out.main_deck[:2], ("ca", {k: v for k, v in (out.current_action or {}).items() if k in ("camouflage", "after")}) if os.environ.get("CA") else "", [(e["kind"], e.get("source")) for e in out.prompt.args.get("pending", [])] if os.environ.get("CA") and out.prompt is not None and out.prompt.kind == "effects" else "")
             return out
 
         d.turn_actions, d.apply = ta, ap

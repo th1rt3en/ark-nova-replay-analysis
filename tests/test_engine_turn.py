@@ -79,7 +79,7 @@ def test_illegal_and_unimplemented():
         apply(s, Action(0, "choose_action_card", {"type": "cards", "spend": 0}))
 
 
-LOGS = sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json")))
+LOGS = [p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p]   # (573904205 is an old log format the parser does not read)
 
 
 @pytest.mark.skipif(not LOGS, reason="log_examples not available")
@@ -87,8 +87,10 @@ def test_engine_agrees_with_the_log_turn_by_turn():
     """Every supported turn of every log: the logged actions are legal and the engine ends in the replay's state."""
     checked = 0
     problems = []
+    from ark_nova.replay.config import _sample_maps
+    known = _sample_maps()
     for path in LOGS:
-        if "800035115" in path:
+        if "800035115" in path or Path(path).stem not in known:       # (logs whose maps the index does not give yet cannot be replayed reliably)
             continue
         parsed = parse_log(path)
         setup, cfg, seed = game_from_log(parsed)
@@ -101,8 +103,8 @@ def test_engine_agrees_with_the_log_turn_by_turn():
     # differences) are listed by scripts/engine_summary.py
     # (the harness also checks the turns with takeBonus / break income cards / placement bonus cards / the Commercial Harbor: 6.5k turns
     # checked, ~340 known problems, see scripts/engine_coverage.py; this is a ratchet, lower it when the problems are fixed)
-    assert len(problems) <= 265, problems[:3]
-    assert checked >= 6800
+    assert len(problems) <= 65, problems[:3]
+    assert checked >= 12100
 
 
 def _build_state(marine_worlds=True, map_id="1"):
@@ -505,8 +507,8 @@ def test_break_hand_limit_board_display_income_and_turn_order():
     assert {a.player for a in discards} == {0, 1} and all(len(a.args["cards"]) in (1, 2) for a in discards)
     s = apply(s, [a for a in discards if a.player == 1][0])
     s = apply(s, [a for a in legal_actions(s) if a.kind == "choose_effect" and a.player == 0][0])
-    while s.prompt.kind == "effects":                                                                 # the appeal incomes are effects of their own
-        s = apply(s, [a for a in legal_actions(s) if a.kind == "choose_effect" and a.args.get("apply") == "income_appeal"][0])
+    while s.prompt.kind == "effects":                                                                 # the appeal / kiosk / map incomes are effects of their own
+        s = apply(s, [a for a in legal_actions(s) if a.kind == "choose_effect" and str(a.args.get("apply", "")).startswith("income_")][0])
     assert s.prompt.kind == "choose_action_card" and s.active_player == 1 and s.break_position == 0
     assert [len(p.hand) for p in s.players] == [3, 3]
     assert all(c not in s.display for c in top) and all(c in s.main_discard for c in top) and len(s.display) == 6

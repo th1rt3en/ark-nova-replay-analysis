@@ -71,6 +71,11 @@ def hire_worker(state, seat: int) -> bool:
         defer(state, {"kind": "upgrade", "player": seat, "optional": False, "source": "third worker (map 11, Caves)"})
     if p.map_id == "T1" and len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_")) in (2, 3):
         _g()._gain(state, seat, reputation=1)                          # map T1: the 1st and the 2nd hired worker give 1 reputation (logs)
+    if p.map_id == "14" and len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_")) in (2, 3, 4):
+        from ark_nova.engine.cards import search_deck               # map 14: every hired worker brings the first person sponsor of the deck (1st, 2nd and last worker bonus)
+        found = search_deck(state.main_deck, ("person", None))
+        if found:
+            p.hand.append(found)
     if len(supply) == 1:
         from ark_nova.engine import association
         _g()._gain(state, seat, conservation=association.map_bonus(p.map_id, "last_worker"))
@@ -90,7 +95,9 @@ def use_token(state, action) -> None:
         raise _g().IllegalAction("that token cannot be used now")
     p.tokens.remove(tok)
     eff = {"kind": kind, "source": tok.type, "optional": True, "player": p.seat}
-    if state.current_action is not None and state.current_action.get("seat") == p.seat and state.prompt is not None and state.prompt.kind == "effects":
+    if state.current_action is not None and state.current_action.get("type") == "break" and state.prompt is not None and state.prompt.kind == "effects":
+        state.prompt.args["pending"].append(eff)               # in the break either player may use a token
+    elif state.current_action is not None and state.current_action.get("seat") == p.seat and state.prompt is not None and state.prompt.kind == "effects":
         state.prompt.args["pending"].append(eff)
     elif state.current_action is not None and state.current_action.get("seat") == p.seat and state.prompt is not None and state.prompt.player == p.seat:
         _fx().open_prompt(state, p.seat, [eff], {"kind": "prompt", "prompt_kind": state.prompt.kind, "args": state.prompt.args})
@@ -105,9 +112,13 @@ def _token_window(state, p) -> bool:
     if state.prompt is None:
         return False
     if state.current_action is not None:
+        if state.current_action.get("type") == "break":
+            return state.prompt.kind == "effects"
         return state.current_action.get("seat") == p.seat and state.prompt.player == p.seat
     if state.prompt.kind == "choose_action_card" and state.prompt.player == p.seat and state.active_player == p.seat:
         return True                                        # the player's turn has begun, no action card chosen yet
+    if state.prompt.kind == "effects" and state.prompt.player == p.seat and state.active_player == p.seat and (state.prompt.args.get("resume") or {}).get("kind") == "end":
+        return True                                        # the effects after the action (Clever, Boost, marks): the token may be used before them
     return bool(p.flags.get("turn_window")) and state.prompt.kind == "choose_action_card"
 
 
@@ -127,6 +138,7 @@ def token_actions(state, p) -> list:
 def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
     """A bonus of the map, the conservation track or a card (`{name: value}` as in the BGA logs and the map data)."""
     g = _g()
+    p = state.players[seat]
     for k, v in bonus.items():
         if k == "money":
             g._gain(state, seat, money=v)
@@ -140,13 +152,24 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             g._gain(state, seat, x_tokens=v)
         elif k == "upgrade-card":
             defer(state, {"kind": "upgrade", "player": seat, "optional": False})
-        elif k in ("add-worker", "Worker"):
+        elif k == "kiosk-pavilion":                      # a free kiosk or pavilion (map 9 continent bonus)
+            defer(state, {"kind": "build", "source": "bonus", "types": ["kiosk", "pavilion"], "type": "kiosk", "rules": {}, "optional": True, "double": False, "player": seat})
+        elif k == "Multiplier":                          # a token on an action card of the player's choice (map 4 hex, the bonus on 16 reputation)
+            defer(state, {"kind": "multiplier", "optional": False, "player": seat})
+        elif k == "sponsor-person-card":                 # map 14: a person sponsor of the hand is played for free (optional)
+            defer(state, {"kind": "marketing", "source": "bonus", "optional": True, "player": seat, "free": True, "person": True})
+        elif k == "store":                               # map 11 (Caves): a card of the hand may go into the storage
+            defer(state, {"kind": "store", "source": "map11", "optional": True, "player": seat})
+        elif k == "add-worker":
             hire_worker(state, seat)
+        elif k == "Worker":                              # a new worker; with all four hired, a worker comes back from the association board (like Extra Shift)
+            if not hire_worker(state, seat):
+                defer(state, {"kind": "extra_shift", "source": "bonus", "optional": False, "player": seat})
         elif k == "size-2":
             defer(state, {"kind": "build", "source": "bonus", "type": "size-2", "rules": {}, "optional": income, "double": False, "player": seat})      # (a player may pass on the income enclosure)
         elif k == "take-in-range-or-deck":               # v cards (3 for the conservation bonus)
             for _ in range(int(v)):
-                defer(state, {"kind": "take", "source": "bonus", "optional": False, "player": seat})
+                defer(state, {"kind": "take", "source": "bonus", "optional": p.map_id == "T1", "player": seat})      # (T1: the card space of the notepad may be passed, some logs show no card)
         elif k == "bonus-icon":                          # a token that adds one icon of your choice when you support a project (spent then)
             ids = [t.id for q in state.players for t in q.tokens]
             state.players[seat].tokens.append(Token(max(ids, default=0) + 1, "bonus-icon", "notepad"))
@@ -158,12 +181,30 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             if state.current_action is None:
                 raise NotImplementedError("Determination outside an action")
             state.current_action["extra"] = {"types": [t for t in animal_abilities.ACTION_TYPES if t != state.current_action["type"]], "optional": False}
+        elif k == "animal-magnet":                       # map 12 (income-less space): every animal of the display goes to the hand, the display is refilled at the end of the turn
+            from ark_nova.engine import marks
+            p = state.players[seat]
+            for j, c in enumerate(state.display):
+                if c and c.startswith("A"):
+                    state.display[j] = None
+                    marks.taken(state, c)
+                    p.hand.append(c)
+        elif k == "continent":                           # map 9 space: one of the remaining continent cubes is unlocked (with its bonus), nothing when all are
+            from ark_nova.engine import map_rules
+            if map_rules.continents_left(state.players[seat]):
+                defer(state, {"kind": "continent", "optional": True, "player": seat})
+        elif k == "Pouch":                               # maps 7 / 7a (income slot): up to v cards of the hand go under the map for appeal
+            for _ in range(int(v)):
+                defer(state, {"kind": "pouch", "source": "map", "optional": True, "player": seat})
         elif k == "cut-down":                            # the Cut Down animal ability (map 13's income slot): an optional effect
             for _ in range(int(v)):
                 defer(state, {"kind": "cut_down", "source": "bonus", "optional": True, "player": seat})
         elif k == "Clever":                              # the notepad's Clever income: any action card may go to slot 1, free (v times)
             for _ in range(int(v)):
-                defer(state, {"kind": "slot1", "source": "bonus", "optional": True, "cost": 0, "player": seat})
+                if state.current_action is not None and state.current_action.get("type") not in ("break", None):      # (the card goes to slot 1 after the action itself)
+                    state.current_action.setdefault("after", []).append({"kind": "slot1", "source": "bonus", "optional": True, "cost": 0})
+                else:
+                    defer(state, {"kind": "slot1", "source": "bonus", "optional": True, "cost": 0, "player": seat})
         elif k == "bonus-sponsor":                       # a Marketing effect at once (optional)
             defer(state, {"kind": "marketing", "source": "bonus", "optional": True, "player": seat})
         elif k in TOKEN_BONUSES:                         # a token for later: Marketing at any time / recall a worker at any time / play an animal ignoring its conditions
@@ -207,11 +248,33 @@ def archaeologist_cells(state, p) -> list:
     return sorted(c for c, l in bd.bonuses.items() if c not in covered and l and all(b and b["type"] != "conceal" for b in l))
 
 
+_MOVE_SPEC = {"reptile-house": "Reptile House", "large-bird-aviary": "Large Bird Aviary", "small-aquarium": "Aquarium", "large-aquarium": "Aquarium"}
+
+
+def move_options(state, p, e) -> list:
+    """[(animal, [x, y] of the enclosure it leaves)]: the animals that may move into the newly built special enclosure, from a standard
+    enclosure (emptied by the release priority) or from another special enclosure (its spaces are free again)."""
+    from ark_nova.engine import animals_action as aa, project_effects as pe
+    nb = next((b for b in p.buildings if [b.x, b.y] == e["building"]), None)
+    if nb is None:
+        return []
+    free = aa.CAPACITY[nb.type] - sum(aa._special_size(a_) for a_ in nb.animals)
+    out = []
+    for key in p.animals:
+        specs = [s for s in aa.card(key).get("specialEnclosures") or [] if s["type"] == _MOVE_SPEC[nb.type]]
+        if key in nb.animals or not specs or free < specs[0]["size"]:
+            continue
+        special = [b for b in p.buildings if key in b.animals]
+        for b in special or pe.release_enclosures(state, p.seat, key, exclude=nb):
+            out.append((key, [b.x, b.y]))
+    return out
+
+
 def upgradable(p) -> list:
     return [c.type for c in p.action_cards if c.level < 2]
 
 
-KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "rep_bonus")
+KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map")
 
 
 def open_break_prompt(state, seat: int, pending: list, resume: dict) -> None:
@@ -236,18 +299,38 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     elif k == "adapt":                                  # the top cards of the endgame deck are drawn, then `n` of the hand are discarded
         pool = sorted(p.endgame_hand + state.endgame_deck[:e.get("draw", e["n"])])
         out += [Action(seat, "choose_effect", {"index": i, "discard": list(c)}) for c in sorted(set(combinations(pool, e["n"])))]
+    elif k == "continent":                              # map 9: remove a continent marker for one of the 5 bonuses
+        from ark_nova.engine import map_rules
+        left = map_rules.continents_left(p)
+        names = [e["continent"]] if e.get("continent") else left
+        out += [Action(seat, "choose_effect", {"index": i, "continent": c, "pick": j}) for c in names if c in left for j in range(len(map_rules.CONTINENT_BONUSES))]
+        out.append(Action(seat, "skip_effect", {"index": i}))
+    elif k == "wave":                                   # a Wave effect (map 14 placement bonus): no choice, resolved in the order the player likes
+        out.append(Action(seat, "choose_effect", {"index": i, "apply": "wave"}))
+    elif k == "multiplier":                             # a Multiplier token on an action card of the player's choice
+        out += [Action(seat, "choose_effect", {"index": i, "multiplier": c.type}) for c in p.action_cards]
+    elif k == "move_in":                                # a new reptile house / bird aviary / first aquarium: animals of the zoo may move in
+        out += [Action(seat, "choose_effect", {"index": i, "move": key, "from": src}) for key, src in move_options(state, p, e)]
+        out.append(Action(seat, "skip_effect", {"index": i}))
+    elif k == "store":                                  # map 11 (Caves): a card of the hand goes into the hidden storage (2 money income each, no hand size)
+        out += [Action(seat, "choose_effect", {"index": i, "store": c}) for c in dict.fromkeys(p.hand)]
+        out.append(Action(seat, "skip_effect", {"index": i}))
     elif k == "rep_bonus":                              # Marine Worlds: the bonus on 16 reputation, instead of the point gained at 15
         out += [Action(seat, "choose_effect", {"index": i, "rep_bonus": j}) for j in range(len(state.conservation_options.get("99", [])))]
         out.append(Action(seat, "skip_effect", {"index": i}))
+    elif k == "income_map":                             # the income of the zoo map (restaurant spaces, stored cards, kiosks of the ice cream parlors)
+        out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_map"}))
     elif k == "income_appeal":                          # the break income of the appeal track
         out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_appeal"}))
+    elif k == "income_kiosk":                           # the break income of the kiosks (a building of the income may change it)
+        out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_kiosk"}))
     elif k == "archaeologist":                          # a placement bonus anywhere on the map that no building covers yet
         out += [Action(seat, "choose_effect", {"index": i, "cell": list(c)}) for c in archaeologist_cells(state, p)]
         if not out:
             out.append(Action(seat, "skip_effect", {"index": i}))
     elif k == "take_tile":
         from ark_nova.engine import association
-        out += [Action(seat, "choose_effect", {"index": i, **o}) for o in association.tile_options(state, p, e["tile"])]
+        out += [Action(seat, "choose_effect", {"index": i, **o}) for o in association.with_categories(state, association.tile_options(state, p, e["tile"]))]
         if not out:
             out.append(Action(seat, "skip_effect", {"index": i}))               # nothing left on the board to take
     elif k == "endgame_discard":
@@ -281,12 +364,61 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if not 0 <= j <= len(opts):
             raise fx.IllegalEffect("no such bonus")
         apply_bonus(state, p.seat, {"money": 5} if j == len(opts) else opts.pop(j))
+    elif k == "continent":
+        from ark_nova.engine import map_rules
+        c, j = a["continent"], int(a["pick"])
+        if c not in map_rules.continents_left(p) or (e.get("continent") and e["continent"] != c) or not 0 <= j < len(map_rules.CONTINENT_BONUSES):
+            raise fx.IllegalEffect("that continent marker cannot be removed")
+        p.flags["m9_removed"] = p.flags.get("m9_removed", 0) | 1 << map_rules.CONTINENTS.index(c)
+        bonus = dict(map_rules.CONTINENT_BONUSES[j])
+        if "Clever" in bonus and state.current_action is not None and state.current_action.get("type") != "break":
+            state.current_action.setdefault("after", []).append({"kind": "slot1", "source": "map9", "optional": True})        # any action card to slot 1 at the end of the action
+        else:
+            apply_bonus(state, p.seat, bonus)
+        if not map_rules.continents_left(p):
+            _g()._gain(state, p.seat, conservation=1)                           # the 5th and last marker
+    elif k == "wave":
+        gone = next((c for c in state.display if c), None)
+        if gone is not None:                                                    # the first card of the display goes (to the owner of its mark, if any) and the display is replenished
+            state.display[state.display.index(gone)] = None
+            from ark_nova.engine import marks
+            marks.discard(state, gone)
+            _g()._refill_display(state)
+    elif k == "multiplier":
+        card = next((c for c in p.action_cards if c.type == a.get("multiplier")), None)
+        if card is None:
+            raise fx.IllegalEffect("no such action card")
+        from ark_nova.engine import animal_abilities
+        animal_abilities.add_multiplier(state, p, card)
+    elif k == "move_in":
+        key, src = a.get("move"), list(a.get("from") or [])
+        if (key, src) not in move_options(state, p, e):
+            raise fx.IllegalEffect("that animal cannot move into the new enclosure")
+        nb = next(b for b in p.buildings if [b.x, b.y] == e["building"])
+        old = next(b for b in p.buildings if [b.x, b.y] == src)
+        if old.type.startswith("size-"):
+            old.animal = None                                   # the standard enclosure is empty again
+        else:
+            old.animals.remove(key)
+        nb.animals.append(key)
+        return                                                  # more animals may follow; the player skips the effect when done
+    elif k == "store":
+        if a["store"] not in p.hand:
+            raise fx.IllegalEffect("that card is not in the hand")
+        p.hand.remove(a["store"])
+        p.stored.append(a["store"])
     elif k == "rep_bonus":
         opts = state.conservation_options.get("99", [])
         j = int(a["rep_bonus"])
         if not 0 <= j < len(opts):
             raise fx.IllegalEffect("the bonus of 16 reputation has been taken")
         apply_bonus(state, p.seat, opts.pop(j))
+    elif k == "income_map":
+        from ark_nova.engine import breaks
+        _g()._gain(state, p.seat, money=breaks.map_ability_income(state, p))
+    elif k == "income_kiosk":
+        from ark_nova.engine import breaks
+        _g()._gain(state, p.seat, money=breaks.kiosk_income(p))
     elif k == "income_appeal":
         _g()._gain(state, p.seat, money=tracks_module().income_from_appeal(p.appeal))
     elif k == "archaeologist":

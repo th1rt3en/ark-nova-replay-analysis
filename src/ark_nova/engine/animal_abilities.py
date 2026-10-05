@@ -61,6 +61,15 @@ def _build(source: str, types, n: int = 1) -> list:
 PEACEFUL = {"Venom", "Constriction", "Pilfering 1", "Pilfering 2", "Hypnosis"}
 
 
+def add_multiplier(state, p, card) -> None:
+    """A Multiplier token goes on an action card. One put on the card of the action that is being performed cannot be used in that action (BGA
+    signals the token as ready with `enableMultiplier` after the action)."""
+    card.tokens.append("Multiplier")
+    ca = state.current_action
+    if ca is not None and ca.get("seat") == p.seat and ca.get("type") == card.type:
+        ca["fresh_multiplier"] = ca.get("fresh_multiplier", 0) + 1
+
+
 def peaceful_effects(state, seat: int, key: str, name: str, value) -> list:
     """The peaceful variant replaces the hostile abilities (found in the logs: Venom X -> X X tokens, Constriction -> Clever, Pilfering 1 -> 3
     money, Pilfering 2 -> Sprint 2, Hypnosis -> Mark; ISSUES.md)."""
@@ -108,7 +117,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         return [{"kind": "marketing", "source": key, "optional": True}]
     elif name.startswith("Multiplier: "):                          # a Multiplier token on the player's own action card of that kind
         kind = _MULTIPLIER_CARD[name[12:]]
-        next(c for c in p.action_cards if c.type == kind).tokens.append("Multiplier")
+        add_multiplier(state, p, next(c for c in p.action_cards if c.type == kind))
     elif name == "Constriction":
         return [{"kind": "constrict", "source": key, "optional": True}]
     elif name == "Sprint":
@@ -116,14 +125,16 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     elif name == "Jumping":
         g.advance_break(state, seat, int(value))
         g._gain(state, seat, money=int(value))
-    elif name == "Inventive":
-        g._gain(state, seat, x_tokens=1)
+    elif name == "Inventive":                            # (an effect of its own: a Trade of the same Reef activation may use the token first)
+        return [{"kind": "gain", "source": key, "res": "xtoken", "n": 1, "optional": False}]
     elif name == "Inventive: Bear":
         both = icon_counts(state, 0) + icon_counts(state, 1)
-        g._gain(state, seat, x_tokens=min(3, both["Bear"]))
+        n = min(3, both["Bear"])
+        return [{"kind": "gain", "source": key, "res": "xtoken", "n": n, "optional": False}] if n else []
     elif name == "Inventive: Primary":
         n = icons["Primate"]
-        g._gain(state, seat, x_tokens=3 if n >= 5 else 2 if n >= 3 else 1 if n >= 1 else 0)
+        n = 3 if n >= 5 else 2 if n >= 3 else 1 if n >= 1 else 0
+        return [{"kind": "gain", "source": key, "res": "xtoken", "n": n, "optional": False}] if n else []
     elif name == "Full-throated":
         bonuses.hire_worker(state, seat)
     elif name == "Posturing":
@@ -150,7 +161,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         opp = state.players[1 - seat]
         targets = [opp.appeal >= p.appeal]                               # the player with the most appeal (a tie counts: unclear, ISSUES.md)
         if name == "Pilfering 2":
-            targets.append(opp.conservation >= p.conservation)           # and the player with the most conservation points
+            targets.append(opp.conservation >= p.conservation and opp.conservation > 0)           # (a tie at 0 does not count: logs)           # and the player with the most conservation points
         if tracks.is_protected(opp.appeal) or "S225" in opp.sponsors:                              # below 5 appeal a player is protected
             targets = []
         return [{"kind": "pilfer", "source": key, "player": opp.seat, "to": seat, "optional": False} for hit in targets if hit]
@@ -182,9 +193,9 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
                 marks.taken(state, c)
                 p.hand.append(c)
     elif name == "Determination":
-        state.current_action["extra"] = {"types": [t for t in ACTION_TYPES if t != state.current_action["type"]], "optional": False}
+        g.add_extra(state, {"types": [t for t in ACTION_TYPES if t != state.current_action["type"]], "optional": False})
     elif name.startswith("Action: "):
-        state.current_action["extra"] = {"types": [_ACTION_OF[name[8:]]], "optional": True}
+        g.add_extra(state, {"types": [_ACTION_OF[name[8:]]], "optional": True})
     elif name == "Camouflage":
         state.current_action["camouflage"] = True
     return []
@@ -251,7 +262,7 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     if k == "mark":
         return [Action(seat, "choose_effect", {"index": i, "card": c}) for c in marks.markable(state)]
     if k == "marketing":
-        return [Action(seat, "choose_effect", {"index": i, "card": c}) for c in _marketing_options(state, seat)]
+        return [Action(seat, "choose_effect", {"index": i, "card": c}) for c in _marketing_options(state, seat, e)]
     if k == "ability":
         return [] if venom.blocked(state, seat) else [Action(seat, "choose_effect", {"index": i, "activate": True})]
     if k == "digging":
@@ -273,7 +284,9 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         reach = [c for c in state.display[:cards_action.reputation_range(p.reputation)] if c and c.startswith("A")]
         return [Action(seat, "choose_effect", {"index": i, "cards": c}) for c in _subsets(reach, e["n"])]
     if k == "symbiosis":
-        return [Action(seat, "choose_effect", {"index": i, "animal": a}) for a in _symbiosis_targets(p, e["source"])]
+        from ark_nova.engine import animals_action
+        return [Action(seat, "choose_effect", {"index": i, "animal": a, "ability": n}) for a in _symbiosis_targets(p, e["source"])
+                for n in dict.fromkeys(n for n, _ in animals_action.abilities(a))]            # (1 ability of 1 other sea animal)
     if k == "cut_down":
         return [Action(seat, "choose_effect", {"index": i, "building": [b.x, b.y]}) for b in p.buildings if _empty_standard(b)]
     if k == "trade":
@@ -308,12 +321,14 @@ def rescuable(key) -> bool:
     return bool(c) and key.startswith("A") and not any(s["type"] == "Petting Zoo" for s in c.get("specialEnclosures") or [])
 
 
-def _marketing_options(state, seat: int) -> list:
+def _marketing_options(state, seat: int, e=None) -> list:
     """Marketing: a sponsor of the hand that can be played (all requirements) for money equal to its strength."""
     from ark_nova.engine import effects, sponsors_action
     p = state.players[seat]
     level = max((c.level for c in p.action_cards if c.type == "sponsors"), default=1)
-    return [k for k in sorted(set(p.hand)) if k.startswith("S") and sponsors_action.level_for(state, seat, k) <= p.money
+    free, person = bool(e and e.get("free")), bool(e and e.get("person"))                # map 14: a person sponsor of the hand for nothing
+    return [k for k in sorted(set(p.hand)) if k.startswith("S") and (free or sponsors_action.level_for(state, seat, k) <= p.money)
+            and (not person or data.cards_by_key()[k].get("type") == "HUMAN")
             and sponsors_action.requirements_met(state, seat, k, level) and effects.can_play(state, seat, k)
             and not sponsors_action.has_unimplemented_effect(k)]
 
@@ -352,10 +367,11 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         marks.place(state, action.player, a["card"])
     elif k == "marketing":
         card = a["card"]
-        if card not in _marketing_options(state, action.player):
+        if card not in _marketing_options(state, action.player, e):
             raise fx.IllegalEffect("that sponsor cannot be played with Marketing")
         from ark_nova.engine import sponsors_action
-        g._gain(state, action.player, money=-sponsors_action.level_for(state, action.player, card))
+        if not e.get("free"):
+            g._gain(state, action.player, money=-sponsors_action.level_for(state, action.player, card))
         if e.get("cube"):                                         # Okapi Stable: the cube is used up
             from ark_nova.engine import association
             loc = association.token_location(e["cube"])
@@ -369,7 +385,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         g._gain(state, action.player, **{{"appeal": "appeal", "money": "money", "reputation": "reputation", "conservation": "conservation", "xtoken": "x_tokens"}[e["res"]]: e["n"]})
     elif k == "ability":
         venom.settle(state, action.player)
-        state.prompt.args["pending"][i + 1:i + 1] = activate(state, action.player, e["source"], e["name"], e["value"])
+        state.prompt.args["pending"][i + 1:i + 1] = [{**x, "player": x.get("player", e.get("player", action.player))}
+                                                    for x in activate(state, action.player, e["source"], e["name"], e["value"])]
     elif k == "digging":
         rescue = bool(a.get("rescue"))
         if rescue and (not e.get("rescue") or len(p.rescued) >= RESCUE_SLOTS or not rescuable(a.get("display") or a.get("hand"))):
@@ -393,6 +410,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             p.hand.remove(c)
             (p.rescued if rescue else state.main_discard).append(c)
             p.hand.append(state.main_deck.pop(0))
+        if rescue:                                                # the icons of a rescued animal count and trigger the sponsors
+            state.prompt.args["pending"][i + 1:i + 1] = fx.fire_icons(state, p.seat, c)
         e["n"] -= 1
         if e["n"] > 0:
             return
@@ -429,18 +448,27 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         reach = state.display[:cards_action.reputation_range(p.reputation)]
         if not 1 <= len(cards) <= e["n"] or any(c not in reach or not c.startswith("A") for c in cards) or len(set(cards)) != len(cards):
             raise fx.IllegalEffect("discard up to that many animals from the display (reputation range)")
+        total = 0
         for c in cards:
             state.display[state.display.index(c)] = None
             marks.discard(state, c)
             from ark_nova.engine.association import project
-            g._gain(state, p.seat, appeal=(project(c, state.config.marine_worlds).get("appeal") or 0) // 2)
+            total += project(c, state.config.marine_worlds).get("appeal") or 0
+        g._gain(state, p.seat, appeal=total // 2)                  # half of the sum of the discarded animals' appeal, rounded down (log: 9 + 5 -> 7)
         # (the display is refilled at the end of the action, after the Hunter / Perception effects: the logs' fillPool comes last)
     elif k == "symbiosis":
         from ark_nova.engine import animals_action
         c = a["animal"]
         if c not in _symbiosis_targets(p, e["source"]):
             raise fx.IllegalEffect("that animal has no ability to use")
-        state.prompt.args["pending"][i + 1:i + 1] = animals_action.ability_effects(state, c)
+        pairs = [(n, v) for n, v in animals_action.abilities(c) if n == a.get("ability")]
+        if not pairs:
+            raise fx.IllegalEffect("that animal has no such ability")
+        new = animals_action.ability_effects(state, c, pairs)
+        for x in new:
+            if x["kind"] == "pouch" and x.get("source") == c:        # (the pouched card goes under the animal that has the Symbiosis, logs)
+                x["source"] = e["source"]
+        state.prompt.args["pending"][i + 1:i + 1] = new
     elif k == "cut_down":
         b = next((b for b in p.buildings if [b.x, b.y] == list(a["building"]) and _empty_standard(b)), None)
         if b is None:

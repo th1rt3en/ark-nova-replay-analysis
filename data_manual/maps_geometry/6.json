@@ -353,8 +353,11 @@
         {
             "x": 7,
             "y": 2,
-            "bonus": null,
-            "note": "building/columns icon: unidentified"
+            "bonus": {
+                "type": "Fac",
+                "value": 1
+            },
+            "note": "university"
         },
         {
             "x": 8,

@@ -2853,8 +2853,11 @@
                 {
                     "x": 7,
                     "y": 2,
-                    "bonus": null,
-                    "note": "building/columns icon: unidentified"
+                    "bonus": {
+                        "type": "Fac",
+                        "value": 1
+                    },
+                    "note": "university"
                 },
                 {
                     "x": 8,
@@ -3288,8 +3291,11 @@
                 {
                     "x": 1,
                     "y": 2,
-                    "bonus": null,
-                    "note": "kiosk icon"
+                    "bonus": {
+                        "type": "kiosk",
+                        "value": 1
+                    },
+                    "note": "a free kiosk"
                 },
                 {
                     "x": 1,
@@ -3334,14 +3340,20 @@
                 {
                     "x": 5,
                     "y": 4,
-                    "bonus": null,
-                    "note": "kiosk icon"
+                    "bonus": {
+                        "type": "kiosk",
+                        "value": 1
+                    },
+                    "note": "a free kiosk"
                 },
                 {
                     "x": 5,
                     "y": 10,
-                    "bonus": null,
-                    "note": "kiosk icon"
+                    "bonus": {
+                        "type": "kiosk",
+                        "value": 1
+                    },
+                    "note": "a free kiosk"
                 },
                 {
                     "x": 7,
@@ -3430,8 +3442,11 @@
                 {
                     "index": 3,
                     "kind": "instant_income",
-                    "bonus": null,
-                    "note": "white card with black animal-head silhouette and \"2\": keyword ability icon, unidentified"
+                    "bonus": {
+                        "type": "Pouch",
+                        "value": 2
+                    },
+                    "note": "Pouch 2 (log: map bonus space, 'gets 2 x Pouch')"
                 },
                 {
                     "index": 4,
@@ -4611,8 +4626,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "white hexes with an upward arrow and a cube: unidentified"
+                    "bonus": {
+                        "type": "continent",
+                        "value": 1
+                    },
+                    "note": "unlocks one of the remaining continent cubes (map 9 ability)"
                 },
                 {
                     "index": 4,
@@ -6109,8 +6127,11 @@
                 {
                     "index": 3,
                     "kind": "instant",
-                    "bonus": null,
-                    "note": "net / juggler icon: unidentified"
+                    "bonus": {
+                        "type": "animal-magnet",
+                        "value": 1
+                    },
+                    "note": "Animal Magnet (all animals of the display, refilled at the end of the turn)"
                 },
                 {
                     "index": 4,
@@ -7533,8 +7554,11 @@
                 {
                     "x": 3,
                     "y": 4,
-                    "bonus": null,
-                    "note": "black \"3\" with a curved shape: unidentified"
+                    "bonus": {
+                        "type": "Scavenging",
+                        "value": 3
+                    },
+                    "note": "Scavenging 3"
                 },
                 {
                     "x": 4,
@@ -7547,8 +7571,11 @@
                 {
                     "x": 4,
                     "y": 11,
-                    "bonus": null,
-                    "note": "white card/cube icon on grey base: unidentified"
+                    "bonus": {
+                        "type": "Mark",
+                        "value": 1
+                    },
+                    "note": "Mark"
                 },
                 {
                     "x": 6,
@@ -10511,8 +10538,11 @@
                 {
                     "x": 7,
                     "y": 2,
-                    "bonus": null,
-                    "note": "building/columns icon: unidentified"
+                    "bonus": {
+                        "type": "Fac",
+                        "value": 1
+                    },
+                    "note": "university"
                 },
                 {
                     "x": 7,
@@ -10946,8 +10976,11 @@
                 {
                     "x": 0,
                     "y": 5,
-                    "bonus": null,
-                    "note": "kiosk icon"
+                    "bonus": {
+                        "type": "kiosk",
+                        "value": 1
+                    },
+                    "note": "a free kiosk"
                 },
                 {
                     "x": 1,
@@ -11000,8 +11033,11 @@
                 {
                     "x": 5,
                     "y": 10,
-                    "bonus": null,
-                    "note": "kiosk icon"
+                    "bonus": {
+                        "type": "kiosk",
+                        "value": 1
+                    },
+                    "note": "a free kiosk"
                 },
                 {
                     "x": 6,
@@ -11014,8 +11050,11 @@
                 {
                     "x": 7,
                     "y": 4,
-                    "bonus": null,
-                    "note": "kiosk icon"
+                    "bonus": {
+                        "type": "kiosk",
+                        "value": 1
+                    },
+                    "note": "a free kiosk"
                 },
                 {
                     "x": 7,
@@ -11088,8 +11127,11 @@
                 {
                     "index": 3,
                     "kind": "instant_income",
-                    "bonus": null,
-                    "note": "white card with black animal-head silhouette and \"2\": keyword ability icon, unidentified"
+                    "bonus": {
+                        "type": "Pouch",
+                        "value": 2
+                    },
+                    "note": "Pouch 2 (log: map bonus space, 'gets 2 x Pouch')"
                 },
                 {
                     "index": 4,

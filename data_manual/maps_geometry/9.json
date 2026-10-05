@@ -651,8 +651,11 @@
         {
             "index": 3,
             "kind": "instant",
-            "bonus": null,
-            "note": "white hexes with an upward arrow and a cube: unidentified"
+            "bonus": {
+                "type": "continent",
+                "value": 1
+            },
+            "note": "unlocks one of the remaining continent cubes (map 9 ability)"
         },
         {
             "index": 4,

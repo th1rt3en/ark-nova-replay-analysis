@@ -18,7 +18,8 @@ def _zoo(card, hand=(), level=2, slot=5, **buildings):
     p.buildings = [Building(id=1, type="size-5", x=1, y=0), Building(id=2, type="size-5", x=3, y=0)]
     p.money = 60
     p.sponsors = ["S219"]                                                              # Diversity Researcher: no rock / water conditions (and a research icon)
-    p.tokens.append(Token(700, "partner-Asia", "partner_1"))                          # a partner zoo
+    cont = next((t for t in CARDS[card]["tags"] if t in ("africa", "europe", "asia", "americas", "australia")), "asia")
+    p.tokens.append(Token(700, "partner-" + cont.capitalize(), "partner_1"))           # a partner zoo (of the animal's continent: the condition names one of them)
     return s
 
 
@@ -288,7 +289,7 @@ def _sponsor_state_for_venom():
 def test_venom_blocks_drawing_cards_until_it_is_paid():
     s = _zoo("A401", level=1)
     s.players[0].action_cards[0].tokens = ["Venom"]
-    s.players[0].money = 18                                                            # the Cheetah costs 17: 1 money left, Venom due
+    s.players[0].money = 15                                                            # the Cheetah costs 14 (partner zoo discount): 1 money left, Venom due
     s = _start(s)
     s = _play(s, "A401")
     assert s.players[0].money == 1
@@ -296,7 +297,7 @@ def test_venom_blocks_drawing_cards_until_it_is_paid():
     s = apply(s, Action(0, "skip_effect", {"index": 0}))
     s2 = _zoo("A401", level=1)
     s2.players[0].action_cards[0].tokens = ["Venom"]
-    s2.players[0].money = 20                                                           # 3 left: Venom is paid first, then the cards are drawn
+    s2.players[0].money = 17                                                           # 3 left: Venom is paid first, then the cards are drawn
     s2 = _play(_start(s2), "A401")
     s2 = _resolve(s2, activate=True)
     assert s2.players[0].money == 1

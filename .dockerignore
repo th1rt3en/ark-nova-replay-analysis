@@ -16,6 +16,7 @@ venv/
 
 # Large or build-time-only inputs
 log_examples/
+log_examples_unsupported/
 vendor/
 node_modules/
 docs/

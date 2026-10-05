@@ -5,8 +5,9 @@ from each covered black-square hex of the map, from the second university and fr
 is covered gets the next higher number that is still visible (the strength track goes on past 5: with all four squares the spaces 1-3 have
 strength 3 and the spaces 4 and 5 strength 6).
 """
+from ark_nova import data
 from ark_nova.engine import build_action
-from ark_nova.engine.board import board
+from ark_nova.engine.board import board, neighbours
 
 CONCEAL_ORDER = (1, 2, 4, 5)
 
@@ -32,7 +33,56 @@ def strength_bonus(p, slot: int) -> int:
     return s - slot
 
 
+def t1_discard_possible(p) -> bool:
+    """Map T1: with the top-left bonus space unlocked, once in the turn a hand card may be discarded for +1 strength of an action."""
+    return p.map_id == "T1" and bool(p.flags.get("bonus_used", 0) & 1) and not p.flags.get("t1_used") and bool(p.hand)
+
+
 # ---- map 13 (Drawing Board): the four areas -------------------------------------------------------------------------------------------
+
+# ---- map 1 (Observation Tower) ---------------------------------------------------------------------------------------------------------
+
+def tower_appeal(p, b) -> int:
+    """Maps 1 / 1a: 2 appeal each time a standard enclosure next to the Observation Tower is flipped to its occupied side."""
+    if p.map_id not in ("1", "1a") or not b.type.startswith("size-"):
+        return 0
+    tower = next((s for s in data.map_by_id(p.map_id)["geometry"]["special_hexes"] if s["kind"] == "observation_tower"), None)
+    if tower is None:
+        return 0
+    cells = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
+    return 2 if any(n in cells for n in neighbours((tower["x"], tower["y"]))) else 0
+
+
+# ---- map 9 (Geographical Zoo) -----------------------------------------------------------------------------------------------------------
+
+CONTINENTS = ("Europe", "Americas", "Africa", "Australia", "Asia")
+CONTINENT_BONUSES = ({"reputation": 1}, {"appeal": 2}, {"money": 4}, {"Clever": 1}, {"kiosk-pavilion": 1})      # the 5 bonuses depicted (logs)
+
+
+def continent_cells(map_id: str) -> dict:
+    out: dict = {}
+    for s in data.map_by_id(map_id)["geometry"]["special_hexes"]:
+        if s["kind"] == "continent_area":
+            out.setdefault(s["note"], set()).add((s["x"], s["y"]))
+    return out
+
+
+def continents_left(p) -> list:
+    done = p.flags.get("m9_removed", 0)
+    return [c for i, c in enumerate(CONTINENTS) if not done >> i & 1]
+
+
+def continent_effects(state, p, key: str, b) -> list:
+    """Map 9: an animal played into an enclosure that has a space in the area of one of its continents may remove that area's marker for a bonus."""
+    if p.map_id != "9" or b is None or not build_action.knows_shape(b.type):
+        return []
+    from ark_nova.engine.animals_action import CONTINENT_TAGS, card
+    cells = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
+    area = continent_cells(p.map_id)
+    mine = {CONTINENT_TAGS[t] for t in card(key).get("tags", []) if t in CONTINENT_TAGS}
+    return [{"kind": "continent", "continent": c, "optional": True, "player": p.seat, "source": "map9"}
+            for c in continents_left(p) if c in mine and area.get(c, set()) & cells]
+
 
 def covered_cells(p) -> set:
     return {c for b in p.buildings if build_action.knows_shape(b.type) for c in build_action.footprint(b.type, b.x, b.y, b.rotation)}

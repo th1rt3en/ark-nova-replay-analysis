@@ -40,6 +40,7 @@ def hand_limit(p) -> int:
 def start(state, initiator: int) -> None:
     """Called when the break token has reached the last space and the turn is over."""
     state.current_action = {"seat": initiator, "type": "break", "strength": 0}
+    state.prompt = None                                       # (the effects prompt of the last action is over: the effects of the break must not join it)
     pending = [{"kind": "break_discard", "player": p.seat, "n": len(p.hand) - hand_limit(p), "optional": False}
                for p in state.players if len(p.hand) > hand_limit(p)]
     if pending:
@@ -153,11 +154,11 @@ def association_building_types():
 _SPONSORSHIP = {"S231": "Primate", "S232": "Reptile", "S233": "Bird", "S234": "Predator", "S235": "Herbivore"}
 
 
-def sponsor_income(state, p) -> dict:
-    """{resource: n} of the income effects of the sponsors in play (the ones with a decision are handled by `_income`)."""
+def sponsor_income(state, p, only=None) -> dict:
+    """{resource: n} of the income effects of the sponsors in play (the ones with a decision are handled by `_income`); `only`: just these sponsors."""
     out = {"money": 0, "xtoken": 0, "appeal": 0, "conservation": 0}
     icons = icon_counts(state, p.seat)
-    for k in p.sponsors:
+    for k in (p.sponsors if only is None else only):
         if k == "S209":
             out["xtoken"] += 1
         elif k == "S220":
@@ -211,8 +212,11 @@ def _income(state, seat: int) -> None:
     g = _g()
     p = state.players[seat]
     bonuses.defer(state, {"kind": "income_appeal", "optional": False, "player": seat})      # the money of the appeal track is counted when the player resolves it: appeal gained first counts
-    g._gain(state, seat, money=kiosk_income(p))
-    g._gain(state, seat, money=map_ability_income(state, p))
+    bonuses.defer(state, {"kind": "income_kiosk", "optional": False, "player": seat})
+    if p.map_id in ("11", "5", "5a", "7", "7a"):           # the income of the map is an effect of its own: the player may resolve it before or after the free enclosure / store of the income
+        bonuses.defer(state, {"kind": "income_map", "optional": False, "player": seat})
+    else:
+        g._gain(state, seat, money=map_ability_income(state, p))
     if p.map_id == "13":                                   # Drawing Board: every covered area pays again
         from ark_nova.engine import map_rules
         for name in sorted(map_rules.quarters_done(p)):

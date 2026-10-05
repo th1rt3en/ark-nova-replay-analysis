@@ -25,15 +25,15 @@ def _g():
     return game
 
 
-def build_rules(card_key: str) -> tuple:
+def build_rules(card_key: str, marine_worlds: bool = False) -> tuple:
     """(building type, placement rules) of the sponsor that places a building when played."""
     t, extra = prog.UNIQUE_BUILD[card_key]
     card = data.cards_by_key()[card_key]
     rules = dict(extra)
-    if requirement(card_key, "rock"):
-        rules["rock"] = requirement(card_key, "rock")
-    if requirement(card_key, "water"):
-        rules["water"] = requirement(card_key, "water")
+    if requirement(card_key, "rock", marine_worlds):
+        rules["rock"] = requirement(card_key, "rock", marine_worlds)
+    if requirement(card_key, "water", marine_worlds):
+        rules["water"] = requirement(card_key, "water", marine_worlds)
     return t, rules
 
 
@@ -56,7 +56,7 @@ def build_options(state, seat: int, t: str, rules: dict) -> list:
 def can_play(state, seat: int, card_key: str) -> bool:
     """A sponsor that places a building can only be played when the building fits."""
     if card_key in prog.UNIQUE_BUILD:
-        t, rules = build_rules(card_key)
+        t, rules = build_rules(card_key, state.config.marine_worlds)
         return not build_action.knows_shape(t) or bool(build_options(state, seat, t, rules))
     return True
 
@@ -87,7 +87,7 @@ def on_play(state, seat: int, card_key: str) -> list:
         g._gain(state, seat, **{"x_tokens" if res == "xtoken" else res: mult * (total[icon] // (div[0] if div else 1))})
     pending += special_on_play(state, seat, card_key, total)
     if card_key in prog.UNIQUE_BUILD:
-        t, rules = build_rules(card_key)
+        t, rules = build_rules(card_key, state.config.marine_worlds)
         if not build_action.knows_shape(t):
             raise NotImplementedError(f"the shape of the {t} building is unknown (see data/unique_shapes.json)")
         pending.append({"kind": "build", "source": card_key, "type": t, "rules": rules, "optional": card_key in prog.OPTIONAL_BUILD,
@@ -101,6 +101,8 @@ def on_play(state, seat: int, card_key: str) -> list:
     if card_key in prog.SEARCH_DISCARD_PET and any(_is_pet(k) for k in state.main_discard):
         pending.append({"kind": "search_discard", "source": card_key, "optional": False})
     pending += fire_icons(state, seat, card_key)
+    for e in pending:
+        e.setdefault("player", seat)                    # (a sponsor played in the break belongs to the player whose income it is)
     return pending
 
 
@@ -135,21 +137,25 @@ def fire_icon_counter(state, seat: int, own: Counter) -> list:
                         g._gain(state, owner, money=v.get("money", 0), appeal=v.get("appeal", 0), x_tokens=v.get("xtoken", 0),
                                 reputation=v.get("reputation", 0), conservation=v.get("conservation", 0))
                     elif eff[0] == "build":
-                        pending.append({"kind": "build", "source": s, "type": eff[1], "rules": {}, "optional": True, "double": False})
+                        pending.append({"kind": "build", "source": s, "type": eff[1], "rules": {}, "optional": True, "double": False, "player": owner})
                     elif eff[0] == "reveal":
-                        pending.append({"kind": "reveal", "source": s, "x": eff[1], "filter": eff[2] if len(eff) > 2 and isinstance(eff[2], str) else "any", "optional": False})
+                        pending.append({"kind": "reveal", "source": s, "x": eff[1], "filter": eff[2] if len(eff) > 2 and isinstance(eff[2], str) else "any", "optional": False, "player": owner})
                     elif eff[0] == "hunter":
-                        pending.append({"kind": "reveal", "source": s, "x": total["Predator"], "filter": "animal", "optional": False})
+                        pending.append({"kind": "reveal", "source": s, "x": total["Predator"], "filter": "animal", "optional": False, "player": owner})
                     elif eff[0] == "sell":
-                        pending.append({"kind": "sell", "source": s, "max": eff[1], "optional": True})
+                        pending.append({"kind": "sell", "source": s, "max": eff[1], "optional": True, "player": owner})
                     elif eff[0] == "pouch":
-                        pending.append({"kind": "pouch", "source": s, "optional": True})
+                        pending.append({"kind": "pouch", "source": s, "optional": True, "player": owner})
+                    elif eff[0] == "slot1" and state.current_action.get("type") == "break":      # (a sponsor played in the break: at once, free)
+                        pending.append({"kind": "slot1", "source": s, "optional": True, "cost": 0, "player": owner})
                     elif eff[0] == "slot1":              # the used action card only goes to slot 1 at the end of the action
                         state.current_action.setdefault("after", []).append({"kind": "slot1", "source": s, "optional": True})
                     elif eff[0] == "mark":                # Conference on Europe: one mark per Europe icon, at the end of the action
                         state.current_action.setdefault("after", []).append({"kind": "mark", "source": s, "optional": False})
+                    elif eff[0] == "expedition":
+                        pending.append({"kind": "expedition", "source": s, "optional": True, "player": owner})
                     elif eff[0] == "enlarge":
-                        pending.append({"kind": "enlarge", "source": s, "optional": True})
+                        pending.append({"kind": "enlarge", "source": s, "optional": True, "player": owner})
                     elif eff[0] == "marketing_cube":                # a cube of the card pays for one Marketing effect (optional)
                         loc = association.token_location(s)
                         left = sum(1 for t in state.players[owner].tokens if t.location == loc) - sum(1 for e in pending if e.get("cube") == s)
@@ -173,6 +179,9 @@ def open_prompt(state, seat: int, pending: list, resume) -> None:
 def legal(state, p0) -> list:
     a = state.prompt.args
     out = []
+    resume = a.get("resume") or {}
+    if resume.get("kind") == "end" and resume.get("extra") and a["pending"]             and all(e["kind"] in ("slot1", "boost", "mark") for e in a["pending"]):
+        out.append(Action(state.prompt.player, "go_extra", {}))        # the extra action first, the Clever / Boost after it
     for i, e in enumerate(a["pending"]):
         k = e["kind"]
         p = state.players[e.get("player", p0.seat)]
@@ -212,12 +221,17 @@ def legal(state, p0) -> list:
             for c in state.display[:cards_action.reputation_range(p.reputation)]:
                 if c:
                     out.append(Action(p.seat, "take_cards", {"mode": "range", "card": c}))
+            if None in state.display[:cards_action.reputation_range(p.reputation) + 1]:        # the display may be refilled first: the gap closes and a card moves into the range
+                out.append(Action(p.seat, "choose_effect", {"index": i, "refill": True}))
         elif k == "reveal" and venom.blocked(state, p.seat):
             out.append(Action(p.seat, "skip_effect", {"index": i}))            # drawing cards is not allowed before Venom is paid
             continue
         elif k == "reveal":
             top = state.main_deck[:e["x"]]
             opts = [c for c in top if _reveal_ok(e, c)]
+            if e.get("n", 1) > 1:                                   # Perception 4: 4 cards are drawn, 2 are kept
+                out += [Action(p.seat, "choose_effect", {"index": i, "keep": sorted(c)}) for c in sorted(set(combinations(sorted(opts), e["n"])))]
+                continue
             for c in dict.fromkeys(opts):
                 out.append(Action(p.seat, "choose_effect", {"index": i, "keep": c}))
             if not opts:
@@ -294,7 +308,11 @@ def resolve_build(state, action: Action) -> None:
     if e.get("placeback"):                          # Reconstruction: a building that was picked up goes back on the map (no bonuses)
         from ark_nova.engine.state import Building
         pb = e["placeback"]
+        from ark_nova.engine import map_rules
+        areas_before = map_rules.quarters_done(p)
         p.buildings.append(Building(id=pb["id"], type=t, x=x, y=y, rotation=k, animal=pb["animal"], animals=list(pb["animals"])))
+        for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: an area that is covered again pays its bonus again
+            map_rules.quarter_bonus(state, p.seat, name)
         _done(state, i)
         return
     g._put_building(state, p.seat, t, x, y, k, double=e["double"])
@@ -342,7 +360,7 @@ def resolve_choice(state, action: Action) -> None:
     k = e["kind"]
     if e.get("player", state.prompt.player) != action.player:
         raise IllegalEffect("this effect belongs to the other player")
-    if action.args.get("refill") and k == "take" and e.get("snap") and None in state.display:
+    if action.args.get("refill") and k == "take" and None in state.display:
         _g()._refill_display(state)
         return
     if k in bonuses.KINDS:
@@ -363,6 +381,18 @@ def resolve_choice(state, action: Action) -> None:
         top = state.main_deck[:e["x"]]
         keep = action.args.get("keep")
         options = [c for c in top if _reveal_ok(e, c)]
+        if e.get("n", 1) > 1:
+            keep_list = list(keep or [])
+            if len(keep_list) != e["n"] or any(keep_list.count(c) > top.count(c) for c in keep_list):
+                raise IllegalEffect("keep the right number of the revealed cards")
+            venom.settle(state, p.seat)
+            del state.main_deck[:e["x"]]
+            for c in keep_list:
+                top.remove(c)
+                p.hand.append(c)
+            state.main_discard.extend(top)
+            _done(state, i)
+            return
         if (keep is None and options) or (keep is not None and keep not in options):
             raise IllegalEffect("keep one of the revealed cards of the right kind")
         venom.settle(state, p.seat)
@@ -387,7 +417,10 @@ def resolve_choice(state, action: Action) -> None:
         if c not in p.hand:
             raise IllegalEffect("that card is not in hand")
         p.hand.remove(c)
-        p.under.setdefault(e["source"], []).append(c)
+        if e["source"] == "map":
+            p.pouched.append(c)                         # (a Pouch bonus of the map: the card goes under the zoo map)
+        else:
+            p.under.setdefault(e["source"], []).append(c)
         g._gain(state, p.seat, appeal=prog.POUCH_APPEAL)
     elif k == "slot1":
         if e.get("cost", 0) > p.money:

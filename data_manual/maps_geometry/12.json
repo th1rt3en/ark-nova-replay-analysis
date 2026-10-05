@@ -448,8 +448,11 @@
         {
             "index": 3,
             "kind": "instant",
-            "bonus": null,
-            "note": "net / juggler icon: unidentified"
+            "bonus": {
+                "type": "animal-magnet",
+                "value": 1
+            },
+            "note": "Animal Magnet (all animals of the display, refilled at the end of the turn)"
         },
         {
             "index": 4,

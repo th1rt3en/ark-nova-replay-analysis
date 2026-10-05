@@ -4,9 +4,12 @@ from ark_nova.parser import parse_log
 from ark_nova.replay.builder import build_replay
 from ark_nova.replay.config import game_from_log
 from ark_nova.replay.differential import run_differential
+import json
+KNOWN=set(json.load(open("data_manual/sample_maps.json")))
 out=[]
 for f in sorted(glob.glob("log_examples/*.json")):
-    if "800035115" in f: continue
+    if "800035115" in f or "573904205" in f: continue
+    if len(sys.argv) > 2 and sys.argv[2] == "known" and f[-14:-5] not in KNOWN: continue
     p = parse_log(f); s, cfg, seed = game_from_log(p)
     r = build_replay(p, s, cfg, seed)
     rep = run_differential(p, r, {pid: i for i, pid in enumerate(s.seats)})

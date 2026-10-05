@@ -37,7 +37,7 @@ def client(*records, files=None):
 
 
 def sample_log():
-    path = next((p for p in sorted(LOG_DIR.glob("*.json")) if p.stat().st_size < 12_000_000), None)
+    path = next((p for p in sorted(LOG_DIR.glob("*.json")) if p.stat().st_size < 12_000_000 and p.stem != "573904205"), None)
     if path is None:
         pytest.skip("no log examples")
     return path, json.loads(path.read_text("utf8"))

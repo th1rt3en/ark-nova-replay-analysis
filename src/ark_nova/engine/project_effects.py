@@ -109,17 +109,17 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     if k == "tutor":
         return [Action(seat, "choose_effect", {"index": i, "apply": "tutor"})]
     if k == "reef":
-        return [Action(seat, "choose_effect", {"index": i, "building": [b.x, b.y]}) for b in _reef_aquariums(state, seat)]
+        return [Action(seat, "choose_effect", {"index": i, "apply": "reef"})] if _reef_aquariums(state, seat) else []
     return []
 
 
 def _reef_aquariums(state, seat: int) -> list:
     from ark_nova.engine import animals_action
-    return [b for b in state.players[seat].buildings if b.type in ("small-aquarium", "large-aquarium")
+    return [b for b in state.players[seat].buildings if b.type in ("small-aquarium", "large-aquarium", "underwater-tunnel")
             and any(animals_action.reef_abilities(k) for k in b.animals)]
 
 
-def release_enclosures(state, seat: int, key: str) -> list:
+def release_enclosures(state, seat: int, key: str, exclude=None) -> list:
     """The occupied enclosures that the release of this animal can empty (an animal is not tied to an enclosure; the flipped one is chosen by
     priority): a special enclosure that meets the water / rock needs, the smallest standard one that does, a special one that does not, the
     smallest standard one that does not. Empty list: no enclosure is emptied (they are all too small)."""
@@ -127,7 +127,7 @@ def release_enclosures(state, seat: int, key: str) -> list:
     from ark_nova.engine.board import board
     p = state.players[seat]
     bd = board(p.map_id)
-    cands = animals_action.hosts(state, seat, key, occupied=True)
+    cands = [(b, ok) for b, ok in animals_action.hosts(state, seat, key, occupied=True) if b is not exclude]
     for want in (True, False):
         special = [b for b, ok in cands if ok == want and not b.type.startswith("size-")]
         if special:
@@ -170,14 +170,14 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         release_animal(state, p.seat, a["release"], a.get("building"))
     elif k == "reef":
         from ark_nova.engine import animals_action
-        b = next((b for b in _reef_aquariums(state, p.seat) if [b.x, b.y] == list(a.get("building") or [])), None)
-        if b is None:
-            raise _fx().IllegalEffect("choose an aquarium with Reef Dwellers")
         extra = []
-        for other in b.animals:
-            pairs = animals_action.reef_abilities(other)
-            if pairs:
-                extra += animals_action.ability_effects(state, other, pairs)
+        for b in _reef_aquariums(state, p.seat):                    # the aquariums of a zoo share their spaces: the effects of all of their animals (logs)
+            for other in b.animals:
+                pairs = animals_action.reef_abilities(other)
+                if pairs:
+                    extra += animals_action.ability_effects(state, other, pairs)
+        if not extra and not _reef_aquariums(state, p.seat):
+            raise _fx().IllegalEffect("no aquarium with Reef Dwellers")
         state.prompt.args["pending"][i + 1:i + 1] = extra
     elif k == "tutor":
         from ark_nova.engine.cards import search_deck

@@ -36,6 +36,8 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     for m in data.maps():
         mid = m["id"]
+        if mid == "6a":                  # not used: the viewer shows map-6.jpg for 6a (same board; the 6a picture has the bonuses baked in)
+            continue
         target = OUT / f"map-{mid}.jpg"
         try:
             req = urllib.request.Request(f"{BASE}map-{mid}.jpg", headers={"User-Agent": "Mozilla/5.0"})       # the default urllib agent gets a 403

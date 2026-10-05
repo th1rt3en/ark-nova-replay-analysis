@@ -12,7 +12,7 @@ from ark_nova.parser import parse_log
 from ark_nova.parser.deck import extract_exits, known_order
 from ark_nova.parser.setup import extract_setup
 
-LOGS = sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json")))
+LOGS = [p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p]   # (573904205 is an old log format the parser does not read)
 pytestmark = pytest.mark.skipif(not LOGS, reason="log_examples not available")
 
 
@@ -32,7 +32,7 @@ def _game_from_log(path):
     return parsed, setup, cfg, SeedSpec(tail_seed=1, main_order=main, endgame_order=endgame)
 
 
-@pytest.mark.parametrize("path", [p for p in LOGS if "800035115" not in p])   # 800035115 is aborted before the deal
+@pytest.mark.parametrize("path", [p for p in LOGS if "800035115" not in p and "573904205" not in p])   # 800035115 is aborted before the deal
 def test_setup_matches_log(path):
     parsed, setup, cfg, seed = _game_from_log(path)
     state = start_game(cfg, seed)
@@ -53,7 +53,7 @@ def test_setup_matches_log(path):
 
 
 def test_legal_actions_in_setup():
-    _, setup, cfg, seed = _game_from_log(LOGS[0])
+    _, setup, cfg, seed = _game_from_log(next(p for p in LOGS if "573904205" not in p))
     state = start_game(cfg, seed)
     acts = legal_actions(state)
     assert len(acts) == 140 and all(a.kind == "initial_discard" for a in acts)     # C(8,4) per player

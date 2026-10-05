@@ -297,8 +297,11 @@
         {
             "x": 0,
             "y": 5,
-            "bonus": null,
-            "note": "kiosk icon"
+            "bonus": {
+                "type": "kiosk",
+                "value": 1
+            },
+            "note": "a free kiosk"
         },
         {
             "x": 1,
@@ -351,8 +354,11 @@
         {
             "x": 5,
             "y": 10,
-            "bonus": null,
-            "note": "kiosk icon"
+            "bonus": {
+                "type": "kiosk",
+                "value": 1
+            },
+            "note": "a free kiosk"
         },
         {
             "x": 6,
@@ -365,8 +371,11 @@
         {
             "x": 7,
             "y": 4,
-            "bonus": null,
-            "note": "kiosk icon"
+            "bonus": {
+                "type": "kiosk",
+                "value": 1
+            },
+            "note": "a free kiosk"
         },
         {
             "x": 7,
@@ -439,8 +448,11 @@
         {
             "index": 3,
             "kind": "instant_income",
-            "bonus": null,
-            "note": "white card with black animal-head silhouette and \"2\": keyword ability icon, unidentified"
+            "bonus": {
+                "type": "Pouch",
+                "value": 2
+            },
+            "note": "Pouch 2 (log: map bonus space, 'gets 2 x Pouch')"
         },
         {
             "index": 4,

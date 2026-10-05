@@ -60,6 +60,14 @@ def strength_penalty(card) -> int:
     return CONSTRICTION_PENALTY * card.tokens.count("Constriction")
 
 
+def end_of_action(state, seat: int) -> None:
+    """The action is over: Venom that is still due is paid now (BGA does not wait for an extra action that follows)."""
+    p = state.players[seat]
+    if due(p):
+        _g()._gain(state, seat, money=-min(VENOM_COST, p.money))
+        p.flags["venom_paid"] = 1
+
+
 def finish_turn(state, seat: int) -> None:
     """End of the player's turn: pay for Venom that is still due."""
     p = state.players[seat]

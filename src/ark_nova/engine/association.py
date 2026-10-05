@@ -77,9 +77,9 @@ def map_bonus(map_id: str, key: str) -> int:
 # ---- setup ---------------------------------------------------------------------------------------------------------------------
 
 def initial_board(marine_worlds: bool) -> list:
-    """One partner zoo of each continent and one university of each kind on the board."""
+    """One partner zoo of each continent and one university of each kind on the board (the base game has 3 kinds; the category university is Marine Worlds)."""
     toks = [Token(1 + 4 * i, f"partner-{c}", "association_3") for i, c in enumerate(CONTINENTS)]        # the ids BGA uses for the first tile of each kind
-    toks += [Token(21 + 4 * i, k, "association_4") for i, k in enumerate(UNIVERSITY_KINDS)]
+    toks += [Token(21 + 4 * i, k, "association_4") for i, k in enumerate(UNIVERSITY_KINDS if marine_worlds else UNIVERSITY_KINDS[:3])]
     return toks
 
 
@@ -147,6 +147,21 @@ def donation_cost(state, p, x_discount: bool = False) -> int:
     if x_discount:                                              # X Association (3), level II: 1 less per X token
         base = max(0, base - p.x_tokens)
     return base
+
+
+def with_categories(state, acts: list) -> list:
+    """A blank (generic) university comes with the choice of a species that nobody has taken yet (there is one university per species)."""
+    out = []
+    for x in acts:
+        a = x.args if hasattr(x, "args") else x
+        generic = a.get("kind") == "fac-generic" or a.get("university") == "fac-generic"
+        if not generic:
+            out.append(x)
+        elif hasattr(x, "args"):
+            out += [Action(x.player, x.kind, {**a, "category": c}) for c in category_pool(state)] or [x]
+        else:
+            out += [{**a, "category": c} for c in category_pool(state)] or [x]
+    return out
 
 
 def category_pool(state) -> list:
@@ -224,7 +239,8 @@ def _breedable(state, p, tag: str) -> bool:
     mine = {continent_of(t) for t in partners(p)}
     icon = project_effects.tag_icon(tag)
     return any(card_icons(k, state.config.marine_worlds)[icon] > 0 and card_icons(k, state.config.marine_worlds)[c] > 0
-               for k in p.animals for c in mine)
+               for k in p.animals for c in mine) or (bool(mine) and icon_counts(state, p.seat)[icon] > 0 and not any(
+                   card_icons(k, state.config.marine_worlds)[icon] > 0 for k in p.animals))      # (a primate icon that does not come from an animal: found in the logs)
 
 
 def slot_options(state, seat: int, key: str, extra: int = 0) -> list:
@@ -233,7 +249,7 @@ def slot_options(state, seat: int, key: str, extra: int = 0) -> list:
     Base / normal projects: the icon count of the slot; release: an animal with the icon and the size of the slot (large / medium / small); breeding: an animal with the icon
     and a partner zoo of its continent; management plans: 2 icons of the plan's kind. Every slot that is still free then counts."""
     p = state.players[seat]
-    card = project(key, state.config.marine_worlds)
+    card = map_quirks.project_for_table(project(key, state.config.marine_worlds), state.config.table_id)
     if not project_supported(card):
         raise NotImplementedError(f"conservation project {key} ({card['type']}) is not implemented yet")
     kind = card["type"]
@@ -267,7 +283,7 @@ def notepad_bonuses(state, p) -> list:
     """(index, bonus) of the notepad tokens still on the map."""
     slots = data.map_by_id(p.map_id)["geometry"]["bonus_slots"]
     used = p.flags.get("bonus_used", 0)
-    return [(s["index"], s["bonus"]) for s in slots if not used >> s["index"] & 1 and s.get("bonus")]
+    return [(s["index"], s["bonus"]) for s in slots if (not used >> s["index"] & 1 or (p.map_id == "T1" and s["index"] == 0)) and s.get("bonus")]      # (T1: the card space can be taken again and again, 17 of 20 logged supports)
 
 
 # ---- the action --------------------------------------------------------------------------------------------------------------------
@@ -336,6 +352,8 @@ def task_actions(state, p, a) -> list:
                     if variant == 1 and level >= 2:             # from the supply: the tiles of the three kinds, even a kind the zoo has
                         acts += [Action(p.seat, "association_task", {"task": task, "kind": k, "supply": True, **mark}) for k in SUPPLY_UNIVERSITIES
                                  if supply_left(state, k) > 0]
+                        if category_pool(state):                # (a category university from the supply: any species that nobody has)
+                            acts.append(Action(p.seat, "association_task", {"task": task, "kind": "fac-generic", "supply": True, **mark}))
                     for t in state.board_tokens:
                         if t.location == "association_4" and university_class(t.type) not in mine:
                             acts.append(Action(p.seat, "association_task", {"task": task, "kind": t.type, **mark}))
@@ -367,9 +385,9 @@ def extra_icon_sources(state, p, card: dict) -> list:
     """Where one more icon of any kind can come from when a project is supported: a bonus-icon token of the notepad ("icon"), a token of
     Breeding Cooperation / Breeding Program (base projects only, "S215" / "S218")."""
     out = []
-    if any(t.type == "bonus-icon" for t in p.tokens):
+    if any(t.type == "bonus-icon" for t in p.tokens) and card.get("key") in state.base_projects:       # (only the 3 base projects of the setup, not one drawn with Assertion / Dominance)
         out.append("icon")
-    if card["type"] == "Base":
+    if card.get("key") in state.base_projects:
         out += [k for k in SPONSOR_TOKENS if k in p.sponsors and any(t.location == token_location(k) for t in p.tokens)]
     return out
 
@@ -396,7 +414,7 @@ def legal(state, p) -> list:
     a = state.prompt.args
     pr = a.get("project")
     if pr is None:
-        return task_actions(state, p, a)
+        return with_categories(state, task_actions(state, p, a))
     if pr["step"] == "slot":                                       # which slot of the project (the ones the zoo satisfies)
         plain = slot_options(state, p.seat, pr["key"])
         out = [Action(p.seat, "choose_slot", {"slot": i}) for i, _, _ in plain]
@@ -472,10 +490,8 @@ def place_university(state, p, tok, category=None) -> None:
         pool = category_pool(state)
         if category is not None and category not in pool:
             raise fx.IllegalEffect("that university is not left")
-        if category is None:                                  # the tile is drawn at random from the bag
-            rng = Rng(state.rng)
-            category = pool[rng.randbelow(len(pool))]
-            state.rng = rng.state
+        if category is None:                                  # the player chooses one of the species that are left
+            raise fx.IllegalEffect("choose the species of the university")
         tok.type = f"fac-science-{category}"
     k = free_space(p.tokens, "university_", MAX_UNIVERSITIES)
     tok.location = f"university_{k}"
@@ -494,7 +510,8 @@ def place_university(state, p, tok, category=None) -> None:
 def tile_options(state, p, tile: str) -> list:
     """The tiles on the association board that a conservation bonus (Partner Zoo / University) can take: the same ones as the task, without workers."""
     if tile == "partner":
-        if len(partners(p)) >= MAX_PARTNERS:
+        if len(partners(p)) >= MAX_PARTNERS or (p.map_id in ("8", "8a") and len(partners(p)) >= LEVEL_I_PARTNERS
+                                                and not any(c.type == "association" and c.level >= 2 for c in p.action_cards)):          # map 8: no 3rd partner zoo before the upgrade
             return []
         mine = {continent_of(t) for t in partners(p)}
         return [{"partner": continent_of(t)} for t in state.board_tokens if t.location == "association_3" and continent_of(t) not in mine]
@@ -538,6 +555,8 @@ def space_bonuses(state, p, kind: str, k: int) -> None:
             bonuses.defer(state, dict(upgrade, source=f"set {new_min}"))
         if p.map_id == "11" and new_min > old_min and new_min == 3:
             g._gain(state, p.seat, conservation=1)
+    if p.map_id == "11" and k == 2:                           # map 11 (Caves): the 2nd partner zoo / 2nd university recalls a worker from the association board (Extra Shift; logs)
+        bonuses.defer(state, {"kind": "extra_shift", "source": "map11", "optional": True, "player": p.seat})
     if kind == "partner":
         if k == 3:
             bonuses.hire_worker(state, p.seat)

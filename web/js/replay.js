@@ -83,11 +83,11 @@
     g.addEventListener('animationend', () => g.remove());
     return g;
   }
-  function cardRow(keys, cls, emptyText, zone) {
+  function cardRow(keys, cls, emptyText, zone, dimmed) {
     const row = el('div', 'cards' + (cls ? ' ' + cls : ''));
     if (!keys.length) row.append(el('span', 'empty', emptyText || 'none'));
     const z = zone ? zoneNew(zone, keys) : null;
-    const items = keys.map((k) => (k ? card(k, z && z.isNew(k) ? 'card-new' : '') : el('div', 'card')));
+    const items = keys.map((k) => (k ? card(k, (z && z.isNew(k) ? 'card-new' : '') + (dimmed && dimmed(k) ? ' dim' : '')) : el('div', 'card')));
     if (z) for (const g of z.gone) items.splice(Math.min(g.index, items.length), 0, ghost(g.key));
     row.append(...items);
     return row;
@@ -111,17 +111,17 @@
     // what a placement bonus pentagon shows on top of the yellow base (r5c14); the number is drawn as text
     'bonus:reputation': 'r4c9', 'bonus:money': 'r11c8', 'bonus:xtoken': 'r3c2', 'bonus:take-in-range-or-deck': 'r6c13', 'bonus:Clever': 'r6c6',
     'bonus:bonus-sponsor': 'r7c6', 'bonus:sponsor-person-card': 'r7c6', 'bonus:Digging': 'r9c13', 'bonus:Determination': 'r6c7', 'bonus:cut-down': 'r4c1', 'bonus:bonus-scoring-cards': 'r6c4', 'bonus:Fac': 'r10c2', 'bonus:Partner-Zoo': 'r10c14', 'bonus:Multiplier': 'r6c8',
-    'bonus:Worker': 'r5c13', 'bonus:upgrade-card': 'r10c5',
-    'bonus:shark-attack': 'r5c1', 'bonus:wave': 'r11c14', 'bonus:store': 'r5c2', 'bonus:conceal': 'r5c5',
+    'bonus:Worker': 'r5c13', 'bonus:Pouch': 'r7c11', 'bonus:kiosk': 'r7c3', 'bonus:upgrade-card': 'r10c5',
+    'bonus:continent': 'r9c12', 'bonus:shark-attack': 'r5c1', 'bonus:wave': 'r11c14', 'bonus:store': 'r5c2', 'bonus:conceal': 'r5c5',
   };
   // BGA's names of the icons (scripts/name_icons.py): the placement bonus of each type shows the icon of the same name
   const BONUS_ICON_NAME = {
     reputation: 'reputation', money: 'money', xtoken: 'xtoken-bordered', 'take-in-range-or-deck': 'take-in-range-or-deck', Clever: 'clever', 'bonus-sponsor': 'bonus-sponsor',
     'sponsor-person-card': 'sponsor-person-card', Digging: 'digging', 'Partner-Zoo': 'partner-zoo', Multiplier: 'multiplier', Worker: 'add-worker', 'upgrade-card': 'upgrade-card',
-    appeal: 'appeal', conservation: 'conservation', Snapping: 'snapping', 'size-2': 'enclosure-size-2',
+    appeal: 'appeal', conservation: 'conservation', Snapping: 'snapping', 'size-2': 'enclosure-size-2', 'size-3': 'enclosure-size-3',
   };
   function applyIconNames(names) {
-    for (const [type, name] of Object.entries(BONUS_ICON_NAME)) if (names[name]) ICON_IDS['bonus:' + type] = names[name];
+    for (const [type, name] of Object.entries(BONUS_ICON_NAME)) if (names[name] && type !== 'Digging') ICON_IDS['bonus:' + type] = names[name];       // (Digging keeps r9c13)
     ICON_IDS.money = names.money; ICON_IDS.appeal = names.appeal; ICON_IDS.conservation = names.conservation; ICON_IDS.reputation = names.reputation; ICON_IDS.xtoken_plain = names.xtoken;
   }
   const SHOW_VALUE = new Set(['money', 'reputation', 'appeal']);     // BGA prints the number on these three only (appeal: 2 on the drawing board); the icon of every other bonus already says what it is
@@ -186,13 +186,14 @@
       const bn = pb.bonus || {};
       const tip = svg('title');
       tip.textContent = bn.type ? bn.type + (bn.value ? ' ' + bn.value : '') : 'bonus';
-      iconBox(ICON_IDS.pentagon, cx, cy, 80);
       const icon = ICON_IDS['bonus:' + bn.type];
+      if (bn.type === 'Digging') { iconBox(icon, cx, cy, 80); s.lastChild.append(tip); continue; }       // r9c13 already has its own background
+      iconBox(ICON_IDS.pentagon, cx, cy, 80);
       if (bn.type === 'adapt') { iconBox('r10c15', cx - 14, cy + 3, 36); iconBox('r10c16', cx + 15, cy + 3, 36); }      // two endgame card icons side by side
       else if (bn.type === 'money') moneyTile(s, cx, cy + 3, 48);
       else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)
       if (bn.type === 'appeal' && !icon) put('text', { x: cx, y: cy + 6, class: 'bonus-label' }, '★');      // a bonus nobody has identified yet is just the empty pentagon
-      if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + 16, class: 'bonus-number' }, bn.value);       // the number sits over the middle of the icon
+      if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
       s.lastChild.append(tip);
     }
     for (const sh of map.special_hexes) {            // hex that needs the upgraded Build action: red wedge on its upper left, purple "II" shovel badge
@@ -205,6 +206,30 @@
       put('circle', { cx: bx, cy: by, r: br, class: 'flag-badge' });
       iconBox('r3c9', bx, by - 8, 29);               // the shovel (Build action) on white
       put('text', { x: bx, y: by + 20, class: 'flag-label' }, 'II');
+    }
+
+    // map 9: a slot with the continent icon on the edge of the map holds the player's cube until the marker is removed (the log line "removes <ASIA> marker")
+    if (map.id === '9') {
+      const ORDER = ['Europe', 'Americas', 'Africa', 'Australia', 'Asia'], gone = (player.flags && player.flags.m9_removed) || 0;
+      const at = Object.fromEntries((map.special_hexes || []).filter((h) => h.kind === 'continent_marker').map((h) => [h.note.split(' ')[0], cellCentre(h.x, h.y)]));
+      ORDER.forEach((c, i) => {
+        if (gone >> i & 1 || !at[c]) return;
+        const cx = Math.max(52, Math.min(1070, at[c][0])), cy = Math.max(30, Math.min(946, at[c][1]));
+        const g = svg('g', {});
+        g.append(svg('rect', { x: cx - 50, y: cy - 25, width: 100, height: 50, rx: 12, fill: '#f3ecd2', stroke: '#2b1d12', 'stroke-width': 3 }));
+        const col = seatColor(seat), edge = mix(col, '#000000', .6);
+        const cube = svg('g', { transform: 'translate(' + (cx - 24) + ' ' + (cy - 1) + ') scale(.8)' });
+        for (const [pts, fill] of [['0,-19 19,-9 0,2 -19,-9', mix(col, '#ffffff', .45)], ['-19,-9 0,2 0,21 -19,10', col], ['19,-9 0,2 0,21 19,10', mix(col, '#000000', .3)]]) {
+          cube.append(svg('polygon', { points: pts, fill, stroke: edge, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
+        }
+        g.append(cube);
+        const id = ICON_IDS[c];
+        if (id) { const [w0, h0] = iconSizes[id] || [190, 152], h = 38, w = w0 * h / h0; g.append(svg('image', { href: iconUrl(id), x: cx + 26 - w / 2, y: cy - h / 2, width: w, height: h })); }
+        const tip = svg('title');
+        tip.textContent = c + ' marker (' + replay.players[seat].name + '): removed when an animal of this continent is played next to its area';
+        g.append(tip);
+        s.append(g);
+      });
     }
 
     // map 13: the bonus of each quadrant (gained when the area is completely covered and at every break) sits on the edge of the map, on the
@@ -239,6 +264,22 @@
       const [hx, hy] = cellCentre(x, y);
       return [0, 1, 2, 3, 4, 5].map((i) => (hx + 76 * Math.cos(i * Math.PI / 3)).toFixed(1) + ',' + (hy + 76 * Math.sin(i * Math.PI / 3)).toFixed(1)).join(' ');
     };
+    // the outline of a building: only the edges of its hexes that have no neighbour hex of the same building (flat topped hexes; the neighbour across edge i
+    // lies at (+1,+1), (0,+2), (-1,+1), (-1,-1), (0,-2), (+1,-1))
+    const NEIGHBOUR = [[1, 1], [0, 2], [-1, 1], [-1, -1], [0, -2], [1, -1]];
+    const outlinePath = (cells) => {
+      const mine = new Set(cells.map(([x, y]) => x + ',' + y));
+      const parts = [];
+      for (const [x, y] of cells) {
+        const [hx, hy] = cellCentre(x, y);
+        NEIGHBOUR.forEach(([dx, dy], i) => {
+          if (mine.has((x + dx) + ',' + (y + dy))) return;
+          const pt = (k) => (hx + 76 * Math.cos(k * Math.PI / 3)).toFixed(1) + ' ' + (hy + 76 * Math.sin(k * Math.PI / 3)).toFixed(1);
+          parts.push('M' + pt(i) + 'L' + pt(i + 1));
+        });
+      }
+      return parts.join('');
+    };
     const drawBuilding = (b, cls) => {
       const g = svg('g', cls ? { class: cls } : {});
       const sp = spriteOf(b);
@@ -258,7 +299,7 @@
         img.append(title);
         g.append(img);
       }
-      if (cls) for (const [x, y] of b.cells) g.append(svg('polygon', { points: hexPoints(x, y), class: 'frame' }));
+      if (cls) g.append(svg('path', { d: outlinePath(b.cells), class: 'frame' }));
       return g;
     };
     const keyOf = (b) => [b.type, b.x, b.y, b.rotation, b.animal || (b.animals && b.animals.length) ? 'full' : 'empty'].join('|');
@@ -430,20 +471,31 @@
         const icon = SLOT_ICON[bn.type] || ICON_IDS['bonus:' + bn.type];
         const size = bn.type === 'money' ? (sl.kind === 'instant_income' ? 46 : 42) : (sl.kind === 'instant_income' ? 44 : 50);
         if (bn.type === 'money') moneyTile(s, 109, y + 1, size);
-        else if (bn.type === 'special-enclosure') {            // the choice of a large bird aviary / reptile house / large aquarium (Marine Worlds): three icons with slashes
-          const ids = ['r9c9', 'r9c11', 'r8c14'], h = 22;
-          let x = 78;
-          ids.forEach((id, n) => {
-            const [w0, h0] = iconSizes[id] || [h, h], w = w0 * h / h0;
-            add('image', { href: iconUrl(id), x, y: y - h / 2 + 1, width: w, height: h });
-            x += w + 2;
-            if (n < ids.length - 1) { add('text', { x: x + 1, y: y + 7, class: 'slot-label', style: 'font-size:18px' }, '/'); x += 8; }
-          });
+        else if (bn.type === 'special-enclosure') {            // the choice of a large bird aviary / reptile house (/ large aquarium in a Marine Worlds game)
+          const h = 24, row = (ids, cy, trailing) => {
+            const ws = ids.map((id) => { const [w0, h0] = iconSizes[id] || [h, h]; return w0 * h / h0; });
+            let x = 110 - (ws.reduce((a, b) => a + b, 0) + 10 * (ids.length - 1) + (trailing ? 6 : 0)) / 2;
+            ids.forEach((id, n) => {
+              add('image', { href: iconUrl(id), x, y: cy - h / 2, width: ws[n], height: h });
+              x += ws[n];
+              if (n < ids.length - 1 || trailing) { add('text', { x: x + 5, y: cy + 7, class: 'slot-label', style: 'font-size:18px' }, '/'); x += 10; }
+            });
+          };
+          if (replay.marine_worlds) { row(['r9c9', 'r9c11'], y - 11, true); row(['r8c14'], y + 15, false); }      // the aquarium goes down a row so that all three fit the pentagon
+          else row(['r9c9', 'r9c11'], y, false);
+        } else if (icon && bn.type === 'Clever' && bn.value > 1) {          // 2 Clever abilities: the amount to the left of the icon (no overlap)
+          const [w0, h0] = iconSizes[icon] || [size, size];
+          add('image', { href: iconUrl(icon), x: 120 - (w0 * size / h0) / 2, y: y - size / 2 + 1, width: w0 * size / h0, height: size });
+          add('text', { x: 90, y: y + 12, class: 'slot-number', style: 'font-size:32px' }, bn.value);
+        } else if (icon && (bn.type === 'xtoken' || bn.type === 'Pouch') && bn.value > 1) {          // several X tokens / Pouch 2: the amount to the left of the icon, overlapping it a little
+          const [w0, h0] = iconSizes[icon] || [size, size];
+          add('image', { href: iconUrl(icon), x: 117 - (w0 * size / h0) / 2, y: y - size / 2 + 1, width: w0 * size / h0, height: size });
+          add('text', { x: 92, y: y + 12, class: 'slot-number', style: 'font-size:32px' }, bn.value);       // (overlaps the token a little)
         } else if (icon) {
           const [w0, h0] = iconSizes[icon] || [size, size];
           add('image', { href: iconUrl(icon), x: 109 - (w0 * size / h0) / 2, y: y - size / 2 + 1, width: w0 * size / h0, height: size });
         } else add('text', { x: 109, y: y + 8, class: 'slot-label' }, '?');
-        if (SLOT_NUMBER.has(bn.type) && bn.value) add('text', { x: 109, y: y + 13, class: 'slot-number' }, bn.value);
+        if (SLOT_NUMBER.has(bn.type) && bn.value && !(bn.type === 'xtoken' && bn.value > 1)) add('text', { x: 109, y: y + 13, class: 'slot-number' }, bn.value);
         if (bn.type === 'cut-down' && icon) {                  // the Cut Down ability: a white 1 with a black border near the left edge of the icon
           const [w0, h0] = iconSizes[icon] || [size, size];
           add('text', { x: 109 - (w0 * size / h0) / 2 + 8, y: y + 14, class: 'slot-number', style: 'font-size:28px' }, '1');
@@ -470,30 +522,66 @@
 
   // the player's association board (web/assets/association_player_board.webp, 351x1776): partner zoo slots 1-4 and university slots 1-3, bottom to top
   const STRIP = {
-    partner: { 1: 850, 2: 612, 3: 376, 4: 140 },          // y of the middle of the slot picture; x is always 175
-    university: { 1: 1610, 2: 1375, 3: 1140 },
+    partner: { 1: 855, 2: 619, 3: 383, 4: 147 },          // y of the middle of the slot picture (measured on the silhouettes); x is always 175
+    university: { 1: 1612, 2: 1378, 3: 1144 },
   };
+  const SLOT_SIZE = { partner: [253, 198], university: [248, 199] };         // the silhouettes of the slots on the picture of the player board
   function associationStrip(p, map, seat) {
-    const s = svg('svg', { class: 'strip', viewBox: '0 0 351 1776', role: 'img', 'aria-label': 'Partner zoos and universities' });
+    const s = svg('svg', { class: 'strip', viewBox: '-50 0 451 1776', role: 'img', 'aria-label': 'Partner zoos and universities' });
     s.append(svg('image', { href: '/assets/association_player_board.webp', x: 0, y: 0, width: 351, height: 1776 }));
     const bonuses = map.association_bonuses || {};            // conservation points of the 4th partner zoo and the 3rd university, shown on their (empty) slots
     conservationBonus(s, 175, STRIP.partner[4] + 22, 92, bonuses.partner4, '4th partner zoo: ' + bonuses.partner4 + ' conservation');
     conservationBonus(s, 175, STRIP.university[3] + 22, 92, bonuses.university3, '3rd university: ' + bonuses.university3 + ' conservation');
+    // where the zoo map awards an action card upgrade: most maps on the 2nd partner zoo and the 2nd university; maps 12 and T1 on the first and the second *set*
+    // (a partner zoo and a university), map 11 on the first set: a curved line joins the two slots of a set with the upgrade icon in its middle and an arrow from
+    // each end pointing at it
+    const upgradeIcon = ICON_IDS['bonus:upgrade-card'] || 'r10c5';
+    const putUpgrade = (cx, cy, h, tip) => {
+      const [w0, h0] = iconSizes[upgradeIcon] || [h, h], w = w0 * h / h0;
+      const img = svg('image', { href: iconUrl(upgradeIcon), x: cx - w / 2, y: cy - h / 2, width: w, height: h });
+      const t = svg('title'); t.textContent = tip; img.append(t);
+      s.append(img);
+    };
+    const SETS = { '12': [1, 2], T1: [1, 2], '11': [1] };
+    if (!SETS[map.id]) {
+      putUpgrade(175, STRIP.partner[2] + 22, 84, 'Upgrade an action card (2nd partner zoo)');
+      putUpgrade(175, STRIP.university[2] + 22, 84, 'Upgrade an action card (2nd university)');
+    } else {
+      SETS[map.id].forEach((n, i) => {
+        const side = i % 2 === 0 ? 1 : -1, ex = side === 1 ? 34 : 351 - 34, cx = side === 1 ? -34 : 351 + 34;        // the first set on the left margin, the second on the right
+        const y1 = STRIP.partner[n], y2 = STRIP.university[n];
+        const pt = (t) => [(1 - t) * (1 - t) * ex + 2 * (1 - t) * t * cx + t * t * ex, (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * ((y1 + y2) / 2) + t * t * y2];
+        s.append(svg('path', { d: 'M' + ex + ' ' + y1 + ' Q' + cx + ' ' + (y1 + y2) / 2 + ' ' + ex + ' ' + y2, fill: 'none', stroke: '#3a2616', 'stroke-width': 7, 'stroke-linecap': 'round' }));
+        for (const t of [0.34, 0.66]) {                                                    // arrowheads on the line, pointing towards the middle
+          const [x, y] = pt(t), [x2, y2b] = pt(t + (t < 0.5 ? 0.04 : -0.04));
+          const ang = Math.atan2(y2b - y, x2 - x), L = 26, W = 14;
+          const tip = [x2, y2b], base = [x2 - Math.cos(ang) * L, y2b - Math.sin(ang) * L];
+          const nx = -Math.sin(ang) * W, ny = Math.cos(ang) * W;
+          s.append(svg('polygon', { points: [tip, [base[0] + nx, base[1] + ny], [base[0] - nx, base[1] - ny]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '), fill: '#3a2616' }));
+        }
+        const [mx, my] = pt(0.5);
+        putUpgrade(mx, my, 84, 'Upgrade an action card (set ' + n + ': a partner zoo and a university)');
+      });
+    }
     // the partner zoos and universities of the player; one that arrived gets a green frame, one that left stays as a ghost with a red frame
     // (the same fade as the cards)
     const drawToken = (kind, slot, type, cls) => {
       const y = STRIP[kind][slot];
       const id = ICON_IDS[kind === 'partner' ? type.replace('partner-', '') : type];
       if (!y || !id) return null;
+      // the token moves from the association board to its slot: scaled so that its visible part (without the transparent edge of the picture) fills the slot
       const [w0, h0] = iconSizes[id] || [190, 152];
-      const w = kind === 'partner' ? 232 : 250, h = w * h0 / w0;
+      const [bx, by, bw, bh] = kind === 'partner' ? [5, 4, 179, 142] : id === 'r7c14' ? [1, 1, 119, 84] : [7, 6, 119, 84];       // the drawn part of the picture (no transparent edge / shadow)
+      const [slotW, slotH] = SLOT_SIZE[kind];
+      const kx = slotW / bw, ky = kind === 'partner' ? kx : slotH / bh;               // a university is a little flatter than its slot: stretched to fill it
+      const w = w0 * kx, h = h0 * ky;
       const g = svg('g', cls ? { class: cls } : {});
-      const img = svg('image', { href: iconUrl(id), x: 175 - w / 2, y: y - h / 2, width: w, height: h });
+      const img = svg('image', { href: iconUrl(id), x: 175 - (bx + bw / 2) * kx, y: y - (by + bh / 2) * ky, width: w, height: h, preserveAspectRatio: 'none' });
       const tip = svg('title');
       tip.textContent = type;
       img.append(tip);
       g.append(img);
-      if (cls) g.append(svg('rect', { x: 175 - w / 2 - 6, y: y - h / 2 - 6, width: w + 12, height: h + 12, rx: 14, class: 'frame' }));
+      if (cls) g.append(svg('rect', { x: 175 - slotW / 2 - 4, y: y - slotH / 2 - 4, width: slotW + 8, height: slotH + 8, rx: 14, class: 'frame' }));
       return g;
     };
     const toks = p.tokens.filter((t) => /^(partner|university)_\d$/.test(t.location));
@@ -645,6 +733,23 @@
     const bar = $('actionbar');
     bar.replaceChildren();
     const cur = replay.steps[step], o = cur.options;
+    // the step that puts the action card back on slot 1 ends the turn (the state already passes it on): the player has to confirm it. In the replay the buttons
+    // are only shown, greyed out; in the game Confirm passes the turn, Undo takes back the last effect that can be taken back, Restart turn all of them
+    const before = step > 0 ? replay.steps[step - 1].state : null;
+    if (before && st.turn > before.turn && st.active_player !== before.active_player && (before.phase === 'turn' || before.phase === 'final_turns')) {
+      bar.hidden = false;
+      const who = el('span', 'who', replay.players[before.active_player].name);
+      who.style.color = seatColor(before.active_player);
+      bar.append(who, el('b', '', ' must confirm or restart your turn'));
+      for (const [cls, label, tip] of [['confirm', 'Confirm', 'Confirm the turn and pass to the next player'],
+                                       ['undo', 'Undo last step', 'Take back the last effect (only if it can be taken back)'],
+                                       ['restart', 'Restart turn', 'Take back all the steps of the turn (to its start or the last effect that cannot be taken back)']]) {
+        const b = el('button', 'turnbtn ' + cls, label);
+        b.type = 'button'; b.disabled = true; b.title = tip + ' - not available in the replay';
+        bar.append(b);
+      }
+      return;
+    }
     const fromEngine = cur.engine && cur.engine.source === 'engine';
     const seat = o ? o.seat : st.active_player;
     const choosing = o ? true : !fromEngine && (st.phase === 'turn' || st.phase === 'final_turns') && !st.current_action && st.players[seat] && st.players[seat].action_cards;
@@ -724,10 +829,62 @@
 
   // taking cards: what it is for, and the button to draw from the deck; the display cards that can be taken are the ones not greyed out
   const SOURCE_TEXT = { bonus: 'placement bonus', 'reputation track': 'reputation track', association4: 'association', map13: 'map bonus' };
+  // the action card of the running action with its strength, as in front of BGA's prompt
+  function actionBadge(st) {
+    const ca = st.current_action || {};
+    const card = (st.players[ca.seat] && st.players[ca.seat].action_cards[ca.slot - 1]) || {};      // (the log-built state only knows the slot of the card)
+    const type = ca.type || card.type, level = ca.level || card.level;
+    const b = el('span', 'abtn' + (level === 2 ? ' lvl2' : ''));
+    b.title = (ACTION_NAMES[type] || '') + (level === 2 ? ' II' : '') + ', strength ' + ca.strength;
+    if (type) b.append(pic(ACTION_ICON[type], 26), el('b', '', ca.strength));
+    return b;
+  }
+  // the Association action: one button per kind of task that can be done now (not one per partner zoo / university)
+  const TASK_TEXT = { partner: 'Take a partner zoo', university: 'Take a university', conservation: 'Support a conservation project', hire: 'Hire a worker' };
+  function associationBar(bar, o) {
+    bar.append(el('b', '', ' must perform an association task'));
+    for (const [task, n] of Object.entries(o.association.tasks)) {
+      const b = el('span', 'abtn deckbtn');
+      b.title = task + ': ' + n + (n === 1 ? ' possibility' : ' possibilities');
+      if (task === 'reputation') b.append(el('b', '', 'Take 2'), pic('reputation', 26));
+      else b.append(el('b', '', TASK_TEXT[task] || task));
+      bar.append(b);
+    }
+    for (const [kind, n] of Object.entries(o.kinds)) {
+      if (kind === 'association_task') continue;
+      const b = el('span', 'abtn gen');
+      b.title = kind + ': ' + n + (n === 1 ? ' option' : ' options');
+      b.append(el('b', '', KIND_LABEL[kind] || kind.replace(/_/g, ' ')));
+      bar.append(b);
+    }
+  }
+  // the Sponsors action: play a sponsor (click it in the hand; the cards that cannot be played are greyed out) or break for money
+  function sponsorsBar(bar, o) {
+    const sp = o.sponsors;
+    const text = sp.played ? ' may play another sponsor card' : sp.level >= 2 ? ' must play sponsor cards from hand or display or break for money' : ' must play one sponsor card from hand or break for money';
+    bar.append(el('b', '', text));
+    if (sp.can_break) {
+      const b = el('span', 'abtn deckbtn');
+      b.title = 'Instead of playing a sponsor: advance the break token by the strength and gain money';
+      b.append(el('b', '', 'Break ' + sp.strength + ', Gain ' + sp.gain));
+      bar.append(b);
+    }
+    for (const [kind, n] of Object.entries(o.kinds)) {
+      if (kind === 'play_sponsor' || kind === 'sponsor_break') continue;
+      const b = el('span', 'abtn gen');
+      b.title = kind + ': ' + n + (n === 1 ? ' option' : ' options');
+      b.append(el('b', '', KIND_LABEL[kind] || kind.replace(/_/g, ' ')));
+      bar.append(b);
+    }
+  }
   function takeBar(bar, o, seat) {
     const t = o.take;
     let text;
-    if (t.remaining !== undefined) text = ' must take ' + t.remaining + (t.remaining === 1 ? ' card' : ' cards') + (t.snapping ? ' (a snap is possible)' : '');
+    if (t.remaining !== undefined) {                      // the Cards action: draw (and discard) or snap
+      const n = t.remaining, s = n === 1 ? ' card' : ' cards';
+      text = ' must take ' + n + (t.taken ? ' more' : '') + s + (t.range.length ? ' from deck or display in reputation range' : ' from deck') + (t.discard ? ' (and discard ' + t.discard + ')' : '')
+        + (t.snapping && !t.taken ? ' or snap ' + t.snaps_left + ' card(s)' : '');
+    }
     else {
       const src = t.source ? (SOURCE_TEXT[t.source] || (/^[ASPF]\d{3}$/.test(t.source) ? cardName(t.source) : t.source)) : '';
       text = ' must ' + (t.is_snap ? 'snap 1 card from the display' + (t.small ? ' (a small animal)' : '') : 'take 1 card from display in reputation range') + (src ? ' (' + src + ')' : '');
@@ -736,21 +893,88 @@
     if (t.deck && !t.range_only) {
       const b = el('span', 'abtn deckbtn');
       b.title = 'Draw from the deck';
-      b.append(el('b', '', t.deck > 1 ? 'Draw up to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
+      b.append(el('b', '', t.remaining !== undefined && t.deck === t.remaining && t.deck > 1 ? 'Draw all ' + t.deck + ' cards from deck' : t.deck > 1 ? 'Draw up to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
       bar.append(b);
     }
+  }
+
+  // the buttons of the pending effects. Reputation, appeal and conservation gains, project rewards, placement bonuses and animal abilities are choices of the
+  // player; money and X token gains happen by themselves (no button).
+  const EFFECT_TEXT = {
+    build: 'Build', take: 'Take a card', reveal: 'Reveal cards', sell: 'Sell cards', mark: 'Mark an animal', marketing: 'Marketing', donation: 'Donate', digging: 'Dig',
+    scavenge: 'Scavenge', glide: 'Glide', glide_gain: 'Glide', shark: 'Shark attack', symbiosis: 'Symbiosis', cut_down: 'Cut down', trade: 'Trade', extra_shift: 'Extra shift',
+    assertion: 'Assertion', pilfer: 'Pilfer', venom: 'Venom', constrict: 'Constriction', hypnosis: 'Hypnosis', pay_appeal: 'Pay appeal', slot1: 'Card to slot 1', boost: 'Boost',
+    waza: 'Waza', reposition: 'Reposition', pouch: 'Pouch a card', search_discard: 'Search the discard pile', upgrade: 'Upgrade an action card', threshold2: 'Upgrade or worker',
+    threshold_bonus: 'Choose a bonus', endgame_discard: 'Discard an endgame card', adapt: 'Adapt', break_discard: 'Discard to the hand limit', take_tile: 'Take a tile',
+    archaeologist: 'Archaeologist', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', reef: 'Reef', ability: 'Animal ability',
+  };
+  const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
+  function effectButton(e) {
+    if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res)) return null;
+    if (e.kind === 'take' || e.kind === 'build') return null;                      // shown as the deck button / the pieces
+    const b = el('span', 'abtn deckbtn');
+    const src = e.source && /^[ASPF]\d{3}$/.test(e.source) ? cardName(e.source) : '';
+    b.title = (EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
+    if (e.kind === 'gain') {
+      b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
+    } else {
+      b.append(el('b', '', EFFECT_TEXT[e.kind] || e.kind.replace(/_/g, ' ')));
+    }
+    return b;
   }
 
   // any other decision of the engine: who must do what, and the kinds of action it offers (with how many options each)
   function genericBar(bar, st, o, seat) {
     const who = el('span', 'who', replay.players[seat].name);
     who.style.color = seatColor(seat);
-    if (o.take) { bar.append(who); takeBar(bar, o, seat); return; }
-    bar.append(who, el('b', '', ' ' + (PROMPT_TEXT[o.prompt] || 'must decide (' + o.prompt + ')')));
-    if (o.pending) for (const k of o.pending) bar.append(el('span', 'chip pend', k));
+    if (o.discard) {                                            // no buttons: in the game the player clicks the cards of the hand, then a Confirm button appears
+      let who2 = who, count = o.discard.count;
+      if (o.prompt === 'effects' && o.discard.what === 'card') {
+        // the hand limit at a break: the engine has the discard pending from the moment the break is triggered, the log only from "Starting a new break" on, and it
+        // is the player over the limit (by the log's hand) who has to discard
+        let inBreak = false;
+        for (let j = step; j >= 0; j--) {
+          const label = replay.steps[j].label || '';
+          if (/^End of the break/.test(label)) break;
+          if (/^Starting a new break/.test(label)) { inBreak = true; break; }
+        }
+        const over = st.players.map((q, i) => ({ i, n: q.hand.length - q.hand_limit })).filter((q) => q.n > 0);
+        if (!inBreak || !over.length) { bar.hidden = true; return; }
+        who2 = el('span', 'who', replay.players[over[0].i].name);
+        who2.style.color = seatColor(over[0].i);
+        count = over[0].n;
+      }
+      bar.append(who2, el('b', '', ' must discard ' + count + ' ' + o.discard.what + '(s)'));
+      return;
+    }
+    if (o.association) {
+      bar.append(actionBadge(st), who);
+      associationBar(bar, o);
+      return;
+    }
+    if (o.sponsors) {
+      bar.append(actionBadge(st), who);
+      sponsorsBar(bar, o);
+      return;
+    }
+    if (o.take) {
+      if (o.prompt === 'cards_take') bar.append(actionBadge(st));
+      bar.append(who);
+      takeBar(bar, o, seat);
+      return;
+    }
+    const effectsOnly = o.prompt === 'effects' && !o.take && !(o.pieces && o.pieces.length);       // (the effect buttons say it all)
+    if (effectsOnly) bar.append(who);
+    else bar.append(who, el('b', '', ' ' + (PROMPT_TEXT[o.prompt] || 'must decide (' + o.prompt + ')')));
+    let shown = 0;
+    for (const e of o.effects || []) {                          // every effect the player can resolve has its own button (in any order); automatic gains have none
+      const b = effectButton(e);
+      if (b) { bar.append(b); shown++; }
+    }
     if (o.pieces && o.pieces.length) bar.append(piecesRow(o));
     for (const [kind, n] of Object.entries(o.kinds)) {
       if (kind === 'place_building' && o.pieces && o.pieces.length) continue;       // shown as the pieces themselves
+      if (kind === 'choose_effect' || kind === 'take_cards' || (o.prompt === 'effects' && kind === 'place_building')) continue;      // shown as the effect buttons / cards
       const b = el('span', 'abtn gen');
       b.title = kind + ': ' + n + (n === 1 ? ' option' : ' options');
       b.append(el('b', '', KIND_LABEL[kind] || kind.replace(/_/g, ' ')));
@@ -758,6 +982,7 @@
       bar.append(b);
     }
     if (!Object.keys(o.kinds).length) bar.append(el('span', 'abtn gen off', 'nothing to choose'));
+    if (effectsOnly && !bar.querySelector('.abtn')) bar.hidden = true;                // only automatic gains are pending: nothing for the player to do
   }
 
   // the cards of the display a player can reach at this reputation (engine cards_action.reputation_range)
@@ -767,6 +992,40 @@
   // At 5 and 8 the two random bonuses of the game still on offer lie to the left and right of the arrows, like the upgrade / worker at 2.
   const CT_X = (n) => (88 + 182.4 * n) / 2000;                       // centre of the space n on the picture (2000 px wide version)
   const CT_BONUS_X = { 5: [905, 1095], 8: [1457, 1643] };            // where the two random bonus tiles lie under the arrows
+  // a bonus tile of the conservation track: the bonus tokens (bonus-...) are whole tiles of the icon sheet; the others (university, partner zoo, money, X tokens...)
+  // are drawn like the placement bonuses of the zoo map: the yellow pentagon with the icon, and the amount for money and X tokens
+  function bonusTile(name, value) {
+    if (name.startsWith('bonus-') && iconNames[name]) {
+      const t = el('img', 'ctbonus');
+      t.src = iconUrl(iconNames[name]); t.alt = name;
+      return t;
+    }
+    const id = ICON_IDS['bonus:' + name];
+    if (!id) return null;
+    // drawn in the units of the placement bonuses of the zoo map (pentagon 80, icon 48, numbers in the same typography)
+    const t = svg('svg', { class: 'ctbonus ctcomposed', viewBox: '0 0 80 80' });
+    const picture = (iconId, cx, cy, h) => {
+      const [w0, h0] = iconSizes[iconId] || [h, h];
+      t.append(svg('image', { href: iconUrl(iconId), x: cx - (w0 * h / h0) / 2, y: cy - h / 2, width: w0 * h / h0, height: h }));
+    };
+    picture(ICON_IDS.pentagon, 40, 40, 80);
+    if (name === 'money') {
+      moneyTile(t, 40, 43, 48);
+      if (value) t.append(Object.assign(svg('text', { x: 40, y: 56, class: 'bonus-number' }), { textContent: value }));      // on top of the money icon
+    } else if (name === 'reputation' || name === 'appeal') {
+      picture(id, 40, 43, 48);
+      if (value) t.append(Object.assign(svg('text', { x: 40, y: 59, class: 'bonus-number' }), { textContent: value }));      // the amount over the icon, like the other reputation bonuses
+    } else if (name === 'take-in-range-or-deck' && value > 1) {
+      picture(id, 52, 43, 48);
+      t.append(Object.assign(svg('text', { x: 16, y: 55, class: 'bonus-number', style: 'font-size:38px' }), { textContent: value }));   // the amount to the left of the icon
+    } else if (name === 'xtoken' && value > 1) {
+      picture(id, 50, 43, 48);
+      t.append(Object.assign(svg('text', { x: 23, y: 55, class: 'bonus-number', style: 'font-size:38px' }), { textContent: value }));   // the amount to the left of the icon
+    } else {
+      picture(id, 40, 43, 48);
+    }
+    return t;
+  }
   function conservationTrack(st) {
     if (Math.min(...st.players.map((p) => p.conservation)) > 10) return null;
     const wrap = el('div', 'ctrackwrap');
@@ -779,10 +1038,9 @@
       (first[th] || []).forEach((opt, i) => {
         if (!left.some((o) => JSON.stringify(o) === JSON.stringify(opt))) return;
         const [name] = Object.keys(opt);
-        const id = iconNames[name];
-        if (!id) return;
-        const t = el('img', 'ctbonus');
-        t.src = iconUrl(id); t.alt = name; t.title = 'Bonus at ' + th + ' conservation: ' + name.replace(/^bonus-/, '').replace(/-/g, ' ') + (opt[name] ? ' (' + opt[name] + ')' : '');
+        const t = bonusTile(name, opt[name]);
+        if (!t) return;
+        t.title = 'Bonus at ' + th + ' conservation: ' + name.replace(/^bonus-/, '').replace(/-/g, ' ') + (opt[name] > 1 ? ' (' + opt[name] + ')' : '');
         t.style.left = (CT_BONUS_X[th][i] / 2000 * 100) + '%';
         wrap.append(t);
       });
@@ -810,7 +1068,8 @@
     st.display.forEach((k, i) => {
       const f = el('div', 'folder');
       const allowed = (replay.steps[step].options || {}).take;                       // while taking cards, the cards that cannot be taken are greyed out
-      const dim = allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k);
+      const sps = (replay.steps[step].options || {}).sponsors;
+      const dim = (allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k)) || (sps && sps.level >= 2 && k && !sps.display.includes(k));
       if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '')));
       for (const g of displayGone) if (g.index === i) f.append(ghost(g.key));       // the card that left this slot fades away on top of it
       f.append(el('span', 'folnum', i + 1));
@@ -847,6 +1106,35 @@
     col.append(associationBoard(st));
     col.append(projectPanel(st, replay.base_projects, 3, 'conservation-project-base', 'Base conservation projects', true));
     root.append(col);
+  }
+
+  // ---- the popup that lists the cards of the discard pile / the endgame deck (stays open while stepping, closes with the X, Escape or a click outside) ----
+  let openedPile = null;
+  function openPile(which) { openedPile = which; renderPile(); }
+  function closePile() { openedPile = null; renderPile(); }
+  function renderPile() {
+    let box = $('pile');
+    if (!openedPile) { if (box) box.hidden = true; return; }
+    if (!box) {
+      box = el('div', 'pile'); box.id = 'pile';
+      box.addEventListener('click', (e) => { if (e.target === box) closePile(); });
+      document.body.append(box);
+    }
+    const st = replay.steps[step].state;
+    const keys = openedPile === 'discard' ? st.main_discard.slice().reverse() : st.endgame_deck.slice().sort();      // the newest discard first; the endgame deck has no known order
+    const win = el('div', 'pilewin');
+    const head = el('div', 'pilehead');
+    head.append(el('h2', '', (openedPile === 'discard' ? 'Discard pile' : 'Endgame cards left (unordered)') + ' - ' + keys.length + ' card' + (keys.length === 1 ? '' : 's')));
+    const x = el('button', 'pileclose', '✕');
+    x.type = 'button'; x.title = 'Close (Escape)'; x.setAttribute('aria-label', 'Close');
+    x.onclick = closePile;
+    head.append(x);
+    const grid = el('div', 'cards pilegrid');
+    if (!keys.length) grid.append(el('span', 'empty', 'no cards'));
+    for (const k of keys) grid.append(card(k));
+    win.append(head, grid);
+    box.replaceChildren(win);
+    box.hidden = false;
   }
 
   // ---- the side panel above the move log (like BGA's player panels): break track, decks, then per player score, resources, action cards and icon counters ----
@@ -918,11 +1206,18 @@
     brk.append(flash('break', st.break_position, el('b', '', st.break_position + ' / 9')), bi);
     top.append(brk);
     const counts = el('div', 'deckcounts');
-    counts.append(flash('deck', st.main_deck_size, deckIcon(st.main_deck_size)), flash('discard', st.main_discard_size, discardIcon(st.main_discard_size)));
+    const discardBtn = flash('discard', st.main_discard_size, discardIcon(st.main_discard_size));
+    discardBtn.classList.add('pilebtn');
+    discardBtn.title = 'Discard pile: click to list its cards';
+    discardBtn.onclick = () => openPile('discard');
+    counts.append(flash('deck', st.main_deck_size, deckIcon(st.main_deck_size)), discardBtn);
     const eg = el('span', 'dc');
     eg.title = 'Endgame cards left';
     const ei = el('img', 'icon'); ei.src = iconUrl('r10c15'); ei.alt = 'Endgame cards'; ei.height = 32;
-    eg.append(ei, el('b', '', st.endgame_deck_size));
+    eg.append(el('b', '', st.endgame_deck_size), ei);                       // the number first, like the discard pile
+    eg.classList.add('pilebtn');
+    eg.title = 'Endgame cards left: click to list them';
+    eg.onclick = () => openPile('endgame');
     flash('egdeck', st.endgame_deck_size, eg);
     counts.append(eg);
     top.append(counts);
@@ -1020,6 +1315,11 @@
     lastNums = nums;
   }
 
+  // while a sponsor is to be played, everything in the hand of that player that is not a playable sponsor is greyed out
+  function handDim(seat) {
+    const o = replay.steps[step].options;
+    return o && o.sponsors && o.seat === seat ? (k) => !o.sponsors.hand.includes(k) : null;
+  }
   function renderZoo(st, seat) {
     const p = st.players[seat], who = replay.players[seat], map = replay.maps[seat];
     const box = el('div', 'zoo seat' + seat + (st.active_player === seat && st.phase !== 'over' ? ' active' : ''));
@@ -1032,7 +1332,7 @@
     row.append(bonusPanel(map, p, seat), zooBoard(map, p, seat), associationStrip(p, map, seat));
     box.append(row);
 
-    box.append(section('Hand (' + p.hand.length + ')', cardRow(p.hand, '', 'empty', seat + ':hand')));
+    box.append(section('Hand (' + p.hand.length + ')', cardRow(p.hand, '', 'empty', seat + ':hand', handDim(seat))));
     box.append(section('Endgame cards', cardRow(p.endgame_hand, 'small', 'none', seat + ':endgame')));
     box.append(section('Animals (' + p.animals.length + ')', cardRow(p.animals, 'small', 'none', seat + ':animals')));
     box.append(section('Sponsors (' + p.sponsors.length + ')', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors')));
@@ -1077,6 +1377,7 @@
     history.replaceState(null, '', '#' + step);
     fitAside();
     updateTimeline();
+    if (openedPile) renderPile();
     window.scrollTo(scrollX, scrollY);
   }
 
@@ -1165,7 +1466,9 @@
     replay.steps.forEach((s, i) => {
       // the step that finishes an action passes the turn in its state, but it still belongs to the player who acted
       const prev = i > 0 ? replay.steps[i - 1].state : null;
-      const actor = prev && s.state.turn > prev.turn && s.state.active_player !== prev.active_player ? prev.active_player : s.state.active_player;
+      const named = replay.players.findIndex((pl) => (s.label || '').startsWith(pl.name + ' '));        // (a label that starts with a player's name is that player's)
+      const actor = s.actor !== null && s.actor !== undefined ? s.actor : named >= 0 ? named            // the player the log names for this line (a Boost / Clever effect after the turn passed is still the acting player's)
+        : prev && s.state.turn > prev.turn && s.state.active_player !== prev.active_player ? prev.active_player : s.state.active_player;
       const li = el('li', 'seat' + actor);
       li.style.borderLeftColor = seatColor(actor);
       li.append(el('span', 'n', i), el('span', '', s.label || '…'), engineBadge(s.engine));
@@ -1181,6 +1484,7 @@
     $('last').onclick = () => { go(replay.steps.length - 1); };
     $('jump').onchange = (e) => { go(parseInt(e.target.value, 10) || 0); };
     document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && openedPile) { closePile(); return; }
       if (e.target.tagName === 'INPUT' || e.altKey || e.ctrlKey || e.metaKey) return;
       const keys = { ArrowLeft: () => go(step - 1), ArrowRight: () => go(step + 1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!timer); }, Home: () => go(0), End: () => go(replay.steps.length - 1) };
       if (keys[e.key]) { e.preventDefault(); keys[e.key](); }

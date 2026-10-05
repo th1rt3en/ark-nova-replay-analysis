@@ -24,3 +24,7 @@ for r in rows:
     t["marine_worlds"] = t["marine_worlds"] or bool(r["is_mw"])
 (ROOT / "data_manual" / "sample_maps.json").write_text(json.dumps(out, indent=4, sort_keys=True) + "\n")
 print(f"{len(out)} of {len(ids)} tables indexed", file=sys.stderr)
+from quarantine_unsupported_maps import quarantine  # noqa: E402  (beginner maps without geometry: move their logs out of log_examples/)
+
+for table, maps in quarantine():
+    print(f"{table}: map {', '.join(maps)} is not supported yet, moved to log_examples_unsupported/", file=sys.stderr)

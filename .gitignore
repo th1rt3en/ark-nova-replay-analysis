@@ -34,3 +34,4 @@ vendor/
 
 # Raw BGA logs: ~400 MB, keep out of git (they live in GCS; the golden tests read them from here locally)
 log_examples/
+log_examples_unsupported/

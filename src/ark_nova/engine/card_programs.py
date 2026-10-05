@@ -39,7 +39,7 @@ SCUBA_DIVE = {"S270"}                        # reveal the 3 topmost cards, take 
 UNSUPPORTED_PLAY = {}
 HIRE_WORKER = {"S216"}                       # Talented Communicator: hire 1 association worker
 DONATION = {"S273"}                          # Publications: you may make 1 donation
-UNSUPPORTED_IN_BUILD = {"S217": "Engineer (extra building of the same kind)"}
+UNSUPPORTED_IN_BUILD: dict = {}
 
 # passive triggers: sponsor -> [(icon, scope, effect)]. scope: 'self' = icons played into the owner's zoo, 'any' = into any zoo (the
 # owner gains). effect: ('gain', {resource: n}) | ('build', type) | ('reveal', x, animals_only) | ('sell', max) | ('pouch',) |
@@ -67,7 +67,7 @@ TRIGGERS = {
     "S239": [("Predator", "any", ("gain", {"money": 3}))],
     "S240": [("Herbivore", "any", ("gain", {"money": 3}))],
     "S266": [("SeaAnimal", "any", ("gain", {"money": 3}))],
-    "S270": [("SeaAnimal", "self", ("reveal", 3, "sponsor"))],           # Marine Research Expedition: Scuba Dive 3 for every sea animal icon (its own too)
+    "S270": [("SeaAnimal", "self", ("expedition",))],                     # Marine Research Expedition: send a person away for 1 conservation or Scuba Dive 3, for every sea animal icon (its own too)
     "S251": [("Bear", "any", ("gain", {"appeal": 2}))],
     "S252": [("Predator", "self", ("hunter",))],
     "S253": [("Herbivore", "self", ("marketing_cube",))],                 # Okapi Stable: 3 cubes, a herbivore icon may remove one for a Marketing effect

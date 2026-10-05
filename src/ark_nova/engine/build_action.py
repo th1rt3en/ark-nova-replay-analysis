@@ -109,13 +109,13 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
             if level < 2 and not rules.get("flags") and any(c in bd.flags for c in cells):
                 continue
             around = {n for c in cells for n in neighbours(c) if n not in cells}
-            if not overbuild and sum(bd.terrain.get(n) == "rock" for n in around) < rules.get("rock", 0):
+            if not overbuild and sum(bd.terrain.get(n) == "rock" and n not in occupied for n in around) < rules.get("rock", 0):
                 continue
-            if not overbuild and sum(bd.terrain.get(n) == "water" for n in around) < rules.get("water", 0):
+            if not overbuild and sum(bd.terrain.get(n) == "water" and n not in occupied for n in around) < rules.get("water", 0):
                 continue
             if sum(c in bd.border for c in cells) < rules.get("border", 0):
                 continue
-            if t in AQUARIUMS and not overbuild and not any(bd.terrain[c] == "water" for c in cells)                     and not any(bd.terrain.get(n) == "water" and n not in occupied for c in cells for n in neighbours(c)):
+            if t in AQUARIUMS and not overbuild and not any(bd.terrain[c] == "water" for c in cells)                     and not any(bd.terrain.get(n) == "water" and occupied.get(n, "underwater-tunnel") == "underwater-tunnel" for c in cells for n in neighbours(c)):
                 continue                                  # (a water space that is covered by a building (Terrain Build) does not count; an aquarium on water needs no other)
             if t == "kiosk" and any(hex_distance(cells[0], o) < KIOSK_DISTANCE for o in kiosks):
                 continue

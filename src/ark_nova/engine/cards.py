@@ -11,7 +11,7 @@ def matches(cond: Condition, key: str) -> bool:
     card = data.cards_by_key()[key]
     kind, arg = cond
     if kind == "tag":                       # animals and sponsors carry icon tags (projects do not)
-        return card["card_type"] in ("animal", "sponsor") and arg in card.get("tags", [])
+        return card["card_type"] in ("animal", "sponsor") and (arg in card.get("tags", []) or arg in ((card.get("variants") or {}).get("marine_worlds") or {}).get("tags", []))      # (Sea Turtle Tank: a sea animal in Marine Worlds)
     if kind == "sponsor":
         return card["card_type"] == "sponsor"
     if kind == "person":

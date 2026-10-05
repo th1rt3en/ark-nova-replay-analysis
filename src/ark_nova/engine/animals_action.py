@@ -17,7 +17,7 @@ from pathlib import Path
 
 from ark_nova import data
 from ark_nova.data.map_quirks import base_map_id
-from ark_nova.engine import animal_abilities, bonuses, cards_action, marks, sponsor_extras
+from ark_nova.engine import animal_abilities, bonuses, cards_action, map_rules, marks, sponsor_extras
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board, footprint_cells, neighbours
 from ark_nova.engine.icons import icon_counts, requirement
@@ -97,7 +97,7 @@ def own_abilities(key: str, b) -> list:
     same effect as the ability: the two lists are identical for some cards)."""
     pairs = abilities(key)
     reef = reef_abilities(key)
-    if b is not None and b.type in ("small-aquarium", "large-aquarium") and reef != pairs:
+    if b is not None and b.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") and reef != pairs:
         pairs = pairs + reef
     return pairs
 
@@ -105,11 +105,11 @@ def own_abilities(key: str, b) -> list:
 def reef_effects(state, key: str, b) -> list:
     """A Reef Dweller (a sea animal with a Reef Dweller effect) placed in an aquarium makes every other sea animal in the aquariums of the zoo trigger its Reef Dweller
     effect (confirmed by the user: 724827313 T68, a Cowfish in the small aquarium, the new animal in the large one). Sea animals without one (their effect is only an ability) neither trigger nor are triggered (checked on the logs)."""
-    if b is None or b.type not in ("small-aquarium", "large-aquarium") or not reef_abilities(key):
+    if b is None or b.type not in ("small-aquarium", "large-aquarium", "underwater-tunnel") or not reef_abilities(key):
         return []
     out = []
     seat = next(i for i, pl in enumerate(state.players) if b in pl.buildings)
-    zoo = [o for bb in state.players[seat].buildings if bb.type in ("small-aquarium", "large-aquarium") for o in bb.animals]      # (any aquarium of the zoo)
+    zoo = [o for bb in state.players[seat].buildings if bb.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") for o in bb.animals]      # (any aquarium of the zoo)
     for other in zoo:
         if other != key:
             pairs = reef_abilities(other)
@@ -127,7 +127,7 @@ def ability_effects(state, key: str, pairs=None) -> list:
         if name == "Hunter":
             out.append({"kind": "reveal", "source": key, "x": int(value), "filter": "animal", "optional": False})
         elif name.startswith("Perception"):
-            out.append({"kind": "reveal", "source": key, "x": int(name.split()[1]), "filter": "any", "optional": False})
+            out.append({"kind": "reveal", "source": key, "x": int(name.split()[1]), "filter": "any", "optional": False, "n": int(name.split()[1]) // 2})        # (Perception 4: draw 4, keep 2)
         elif name == "Sun Bathing":
             out.append({"kind": "sell", "source": key, "max": int(value), "optional": True})
         elif name.startswith("Boost: "):        # the X action card goes to slot 1 or slot 5 at the end of the action (player's choice)
@@ -182,7 +182,8 @@ def failed_conditions(state: GameState, seat: int, key: str, level: int) -> list
         elif req == "university":
             missing = 0 if any(t.location.startswith("university_") for t in p.tokens) else 1
         elif req == "Partner Zoo":      # a partner zoo (of any continent) or a university, checked on the logs
-            missing = 0 if any(t.type.startswith("partner-") or t.location.startswith("university_") for t in p.tokens) else 1
+            tags = {x for x in card(key).get("tags", []) if x in CONTINENT_TAGS}
+            missing = 0 if any(t.type.startswith("partner-") and t.type.split("-", 1)[1].lower() in tags for t in p.tokens) else 1      # (a partner zoo of one of the animal's continents)
         elif req in _ICON:
             missing = max(0, n - icons[_ICON[req]])
         else:
@@ -196,7 +197,7 @@ def conditions_met(state: GameState, seat: int, key: str, level: int) -> bool:
     if not waza_allows(state.players[seat], card(key)):
         return False
     failed = failed_conditions(state, seat, key, level)
-    credit = bool(state.current_action and state.current_action.get("camouflage")) or ignore_credit(state) or institute_connected(state.players[seat])
+    credit = bool(state.current_action and state.current_action.get("camouflage")) or ignore_credit(state) or institute_connected(state.players[seat])          or ("S263" in state.players[seat].sponsors and sponsor_extras.size_class(card(key)) == "large")        # Waza Large Animal Program: a large animal ignores 1 condition
     token = any(t.type == "bonus-ignore-conditions" for t in state.players[seat].tokens)       # (the rock / water of the enclosure still counts)
     return not failed or token or (credit and len(failed) == 1)
 
@@ -246,10 +247,13 @@ def _around(bd, cells) -> set:
 
 def flock_free(state: GameState, seat: int, key: str) -> bool:
     """Flock Animal X: the animal needs no enclosure when the zoo has a herbivore of at least size X (the ability belongs to the animal, not to an enclosure)."""
+    from ark_nova.engine import build_action
     p = state.players[seat]
     for name, value in abilities(key):
-        if name == "Flock Animal" and any("herbivore" in card(o).get("tags", []) and (card(o).get("size") or 0) >= int(value) for o in p.animals):
-            return True
+        if name == "Flock Animal" and (any("herbivore" in card(o).get("tags", []) and (card(o).get("size") or 0) >= int(value) for o in p.animals)
+                                       or any(b.animal and "herbivore" in card(b.animal).get("tags", []) and build_action.SIZES.get(b.type, 0) >= int(value) for b in p.buildings)
+                                       or (icon_counts(state, seat)["Herbivore"] and any(b.animal and build_action.SIZES.get(b.type, 0) >= int(value) for b in p.buildings))):
+            return True        # (the *enclosure* of a herbivore has the size: a small herbivore in a big enclosure counts; a herbivore icon of a university or token counts too: found in the logs)
     return False
 
 
@@ -268,17 +272,24 @@ def hosts(state: GameState, seat: int, key: str, occupied: bool = False) -> list
     def near_ok(b) -> bool:
         cells = footprint(b.type, b.x, b.y, b.rotation)
         around = _around(bd, set(cells)) - covered
-        return overbuild or (sum(bd.terrain.get(n) == "water" for n in around) >= requirement(key, "water")
-                             and sum(bd.terrain.get(n) == "rock" for n in around) >= requirement(key, "rock"))
+        own_water = sum(bd.terrain.get(n) == "water" for n in cells) if b.type == "underwater-tunnel" else 0         # (the tunnel is built on water: its own spaces count)
+        return overbuild or (sum(bd.terrain.get(n) == "water" for n in around) + own_water >= requirement(key, "water", state.config.marine_worlds)
+                             and sum(bd.terrain.get(n) == "rock" for n in around) >= requirement(key, "rock", state.config.marine_worlds))
 
     if c.get("canBeInStandardEnclosure") is not False:
         for b in p.buildings:
             if b.type.startswith("size-") and (b.animal is not None) == occupied and effective_size(p, b, bd) >= c["size"]:
                 out.append((b, near_ok(b)))
     for spec in c.get("specialEnclosures") or []:
+        pool = spec["type"] == "Aquarium" and not occupied                 # the aquariums of a zoo share their spaces: an animal may take them in several
+        free = 0
+        if pool:
+            aq = [b for b in p.buildings if b.type in SPECIAL_TYPES["Aquarium"]]
+            free = sum(CAPACITY[b.type] for b in aq) - sum(_special_size(a) for a in {a for b in aq for a in b.animals})
         for t in SPECIAL_TYPES.get(spec["type"], ()):
             for b in p.buildings:
-                if b.type == t and ((bool(b.animals) if occupied else CAPACITY[t] - sum(_special_size(a) for a in b.animals) >= spec["size"])):
+                if b.type == t and ((bool(b.animals) if occupied else (free >= spec["size"] if pool else
+                                                                       CAPACITY[t] - sum(_special_size(a) for a in b.animals) >= spec["size"]))):
                     out.append((b, near_ok(b)))
     return out
 
@@ -349,6 +360,11 @@ def legal(state: GameState, p) -> list:
                 acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": d, "x": x, "y": y}))
             if flock_free(state, p.seat, k):                      # Flock Animal: no enclosure is flipped
                 acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": d, "flock": True}))
+        for k in sorted(set(p.stored)):                          # map 11: an animal of the storage is played directly (the price is the same)
+            if k.startswith("A") and conditions_met(state, p.seat, k, a["level"]) and _cost_ok(state, p.seat, k, False, 0):
+                acts += [Action(p.seat, "play_animal", {"card": k, "from_display": False, "x": x, "y": y, "stored": True}) for x, y in enclosure_options(state, p.seat, k)]
+                if flock_free(state, p.seat, k):
+                    acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": False, "flock": True, "stored": True}))
     if a["played"]:
         acts.append(Action(p.seat, "finish_animals", {}))
     return acts
@@ -368,6 +384,8 @@ def play(state: GameState, action: Action) -> None:
             a["capped"] = True                               # Ignore Animals: that was the only animal of the action
         elif institute_connected(p) and len(failed_conditions(state, p.seat, k, a["level"])) == 1:
             pass                                             # the Research Institute ignores it
+        elif "S263" in p.sponsors and sponsor_extras.size_class(card(k)) == "large" and len(failed_conditions(state, p.seat, k, a["level"])) == 1:
+            pass                                             # Waza Large Animal Program ignores it
         elif state.current_action.get("camouflage") and len(failed_conditions(state, p.seat, k, a["level"])) == 1:
             state.current_action.pop("camouflage")           # the Camouflage credit is used
         else:                                                # the bonus token that ignores the conditions is used up
@@ -381,6 +399,8 @@ def play(state: GameState, action: Action) -> None:
         if a.get("variant") == 4 and a["level"] >= 2 and marks.owner(state, k) is not None:      # Mark Animals, level II: 1 reputation for a marked animal
             g._gain(state, p.seat, reputation=1)
         marks.taken(state, k)
+    elif action.args.get("stored"):
+        p.stored.remove(k)
     else:
         p.hand.remove(k)
     p.money -= price
@@ -405,7 +425,9 @@ def play(state: GameState, action: Action) -> None:
     g._gain(state, p.seat, money=own.get("money", 0), x_tokens=own.get("xtoken", 0))
     if a.get("variant") == 3 and a["level"] >= 2:            # Discount Animals, level II: pay 2 for 1 appeal, once per animal
         printed.append({"kind": "pay_appeal", "source": k, "optional": True})
-    pending = printed + ability_effects(state, k, pairs) + reef_effects(state, k, b) + fx.fire_icons(state, p.seat, k)
+    if b is not None and b.type.startswith("size-") and state.config.map_known[p.seat]:        # (a map that had to be guessed is not trusted with the tower)
+        g._gain(state, p.seat, appeal=map_rules.tower_appeal(p, b))              # map 1: the Observation Tower
+    pending = printed + ability_effects(state, k, pairs) + reef_effects(state, k, b) + fx.fire_icons(state, p.seat, k) + map_rules.continent_effects(state, p, k, b)
     if not g._open_effects(state, p.seat, pending, {"kind": "animals_play", "args": a}):
         after_step(state, p.seat)
 

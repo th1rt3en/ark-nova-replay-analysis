@@ -17,7 +17,7 @@ kinds = collections.Counter()
 skipped = collections.Counter()
 illegal, mism = [], []
 for f in sorted(glob.glob("log_examples/*.json"))[:limit]:
-    if "800035115" in f:
+    if "800035115" in f or "573904205" in f:
         continue
     parsed = parse_log(f)
     setup, cfg, seed = game_from_log(parsed)

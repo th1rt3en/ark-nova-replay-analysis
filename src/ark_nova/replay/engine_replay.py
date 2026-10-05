@@ -20,13 +20,13 @@ class MoveEngine:
     status: str                        # ok | mismatch | illegal | skipped | log (not part of a turn: setup, final scoring)
     detail: str = ""
     end: GameState | None = None       # engine state after the move (status ok only)
-    trace: list | None = None          # (event order, engine state after the action) of the turn, for the sub-steps of the move
+    trace: list | None = None          # (event order, engine state after the action, added by the test) of the turn, for the sub-steps of the move
 
     def state_before(self, order: int) -> GameState | None:
         """The engine state just before the log event `order`: after the last engine action that comes from an earlier event."""
         best = None
-        for o, st in self.trace or []:
-            if o is not None and o < order:
+        for o, st, added in self.trace or []:
+            if o is not None and (o < order or (o == order and added)):        # (an action added before the logged one of that event resolves what the log shows earlier)
                 best = st
         return best
 
@@ -69,11 +69,11 @@ def build_engine_replay(parsed: ParsedLog, replay: Replay, seat_of: dict[str, in
         if res.status != "ok":
             out[m.index] = MoveEngine(res.status, res.detail)
             continue
-        trace = [(o, st) for _, o, st in res.trace]
+        trace = [(o, st, added) for _, o, st, added in res.trace]
         if m.index == last_move[first]:
             out[m.index] = MoveEngine("ok", end=res.trace[-1][2], trace=trace)
             continue
-        done = [s for mv, _, s in res.trace if mv is not None and mv <= m.index]
+        done = [s for mv, _, s, _ in res.trace if mv is not None and mv <= m.index]
         out[m.index] = MoveEngine("ok", end=done[-1], trace=trace) if done else MoveEngine("log", "before the first engine action of the turn")
     return EngineReplay(out, diff)
 

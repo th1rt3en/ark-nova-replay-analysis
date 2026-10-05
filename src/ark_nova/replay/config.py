@@ -44,7 +44,7 @@ def infer_maps(parsed: ParsedLog, seats: list[str]) -> list[Optional[str]]:
     return [maps.get(pid) for pid in seats]
 
 
-def infer_base_projects(parsed: ParsedLog, marine_worlds: bool) -> list[str]:
+def infer_base_projects(parsed: ParsedLog, marine_worlds: bool, fill: bool = True) -> list[str]:
     """The 3 base conservation projects (the user enters them in production): those the log shows as supported in slot base_0..2 or by a
     player token, the rest filled with the first unused base projects."""
     deck = deck_cards("base_project", marine_worlds)
@@ -55,6 +55,11 @@ def infer_base_projects(parsed: ParsedLog, marine_worlds: bool) -> list[str]:
         for e in m.events:
             if e.type == "pDrawCards" and isinstance(e.args, dict) and ("with Assertion" in e.log or "with Dominance" in e.log):
                 fetched |= {data.parse_bga_card_id(c["id"])[0] for c in e.args.get("cards", [])}
+            if e.type == "gameStateChangePrivateArg" and isinstance(e.args, dict) and isinstance(e.args.get("slots"), dict):
+                opts = (e.args["slots"].get("5") or {}).get("options")      # BGA's own list of the projects the player can support: a base project in it is in play
+                for k in (opts if isinstance(opts, dict) else {}):
+                    if k[:4] in deck and k[:4] not in seen and k[:4] not in fetched:
+                        seen.append(k[:4])
             if e.type != "slideMeeples" or not isinstance(e.args, dict):
                 continue
             card = e.args.get("card")
@@ -69,9 +74,71 @@ def infer_base_projects(parsed: ParsedLog, marine_worlds: bool) -> list[str]:
         if key not in slots and None in slots:
             slots[slots.index(None)] = key
     for key in deck:
-        if None in slots and key not in slots and key not in fetched:
+        if fill and None in slots and key not in slots and key not in fetched:
             slots[slots.index(None)] = key
     return slots
+
+
+def unseen_base_slots(parsed: ParsedLog, marine_worlds: bool) -> tuple[list[str], list[int], list[str]]:
+    """(the inferred base projects, the positions that were only filled with a guess, the candidates for those positions)."""
+    seen_only = infer_base_projects(parsed, marine_worlds, fill=False)
+    guess = [i for i, k in enumerate(seen_only) if k is None]
+    filled = infer_base_projects(parsed, marine_worlds)
+    deck = deck_cards("base_project", marine_worlds)
+    fetched: set = set()
+    for m in parsed.moves:
+        for e in m.events:
+            if e.type == "pDrawCards" and isinstance(e.args, dict) and ("with Assertion" in e.log or "with Dominance" in e.log):
+                fetched |= {data.parse_bga_card_id(c["id"])[0] for c in e.args.get("cards", [])}
+    return filled, guess, [k for k in deck if k not in seen_only and k not in fetched]
+
+
+def refine_base_projects(parsed: ParsedLog, setup, cfg, seed) -> list[str]:
+    """The base projects that the log never shows (nobody supported them, BGA's lists never offered them) are a guess; choose the candidate for
+    which the engine's list of the supportable slots agrees with BGA's own list at every Association action (a project the zoo qualifies for
+    shows up there)."""
+    import copy as _copy
+    from ark_nova.replay import differential as df
+    from ark_nova.replay.actions import turn_events
+    from ark_nova.replay.builder import build_replay
+    filled, guess, candidates = unseen_base_slots(parsed, cfg.marine_worlds)
+    if not guess:
+        return filled
+    rep = build_replay(parsed, setup, cfg, seed)
+    turns = turn_events(parsed)
+    oracle = []
+    for k, evs in enumerate(turns):
+        if k >= len(rep.turn_snapshots):
+            break
+        ch = next((e for e in evs if e.type == "chooseActionCard"), None)
+        if ch is None or "association" not in str(ch.args.get("actionCard", {}).get("type", "")).lower():
+            continue
+        actor = str(ch.args["player_id"])
+        theirs = df._bga_project_options(evs, actor)
+        if theirs is not None:
+            oracle.append((k, setup.seats.index(actor), theirs))
+    result = list(filled)
+    taken = set(k for i, k in enumerate(filled) if i not in guess)
+    for pos in guess:
+        best = None
+        for cand in candidates:
+            if cand in taken:
+                continue
+            bad = 0
+            for k, seat, theirs in oracle:
+                st = _copy.deepcopy(rep.turn_snapshots[k])
+                st.base_projects = [cand if i == pos else x for i, x in enumerate(result)]
+                try:
+                    mine = df._engine_project_options(st, seat).get(cand, [])
+                except Exception:
+                    bad += 1
+                    continue
+                bad += mine != theirs.get(cand, [])
+            if best is None or bad < best[0]:
+                best = (bad, cand)
+        result[pos] = best[1]
+        taken.add(best[1])
+    return result
 
 
 HOSTILE = {"Venom", "Constriction", "Pilfering 1", "Pilfering 2", "Hypnosis"}
@@ -79,17 +146,26 @@ HOSTILE = {"Venom", "Constriction", "Pilfering 1", "Pilfering 2", "Hypnosis"}
 
 def infer_peaceful(parsed: ParsedLog) -> bool:
     """The peaceful variant (hostile effects replaced): an animal with a hostile ability was played and no hostile event ever shows in the log."""
-    played = hostile = 0
+    played = hostile = peaceful = 0
+    names: set = set()
     for m in parsed.moves:
         for e in m.events:
             a = e.args if isinstance(e.args, dict) else {}
-            if e.type in ("pilfering", "hypnosis") or (e.type == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log)):
+            if e.type == "chooseActionCard":
+                names = set()                              # (the effects of a turn are logged in several moves)
+            if e.type in ("pilfering", "pilferingMoney", "pilferingCard", "hypnosis") or (e.type == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log)):
                 hostile += 1
             if e.type == "buyAnimal" and isinstance(a.get("card"), dict):
                 card = data.cards_by_key()[data.parse_bga_card_id(a["card"]["id"])[0]]
-                if any(ab["keyword"]["name"] in HOSTILE for ab in card.get("abilities") or []):
+                own = {ab["keyword"]["name"] for ab in card.get("abilities") or []} | {ab["keyword"]["name"] for ab in card.get("reefDwellerEffect") or []}
+                if own & HOSTILE:
                     played += 1
-    return bool(played) and not hostile
+                    names |= own
+            elif names:                                    # what BGA logs instead of a hostile ability
+                b = a.get("bonuses") or {}
+                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                         or (e.type == "actionCardCleanup" and "Constriction" in names and "Clever effect" in e.log)                         or (e.type == "pDrawCards" and "Pilfering 2" in names and "sprint" in e.log)                         or (e.type == "markCard" and "Hypnosis" in names):
+                    peaceful += 1
+    return bool(played) and not hostile and bool(peaceful)
 
 
 @lru_cache(maxsize=None)
@@ -125,6 +201,7 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
                 maps[i] = "14"
     known = [m is not None for m in maps]
     maps = [map_quirks.played_map_id(m or "1", parsed.table_id) for m in maps]
+    infer_bp = base_projects is None
     if base_projects is None:
         base_projects = infer_base_projects(parsed, marine_worlds)
     cb = extract_conservation_bonuses(parsed)
@@ -133,5 +210,8 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
         options["99"] = cb.random["99"][:1]                  # the bonus on 16 reputation (Marine Worlds)
     cfg = GameConfig(marine_worlds=marine_worlds, player_ids=setup.seats, maps=maps, base_projects=base_projects,
                      action_cards=[[ActionCardChoice(t, v) for t, v in setup.action_cards[p]] for p in setup.seats],
-                     conservation_bonuses=options, map_known=known, peaceful=infer_peaceful(parsed))
-    return setup, cfg, SeedSpec(tail_seed=1, main_order=main, endgame_order=endgame)
+                     conservation_bonuses=options, map_known=known, peaceful=infer_peaceful(parsed), table_id=int(parsed.table_id or 0))
+    seed = SeedSpec(tail_seed=1, main_order=main, endgame_order=endgame)
+    if infer_bp and cfg.marine_worlds is not None:
+        cfg.base_projects = refine_base_projects(parsed, setup, cfg, seed)
+    return setup, cfg, seed

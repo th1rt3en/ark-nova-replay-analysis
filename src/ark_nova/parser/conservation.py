@@ -27,6 +27,13 @@ def extract_conservation_bonuses(parsed: ParsedLog) -> ConservationBonuses:
     seen: set[tuple[str, str, bool]] = set()
     for mv in parsed.moves:
         for e in mv.events:
+            if e.type == "takeBonus" and isinstance(e.args, dict) and e.args.get("remove") and "-" in str(e.args["remove"]):
+                bd = ((e.args.get("bonus_desc") or {}).get("args") or {})                  # the option that was just taken ("5-1": threshold 5, option 1) is no longer in the table
+                th = str(e.args["remove"]).split("-")[0]
+                if bd.get("bonus_type") and bd["bonus_type"] != "DISCARD_SCORING" and th != "10":
+                    bonus = {bd["bonus_type"]: bd.get("bonus_n")}
+                    if bonus not in out.random.get(th, []) and bonus not in out.always.get(th, []):
+                        out.random.setdefault(th, []).append(bonus)
             table = e.args.get("conservationBonuses") if e.type == "takeBonus" and isinstance(e.args, dict) else None
             if not isinstance(table, dict):
                 continue

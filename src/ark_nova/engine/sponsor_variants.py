@@ -60,6 +60,7 @@ def legal(state, p) -> list:
                 if c.startswith("S"):
                     out += [Action(p.seat, "sponsor_side", {"op": "discard_snap", "card": c, "take": t}) for t in shown]
         elif a.get("broke"):
+            out += [Action(p.seat, "sponsor_side", {"op": "discard_play", "card": c, "play": None}) for c in dict.fromkeys(hand)]       # (BGA lets the card go without a sponsor played)
             for c in hand:
                 for k in hand:
                     if k.startswith("S") and (k != c or p.hand.count(k) > 1) and _playable(state, p, k, a):
@@ -101,6 +102,8 @@ def apply(state, action: Action) -> None:
             i = state.display.index(args["take"])
             state.display[i] = None
             p.hand.append(args["take"])
+        elif args["play"] is None:
+            pass
         else:
             g._gain(state, p.seat, money=-sponsors_action.level_for(state, p.seat, args["play"]))
             pending = g.play_sponsor_outside_action(state, p.seat, args["play"])

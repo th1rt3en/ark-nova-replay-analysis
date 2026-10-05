@@ -32,13 +32,33 @@ def step_options(state: GameState) -> dict | None:
         out["pieces"] = sorted(pieces, key=lambda q: not q.get("extra"))
         if pr.kind == "build_place":
             out["build"] = {"variant": pr.args.get("variant", 0), "level": pr.args.get("level", 1)}
+    if pr.kind == "sponsors_play":                                      # the Sponsors action: the sponsors that can be played (the other cards of the hand are greyed out)
+        sa = pr.args
+        out["sponsors"] = {"hand": [a.args["card"] for a in acts if a.kind == "play_sponsor" and not a.args.get("from_display")],
+                           "display": [a.args["card"] for a in acts if a.kind == "play_sponsor" and a.args.get("from_display")],
+                           "strength": sa.get("strength"), "gain": sa.get("strength", 0) * (2 if sa.get("level", 1) >= 2 else 1),
+                           "level": sa.get("level", 1), "played": bool(sa.get("played")), "can_break": any(a.kind == "sponsor_break" for a in acts)}
+    if pr.kind == "association_tasks":                                  # the tasks of the Association action that can be done (one entry per kind of task)
+        tasks: dict[str, int] = {}
+        for a in acts:
+            if a.kind == "association_task":
+                tasks[a.args["task"]] = tasks.get(a.args["task"], 0) + 1
+        out["association"] = {"tasks": tasks, "strength": pr.args.get("strength"), "left": pr.args.get("left")}
+    if pr.kind == "cards_discard":                                      # discarding: the bar only says how many (the player picks the cards in the hand)
+        out["discard"] = {"count": pr.args.get("count", 1), "what": "card"}
+    elif pr.kind == "effects":
+        mine = [e for e in pr.args.get("pending", []) if e.get("player", pr.player) == pr.player]
+        d = next((e for e in mine if e.get("kind") in ("break_discard", "endgame_discard")), None)
+        if d is not None:
+            out["discard"] = {"count": d.get("n", 1), "what": "card" if d["kind"] == "break_discard" else "endgame card"}
     takes = [a for a in acts if a.kind == "take_cards"]
     if takes:                                                           # taking cards: the deck and/or the display cards the player may take (the others are greyed out)
         take: dict = {"deck": max([a.args.get("count", 1) for a in takes if a.args["mode"] == "deck"], default=0),
                       "range": [a.args["card"] for a in takes if a.args["mode"] == "range"],
                       "snap": [a.args["card"] for a in takes if a.args["mode"] == "snap"]}
         if pr.kind == "cards_take":
-            take.update(remaining=pr.args.get("remaining"), snapping=bool(pr.args.get("snap")))
+            take.update(remaining=pr.args.get("remaining"), snapping=bool(pr.args.get("snap")), taken=pr.args.get("taken", 0), discard=pr.args.get("discard", 0),
+                        snaps_left=pr.args.get("snaps_left", 1))
         elif pr.kind == "effects":
             e = next((e for e in pr.args.get("pending", []) if e.get("kind") == "take" and e.get("player", pr.player) == pr.player
                       and bool(e.get("snap")) == bool(take["snap"])), None)
@@ -57,5 +77,8 @@ def step_options(state: GameState) -> dict | None:
         if pr.args.get("hypnosis"):
             out["hypnosis"] = True
     elif pr.kind == "effects":
-        out["pending"] = [e.get("kind") for e in pr.args.get("pending", [])][:12]
+        pending = pr.args.get("pending", [])
+        out["pending"] = [e.get("kind") for e in pending][:12]
+        out["effects"] = [{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type") if k in e and isinstance(e[k], (str, int, bool))}
+                          for e in pending if e.get("player", pr.player) == pr.player][:12]               # what the player can resolve, in any order
     return out

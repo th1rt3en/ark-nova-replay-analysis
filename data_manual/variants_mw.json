@@ -49,6 +49,43 @@
         },
         "S282": {
             "active": false
+        },
+        "P129": {
+            "slots": [
+                {
+                    "position": 1,
+                    "bonuses": [
+                        {
+                            "bonusType": "Conservation Point",
+                            "bonusRequirement": "rock",
+                            "bonusValue": 4
+                        }
+                    ],
+                    "indicator": 5
+                },
+                {
+                    "position": 2,
+                    "bonuses": [
+                        {
+                            "bonusType": "Conservation Point",
+                            "bonusRequirement": "rock",
+                            "bonusValue": 3
+                        }
+                    ],
+                    "indicator": 3
+                },
+                {
+                    "position": 3,
+                    "bonuses": [
+                        {
+                            "bonusType": "Conservation Point",
+                            "bonusRequirement": "rock",
+                            "bonusValue": 2
+                        }
+                    ],
+                    "indicator": 2
+                }
+            ]
         }
     },
     "variants": {

@@ -8,6 +8,7 @@
 
 # Not needed at runtime
 log_examples/
+log_examples_unsupported/
 vendor/
 docs/
 data_manual/

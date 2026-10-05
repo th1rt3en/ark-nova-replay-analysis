@@ -36,9 +36,13 @@ def card_icons(key: str, marine_worlds: bool) -> Counter:
 REQUIREMENT_FIX = {"S251": {"water": 1}, "A482": {"water": 1}}
 
 
-def requirement(key: str, name: str) -> int:
-    """The number of rock / water spaces a card wants next to it (= its rock / water icons)."""
-    return REQUIREMENT_FIX.get(key, {}).get(name, data.cards_by_key()[key].get(name) or 0)
+def requirement(key: str, name: str, marine_worlds: bool = False) -> int:
+    """The number of rock / water spaces a card wants next to it (= its rock / water icons); the Marine Worlds reprint of a card may want more
+    (Sea Turtle Tank: 1 water space, 2 in Marine Worlds)."""
+    card = data.cards_by_key()[key]
+    if marine_worlds:
+        card = {**card, **card.get("variants", {}).get("marine_worlds", {})}
+    return REQUIREMENT_FIX.get(key, {}).get(name, card.get(name) or 0)
 
 
 # the counters kept in `PlayerState.icons`: continents, the five animal categories, sea animals (Marine Worlds), petting zoo, bear, research, rock, water

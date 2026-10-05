@@ -51,9 +51,19 @@ class LocalLogs:
         raise LogNotFound(gcs_path)
 
 
+def build_app():
+    settings = Settings()
+    index, logs = _remote_index(settings)
+    return create_app(settings, LocalIndex(index), LocalLogs(logs))
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8000)
-    settings = Settings()
-    index, logs = _remote_index(settings)
-    uvicorn.run(create_app(settings, LocalIndex(index), LocalLogs(logs)), host="127.0.0.1", port=ap.parse_args().port)
+    ap.add_argument("--reload", action="store_true", help="restart the server when a Python file under src/ changes (the web/ files are always read from disk)")
+    args = ap.parse_args()
+    if args.reload:
+        uvicorn.run("dev_server:build_app", factory=True, app_dir=str(Path(__file__).resolve().parent), host="127.0.0.1", port=args.port,
+                    reload=True, reload_dirs=[str(Path(__file__).resolve().parents[1] / "src")], reload_includes=["*.py", "*.json"])
+    else:
+        uvicorn.run(build_app(), host="127.0.0.1", port=args.port)

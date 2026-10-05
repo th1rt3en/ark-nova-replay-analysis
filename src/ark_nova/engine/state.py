@@ -50,6 +50,7 @@ class GameConfig:
     # from the log (parser/conservation.py) or entered by the user; the 5-money option is always there
     conservation_bonuses: Optional[dict[str, list[dict[str, Any]]]] = None
     map_known: list[bool] = field(default_factory=lambda: [True, True])    # False when a test had to guess the map of a seat
+    table_id: int = 0                     # the BGA table (0 = unknown): a few rules were implemented differently by BGA in older tables (data/map_quirks.py)
     peaceful: bool = False                # the game variant where the hostile effects (Venom, Constriction, Pilfering, Hypnosis) are replaced
 
 

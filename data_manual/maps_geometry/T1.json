@@ -329,8 +329,11 @@
         {
             "x": 3,
             "y": 4,
-            "bonus": null,
-            "note": "black \"3\" with a curved shape: unidentified"
+            "bonus": {
+                "type": "Scavenging",
+                "value": 3
+            },
+            "note": "Scavenging 3"
         },
         {
             "x": 4,
@@ -343,8 +346,11 @@
         {
             "x": 4,
             "y": 11,
-            "bonus": null,
-            "note": "white card/cube icon on grey base: unidentified"
+            "bonus": {
+                "type": "Mark",
+                "value": 1
+            },
+            "note": "Mark"
         },
         {
             "x": 6,

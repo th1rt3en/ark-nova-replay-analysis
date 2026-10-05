@@ -132,7 +132,7 @@ aside h2 { color: #f3e9d2; text-shadow: 0 1px 2px #000; }
 /* side panel */
 .side { margin-bottom: .8rem; }
 .sidetop { background: #ece3b4; border: 2px solid #1b110a; border-radius: 8px 8px 0 0; padding: .4rem .6rem; color: #2b1d12; }
-.breaktrack { display: flex; align-items: center; justify-content: space-between; font-size: 1.6rem; }
+.breaktrack { display: flex; align-items: center; justify-content: flex-start; gap: .6rem; font-size: 1.6rem; }
 .breaktrack img { background: #5a4636; border-radius: 6px; padding: 2px; }
 .deckcounts { display: flex; justify-content: space-around; margin-top: .3rem; border-top: 1px solid rgba(111, 87, 73, .5); padding-top: .3rem; }
 .dc { display: inline-flex; align-items: center; gap: .3rem; font-size: 1.1rem; }
@@ -146,7 +146,7 @@ aside h2 { color: #f3e9d2; text-shadow: 0 1px 2px #000; }
 .rs { display: inline-flex; align-items: center; gap: .1rem; font-size: 1.05rem; font-weight: 700; }
 .ppactions { display: flex; justify-content: space-between; margin-bottom: .45rem; }
 .ac { display: inline-flex; border: 3px solid #1d9ad6; border-radius: 8px; background: #fff; }
-.ac.lvl2 { border-color: #a53ea5; }
+.ac.lvl2 { border-color: #e04fd0; }
 .ppicons { display: grid; grid-template-columns: repeat(5, 1fr); gap: .35rem .2rem; }
 .ppicons .ic { display: inline-flex; align-items: center; justify-content: center; gap: .1rem; font-size: .95rem; font-weight: 600; }
 .ppicons .ic.zero { opacity: .3; }
@@ -398,7 +398,7 @@ body.viewer { --flash-duration: 0.8s; }
 
 /* action buttons: the blue / purple of the unupgraded / upgraded action cards (.ac) */
 .abtn { background: #1d9ad6; border-color: #0f5f87; }
-.abtn.lvl2 { background: #a53ea5; border-color: #5e215e; }
+.abtn.lvl2 { background: #e04fd0; border-color: #8e2a85; }
 
 .abtn { position: relative; }
 .abtn .variant { position: absolute; left: -9px; top: -9px; width: 25px; height: 25px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .6); pointer-events: none; }
@@ -465,3 +465,35 @@ body.viewer { --flash-duration: 0.8s; }
 /* taking cards: the button to draw from the deck, and the display cards that cannot be taken */
 .abtn.deckbtn { background: #4a76b8; border-color: #1f3a66; }
 .card.dim { opacity: .35; filter: grayscale(1); }
+
+/* composed bonus tiles on the conservation track: same look as the placement bonuses of the zoo map */
+.ctcomposed { display: block; aspect-ratio: 1; overflow: visible; }
+.ctcomposed .bonus-number { font: 800 44px system-ui, sans-serif; fill: #fff; stroke: #222; stroke-width: 8px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
+.ctcomposed .money-border { fill: none; stroke: #fff; stroke-width: 3.5; pointer-events: none; }
+
+/* end of turn: Confirm / Undo last step / Restart turn (disabled in the replay) */
+.turnbtn { padding: .3rem .9rem; border-radius: 6px; font: 700 .95rem system-ui, sans-serif; color: #fff; border: 1px solid rgba(0, 0, 0, .55); }
+.turnbtn.confirm { background: #4a76b8; }
+.turnbtn.undo { background: #d9795a; }
+.turnbtn.restart { background: #c9302c; }
+.turnbtn:disabled { opacity: .4; filter: grayscale(.85); cursor: not-allowed; }
+
+.board .frame { stroke-linecap: round; stroke-linejoin: round; }
+
+/* the discard pile / endgame deck in the tracker open a popup with their cards */
+.pilebtn { cursor: pointer; border-radius: 8px; }
+.pilebtn:hover { background: rgba(255, 255, 255, .45); outline: 2px solid rgba(79, 143, 106, .8); }
+.pile { position: fixed; inset: 0; z-index: 50; background: rgba(15, 8, 3, .6); display: grid; place-items: center; }
+.pile[hidden] { display: none; }
+.pilewin { width: 96vw; height: 94vh; background: #ece3b4 url(/assets/sheet_background.jpg) center / cover; color: #2b1d12; border: 3px solid #1b110a; border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, .7); display: flex; flex-direction: column; overflow: hidden; }
+.pilehead { display: flex; align-items: center; justify-content: space-between; padding: .6rem 1rem; border-bottom: 2px solid rgba(27, 17, 10, .5); }
+.pilehead h2 { margin: 0; font-size: 1.2rem; }
+.pileclose { width: 2.4rem; height: 2.4rem; padding: 0; display: grid; place-items: center; line-height: 1; border-radius: 8px; border: 2px solid #1b110a; background: #c9302c; color: #fff; font: 800 1.2rem/1 system-ui, sans-serif; cursor: pointer; }
+.pileclose:hover { background: #e0443f; }
+.pilegrid { flex: 1 1 auto; overflow-y: auto; padding: 1rem; align-content: flex-start; gap: .8rem; }
+.pilegrid .card { width: 12.5rem; }
+.preview { z-index: 60; }
+
+/* the player board strip has a margin on both sides (viewBox -50..401) for the lines of the upgrade sets: 13% of the row for the 351 units of the picture */
+.strip { flex: 0 0 16.7%; width: 16.7%; }
