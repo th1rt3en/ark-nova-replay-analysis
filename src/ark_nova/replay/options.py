@@ -106,7 +106,7 @@ def step_options(state: GameState) -> dict | None:
     elif pr.kind == "effects":
         pending = pr.args.get("pending", [])
         out["pending"] = [e.get("kind") for e in pending][:12]
-        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type") if k in e and isinstance(e[k], (str, int, bool))},
-                           **({"name": effect_name(e)} if effect_name(e) else {})}
-                          for e in pending if e.get("player", pr.player) == pr.player][:12]               # what the player can resolve, in any order
+        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category") if k in e and isinstance(e[k], (str, int, bool))},
+                           **({"name": effect_name(e)} if effect_name(e) else {}), "index": i}
+                          for i, e in enumerate(pending) if e.get("player", pr.player) == pr.player][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
     return out

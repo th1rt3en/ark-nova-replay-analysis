@@ -14,7 +14,7 @@
             "description": "Pick a map (setup).",
             "suggested": "reversible",
             "why": "Before the game.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -24,8 +24,8 @@
             "description": "Pick a variant in the action card draft (both players at once).",
             "suggested": "depends",
             "why": "Can be changed until the other player has chosen; final after.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "can be changed until the player hit confirm"
         },
         {
             "id": "action:draft_keep",
@@ -34,8 +34,8 @@
             "description": "Keep 2 of 3 variants.",
             "suggested": "depends",
             "why": "Same as draft_pick.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "can be changed until the player hit confirm"
         },
         {
             "id": "action:initial_discard",
@@ -44,8 +44,8 @@
             "description": "Discard 4 of the 8 dealt cards.",
             "suggested": "depends",
             "why": "Both choose at the same time: reversible until both have chosen.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "can be changed until the player hit confirm"
         },
         {
             "id": "action:choose_action_card",
@@ -54,7 +54,7 @@
             "description": "Choose an action card (and spend X tokens).",
             "suggested": "reversible",
             "why": "Nothing hidden is revealed. If the break advance starts a break, see break_start.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -64,7 +64,7 @@
             "description": "Side action of a Sponsors card variant.",
             "suggested": "reversible",
             "why": "Cards involved are public (discard, snap from the display).",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -74,7 +74,7 @@
             "description": "Self-clever Association: do nothing and act again.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -84,8 +84,8 @@
             "description": "A card instead of the donation.",
             "suggested": "depends",
             "why": "From the deck: irreversible; from the display: reversible.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "agree"
         },
         {
             "id": "action:skip_extra",
@@ -94,7 +94,7 @@
             "description": "Decline the optional second action.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -104,7 +104,7 @@
             "description": "Put an action card on slot 1 and gain an X token.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -114,7 +114,7 @@
             "description": "Play an animal into an enclosure.",
             "suggested": "reversible",
             "why": "The card is public; its on-play effects have their own rows.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -124,7 +124,7 @@
             "description": "Place a building.",
             "suggested": "reversible",
             "why": "Placement bonuses have their own rows.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -134,7 +134,7 @@
             "description": "Stop building.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -144,8 +144,8 @@
             "description": "Take a card from the display or draw from the deck.",
             "suggested": "depends",
             "why": "Deck draw irreversible, display reversible.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "irreversible if the card comes from the deck, reversible if it comes from the display"
         },
         {
             "id": "action:discard_cards",
@@ -154,7 +154,7 @@
             "description": "Discard cards from the hand.",
             "suggested": "reversible",
             "why": "Public discard pile.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -164,7 +164,7 @@
             "description": "Play a sponsor card.",
             "suggested": "reversible",
             "why": "Effects have their own rows.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -174,8 +174,8 @@
             "description": "Sponsors action alternative: advance the break and take money.",
             "suggested": "depends",
             "why": "Irreversible if it triggers a break.",
-            "decision": null,
-            "note": ""
+            "decision": "reversible",
+            "note": "triggering a break does nothing but adds an x token to the player, which can be reversible the action is not locked in until the player hit confirm"
         },
         {
             "id": "action:finish_sponsors",
@@ -184,7 +184,7 @@
             "description": "Stop playing sponsors.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -194,7 +194,7 @@
             "description": "Decline an optional pending effect.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -204,8 +204,8 @@
             "description": "Perform one association task.",
             "suggested": "depends",
             "why": "Tasks that draw (universities with a search) are irreversible.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "all reversible; resolving a tutor (search) and the project bonuses are separate effects, decided on their own"
         },
         {
             "id": "action:finish_animals",
@@ -214,7 +214,7 @@
             "description": "Stop playing animals.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -224,7 +224,7 @@
             "description": "Stop performing association tasks.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -234,7 +234,7 @@
             "description": "Make a donation.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -244,7 +244,7 @@
             "description": "Flip an action card to level II.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -254,8 +254,8 @@
             "description": "Resolve one of the pending effects (see the effect rows below).",
             "suggested": "depends",
             "why": "As the effect it resolves.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "depends on the effect: refined effect by effect as they are implemented; choosing which effect to resolve is itself reversible"
         },
         {
             "id": "action:skip",
@@ -264,7 +264,7 @@
             "description": "Decline an optional effect.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -274,7 +274,7 @@
             "description": "End the turn: the display is refilled, a break may start, the turn passes.",
             "suggested": "irreversible",
             "why": "The display refill reveals draw pile cards. Everything before it can be undone, nothing after.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -284,7 +284,7 @@
             "description": "Place a (free) building.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -294,8 +294,8 @@
             "description": "Take a card: deck or display.",
             "suggested": "depends",
             "why": "Deck: irreversible. Display: reversible.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "irreversible if the card comes from the deck, reversible if it comes from the display (same as take_card)"
         },
         {
             "id": "effect:gain",
@@ -304,7 +304,7 @@
             "description": "Money, appeal, conservation, reputation, X tokens.",
             "suggested": "reversible",
             "why": "Reputation and conservation thresholds open their own rows.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -314,7 +314,7 @@
             "description": "Reveal the X topmost cards and keep some.",
             "suggested": "irreversible",
             "why": "The cards were revealed to the opponent.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -324,7 +324,7 @@
             "description": "Discard cards for money (Sun Bathing).",
             "suggested": "reversible",
             "why": "Public discard.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -334,7 +334,7 @@
             "description": "Place a mark cube.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -344,7 +344,7 @@
             "description": "Play a sponsor / bonus through Marketing.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -354,7 +354,7 @@
             "description": "Donate.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -364,8 +364,8 @@
             "description": "Discard a hand card, draw one (or discard a display card).",
             "suggested": "depends",
             "why": "Drawing from the deck: irreversible. Display part: reversible.",
-            "decision": null,
-            "note": ""
+            "decision": "irreversible",
+            "note": "digging from the display immediately refresh the display with new cards from the deck, irreversible"
         },
         {
             "id": "effect:scavenge",
@@ -374,7 +374,7 @@
             "description": "Draw from the discard pile / deck and keep.",
             "suggested": "irreversible",
             "why": "Draws from the deck.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -384,7 +384,7 @@
             "description": "Glide: discard cards for a gain.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -394,8 +394,8 @@
             "description": "Shark Attack: discard sea animals of the display.",
             "suggested": "depends",
             "why": "The display refill comes at the end of the turn.",
-            "decision": null,
-            "note": ""
+            "decision": "reversible",
+            "note": "the player can undo and choose a different animal to shark attack as long as they haven't confirmed the turn"
         },
         {
             "id": "effect:symbiosis",
@@ -404,8 +404,8 @@
             "description": "Use the ability of another sea animal.",
             "suggested": "depends",
             "why": "As the copied ability.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "choosing the effect to copy is reversible; resolving it depends on the ability copied (scuba dive is irreversible)"
         },
         {
             "id": "effect:cut_down",
@@ -414,7 +414,7 @@
             "description": "Remove a building.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -424,7 +424,7 @@
             "description": "Trade X tokens and money.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -434,7 +434,7 @@
             "description": "Take a worker back.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -444,8 +444,8 @@
             "description": "Take an unused base conservation project.",
             "suggested": "reversible",
             "why": "The unused pool is public.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "there are 2 animals with the assertion ability in the deck: white rhino and indian rhino. when the first rhino is played the action is reversible as both players know what are the unused base projects. when the second rhino is played, looking at the unused projects will reveal what the opponent took with the first rhino so it's irreversible"
         },
         {
             "id": "effect:pilfer",
@@ -454,7 +454,7 @@
             "description": "Pilfering: the opponent gives a card or money.",
             "suggested": "irreversible",
             "why": "The opponent has to answer.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -464,7 +464,7 @@
             "description": "Give Venom or Constriction tokens.",
             "suggested": "depends",
             "why": "Opponent's payment decisions are irreversible.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -474,8 +474,8 @@
             "description": "Use an action card of the opponent.",
             "suggested": "depends",
             "why": "Irreversible once the opponent's card does something hidden.",
-            "decision": null,
-            "note": ""
+            "decision": "reversible",
+            "note": "choosing the action cards itself is reversible, resolving the effects of the action card depends"
         },
         {
             "id": "effect:pay_appeal",
@@ -484,8 +484,8 @@
             "description": "Pay appeal for an effect.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
-            "note": ""
+            "decision": "not_applicable",
+            "note": "losing appeal as part of a release project is an automatic effect"
         },
         {
             "id": "effect:jumping",
@@ -494,7 +494,7 @@
             "description": "Advance the break token and gain money.",
             "suggested": "depends",
             "why": "Irreversible if the break starts.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -504,7 +504,7 @@
             "description": "Upgrade an action card or hire a worker.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -514,8 +514,8 @@
             "description": "Conservation 5 / 8: pick one of the bonuses.",
             "suggested": "depends",
             "why": "As the bonus picked (a draw is irreversible).",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "choosing a bonus is reversible; resolving the chosen bonus depends on what it is"
         },
         {
             "id": "effect:endgame_discard",
@@ -524,7 +524,7 @@
             "description": "Conservation 10: discard an endgame card.",
             "suggested": "depends",
             "why": "Both players at once: reversible until both have chosen.",
-            "decision": null,
+            "decision": "depends",
             "note": ""
         },
         {
@@ -534,7 +534,7 @@
             "description": "Draw final scoring / base projects and discard.",
             "suggested": "irreversible",
             "why": "Draws from the endgame deck.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -544,7 +544,7 @@
             "description": "Discard down to the hand limit in a break.",
             "suggested": "depends",
             "why": "Both at once; reversible until both have chosen.",
-            "decision": null,
+            "decision": "depends",
             "note": ""
         },
         {
@@ -554,7 +554,7 @@
             "description": "Take a partner zoo / university tile.",
             "suggested": "reversible",
             "why": "Replenishing is at the end of the break.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -564,8 +564,8 @@
             "description": "Archaeologist.",
             "suggested": "depends",
             "why": "Check the rule.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "choosing which placement bonus to copy is reversible; resolving the chosen bonus depends on what it is"
         },
         {
             "id": "effect:income",
@@ -574,8 +574,8 @@
             "description": "Choices of the break income.",
             "suggested": "depends",
             "why": "Money reversible, cards from the deck irreversible.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "most income effects are reversible; irreversible: the science lab's card draw (from the deck) and map 13 (Drawing Board) hunter quadrant income (hunter 4). To be completed as income effects are implemented"
         },
         {
             "id": "effect:rep_bonus",
@@ -584,8 +584,8 @@
             "description": "Reputation track bonus.",
             "suggested": "depends",
             "why": "A card to take: see take.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "reputation track: upgrade at 5, worker at 8, card draw (deck or range) at 10 and 13, 1 conservation at 11 and 14, x token at 12 and 15. Only the card draw, when taken from the deck, is irreversible"
         },
         {
             "id": "effect:store",
@@ -594,7 +594,7 @@
             "description": "Store a card (map 11).",
             "suggested": "reversible",
             "why": "Nobody else learns anything but a count.",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -604,7 +604,7 @@
             "description": "Map specific moves (map 9, map 4).",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -614,7 +614,7 @@
             "description": "Remove the first display card and replenish.",
             "suggested": "irreversible",
             "why": "The replenish reveals a draw pile card.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -624,7 +624,7 @@
             "description": "Release an animal for a project.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -634,7 +634,7 @@
             "description": "Conservation project rewards.",
             "suggested": "depends",
             "why": "Tutor (search) is irreversible.",
-            "decision": null,
+            "decision": "depends",
             "note": ""
         },
         {
@@ -644,7 +644,7 @@
             "description": "Take the first animal of a size from the deck.",
             "suggested": "irreversible",
             "why": "Search of the draw pile.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -654,7 +654,7 @@
             "description": "Remove up to 3 buildings and place them again.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -664,7 +664,7 @@
             "description": "Move an action card to slot 1 or 5.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -674,7 +674,7 @@
             "description": "Enlarge an enclosure.",
             "suggested": "reversible",
             "why": "",
-            "decision": null,
+            "decision": "reversible",
             "note": ""
         },
         {
@@ -684,8 +684,8 @@
             "description": "Send a person away or Scuba Dive 3.",
             "suggested": "depends",
             "why": "Scuba Dive reveals cards: irreversible.",
-            "decision": null,
-            "note": ""
+            "decision": "depends",
+            "note": "fully reversible: choosing the sponsor to send away (discard) and gaining 1 conservation reveal nothing (scuba dive 3 is irreversible)"
         },
         {
             "id": "effect:ability_draw",
@@ -694,7 +694,7 @@
             "description": "Deferred abilities that draw.",
             "suggested": "irreversible",
             "why": "They draw from the deck.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -704,7 +704,7 @@
             "description": "Take a card from the discard pile.",
             "suggested": "reversible",
             "why": "The pile is public.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -714,7 +714,7 @@
             "description": "At the end of the turn.",
             "suggested": "not_applicable",
             "why": "Part of confirm_turn.",
-            "decision": null,
+            "decision": "not_applicable",
             "note": ""
         },
         {
@@ -724,7 +724,7 @@
             "description": "The break token reaches the end: income, discards, refill.",
             "suggested": "irreversible",
             "why": "The game moves on for both players.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -734,7 +734,7 @@
             "description": "A deck is shuffled.",
             "suggested": "irreversible",
             "why": "Reveals nothing but cannot be undone.",
-            "decision": null,
+            "decision": "irreversible",
             "note": ""
         },
         {
@@ -744,7 +744,7 @@
             "description": "",
             "suggested": "not_applicable",
             "why": "",
-            "decision": null,
+            "decision": "not_applicable",
             "note": ""
         }
     ]

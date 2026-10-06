@@ -104,7 +104,7 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
             if any(c not in bd.cells or c in occupied or c in bd.blocked for c in cells):
                 continue
             wrong = [c for c in cells if bd.terrain[c] != wanted]
-            if wrong and not overbuild and not (rules.get("terrain_hexes") and len(wrong) == 1):   # Terrain Build: 1 rock / water space
+            if wrong and (rules.get("on_water") or not overbuild) and not (rules.get("terrain_hexes") and len(wrong) == 1):          # (the tunnel needs water spaces, the Diversity Researcher does not change that)   # Terrain Build: 1 rock / water space
                 continue
             if level < 2 and not rules.get("flags") and any(c in bd.flags for c in cells):
                 continue

@@ -33,4 +33,4 @@ body.landing { max-width: 64rem; }
 .mode.unavailable h2 { color: var(--muted); }
 .mode.unavailable button { margin-top: auto; align-self: flex-start; background: transparent; color: var(--muted); border-color: var(--border); cursor: not-allowed; }
 .mode.unavailable button:disabled { opacity: 1; cursor: not-allowed; }
-.badge { font-size: .7rem; font-weight: 600; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.mode .badge { font-size: .7rem; font-weight: 600; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }

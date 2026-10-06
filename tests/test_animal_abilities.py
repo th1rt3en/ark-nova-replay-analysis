@@ -257,12 +257,12 @@ def test_venom_puts_tokens_on_the_cards_at_strength_1_and_2_when_the_opponent_is
     s2 = _play(_start(s2), "A449")
     s2 = _resolve(s2, **{"apply": "venom"})
     assert all(not c.tokens for c in s2.players[1].action_cards)
-    s3 = _opponent_ahead(_zoo("A449"), appeal=5)                                       # the order matters: the printed appeal first can make the actor lead
+    s3 = _opponent_ahead(_zoo("A449"), appeal=5)                                       # the appeal that counts is the one when the action began: the animal's own gain does not help
     s3.players[0].appeal = 2
     s3 = _play(_start(s3), "A449", settle=False)
     s3 = _resolve(s3, **{"apply": "gain"})
     s3 = _resolve(s3, **{"apply": "venom"})
-    assert all(not c.tokens for c in s3.players[1].action_cards)
+    assert [c.tokens for c in s3.players[1].action_cards] == [["Venom"], [], [], [], []]
 
 
 def test_venom_is_paid_at_the_end_of_the_turn_unless_a_token_was_removed():
@@ -286,18 +286,17 @@ def _sponsor_state_for_venom():
     return s
 
 
-def test_venom_blocks_drawing_cards_until_it_is_paid():
+def test_venom_does_not_block_drawing_cards_and_is_paid_at_the_end():
     s = _zoo("A401", level=1)
     s.players[0].action_cards[0].tokens = ["Venom"]
     s.players[0].money = 15                                                            # the Cheetah costs 14 (partner zoo discount): 1 money left, Venom due
     s = _start(s)
     s = _play(s, "A401")
     assert s.players[0].money == 1
-    assert not [a for a in legal_actions(s) if a.kind == "choose_effect" and a.args.get("activate")]      # Sprint draws cards: not allowed
-    s = apply(s, Action(0, "skip_effect", {"index": 0}))
+    assert [a for a in legal_actions(s) if a.kind == "choose_effect" and a.args.get("activate")]      # BGA lets the player draw with 1 money (839471673 turn 57)
     s2 = _zoo("A401", level=1)
     s2.players[0].action_cards[0].tokens = ["Venom"]
-    s2.players[0].money = 17                                                           # 3 left: Venom is paid first, then the cards are drawn
+    s2.players[0].money = 17                                                           # 3 left: Venom is paid at the end of the action
     s2 = _play(_start(s2), "A401")
     s2 = _resolve(s2, activate=True)
     assert s2.players[0].money == 1

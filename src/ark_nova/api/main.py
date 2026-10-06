@@ -2,17 +2,22 @@
 import json
 import logging
 import os
+import threading
+from collections import OrderedDict
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from ark_nova.api.ratelimit import rate_limit_middleware
 from ark_nova.api.tableid import parse_table_id
 from ark_nova.config import Settings
 from ark_nova.parser.verify import verify_log
+from ark_nova.engine.game import IllegalAction
+from ark_nova.replay import fork as forking
 from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
 from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
@@ -82,6 +87,8 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         app.state.logs = CachedLogStore(app.state.logs, st.cache_mb * 1024 * 1024 // 2, _cache_dir(st), st.cache_disk_mb * 1024 * 1024 // 2)
     # the built replays (3-7 MB of JSON, 2-3 s of work each): memory first, files for the rest; the code version is part of the key
     app.state.replays = ByteLru(st.cache_mb * 1024 * 1024 // 2, _cache_dir(st) if st.cache_mb > 0 else None, st.cache_disk_mb * 1024 * 1024 // 2, namespace="replay")
+    app.state.forks = OrderedDict()                                      # table id -> (view without its steps, the engine state of every step, the labels): the last few tables
+    app.state.forks_lock = threading.Lock()
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.middleware("http")(rate_limit_middleware)
 
@@ -158,6 +165,68 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             body = res.body
             app.state.replays.put(key, body)
         return Response(content=body, media_type="application/json", headers={"ETag": tag, "Cache-Control": CACHE_CONTROL})
+
+    def _fork_entry(table_id: int, rec: TableRecord, raw: dict):
+        with app.state.forks_lock:
+            hit = app.state.forks.get(table_id)
+            if hit is not None:
+                app.state.forks.move_to_end(table_id)
+                return hit
+        view, states = build_replay_view(raw, rec, with_states=True)
+        entry = ({k: v for k, v in view.items() if k != "steps"}, states, [st["label"] for st in view["steps"]])
+        with app.state.forks_lock:
+            app.state.forks[table_id] = entry
+            while len(app.state.forks) > 3:
+                app.state.forks.popitem(last=False)
+        return entry
+
+    @app.post("/api/tables/{table_id}/fork")
+    async def fork_table(table_id: int, request: Request):
+        """Fork a replay: the position after `step` (where the engine played it) with the deck order of `seed`. Everything the viewer needs comes back; the engine state travels with each step."""
+        try:
+            body = json.loads(await request.body())
+            step = int(body["step"])
+            seed = int(body.get("seed") or forking.DEFAULT_SEED)
+        except (ValueError, KeyError, TypeError):
+            return _error(422, "invalid", "Send {step, seed}.", table_id=table_id)
+        if not 0 <= seed <= forking.MAX_SEED:
+            return _error(422, "invalid", "The seed must be a number between 0 and 2^63 - 1.", table_id=table_id)
+        rec = app.state.index.find(table_id)
+        if rec is None or not rec.logged:
+            return _error(404, "not_logged", "No log has been collected for this table.", table_id=table_id)
+        try:
+            raw = json.loads(app.state.logs.read(rec.gcs_path, table_id))
+        except LogNotFound:
+            return _error(502, "log_missing", "The log is indexed but could not be found in storage.", table_id=table_id)
+        try:
+            skeleton, states, labels = await run_in_threadpool(_fork_entry, table_id, rec, raw)
+        except Exception:  # noqa: BLE001
+            log.exception("fork build failed for table %s", table_id)
+            return _error(500, "replay_failed", "The replay could not be built.", table_id=table_id)
+        if not 0 <= step < len(states) or states[step] is None or states[step].prompt is None:
+            return _error(422, "not_forkable", "The engine did not play this step, so it cannot be forked. Pick a step marked as played by the engine.", table_id=table_id)
+        state = forking.reorder_decks(states[step], seed)
+        first = forking.step_payload(state, f"Fork of table #{table_id} after step {step}: {labels[step]}")
+        return JSONResponse({**skeleton, "setup_steps": 0, "steps": [first], "shapes": forking.shapes(),
+                             "fork": {"table_id": table_id, "step": step, "seed": seed, "default_seed": forking.DEFAULT_SEED, "label": labels[step]}})
+
+    @app.post("/api/fork/apply")
+    async def fork_apply(request: Request):
+        """Play one action of a fork. The body carries the whole engine state (the server keeps nothing): {state, action, names}."""
+        raw_body = await request.body()
+        if len(raw_body) > 3_000_000:
+            return _error(413, "too_large", "That state is too large.")
+        try:
+            body = json.loads(raw_body)
+            names = [str(n) for n in body.get("names") or []]
+            step = await run_in_threadpool(forking.play, body["state"], body["action"], names)
+        except IllegalAction as e:
+            return _error(422, "illegal", str(e))
+        except NotImplementedError as e:
+            return _error(422, "not_implemented", f"The engine does not implement this rule yet: {e}")
+        except (ValueError, KeyError, TypeError) as e:
+            return _error(422, "invalid", f"Could not read the state or the action ({type(e).__name__}).")
+        return JSONResponse(step)
 
     @app.post("/api/tables/{table_id}/replay")
     async def post_replay(table_id: int, request: Request):

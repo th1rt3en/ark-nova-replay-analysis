@@ -85,6 +85,7 @@ def test_keep_needs_two_different_actions_and_ends_the_draft_with_the_deal():
     assert s.prompt.kind == "initial_discard" and all(len(p.hand) == 8 for p in s.players)            # the deal follows the draft
     for seat, p in enumerate(s.players):
         assert sorted(c.type for c in p.action_cards) == sorted(draft.ACTION_TYPES)
+        assert p.action_cards[0].type == "animals"                                       # the Animals card always starts at strength 1
         got = {c.type: c.variant for c in p.action_cards if c.variant}
         assert got == {draft.variant_type(v): draft.variant_number(v) for v in kept[seat]}              # kept variants on their cards, the other 3 standard
 
@@ -106,3 +107,17 @@ def test_the_draft_is_deterministic():
     a, b = _new(9), _new(9)
     assert a.to_dict() == b.to_dict()
     assert _new(10).draft["offers"] != a.draft["offers"] or _new(11).draft["offers"] != a.draft["offers"]
+
+
+def test_the_strength_order_is_only_drawn_when_the_draft_is_over():
+    s = start_game(_config(), SeedSpec(tail_seed=5))
+    assert [c.type for c in s.players[0].action_cards] == list(draft.ACTION_TYPES)        # not shuffled yet: the draft is running
+    assert s.draft["stage"] != "done"
+
+
+def test_the_draft_belongs_to_marine_worlds():
+    import pytest
+    cfg = _config()
+    cfg.marine_worlds = False
+    with pytest.raises(ValueError):
+        start_game(cfg, SeedSpec(tail_seed=5))

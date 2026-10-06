@@ -48,6 +48,9 @@ def keyword_effects(state, seat: int, source: str, b: dict) -> list:
     if t == "Reputation":
         per = b.get("per")
         n = b["bonusValue"] * (icons[tag_icon(per["tag"])] // per["every"] if per else 1)
+        if per:                                   # counted when the effect is resolved (a sponsor played meanwhile counts: logs 897585112 turn 52)
+            return [{"kind": "gain", "source": source, "res": "reputation", "n": n, "optional": False,
+                     "per": {"icon": tag_icon(per["tag"]), "every": per["every"], "mult": b["bonusValue"]}}]
         return [{"kind": "gain", "source": source, "res": "reputation", "n": n, "optional": False}] if n else []
     if t != "Keyword":
         return []
@@ -168,6 +171,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if where and list(a.get("building") or []) not in [[b.x, b.y] for b in where]:
             raise _fx().IllegalEffect("empty one of the enclosures with the highest priority")
         release_animal(state, p.seat, a["release"], a.get("building"))
+        for other in a.get("also") or []:                       # BGA may name more enclosures as emptied (an animal is not tied to an enclosure): each one loses an animal
+            ob = next((b for b in p.buildings if [b.x, b.y] == list(other)), None)
+            if ob is not None and not ob.type.startswith("size-") and ob.animals:
+                ob.animals.pop(0)
     elif k == "reef":
         from ark_nova.engine import animals_action
         extra = []

@@ -158,12 +158,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         return [{"kind": "symbiosis", "source": key, "optional": True}]
     elif name in ("Pilfering 1", "Pilfering 2"):                  # the opponent decides: a card of their hand or 5 money
         opp = state.players[1 - seat]
-        targets = [opp.appeal >= p.appeal]                               # the player with the most appeal (a tie counts: unclear, ISSUES.md)
-        if name == "Pilfering 2":
-            targets.append(opp.conservation >= p.conservation and opp.conservation > 0)           # (a tie at 0 does not count: logs)           # and the player with the most conservation points
-        if tracks.is_protected(opp.appeal) or "S225" in opp.sponsors:                              # below 5 appeal a player is protected
-            targets = []
-        return [{"kind": "pilfer", "source": key, "player": opp.seat, "to": seat, "optional": False} for hit in targets if hit]
+        by = ["appeal"] + (["conservation"] if name == "Pilfering 2" else [])                    # the player with the most appeal, and with Pilfering 2 the most conservation points
+        return [{"kind": "pilfer", "source": key, "player": opp.seat, "to": seat, "by": b, "optional": False} for b in by]       # (whether it hits is decided when it is resolved: the animal's own appeal counts)
     elif name == "Cut Down":
         return [{"kind": "cut_down", "source": key, "optional": True}]
     elif name == "Trade":
@@ -227,18 +223,11 @@ def _sea_animal(key: str) -> bool:
 
 
 def _monkey_gang(state, seat: int) -> None:
-    """Reveal cards from the deck until a primate: take it, the others go under the deck in the order they were revealed."""
-    tucked = []
-    found = None
-    while state.main_deck and found is None:
-        c = state.main_deck.pop(0)
-        if c.startswith("A") and "primate" in card(c).get("tags", []):
-            found = c
-        else:
-            tucked.append(c)
-    state.main_deck += tucked
-    if found:
-        state.players[seat].hand.append(found)
+    """Search the deck for the first card with the primate tag (an animal or a sponsor such as the Primatologist) and take it; the rest of the deck keeps its order (nothing is tucked under the deck: the revealed cards stay secret)."""
+    for i, c in enumerate(state.main_deck):
+        if "primate" in card(c).get("tags", []):
+            state.players[seat].hand.append(state.main_deck.pop(i))
+            return
 
 
 # ---- decisions ---------------------------------------------------------------------------------------------------------------------
@@ -303,6 +292,8 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         return [Action(seat, "choose_effect", {"index": i, "card": c}) for c in state.base_projects_unused]
     if k == "pilfer":
         out = []
+        if not pilfer_hits(state, e):                              # the victim is not behind (any more): nothing happens
+            return [Action(seat, "choose_effect", {"index": i, "nothing": True})]
         if p.money < 5 or p.hand:                                 # with 5 money and cards the victim chooses; short of money they must give a card
             out += [Action(seat, "choose_effect", {"index": i, "give": c}) for c in sorted(set(p.hand))]
         if p.money >= 5 or (not p.hand and p.money > 0):          # without cards they pay 5, or what they have left
@@ -311,6 +302,16 @@ def legal(state, e: dict, i: int, seat: int) -> list:
             out.append(Action(seat, "choose_effect", {"index": i, "nothing": True}))
         return out
     return []
+
+
+def pilfer_hits(state, e: dict) -> bool:
+    """The opponent of the animal's owner is level or ahead (a tie counts) in appeal / conservation points (above 0) and not protected."""
+    victim, thief = state.players[e["player"]], state.players[e["to"]]
+    if tracks.is_protected(victim.appeal) or "S225" in victim.sponsors:                             # below 5 appeal a player is protected
+        return False
+    if e.get("by", "appeal") == "appeal":
+        return victim.appeal >= thief.appeal - (state.current_action or {}).get("trigger_appeal", {}).get(thief.seat, 0)
+    return victim.conservation >= thief.conservation and victim.conservation > 0                    # (a tie at 0 does not count: logs)
 
 
 RESCUE_SLOTS = 3
@@ -386,6 +387,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     elif k == "constrict":
         venom.give_constriction(state, action.player)
     elif k == "gain":
+        if e.get("per_pavilion"):                                    # Landscape Gardener: the pavilions in the zoo when the effect is resolved
+            e["n"] = sum(b.type == "pavilion" for b in p.buildings)
+        if e.get("per"):
+            e["n"] = e["per"]["mult"] * (icon_counts(state, action.player)[e["per"]["icon"]] // e["per"]["every"])
         g._gain(state, action.player, **{{"appeal": "appeal", "money": "money", "reputation": "reputation", "conservation": "conservation", "xtoken": "x_tokens"}[e["res"]]: e["n"]})
     elif k == "ability":
         venom.settle(state, action.player)
@@ -444,7 +449,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         elif choice == "appeal":
             g._gain(state, p.seat, appeal=2)
         elif choice == "kiosk":
-            state.prompt.args["pending"][i + 1:i + 1] = _build(e["source"], ("kiosk",))
+            state.prompt.args["pending"][i + 1:i + 1] = _build(e["source"], ("kiosk", "pavilion"))
         else:
             raise fx.IllegalEffect("unknown gain")
     elif k == "shark":
@@ -500,7 +505,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             paid = min(5, p.money)
             g._gain(state, p.seat, money=-paid)
             g._gain(state, to.seat, money=paid)
-        elif a.get("nothing") and not p.hand and p.money == 0:
+        elif a.get("nothing") and (not p.hand and p.money == 0 or not pilfer_hits(state, e)):
             pass
         else:
             raise fx.IllegalEffect("give a card from the hand or pay 5 money")

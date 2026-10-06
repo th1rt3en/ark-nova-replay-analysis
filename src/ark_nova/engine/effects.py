@@ -57,6 +57,8 @@ def can_play(state, seat: int, card_key: str) -> bool:
     """A sponsor that places a building can only be played when the building fits."""
     if card_key in prog.UNIQUE_BUILD:
         t, rules = build_rules(card_key, state.config.marine_worlds)
+        if t in ("pavilion", "kiosk") or card_key == "S272":      # (Landscape Gardener played with no room for its pavilion: logs 851985853 turn 58; Expansion Area with no room for its size-3: 662887436 turn 74)
+            return True
         return not build_action.knows_shape(t) or bool(build_options(state, seat, t, rules))
     return True
 
@@ -90,8 +92,10 @@ def on_play(state, seat: int, card_key: str) -> list:
         t, rules = build_rules(card_key, state.config.marine_worlds)
         if not build_action.knows_shape(t):
             raise NotImplementedError(f"the shape of the {t} building is unknown (see data/unique_shapes.json)")
-        pending.append({"kind": "build", "source": card_key, "type": t, "rules": rules, "optional": card_key in prog.OPTIONAL_BUILD,
+        pending.append({"kind": "build", "source": card_key, "type": t, "rules": rules, "optional": card_key in prog.OPTIONAL_BUILD or card_key in prog.PER_PAVILION_APPEAL or ((t in ("pavilion", "kiosk") or card_key == "S272") and not build_options(state, seat, t, rules)),
                         "double": card_key in prog.DOUBLE_PLACEMENT_BONUS})
+    if card_key in prog.PER_PAVILION_APPEAL:          # Landscape Gardener: the free pavilion (optional) and the appeal for the pavilions (mandatory) are two effects in any order
+        pending.append({"kind": "gain", "source": card_key, "res": "appeal", "n": 0, "per_pavilion": True, "optional": False})
     if card_key in prog.TAKE_ONE_CARD:
         pending.append({"kind": "take", "source": card_key, "optional": False})
     if card_key in prog.HIRE_WORKER:
@@ -112,10 +116,13 @@ def _is_pet(key: str) -> bool:
 
 def fire_icons(state, seat: int, card_key: str) -> list:
     """Triggers of the cards in play for every icon of the card that was just played into `seat`'s zoo."""
-    return fire_icon_counter(state, seat, card_icons(card_key, state.config.marine_worlds))
+    return fire_icon_counter(state, seat, card_icons(card_key, state.config.marine_worlds), card_key)
 
 
-def fire_icon_counter(state, seat: int, own: Counter) -> list:
+EXPLORER_BUG = {"S250": {"SeaAnimal"}}       # BGA bug (user-confirmed, 656606572 turn 27): the Sea Turtle Tank's Sea Animal icon does not count as a new icon for Explorer
+
+
+def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> list:
     """The same for any icons that have just entered the zoo (a partner zoo or university tile is 'played into the zoo' too)."""
     g = _g()
     total = icon_counts(state, seat)
@@ -132,10 +139,15 @@ def fire_icon_counter(state, seat: int, own: Counter) -> list:
                     explorer = owner == seat
                     continue
                 for _ in range(own[icon]):
-                    if eff[0] == "gain":
+                    if eff[0] == "gain" and eff[1].get("reputation") and len(eff[1]) == 1:        # a reputation gain of a trigger is an effect of its own (an upgrade of the Cards action may lift the cap of 9 first: 726284828 turn 59)
+                        pending.append({"kind": "gain", "source": s, "res": "reputation", "n": eff[1]["reputation"], "optional": False, "player": owner})
+                    elif eff[0] == "gain":
                         v = eff[1]
                         g._gain(state, owner, money=v.get("money", 0), appeal=v.get("appeal", 0), x_tokens=v.get("xtoken", 0),
                                 reputation=v.get("reputation", 0), conservation=v.get("conservation", 0))
+                        if v.get("appeal") and state.current_action is not None:       # (BGA logs a trigger's appeal after the Pilfering of the same animal: `pilfer_hits` does not count it)
+                            ta = state.current_action.setdefault("trigger_appeal", {})
+                            ta[owner] = ta.get(owner, 0) + v["appeal"]
                     elif eff[0] == "build":
                         pending.append({"kind": "build", "source": s, "type": eff[1], "rules": {}, "optional": True, "double": False, "player": owner})
                     elif eff[0] == "reveal":
@@ -164,7 +176,7 @@ def fire_icon_counter(state, seat: int, own: Counter) -> list:
                     elif eff[0] == "unsupported":
                         raise NotImplementedError(eff[1])
     if explorer:
-        new = [i for i in prog.EXPLORER_ICONS if own[i] and not before[i]]
+        new = [i for i in prog.EXPLORER_ICONS if own[i] and not before[i] and i not in EXPLORER_BUG.get(card_key, ())]
         g._gain(state, seat, appeal=len(new), money=2 * len(new))
     return pending
 
@@ -180,7 +192,7 @@ def legal(state, p0) -> list:
     a = state.prompt.args
     out = []
     resume = a.get("resume") or {}
-    if resume.get("kind") == "end" and resume.get("extra") and a["pending"]             and all(e["kind"] in ("slot1", "boost", "mark") for e in a["pending"]):
+    if resume.get("kind") == "end" and resume.get("extra") and a["pending"]             and all(e["kind"] in ("slot1", "boost", "mark") or e.get("cond") == "no_animals" for e in a["pending"]):
         out.append(Action(state.prompt.player, "go_extra", {}))        # the extra action first, the Clever / Boost after it
     for i, e in enumerate(a["pending"]):
         k = e["kind"]
@@ -223,6 +235,9 @@ def legal(state, p0) -> list:
                     out.append(Action(p.seat, "take_cards", {"mode": "range", "card": c}))
             if None in state.display[:cards_action.reputation_range(p.reputation) + 1]:        # the display may be refilled first: the gap closes and a card moves into the range
                 out.append(Action(p.seat, "choose_effect", {"index": i, "refill": True}))
+        elif k == "reveal" and e.get("cond") == "no_animals" and any(c.startswith("A") for c in p.hand):
+            out.append(Action(p.seat, "skip_effect", {"index": i}))            # Hunter Animals: only when the hand holds no animal when the effect is resolved
+            continue
         elif k == "reveal" and venom.blocked(state, p.seat):
             out.append(Action(p.seat, "skip_effect", {"index": i}))            # drawing cards is not allowed before Venom is paid
             continue
@@ -322,8 +337,6 @@ def resolve_build(state, action: Action) -> None:
         _done(state, i)
         return
     g._put_building(state, p.seat, t, x, y, k, double=e["double"])
-    if e["source"] in prog.PER_PAVILION_APPEAL:
-        g._gain(state, p.seat, appeal=sum(b.type == "pavilion" for b in p.buildings))
     _done(state, i)
 
 
@@ -462,6 +475,9 @@ def skip(state, action: Action) -> None:
 
 def _nothing_to_do(state, e: dict, i: int) -> bool:
     """A mandatory animal ability effect without any legal choice can be skipped."""
+    if e["kind"] == "mark":                              # a mark must be placed unless every animal of the display has one already (or there is none)
+        from ark_nova.engine import marks
+        return not marks.markable(state)
     if e["kind"] in project_effects.KINDS:
         return not project_effects.legal(state, e, i, state.prompt.player)
     return e["kind"] in animal_abilities.KINDS and not animal_abilities.legal(state, e, i, state.prompt.player)

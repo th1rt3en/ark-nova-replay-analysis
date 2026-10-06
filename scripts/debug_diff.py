@@ -31,7 +31,10 @@ def main(game: str, turn: str = None) -> None:
                 st, r = ring[-1]
                 pr = st.prompt
                 print("  break", st.break_position, "x", [q.x_tokens for q in st.players]); print("  prompt", pr.kind if pr else None, {k: v for k, v in (pr.args.items() if pr else []) if k != "resume"})
+                print("  hands", [q.hand for q in st.players])
                 print("  legal", [(a.kind, a.args) for a in r][:10])
+                if os.environ.get("LEGALCARD"):          # every legal action that mentions this text (e.g. LEGALCARD=A518)
+                    print("  legal matching", [(a.kind, a.args) for a in r if os.environ["LEGALCARD"] in str(a.args)][:40])
             super().append(x)
 
     orig_init = d.DiffReport.__init__

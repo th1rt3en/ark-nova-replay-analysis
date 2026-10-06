@@ -16,9 +16,9 @@ from typing import Callable
 
 from ark_nova import data
 from ark_nova.engine.actions import Action
-from ark_nova.engine.game import apply, start_game
+from ark_nova.engine.game import IllegalAction, apply, start_game
 from ark_nova.engine import icons, tracks
-from ark_nova.engine.state import Building, GameConfig, GameState, Phase, SeedSpec, Token
+from ark_nova.engine.state import ActionCardState, Building, GameConfig, GameState, Phase, SeedSpec, Token
 from ark_nova.parser.deck import classify_draw
 from ark_nova.parser.model import Event, Move, ParsedLog
 from ark_nova.parser.setup import SetupInfo
@@ -35,6 +35,8 @@ class Replay:
     substates: dict = field(default_factory=dict)        # move index -> states after each sub-step but the last (see build_replay)
     turn_snapshots: list[GameState] = field(default_factory=list)      # state at each turn marker (start of every player turn)
     notes: list[tuple[int, str]] = field(default_factory=list)         # known-imprecise oracles (strength modifiers of Venom/Constriction/hypnosis)
+    draft_engine: dict = field(default_factory=dict)       # setup move index -> the engine state of the action card draft after it (engine/draft.py fed with the log's offers and choices)
+    draft_rounds: dict = field(default_factory=dict)       # draft stage (pick1 | pick2 | keep) -> the engine state when that round starts (nothing chosen yet)
 
 
 def _key(card_id: str) -> str:
@@ -286,6 +288,7 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
         for m in a.get("meeples") or []:
             if m["type"] == "token" and re.match(r"^P\d{3}_.*_\d$", m["location"]) and m.get("pId") not in (None, 0, "0"):
                 ctx.support = str(m["pId"])
+                ctx.__dict__["free_build"] = False
     _place_meeples(ctx, a.get("meeples"))
     if isinstance(a.get("meeple"), dict):
         _place_meeples(ctx, [a["meeple"]])
@@ -337,6 +340,8 @@ def h_discard_cards(ctx: _Ctx, e: Event) -> None:
     a = e.args
     p = s.players[ctx.seat(e.player)]
     _apply_bonuses(p, a.get("bonuses"))             # selling / pouching cards pays money
+    if "Map T1 effect" in str(e.log):               # the discard for +1 strength needs the card space of the notepad (slot 0), taken before
+        p.flags["bonus_used"] = p.flags.get("bonus_used", 0) | 1
     for c in a.get("cards", []):
         k = _key(c["id"])
         if "Pilfering" in e.log:                    # given to the opponent, not discarded
@@ -372,7 +377,7 @@ def h_snap_card(ctx: _Ctx, e: Event) -> None:
         p.hand.append(k)
     if e.type == "snapCard" and ctx.threshold_snaps and "snaps" in e.log:
         ctx.threshold_snaps -= 1
-    elif e.type == "snapCard" and ctx.__dict__.pop("rep_take", False):
+    elif e.type == "snapCard" and (ctx.__dict__.pop("rep_take", False) or ctx.__dict__.get("free_build")):
         pass
     elif e.type == "snapCard":
         _support_bonus(ctx, e, "take-in-range-or-deck" if "reputation range" in e.log else "Snapping")
@@ -497,6 +502,8 @@ def h_buy_building(ctx: _Ctx, e: Event) -> None:
     b = a["building"]
     p.buildings.append(Building(id=b["id"], type=b["type"], x=b["x"], y=b["y"], rotation=b.get("rotation", 0)))
     p.money = int(a["total"])
+    if "adds" in e.log:
+        ctx.__dict__["free_build"] = True                    # (a card taken after a free building comes from a placement bonus of the map, not from the notepad)
     if "adds" in e.log and b["type"] == "size-2":
         _support_bonus(ctx, e, "size-2")
     elif "adds" in e.log and b["type"] in ("large-bird-aviary", "reptile-house", "large-aquarium"):
@@ -594,7 +601,8 @@ HANDLERS: dict[str, Callable[[_Ctx, Event], None]] = {
 }
 # events that carry no state change the builder needs
 IGNORED = {"startBreak", "updateBreakDiscardSelection", "enableMultiplier",
-           "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame", "gameStateChangePrivateArg", "timeJokerUsed"}
+           "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame", "gameStateChangePrivateArg", "timeJokerUsed",
+           "skipTurnOfPlayer", "gameResultNeutralized"}         # a player timed out (the turn is skipped, nothing to show) / quit (the game is lost for them)
 
 
 def _sync(ctx: _Ctx) -> None:
@@ -616,12 +624,9 @@ def _draft_variant(c: dict) -> str:
     return f"{str(c['actionType']).lower()}{c['number']}"
 
 
-def draft_states(parsed: ParsedLog, seats: list, first_turn: int) -> dict:
-    """The action card draft of the log (`updateInitialActionCardSelection` / `...Keep`, private events of both players), as `GameState.draft` shows it
-    after each setup move: `stage` (pick1 | pick2 | keep | done) is the round the log has reached, `offers` / `picked` / `kept` are what BOTH players choose
-    from and chose in that round. The players choose at the same time, but the log tells their rounds one after the other: the round of the player who comes
-    second is taken from the log ahead of its event, so that both players are always complete."""
-    rounds: list = [[], []]                       # per seat: the events in order: (move index, kind, offers, previous, selection)
+def _draft_rounds(parsed: ParsedLog, seats: list, first_turn: int) -> tuple[list, int | None]:
+    """The private draft events of the log per seat: (move index, kind, offers, previous picks, chosen), and the move of `setupActionCards`."""
+    rounds: list = [[], []]
     done_at = None
     for m in parsed.moves[:first_turn]:
         for e in m.events:
@@ -637,6 +642,73 @@ def draft_states(parsed: ParsedLog, seats: list, first_turn: int) -> dict:
                 rounds[seat].append((m.index, kind, cards, prev, chosen))
             elif e.type == "setupActionCards" and done_at is None:
                 done_at = m.index
+    return rounds, done_at
+
+
+def engine_draft(parsed: ParsedLog, config: GameConfig, seed: SeedSpec, seats: list, first_turn: int) -> tuple[dict, dict]:
+    """The action card draft played by the engine (engine/draft.py) with the offers and choices of the log: (setup move index -> engine state after that move, stage -> engine
+    state at the start of that round). The log lacks the undealt variants and the engine's random outcomes: the pool is the rest of the 20 variants, and the 4th variant
+    of a player with 3 of one action is the one the log offers. States stop where the draft is over (the deal that follows is the log's). ({}, {}) if the engine
+    cannot follow the log."""
+    from ark_nova.engine import draft as dr
+    rounds, _ = _draft_rounds(parsed, seats, first_turn)
+    if not all(len(r) == 3 for r in rounds) or any((r[0][1], r[1][1], r[2][1]) != ("pick1", "pick2", "keep") for r in rounds):
+        return {}, {}
+    cfg = copy.deepcopy(config)
+    cfg.draft_action_cards = True                                           # (`cfg.action_cards` stays: the draft keeps the logged order of the slots, only the variants differ)
+    st = start_game(cfg, seed)
+    for p in st.players:
+        p.action_cards = [ActionCardState(type=t) for t in dr.ACTION_TYPES]      # the standard cards until the draft is over
+    offers = [rounds[s][0][2] for s in (0, 1)]
+    if any(len(o) != dr.DEAL for o in offers) or len(set(offers[0]) | set(offers[1])) != 2 * dr.DEAL:
+        return {}, {}
+    st.draft["offers"] = [list(o) for o in offers]
+    st.draft["pool"] = [v for v in dr.all_variants() if v not in offers[0] and v not in offers[1]]
+    events = sorted(((r[0], s, i) for s in (0, 1) for i, r in enumerate(rounds[s])), key=lambda t: (t[0], t[1]))      # (move, seat, round)
+    states, starts, last_move = {}, {"pick1": copy.deepcopy(st)}, None
+    try:
+        for move, seat, i in events:
+            _, kind, cards, _, chosen = rounds[seat][i]
+            if st.draft["stage"] != kind:
+                return {}, {}                                                  # (the other player is still in an earlier round)
+            if last_move is not None and move != last_move:
+                states[last_move] = copy.deepcopy(st)
+            last_move = move
+            act = Action(seat, "draft_keep", {"keep": chosen}) if kind == "keep" else Action(seat, "draft_pick", {"variant": chosen[0]})
+            before = st.draft["stage"]
+            st = apply(st, act)
+            if st.draft["stage"] == before:
+                continue
+            if st.draft["stage"] == "done":
+                last_move = None
+                break
+            d = st.draft                                                       # the keep round starts: a player with 3 of one action gets the 4th variant the log offers
+            for s in (0, 1) if d["stage"] == "keep" else ():
+                want = rounds[s][2][2]
+                if set(want) != set(d["offers"][s]):
+                    extra = [v for v in want if v not in d["offers"][s]]
+                    if len(extra) != 1 or len(want) != len(d["offers"][s]) + 1:
+                        return {}, {}
+                    if d["auto"][s] is not None:
+                        d["pool"].append(d["auto"][s])
+                    d["auto"][s] = extra[0]
+                    if extra[0] in d["pool"]:
+                        d["pool"].remove(extra[0])
+                    d["offers"][s] = [v for v in d["picked"][s]] + [v for v in want if v not in d["picked"][s]]
+            starts[d["stage"]] = copy.deepcopy(st)
+        if last_move is not None:
+            states[last_move] = copy.deepcopy(st)
+    except (IllegalAction, dr.DraftError):
+        return {}, {}
+    return states, starts
+
+
+def draft_states(parsed: ParsedLog, seats: list, first_turn: int) -> dict:
+    """The action card draft of the log (`updateInitialActionCardSelection` / `...Keep`, private events of both players), as `GameState.draft` shows it
+    after each setup move: `stage` (pick1 | pick2 | keep | done) is the round the log has reached, `offers` / `picked` / `kept` are what BOTH players choose
+    from and chose in that round. The players choose at the same time, but the log tells their rounds one after the other: the round of the player who comes
+    second is taken from the log ahead of its event, so that both players are always complete."""
+    rounds, done_at = _draft_rounds(parsed, seats, first_turn)
     if not any(rounds):
         return {}
     order = {"pick1": 1, "pick2": 2, "keep": 3}
@@ -656,13 +728,14 @@ def draft_states(parsed: ParsedLog, seats: list, first_turn: int) -> dict:
             if ev is None:
                 continue
             _, kind, cards, prev, chosen = ev
-            d["offers"][seat] = cards
+            d["offers"][seat] = cards                                       # (what the player is offered is on the table from the start of the round)
+            made = ev[0] <= m.index                                         # the choice itself shows at the step of the player's own log event
             if kind == "keep":
-                d["kept"][seat] = chosen
+                d["kept"][seat] = chosen if made else []
                 pk = next((x for x in rounds[seat] if x[1] == "pick2"), None)
                 d["picked"][seat] = (pk[3] + pk[4]) if pk else []
             else:
-                d["picked"][seat] = prev + chosen
+                d["picked"][seat] = prev + chosen if made else list(prev)
         out[m.index] = d
     return out
 
@@ -716,6 +789,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
             last = drafts.get(i, last)
             if last is not None:
                 drafts[i] = last
+    rep.draft_engine, rep.draft_rounds = engine_draft(parsed, config, seed, [str(s) for s in setup.seats], first_turn)
     rep.substates = {}
     next_marker = 0
     for m in parsed.moves:

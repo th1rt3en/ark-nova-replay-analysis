@@ -77,7 +77,7 @@ def special_on_play(state, seat: int, key: str, total: Counter) -> list:
     elif key == "S262":
         g._gain(state, seat, money=2 * sum(1 for i in prog.EXPLORER_ICONS if total[i]))
     elif key in ("S229", "S230"):                # Expert in Small / Large Animals: appeal for each small animal / 2 for each large animal
-        c = Counter(size_class(data.cards_by_key()[a]) for a in state.players[seat].animals)
+        c = Counter(size_class(data.cards_by_key()[a]) for a in list(state.players[seat].animals) + list(state.players[seat].rescued))      # (the rescued animals count: 839041784 turn 82)
         g._gain(state, seat, appeal=c["small"] if key == "S229" else 2 * c["large"])
     elif key == "S203":                          # Veterinarian: 0 / 2 / 5 / 10 money for 0 / 1 / 2 / 3 universities
         g._gain(state, seat, money=(0, 2, 5, 10)[min(3, sum(t.location.startswith("university_") for t in state.players[seat].tokens))])
@@ -195,6 +195,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         old = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
         b.type = f"size-{int(b.type[5:]) + 1}"
         b.x, b.y, b.rotation = opt
+        g.hydrologist_geologist(state, p.seat, [c for c in build_action.footprint(b.type, b.x, b.y, b.rotation) if c not in old])      # (the new spaces pay the Hydrologist / Geologist)
         for c in build_action.footprint(b.type, b.x, b.y, b.rotation):
             if c not in old and "S280" not in p.sponsors:
                 for bon in board(p.map_id).bonuses.get(c, []):          # (the covered hex pays its placement bonus, a Marketing one included)

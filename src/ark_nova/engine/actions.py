@@ -47,6 +47,8 @@ ACTION_SPECS: dict[str, ActionSpec] = dict([
     _s("initial_discard", "discard 4 of the 8 dealt cards (the other 4 are kept; both endgame cards are kept until one is discarded later)",
        "cards", "updateInitialSelection", "pDiscardCards"),
     # turn
+    _s("finish_game", "after the last turn: nothing is left to do with a token, the game is scored", "", "finalScoring"),
+    _s("skip_snap", "Snap cards, level II, strength 5: give up the second snap, the action ends", "", "actionCardCleanup"),
     _s("choose_action_card", "choose one of the 5 action cards (optionally spending X tokens)", "type spend", "chooseActionCard"),
     _s("sponsor_side", "a side action of a Sponsors action card variant (trade, discard for money, snap a sponsor, play a sponsor for a card)", "op card take play", "getBonuses", "pDiscardCards"),
     _s("self_clever", "Self-clever Association (level I, strength 5): do nothing, perform another action", "", "actionCardCleanup"),

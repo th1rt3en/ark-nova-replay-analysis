@@ -15,7 +15,7 @@
             "description": "Maps, Marine Worlds, player names, which base projects were drawn.",
             "suggested": "public",
             "why": "Everyone needs it to read the board.",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -25,8 +25,8 @@
             "description": "The random seed and the known deck prefix: they decide the deck order.",
             "suggested": "server_only",
             "why": "Whoever has the seed can compute every future draw.",
-            "decision": null,
-            "note": ""
+            "decision": "until_revealed",
+            "note": "revealed to both players at the end of the game"
         },
         {
             "id": "game.rng",
@@ -35,7 +35,7 @@
             "description": "The 64 bit state of the engine's random generator.",
             "suggested": "server_only",
             "why": "Same reason as the seed.",
-            "decision": null,
+            "decision": "server_only",
             "note": ""
         },
         {
@@ -45,7 +45,7 @@
             "description": "Where the game is.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -55,7 +55,7 @@
             "description": "The cards still in the draw pile, top first.",
             "suggested": "server_only",
             "why": "The order is the secret.",
-            "decision": null,
+            "decision": "server_only",
             "note": ""
         },
         {
@@ -65,7 +65,7 @@
             "description": "How many cards are left.",
             "suggested": "public",
             "why": "Physical game: the pile is visible.",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -75,7 +75,7 @@
             "description": "All discarded cards and their order.",
             "suggested": "public",
             "why": "Face up in the physical game.",
-            "decision": null,
+            "decision": "server_only",
             "note": ""
         },
         {
@@ -85,7 +85,7 @@
             "description": "The final scoring cards not yet dealt.",
             "suggested": "server_only",
             "why": "",
-            "decision": null,
+            "decision": "server_only",
             "note": ""
         },
         {
@@ -95,7 +95,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -105,7 +105,7 @@
             "description": "Final scoring cards discarded at conservation 10 or at the start.",
             "suggested": "until_revealed",
             "why": "Face down in the physical game; may be revealed at the end.",
-            "decision": null,
+            "decision": "until_revealed",
             "note": ""
         },
         {
@@ -115,7 +115,7 @@
             "description": "The cards in reach.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -125,7 +125,7 @@
             "description": "The 3 base projects of the game.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -135,7 +135,7 @@
             "description": "The other base projects (Assertion fetches one of them).",
             "suggested": "public",
             "why": "Players can work them out anyway.",
-            "decision": null,
+            "decision": "server_only",
             "note": ""
         },
         {
@@ -145,7 +145,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -155,7 +155,7 @@
             "description": "Partner zoo and university tiles on offer.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -165,7 +165,7 @@
             "description": "The random bonuses still on offer.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -175,7 +175,7 @@
             "description": "Which action card, strength and variant the active player is using.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -185,7 +185,7 @@
             "description": "What the active player still has to resolve (kinds, not the secret contents).",
             "suggested": "public",
             "why": "Opponents see 'X must resolve Perception 2'; the revealed cards follow the reveal rules below.",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -195,7 +195,7 @@
             "description": "The variants each player is offered and picks.",
             "suggested": "until_revealed",
             "why": "Both choose at the same time: nothing is shown until both have chosen, or until the draft is over.",
-            "decision": null,
+            "decision": "until_revealed",
             "note": ""
         },
         {
@@ -205,7 +205,7 @@
             "description": "Final scores, winner, how the game ended.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -215,7 +215,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -225,7 +225,7 @@
             "description": "The tracks.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -235,7 +235,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -245,7 +245,7 @@
             "description": "",
             "suggested": "owner_count",
             "why": "The opponent knows how many.",
-            "decision": null,
+            "decision": "owner_count",
             "note": ""
         },
         {
@@ -255,7 +255,7 @@
             "description": "The player's final scoring cards.",
             "suggested": "owner_count",
             "why": "",
-            "decision": null,
+            "decision": "owner_count",
             "note": ""
         },
         {
@@ -265,7 +265,7 @@
             "description": "Before the first discard.",
             "suggested": "owner_only",
             "why": "",
-            "decision": null,
+            "decision": "owner_only",
             "note": ""
         },
         {
@@ -275,7 +275,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -285,7 +285,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -295,7 +295,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -305,7 +305,7 @@
             "description": "",
             "suggested": "owner_count",
             "why": "Face down.",
-            "decision": null,
+            "decision": "owner_count",
             "note": ""
         },
         {
@@ -315,7 +315,7 @@
             "description": "",
             "suggested": "owner_count",
             "why": "Face down in the physical game.",
-            "decision": null,
+            "decision": "owner_count",
             "note": ""
         },
         {
@@ -325,7 +325,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -335,7 +335,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -345,7 +345,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -355,7 +355,7 @@
             "description": "Engine bookkeeping.",
             "suggested": "public",
             "why": "Check the individual flags before sending them.",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -365,7 +365,7 @@
             "description": "Derived from the zoo.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -375,7 +375,7 @@
             "description": "Draw, Sprint, Cards action, income.",
             "suggested": "owner_count",
             "why": "The owner sees the cards, the opponent how many.",
-            "decision": null,
+            "decision": "owner_count",
             "note": ""
         },
         {
@@ -385,7 +385,7 @@
             "description": "Take in range, snap.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -395,8 +395,8 @@
             "description": "All the revealed cards.",
             "suggested": "public",
             "why": "'Reveal' means shown to everybody.",
-            "decision": null,
-            "note": ""
+            "decision": "owner_only",
+            "note": "hunter/scuba dive X: opponent only sees the card that was kept. perception X: the opponent sees nothing"
         },
         {
             "id": "event.reveal_kept",
@@ -405,8 +405,8 @@
             "description": "Goes to the hand of the player.",
             "suggested": "public",
             "why": "It was shown to all.",
-            "decision": null,
-            "note": ""
+            "decision": "public",
+            "note": "hunter/scuba dive X: opponent only sees the card that was kept. perception X: the opponent sees nothing"
         },
         {
             "id": "event.digging",
@@ -415,8 +415,8 @@
             "description": "Discard one hand card, draw one.",
             "suggested": "owner_count",
             "why": "The discarded card is public (discard pile), the new one is not.",
-            "decision": null,
-            "note": ""
+            "decision": "owner_only",
+            "note": "the discard is only public if it was from the display"
         },
         {
             "id": "event.scavenging",
@@ -425,7 +425,7 @@
             "description": "Discard from the discard pile and draw.",
             "suggested": "owner_count",
             "why": "",
-            "decision": null,
+            "decision": "owner_count",
             "note": ""
         },
         {
@@ -435,7 +435,7 @@
             "description": "The card found in the draw pile.",
             "suggested": "public",
             "why": "The found card is shown; the rest of the pile is not.",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -445,8 +445,8 @@
             "description": "Look at cards and tuck them under the draw pile.",
             "suggested": "owner_only",
             "why": "Contents and order of the tucked cards stay secret.",
-            "decision": null,
-            "note": ""
+            "decision": "public",
+            "note": "note that monkey gang was updated to drop the tuck under draw pile effect"
         },
         {
             "id": "event.pilfering",
@@ -455,8 +455,8 @@
             "description": "A card moves between the hands.",
             "suggested": "until_revealed",
             "why": "Name who sees which card in the note.",
-            "decision": null,
-            "note": ""
+            "decision": "public",
+            "note": "there are only 2 players in the game, and in this situation, they both see the card"
         },
         {
             "id": "event.discard_hand",
@@ -465,7 +465,7 @@
             "description": "",
             "suggested": "public",
             "why": "It goes to the face up discard pile.",
-            "decision": null,
+            "decision": "owner_only",
             "note": ""
         },
         {
@@ -475,7 +475,7 @@
             "description": "",
             "suggested": "public",
             "why": "Goes to the discard pile.",
-            "decision": null,
+            "decision": "owner_only",
             "note": ""
         },
         {
@@ -485,7 +485,7 @@
             "description": "Which final scoring card was discarded.",
             "suggested": "owner_only",
             "why": "",
-            "decision": null,
+            "decision": "owner_only",
             "note": ""
         },
         {
@@ -495,7 +495,7 @@
             "description": "The card leaves the hand and becomes public.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -505,7 +505,7 @@
             "description": "",
             "suggested": "public",
             "why": "Revealed to score them.",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -515,7 +515,7 @@
             "description": "",
             "suggested": "until_revealed",
             "why": "See game.draft.",
-            "decision": null,
+            "decision": "until_revealed",
             "note": ""
         },
         {
@@ -525,7 +525,7 @@
             "description": "New cards come from the draw pile onto the display.",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         },
         {
@@ -535,7 +535,7 @@
             "description": "The sentence for each move ('X plays Y').",
             "suggested": "owner_count",
             "why": "Written per viewer: card names only where the viewer may see them.",
-            "decision": null,
+            "decision": "owner_count",
             "note": ""
         },
         {
@@ -545,7 +545,7 @@
             "description": "",
             "suggested": "server_only",
             "why": "They would reveal the hand.",
-            "decision": null,
+            "decision": "server_only",
             "note": ""
         },
         {
@@ -555,7 +555,7 @@
             "description": "",
             "suggested": "public",
             "why": "",
-            "decision": null,
+            "decision": "public",
             "note": ""
         }
     ]

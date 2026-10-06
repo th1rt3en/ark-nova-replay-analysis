@@ -94,10 +94,11 @@ def build_app():
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--host", default="127.0.0.1", help="address to listen on; 0.0.0.0 makes the server reachable from other devices on the network (it can then also save the planning sheets for them)")
     ap.add_argument("--reload", action="store_true", help="restart the server when a Python file under src/ changes (the web/ files are always read from disk)")
     args = ap.parse_args()
     if args.reload:
-        uvicorn.run("dev_server:build_app", factory=True, app_dir=str(Path(__file__).resolve().parent), host="127.0.0.1", port=args.port,
+        uvicorn.run("dev_server:build_app", factory=True, app_dir=str(Path(__file__).resolve().parent), host=args.host, port=args.port,
                     reload=True, reload_dirs=[str(Path(__file__).resolve().parents[1] / "src")], reload_includes=["*.py", "*.json"])
     else:
-        uvicorn.run(build_app(), host="127.0.0.1", port=args.port)
+        uvicorn.run(build_app(), host=args.host, port=args.port)

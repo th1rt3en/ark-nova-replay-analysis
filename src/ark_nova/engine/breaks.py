@@ -66,6 +66,10 @@ def run(state, initiator: int, step: str) -> None:
         endgame.check_trigger(state, [initiator, 1 - initiator], False, 1 - initiator)     # the income can reach 100
         state.break_position = 0
         state.round += 1                                          # the break is over: the next round starts
+        if state.end_triggered_by is not None and not state.final_turns:               # the break of the very last turn: the final scoring follows it
+            state.current_action = None
+            g._end_game(state)
+            return
         for q in state.players:
             q.flags.pop("built_now", None)
             q.flags["post_break"] = 1                              # (a token used before the next action still belongs to the break in BGA's log: a sponsor played then pays its income)

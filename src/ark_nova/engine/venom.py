@@ -32,20 +32,17 @@ def due(p) -> bool:
 
 
 def blocked(state, seat: int) -> bool:
-    """Irreversible actions (drawing cards from the deck) are not allowed while Venom is due and cannot be paid."""
-    p = state.players[seat]
-    return due(p) and p.money < VENOM_COST
+    """Drawing cards from the deck is never blocked by an unpaid Venom: BGA let a player with 1 money draw (839471673 turn 57, 820888770 turn 35) and took the
+    2 money only at the end of the turn, after the card was sold for money."""
+    return False
 
 
 def settle(state, seat: int) -> None:
-    """Pay for Venom before an irreversible action."""
+    """Commit the payment of Venom before an irreversible action (the money is taken at the end of the action; with less money the player pays what is left)."""
     p = state.players[seat]
     if due(p):
-        if p.money < VENOM_COST:
-            from ark_nova.engine.effects import IllegalEffect
-            raise IllegalEffect("pay for Venom first: not enough money")
-        _g()._gain(state, seat, money=-VENOM_COST)
-        p.flags["venom_paid"] = 1
+        p.flags["venom_paid"] = 1                              # (the payment is committed; BGA takes the money when the action is over)
+        p.flags["venom_owed"] = 1
 
 
 def remove_tokens(p, card, owner_paid: bool = True) -> None:
@@ -61,26 +58,40 @@ def strength_penalty(card) -> int:
 
 
 def end_of_action(state, seat: int) -> None:
-    """The action is over: Venom that is still due is paid now (BGA does not wait for an extra action that follows)."""
+    """The action is over: Venom that is still due is paid now when the player can (BGA does not wait for an extra action that follows); with less than
+    2 money the payment waits for the end of the turn, after the player has sold cards for money (839471673 turn 57)."""
     p = state.players[seat]
-    if due(p):
-        _g()._gain(state, seat, money=-min(VENOM_COST, p.money))
+    if (p.flags.get("venom_owed") or due(p)) and p.money >= VENOM_COST:
+        p.flags.pop("venom_owed", None)
+        _g()._gain(state, seat, money=-VENOM_COST)
         p.flags["venom_paid"] = 1
 
 
 def finish_turn(state, seat: int) -> None:
-    """End of the player's turn: pay for Venom that is still due."""
+    """End of the player's turn: pay for Venom that is still due. A player with less than 2 money who can still sell cards at the Commercial Harbor
+    (map 4) pays after the sale (`pay_late`, 839471673 turn 57)."""
     p = state.players[seat]
-    if due(p):
-        _g()._gain(state, seat, money=-min(VENOM_COST, p.money))
+    if p.flags.pop("venom_owed", None) or due(p):
+        if p.money < VENOM_COST and p.map_id in ("4", "4a") and p.hand:
+            p.flags["venom_late"] = 1
+        else:
+            _g()._gain(state, seat, money=-min(VENOM_COST, p.money))
     p.flags.pop("venom_removed", None)
     p.flags.pop("venom_paid", None)
+
+
+def pay_late(state, seat: int) -> None:
+    p = state.players[seat]
+    if p.flags.pop("venom_late", None):
+        _g()._gain(state, seat, money=-min(VENOM_COST, p.money))
 
 
 def give_venom(state, seat: int, n: int) -> None:
     """Venom n by `seat`: the other player gets a token on their cards at strength 1 (and 2) when they are ahead on appeal."""
     me, other = state.players[seat], state.players[1 - seat]
-    if other.appeal > me.appeal and not _tracks().is_protected(other.appeal) and "S225" not in other.sponsors:
+    start = (state.current_action or {}).get("appeal_start")            # the appeal when the action began: what the animal gains itself does not count (105 logged Venoms)
+    mine, theirs = (start[seat], start[1 - seat]) if start else (me.appeal, other.appeal)
+    if theirs > mine and not _tracks().is_protected(other.appeal) and "S225" not in other.sponsors:
         for card in other.action_cards[:n]:
             card.tokens.append("Venom")
 

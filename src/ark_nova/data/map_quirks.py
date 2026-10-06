@@ -10,10 +10,10 @@ import os
 
 MAP_6A_FIXED_FROM_TABLE_ID = int(os.environ.get("MAP_6A_FIXED_FROM_TABLE_ID", "800004000"))
 
-# Project P129 (Geological): BGA first asked 4 rock icons for the second slot, the printed card asks 3. Tables below this id were played with the bug.
-# The sample logs only show the 3-icon rule from table 727215709 on (older samples never reach the difference), so the number is a guess: set it to
-# the first table id that has the fix (or the env var GEOLOGICAL_FIXED_FROM_TABLE_ID) when it is known.
-GEOLOGICAL_FIXED_FROM_TABLE_ID = int(os.environ.get("GEOLOGICAL_FIXED_FROM_TABLE_ID", "650510189"))
+# Project P129 (Geological): BGA may have asked 4 rock icons for the second slot before a fix, the printed card asks 3. No sample log shows the 4-icon rule
+# (the oldest ones, tables 626827519 and 647641584, already offer the slot with 3), so the default is 0 = the bug never applies. Set it to the first table
+# id that has the fix (or the env var GEOLOGICAL_FIXED_FROM_TABLE_ID) when a log needs it.
+GEOLOGICAL_FIXED_FROM_TABLE_ID = int(os.environ.get("GEOLOGICAL_FIXED_FROM_TABLE_ID", "0"))
 
 # Hypnosis: the variant effect of the opponent's action card (Money Sponsors bonus, Mark, the extra kiosk ...) is part of the hypnotised action. BGA first
 # left it out; tables below this id were played with the bug. The sample logs put the change between table 732463562 (no Sponsors II bonus) and
@@ -36,9 +36,12 @@ def played_map_id(map_id: str, table_id: int) -> str:
     return map_id
 
 
-def hypnosis_runs_variant(table_id: int) -> bool:
-    """Whether a hypnotised card of the opponent runs its variant effect in table `table_id` (older tables: only the plain action)."""
-    return table_id <= 0 or table_id >= HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID
+def hypnosis_runs_variant(table_id: int, card_type: str = "", variant: int = 0) -> bool:
+    """Whether a hypnotised card of the opponent runs its variant effect in table `table_id`. Older tables left it out (Money Sponsors bonus, Mark, the
+    extra kiosk ...), but the Discount Animals (3) payment and the Association variants already ran in the oldest sample tables (665718619, 668553028)."""
+    if table_id <= 0 or table_id >= HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID:
+        return True
+    return (card_type == "animals" and variant == 3) or card_type == "association"
 
 
 def project_for_table(card: dict, table_id: int) -> dict:

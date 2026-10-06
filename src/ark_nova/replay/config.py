@@ -44,7 +44,7 @@ def infer_maps(parsed: ParsedLog, seats: list[str]) -> list[Optional[str]]:
     return [maps.get(pid) for pid in seats]
 
 
-def infer_base_projects(parsed: ParsedLog, marine_worlds: bool, fill: bool = True) -> list[str]:
+def infer_base_projects(parsed: ParsedLog, marine_worlds: bool, fill: bool = True, info: dict = None) -> list[str]:
     """The 3 base conservation projects (the user enters them in production): those the log shows as supported in slot base_0..2 or by a
     player token, the rest filled with the first unused base projects."""
     deck = deck_cards("base_project", marine_worlds)
@@ -70,6 +70,11 @@ def infer_base_projects(parsed: ParsedLog, marine_worlds: bool, fill: bool = Tru
                 head = str(mp["location"]).split("_")[0]
                 if mp["type"] == "token" and head[:1] == "P" and head[1:4].isdigit() and head[:4] in deck and head[:4] not in seen and head[:4] not in fetched:
                     seen.append(head[:4])
+    if info is not None:                   # (the caller places the projects that were seen but whose position is unknown)
+        info["seen"] = [k for k in seen if k not in slots]
+        info["fetched"] = fetched
+        info["explicit"] = list(slots)
+        return slots
     for key in seen:
         if key not in slots and None in slots:
             slots[slots.index(None)] = key
@@ -79,31 +84,23 @@ def infer_base_projects(parsed: ParsedLog, marine_worlds: bool, fill: bool = Tru
     return slots
 
 
-def unseen_base_slots(parsed: ParsedLog, marine_worlds: bool) -> tuple[list[str], list[int], list[str]]:
-    """(the inferred base projects, the positions that were only filled with a guess, the candidates for those positions)."""
-    seen_only = infer_base_projects(parsed, marine_worlds, fill=False)
-    guess = [i for i, k in enumerate(seen_only) if k is None]
-    filled = infer_base_projects(parsed, marine_worlds)
-    deck = deck_cards("base_project", marine_worlds)
-    fetched: set = set()
-    for m in parsed.moves:
-        for e in m.events:
-            if e.type == "pDrawCards" and isinstance(e.args, dict) and ("with Assertion" in e.log or "with Dominance" in e.log):
-                fetched |= {data.parse_bga_card_id(c["id"])[0] for c in e.args.get("cards", [])}
-    return filled, guess, [k for k in deck if k not in seen_only and k not in fetched]
-
-
 def refine_base_projects(parsed: ParsedLog, setup, cfg, seed) -> list[str]:
-    """The base projects that the log never shows (nobody supported them, BGA's lists never offered them) are a guess; choose the candidate for
-    which the engine's list of the supportable slots agrees with BGA's own list at every Association action (a project the zoo qualifies for
-    shows up there)."""
+    """The base projects whose position the log never shows (only BGA's lists offered them, or nobody supported them) are a guess; assign the
+    candidates to the unknown positions so that the engine's list of the supportable slots (which depends on the position: the slot of the card's
+    own position is covered) agrees with BGA's own list at every Association action. Projects BGA offered are in play, so they must be placed."""
     import copy as _copy
+    import itertools
     from ark_nova.replay import differential as df
     from ark_nova.replay.actions import turn_events
     from ark_nova.replay.builder import build_replay
-    filled, guess, candidates = unseen_base_slots(parsed, cfg.marine_worlds)
-    if not guess:
+    info: dict = {}
+    explicit = infer_base_projects(parsed, cfg.marine_worlds, info=info)
+    unknown = [i for i, k in enumerate(explicit) if k is None]
+    filled = infer_base_projects(parsed, cfg.marine_worlds)
+    if not unknown:
         return filled
+    required = info["seen"]
+    pool = required + [k for k in deck_cards("base_project", cfg.marine_worlds) if k not in explicit and k not in required and k not in info["fetched"]]
     rep = build_replay(parsed, setup, cfg, seed)
     turns = turn_events(parsed)
     oracle = []
@@ -117,27 +114,34 @@ def refine_base_projects(parsed: ParsedLog, setup, cfg, seed) -> list[str]:
         theirs = df._bga_project_options(evs, actor)
         if theirs is not None:
             oracle.append((k, setup.seats.index(actor), theirs))
-    result = list(filled)
-    taken = set(k for i, k in enumerate(filled) if i not in guess)
-    for pos in guess:
-        best = None
-        for cand in candidates:
-            if cand in taken:
-                continue
-            bad = 0
+    cost: dict = {}
+
+    def bad(pos: int, cand: str) -> int:
+        if (pos, cand) not in cost:
+            n = 0
             for k, seat, theirs in oracle:
                 st = _copy.deepcopy(rep.turn_snapshots[k])
-                st.base_projects = [cand if i == pos else x for i, x in enumerate(result)]
+                spare = iter(k for k in pool if k != cand and k not in explicit)          # (the other unknown positions only need some other project)
+                st.base_projects = [cand if i == pos else (x or next(spare)) for i, x in enumerate(explicit)]
                 try:
-                    mine = df._engine_project_options(st, seat).get(cand, [])
+                    n += df._engine_project_options(st, seat).get(cand, []) != theirs.get(cand, [])
                 except Exception:
-                    bad += 1
-                    continue
-                bad += mine != theirs.get(cand, [])
-            if best is None or bad < best[0]:
-                best = (bad, cand)
-        result[pos] = best[1]
-        taken.add(best[1])
+                    n += 1
+            cost[(pos, cand)] = n
+        return cost[(pos, cand)]
+
+    best = None
+    for combo in itertools.permutations(pool, len(unknown)):
+        if any(r not in combo for r in required):
+            continue
+        total = sum(bad(pos, c) for pos, c in zip(unknown, combo))
+        if best is None or total < best[0]:
+            best = (total, combo)
+    if best is None:
+        return filled
+    result = list(explicit)
+    for pos, c in zip(unknown, best[1]):
+        result[pos] = c
     return result
 
 

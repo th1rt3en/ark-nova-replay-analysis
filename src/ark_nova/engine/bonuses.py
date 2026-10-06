@@ -111,6 +111,8 @@ def _token_window(state, p) -> bool:
     """Tokens are used during the player's own action, or in the moment after their turn."""
     if state.prompt is None:
         return False
+    if state.prompt.kind == "final_window":
+        return state.prompt.player == p.seat                  # (the last turn is over, the game is not scored yet)
     if state.current_action is not None:
         if state.current_action.get("type") == "break":
             return state.prompt.kind == "effects"
@@ -120,6 +122,14 @@ def _token_window(state, p) -> bool:
     if state.prompt.kind == "effects" and state.prompt.player == p.seat and state.active_player == p.seat and (state.prompt.args.get("resume") or {}).get("kind") == "end":
         return True                                        # the effects after the action (Clever, Boost, marks): the token may be used before them
     return bool(p.flags.get("turn_window")) and state.prompt.kind == "choose_action_card"
+
+
+def token_uses(state, p) -> bool:
+    """The player owns a notepad token that could be used now, whatever the prompt is."""
+    from ark_nova.engine import animal_abilities
+    if any(t.type == "bonus-sponsor-gray" for t in p.tokens) and animal_abilities._marketing_options(state, p.seat):
+        return True
+    return any(t.type == "bonus-extra-shift" for t in p.tokens) and any(t.type == "worker" and t.location.startswith("association_") for t in p.tokens)
 
 
 def token_actions(state, p) -> list:
@@ -274,7 +284,7 @@ def upgradable(p) -> list:
     return [c.type for c in p.action_cards if c.level < 2]
 
 
-KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor")
+KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor")
 
 
 def open_break_prompt(state, seat: int, pending: list, resume: dict) -> None:
@@ -318,6 +328,12 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     elif k == "rep_bonus":                              # Marine Worlds: the bonus on 16 reputation, instead of the point gained at 15
         out += [Action(seat, "choose_effect", {"index": i, "rep_bonus": j}) for j in range(len(state.conservation_options.get("99", [])))]
         out.append(Action(seat, "skip_effect", {"index": i}))
+    elif k == "search_sponsor":                         # maps 8 / 8a: the first sponsor of the deck joins the hand
+        out.append(Action(seat, "choose_effect", {"index": i, "apply": "search_sponsor"}))
+    elif k == "pbonus":                                 # one of several placement bonuses of the same building: the player chooses the order
+        out.append(Action(seat, "choose_effect", {"index": i, "apply": "pbonus", "bonus": e["bonus"]["type"]}))
+    elif k == "search_category":                        # the search of a category university: the first card of the category leaves the deck (after the trigger effects of the new icons: 796946880 turn 23)
+        out.append(Action(seat, "choose_effect", {"index": i, "apply": "search_category"}))
     elif k == "income_map":                             # the income of the zoo map (restaurant spaces, stored cards, kiosks of the ice cream parlors)
         out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_map"}))
     elif k == "income_appeal":                          # the break income of the appeal track
@@ -415,6 +431,15 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if not 0 <= j < len(opts):
             raise fx.IllegalEffect("the bonus of 16 reputation has been taken")
         apply_bonus(state, p.seat, opts.pop(j))
+    elif k == "search_sponsor":
+        from ark_nova.engine.cards import search_deck
+        found = search_deck(state.main_deck, ("sponsor", None))
+        if found:
+            p.hand.append(found)
+    elif k == "pbonus":
+        _g().apply_placement_bonus(state, p.seat, e["bonus"])
+    elif k == "search_category":
+        fx.search_for_category(state, p.seat, e["category"])
     elif k == "income_map":
         from ark_nova.engine import breaks
         _g()._gain(state, p.seat, money=breaks.map_ability_income(state, p))

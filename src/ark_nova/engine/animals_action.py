@@ -149,11 +149,12 @@ def is_large(c: dict) -> bool:
     return c["size"] >= 4
 
 
-def cost(state: GameState, seat: int, key: str) -> int:
+def cost(state: GameState, seat: int, key: str, folder: int = 0) -> int:
+    """The price of the animal; the folder number of a display card is added before the discounts (BGA: 671385258 turn 42, a 4-money Stoat in folder 4 cost 2 with 6 of discounts)."""
     p = state.players[seat]
     c = card(key)
     mine = Counter(t.type.split("-", 1)[1].lower() for t in p.tokens if t.type.startswith("partner-"))
-    price = c["price"] - PARTNER_DISCOUNT * sum(mine[tag] for tag in c.get("tags", []) if tag in CONTINENT_TAGS)
+    price = c["price"] + folder - PARTNER_DISCOUNT * sum(mine[tag] for tag in c.get("tags", []) if tag in CONTINENT_TAGS)
     if "S229" in p.sponsors and is_small(c):                 # Expert in Small Animals
         price -= 3
     if "S230" in p.sponsors and is_large(c):                 # Expert in Large Animals
@@ -304,7 +305,7 @@ def _special_size(animal_key: str) -> int:
 
 
 def _cost_ok(state: GameState, seat: int, key: str, from_display: bool, folder: int) -> bool:
-    return cost(state, seat, key) + (folder if from_display else 0) <= state.players[seat].money
+    return cost(state, seat, key, folder if from_display else 0) <= state.players[seat].money
 
 
 def playable(state: GameState, seat: int, level: int) -> list:
@@ -391,12 +392,11 @@ def play(state: GameState, action: Action) -> None:
         else:                                                # the bonus token that ignores the conditions is used up
             p.tokens.remove(next(t for t in p.tokens if t.type == "bonus-ignore-conditions"))
     c = card(k)
-    price = cost(state, p.seat, k)
+    price = cost(state, p.seat, k, state.display.index(k) + 1 if from_display else 0)
     if from_display:
         i = state.display.index(k)
-        price += i + 1
         state.display[i] = None
-        if a.get("variant") == 4 and a["level"] >= 2 and marks.owner(state, k) is not None:      # Mark Animals, level II: 1 reputation for a marked animal
+        if a.get("variant") == 4 and a["level"] >= 2 and marks.owner(state, k) == p.seat:      # Mark Animals, level II: 1 reputation for an animal with the player's own mark, whatever the source of the mark (user)
             g._gain(state, p.seat, reputation=1)
         marks.taken(state, k)
     elif action.args.get("stored"):
@@ -413,6 +413,8 @@ def play(state: GameState, action: Action) -> None:
         b.animals.append(k)
     p.animals.append(k)
     a["played"].append(k)
+    if state.current_action is not None:
+        state.current_action["trigger_appeal"] = {}               # (the appeal that the triggers of this animal give: see `pilfer_hits`)
     own = own_gain(k)
     waza = p.flags.get("waza")                                # Waza Special Assignment: appeal for every animal of the chosen kind
     if waza and sponsor_extras.size_class(c) == ("small" if waza == sponsor_extras.WAZA_SMALL else "large"):
@@ -444,9 +446,9 @@ def _end(state: GameState, seat: int) -> None:
     """End of the action; Waza Small Animal Program: after only small animals one small animal may be snapped from the display."""
     p = state.players[seat]
     a = state.prompt.args
-    if a.get("variant") == 2 and not any(k.startswith("A") for k in p.hand):    # Hunter Animals: no animals left in hand: Hunter 4 (level I) / 6 (level II)
+    if a.get("variant") == 2:                                                   # Hunter Animals: no animals left in hand: Hunter 4 (level I) / 6 (level II); checked when the effect is resolved (a pouch of a later action counts)
         state.current_action.setdefault("after", []).append({"kind": "reveal", "source": "animals2", "x": 4 if a["level"] == 1 else 6,
-                                                              "filter": "animal", "optional": True})
+                                                              "filter": "animal", "optional": True, "cond": "no_animals"})
     if "S228" in p.sponsors and a["played"] and all(sponsor_extras.size_class(card(k)) == "small" for k in a["played"]):
         state.current_action.setdefault("after", []).append({"kind": "take", "source": "S228", "snap": True, "small": True, "optional": True})
     _g()._end_turn(state)

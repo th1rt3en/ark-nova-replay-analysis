@@ -11,7 +11,7 @@ from typing import Any
 from ark_nova import data
 from ark_nova.data import map_quirks
 from ark_nova.engine import association, tracks
-from ark_nova.engine.breaks import hand_limit
+from ark_nova.engine.breaks import hand_limit, map_ability_income
 from ark_nova.engine.board import footprint_cells
 from ark_nova.engine.build_action import knows_shape, shape_of
 from ark_nova.engine.state import GameState
@@ -68,12 +68,53 @@ def _draft_text(e, names: dict[str, str]) -> str:
     return ""
 
 
-def step_label(move: Move, names: dict[str, str]) -> str:
+# What an opponent does not see in the physical game: the cards drawn from the deck (and the scoring cards), cards stored or pouched face down. The cards that are revealed
+# (Hunter, Perception, Scuba Dive, a search of the deck, the discard pile) and everything that goes to the open discard pile are public (planning sheet "visibility").
+_PUBLIC_DRAW = re.compile(r"hunter effect|perception effect|scuba dive effect|resistance effect|for gaining a new university|from discard|Assertion|Dominance|Pilfering|with <")
+_SECRET_DISCARD = re.compile(r"scoring card|adapt effect|pouch")
+
+
+def _secret(e) -> bool:
+    """Is this private event (written for one player) something that the other player must not read?"""
+    if e.player is None:
+        return False
+    log = e.log or ""
+    if e.type == "pDrawCards":
+        return not _PUBLIC_DRAW.search(log)
+    if e.type == "pDiscardCards":
+        return bool(_SECRET_DISCARD.search(log))
+    return e.type in ("pStoreCard", "pUnstoreCard")
+
+
+def _hidden_text(e) -> str:
+    """The log line of a secret event with the cards replaced by their number."""
+    a = e.args if isinstance(e.args, dict) else {}
+    cards = a.get("cards")
+    n = len(cards) if isinstance(cards, list) and cards else 1
+    word = f"{n} card" + ("" if n == 1 else "s")
+    if "${card_names} cards" in (e.log or ""):                         # ("You pouch ${card_names} cards for ...": the word is already there)
+        word = str(n)
+    hidden = {**a, "card_names": word, "card_name": word, "card_names2": word}
+    return render_log(e.log, hidden)
+
+
+def _event_text_pov(e, names: dict[str, str], pov) -> str:
+    """The line of an event as the viewer at `pov` (a player id, None = sees everything) reads it."""
+    t = _hidden_text(e) if pov is not None and str(e.player) != str(pov) and _secret(e) else render_log(e.log, e.args)
+    if e.player and names.get(e.player):          # private events are written for the player: "You draw ..."
+        t = re.sub(r"^You", names[e.player], t)
+    return t
+
+
+def step_label(move: Move, names: dict[str, str], pov=None) -> str:
     texts = []
     for e in move.events:
-        t = _draft_text(e, names) if e.type in ("updateInitialActionCardSelection", "updateInitialActionCardsKeep") else render_log(e.log, e.args)
-        if e.player and names.get(e.player):          # private events are written for the player: "You draw ..."
-            t = re.sub(r"^You", names[e.player], t)
+        if e.type in ("updateInitialActionCardSelection", "updateInitialActionCardsKeep"):
+            t = _draft_text(e, names)
+            if pov is not None and e.player is not None and str(e.player) != str(pov):          # the other player's choices stay hidden
+                t = f"{names.get(str(e.player), 'A player')} chooses action cards (action card draft)" if t else ""
+        else:
+            t = _event_text_pov(e, names, pov)
         if t and t not in texts:
             texts.append(t)
     return " · ".join(texts[:3])
@@ -84,6 +125,18 @@ def _event_text(e, names: dict[str, str]) -> str:
     if e.player and names.get(e.player):
         t = re.sub(r"^You", names[e.player], t)
     return t
+
+
+def group_labels(move: Move, names: dict[str, str], pov) -> list[str]:
+    """`move_groups` labels as the viewer at `pov` reads them (the same groups: they are cut by the unredacted text)."""
+    groups: list[list] = []
+    for e in move.events:
+        t = _event_text(e, names)
+        if not t:
+            continue
+        if not groups or t != groups[-1][0]:
+            groups.append([t, _event_text_pov(e, names, pov)])
+    return [g[1] for g in groups]
 
 
 def move_groups(move: Move, names: dict[str, str]) -> list[tuple[str, int]]:
@@ -120,6 +173,27 @@ def group_actors(move: Move, groups: list, seat_of: dict[str, int]) -> list:
     return out
 
 
+DRAFT_ROUND_TEXT = {"pick1": "Action card draft, first pick: every player is offered action cards",
+                    "pick2": "Action card draft, second pick: every player is offered the action cards the other one passed",
+                    "keep": "Action card draft, last round: every player has 3 action cards and keeps 2 of them, of two different action cards"}
+
+
+def _draft_option_steps(steps: list, rounds: dict) -> tuple[list, int]:
+    """Before the step where a round of the action card draft starts (the first log event of that round) a step that shows the options of both players and no choice
+    yet; the choices then appear one log event at a time. Returns the new steps and how many were added."""
+    out, added, prev_stage = [], 0, None
+    for st in steps:
+        d = st["state"].get("draft")
+        stage = d["stage"] if d else None
+        if stage in DRAFT_ROUND_TEXT and stage != prev_stage:
+            pre_d = {**d, "choice": [None, None], "kept": [[], []], "picked": [p[:1] if stage == "pick2" else ([] if stage == "pick1" else p) for p in d["picked"]]}
+            out.append({**st, "state": {**st["state"], "draft": pre_d}, "label": DRAFT_ROUND_TEXT[stage], "label_pov": None, "options": None, "actor": None, "_obj": rounds.get(stage)})
+            added += 1
+        prev_stage = stage
+        out.append(st)
+    return out, added
+
+
 def building_cells(state_building: dict) -> list[list[int]]:
     t = state_building["type"]
     if not knows_shape(t):
@@ -136,13 +210,13 @@ def state_view(state: GameState) -> dict:
     for p, ps in zip(s["players"], state.players):
         p["score"] = tracks.score(ps.appeal, ps.conservation)
         p["hand_limit"] = hand_limit(ps)
-        p["income"] = tracks.income_from_appeal(ps.appeal)       # the money the appeal track gives at a break
+        p["income"] = tracks.income_from_appeal(ps.appeal) + (map_ability_income(state, ps) if ps.map_id in ("5", "5a") else 0)       # the money at a break: the appeal track, and Park Restaurant's 1 per covered space next to the restaurant
         for b in p["buildings"]:
             b["cells"] = building_cells(b)
     return s
 
 
-def card_catalog(keys: set[str]) -> dict[str, dict]:
+def card_catalog(keys: set[str], marine_worlds: bool = False) -> dict[str, dict]:
     cards = data.cards_by_key()
     out = {}
     for k in sorted(keys):
@@ -151,10 +225,11 @@ def card_catalog(keys: set[str]) -> dict[str, dict]:
             out[k] = {"name": k, "type": "unknown"}
             continue
         entry = {"name": c.get("name", k), "type": c["card_type"], "bga_id": c.get("bga_id")}
-        if (LARGE_DIR / f"{k}.webp").exists():
-            entry["large"] = f"/cards_large/{k}.webp"
-        if (CARD_DIR / f"{k}.webp").exists():
-            entry["image"] = f"/cards/{k}.webp"
+        mw = f"{k}_MW" if marine_worlds and (CARD_DIR / f"{k}_MW.webp").exists() else k          # (a card whose icons changed in Marine Worlds: scripts/build_mw_card_images.py)
+        if (LARGE_DIR / f"{mw}.webp").exists():
+            entry["large"] = f"/cards_large/{mw}.webp"
+        if (CARD_DIR / f"{mw}.webp").exists():
+            entry["image"] = f"/cards/{mw}.webp"
         elif c["card_type"] in IMAGE_DIR and c.get("bga_id"):
             entry["image"] = f"/img/{IMAGE_DIR[c['card_type']]}/{c['bga_id']}.jpg"
         if c["card_type"] == "animal":
@@ -186,7 +261,8 @@ def map_view(map_id: str) -> dict:
             "association_bonuses": association.map_bonuses(base)}
 
 
-def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
+def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False):
+    """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking."""
     parsed: ParsedLog = parse_log(raw_log)
     seats = [str(p.id) for p in parsed.players]
     maps = None
@@ -208,9 +284,14 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
         me = eng.moves[mv.index]
         views = [state_view(s) for s in rep.substates.get(mv.index, [])] + [state_view(final)]
         labels = [label for label, _ in g]
+        labels_pov = [group_labels(mv, names, pid) for pid in config.player_ids]
         if len(labels) != len(views):                                       # setup moves, or a move without effects: one step
             views, labels = views[-1:], [step_label(mv, names)]
+            labels_pov = [[step_label(mv, names, pid)] for pid in config.player_ids]
         source = ["log"] * len(views)
+        objs: list = [None] * len(views)                                   # the engine state of each step (forking starts from it)
+        if mv.index in rep.draft_engine:                                    # the action card draft, played by the engine with the choices of the log
+            objs[-1] = rep.draft_engine[mv.index]
         if me.end is not None:                                              # the engine played this move and agrees with the log
             logged = views[:]
             engine_vals: dict = {}
@@ -220,6 +301,10 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
                 if before is not None:
                     views[i], source[i] = state_view(before), "engine"
             views[-1], source[-1] = state_view(me.end), "engine"
+            objs[-1] = me.end
+            for i, (_, start) in enumerate(g[1:]):
+                if len(g) == len(views) and source[i] == "engine":
+                    objs[i] = me.state_before(start)
             for i, src in enumerate(source):                                  # the engine refills the display when the action ends, the log at its fillPool event
                 if src == "engine":
                     engine_vals[i] = [{f: p[f] for f in GAIN_FIELDS} for p in views[i]["players"]]
@@ -249,21 +334,28 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
             if o is not None and o["prompt"] == "choose_action_card" and (v["current_action"] or v["active_player"] != o["seat"]):
                 options[i] = None                                          # the engine is a step ahead of the log here (it ends the turn inside the last action)
         actors = group_actors(mv, g, {pid: i for i, pid in enumerate(config.player_ids)}) if len(g) == len(views) else [None] * len(views)
-        steps += [{"move_id": mv.move_id, "label": lb, "state": v, "engine": {"source": src, "status": me.status, "detail": me.detail[:300]}, "options": o, "actor": ac}
-                  for lb, v, src, o, ac in zip(labels, views, source, options, actors)]
+        steps += [{"move_id": mv.move_id, "label": lb, "state": v, "engine": {"source": src, "status": me.status, "detail": me.detail[:300]}, "options": o, "actor": ac,
+                   "label_pov": [lp[i] if lp[i] != lb else None for lp in labels_pov] if any(lp[i] != lb for lp in labels_pov) else None,
+                   "_obj": objs[i]}
+                  for i, (lb, v, src, o, ac) in enumerate(zip(labels, views, source, options, actors))]
     # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step. The first step stays.
     keep = [i == 0 or bool(st["label"].strip()) for i, st in enumerate(steps)]
     setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])
     steps = [st for st, k in zip(steps, keep) if k]
     for st in steps:
         st["state"]["main_deck_known"] = max(0, min(len(st["state"]["main_deck"]), known_prefix - (full_deck - len(st["state"]["main_deck"]))))
+    steps, extra = _draft_option_steps(steps, rep.draft_engine and rep.draft_rounds or {})
+    setup_steps += extra
+    objs_by_step = [st.pop("_obj", None) for st in steps]
     for i, st in enumerate(steps):
         st["index"] = i
+        o = objs_by_step[i]                                                  # a step can be forked where the engine played it and a decision is waiting
+        st["fork"] = o is not None and o.prompt is not None and (o.prompt.kind == "draft" or o.phase.value not in ("setup", "over", "scoring"))
     states = [st["state"] for st in steps]
     keys: set[str] = set()
     _card_keys(states, keys)
     _card_keys(config.base_projects, keys)
-    return {
+    view = {
         "table_id": parsed.table_id,
         "marine_worlds": config.marine_worlds,
         "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid)} for i, pid in enumerate(config.player_ids)],
@@ -271,7 +363,8 @@ def build_replay_view(raw_log: dict, record: TableRecord) -> dict:
         "base_projects": config.base_projects,
         "result": [{k: r.get(k) for k in ("id", "name", "score", "rank")} for r in parsed.result or []],
         "setup_steps": setup_steps,
-        "cards": card_catalog(keys),
+        "cards": card_catalog(keys, bool(config.marine_worlds)),
         "engine": eng.summary(),
         "steps": steps,
     }
+    return (view, objs_by_step) if with_states else view

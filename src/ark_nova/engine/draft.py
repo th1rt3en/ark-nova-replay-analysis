@@ -5,8 +5,8 @@ Every action card has 4 alternative sides ("variants" 1-4) besides the standard 
 2. each player picks 1 of the 2 received; the other one goes to the opponent;
 3. each player now has 3 variants (the 2 picked + the one received) and keeps 2 of them, of two different action types (not 2 builds). When all 3 are
    of one type the engine adds a random 4th variant of another type from the rest of the pile (`auto`), so that a valid pair exists.
-The kept variants replace the standard side of their action card; the other 3 action cards stay standard. The five cards of a player go in a random order
-into the strength slots.
+The kept variants replace the standard side of their action card; the other 3 action cards stay standard. The Animals card of a player always goes to strength 1, the other four in a random order
+into the strength slots 2-5.
 
 `GameState.draft` (JSON) holds what the UI shows: `stage` (pick1 | pick2 | keep | done), `offers` (what each seat chooses from), `picked`, `choice` (a
 simultaneous pick that waits for the other player), `kept`, `auto`, `pool` (the undealt rest). Variants are named like `build1`.
@@ -126,14 +126,19 @@ def _complete_single_type(state) -> None:
 
 
 def _finish(state) -> None:
-    """The kept variants go on their action cards, the five cards of each player in a random order; then the cards are dealt."""
+    """The kept variants go on their action cards, the Animals card of each player at strength 1 and the other four in a random order; then the cards are dealt."""
     from ark_nova.engine import game
     d = state.draft
     rng = Rng(state.rng)
     for s, p in enumerate(state.players):
         number = {variant_type(v): variant_number(v) for v in d["kept"][s]}
-        types = list(ACTION_TYPES)
-        rng.shuffle(types)
+        given = state.config.action_cards                         # a fork of a replay: the slots are in the order of the logged game (only the variants come from the draft)
+        if given and len(given) == len(state.players):
+            types = [c.type for c in given[s]]
+        else:
+            types = [x for x in ACTION_TYPES if x != "animals"]
+            rng.shuffle(types)
+            types.insert(0, "animals")                            # the Animals card always starts at strength 1, the other four are shuffled
         p.action_cards = [ActionCardState(type=t, variant=number.get(t, 0)) for t in types]
     state.rng = rng.state
     game.deal_initial(state)

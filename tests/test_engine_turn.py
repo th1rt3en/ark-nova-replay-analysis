@@ -29,7 +29,8 @@ def test_cards_action_tables():
 def _started():
     """A started game (default action cards, slot order animals..sponsors) waiting for the first player's action card."""
     mw = True
-    cfg = GameConfig(marine_worlds=mw, player_ids=["1", "2"], maps=["1", "1"], base_projects=deck_cards("base_project", mw)[:3])
+    cfg = GameConfig(marine_worlds=mw, player_ids=["1", "2"], maps=["1", "1"], base_projects=deck_cards("base_project", mw)[:3],
+                     action_cards=[[ActionCardChoice(x) for x in ("animals", "association", "build", "cards", "sponsors")] for _ in range(2)])
     state = start_game(cfg, SeedSpec(tail_seed=7))
     for seat in (0, 1):
         state = apply(state, Action(seat, "initial_discard", {"cards": state.players[seat].hand[:4]}))
@@ -103,14 +104,15 @@ def test_engine_agrees_with_the_log_turn_by_turn():
     # differences) are listed by scripts/engine_summary.py
     # (the harness also checks the turns with takeBonus / break income cards / placement bonus cards / the Commercial Harbor: 6.5k turns
     # checked, ~340 known problems, see scripts/engine_coverage.py; this is a ratchet, lower it when the problems are fixed)
-    assert len(problems) <= 30, problems[:3]
-    assert checked >= 12100
+    assert len(problems) <= 20, problems[:3]
+    assert checked >= 24300
 
 
 def _build_state(marine_worlds=True, map_id="1"):
     """First player is about to choose an action card; both zoos on the same map, empty."""
     cfg = GameConfig(marine_worlds=marine_worlds, player_ids=["1", "2"], maps=[map_id, map_id],
-                     base_projects=deck_cards("base_project", marine_worlds)[:3])
+                     base_projects=deck_cards("base_project", marine_worlds)[:3],
+                     action_cards=[[ActionCardChoice(x) for x in ("animals", "association", "build", "cards", "sponsors")] for _ in range(2)])
     state = start_game(cfg, SeedSpec(tail_seed=3))
     for seat in (0, 1):
         state = apply(state, Action(seat, "initial_discard", {"cards": state.players[seat].hand[:4]}))

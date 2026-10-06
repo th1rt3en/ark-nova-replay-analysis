@@ -11,6 +11,7 @@ State: workers, partner zoos, universities and project tokens are player tokens 
 `association_4`); the donation tokens sit on `association_0_k`; the notepad bonuses already taken are the bits of `p.flags["bonus_used"]`.
 Supported projects: those with icon conditions (base and normal projects); release / breed / management projects raise NotImplementedError.
 """
+import itertools
 import json
 import re
 from collections import Counter
@@ -239,8 +240,7 @@ def _breedable(state, p, tag: str) -> bool:
     mine = {continent_of(t) for t in partners(p)}
     icon = project_effects.tag_icon(tag)
     return any(card_icons(k, state.config.marine_worlds)[icon] > 0 and card_icons(k, state.config.marine_worlds)[c] > 0
-               for k in p.animals for c in mine) or (bool(mine) and icon_counts(state, p.seat)[icon] > 0 and not any(
-                   card_icons(k, state.config.marine_worlds)[icon] > 0 for k in p.animals))      # (a primate icon that does not come from an animal: found in the logs)
+               for k in list(p.animals) + list(p.rescued) for c in mine)      # (the icon and the continent come from the same animal, a rescued one too; a university / sponsor icon does not count: logged lists)
 
 
 def slot_options(state, seat: int, key: str, extra: int = 0) -> list:
@@ -418,9 +418,13 @@ def legal(state, p) -> list:
     if pr["step"] == "slot":                                       # which slot of the project (the ones the zoo satisfies)
         plain = slot_options(state, p.seat, pr["key"])
         out = [Action(p.seat, "choose_slot", {"slot": i}) for i, _, _ in plain]
-        for src in extra_icon_sources(state, p, project(pr["key"], state.config.marine_worlds)):      # a token counts as one more icon of the project
-            out += [Action(p.seat, "choose_slot", {"slot": i, **({"icon": True} if src == "icon" else {"token": src})})
-                    for i, c, r in slot_options(state, p.seat, pr["key"], extra=1) if (i, c, r) not in plain]
+        srcs = extra_icon_sources(state, p, project(pr["key"], state.config.marine_worlds))
+        for n in range(1, len(srcs) + 1):                          # every token counts as one more icon of the project (the bonus-icon token and a sponsor's token may be used together)
+            for combo in itertools.combinations(srcs, n):
+                args = {**({"icon": True} if "icon" in combo else {}), **({"token": [c for c in combo if c != "icon"][0]} if len(combo) - ("icon" in combo) > 0 else {})}
+                out += [Action(p.seat, "choose_slot", {"slot": i, **args}) for i, c, r in slot_options(state, p.seat, pr["key"], extra=n) if (i, c, r) not in plain
+                        and not any(Action(p.seat, "choose_slot", {"slot": i, **args}) == o for o in out)
+                        and (n == 1 or (i, c, r) not in slot_options(state, p.seat, pr["key"], extra=n - 1))]
         return out
     return [Action(p.seat, "choose_bonus", {"bonus": j}) for j, _ in notepad_bonuses(state, p)]
 
@@ -501,10 +505,10 @@ def place_university(state, p, tok, category=None) -> None:
     if rep:
         bonuses.defer(state, {"kind": "gain", "source": "university", "res": "reputation", "n": rep, "optional": False, "player": p.seat})
     cat = tok.type.split("-", 2)[2] if tok.type.count("-") == 2 else None
-    if cat in CATEGORY_TILES:
-        fx.search_for_category(state, p.seat, cat)
     for eff in fx.fire_icon_counter(state, p.seat, tile_icons(tok.type)):
         bonuses.defer(state, eff)
+    if cat in CATEGORY_TILES:
+        bonuses.defer(state, {"kind": "search_category", "category": cat, "optional": False, "player": p.seat})
 
 
 def tile_options(state, p, tile: str) -> list:
@@ -601,7 +605,7 @@ def choose_slot(state, action: Action) -> None:
         raise fx.IllegalEffect(f"that slot cannot be chosen now: {action.args}")
     if action.args.get("icon"):
         p.tokens.remove(next(t for t in p.tokens if t.type == "bonus-icon"))
-    elif action.args.get("token"):
+    if action.args.get("token"):
         loc = token_location(action.args["token"])
         p.tokens.remove(next(t for t in p.tokens if t.location == loc))
     slot = int(action.args["slot"])
