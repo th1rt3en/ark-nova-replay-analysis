@@ -14,6 +14,7 @@
   // Fork mode (fork.html): the same viewer on a position taken from a replay, played on for both seats. The server keeps nothing: every step carries its engine state,
   // every move is posted with the state it applies to.
   const FORK = !!window.FORK_MODE;
+  const SANDBOX = !!window.SANDBOX_MODE;                                   // sandbox.html: a game that is set up and edited freely against a bot that passes (fork mode, with the tools of the sandbox)
   let forkInfo = null;
   let forkBusy = false;
   // Placing a building in a fork: { seat, type, extra, x, y, rot } - the piece is chosen in the move panel, a click on a hex of the zoo sets its anchor, the two buttons round
@@ -74,6 +75,13 @@
   async function fetchReplay() {
     const url = '/api/tables/' + encodeURIComponent(table) + '/replay';
     let res;
+    if (SANDBOX) {                                                           // the game the lobby started
+      const raw = sessionStorage.getItem('sandboxGame');
+      if (!raw) { location.replace('/sandbox.html'); return null; }
+      const game = JSON.parse(raw);
+      game.steps.forEach((st, i) => { st.index = i; });
+      return game;
+    }
     if (FORK) {
       const seed = params.get('seed');
       res = await fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1426,10 +1434,16 @@
     const img = el('img', 'ctrack');
     img.src = '/assets/conservation_track.webp'; img.alt = 'Conservation track';
     wrap.append(img);
-    const first = replay.steps[0].state.conservation_options || {};     // the options of the game as dealt: a taken one leaves its place empty
+    const first = SANDBOX ? sbMeta().initial : replay.steps[0].state.conservation_options || {};     // the options of the game as dealt: a taken one leaves its place empty
     for (const th of ['5', '8']) {
       const left = (st.conservation_options || {})[th] || [];
       (first[th] || []).forEach((opt, i) => {
+        if (SANDBOX && sbMeta().unset['b' + th][i]) {                            // not set yet: randomize / choose
+          const b = sbSlotButtons(th, i);
+          b.style.left = (CT_BONUS_X[th][i] / 2000 * 100) + '%';
+          wrap.append(b);
+          return;
+        }
         if (!left.some((o) => JSON.stringify(o) === JSON.stringify(opt))) return;
         const [name] = Object.keys(opt);
         const t = bonusTile(name, opt[name]);
@@ -1511,7 +1525,12 @@
     }
     // Marine Worlds: the bonus drawn for 16 reputation (a point gained at 15 may be traded for it) sits above the appeal space at the end of the track, until it is taken
     const bonus16 = replay.marine_worlds && ((st.conservation_options || {})['99'] || [])[0];
-    if (bonus16) {
+    if (SANDBOX && replay.marine_worlds && sbMeta().unset.b99 && sbMeta().unset.b99[0]) {
+      const b = sbSlotButtons('99', 0);
+      b.classList.add('rep16');
+      b.style.left = '98.6%';
+      repWrap.append(b);
+    } else if (bonus16) {
       const [name] = Object.keys(bonus16);
       const t = bonusTile(name, bonus16[name]);
       if (t) {
@@ -1535,7 +1554,19 @@
     // projects played during the game: the newest enters on the left and pushes the others right; a third one pushes the oldest off to the discard
     col.append(projectPanel(st, st.projects_in_play, 2, 'conservation-project', 'Conservation projects in play'));
     col.append(associationBoard(st));
-    col.append(projectPanel(st, replay.base_projects, 3, 'conservation-project-base', 'Base conservation projects', true));
+    if (SANDBOX) {                                                             // the sandbox starts with empty base project slots: two buttons in the centre set them
+      const unset = sbMeta().unset.projects;
+      const panel = projectPanel(st, st.base_projects.map((k, n) => (unset[n] ? null : k)), 3, 'conservation-project-base', 'Base conservation projects', true);
+      if (unset.some(Boolean)) {
+        const slots = unset.map((u, n) => (u ? n : -1)).filter((n) => n >= 0);
+        const over = el('div', 'sbcenter');
+        over.append(sbButton('Randomize', 'Draw the empty base projects at random', () => sbEdit('set_projects', { slots, keys: slots.map(() => null) })),
+                    sbButton('Choose…', 'Choose the empty base projects', async () => { const keys = await sbPickProjects(slots.length, st.base_projects); if (keys) sbEdit('set_projects', { slots, keys }); }));
+        panel.classList.add('sbhost');
+        panel.append(over);
+      }
+      col.append(panel);
+    } else col.append(projectPanel(st, replay.base_projects, 3, 'conservation-project-base', 'Base conservation projects', true));
     root.append(col);
   }
 
@@ -1943,6 +1974,7 @@
         if (seat >= 0 && (dockSel.seat !== seat || dockSel.kind !== 'hand' || dockHidden)) { dockSel = { seat, kind: 'hand' }; dockHidden = false; renderDock(st); }
       }
       forkBar(); renderForkMoves();
+      if (SANDBOX) renderSandboxTools(st);
     }
     prevZones = curZones; curZones = {}; prevZoneData = curZoneData; curZoneData = {};
     $('jump').value = step;
@@ -2113,6 +2145,265 @@
   }
 
   // ---- fork: the information line (seed), the legal moves of both seats, and adding the step that a move makes -----------------------------------------------------
+
+  // ---- sandbox ------------------------------------------------------------------------------------------------------------------------------
+  // The controller sets the game up (the empty base projects and conservation bonuses) and edits it at any time with the tools panel; every edit is a step (Undo / the
+  // arrows take it back). The server answers each move of the controller with the moves of the bot, which only passes.
+  const BONUS_POOL = [{ 'Partner-Zoo': 1 }, { Fac: 1 }, { Multiplier: 1 }, { xtoken: 3 }, { 'take-in-range-or-deck': 3 }, { 'size-3': 1 }, { 'bonus-ignore-conditions': 3 },
+                      { 'bonus-increased-hand': 1 }, { 'bonus-icon': 1 }, { 'bonus-scoring-cards': 3 }, { 'bonus-sponsor-gray': 1 }, { 'bonus-sponsor': 1 }, { reputation: 2 },
+                      { 'bonus-extra-shift': 1 }, { 'bonus-kiosk-pavilion': 3 }, { money: 10 }];
+  const sbMeta = () => (replay.steps[step] && replay.steps[step].sandbox) || replay.sandbox;
+  const sbReady = () => !Object.values(sbMeta().unset).some((a) => a.some(Boolean));
+  let sbSeat = null, sbUnlocked = false, sbOpen = true;
+
+  async function sbEdit(op, args) {
+    if (forkBusy) return;
+    forkBusy = true;
+    try {
+      const res = await fetch('/api/sandbox/edit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ state: replay.steps[step].engine_state, meta: sbMeta(), op, args }) });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || 'the edit could not be made');
+      commitSteps(body.steps);
+    } catch (err) {
+      forkBusy = false;
+      renderForkMoves(err.message);
+    }
+  }
+  function sbButton(text, tip, onclick, cls) {
+    const b = el('button', 'forkmove sbbtn' + (cls ? ' ' + cls : ''), text);
+    b.type = 'button'; b.title = tip; b.onclick = onclick;
+    return b;
+  }
+  // the two buttons of an empty bonus space of the conservation track / the reputation track
+  function sbSlotButtons(th, i) {
+    const d = el('div', 'sbslot');
+    d.append(sbButton('\u{1F3B2}', 'Randomize this bonus', () => sbEdit('set_bonus', { threshold: th, slot: i, bonus: null }), 'sbmini'),
+             sbButton('\u270E', 'Choose this bonus', async () => {
+               const others = (sbMeta().initial[th] || []).filter((b, j) => j !== i);
+               const bonus = await sbPickBonus(others);
+               if (bonus) sbEdit('set_bonus', { threshold: th, slot: i, bonus });
+             }, 'sbmini'));
+    return d;
+  }
+
+  // ---- pop-ups ----
+  function sbModal(title, build) {
+    return new Promise((resolve) => {
+      const back = el('div', 'modalback');
+      const box = el('div', 'modalbox sbmodal');
+      const done = (v) => { back.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+      const onKey = (e) => { if (e.key === 'Escape') done(null); };
+      const head = el('div', 'sbmodalhead');
+      const x = el('button', 'sbclose', '\u00D7');
+      x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.onclick = () => done(null);
+      head.append(el('h3', '', title), x);
+      box.append(head, build(done));
+      back.append(box);
+      back.addEventListener('click', (e) => { if (e.target === back) done(null); });
+      document.addEventListener('keydown', onKey);
+      document.body.append(back);
+    });
+  }
+  function sbPickCard(title, groups) {            // groups: [[label, [card keys]], ...] -> the key chosen, or null
+    return sbModal(title, (done) => {
+      const wrap = el('div', 'sbpick');
+      const filter = el('input', 'sbfilter');
+      filter.type = 'search'; filter.placeholder = 'Filter by name'; filter.setAttribute('aria-label', 'Filter by name');
+      const list = el('div', 'sblist');
+      const fill = () => {
+        const q = filter.value.trim().toLowerCase();
+        list.replaceChildren();
+        let shown = 0;
+        for (const [label, keys] of groups) {
+          const hits = keys.filter((k) => !q || cardName(k).toLowerCase().includes(q) || k.toLowerCase() === q).sort((a, b) => cardName(a).localeCompare(cardName(b)));
+          if (!hits.length) continue;
+          list.append(el('div', 'sbgroup', label + ' (' + hits.length + ')'));
+          for (const k of hits.slice(0, 120 - Math.min(shown, 120))) {
+            const b = el('button', 'sbrow', cardName(k));
+            b.type = 'button';
+            b.append(el('span', 'sbkey', k));
+            b.onclick = () => done(k);
+            b.onmouseenter = () => showPreview(info(k).large || info(k).image);
+            b.onmouseleave = hidePreview;
+            list.append(b);
+            shown++;
+          }
+        }
+        if (!shown) list.append(el('div', 'muted', 'No card matches.'));
+      };
+      filter.oninput = fill;
+      fill();
+      wrap.append(filter, list);
+      setTimeout(() => filter.focus(), 0);
+      return wrap;
+    }).finally(hidePreview);
+  }
+  function sbPickBonus(taken) {
+    return sbModal('Choose the bonus', (done) => {
+      const grid = el('div', 'sbbonuses');
+      for (const b of BONUS_POOL) {
+        const [name] = Object.keys(b);
+        const t = bonusTile(name, b[name]);
+        const btn = el('button', 'sbtile');
+        btn.type = 'button';
+        btn.title = name.replace(/^bonus-/, '').replace(/-/g, ' ') + (b[name] > 1 ? ' (' + b[name] + ')' : '');
+        btn.disabled = taken.some((o) => JSON.stringify(o) === JSON.stringify(b));
+        if (t) { t.classList.remove('ctbonus'); btn.append(t); } else btn.textContent = btn.title;
+        btn.onclick = () => done(b);
+        grid.append(btn);
+      }
+      return grid;
+    });
+  }
+  function sbPickProjects(n, current) {
+    return sbModal('Choose ' + n + ' base project' + (n === 1 ? '' : 's'), (done) => {
+      const wrap = el('div', 'sbpick');
+      const chosen = [];
+      const grid = el('div', 'sbprojects');
+      const ok = sbButton('Confirm', 'Set the projects', () => done(chosen.slice()), 'forkconfirm');
+      ok.disabled = true;
+      const refresh = () => { ok.disabled = chosen.length !== n; ok.textContent = 'Confirm (' + chosen.length + '/' + n + ')'; };
+      for (const k of replay.base_pool || []) {
+        const wrapc = el('div', 'sbproject');
+        wrapc.append(card(k));
+        wrapc.onclick = () => {
+          const at = chosen.indexOf(k);
+          if (at >= 0) chosen.splice(at, 1); else if (chosen.length < n) chosen.push(k);
+          wrapc.classList.toggle('marked', chosen.includes(k));
+          refresh();
+        };
+        wrapc.title = cardName(k);
+        grid.append(wrapc);
+      }
+      refresh();
+      wrap.append(grid, el('div', 'modalrow'));
+      wrap.lastChild.append(ok);
+      return wrap;
+    });
+  }
+
+  // ---- the tools panel ----
+  const SB_TYPES = ['animals', 'association', 'build', 'cards', 'sponsors'];
+  function renderSandboxTools(st) {
+    const box = $('sbtools');
+    if (!box) return;
+    const meta = sbMeta();
+    if (sbSeat === null) sbSeat = meta.controller;
+    const seat = sbSeat, p = st.players[seat];
+    const sum = el('summary', '', 'Sandbox tools');
+    box.open = sbOpen;
+    box.ontoggle = () => { sbOpen = box.open; };
+    const body = el('div', 'sbbody');
+    const sec = (title, ...nodes) => { const d = el('div', 'sbsec'); d.append(el('h4', '', title), ...nodes); body.append(d); return d; };
+
+    const who = el('select', 'sbselect');
+    who.setAttribute('aria-label', 'Seat to edit');
+    st.players.forEach((q, i) => { const o = el('option', '', replay.players[i].name + (i === meta.controller ? ' (you play this seat)' : ' (passes)')); o.value = i; who.append(o); });
+    who.value = seat;
+    who.onchange = () => { sbSeat = +who.value; renderSandboxTools(curState()); };
+    sec('Edit the seat of', who);
+
+    const fields = el('div', 'sbfields');
+    for (const [f, label, lo, hi] of [['money', 'Money', 0, 999], ['x_tokens', 'X tokens', 0, 5], ['conservation', 'Conservation', 0, 40], ['reputation', 'Reputation', 0, 15]]) {
+      const l = el('label', 'sbfield', label + ' ');
+      const inp = el('input');
+      inp.type = 'number'; inp.min = lo; inp.max = hi; inp.value = p[f];
+      inp.onchange = () => { const v = parseInt(inp.value, 10); if (Number.isFinite(v)) sbEdit('set_value', { seat, field: f, value: v }); };
+      l.append(inp);
+      fields.append(l);
+    }
+    sec('Resources (set directly: no bonus follows)', fields);
+
+    const ul = el('ul', 'sblist-actions');
+    let drag = null;
+    for (const [n, a] of p.action_cards.entries()) {
+      const li = el('li', 'sbaction' + (sbUnlocked ? ' unlocked' : ''));
+      li.dataset.type = a.type;
+      li.draggable = sbUnlocked;
+      li.append(el('span', 'sbn', n + 1), pic(ACTION_ICON[a.type], 26), el('span', 'sbname', ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '')));
+      const v = el('select', 'sbselect');
+      v.title = replay.marine_worlds ? 'Variant of the action card' : 'The variants belong to Marine Worlds';
+      v.disabled = !replay.marine_worlds;
+      for (const k of [0, 1, 2, 3, 4]) { const o = el('option', '', k ? 'Variant ' + k : 'Standard'); o.value = k; v.append(o); }
+      v.value = a.variant || 0;
+      v.onchange = () => sbEdit('set_variant', { seat, type: a.type, variant: +v.value });
+      li.append(v);
+      li.addEventListener('dragstart', (e) => { drag = li; li.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', a.type); });
+      li.addEventListener('dragover', (e) => {
+        if (!drag || drag === li) return;
+        e.preventDefault();
+        const r = li.getBoundingClientRect();
+        ul.insertBefore(drag, e.clientY > r.top + r.height / 2 ? li.nextSibling : li);
+      });
+      li.addEventListener('dragend', () => { li.classList.remove('dragging'); drag = null; });
+      ul.append(li);
+    }
+    const lock = sbButton(sbUnlocked ? '\u{1F513} Unlocked: drag to reorder' : '\u{1F512} Locked', sbUnlocked ? 'Click to lock the new order' : 'Click to unlock and drag the action cards into another order', () => {
+      if (sbUnlocked) {
+        const order = [...ul.children].map((li) => li.dataset.type);
+        sbUnlocked = false;
+        if (order.join() !== p.action_cards.map((c) => c.type).join()) sbEdit('reorder', { seat, order });
+        else renderSandboxTools(curState());
+      } else { sbUnlocked = true; renderSandboxTools(curState()); }
+    }, sbUnlocked ? 'on' : '');
+    sec('Action cards (slot 1 first)', lock, ul);
+
+    const deckKeys = st.main_deck.filter((k) => k !== '?'), discardKeys = (st.main_discard || []).filter((k) => k !== '?'), egKeys = st.endgame_deck.filter((k) => k !== '?');
+    sec('Cards', sbButton('Add a card to the hand…', 'A card of the draw pile, the discard pile or the endgame deck goes to the hand', async () => {
+      const k = await sbPickCard('Add a card to the hand of ' + replay.players[seat].name, [['Draw pile', deckKeys], ['Discard pile', discardKeys], ['Endgame deck', egKeys]]);
+      if (k) sbEdit('add_hand', { seat, card: k });
+    }));
+    const disp = el('div', 'sbdisplay');
+    st.display.forEach((k, i) => {
+      const b = sbButton((i + 1) + ': ' + (k ? cardName(k) : '(empty)'), 'Change this display card: the card that leaves takes the place of the new one', async () => {
+        const c = await sbPickCard('Display space ' + (i + 1), [['Draw pile', deckKeys], ['Discard pile', discardKeys], ['Display', st.display.filter((x, j) => x && j !== i)]]);
+        if (c) sbEdit('set_display', { index: i, card: c });
+      });
+      disp.append(b);
+    });
+    sec('Display', disp);
+
+    const tiles = el('div', 'sbtiles');
+    const tile = (kind, name, id, tip) => {
+      const b = el('button', 'sbtile');
+      b.type = 'button'; b.title = tip;
+      const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = tip; i.height = 40;
+      b.append(i);
+      b.onclick = () => sbEdit('add_tile', { seat, tile: kind, name });
+      tiles.append(b);
+    };
+    for (const c of ['Africa', 'Europe', 'Asia', 'Americas', 'Australia']) tile('partner', c, ICON_IDS[c], 'Partner zoo: ' + c);
+    for (const u of ['fac-rep-hand', 'fac-science-rep', 'fac-science-science']) tile('university', u, ICON_IDS[u], 'University: ' + u.replace('fac-', '').replace(/-/g, ' '));
+    for (const c of ['bird', 'predator', 'herbivore', 'primate', 'reptile'].concat(replay.marine_worlds ? ['marine'] : [])) tile('university', c, ICON_IDS['fac-science-' + c], 'Species university: ' + c);
+    sec('Partner zoos and universities (their bonuses follow)', tiles);
+
+    const w = (where) => p.tokens.filter((t) => t.type === 'worker' && t.location.startsWith(where)).length;
+    const wk = el('div', 'sbworkers');
+    wk.append(sbButton('Unlock a worker (' + w('supply_') + ' locked)', 'Unlock the next locked worker', () => sbEdit('workers', { seat, what: 'unlock' })));
+    for (const [where, label] of [['supply_', 'locked'], ['reserve', 'ready'], ['association_', 'placed']]) {
+      const b = sbButton('Remove a ' + label + ' worker (' + w(where) + ')', 'Take a worker away for good', () => sbEdit('workers', { seat, what: 'remove', where }));
+      b.disabled = !w(where);
+      wk.append(b);
+    }
+    sec('Workers', wk);
+    box.replaceChildren(sum, body);
+  }
+
+  function initSandbox() {
+    document.title = 'Sandbox - Ark Nova';
+    replay.sandbox = replay.sandbox || replay.steps[0].sandbox;
+    $('tableInfo').textContent = 'Sandbox · ' + replay.players.map((q, i) => q.name + ' (map ' + replay.maps[i].id + ')').join(' vs ') + (replay.marine_worlds ? ' · Marine Worlds' : '');
+    const box = $('forkinfo');
+    box.hidden = false;
+    box.replaceChildren();
+    const fresh = el('a', '', 'New sandbox');
+    fresh.href = '/sandbox.html';
+    fresh.onclick = () => { sessionStorage.removeItem('sandboxGame'); };
+    box.append(el('b', '', 'Sandbox'), document.createTextNode(' · '), fresh, el('div', 'forknote', 'The other seat is a bot that only passes. Set the empty base projects and conservation bonuses, then play; the tools below change the game at any time. Going back a step undoes an edit or a move.'));
+    document.body.classList.add('forkpage');
+  }
+
   function initFork() {
     document.title = 'Fork - Ark Nova Replay';
     $('tableInfo').textContent = 'Fork of table #' + replay.table_id + ' after step ' + forkInfo.step + ' · ' + replay.players.map((p) => p.name).join(' vs ');
@@ -2225,30 +2516,38 @@
     });
   }
 
+  // the steps a move made after going back replaces the old future with
+  function commitSteps(steps) {
+    placement = null;
+    replay.steps.length = step + 1;
+    for (const st of steps) { st.index = replay.steps.length; replay.steps.push(st); }
+    buildMoveList();
+    $('total').textContent = replay.steps.length - 1;
+    $('jump').max = replay.steps.length - 1;
+    forkBusy = false;
+    go(replay.steps.length - 1);
+  }
+
   async function playFork(action) {
     if (forkBusy) return;
     forkBusy = true;
     renderForkMoves();
     try {
-      const res = await fetch('/api/fork/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                   body: JSON.stringify({ state: replay.steps[step].engine_state, action: { player: action.player, kind: action.kind, args: action.args }, names: replay.players.map((p) => p.name) }) });
+      const move = { player: action.player, kind: action.kind, args: action.args };
+      const res = SANDBOX
+        ? await fetch('/api/sandbox/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: replay.steps[step].engine_state, meta: sbMeta(), action: move }) })
+        : await fetch('/api/fork/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ state: replay.steps[step].engine_state, action: move, names: replay.players.map((p) => p.name) }) });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || 'the move could not be played');
-      if (body.irreversible && ['turn', 'final_turns'].includes(replay.steps[step].state.phase)) {          // (a fork changes nothing until the step is added: the move was only computed)
+      const steps = SANDBOX ? body.steps : [body];
+      const first = steps[0];
+      if (first.irreversible && ['turn', 'final_turns'].includes(replay.steps[step].state.phase)) {          // (a fork changes nothing until the step is added: the move was only computed)
         forkBusy = false;
-        const ok = await warnIrreversible(body.irreversible_reason);
+        const ok = await warnIrreversible(first.irreversible_reason);
         if (!ok) { refreshBar(); return; }
         forkBusy = true;
       }
-      placement = null;
-      replay.steps.length = step + 1;                                    // a move made after going back replaces the old future
-      body.index = replay.steps.length;
-      replay.steps.push(body);
-      buildMoveList();
-      $('total').textContent = replay.steps.length - 1;
-      $('jump').max = replay.steps.length - 1;
-      forkBusy = false;
-      go(replay.steps.length - 1);
+      commitSteps(steps);
     } catch (err) {
       forkBusy = false;
       renderForkMoves(err.message);
@@ -2302,6 +2601,10 @@
   // one), and the legal moves that no control stands for are listed at the end of the bar.
   function forkBar() {
     const bar = $('actionbar'), cur = replay.steps[step], acts = cur.actions || [];
+    if (SANDBOX && !sbReady()) {                                             // the empty spaces first
+      if (bar) { bar.hidden = false; bar.replaceChildren(el('b', '', 'Set the base projects and the conservation bonuses (the empty spaces of the board) to start playing.')); }
+      return;
+    }
     if (!bar || forkGate || (!acts.length && !forkError)) return;
     if (acts.some((a) => a.kind === 'draft_pick' || a.kind === 'draft_keep' || a.kind === 'initial_discard')) return;      // (the draft is played in the bar itself)
     for (const a of acts) {                                                          // the action cards of the bar
@@ -2573,7 +2876,8 @@
       const keys = { ArrowLeft: () => go(step - 1), ArrowRight: () => go(step + 1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!timer); }, Home: () => go(0), End: () => go(replay.steps.length - 1) };
       if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
     });
-    if (FORK) initFork();
+    if (SANDBOX) initSandbox();
+    else if (FORK) initFork();
     else {
       const fb = $('fork');
       if (fb) fb.onclick = () => { if (replay.steps[step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + step, '_blank'); };
@@ -2584,7 +2888,7 @@
     go(Number.isFinite(start) ? start : 0);
   }
 
-  if (!/^\d+$/.test(table || '')) { location.replace('/'); return; }
+  if (!SANDBOX && !/^\d+$/.test(table || '')) { location.replace('/'); return; }
   fetchReplay().then((data) => {
     if (!data) return;
     replay = data;

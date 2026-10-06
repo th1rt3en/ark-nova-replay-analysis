@@ -41,7 +41,7 @@ class GameConfig:
     """Everything that is fixed for the whole game and given by the user / the log index."""
     marine_worlds: bool
     player_ids: list[str]                 # BGA ids, index = seat
-    maps: list[str]                       # map id per seat ('1'..'14', '1a'..'8a', 'T1')
+    maps: list[str]                       # map id per seat ('1'..'14', '1a'..'8a', 'T1'); empty = a new game that selects its maps first (engine/map_select.py)
     base_projects: list[str]              # the 3 base conservation projects in play (entered by the user)
     player_names: list[str] = field(default_factory=list)
     # per seat: the 5 action cards in initial strength-slot order (slot 1 first); None = standard cards in the standard order
@@ -51,6 +51,8 @@ class GameConfig:
     conservation_bonuses: Optional[dict[str, list[dict[str, Any]]]] = None
     map_known: list[bool] = field(default_factory=lambda: [True, True])    # False when a test had to guess the map of a seat
     table_id: int = 0                     # the BGA table (0 = unknown): a few rules were implemented differently by BGA in older tables (data/map_quirks.py)
+    game_mode: str = "random-mirrored"    # a new game without `maps`: original (2 maps dealt to each player, each picks one) | random-mirrored (one random map for both) | free-select (any map of the pool)
+    maps_to_exclude: list[str] = field(default_factory=list)   # map ids left out of the pool of a new game ('3', '3a', '11', 'T1' ...)
     draft_action_cards: bool = False      # a new game: the players draft their action card variants first (engine/draft.py); False = `action_cards` (or the standard cards) are given
     peaceful: bool = False                # the game variant where the hostile effects (Venom, Constriction, Pilfering, Hypnosis) are replaced
 
@@ -168,6 +170,7 @@ class GameState:
     end_triggered_by: Optional[int] = None
     final_turns: list[int] = field(default_factory=list)       # seats that still have a last turn after the end of the game was triggered
     result: Optional[Result] = None
+    map_select: Optional[dict[str, Any]] = None                 # the map selection of a new game (engine/map_select.py); kept after it for the viewer
     draft: Optional[dict[str, Any]] = None                      # the action card draft of the setup (engine/draft.py); kept after it for the viewer
 
     def to_dict(self) -> dict:

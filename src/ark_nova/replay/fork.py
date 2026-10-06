@@ -105,6 +105,8 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         name = effect_name(e) or str(e.get("kind", "effect")).replace("_", " ").capitalize()
         rest = args.pop("args", None) or {}
         return ("Skip: " if k == "skip_effect" else "") + name + "".join(f", {k2} {_fmt(v)}" for k2, v in rest.items())
+    if k == "choose_map":
+        return "Select map " + str(args.pop("map", "?"))
     if k == "draft_pick":
         return "Pick " + _variant(args.pop("variant", "?"))
     if k == "draft_keep":

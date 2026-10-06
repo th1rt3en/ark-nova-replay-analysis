@@ -12,7 +12,7 @@ from itertools import combinations
 
 from ark_nova import data
 from ark_nova.data import map_quirks
-from ark_nova.engine import draft, map_rules, breaks, endgame, icons, marks, sponsor_variants, venom, animals_action, association, bonuses, build_action, card_programs, cards_action, effects, sponsors_action, tracks
+from ark_nova.engine import draft, map_select, map_rules, breaks, endgame, icons, marks, sponsor_variants, venom, animals_action, association, bonuses, build_action, card_programs, cards_action, effects, sponsors_action, tracks
 from ark_nova.engine.board import board, neighbours
 from ark_nova.engine.actions import Action
 from ark_nova.engine.cards import search_deck
@@ -73,7 +73,7 @@ def _standard_action_cards(tail_seed: int) -> list:
 
 def initial_state(config: GameConfig, seed: SeedSpec) -> GameState:
     """Decks built and players created; nothing is dealt yet."""
-    if len(config.player_ids) != 2 or len(config.maps) != 2:
+    if len(config.player_ids) != 2 or len(config.maps) not in (0, 2):
         raise ValueError("exactly 2 players are supported")
     base = deck_cards("base_project", config.marine_worlds)
     if len(config.base_projects) != 3 or len(set(config.base_projects)) != 3 or not set(config.base_projects) <= set(base):
@@ -99,9 +99,9 @@ def initial_state(config: GameConfig, seed: SeedSpec) -> GameState:
         base_projects=list(config.base_projects),
         base_projects_unused=[k for k in base if k not in config.base_projects],
         players=[
-            PlayerState(seat=i, map_id=config.maps[i], money=START_MONEY, appeal=i, reputation=1,      # 0 / 1 appeal for the first / second player
+            PlayerState(seat=i, map_id=config.maps[i] if config.maps else "", money=START_MONEY, appeal=i, reputation=1,      # 0 / 1 appeal for the first / second player
                         action_cards=[ActionCardState(type=c.type, variant=c.variant) for c in choices[i]],
-                        tokens=_initial_tokens(i), buildings=_initial_buildings(config.maps[i], i))
+                        tokens=_initial_tokens(i), buildings=_initial_buildings(config.maps[i], i) if config.maps else [])
             for i in range(2)
         ],
     )
@@ -110,13 +110,49 @@ def initial_state(config: GameConfig, seed: SeedSpec) -> GameState:
 
 
 def start_game(config: GameConfig, seed: SeedSpec) -> GameState:
-    """A new game: the action card draft first when `config.draft_action_cards` (the deal follows it), else the initial deal at once."""
+    """A new game: the map selection first when the config has no `maps`, then the action card draft when `config.draft_action_cards` (Marine Worlds),
+    then the initial deal."""
     state = initial_state(config, seed)
-    if config.draft_action_cards:
-        draft.begin(state)
+    if not config.maps:
+        map_select.begin(state)
         return state
-    deal_initial(state)
+    continue_setup(state)
     return state
+
+
+def continue_setup(state: GameState) -> None:
+    """The maps are known: the action card draft (Marine Worlds) or the initial deal comes next."""
+    if state.config.draft_action_cards:
+        draft.begin(state)
+    else:
+        deal_initial(state)
+
+
+def assign_maps(state: GameState, maps: list) -> None:
+    """The maps that were selected: the zoos get their map (and its starting buildings)."""
+    state.config = dataclasses.replace(state.config, maps=list(maps))
+    for i, p in enumerate(state.players):
+        p.map_id = maps[i]
+        p.buildings = _initial_buildings(maps[i], i)
+
+
+def new_game(options: dict, player_ids: list, tail_seed: int = 0) -> GameState:
+    """A new game from the options of the lobby: `{"game_mode": "original" | "random-mirrored" | "free-select" (default random-mirrored),
+    "marine_worlds_flag": true | false (default true), "maps_to_exclude": [3, "3a", 11, "T1"] (default [])}`. The 3 base projects are drawn at random; a Marine
+    Worlds game drafts the action cards after the maps."""
+    unknown = set(options) - {"game_mode", "marine_worlds_flag", "maps_to_exclude"}
+    if unknown:
+        raise ValueError(f"unknown options {sorted(unknown)}")
+    mw = bool(options.get("marine_worlds_flag", True))
+    rng = Rng(tail_seed + 104729)
+    base = deck_cards("base_project", mw)
+    rng.shuffle(base)
+    mode = options.get("game_mode", map_select.DEFAULT_MODE)
+    if mode not in map_select.MODES:
+        raise ValueError(f"game_mode must be one of {list(map_select.MODES)}")
+    config = GameConfig(marine_worlds=mw, player_ids=list(player_ids), maps=[], base_projects=sorted(base[:3]), game_mode=mode,
+                        maps_to_exclude=[str(m) for m in options.get("maps_to_exclude") or []], draft_action_cards=mw)
+    return start_game(config, SeedSpec(tail_seed=tail_seed))
 
 
 def deal_initial(state: GameState) -> None:
@@ -180,6 +216,8 @@ def legal_actions(state: GameState) -> list[Action]:
 
 
 def _prompt_actions(state: GameState) -> list[Action]:
+    if state.phase is Phase.SETUP and state.map_select is not None and state.map_select["stage"] != "done":
+        return map_select.legal(state)
     if state.phase is Phase.SETUP and state.draft is not None and state.draft["stage"] != "done":
         return draft.legal(state)
     if state.phase is Phase.SETUP:
@@ -309,6 +347,12 @@ def _covers_terrain(bd, t: str, x: int, y: int, k: int) -> bool:
 def apply(state: GameState, action: Action) -> GameState:
     """Returns a new state. Raises IllegalAction for an illegal action and NotImplementedError for rules not written yet."""
     new = copy.deepcopy(state)
+    if new.phase is Phase.SETUP and action.kind == "choose_map":
+        try:
+            map_select.apply(new, action)
+        except map_select.MapSelectError as ex:
+            raise IllegalAction(str(ex)) from None
+        return new
     if new.phase is Phase.SETUP and action.kind in ("draft_pick", "draft_keep"):
         try:
             draft.apply(new, action)

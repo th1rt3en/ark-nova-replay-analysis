@@ -17,7 +17,9 @@ from ark_nova.api.tableid import parse_table_id
 from ark_nova.config import Settings
 from ark_nova.parser.verify import verify_log
 from ark_nova.engine.game import IllegalAction
+from ark_nova.engine.state import GameState
 from ark_nova.replay import fork as forking
+from ark_nova.replay import sandbox
 from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
 from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
@@ -209,6 +211,56 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         first = forking.step_payload(state, f"Fork of table #{table_id} after step {step}: {labels[step]}")
         return JSONResponse({**skeleton, "setup_steps": 0, "steps": [first], "shapes": forking.shapes(),
                              "fork": {"table_id": table_id, "step": step, "seed": seed, "default_seed": forking.DEFAULT_SEED, "label": labels[step]}})
+
+    @app.get("/api/sandbox/maps")
+    async def sandbox_maps(marine_worlds: bool = False):
+        return JSONResponse({"maps": sandbox.available_maps(marine_worlds)})
+
+    @app.post("/api/sandbox/new")
+    async def sandbox_new(request: Request):
+        """Start a sandbox game: {marine_worlds, maps: [seat 0, seat 1], controller: 0 | 1}."""
+        try:
+            body = json.loads(await request.body())
+            state, meta = sandbox.new_game(bool(body.get("marine_worlds")), [str(m) for m in body["maps"]], int(body["controller"]))
+            steps = await run_in_threadpool(sandbox.first_step, state, meta)
+        except (ValueError, KeyError, TypeError) as e:
+            return _error(422, "invalid", str(e) if isinstance(e, sandbox.SandboxError) else "Send {marine_worlds, maps, controller}.")
+        final = GameState.from_dict(steps[-1]["engine_state"])
+        return JSONResponse({**sandbox.skeleton(final), "steps": steps, "sandbox": meta})
+
+    @app.post("/api/sandbox/apply")
+    async def sandbox_apply(request: Request):
+        """A move of the controller on the state posted by the browser, then the moves of the bot: {state, meta, action}; returns {steps}."""
+        raw_body = await request.body()
+        if len(raw_body) > 3_000_000:
+            return _error(413, "too_large", "That state is too large.")
+        try:
+            body = json.loads(raw_body)
+            steps = await run_in_threadpool(sandbox.play, body["state"], body["meta"], body["action"])
+        except IllegalAction as e:
+            return _error(422, "illegal", str(e))
+        except NotImplementedError as e:
+            return _error(422, "not_implemented", f"The engine does not implement this rule yet: {e}")
+        except (ValueError, KeyError, TypeError) as e:
+            return _error(422, "invalid", f"Could not read the state or the action ({type(e).__name__}).")
+        return JSONResponse({"steps": steps})
+
+    @app.post("/api/sandbox/edit")
+    async def sandbox_edit(request: Request):
+        """An edit of the controller: {state, meta, op, args}; returns {steps: [the new step]}."""
+        raw_body = await request.body()
+        if len(raw_body) > 3_000_000:
+            return _error(413, "too_large", "That state is too large.")
+        try:
+            body = json.loads(raw_body)
+            step = await run_in_threadpool(sandbox.edit_payload, body["state"], body["meta"], str(body["op"]), dict(body.get("args") or {}))
+        except sandbox.SandboxError as e:
+            return _error(422, "invalid", str(e))
+        except (IllegalAction, NotImplementedError) as e:
+            return _error(422, "illegal", str(e))
+        except (ValueError, KeyError, TypeError) as e:
+            return _error(422, "invalid", f"Could not read the state or the edit ({type(e).__name__}).")
+        return JSONResponse({"steps": [step]})
 
     @app.post("/api/fork/apply")
     async def fork_apply(request: Request):
