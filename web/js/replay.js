@@ -173,7 +173,17 @@
         const mark = zone + '#' + (n++);
         if (cardMarks.has(mark)) node.classList.add('marked');
         node.classList.add('markable');
-        node.addEventListener('click', () => { if (cardMarks.has(mark)) cardMarks.delete(mark); else cardMarks.add(mark); node.classList.toggle('marked'); if (FORK) refreshBar(); });
+        node.addEventListener('click', () => {
+          if (FORK && node.classList.contains('dim') && forkSingleSelect()) return;                      // (a card that cannot be played cannot be selected)
+          if (cardMarks.has(mark)) cardMarks.delete(mark);
+          else {
+            if (FORK && forkSingleSelect()) for (const x of [...cardMarks]) if (/:hand#|^display#/.test(x)) cardMarks.delete(x);        // a card to play: the new choice replaces the old one
+            cardMarks.add(mark);
+          }
+          if (FORK && forkSingleSelect()) for (const n of document.querySelectorAll('.dockpanel .card.markable')) n.classList.remove('marked');
+          node.classList.toggle('marked', cardMarks.has(mark));
+          if (FORK) refreshBar();
+        });
       });
     }
     row.append(...items);
@@ -916,6 +926,8 @@
     };
     return node;
   }
+  // a card is chosen to be played (an animal, a sponsor, a Marketing sponsor...): only one can be selected at a time
+  const forkSingleSelect = () => marketMode !== null || forkActs((a) => a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind)).length > 0;
   function refreshBar() { actionBar(curState()); if (FORK) forkBar(); }
   let forkGate = false, forkConfirmed = -1;                               // fork: the turn has just been passed on and the player has not confirmed it yet
   let forkBonus = null;                                                    // fork: the bonus slot of the player board the viewer picked to unlock
@@ -1438,7 +1450,7 @@
     for (const th of ['5', '8']) {
       const left = (st.conservation_options || {})[th] || [];
       (first[th] || []).forEach((opt, i) => {
-        if (SANDBOX && sbMeta().unset['b' + th][i]) {                            // not set yet: randomize / choose
+        if (SANDBOX && !replay.setup && sbMeta().unset['b' + th][i]) {                            // not set yet: randomize / choose
           const b = sbSlotButtons(th, i);
           b.style.left = (CT_BONUS_X[th][i] / 2000 * 100) + '%';
           wrap.append(b);
@@ -1481,7 +1493,7 @@
       if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '') + (FORK && cardMarks.has('display#' + i) ? ' marked' : '')));
       if (k && FORK) {                                                              // a card of the display can be chosen for a move
         f.classList.add('markable');
-        f.addEventListener('click', () => { const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if (x.startsWith('display#')) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); refreshBar(); });
+        f.addEventListener('click', () => { const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if (x.startsWith('display#') || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); refreshBar(); });
       }
       for (const g of displayGone) if (g.index === i) f.append(ghost(g.key));       // the card that left this slot fades away on top of it
       f.append(el('span', 'folnum', i + 1));
@@ -1525,7 +1537,7 @@
     }
     // Marine Worlds: the bonus drawn for 16 reputation (a point gained at 15 may be traded for it) sits above the appeal space at the end of the track, until it is taken
     const bonus16 = replay.marine_worlds && ((st.conservation_options || {})['99'] || [])[0];
-    if (SANDBOX && replay.marine_worlds && sbMeta().unset.b99 && sbMeta().unset.b99[0]) {
+    if (SANDBOX && !replay.setup && replay.marine_worlds && sbMeta().unset.b99 && sbMeta().unset.b99[0]) {
       const b = sbSlotButtons('99', 0);
       b.classList.add('rep16');
       b.style.left = '98.6%';
@@ -1554,17 +1566,18 @@
     // projects played during the game: the newest enters on the left and pushes the others right; a third one pushes the oldest off to the discard
     col.append(projectPanel(st, st.projects_in_play, 2, 'conservation-project', 'Conservation projects in play'));
     col.append(associationBoard(st));
-    if (SANDBOX) {                                                             // the sandbox starts with empty base project slots: two buttons in the centre set them
+    if (SANDBOX && !replay.setup) {                                            // the sandbox starts with empty base project slots: two buttons in the centre set them
       const unset = sbMeta().unset.projects;
       const panel = projectPanel(st, st.base_projects.map((k, n) => (unset[n] ? null : k)), 3, 'conservation-project-base', 'Base conservation projects', true);
-      if (unset.some(Boolean)) {
-        const slots = unset.map((u, n) => (u ? n : -1)).filter((n) => n >= 0);
+      const taken = st.base_projects.filter((k, n) => !unset[n]);
+      [...panel.querySelectorAll('.projslot')].forEach((slotEl, n) => {            // each empty slot has its own two buttons
+        if (!unset[n]) return;
         const over = el('div', 'sbcenter');
-        over.append(sbButton('Randomize', 'Draw the empty base projects at random', () => sbEdit('set_projects', { slots, keys: slots.map(() => null) })),
-                    sbButton('Choose…', 'Choose the empty base projects', async () => { const keys = await sbPickProjects(slots.length, st.base_projects); if (keys) sbEdit('set_projects', { slots, keys }); }));
-        panel.classList.add('sbhost');
-        panel.append(over);
-      }
+        over.append(sbButton('Randomize', 'Draw this base project at random', () => sbEdit('set_projects', { slots: [n], keys: [null] })),
+                    sbButton('Choose…', 'Choose this base project', async () => { const keys = await sbPickProjects(1, taken); if (keys) sbEdit('set_projects', { slots: [n], keys }); }));
+        slotEl.classList.add('sbhost');
+        slotEl.append(over);
+      });
       col.append(panel);
     } else col.append(projectPanel(st, replay.base_projects, 3, 'conservation-project-base', 'Base conservation projects', true));
     root.append(col);
@@ -1829,6 +1842,10 @@
       const keys = forkActs((a) => a.kind === 'choose_effect' && a.player === seat && a.args.index === marketMode && typeof a.args.card === 'string').map((a) => a.args.card);
       if (keys.length) return (k) => !keys.includes(k);
     }
+    if (FORK) {                                                           // a card is to be played: the cards the engine does not let the player play (not an animal / a sponsor, a requirement, the price or an enclosure that cannot be met) are greyed out
+      const ok = forkActs((a) => a.player === seat && a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind)).map((a) => a.args.card);
+      if (ok.length) return (k) => !ok.includes(k);
+    }
     const o = replay.steps[step].options;
     return o && o.sponsors && o.seat === seat && !hides(seat) ? (k) => !o.sponsors.hand.includes(k) : null;
   }
@@ -1843,6 +1860,7 @@
   function renderDock(st) {
     let dock = $('dock');
     if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
+    if (SANDBOX && replay.setup) { dock.replaceChildren(); return; }                // (nothing to show before the game: the seat and the maps are chosen first)
     const panel = el('div', 'dockpanel');
     const bar = el('div', 'dockbar');
     const rows = {};
@@ -2180,7 +2198,8 @@
     const d = el('div', 'sbslot');
     d.append(sbButton('\u{1F3B2}', 'Randomize this bonus', () => sbEdit('set_bonus', { threshold: th, slot: i, bonus: null }), 'sbmini'),
              sbButton('\u270E', 'Choose this bonus', async () => {
-               const others = (sbMeta().initial[th] || []).filter((b, j) => j !== i);
+               const m = sbMeta();
+               const others = Object.entries(m.initial).flatMap(([t, bs]) => bs.filter((b, j) => !(t === th && j === i) && !m.unset['b' + t][j]));      // the bonuses already set anywhere on the board
                const bonus = await sbPickBonus(others);
                if (bonus) sbEdit('set_bonus', { threshold: th, slot: i, bonus });
              }, 'sbmini'));
@@ -2265,9 +2284,10 @@
       ok.disabled = true;
       const refresh = () => { ok.disabled = chosen.length !== n; ok.textContent = 'Confirm (' + chosen.length + '/' + n + ')'; };
       for (const k of replay.base_pool || []) {
-        const wrapc = el('div', 'sbproject');
+        const wrapc = el('div', 'sbproject' + (current.includes(k) ? ' taken' : ''));
         wrapc.append(card(k));
         wrapc.onclick = () => {
+          if (current.includes(k)) return;
           const at = chosen.indexOf(k);
           if (at >= 0) chosen.splice(at, 1); else if (chosen.length < n) chosen.push(k);
           wrapc.classList.toggle('marked', chosen.includes(k));
@@ -2288,6 +2308,8 @@
   function renderSandboxTools(st) {
     const box = $('sbtools');
     if (!box) return;
+    box.hidden = !!replay.setup;
+    if (replay.setup) return;
     const meta = sbMeta();
     if (sbSeat === null) sbSeat = meta.controller;
     const seat = sbSeat, p = st.players[seat];
@@ -2390,8 +2412,78 @@
     box.replaceChildren(sum, body);
   }
 
+  // The setup before the game: the seat to play, then the map of each seat (a click on a map shows it on the player board; it can be changed before Confirm).
+  // `replay.setup` = {stage: 'seat' | 'map0' | 'map1', controller, maps: [id, id]}; the real game starts when the last map is confirmed.
+  const mapViews = {};
+  let sbMapList = null;
+  async function sbShowMap(seat, id) {
+    if (!mapViews[id]) {
+      const res = await fetch('/api/sandbox/map/' + encodeURIComponent(id));
+      if (!res.ok) return;
+      mapViews[id] = await res.json();
+    }
+    replay.setup.maps[seat] = id;
+    replay.maps[seat] = mapViews[id];
+    render();
+  }
+  function sbSetupBar(bar) {
+    const set = replay.setup;
+    bar.hidden = false;
+    bar.replaceChildren();
+    if (!sbMapList) {
+      sbMapList = [];
+      fetch('/api/sandbox/maps?marine_worlds=' + (replay.marine_worlds ? 'true' : 'false')).then((r) => r.json()).then((b) => { sbMapList = b.maps; if (replay.setup) render(); });
+    }
+    if (set.stage === 'seat') {
+      bar.append(el('b', '', 'Choose the seat you play'));
+      for (const seat of [0, 1]) {
+        const b = sbButton('Seat ' + (seat + 1) + (seat === 0 ? ' (plays first)' : ''), 'You play this seat; the other one is a bot that passes', () => { set.controller = seat; set.stage = 'map0'; render(); }, 'forkchoice');
+        b.style.setProperty('--pc', seatColor(seat));
+        bar.append(b);
+      }
+      return;
+    }
+    const seat = set.stage === 'map0' ? 0 : 1;
+    const head = el('b', '', 'Choose the map of seat ' + (seat + 1) + (seat === set.controller ? ' (you)' : ' (the bot)'));
+    const list = el('div', 'sbmaps');
+    for (const m of sbMapList) {
+      const b = el('button', 'forkmove sbmapbtn' + (set.maps[seat] === m.id ? ' on' : ''), 'Map ' + m.id + ': ' + m.name);
+      b.type = 'button';
+      b.onclick = () => sbShowMap(seat, m.id);
+      list.append(b);
+    }
+    const ok = sbButton('Confirm', 'Use this map', async () => {
+      if (seat === 0) { set.stage = 'map1'; set.maps[1] = null; render(); return; }
+      ok.disabled = true;
+      const res = await fetch('/api/sandbox/new', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ marine_worlds: replay.marine_worlds, maps: set.maps, controller: set.controller }) });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) { ok.disabled = false; renderForkMoves(body.message || 'could not start'); return; }
+      sessionStorage.setItem('sandboxGame', JSON.stringify(body));
+      location.reload();
+    }, 'forkconfirm');
+    ok.disabled = !set.maps[seat];
+    const back = sbButton('Back', 'Go back', () => { set.stage = seat === 0 ? 'seat' : 'map0'; render(); });
+    const dice = sbButton('Random map', 'Pick a map at random: it is shown on the board and can still be changed before Confirm', () => {
+      if (sbMapList.length) sbShowMap(seat, sbMapList[Math.floor(Math.random() * sbMapList.length)].id);
+    });
+    bar.append(head, list, dice, ok, back);
+  }
+
   function initSandbox() {
     document.title = 'Sandbox - Ark Nova';
+    if (replay.setup) {
+      Object.assign(replay.setup, { stage: 'seat', controller: 0, maps: [null, null] });
+      replay.players.forEach((q, i) => { q.name = 'Seat ' + (i + 1); });
+      replay.steps[0].label = 'Choose your seat and the maps';
+      buildMoveList();
+      $('tableInfo').textContent = 'Sandbox setup' + (replay.marine_worlds ? ' · Marine Worlds' : '');
+      const box0 = $('forkinfo');
+      box0.hidden = false;
+      box0.replaceChildren(el('b', '', 'Sandbox setup'), el('div', 'forknote', 'Choose the seat you play, then the map of each seat. The other seat is a bot that only passes.'));
+      document.body.classList.add('forkpage');
+      return;
+    }
     replay.sandbox = replay.sandbox || replay.steps[0].sandbox;
     $('tableInfo').textContent = 'Sandbox · ' + replay.players.map((q, i) => q.name + ' (map ' + replay.maps[i].id + ')').join(' vs ') + (replay.marine_worlds ? ' · Marine Worlds' : '');
     const box = $('forkinfo');
@@ -2601,12 +2693,13 @@
   // one), and the legal moves that no control stands for are listed at the end of the bar.
   function forkBar() {
     const bar = $('actionbar'), cur = replay.steps[step], acts = cur.actions || [];
+    if (SANDBOX && replay.setup) { if (bar) sbSetupBar(bar); return; }          // the seat and the maps first
     if (SANDBOX && !sbReady()) {                                             // the empty spaces first
       if (bar) { bar.hidden = false; bar.replaceChildren(el('b', '', 'Set the base projects and the conservation bonuses (the empty spaces of the board) to start playing.')); }
       return;
     }
     if (!bar || forkGate || (!acts.length && !forkError)) return;
-    if (acts.some((a) => a.kind === 'draft_pick' || a.kind === 'draft_keep' || a.kind === 'initial_discard')) return;      // (the draft is played in the bar itself)
+    if (acts.some((a) => a.kind === 'draft_pick' || a.kind === 'draft_keep')) return;      // (the draft is played in the bar itself)
     for (const a of acts) {                                                          // the action cards of the bar
       if (a.kind === 'choose_action_card' && !a.args.hypnosis && !a.args.t1) forkClaimed.add(a);
       if (a.kind === 'skip_action' && !a.args.repeat) forkClaimed.add(a);
@@ -2630,7 +2723,7 @@
       ok.onclick = () => { if (match) playFork(match); };
       bar.append(who0, el('b', '', ' must choose a bonus to unlock'), ok);
     }
-    if (!bar.children.length) {
+    if (!bar.children.length && !acts.some((x) => x.kind === 'initial_discard')) {
       const who = el('span', 'who', replay.players[seat].name);
       who.style.color = seatColor(seat);
       bar.append(who, el('b', '', ' ' + ((cur.options && PROMPT_TEXT[cur.options.prompt]) || 'must decide')));
@@ -2702,7 +2795,9 @@
     }
     const cardEff = acts.filter((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards));      // an effect that takes cards of the hand (sunbathing)
     for (const a of [...handActs, ...dispActs, ...discardActs, ...cardEff]) forkClaimed.add(a);
-    const actor = (handActs[0] || discardActs[0] || cardEff[0] || (marketMode !== null ? marketActs[0] : null) || {}).player;
+    const initActs = acts.filter((a) => a.kind === 'initial_discard');
+    for (const a of initActs) forkClaimed.add(a);
+    const actor = (handActs[0] || discardActs[0] || cardEff[0] || initActs[0] || (marketMode !== null ? marketActs[0] : null) || {}).player;
     if (actor !== undefined && forkDockStep !== step) {                              // the hand of the player who has to choose is open
       forkDockStep = step;
       if (dockSel.seat !== actor || dockSel.kind !== 'hand' || dockHidden) { dockSel = { seat: actor, kind: 'hand' }; dockHidden = false; renderDock(curState()); }
@@ -2744,6 +2839,20 @@
       bar.append(ok);
       for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === idx)) { forkClaimed.add(a); bar.append(btn(a, 'Pass', false)); }
     }
+    for (const seat0 of [...new Set(initActs.map((a) => a.player))]) {                 // the initial discard: pick the cards to keep in the hand, then confirm
+      const mine = initActs.filter((a) => a.player === seat0);
+      const offer = new Set(mine.flatMap((a) => a.args.cards));
+      const hand0 = st.players[seat0].hand.filter((k) => offer.has(k));
+      const keep = hand0.length - mine[0].args.cards.length;
+      const picked = marked(seat0 + ':hand', st.players[seat0].hand).filter((k) => offer.has(k));
+      const drop = hand0.filter((k) => !picked.includes(k)).sort().join();
+      const match = picked.length === keep ? mine.find((a) => [...a.args.cards].sort().join() === drop) : null;
+      const who1 = el('span', 'who', replay.players[seat0].name);
+      who1.style.color = seatColor(seat0);
+      const ok = match ? btn(match, 'Confirm', true) : el('button', 'forkmove forkconfirm', 'Confirm');
+      ok.type = 'button'; ok.disabled = !match || forkBusy;
+      bar.append(who1, el('b', '', ' must choose ' + keep + ' card' + (keep === 1 ? '' : 's') + ' to keep (' + picked.length + '/' + keep + ')'), ok);
+    }
     if (forkMenu) {                                                                   // the choices of a button with several moves
       const row = el('span', 'forkmenu');
       row.append(el('b', '', forkMenu.label ? forkMenu.label + ': ' : ''));
@@ -2769,7 +2878,8 @@
     box.replaceChildren();
     forkError = error || '';
     if (error) { refreshBar(); return; }
-    if (!acts.some((a) => a.kind === 'initial_discard')) { if (forkBusy) refreshBar(); return; }          // everything is played from the bar at the top (the initial discard keeps its cards here)
+    if (forkBusy) refreshBar();
+    return;          // everything is played from the bar at the top (the initial discard keeps its cards here)
     if (acts.some((a) => a.kind === 'draft_pick' || a.kind === 'draft_keep')) return;      // the draft is played in the bar at the top
     if (acts.length && acts.every((a) => a.kind === 'choose_action_card' || a.kind === 'skip_action') && s.options && s.options.prompt === 'choose_action_card') return;      // so is the choice of the action card
     const head = el('div', 'forkhead');

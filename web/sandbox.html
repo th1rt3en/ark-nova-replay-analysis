@@ -10,16 +10,9 @@
 <body class="viewer forkpage sandboxpage">
 <section id="lobby" class="lobby" hidden>
   <h1>Sandbox</h1>
-  <p class="muted">Play against a bot that only passes, on a board you set up and can edit at any time.</p>
+  <p class="lobbytext">Play against a bot that only passes, on a board you set up and can edit at any time. You choose your seat and the maps in the game.</p>
   <form id="lobbyform">
     <label class="lobbyrow"><input type="checkbox" id="mw"> Marine Worlds</label>
-    <label class="lobbyrow">Map of seat 1 <select id="map0"></select></label>
-    <label class="lobbyrow">Map of seat 2 <select id="map1"></select></label>
-    <fieldset class="lobbyrow">
-      <legend>You play</legend>
-      <label><input type="radio" name="seat" value="0" checked> seat 1</label>
-      <label><input type="radio" name="seat" value="1"> seat 2</label>
-    </fieldset>
     <button type="submit" id="start">Start the sandbox</button>
     <div id="lobbymsg" role="status" class="muted"></div>
   </form>
@@ -75,23 +68,12 @@
     return;
   }
   $('lobby').hidden = false;
-  const fill = async () => {
-    const res = await fetch('/api/sandbox/maps?marine_worlds=' + ($('mw').checked ? 'true' : 'false'));
-    const maps = (await res.json()).maps;
-    for (const id of ['map0', 'map1']) {
-      const sel = $(id), keep = sel.value;
-      sel.replaceChildren(...maps.map((m) => { const o = document.createElement('option'); o.value = m.id; o.textContent = 'Map ' + m.id + ': ' + m.name; return o; }));
-      if (maps.some((m) => m.id === keep)) sel.value = keep;
-    }
-  };
-  $('mw').onchange = fill;
-  fill();
   $('lobbyform').onsubmit = async (e) => {
     e.preventDefault();
     $('start').disabled = true; $('lobbymsg').textContent = 'Starting…';
     try {
       const res = await fetch('/api/sandbox/new', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marine_worlds: $('mw').checked, maps: [$('map0').value, $('map1').value], controller: +document.querySelector('input[name=seat]:checked').value }) });
+        body: JSON.stringify({ marine_worlds: $('mw').checked, setup: true }) });
       const body = await res.json();
       if (!res.ok) throw new Error(body.message || 'could not start');
       sessionStorage.setItem('sandboxGame', JSON.stringify(body));

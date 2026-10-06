@@ -241,7 +241,7 @@ def _prompt_actions(state: GameState) -> list[Action]:
         if map_rules.t1_discard_possible(p):                      # map T1: once a turn a hand card is discarded for +1 strength
             chosen += [Action(p.seat, "choose_action_card", {"type": c.type, "spend": k, "t1": h})
                        for c in p.action_cards if only is None or c.type in only for k in range(0, p.x_tokens + 1) for h in sorted(set(p.hand))]
-        chosen = [a for a in chosen if _has_moves(state, a)]      # an action card without any legal move cannot be chosen (it can still be put back: `skip_action`)
+        chosen = _with_moves(state, chosen)                       # an action card without any legal move cannot be chosen (it can still be put back: `skip_action`)
         if only is not None:                                     # a second action: Action: X can be declined (not put back for an X token), Determination can put any action back
             if pr.args.get("optional"):
                 return chosen + [Action(p.seat, "skip_extra", {})]
@@ -309,7 +309,8 @@ def _engineer_cost(a, t: str) -> int:
     return BUILD_EXTRA_COST[a["level"]] if t == a.get("extra_type") and t not in a["placed"] else build_action.cost(t)
 
 
-def _build_actions(state: GameState, p) -> list[Action]:
+def _build_actions(state: GameState, p, only=None) -> list[Action]:
+    """The building placements (and `finish_build`); `only` limits the types that are looked at (a quick check whether any move exists)."""
     a = state.prompt.args
     bd = board(p.map_id)
     mine = [(b.type, b.x, b.y, b.rotation) for b in p.buildings]
@@ -317,6 +318,8 @@ def _build_actions(state: GameState, p) -> list[Action]:
     variant = a.get("variant", 0)
     acts = []
     for t, size in build_action.SIZES.items():
+        if only is not None and t not in only:
+            continue
         if t in build_action.AQUARIUMS and not state.config.marine_worlds:      # aquariums belong to Marine Worlds
             continue
         if t in build_action.UNIQUE and any(b.type == t for b in p.buildings):
@@ -811,6 +814,27 @@ def _finish_build(state: GameState, action: Action) -> None:
 _FINISHING = {"finish_animals", "finish_build", "finish_sponsors", "finish_association", "skip_effect"}
 
 
+def _with_moves(state: GameState, chosen: list) -> list:
+    """The choices of an action card that leave a legal move. More strength never takes a move away, so one check per card decides all its spends when it
+    is positive; a card without moves at the highest spend has none at all."""
+    out, known = [], {}
+    for a in chosen:
+        key = (a.args["type"], a.args.get("t1"), bool(a.args.get("hypnosis")))
+        if key not in known:
+            same = [x for x in chosen if (x.args["type"], x.args.get("t1"), bool(x.args.get("hypnosis"))) == key]
+            lowest, highest = same[0], same[-1]
+            if _has_moves(state, lowest):
+                known[key] = {"all": True}
+            elif not _has_moves(state, highest):
+                known[key] = {"all": False}
+            else:
+                known[key] = {"each": {x.args["spend"]: _has_moves(state, x) for x in same}}
+        k = known[key]
+        if k.get("all", False) or ("each" in k and k["each"].get(a.args["spend"])):
+            out.append(a)
+    return out
+
+
 def _has_moves(state: GameState, action: Action) -> bool:
     """Whether the action card, chosen like this, would leave the player a legal move (a Cards action always does, a Sponsors action can always break)."""
     if action.args.get("hypnosis") or action.args["type"] == "cards":
@@ -822,6 +846,10 @@ def _has_moves(state: GameState, action: Action) -> bool:
     pr = new.prompt
     if pr is None or pr.kind not in ("animals_play", "build_place", "sponsors_play", "association_tasks"):
         return True                                           # effects of the card's start (a bonus, a threshold) or something this check does not know
+    if pr.kind == "build_place":                              # a quick look at the cheapest buildings first: a free place for one of them is a move
+        p = new.players[pr.player]
+        if any(x.kind == "place_building" for x in _build_actions(new, p, ("size-1", "pavilion", "kiosk"))):
+            return True
     return any(a.kind not in _FINISHING for a in legal_actions(new))
 
 

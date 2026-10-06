@@ -39,13 +39,19 @@ def test_setup_steps_follow_the_log_deal_then_discard_then_display():
         assert len(cards) == len(set(cards))
 
 
+def _oracle_problems(path):
+    """One log (a worker of the parallel test): the unhandled events and the oracle mismatches of its replay."""
+    _, rep = _replay(path)
+    found = []
+    if rep.unhandled:
+        found.append((Path(path).name, "unhandled", dict(rep.unhandled)))
+    if rep.mismatches:
+        found.append((Path(path).name, "mismatch", rep.mismatches[:2]))
+    return found
+
+
 def test_all_events_handled_and_all_oracles_agree():
     """Hand + display + endgame snapshots (state 20), money after purchases (`total`) and the running score (`score`)."""
-    problems = []
-    for path in LOGS:
-        _, rep = _replay(path)
-        if rep.unhandled:
-            problems.append((Path(path).name, "unhandled", dict(rep.unhandled)))
-        if rep.mismatches:
-            problems.append((Path(path).name, "mismatch", rep.mismatches[:2]))
+    from ark_nova.replay.batch import parallel_map
+    problems = [p for found in parallel_map(_oracle_problems, LOGS) for p in found]
     assert not problems, problems[:3]

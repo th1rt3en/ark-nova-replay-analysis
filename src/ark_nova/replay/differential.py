@@ -333,7 +333,8 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
         p = state.players[act.player]
         if "slot" in want:                                  # the bonus left no trace in the log: the keyword space of the map
             for j, b in notepad_bonuses(state, p):
-                if j == want["slot"] and b["type"] not in ("reputation", "money", "xtoken", "appeal", "Worker", "bonus-scoring-cards"):         # (Adapt 3 of map 13 would show its draw in the log)
+                adapt_logged = any(x.kind == "choose_effect" and "discard" in x.args for x in _UPCOMING[0])          # (Adapt 3 of map 13 shows its draw and discard in the log)
+                if j == want["slot"] and b["type"] not in ("reputation", "money", "xtoken", "appeal", "Worker") and (b["type"] != "bonus-scoring-cards" or adapt_logged):
                     return Action(act.player, act.kind, {**act.args, "bonus": j})
             for j, b in notepad_bonuses(state, p):          # a bonus that was unlocked and declined leaves no trace: Cut Down (map 13) is optional
                 if b["type"] == "cut-down" and want["slot"] == 3:

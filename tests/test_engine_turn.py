@@ -83,29 +83,34 @@ def test_illegal_and_unimplemented():
 LOGS = [p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p]   # (573904205 is an old log format the parser does not read)
 
 
+def _differential_of_log(path):
+    """One log through parser + replay + engine (a worker of the parallel test): (name, checked turns, problems)."""
+    parsed = parse_log(path)
+    setup, cfg, seed = game_from_log(parsed)
+    replay = build_replay(parsed, setup, cfg, seed)
+    rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
+    return Path(path).name, rep.checked, rep.illegal + rep.mismatches
+
+
 @pytest.mark.skipif(not LOGS, reason="log_examples not available")
 def test_engine_agrees_with_the_log_turn_by_turn():
     """Every supported turn of every log: the logged actions are legal and the engine ends in the replay's state."""
-    checked = 0
-    problems = []
+    from ark_nova.replay.batch import parallel_map
     from ark_nova.replay.config import _sample_maps
     known = _sample_maps()
-    for path in LOGS:
-        if "800035115" in path or Path(path).stem not in known:       # (logs whose maps the index does not give yet cannot be replayed reliably)
-            continue
-        parsed = parse_log(path)
-        setup, cfg, seed = game_from_log(parsed)
-        replay = build_replay(parsed, setup, cfg, seed)
-        rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
-        checked += rep.checked
-        problems += [(Path(path).name, x) for x in rep.illegal + rep.mismatches]
+    paths = [p for p in LOGS if "800035115" not in p and Path(p).stem in known]       # (logs whose maps the index does not give yet cannot be replayed reliably)
+    checked = 0
+    problems = []
+    for name, n, bad in parallel_map(_differential_of_log, paths):
+        checked += n
+        problems += [(name, x) for x in bad]
     # Cards, Sponsors (fixed-effect cards and the break option), skipped turns and most Build turns agree exactly; the remaining
     # discrepancies (5% of the compared turns: aquarium/petting zoo placement details in a few games, some pavilion appeal and money
     # differences) are listed by scripts/engine_summary.py
     # (the harness also checks the turns with takeBonus / break income cards / placement bonus cards / the Commercial Harbor: 6.5k turns
     # checked, ~340 known problems, see scripts/engine_coverage.py; this is a ratchet, lower it when the problems are fixed)
-    assert len(problems) <= 20, problems[:3]
-    assert checked >= 24300
+    assert len(problems) <= 0, problems[:3]
+    assert checked >= 24390
 
 
 def _build_state(marine_worlds=True, map_id="1"):

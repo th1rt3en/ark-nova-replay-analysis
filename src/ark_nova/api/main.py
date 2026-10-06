@@ -216,17 +216,25 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     async def sandbox_maps(marine_worlds: bool = False):
         return JSONResponse({"maps": sandbox.available_maps(marine_worlds)})
 
+    @app.get("/api/sandbox/map/{map_id}")
+    async def sandbox_map(map_id: str):
+        if map_id not in {m["id"] for m in sandbox.available_maps(True)}:
+            return _error(404, "no_map", "No such map.")
+        return JSONResponse(sandbox.map_view(map_id))
+
     @app.post("/api/sandbox/new")
     async def sandbox_new(request: Request):
-        """Start a sandbox game: {marine_worlds, maps: [seat 0, seat 1], controller: 0 | 1}."""
+        """Start a sandbox game: {marine_worlds, maps: [seat 0, seat 1], controller: 0 | 1}. With {marine_worlds, setup: true} a game on placeholder maps comes back with
+        `setup`: the viewer then lets the controller choose the seat and the maps, and starts the real game with this call."""
         try:
             body = json.loads(await request.body())
-            state, meta = sandbox.new_game(bool(body.get("marine_worlds")), [str(m) for m in body["maps"]], int(body["controller"]))
+            setup = bool(body.get("setup"))
+            state, meta = sandbox.new_game(bool(body.get("marine_worlds")), ["1", "1"] if setup else [str(m) for m in body["maps"]], 0 if setup else int(body["controller"]))
             steps = await run_in_threadpool(sandbox.first_step, state, meta)
         except (ValueError, KeyError, TypeError) as e:
             return _error(422, "invalid", str(e) if isinstance(e, sandbox.SandboxError) else "Send {marine_worlds, maps, controller}.")
         final = GameState.from_dict(steps[-1]["engine_state"])
-        return JSONResponse({**sandbox.skeleton(final), "steps": steps, "sandbox": meta})
+        return JSONResponse({**sandbox.skeleton(final), "steps": steps, "sandbox": meta, **({"setup": {"stage": "seat"}} if setup else {})})
 
     @app.post("/api/sandbox/apply")
     async def sandbox_apply(request: Request):

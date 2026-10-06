@@ -21,7 +21,7 @@ from ark_nova.engine.map_select import MARINE_WORLDS_MAPS
 from ark_nova.engine.state import ActionCardState, GameConfig, GameState, SeedSpec, Token
 from ark_nova.data.map_support import UNSUPPORTED_MAPS
 from ark_nova.replay import fork as forking
-from ark_nova.replay.view import card_catalog, map_view
+from ark_nova.replay.view import card_catalog, map_view  # noqa: F401 (map_view is used by the API too)
 
 # the 16 bonuses that the 5 and 8 conservation spaces (and the 16 reputation space) draw two (one) of at random, as seen in the logs; the 5 money option is always there
 BONUS_POOL = [{"Partner-Zoo": 1}, {"Fac": 1}, {"Multiplier": 1}, {"xtoken": 3}, {"take-in-range-or-deck": 3}, {"size-3": 1}, {"bonus-ignore-conditions": 3},
@@ -37,9 +37,10 @@ class SandboxError(ValueError):
     pass
 
 
-def available_maps(marine_worlds: bool) -> list[dict]:
+def available_maps(marine_worlds: bool = True) -> list[dict]:
+    """Every map that has a geometry, whether or not the game has Marine Worlds (the sandbox lets the controller use any of them)."""
     return [{"id": m["id"], "name": m["name"], "marine_worlds": m["id"] in MARINE_WORLDS_MAPS} for m in data.maps()
-            if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS and (marine_worlds or m["id"] not in MARINE_WORLDS_MAPS)]
+            if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS]
 
 
 def new_game(marine_worlds: bool, maps: list, controller: int, seed: int | None = None) -> tuple[GameState, dict]:
@@ -187,11 +188,11 @@ def edit(state: GameState, meta: dict, op: str, args: dict) -> tuple[GameState, 
         if flags is None or not 0 <= slot < len(flags) or not flags[slot]:
             raise SandboxError("that bonus space is already set")
         bonus = args.get("bonus")
-        others = [b for j, b in enumerate(meta["initial"][th]) if j != slot]
+        others = [b for t, bs in meta["initial"].items() for j, b in enumerate(bs) if not (t == th and j == slot) and not meta["unset"]["b" + t][j]]      # (a bonus is drawn once for the whole board)
         if bonus is None:
             bonus = random.SystemRandom().choice([b for b in BONUS_POOL if b not in others])
         if bonus not in BONUS_POOL or bonus in others:
-            raise SandboxError("that bonus cannot be used (twice on one threshold)")
+            raise SandboxError("that bonus is already on the board")
         meta["initial"][th][slot] = bonus
         state.conservation_options[th] = copy.deepcopy(meta["initial"][th])
         flags[slot] = False

@@ -111,3 +111,16 @@ def test_the_edits(client):
     assert sum(1 for t in out["engine_state"]["players"][0]["tokens"] if t["type"] == "worker" and t["location"].startswith("supply_")) == before - 1
     bad = client.post("/api/sandbox/edit", json={"state": out["engine_state"], "meta": out["sandbox"], "op": "set_value", "args": {"seat": 0, "field": "money", "value": -5}})
     assert bad.status_code == 422
+
+
+def test_a_setup_game_starts_on_placeholder_maps_and_any_map_can_be_shown(client):
+    r = client.post("/api/sandbox/new", json={"marine_worlds": True, "setup": True})
+    assert r.status_code == 200 and r.json()["setup"] == {"stage": "seat"} and [m["id"] for m in r.json()["maps"]] == ["1", "1"]
+    assert client.get("/api/sandbox/map/12").json()["id"] == "12" and client.get("/api/sandbox/map/nope").status_code == 404
+
+
+def test_every_map_is_available_with_or_without_marine_worlds(client):
+    base = {m["id"] for m in client.get("/api/sandbox/maps?marine_worlds=false").json()["maps"]}
+    assert base == {m["id"] for m in client.get("/api/sandbox/maps?marine_worlds=true").json()["maps"]} and "12" in base
+    r = client.post("/api/sandbox/new", json={"marine_worlds": False, "maps": ["12", "14"], "controller": 0})
+    assert r.status_code == 200, r.text

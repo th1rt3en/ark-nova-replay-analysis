@@ -68,14 +68,9 @@ def test_parse_real_logs(path):
     assert all(m.events for m in p.moves)
 
 
-@needs_logs
-def test_deck_order_rebuilds_for_every_log():
-    """The key check: for all logs, the deck rebuilt from the exits reproduces every logged draw and search, also from a
-    fork point in the middle of the game."""
-    for path in LOGS:
-        if "761933963" in path:
-            continue                                       # a log whose search at exit 42 does not reproduce (S278 vs S250): to investigate
-
+def _deck_order_error(path):
+    """One log (a worker of the parallel test): None when the rebuilt deck reproduces every draw and search, else the error."""
+    try:
         p = parse_log(path)
         exits = extract_exits(p)
         for deck in ("main", "endgame"):
@@ -83,3 +78,15 @@ def test_deck_order_rebuilds_for_every_log():
             if exits:
                 mid = exits[len(exits) // 2].seq
                 simulate(known_order(exits, deck, mid), exits, deck, mid)
+    except Exception as ex:                      # (AssertionError of `simulate`, ValueError of `known_order`)
+        return f"{Path(path).name}: {type(ex).__name__}: {ex}"
+    return None
+
+
+@needs_logs
+def test_deck_order_rebuilds_for_every_log():
+    """The key check: for all logs, the deck rebuilt from the exits reproduces every logged draw and search, also from a
+    fork point in the middle of the game."""
+    from ark_nova.replay.batch import parallel_map
+    errors = [e for e in parallel_map(_deck_order_error, [p for p in LOGS if "761933963" not in p]) if e]      # (761933963: a search at exit 42 does not reproduce (S278 vs S250): to investigate)
+    assert not errors, errors[:3]

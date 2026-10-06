@@ -1,4 +1,5 @@
 import glob
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,25 @@ from ark_nova.parser.conservation import extract_conservation_bonuses
 
 LOGS = [p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p]   # (573904205 is an old log format the parser does not read)
 needs_logs = pytest.mark.skipif(not LOGS, reason="log_examples not available")
+
+
+def _scan_log(path):
+    """One log (a worker of the parallel tests): its final scorings, the scores at the end-of-game trigger and its conservation bonuses."""
+    parsed = parse_log(path)
+    finals, ends = [], []
+    for mv in parsed.moves:
+        for e in mv.events:
+            if e.type == "finalScoring":
+                finals.append((e.args["conservation"], e.args["conservationScore"]))
+            if e.type == "endOfGame" and isinstance(e.args, dict) and "infos" in e.args:
+                ends.append(e.args["infos"]["score"][str(e.args["player_id"])])
+    return Path(path).name, finals, ends, extract_conservation_bonuses(parsed)
+
+
+@lru_cache(maxsize=1)
+def _scans():
+    from ark_nova.replay.batch import parallel_map
+    return parallel_map(_scan_log, LOGS)
 
 
 def test_income_from_appeal():
@@ -34,32 +54,23 @@ def test_protection_and_end_trigger():
 def test_final_scoring_matches_the_track():
     """All 200 finalScoring events: conservation points come from the track, and appeal + points is the final score."""
     checked = 0
-    for path in LOGS:
-        for mv in parse_log(path).moves:
-            for e in mv.events:
-                if e.type == "finalScoring":
-                    a = e.args
-                    assert tracks.conservation_points(a["conservation"]) == a["conservationScore"]
-                    checked += 1
+    for _, finals, _, _ in _scans():
+        for conservation, score in finals:
+            assert tracks.conservation_points(conservation) == score
+            checked += 1
     assert checked >= 100
 
 
 @needs_logs
 def test_end_of_game_is_triggered_at_100():
-    scores = []
-    for path in LOGS:
-        for mv in parse_log(path).moves:
-            for e in mv.events:
-                if e.type == "endOfGame" and isinstance(e.args, dict) and "infos" in e.args:
-                    scores.append(e.args["infos"]["score"][str(e.args["player_id"])])
+    scores = [s for _, _, ends, _ in _scans() for s in ends]
     assert scores and min(scores) == tracks.END_TRIGGER_SCORE and max(scores) <= 115
 
 
 @needs_logs
 def test_conservation_bonuses_recoverable_from_logs():
     complete = incomplete = 0
-    for path in LOGS:
-        cb = extract_conservation_bonuses(parse_log(path))
+    for _, _, _, cb in _scans():
         if not cb.random and not cb.always:
             continue                                   # the aborted game
         assert len(cb.always["5"]) == 1 and cb.always["5"][0] == {"money": 5}
