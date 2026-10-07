@@ -1,4 +1,13 @@
 {
+    "0": {
+        "verified": false,
+        "partner4": null,
+        "university3": null,
+        "last_worker": null,
+        "partner4_observed": {},
+        "university3_observed": {},
+        "last_worker_observed": {}
+    },
     "1": {
         "verified": true,
         "last_worker": 0,
@@ -136,5 +145,18 @@
         "last_worker": 1,
         "partner4": 1,
         "university3": 1
+    },
+    "A": {
+        "verified": false,
+        "partner4": null,
+        "university3": 2,
+        "last_worker": 2,
+        "partner4_observed": {},
+        "university3_observed": {
+            "2": 2
+        },
+        "last_worker_observed": {
+            "2": 3
+        }
     }
 }

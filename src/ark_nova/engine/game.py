@@ -56,8 +56,12 @@ def _initial_tokens(seat: int) -> list[Token]:
 
 
 def _initial_buildings(map_id: str, seat: int) -> list[Building]:
-    """Map 13 (Drawing Board) starts with a free 2-space enclosure on the two centre spaces."""
-    return [Building(id=PLACEHOLDER_ID + 100 + seat, type="size-2", x=4, y=5, rotation=0)] if map_id == "13" else []
+    """Map 13 (Drawing Board) starts with a free 2-space enclosure on the two centre spaces; map A with an idle 3-space enclosure and a kiosk
+    (`start_buildings` of the map's geometry)."""
+    out = [Building(id=PLACEHOLDER_ID + 100 + seat, type="size-2", x=4, y=5, rotation=0)] if map_id == "13" else []
+    for i, b in enumerate(data.map_by_id(map_id)["geometry"].get("start_buildings", [])):
+        out.append(Building(id=1 + 2 * seat + i, type=b["type"], x=b["x"], y=b["y"], rotation=b["rotation"]))      # (BGA numbers them 1, 2 for the first player and 3, 4 for the second)
+    return out
 
 
 def _standard_action_cards(tail_seed: int) -> list:
@@ -570,8 +574,10 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
     """The effect of one placement bonus that is gained (covered by a building, or chosen with the Archeologist)."""
     _gain(state, seat, money=b["value"] if b["type"] == "money" else 0, x_tokens=b["value"] if b["type"] == "xtoken" else 0,
           reputation=b["value"] if b["type"] == "reputation" else 0)
-    if b["type"] == "Worker":                                       # the Worker hex of map 11 takes a worker back from the association board (13 of 13 in the logs); the notepad Worker hires
+    if b["type"] == "Worker" and state.players[seat].map_id == "11":      # the Worker hex of map 11 takes a worker back from the association board (13 of 13 in the logs); the notepad Worker hires
         bonuses.defer(state, {"kind": "extra_shift", "source": "map11", "optional": False, "player": seat})
+    elif b["type"] == "Worker":                                     # the Worker hex of map A hires a new worker (817617353 turn 38)
+        bonuses.apply_bonus(state, seat, {"Worker": 1})
     elif b["type"] in PLACEMENT_VIA_BONUSES:                        # the same effects as the conservation / notepad bonuses
         bonuses.apply_bonus(state, seat, {b["type"]: b["value"]})
     if b["type"] == "Mark" and state.current_action is not None and state.current_action.get("type") == "break":

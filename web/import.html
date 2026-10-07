@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Importing a log - Ark Nova Replay</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1>Importing the game log</h1>
+<div id="msg" role="status" class="loading">Waiting for the log from the browser extension…</div>
+<p><a href="/">Back</a></p>
+<script src="/js/logstore.js"></script>
+<script>
+// The browser extension (extension/) opens this page from a BGA review page and posts the captured log to it.
+const table = new URLSearchParams(location.search).get('table');
+const msg = document.getElementById('msg');
+function show(text, kind, errors) {
+  msg.textContent = text;
+  if (errors && errors.length) {
+    const ul = document.createElement('ul'); ul.className = 'errors';
+    for (const e of errors) { const li = document.createElement('li'); li.textContent = e; ul.appendChild(li); }
+    msg.appendChild(ul);
+  }
+  msg.className = kind;
+}
+if (!/^\d+$/.test(table || '') || !window.opener) {
+  show('Open this page with the extension button on a BGA game review page.', 'error');
+} else {
+  window.addEventListener('message', async (e) => {
+    const d = e.data;
+    if (e.source !== window.opener || !d || d.type !== 'ark-nova-log' || d.table !== table || typeof d.log !== 'string') return;
+    show('Verifying the log…', 'loading');
+    try {
+      const res = await fetch('/api/tables/' + table + '/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: d.log });
+      const body = await res.json();
+      if (body.ok) {
+        await LogStore.put(table, d.log);
+        location.replace('/replay.html?table=' + table + '&source=upload');
+      } else if (body.errors) { show('This log cannot be used:', 'error', body.errors); }
+      else { show(body.message || 'Something went wrong.', 'error'); }
+    } catch (err) { show('Could not verify the log, try again.', 'error'); }
+  });
+  window.opener.postMessage({ type: 'ark-nova-import-ready' }, '*');
+}
+</script>
+</body>
+</html>

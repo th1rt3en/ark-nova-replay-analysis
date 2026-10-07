@@ -126,7 +126,13 @@
     }
     return d;
   }
-  function showPreview(src) { const p = $('preview'); p.src = src; p.hidden = false; }
+  let previewTimer = null;
+  function showPreview(src) {
+    const p = $('preview');
+    p.src = src; p.hidden = false;
+    clearTimeout(previewTimer);
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches) previewTimer = setTimeout(hidePreview, 3000);       // (a touch screen has no mouse leaving the card: the thumbnail goes away by itself)
+  }
   function hidePreview() { $('preview').hidden = true; }
   document.addEventListener('DOMContentLoaded', () => { const pv = $('preview'); if (pv) pv.addEventListener('click', hidePreview); });       // (on touch screens a tap closes the preview)
   function textFace(key, c) {

@@ -26,10 +26,9 @@ def test_marine_worlds_scoring_differs():
 
 
 def test_all_selectable_maps_have_geometry():
-    for m in data.maps():
-        if not m["beginner"]:
-            assert m["geometry"] and len(m["geometry"]["hexes"]) == 58, m["id"]
-            assert len(m["geometry"]["bonus_slots"]) == 7, m["id"]
+    for m in data.maps():                      # (the beginner maps 0 and A too)
+        assert m["geometry"] and len(m["geometry"]["hexes"]) == 58, m["id"]
+        assert len(m["geometry"]["bonus_slots"]) == 7, m["id"]
 
 
 def test_every_log_card_is_known():

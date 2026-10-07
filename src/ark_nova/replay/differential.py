@@ -165,11 +165,12 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
             break
         a = e.args if isinstance(e.args, dict) else {}
         if e.type == "takeBonus" and not a.get("source"):
-            bt = ((a.get("bonus_desc") or {}).get("args") or {}).get("bonus_type")
+            bd_args = (a.get("bonus_desc") or {}).get("args") or {}
+            bt = bd_args.get("bonus_type")
             if bt:
-                extra[bt] += 1
+                extra[(bt, bd_args.get("bonus_n"))] += 1
     bd = board(state.players[seat].map_id)
-    for typ, n in extra.items():
+    for (typ, amount), n in extra.items():
         for _ in range(n):
             if state.prompt is None or state.prompt.kind != "effects":
                 return state
@@ -178,7 +179,7 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
                 return state
             cell = next((c for c in bon.archaeologist_cells(state, state.players[seat])
                         if any(b and b["type"].replace("-", "").lower() == {"extrashift": "worker"}.get(str(typ).replace("-", "").lower(), str(typ).replace("-", "").lower())
-                               for b in bd.bonuses[c])), None)
+                               and (amount is None or b["type"] not in ("money", "xtoken", "reputation") or b["value"] == amount) for b in bd.bonuses[c])), None)
             if cell is None:
                 break                                      # (not a bonus of a hex: the choice at conservation 5 / 8 is logged the same way)
             state = ap(state, Action(seat, "choose_effect", {"index": i, "cell": list(cell)}))
@@ -341,6 +342,10 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
                     return Action(act.player, act.kind, {**act.args, "bonus": j})
             for j, b in notepad_bonuses(state, p):          # (the keyword space is a bonus with a visible effect on this map: the trace is the card taken)
                 if b["type"] == "take-in-range-or-deck":
+                    return Action(act.player, act.kind, {**act.args, "bonus": j})
+            for j, b in notepad_bonuses(state, p):          # reputation at the top of the track: the bonus shows only as the appeal of "maxing out reputation" (map A, 801090816 turn 74)
+                from ark_nova.engine import bonuses as _bon
+                if b["type"] == "reputation" and p.reputation + 6 >= _bon.reputation_cap(p):          # (the project's own reputation may come first)
                     return Action(act.player, act.kind, {**act.args, "bonus": j})
             for j, b in notepad_bonuses(state, p):
                 if j == want["slot"]:

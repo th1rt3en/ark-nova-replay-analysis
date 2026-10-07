@@ -179,6 +179,14 @@ def _sample_maps() -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
+@lru_cache(maxsize=None)
+def _label_fixes() -> dict:
+    """data_manual/map_label_fixes.json: {table id: {player id: map id}}: BGA labelled the T1 layout "Map 0" in some tables (found with scripts/find_mislabeled_maps.py:
+    the log's own first-building lists fingerprint the real map)."""
+    path = Path(__file__).resolve().parents[3] / "data_manual" / "map_label_fixes.json"
+    return {t: {pid: v["log"] if isinstance(v, dict) else v for pid, v in m.items()} for t, m in json.loads(path.read_text()).items()} if path.exists() else {}
+
+
 def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_projects: Optional[list[str]] = None,
                   marine_worlds: Optional[bool] = None, from_seq: int = 0) -> tuple[SetupInfo, GameConfig, SeedSpec]:
     """`maps`, `base_projects` and `marine_worlds` come from the BigQuery index / the user in production. When they are not
@@ -192,6 +200,9 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
             maps = mapped
         if marine_worlds is None:
             marine_worlds = sample["marine_worlds"]
+    fixes = _label_fixes().get(str(parsed.table_id))
+    if fixes and maps is not None:                                        # tables where BGA's index names the wrong map (data_manual/map_label_fixes.json)
+        maps = [fixes.get(pid, m) for pid, m in zip(setup.seats, maps)]
     exits = extract_exits(parsed)
     main, endgame = known_order(exits, "main", from_seq), known_order(exits, "endgame", from_seq)
     if marine_worlds is None:       # Marine Worlds cards in the log, or BGA offering aquariums (a Marine Worlds building) to build

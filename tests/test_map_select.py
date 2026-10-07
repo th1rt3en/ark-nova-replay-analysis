@@ -41,7 +41,7 @@ def test_free_select_offers_the_whole_pool_and_allows_the_same_map():
 def test_the_pool_leaves_out_excluded_maps_and_the_marine_worlds_maps_of_a_base_game():
     s = new_game({"marine_worlds_flag": False, "maps_to_exclude": [3, "3a", "T1"]}, ["a", "b"], tail_seed=1)
     pool = map_select.pool(s.config)
-    assert not {"3", "3a", "T1", "0", "A", "10", "11", "12", "13", "14"} & set(pool) and "1" in pool and "8a" in pool
+    assert not {"3", "3a", "T1", "10", "11", "12", "13", "14"} & set(pool) and {"0", "A", "1", "8a"} <= set(pool)          # (the beginner maps are in the pool: they have geometry)
     mw = new_game({"maps_to_exclude": ["11"]}, ["a", "b"], tail_seed=1)
     assert "11" not in map_select.pool(mw.config) and {"10", "12", "13", "14"} <= set(map_select.pool(mw.config))
 
@@ -50,6 +50,13 @@ def test_the_starting_buildings_follow_the_selected_map():
     s = new_game({"game_mode": "free-select"}, ["a", "b"], tail_seed=2)
     s = apply(apply(s, Action(0, "choose_map", {"map": "13"})), Action(1, "choose_map", {"map": "1"}))
     assert [b.type for b in s.players[0].buildings] == ["size-2"] and s.players[1].buildings == []        # map 13 starts with a free 2-space enclosure
+
+
+def test_map_a_starts_with_an_idle_enclosure_and_a_kiosk():
+    s = new_game({"game_mode": "free-select"}, ["a", "b"], tail_seed=2)
+    s = apply(apply(s, Action(0, "choose_map", {"map": "A"})), Action(1, "choose_map", {"map": "0"}))
+    assert [(b.type, b.x, b.y, b.rotation, b.id) for b in s.players[0].buildings] == [("size-3", 0, 9, 0, 1), ("kiosk", 0, 7, 0, 2)]
+    assert s.players[1].buildings == []                                    # map 0 has no starting building
 
 
 def test_bad_options_are_refused():
