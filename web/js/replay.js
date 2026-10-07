@@ -2999,15 +2999,21 @@
       if (fb) fb.onclick = () => { if (replay.steps[step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + step, '_blank'); };
     }
     const start = FORK ? 0 : parseInt(location.hash.slice(1), 10);
+    if (loadProgress) loadProgress.done();
     $('loading').hidden = true;
     $('app').hidden = false;
     go(Number.isFinite(start) ? start : 0);
   }
 
   if (!SANDBOX && !/^\d+$/.test(table || '')) { location.replace('/'); return; }
+  const loadProgress = !SANDBOX && window.Progress && $('loading')
+    ? Progress.start($('loading'), { key: FORK ? 'fork' : 'replay', title: FORK ? 'Loading the fork' : 'Loading the table and its log', expected: FORK ? 5000 : 9000,
+                                     stages: [[0, 'Looking up the table'], [0.08, 'Reading the log'], [0.25, 'Replaying the game with the engine'], [0.8, 'Building the steps']] })
+    : null;
   fetchReplay().then((data) => {
     if (!data) return;
     replay = data;
+    if (loadProgress) loadProgress.stage('Preparing the board');
     return Promise.all([
       fetch('/enclosures/sprites.json').then((r) => r.json()).catch(() => ({ sprites: {} })),
       fetch('/icons/icons.json').then((r) => r.json()).catch(() => ({})),
@@ -3021,6 +3027,7 @@
     });
   }).catch((err) => {
     const m = $('loading');
+    if (loadProgress) loadProgress.fail();
     m.className = 'status error';
     m.textContent = 'Could not load this table: ' + err.message;
   });

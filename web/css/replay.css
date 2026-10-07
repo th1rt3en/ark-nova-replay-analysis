@@ -885,3 +885,13 @@ body.viewer { padding-bottom: 5rem; }
   .projcrop { flex: 1 1 0; width: auto; min-width: 0; }
   .preview { top: 3.2rem; bottom: auto; right: .5rem; left: auto; transform: none; width: min(46vw, 12rem); max-width: 46vw; height: auto; }
 }
+
+/* the loading / error box of the viewer: a solid card (the wood behind it made the text unreadable) */
+body.viewer .status { background: #f3ead2; color: #2b1d12; border: 3px solid #3b2a1c; border-radius: 12px; padding: 1.1rem 1.5rem; margin: 3rem auto; max-width: 30rem; font-size: 1.05rem; box-shadow: 0 6px 24px rgba(0, 0, 0, .5); }
+body.viewer .status .progress { color: #2b1d12; }
+body.viewer .status .progresscircle .ptrack { stroke: #cdbf99; }
+body.viewer .status .progresscircle .parc { stroke: #2f6b4f; }
+body.viewer .status .progresscircle .ppct { fill: #2b1d12; }
+body.viewer .status .peta { color: #5b4636; }
+body.viewer .status.error { border-color: #a12f2f; color: #8b1f1f; font-weight: 600; }
+body.viewer .status.loading::before { display: none; }

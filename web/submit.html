@@ -17,6 +17,7 @@
 <div id="msg" role="status" hidden></div>
 <p><a href="/">Back</a></p>
 <script src="/js/logstore.js"></script>
+<script src="/js/progress.js"></script>
 <script>
 const table = new URLSearchParams(location.search).get('table');
 const msg = document.getElementById('msg');
@@ -34,18 +35,21 @@ document.getElementById('tid').textContent = table;
 document.getElementById('f').addEventListener('submit', async (e) => {
   e.preventDefault();
   const go = document.getElementById('go');
-  go.disabled = true; show('Verifying the log…', 'loading');
+  go.disabled = true;
+  msg.className = 'loading'; msg.hidden = false;
+  const prog = Progress.start(msg, { key: 'verify', title: 'Verifying the log', expected: 4000, stages: [[0, 'Reading the file'], [0.1, 'Sending it'], [0.3, 'Checking every event of the log'], [0.8, 'Checking the players, the maps and the result']] });
   try {
     const text = await document.getElementById('file').files[0].text();
     const res = await fetch('/api/tables/' + table + '/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: text });
     const body = await res.json();
+    prog.done();
     if (body.ok) {
       show('Log verified, opening the replay…', 'loading');
       await LogStore.put(table, text);
       location.href = '/replay.html?table=' + table + '&source=upload';
     } else if (body.errors) { show('This log cannot be used:', 'error', body.errors); }
     else { show(body.message || 'Something went wrong.', 'error'); }
-  } catch (err) { show('Could not verify the file, try again.', 'error'); }
+  } catch (err) { prog.stop(); show('Could not verify the file, try again.', 'error'); }
   finally { go.disabled = false; }
 });
 </script>

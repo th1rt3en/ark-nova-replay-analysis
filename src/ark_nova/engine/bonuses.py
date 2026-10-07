@@ -60,13 +60,14 @@ def worker_tokens(p, where: str) -> list:
     return sorted((t for t in p.tokens if t.type == "worker" and t.location.startswith(where)), key=lambda t: t.location)
 
 
-def hire_worker(state, seat: int) -> bool:
-    """Take a lying worker (lowest space first) to the notepad as an active worker; the last one pays a conservation bonus on some maps."""
+def hire_worker(state, seat: int, where: str = "reserve") -> bool:
+    """Take a lying worker (lowest space first) to the notepad as an active worker (`where`: the Hire Association task puts it next to the one doing the task);
+    the 1st / 2nd / last one pays a bonus on some maps."""
     p = state.players[seat]
     supply = worker_tokens(p, "supply_")
     if not supply:
         return False
-    supply[0].location = "reserve"
+    supply[0].location = where
     if p.map_id == "11" and len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_")) == 3:
         defer(state, {"kind": "upgrade", "player": seat, "optional": False, "source": "third worker (map 11, Caves)"})
     if p.map_id == "T1" and len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_")) in (2, 3):
@@ -154,8 +155,8 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             g._gain(state, seat, money=v)
         elif k == "appeal":
             g._gain(state, seat, appeal=v)
-        elif k == "reputation":
-            g._gain(state, seat, reputation=v)
+        elif k == "reputation":                          # an effect of its own: an upgrade of the Cards action that is still pending lifts the cap of 9 first (814950957 turn 45)
+            defer(state, {"kind": "gain", "source": "bonus", "res": "reputation", "n": v, "optional": False, "player": seat})
         elif k == "conservation":
             g._gain(state, seat, conservation=v)
         elif k == "xtoken":

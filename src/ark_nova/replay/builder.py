@@ -226,8 +226,11 @@ def _support_bonus(ctx: _Ctx, e: Event, kind: str) -> None:
 
 def h_get_bonuses(ctx: _Ctx, e: Event) -> None:
     p = ctx.player(e.args["player_id"])
-    if e.args.get("source") == "association board" and ctx.rep_task:      # the reputation task was already counted by its worker move
+    if e.args.get("source") == "association board" and ctx.rep_task:      # the reputation task was already counted by its worker move (+2): BGA's own gain may be less (the 9 of a Cards action that is not upgraded)
         ctx.rep_task = False
+        got = (e.args.get("bonuses") or {}).get("reputation")
+        if got is not None and got < 2:
+            p.reputation = min(15, ctx.__dict__.get("rep_task_old", p.reputation) + got)
         return
     _apply_bonuses(p, e.args.get("bonuses"))
     if e.args.get("source") == "map bonus space":
@@ -268,6 +271,7 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
     a = e.args
     if e.type == "slideMeeples" and e.log.endswith("increases reputation"):        # the reputation task: +2, only the worker move is logged
         p = ctx.player(a["player_id"])
+        ctx.__dict__["rep_task_old"] = p.reputation
         p.reputation = min(15, p.reputation + 2)
         ctx.rep_task = True
     if e.type == "discardTokens":                    # tokens leave the game (the hidden university tile that a player turns over, action card tokens)

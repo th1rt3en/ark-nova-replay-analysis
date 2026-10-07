@@ -405,7 +405,8 @@ def conservation_actions(state, p, level: int) -> list:
         card = project(key, state.config.marine_worlds)
         if cost > p.money or not project_supported(card):
             continue
-        if slot_options(state, p.seat, key) or (extra_icon_sources(state, p, card) and slot_options(state, p.seat, key, extra=1)):
+        n_extra = len(extra_icon_sources(state, p, card))                   # (the bonus-icon token and a sponsor's token may be used together: 814950957 turn 72)
+        if slot_options(state, p.seat, key) or (n_extra and slot_options(state, p.seat, key, extra=n_extra)):
             acts.append(Action(p.seat, "association_task", {"task": "conservation", "project": key, "source": src}))
     return acts
 
@@ -449,10 +450,8 @@ def do_task(state, action: Action) -> None:
     if a.get("variant") == 3 and a["level"] == 1 and a["strength"] > strength_needed(p, kind):      # X Association: strength above the task's
         g._gain(state, p.seat, x_tokens=1)
     if task == "hire":                                             # Hire Association: a new worker next to the one doing the task
-        supply = bonuses.worker_tokens(p, "supply_")
-        if not supply:
+        if not bonuses.hire_worker(state, p.seat, "association_5"):       # (the worker bonuses of the map follow: the 1st / 2nd worker of T1, the last one ...)
             raise fx.IllegalEffect("no worker left to hire")
-        supply[0].location = "association_5"
     elif task == "reputation":
         g._gain(state, p.seat, reputation=2)
     elif task == "partner":

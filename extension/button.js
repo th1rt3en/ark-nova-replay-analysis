@@ -19,8 +19,12 @@
     }
   });
 
+  // the button belongs to the review page of the captured table only
+  const onReviewOfCaptured = () => captured && /^\/gamereview/.test(location.pathname)
+    && new URLSearchParams(location.search).get('table') === captured.table;
+
   function render() {
-    if (!/^\/gamereview/.test(location.pathname) || !document.body) return;
+    if (!onReviewOfCaptured() || !document.body) { if (button) { button.remove(); button = null; } return; }
     if (!button) {
       button = document.createElement('button');
       button.id = 'ark-nova-replay-btn';
@@ -53,4 +57,6 @@
 
   // the button appears only after the log was captured; the body may not exist yet at document_start
   document.addEventListener('DOMContentLoaded', () => { if (captured) render(); });
+  // BGA navigates without reloading (history API), so re-check the address now and then
+  setInterval(() => { if (captured) render(); }, 500);
 })();

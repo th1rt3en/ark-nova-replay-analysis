@@ -34,3 +34,15 @@ body.landing { max-width: 64rem; }
 .mode.unavailable button { margin-top: auto; align-self: flex-start; background: transparent; color: var(--muted); border-color: var(--border); cursor: not-allowed; }
 .mode.unavailable button:disabled { opacity: 1; cursor: not-allowed; }
 .mode .badge { font-size: .7rem; font-weight: 600; padding: .1rem .5rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+
+/* progress circle with an estimate (js/progress.js) */
+.progress { display: flex; align-items: center; gap: 1rem; color: var(--fg); }
+.progresscircle { width: 5rem; height: 5rem; flex: 0 0 auto; }
+.progresscircle .ptrack { stroke: var(--border); opacity: .6; }
+.progresscircle .parc { stroke: var(--accent); }
+.progresscircle .ppct { fill: var(--fg); font: 700 17px system-ui, sans-serif; }
+.progresstext { min-width: 0; }
+.progresstext .ptitle { font-weight: 700; font-size: 1.15rem; }
+.progresstext .pstage { margin-top: .15rem; }
+.progresstext .peta { margin-top: .15rem; color: var(--muted); font-size: .9rem; }
+#msg.loading::before, .status.loading::before { display: none; }

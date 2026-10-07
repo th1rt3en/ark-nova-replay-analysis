@@ -147,6 +147,9 @@ def _placement_types(state: GameState, act: Action) -> Counter:
     return Counter(b["type"] for c in cells for b in bd.bonuses.get(c, []) if b)
 
 
+_ARCH_TAKEN: list = []       # the bonuses that `_archaeologist` picked for the turn that is being replayed
+
+
 def _archaeologist(state: GameState, act: Action, events: list, expected: Counter, ap) -> GameState:
     """Archeologist (S221): the log does not name the extra placement bonus that the player chose, only its effect: find an uncovered
     hex with that bonus and resolve the pending choice with it."""
@@ -183,6 +186,7 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
             if cell is None:
                 break                                      # (not a bonus of a hex: the choice at conservation 5 / 8 is logged the same way)
             state = ap(state, Action(seat, "choose_effect", {"index": i, "cell": list(cell)}))
+            _ARCH_TAKEN.append((str(typ), amount))                  # (the plan still holds the log's "gets 1 x <bonus>" as an action: it is this pick)
     return state
 
 
@@ -785,6 +789,7 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
             state.prompt = Prompt(kind="choose_action_card", player=seat, args={**({"hypnosis": True, "optional": True} if acts[0].args.get("hypnosis") else {}), **kept})
             oracle_notes: list[str] = []
             _skip_unneeded.rest = []
+            _ARCH_TAKEN.clear()
             _skip_unneeded.future = [x for x in acts if x.kind == "choose_effect" and str(x.args.get("card", "")).startswith("F")]
             try:
                 items = list(zip(acts, plan.moves, plan.orders))
@@ -840,6 +845,9 @@ def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int],
                             state = ap(state, Action(e_["player"], "choose_effect", {"index": pbs, "apply": "pbonus", "bonus": "bonus-sponsor"}))
                             if act.kind == "choose_effect" and "index" in act.args:
                                 act = Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "index"})
+                    if act.kind == "choose_effect" and "bonus_type" in act.args and "continent" not in act.args and (str(act.args["bonus_type"]), act.args.get("n")) in _ARCH_TAKEN:
+                        _ARCH_TAKEN.remove((str(act.args["bonus_type"]), act.args.get("n")))
+                        continue                                 # the Archaeologist's pick of this bonus was made by the harness already
                     if act.kind == "choose_effect" and "multiplier" in act.args and state.prompt is not None and state.prompt.kind == "effects" and not any(
                             e["kind"] == "multiplier" for e in state.prompt.args["pending"]):
                         pbm = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus" and e["bonus"]["type"] == "Multiplier"), None)
