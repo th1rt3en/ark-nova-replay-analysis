@@ -14,7 +14,7 @@ Decisions (the hand limit discard, cards taken as income) are pending effects of
 from itertools import combinations
 
 from ark_nova import data
-from ark_nova.engine import association, bonuses, endgame, marks, tracks
+from ark_nova.engine import association, bonuses, endgame, gamestats, marks, tracks
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import neighbours
 from ark_nova.engine.build_action import SIZES, footprint
@@ -40,6 +40,7 @@ def hand_limit(p) -> int:
 def start(state, initiator: int) -> None:
     """Called when the break token has reached the last space and the turn is over."""
     state.current_action = {"seat": initiator, "type": "break", "strength": 0}
+    gamestats.count(state, initiator, "breaks")
     state.prompt = None                                       # (the effects prompt of the last action is over: the effects of the break must not join it)
     pending = [{"kind": "break_discard", "player": p.seat, "n": len(p.hand) - hand_limit(p), "optional": False}
                for p in state.players if len(p.hand) > hand_limit(p)]
@@ -160,6 +161,16 @@ def association_building_types():
 
 
 INCOME_SPONSORS = {"S209", "S220", "S206", "S274", "S281", "S265", "S257", "S231", "S232", "S233", "S234", "S235"}
+def income_effects(k: str, seat: int) -> list:
+    """The pending income effects of one sponsor (a sponsor played during the break triggers its instant and its income effect)."""
+    out = []
+    if k in INCOME_SPONSORS:
+        out.append({"kind": "income_sponsor", "source": k, "optional": False, "player": seat})
+    if k == "S201":                                              # Science Lab: take 1 card from the deck or within the reputation range
+        out.append({"kind": "take", "source": k, "optional": False, "player": seat})
+    return out
+
+
 _SPONSORSHIP = {"S231": "Primate", "S232": "Reptile", "S233": "Bird", "S234": "Predator", "S235": "Herbivore"}
 
 
@@ -233,24 +244,25 @@ def _income(state, seat: int) -> None:
     for b in map_income(state, p):
         bonuses.apply_bonus(state, seat, {b["type"]: b["value"]}, income=True)
     for k in p.sponsors:                                        # every income of a sponsor is an effect of its own, in the order the player likes
-        if k in INCOME_SPONSORS:
-            bonuses.defer(state, {"kind": "income_sponsor", "source": k, "optional": False, "player": seat})
-    if "S201" in p.sponsors:                                     # Science Lab: take 1 card from the deck or within the reputation range
-        bonuses.defer(state, {"kind": "take", "source": "S201", "optional": False, "player": seat})
+        for eff in income_effects(k, seat):
+            bonuses.defer(state, eff)
 
 
 # ---- the hand limit discard ---------------------------------------------------------------------------------------------------------
 
 def legal_discard(state, e: dict, i: int, seat: int) -> list:
     p = state.players[seat]
-    return [Action(seat, "choose_effect", {"index": i, "cards": list(c)}) for c in sorted(set(combinations(sorted(p.hand), e["n"])))]
+    n = min(e["n"], len(p.hand) - hand_limit(p))                  # (a sponsor played before the break proper may have brought the hand down: 868837221 turn 42)
+    if n <= 0:
+        return [Action(seat, "skip_effect", {"index": i})]
+    return [Action(seat, "choose_effect", {"index": i, "cards": list(c)}) for c in sorted(set(combinations(sorted(p.hand), n)))]
 
 
 def resolve_discard(state, action: Action, e: dict, i: int) -> None:
     fx = bonuses._fx()
     p = state.players[action.player]
     cards = list(action.args["cards"])
-    if len(cards) != e["n"] or any(cards.count(c) > p.hand.count(c) for c in cards):
+    if len(cards) != min(e["n"], len(p.hand) - hand_limit(p)) or any(cards.count(c) > p.hand.count(c) for c in cards):
         raise fx.IllegalEffect("discard the right number of cards from the hand")
     for c in cards:
         p.hand.remove(c)

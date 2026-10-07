@@ -14,6 +14,7 @@
   // Fork mode (fork.html): the same viewer on a position taken from a replay, played on for both seats. The server keeps nothing: every step carries its engine state,
   // every move is posted with the state it applies to.
   const FORK = !!window.FORK_MODE;
+  const PLAY = !!window.PLAY_MODE;                                         // play.html: a live game (fork mode: the bar is the way to play; the steps are the states the server pushes)
   const SANDBOX = !!window.SANDBOX_MODE;                                   // sandbox.html: a game that is set up and edited freely against a bot that passes (fork mode, with the tools of the sandbox)
   let forkInfo = null;
   let forkBusy = false;
@@ -73,6 +74,7 @@
 
   // ---- loading --------------------------------------------------------------------------------------------------
   async function fetchReplay() {
+    if (PLAY) return playLoad();
     const url = '/api/tables/' + encodeURIComponent(table) + '/replay';
     let res;
     if (SANDBOX) {                                                           // the game the lobby started
@@ -1057,7 +1059,7 @@
     // the step that puts the action card back on slot 1 ends the turn (the state already passes it on): the player has to confirm it. In the replay the buttons
     // are only shown, greyed out; in the game Confirm passes the turn, Undo takes back the last effect that can be taken back, Restart turn all of them
     const before = step > 0 ? replay.steps[step - 1].state : null;
-    if (before && st.turn > before.turn && st.active_player !== before.active_player && (before.phase === 'turn' || before.phase === 'final_turns') && !(FORK && forkConfirmed === step)) {
+    if (before && st.turn > before.turn && st.active_player !== before.active_player && (before.phase === 'turn' || before.phase === 'final_turns') && !(FORK && forkConfirmed === step) && !PLAY) {
       bar.hidden = false;
       forkGate = FORK;
       const who = el('span', 'who', replay.players[before.active_player].name);
@@ -1982,6 +1984,11 @@
     const cur = $('current');
     cur.replaceChildren();
     cur.append(labelNode(labelOf(s) || '(state update)'));
+    if (PLAY && (!replay.maps || replay.maps.length < 2)) {                   // the maps are still being chosen: only the bar
+      for (const id of ['shared', 'zoos', 'side']) { const n = $(id); if (n) n.replaceChildren(); }
+      forkBar();
+      return;
+    }
     const eg = engineBadge(s.engine);
     cur.append(' ', eg);
     if (s.engine && s.engine.detail && s.engine.source === 'log') cur.append(el('div', 'engine-detail', 'Engine: ' + s.engine.detail));
@@ -2502,6 +2509,314 @@
     document.body.classList.add('forkpage');
   }
 
+
+  // ---- live play ---------------------------------------------------------------------------------------------------------------------------
+  // The server keeps the game (the Table Durable Object) and pushes a view + the seat's legal actions after every move; the page draws them with the same code as the fork and
+  // turns a click into one of the legal actions, which it posts. A step is a pushed state; the latest one is the position. The game id and the seat token come from the url
+  // (`play.html?game=E12&s=<token>`; no token = a spectator).
+  let playId = null, playToken = null, playSeat = null, playVersion = -1, playSocket = null, playPoll = null, playStatus = 'playing', playBackoff = 1000, playLeaving = false, playAbandonState = { proposal: null, cooldown: {}, skew: 0 };
+  const playHeaders = () => (playToken ? { 'X-Seat-Token': playToken, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' });
+  async function playApi(path, body) {
+    const res = await fetch('/api/games/' + playId + path, body === undefined ? { headers: playHeaders() } : { method: 'POST', headers: playHeaders(), body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, body: data };
+  }
+  function playStep(p, index) {
+    return { index, move_id: null, label: p.label || '', state: { ...p.view, main_deck_known: 0 }, engine: { source: 'engine', status: 'ok', detail: '' }, options: (p.decision && p.decision.options) || null,
+             actor: null, label_pov: null, fork: false, actions: (p.decision && p.decision.actions) || [], version: p.version };
+  }
+  async function playLoad() {
+    playId = params.get('game');
+    if (!/^E\d+$/.test(playId || '')) { location.replace('/play.html'); return null; }
+    playToken = params.get('s');
+    try { if (playToken) localStorage.setItem('playToken.' + playId, playToken); else playToken = localStorage.getItem('playToken.' + playId); } catch (e) { /* no storage */ }
+    const setup = await playApi('/setup' + (playToken ? '?s=' + encodeURIComponent(playToken) : ''));
+    if (!setup.ok && setup.status === 404) { location.replace('/end.html?game=' + encodeURIComponent(playId)); return null; }       // the table is gone: it ended and was exported
+    if (!setup.ok) throw new Error(setup.body.message || 'no such game');
+    if (['finished', 'conceded', 'abandoned'].includes(setup.body.status)) { location.replace('/end.html?game=' + encodeURIComponent(playId)); return null; }
+    const state = await playApi('/state' + (playToken ? '?s=' + encodeURIComponent(playToken) : ''));
+    if (!state.ok) throw new Error(state.body.message || 'the game could not be read');
+    playSeat = setup.body.seat;
+    playVersion = state.body.version;
+    playStatus = state.body.status || setup.body.status;
+    setAbandon(setup.body.abandon);
+    return { ...setup.body, table_id: playId, result: [], setup_steps: 0, steps: [playStep(state.body, 0)] };
+  }
+  function pushLive(p) {
+    if (p.version <= playVersion) return;
+    playVersion = p.version;
+    if (p.status) playStatus = p.status;
+    const wasLast = step === replay.steps.length - 1;
+    const hadMove = replay.steps.some((st) => (st.actions || []).length > 0);
+    for (const st of replay.steps) st.actions = [];                          // (only the latest position can be played)
+    const next = playStep(p, replay.steps.length);
+    replay.steps.push(next);
+    buildMoveList();
+    $('total').textContent = replay.steps.length - 1;
+    $('jump').max = replay.steps.length - 1;
+    forkBusy = false;
+    if ((!replay.maps || replay.maps.length < 2) && p.view.players[0].map_id) {            // the maps have just been chosen: the page gets them (and the cards)
+      playApi('/setup' + (playToken ? '?s=' + encodeURIComponent(playToken) : '')).then((r) => {
+        if (r.ok && r.body.maps.length) { Object.assign(replay, { maps: r.body.maps, map_names: r.body.map_names, cards: r.body.cards, base_projects: r.body.base_projects }); go(replay.steps.length - 1); }
+      });
+    }
+    if (wasLast) go(replay.steps.length - 1); else renderForkMoves();
+    if (p.view && p.view.end) showGameEnd(p.view.end);
+    else playEndCheck();
+    if (!hadMove && next.actions.length) turnAlert('It is your turn');                  // the turn has just passed to this player (not after the player's own move)
+  }
+  function playMessage(m) {
+    if (m.type === 'abandon') setAbandon(m, true);
+    else if (m.type === 'state') pushLive(m);
+    else if (m.type === 'lobby') { (m.names || []).forEach((n, i) => { if (n) replay.players[i].name = n; }); if (m.status) playStatus = m.status; render(); }
+    else if (m.type === 'status') { playStatus = m.status; render(); playEndCheck(); }
+  }
+  async function playConnect() {
+    let base = '';
+    try { base = (await (await fetch('/api/live/config')).json()).ws_base || ''; } catch (e) { /* no config: poll */ }
+    const open = () => {
+      const ws = new WebSocket(base + '/ws/' + playId + (playToken ? '?s=' + encodeURIComponent(playToken) : ''));
+      playSocket = ws;
+      let ping = null;
+      ws.onopen = () => { playBackoff = 1000; ping = setInterval(() => { try { ws.send('ping'); } catch (e) { /* closed */ } }, 25000); };
+      ws.onmessage = (e) => { if (e.data === 'pong') return; try { playMessage(JSON.parse(e.data)); } catch (err) { /* not for us */ } };
+      ws.onclose = () => { clearInterval(ping); if (playStatus === 'playing' || playStatus === 'waiting') setTimeout(open, playBackoff = Math.min(playBackoff * 2, 15000)); };
+    };
+    if (base) { open(); return; }
+    playPoll = setInterval(async () => {                                      // (no socket server configured: ask every 2 seconds)
+      const r = await playApi('/state' + (playToken ? '?s=' + encodeURIComponent(playToken) : '')).catch(() => null);
+      if (r && r.ok) { if (r.body.version > playVersion) pushLive(r.body); else if (r.body.status && r.body.status !== playStatus) { playStatus = r.body.status; render(); } }
+      else if (r && r.status === 404) { clearInterval(playPoll); playStatus = 'closed'; render(); playEndCheck(); }
+    }, 2000);
+  }
+  // ---- the end of the game ------------------------------------------------------------------------------------------------------------
+  // The result and the statistics of the game slide in from the right in place of the player boards; a button switches between them and the final position.
+  let endShown = false;
+  function showGameEnd(end) {
+    if (endShown || !window.EndStats) return;
+    endShown = true;
+    const names = [0, 1].map((i) => (replay.players[i] ? replay.players[i].name : 'Player ' + (i + 1)));
+    const conceded = end.conceded === 0 || end.conceded === 1;
+    EndStats.render($('endstats'), { names, scores: end.scores || [], winner: end.winner, conceded: conceded ? end.conceded : null, status: conceded ? 'conceded' : 'finished', stats: end.stats });
+    const bar = $('endbar');
+    bar.replaceChildren();
+    const w = end.winner === 0 || end.winner === 1 ? end.winner : null;
+    bar.append(el('b', '', w === null ? 'Game over: a tie.' : 'Game over: ' + names[w] + ' wins ' + end.scores[w] + ' to ' + end.scores[1 - w] + '.'));
+    const sw = el('button', 'turnbtn confirm');
+    sw.type = 'button';
+    const paint = () => { sw.textContent = document.body.classList.contains('showstats') ? 'Show the final board' : 'Show the game statistics'; };
+    sw.onclick = () => { document.body.classList.toggle('showstats'); paint(); };
+    bar.append(sw);
+    const ab = $('abandonbox'); if (ab) ab.hidden = true;
+    document.body.classList.add('gameover', 'showstats');
+    paint();
+    sw.addEventListener('click', () => { if (document.body.classList.contains('showstats')) $('endstats').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    $('endstats').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // the game has ended but its last position did not reach the page (the socket closed first, or there is none): ask for the result instead
+  function playEndCheck() {
+    if (['finished', 'conceded', 'closed'].includes(playStatus) && !endShown && !playLeaving) { playLeaving = true; setTimeout(endFromResult, 1500); }
+  }
+  async function endFromResult() {
+    for (let i = 0; i < 15 && !endShown; i++) {
+      const r = await fetch('/api/games/' + encodeURIComponent(playId) + '/result').catch(() => null);
+      if (r && r.ok) {
+        const d = await r.json();
+        if (d.status === 'abandoned') return;
+        if (d.stats && d.result) { showGameEnd({ scores: d.result.scores || [], winner: d.result.winner, conceded: d.result.conceded, stats: d.stats.players }); return; }
+      }
+      await new Promise((ok) => setTimeout(ok, 1000));
+    }
+  }
+
+  // ---- abandoning by agreement ----------------------------------------------------------------------------------------------------------
+  // One player proposes, the other accepts (the game ends with no winner) or rejects (the proposer must wait before proposing again). The server keeps the proposal and
+  // the cooldowns and pushes every change; `#abandonbox` shows an open proposal wherever the page is.
+  function setAbandon(a, fromSocket) {
+    if (!a) return;
+    const was = playAbandonState.proposal;
+    playAbandonState = { proposal: a.proposal || null, cooldown: a.cooldown || {}, skew: (a.now || Date.now()) - Date.now() };
+    renderAbandon();
+    if (fromSocket && playAbandonState.proposal && (!was || was.at !== playAbandonState.proposal.at) && playAbandonState.proposal.by !== playSeat && playSeat !== null) turnAlert('Your opponent proposes to abandon the game');
+    if (fromSocket && $('actionbar')) refreshBar();
+  }
+  const abandonWait = () => {                                              // seconds until this seat may propose again (0 = now)
+    const until = +(playAbandonState.cooldown[String(playSeat)] || 0);
+    return Math.max(0, Math.ceil((until - (Date.now() + playAbandonState.skew)) / 1000));
+  };
+  async function abandonCall(path, body) {
+    const r = await playApi('/abandon' + path, body || {});
+    if (r.ok && r.body.proposal !== undefined) setAbandon(r.body);
+    else if (!r.ok) renderForkMoves(r.body.message || 'that did not work');
+    return r;
+  }
+  function abandonButton() {
+    if (playSeat === null || playStatus !== 'playing' || playAbandonState.proposal) return null;
+    const wait = abandonWait();
+    const b = el('button', 'turnbtn restart', 'Propose to abandon');
+    b.type = 'button';
+    b.title = wait ? 'You can propose again in ' + Math.ceil(wait / 60) + ' minute(s)' : 'Ask the other player to end the game with no winner';
+    b.disabled = wait > 0;
+    b.onclick = async () => { if (confirm('Ask the other player to abandon the game? It ends with no winner if they agree.')) { await abandonCall(''); } };
+    return b;
+  }
+  function renderAbandon() {
+    const box = $('abandonbox');
+    if (!box) return;
+    box.replaceChildren();
+    const pr = playAbandonState.proposal;
+    box.hidden = !pr || playStatus !== 'playing' || playSeat === null;
+    if (box.hidden) return;
+    const name = (seat) => (replay && replay.players && replay.players[seat] ? replay.players[seat].name : 'The other player');
+    if (pr.by === playSeat) {
+      const w = el('button', 'turnbtn restart', 'Withdraw');
+      w.type = 'button'; w.onclick = () => abandonCall('/withdraw');
+      box.append(el('b', '', 'You proposed to abandon the game. Waiting for ' + name(1 - playSeat) + '… '), w);
+      return;
+    }
+    const yes = el('button', 'turnbtn confirm', 'Agree');
+    yes.type = 'button'; yes.onclick = () => abandonCall('/answer', { agree: true });
+    const no = el('button', 'turnbtn restart', 'Reject');
+    no.type = 'button'; no.title = 'They cannot propose again for a while'; no.onclick = () => abandonCall('/answer', { agree: false });
+    box.append(el('b', '', name(pr.by) + ' proposes to abandon the game (no winner). '), yes, no);
+  }
+
+  // ---- the turn alert ---------------------------------------------------------------------------------------------------------------------
+  // When the turn passes to the player: a short sound, the tab title flashes while the page is in the background and, when allowed, a browser notification.
+  let alertsOn = true, audioCtx = null, titleTimer = null;
+  try { alertsOn = localStorage.getItem('playAlerts') !== 'off'; } catch (e) { /* no storage */ }
+  function beep() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const t = audioCtx.currentTime;
+      [660, 880].forEach((f, i) => {
+        const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + i * 0.16); g.gain.exponentialRampToValueAtTime(0.18, t + i * 0.16 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.16 + 0.15);
+        o.connect(g).connect(audioCtx.destination);
+        o.start(t + i * 0.16); o.stop(t + i * 0.16 + 0.16);
+      });
+    } catch (e) { /* the browser does not allow sound yet */ }
+  }
+  function stopTitleFlash() {
+    if (titleTimer) { clearInterval(titleTimer); titleTimer = null; document.title = 'Play ' + playId + ' - Ark Nova'; }
+  }
+  function turnAlert(text) {
+    if (!alertsOn || playSeat === null) return;
+    beep();
+    if (document.hidden || !document.hasFocus()) {
+      if (!titleTimer) {
+        let on = false;
+        titleTimer = setInterval(() => { on = !on; document.title = on ? '\u{1F514} ' + text : 'Play ' + playId + ' - Ark Nova'; }, 1000);
+      }
+      try { if (window.Notification && Notification.permission === 'granted') new Notification('Ark Nova', { body: text, tag: 'ark-nova-turn-' + playId }); } catch (e) { /* not allowed */ }
+    }
+  }
+  function alertToggle() {
+    const b = el('button', 'alertbtn');
+    b.type = 'button';
+    const paint = () => { b.textContent = alertsOn ? '\u{1F514} Alerts on' : '\u{1F515} Alerts off'; b.title = 'A sound, a flashing tab title and a notification when it is your turn'; };
+    b.onclick = () => {
+      alertsOn = !alertsOn;
+      try { localStorage.setItem('playAlerts', alertsOn ? 'on' : 'off'); } catch (e) { /* no storage */ }
+      if (alertsOn) { beep(); try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) { /* not available */ } }
+      paint();
+    };
+    paint();
+    return b;
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) stopTitleFlash(); });
+  window.addEventListener('focus', stopTitleFlash);
+
+  async function playLive(action) {
+    if (forkBusy) return;
+    forkBusy = true;
+    renderForkMoves();
+    const last = replay.steps[replay.steps.length - 1];
+    try {
+      const ask = await playApi('/preview', { version: last.version, action: { player: action.player, kind: action.kind, args: action.args } });
+      if (!ask.ok) throw new Error(ask.status === 409 ? 'Another move got in first: look at the new position.' : ask.body.message || 'that move cannot be played');
+      if (ask.body.irreversible) {
+        forkBusy = false;
+        const ok = await warnIrreversible(ask.body.reason);
+        if (!ok) { refreshBar(); return; }
+        forkBusy = true;
+      }
+      const done = await playApi('/actions', { version: last.version, action: { player: action.player, kind: action.kind, args: action.args }, request_id: (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2)) });
+      if (!done.ok) throw new Error(done.status === 409 ? 'Another move got in first: look at the new position.' : done.body.message || 'that move cannot be played');
+      forkBusy = false;
+      pushLive(done.body);
+    } catch (err) {
+      forkBusy = false;
+      renderForkMoves(err.message);
+    }
+  }
+  function playWaitingBar(bar) {
+    bar.hidden = false;
+    bar.replaceChildren();
+    const st = replay.steps[step].state, pr = st.prompt;
+    const name = (seat) => (replay.players[seat] ? replay.players[seat].name : 'a player');
+    const toAct = Array.isArray(st.to_act) ? st.to_act : [];            // the seats that have a move now (both when both discard at once)
+    let text;
+    if (['finished', 'conceded', 'abandoned', 'closed'].includes(playStatus)) {
+      text = 'The game is over.';                                       // (the result and the statistics replace the player boards: showGameEnd)
+    }
+    else if (['error'].includes(playStatus)) text = 'The game is over (' + playStatus + ').';
+    else if (playStatus === 'waiting') text = 'Waiting for the other player to join…';
+    else if (playSeat === null) text = 'Watching: ' + (toAct.length ? toAct.map(name).join(' and ') : pr ? name(pr.player) : '…') + ' to play';
+    else text = 'Waiting for ' + (toAct.length ? toAct.filter((s) => s !== playSeat).map(name).join(' and ') : pr && pr.player !== playSeat ? name(pr.player) : 'the other player') + '…';
+    bar.append(el('b', '', text));
+    if (['finished', 'conceded'].includes(playStatus)) {
+      const a = el('a', '', 'Open the replay');
+      a.href = '/replay.html?table=' + encodeURIComponent(playId);
+      a.title = 'The record is ready a moment after the end of the game';
+      bar.append(a);
+    }
+    playConcede(bar);
+  }
+  function playConcede(bar) {
+    if (playSeat === null || !['playing', 'waiting'].includes(playStatus)) return;
+    const b = el('button', 'turnbtn restart', 'Concede');
+    b.type = 'button';
+    b.title = 'Give up the game';
+    b.onclick = async () => {
+      if (!confirm('Concede the game?')) return;
+      const r = await playApi('/concede', {});
+      if (r.ok) { if (r.body.view) pushLive(r.body); playStatus = 'conceded'; render(); } else renderForkMoves(r.body.message || 'could not concede');
+    };
+    bar.append(b);
+    const ab = abandonButton();
+    if (ab) bar.append(ab);
+  }
+  // confirm the turn / take it back: legal actions of the engine, drawn like the buttons of the replay's confirm bar
+  function playTurnButtons(bar, acts) {
+    const find = (k) => acts.find((a) => a.kind === k);
+    if (!find('confirm_turn') && !find('undo_last') && !find('restart_turn')) { playConcede(bar); return; }
+    for (const [cls, label, kind, tip] of [['confirm', 'Confirm', 'confirm_turn', 'Confirm the turn and pass to the next player'], ['undo', 'Undo last step', 'undo_last', 'Take back the last step'],
+                                           ['restart', 'Restart turn', 'restart_turn', 'Take back the steps of the turn (not past a step that cannot be taken back)']]) {
+      const a = find(kind);
+      if (!a && cls === 'confirm') continue;
+      const b = el('button', 'turnbtn ' + cls, label);
+      b.type = 'button'; b.title = tip; b.disabled = !a || forkBusy;
+      if (a) b.onclick = () => playFork(a);
+      bar.append(b);
+    }
+    playConcede(bar);
+  }
+  function initPlay() {
+    document.title = 'Play ' + playId + ' - Ark Nova';
+    const me = playSeat === null ? 'spectating' : 'you are ' + replay.players[playSeat].name;
+    $('tableInfo').textContent = 'Live game ' + playId + ' · ' + me + (replay.marine_worlds ? ' · Marine Worlds' : '');
+    for (const id of ['pov', 'timeline']) { const n = $(id); if (n) n.hidden = true; }
+    if (playSeat !== null) { dockSel = { seat: playSeat, kind: 'hand' }; dockHidden = false; }
+    document.body.classList.add('forkpage', 'playpage');
+    if (playSeat !== null) $('tableInfo').after(alertToggle());
+    renderAbandon();
+    playConnect();
+  }
+
   function initFork() {
     document.title = 'Fork - Ark Nova Replay';
     $('tableInfo').textContent = 'Fork of table #' + replay.table_id + ' after step ' + forkInfo.step + ' · ' + replay.players.map((p) => p.name).join(' vs ');
@@ -2627,6 +2942,7 @@
   }
 
   async function playFork(action) {
+    if (PLAY) return playLive(action);
     if (forkBusy) return;
     forkBusy = true;
     renderForkMoves();
@@ -2703,6 +3019,24 @@
     if (SANDBOX && !sbReady()) {                                             // the empty spaces first
       if (bar) { bar.hidden = false; bar.replaceChildren(el('b', '', 'Set the base projects and the conservation bonuses (the empty spaces of the board) to start playing.')); }
       return;
+    }
+    if (PLAY && bar) {                                                       // a live game: the confirm / undo / restart are legal actions of their own
+      for (const a of acts) if (['confirm_turn', 'undo_last', 'restart_turn'].includes(a.kind)) forkClaimed.add(a);
+      if (!acts.length) { playWaitingBar(bar); return; }
+      const picks = acts.filter((a) => a.kind === 'choose_map');
+      if (picks.length) {                                                    // the maps are chosen in the bar: one button per map on offer
+        for (const a of picks) forkClaimed.add(a);
+        bar.hidden = false;
+        bar.replaceChildren(el('b', '', 'Choose the map of your zoo'));
+        const list = el('div', 'sbmaps');
+        for (const a of picks) {
+          const b = el('button', 'forkmove sbmapbtn', 'Map ' + a.args.map + ((replay.map_names || {})[a.args.map] ? ': ' + replay.map_names[a.args.map] : ''));
+          b.type = 'button'; b.disabled = forkBusy; b.onclick = () => playFork(a);
+          list.append(b);
+        }
+        bar.append(list);
+        return;
+      }
     }
     if (!bar || forkGate || (!acts.length && !forkError)) return;
     if (acts.some((a) => a.kind === 'draft_pick' || a.kind === 'draft_keep')) return;      // (the draft is played in the bar itself)
@@ -2872,7 +3206,8 @@
       for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? replay.players[a.player].name + ': ' : '') + a.text, false));
       bar.append(holder);
     }
-    if (st.phase === 'turn' || st.phase === 'final_turns') turnButtons(bar, st.turn, st.active_player, false);       // undo / restart turn at every step of a turn
+    if (PLAY) playTurnButtons(bar, acts);
+    else if (st.phase === 'turn' || st.phase === 'final_turns') turnButtons(bar, st.turn, st.active_player, false);       // undo / restart turn at every step of a turn
     if (!acts.length) bar.append(el('span', 'forkerror', 'The engine offers no move in this position (a rule that is not complete yet). Go back a step and play something else.'));
     if (forkError) bar.append(el('span', 'forkerror', forkError));
   }
@@ -2993,20 +3328,21 @@
       if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
     });
     if (SANDBOX) initSandbox();
+    else if (PLAY) initPlay();
     else if (FORK) initFork();
     else {
       const fb = $('fork');
       if (fb) fb.onclick = () => { if (replay.steps[step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + step, '_blank'); };
     }
-    const start = FORK ? 0 : parseInt(location.hash.slice(1), 10);
+    const start = PLAY ? replay.steps.length - 1 : FORK ? 0 : parseInt(location.hash.slice(1), 10);
     if (loadProgress) loadProgress.done();
     $('loading').hidden = true;
     $('app').hidden = false;
     go(Number.isFinite(start) ? start : 0);
   }
 
-  if (!SANDBOX && !/^\d+$/.test(table || '')) { location.replace('/'); return; }
-  const loadProgress = !SANDBOX && window.Progress && $('loading')
+  if (!SANDBOX && !PLAY && !/^(E\d+|\d+)$/.test(table || '')) { location.replace('/'); return; }
+  const loadProgress = !SANDBOX && !PLAY && window.Progress && $('loading')
     ? Progress.start($('loading'), { key: FORK ? 'fork' : 'replay', title: FORK ? 'Loading the fork' : 'Loading the table and its log', expected: FORK ? 5000 : 9000,
                                      stages: [[0, 'Looking up the table'], [0.08, 'Reading the log'], [0.25, 'Replaying the game with the engine'], [0.8, 'Building the steps']] })
     : null;

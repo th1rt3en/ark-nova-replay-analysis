@@ -54,6 +54,7 @@ class GameConfig:
     game_mode: str = "random-mirrored"    # a new game without `maps`: original (2 maps dealt to each player, each picks one) | random-mirrored (one random map for both) | free-select (any map of the pool)
     maps_to_exclude: list[str] = field(default_factory=list)   # map ids left out of the pool of a new game ('3', '3a', '11', 'T1' ...)
     draft_action_cards: bool = False      # a new game: the players draft their action card variants first (engine/draft.py); False = `action_cards` (or the standard cards) are given
+    confirm_turns: bool = False           # live play: a turn ends with an explicit confirm, undo / restart turn are offered meanwhile (engine/turns.py)
     peaceful: bool = False                # the game variant where the hostile effects (Venom, Constriction, Pilfering, Hypnosis) are replaced
 
 
@@ -167,6 +168,8 @@ class GameState:
     pending: list[Effect] = field(default_factory=list)
     prompt: Optional[Prompt] = None
     current_action: Optional[dict[str, Any]] = None             # the action card chosen this turn: seat, id, slot, strength
+    stats: list[dict[str, Any]] = field(default_factory=list)   # the statistics of the game, one dict per player (engine/gamestats.py)
+    checkpoint: Optional[dict[str, Any]] = None                 # live play (`confirm_turns`): the state this turn can be taken back to and the actions since (engine/turns.py)
     end_triggered_by: Optional[int] = None
     final_turns: list[int] = field(default_factory=list)       # seats that still have a last turn after the end of the game was triggered
     result: Optional[Result] = None

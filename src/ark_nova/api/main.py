@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import re
 import threading
 from collections import OrderedDict
 from pathlib import Path
@@ -79,7 +80,7 @@ def _error(status: int, code: str, message: str, **extra) -> JSONResponse:
     return JSONResponse(status_code=status, content={"status": code, "message": message, **extra})
 
 
-def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None) -> FastAPI:
     app = FastAPI(title="Ark Nova replay")
     app.state.settings = settings or Settings.from_env()
     app.state.index = index or _default_index(app.state.settings)
@@ -93,6 +94,23 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     app.state.forks_lock = threading.Lock()
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.middleware("http")(rate_limit_middleware)
+    if live is None and st.live_keeper_url and st.internal_secret:                 # the live games: only when the keeper (the Cloudflare Worker) is configured
+        from ark_nova.live.keeper import HttpKeeper
+        from ark_nova.live.service import LiveService
+        registry = archive = None
+        try:                                                                        # (without the Google libraries or credentials the keeper still keeps the rows)
+            from ark_nova.live.registry import BigQueryRegistry
+            registry = BigQueryRegistry(st.live_bq_project, st.live_bq_dataset)
+            if st.live_gcs_bucket:
+                from ark_nova.live.archive import GcsArchive
+                archive = GcsArchive(st.live_gcs_bucket)
+        except Exception:                                                           # noqa: BLE001
+            log.exception("the live registry / archive are not available")
+        live = LiveService(HttpKeeper(st.live_keeper_url, st.internal_secret), registry=registry, archive=archive)
+    if live is not None:
+        from ark_nova.api.live import add_routes
+        add_routes(app, live, st.live_keeper_url.replace("https://", "wss://").replace("http://", "ws://") if st.live_keeper_url else "")
+    app.state.live = live
 
     @app.get("/healthz")
     def healthz():
@@ -101,6 +119,16 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     @app.get("/api/lookup")
     def lookup(q: str = ""):
         """Landing page: table id or BGA url -> what to do next (`ready` | `needs_log` | `not_indexed` | `unsupported` | `invalid`)."""
+        live_id = re.fullmatch(r"\s*[Ee](\d{1,9})\s*", q)
+        if live_id and app.state.live is not None:                                     # a table of the live games: the registry knows it
+            gid = f"E{int(live_id.group(1))}"
+            row = app.state.live.registry_row(gid)
+            if row is None:
+                return _error(404, "not_found", "No live game has this id.", table_id=gid)
+            if row.get("status") in ("finished", "conceded") and row.get("gcs_path"):
+                return {"status": "ready", "table_id": gid, "next": f"/replay.html?table={gid}"}
+            return _error(409, "not_replayable", "This game is not over yet: its replay opens when it has ended." if row.get("status") in ("waiting", "playing")
+                          else "This game ended without a record to replay.", table_id=gid, game_status=row.get("status"))
         table_id = parse_table_id(q)
         if table_id is None:
             return _error(400, "invalid", "Enter a table id (e.g. 924000095) or a table url (https://boardgamearena.com/table?table=924000095).")

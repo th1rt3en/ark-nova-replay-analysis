@@ -134,7 +134,7 @@ def enlarge_options(state, seat: int, b) -> list:
     for x, y in sorted(bd.cells):
         for r in range(6):
             cells = build_action.footprint(new, x, y, r)
-            if old <= set(cells) and all(c in bd.cells and c not in others and c not in bd.blocked and (over or bd.terrain[c] == "plain")
+            if old <= set(cells) and all(c in bd.cells and c not in others and c not in bd.blocked and (c in old or over or bd.terrain[c] == "plain")   # (a rock / water space the old enclosure already covers stays covered; new spaces need Diversity Researcher)
                                          and (level >= 2 or c in old or c not in bd.flags) for c in cells):
                 out.append((x, y, r))
     return out
@@ -210,6 +210,6 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         p.buildings = [b for b in p.buildings if (b.x, b.y) not in gone]
         for b in held:
             state.prompt.args["pending"].append({
-                "kind": "build", "source": e["source"], "type": b.type, "rules": _unique_rules(b.type, state.config.marine_worlds), "optional": False, "double": False,
+                "kind": "build", "source": e["source"], "type": b.type, "rules": _unique_rules(b.type, state.config.marine_worlds), "optional": False, "double": False, "player": action.player,
                 "placeback": {"id": b.id, "animal": b.animal, "animals": list(b.animals)}})
     fx._done(state, i)

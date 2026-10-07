@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Play - Ark Nova</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/replay.css">
+<link rel="stylesheet" href="/css/endstats.css">
+</head>
+<body class="viewer">
+<section id="lobby" class="lobby" hidden>
+  <h1 id="lobbytitle">Play Ark Nova</h1>
+  <p id="lobbytext" class="lobbytext"></p>
+  <form id="lobbyform"></form>
+  <div id="links"></div>
+  <p><a href="/">Back to the start page</a></p>
+</section>
+<div id="loading" class="status loading" role="status" hidden>Loading the game…</div>
+<div id="app" hidden>
+  <header class="bar">
+    <a href="/" class="home" title="Back to the start page">Ark Nova</a>
+    <span id="tableInfo" class="muted"></span>
+    <div id="pov" class="pov" role="group" aria-label="Point of view"></div>
+    <div id="timeline" class="timeline" role="slider" aria-label="Game timeline"></div>
+    <div class="controls" role="group" aria-label="Browse the game">
+      <button id="first" title="First position" aria-label="First position">&#9198;</button>
+      <button id="prev" title="Back one position (Left arrow)" aria-label="Back one position">&#9194;&#xFE0E;</button>
+      <button id="play" title="Autoplay" aria-label="Start autoplay">&#9654;</button>
+      <button id="next" title="Forward one position (Right arrow)" aria-label="Forward one position">&#9193;&#xFE0E;</button>
+      <button id="last" title="The current position (End)" aria-label="The current position">&#9197;</button>
+      <label class="jump">Position <input id="jump" type="number" min="0" aria-label="Jump to position"> / <span id="total"></span></label>
+      <span class="speed" role="group" aria-label="Autoplay speed">
+        <button data-speed="1" class="on">1x</button><button data-speed="2">2x</button><button data-speed="4">4x</button>
+      </span>
+    </div>
+  </header>
+  <div id="current" class="current" aria-live="polite"></div>
+  <div id="abandonbox" class="abandonbox" role="alert" hidden></div>
+  <div id="endbar" class="endbar"></div>
+  <div id="forkinfo" class="forkinfo" hidden></div>
+  <div class="layout">
+    <main>
+      <div id="actionbar" class="actionbar" hidden></div>
+      <section id="forkpanel" class="forkpanel" aria-label="Legal moves"></section>
+      <section id="shared" class="shared"></section>
+      <section id="endstats" class="endstats" aria-label="Game result and statistics"></section>
+      <section id="zoos" class="zoos"></section>
+    </main>
+    <aside>
+      <section id="side" class="side"></section>
+      <h2>Moves</h2>
+      <ol id="moves" class="moves"></ol>
+    </aside>
+  </div>
+</div>
+<img id="preview" class="preview" alt="" hidden>
+<script src="/js/endstats.js"></script>
+<script>
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const $ = (id) => document.getElementById(id);
+  const game = params.get('game');
+  const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+  const api = async (path, body, token) => {
+    const res = await fetch('/api/games' + path, body === undefined ? { headers: token ? { 'X-Seat-Token': token } : {} }
+      : { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Seat-Token': token } : {}) }, body: JSON.stringify(body) });
+    return { ok: res.ok, status: res.status, body: await res.json().catch(() => ({})) };
+  };
+  const show = () => { $('lobby').hidden = false; };
+  const start = () => {
+    $('lobby').hidden = true; $('loading').hidden = false;
+    window.FORK_MODE = true; window.PLAY_MODE = true;
+    const s = document.createElement('script'); s.src = '/js/replay.js'; document.body.append(s);
+  };
+  // a labelled control on its own lines (the label above, an optional line of help below)
+  const stack = (label, input, help) => {
+    const d = document.createElement('div'); d.className = 'lobbyfield';
+    const l = document.createElement('span'); l.textContent = label;
+    d.append(l, input);
+    if (help) { help.classList.add('lobbyhelp'); d.append(help); }
+    return d;
+  };
+  const check = (label, input, text) => {
+    const l = document.createElement('label'); l.className = 'lobbycheck';
+    const t = document.createElement('span'); const b = document.createElement('b'); b.textContent = label; t.append(b);
+    if (text) { const s = document.createElement('small'); s.textContent = text; t.append(document.createElement('br'), s); }
+    l.append(input, t);
+    return l;
+  };
+  const field = (label, input) => { const l = document.createElement('label'); l.className = 'lobbyrow'; l.append(label + ' ', input); return l; };
+  const button = (text) => { const b = document.createElement('button'); b.type = 'submit'; b.textContent = text; return b; };
+  const link = (text, href) => { const a = document.createElement('a'); a.href = href; a.textContent = text; return a; };
+
+  if (!game) {                                                       // no game yet: make one
+    $('lobbytext').textContent = 'Play a game against a friend. You get two links: keep one, send the other.';
+    const mw = document.createElement('input'); mw.type = 'checkbox';
+    const mode = document.createElement('select');
+    const opts = await (await fetch('/api/live/options')).json().catch(() => ({ game_modes: [], default: '' }));
+    for (const m of opts.game_modes) { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; o.title = m.description; mode.append(o); }
+    mode.value = opts.default;
+    const hint = document.createElement('div');
+    const showHint = () => { const m = opts.game_modes.find((x) => x.id === mode.value); hint.textContent = m ? m.description : ''; };
+    mode.onchange = showHint; showHint();
+    $('lobbyform').append(stack('Game mode', mode, hint), check('Marine Worlds', mw), button('Create the game'));
+    $('lobbyform').onsubmit = async (e) => {
+      e.preventDefault();
+      const r = await api('', { marine_worlds: mw.checked, game_mode: mode.value });
+      if (!r.ok) { $('lobbytext').textContent = r.body.message || 'The game could not be created.'; return; }
+      const g = r.body, base = location.origin + '/play.html?game=' + g.game_id;
+      $('lobbyform').hidden = true;
+      $('lobbytitle').textContent = 'Game ' + g.game_id;
+      $('lobbytext').textContent = 'Open your link, then send the other one to your opponent. Each link is a seat: do not share your own.';
+      const mine = base + '&s=' + encodeURIComponent(g.tokens[0]), theirs = base + '&s=' + encodeURIComponent(g.tokens[1]);
+      const box = $('links');
+      const row = (title, url, open) => {
+        const d = document.createElement('div'); d.className = 'lobbyrow';
+        const input = document.createElement('input'); input.value = url; input.readOnly = true; input.size = 40; input.onfocus = () => input.select();
+        const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = 'Copy';
+        copy.onclick = async () => { try { await navigator.clipboard.writeText(url); copy.textContent = 'Copied'; } catch (err) { input.select(); } };
+        d.append(title, input, copy);
+        if (open) d.append(link('Open', url));
+        box.append(d);
+      };
+      row('Your seat (seat 1)', mine, true);
+      row('Your opponent (seat 2)', theirs, false);
+      row('Spectators', base, false);
+    };
+    show();
+    return;
+  }
+  if (!/^E\d+$/.test(game)) { location.replace('/play.html'); return; }
+  let token = params.get('s');
+  if (token) store('playToken.' + game, token); else token = store('playToken.' + game);
+  const setup = await api('/' + game + '/setup' + (token ? '?s=' + encodeURIComponent(token) : ''), undefined, token);
+  if (!setup.ok && setup.status === 404) { location.replace('/end.html?game=' + game); return; }     // the table is gone: it ended and was exported (the end page says so when there never was one)
+  if (!setup.ok) { $('lobbytitle').textContent = 'No such game'; $('lobbytext').textContent = setup.body.message || 'Check the link.'; show(); return; }
+  const info = setup.body;
+  if (['finished', 'conceded'].includes(info.status)) { location.replace('/end.html?game=' + game); return; }
+  if (token && info.seat !== null && !info.named[info.seat]) {          // a seat that has not given its name yet
+    $('lobbytitle').textContent = 'Join game ' + game;
+    $('lobbytext').textContent = 'You are seat ' + (info.seat + 1) + '. Type your name to take the seat; the game starts when both players have one.';
+    const name = document.createElement('input'); name.type = 'text'; name.maxLength = 40; name.required = true; name.value = store('playerName') || '';
+    $('lobbyform').append(field('Your name', name), button('Join'));
+    $('lobbyform').onsubmit = async (e) => {
+      e.preventDefault();
+      const r = await api('/' + game + '/join', { name: name.value }, token);
+      if (!r.ok) { $('lobbytext').textContent = r.body.message || 'Could not join.'; return; }
+      store('playerName', name.value);
+      start();
+    };
+    show();
+    return;
+  }
+  start();
+})();
+</script>
+</body>
+</html>

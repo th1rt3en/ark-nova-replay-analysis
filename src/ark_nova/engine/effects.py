@@ -13,6 +13,7 @@ from ark_nova import data
 from ark_nova.engine import association, animal_abilities, bonuses, marks, project_effects, sponsor_extras, venom, build_action, card_programs as prog, cards_action
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board
+from ark_nova.engine.cards import ensure_main_deck
 from ark_nova.engine.icons import card_icons, icon_counts, requirement
 
 
@@ -92,7 +93,7 @@ def on_play(state, seat: int, card_key: str) -> list:
         t, rules = build_rules(card_key, state.config.marine_worlds)
         if not build_action.knows_shape(t):
             raise NotImplementedError(f"the shape of the {t} building is unknown (see data/unique_shapes.json)")
-        pending.append({"kind": "build", "source": card_key, "type": t, "rules": rules, "optional": card_key in prog.OPTIONAL_BUILD or card_key in prog.PER_PAVILION_APPEAL or ((t in ("pavilion", "kiosk") or card_key == "S272") and not build_options(state, seat, t, rules)),
+        pending.append({"kind": "build", "source": card_key, "type": t, "rules": rules, "optional": card_key in prog.OPTIONAL_BUILD or card_key in prog.PER_PAVILION_APPEAL or (t in ("pavilion", "kiosk") and not build_options(state, seat, t, rules)),
                         "double": card_key in prog.DOUBLE_PLACEMENT_BONUS})
     if card_key in prog.PER_PAVILION_APPEAL:          # Landscape Gardener: the free pavilion (optional) and the appeal for the pavilions (mandatory) are two effects in any order
         pending.append({"kind": "gain", "source": card_key, "res": "appeal", "n": 0, "per_pavilion": True, "optional": False})
@@ -218,17 +219,22 @@ def legal(state, p0) -> list:
                 out.append(Action(p.seat, "skip_effect", {"index": i}))
             continue
         if k == "build":
+            start = len(out)
             for t in e.get("types", [e["type"]]):
                 for x, y, r in build_options(state, p.seat, t, e["rules"]):
                     out.append(Action(p.seat, "place_building", {"type": t, "x": x, "y": y, "rotation": r}))
+            if not any(a.kind == "place_building" and a.player == p.seat for a in out[start:]):
+                out.append(Action(p.seat, "skip_effect", {"index": i}))      # (found by self-play: no placement for a non-optional building left the player with no move)
         elif k == "take":
             if e.get("snap"):                              # Snapping: any card of the display (Waza Small Animal Program: a small animal)
                 out += [Action(p.seat, "take_cards", {"mode": "snap", "card": c}) for c in dict.fromkeys(state.display)
                         if c and (not e.get("small") or _small_animal(c))]
                 if None in state.display:                  # Snapping 2: the player may refill the display before the second snap
                     out.append(Action(p.seat, "choose_effect", {"index": i, "refill": True}))
+                if e.get("optional"):                      # (found by self-play: with no small animal in the display and no gap to refill the player had no move at all)
+                    out.append(Action(p.seat, "skip_effect", {"index": i}))
                 continue
-            if state.main_deck and not venom.blocked(state, p.seat):
+            if (state.main_deck or state.main_discard) and not venom.blocked(state, p.seat):      # (an empty draw pile is reshuffled from the discard pile)
                 out.append(Action(p.seat, "take_cards", {"mode": "deck", "count": 1}))
             for c in state.display[:cards_action.reputation_range(p.reputation)]:
                 if c:
@@ -353,6 +359,7 @@ def resolve_take(state, action: Action) -> None:
         marks.taken(state, card)
         p.hand.append(card)
     elif mode == "deck":
+        ensure_main_deck(state, 1)
         if not state.main_deck:
             raise NotImplementedError("the deck would run out (reshuffling the discard pile is not implemented yet)")
         venom.settle(state, p.seat)
@@ -395,6 +402,7 @@ def resolve_choice(state, action: Action) -> None:
         animal_abilities.resolve(state, action, e, i)
         return
     if k == "reveal":
+        ensure_main_deck(state, e["x"])
         if len(state.main_deck) < e["x"]:
             raise NotImplementedError("the deck would run out (reshuffling the discard pile is not implemented yet)")
         top = state.main_deck[:e["x"]]
@@ -478,6 +486,8 @@ def _nothing_to_do(state, e: dict, i: int) -> bool:
     if e["kind"] == "mark":                              # a mark must be placed unless every animal of the display has one already (or there is none)
         from ark_nova.engine import marks
         return not marks.markable(state)
+    if e["kind"] == "build":                             # no place for the building: nothing to do
+        return not any(build_options(state, state.prompt.player, t, e["rules"]) for t in e.get("types", [e["type"]]))
     if e["kind"] in project_effects.KINDS:
         return not project_effects.legal(state, e, i, state.prompt.player)
     return e["kind"] in animal_abilities.KINDS and not animal_abilities.legal(state, e, i, state.prompt.player)

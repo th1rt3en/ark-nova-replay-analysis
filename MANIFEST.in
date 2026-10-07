@@ -1,0 +1,4 @@
+prune cloudflare
+prune node_modules
+prune .wrangler
+exclude package.json package-lock.json

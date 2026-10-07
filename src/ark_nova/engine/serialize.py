@@ -3,6 +3,7 @@
 `to_jsonable(obj)` -> plain dict/list/str/int/bool/None; `from_jsonable(cls, data)` rebuilds the dataclass tree using the
 type hints (list[...], dict[str, ...], Optional[...], nested dataclasses, Enums). No schema is duplicated.
 """
+import copy
 import dataclasses
 import enum
 import types
@@ -24,8 +25,10 @@ def to_jsonable(obj: Any) -> Any:
 
 def from_jsonable(tp: Any, data: Any) -> Any:
     origin = get_origin(tp)
-    if tp is Any or data is None:
+    if data is None:
         return data
+    if tp is Any:
+        return copy.deepcopy(data)                      # (a copy: a state must not share its prompt's lists and dicts with the dict it was built from)
     if origin in (typing.Union, types.UnionType):
         args = [a for a in get_args(tp) if a is not type(None)]
         return from_jsonable(args[0], data) if len(args) == 1 else data

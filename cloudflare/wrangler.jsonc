@@ -1,0 +1,20 @@
+{
+    // The table keeper of live Ark Nova games (docs/live_game_plan.md, section 3). Resource names are placeholders until the infrastructure is created.
+    "name": "ark-nova-live",
+    "main": "src/index.ts",
+    "compatibility_date": "2026-08-01",
+    "durable_objects": {
+        "bindings": [
+            { "name": "TABLE", "class_name": "Table" },
+            { "name": "COUNTER", "class_name": "Counter" }
+        ]
+    },
+    "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["Table", "Counter"] }
+    ],
+    "vars": {
+        // the Cloud Run service behind /api/* (empty: /api/* answers 502)
+        "CLOUD_RUN_URL": "https://ark-nova-replay-analysis-725889947830.us-central1.run.app"
+    }
+    // secrets (wrangler secret put): INTERNAL_SECRET, the key that Cloud Run signs its internal calls with
+}

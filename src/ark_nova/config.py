@@ -22,6 +22,11 @@ class Settings:
     cache_mb: int = 256  # memory kept for raw logs and built replays (the rest of what was read stays in files)
     cache_dir: str = ""  # where the files go; empty = a folder in the temp directory, "off" = no files
     cache_disk_mb: int = 2048  # the most the files may take (the least recently used go first)
+    live_keeper_url: str = ""  # the Cloudflare Worker of the live games (cloudflare/); empty = the live game routes are off
+    internal_secret: str = ""  # signs the calls to it (the Worker's INTERNAL_SECRET)
+    live_bq_project: str = "freestyle-190711"  # the registry of the live tables (docs/live_game_plan.md 9.2): dataset ark_nova_engine, table live_table_events, view live_tables
+    live_bq_dataset: str = "ark_nova_engine"
+    live_gcs_bucket: str = "temp-common-storage"  # where the records of finished / conceded games go (live/<yyyy>/<mm>/E12.json.gz); empty = nothing is exported and the keeper keeps the tables
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -34,4 +39,9 @@ class Settings:
             cache_mb=int(os.environ.get("CACHE_MB", "256")),
             cache_dir=os.environ.get("CACHE_DIR", ""),
             cache_disk_mb=int(os.environ.get("CACHE_DISK_MB", "2048")),
+            live_keeper_url=os.environ.get("LIVE_KEEPER_URL", ""),
+            internal_secret=os.environ.get("INTERNAL_SECRET", ""),
+            live_bq_project=os.environ.get("LIVE_BQ_PROJECT", "freestyle-190711"),
+            live_bq_dataset=os.environ.get("LIVE_BQ_DATASET", "ark_nova_engine"),
+            live_gcs_bucket=os.environ.get("LIVE_GCS_BUCKET", "temp-common-storage"),
         )

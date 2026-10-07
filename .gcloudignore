@@ -16,3 +16,9 @@ tests/
 scripts/
 *.md
 !README.md
+
+# The live table keeper runs on Cloudflare, not on Cloud Run; node tooling is not needed at runtime
+cloudflare/
+.wrangler/
+package.json
+package-lock.json

@@ -7,7 +7,7 @@ a Tutor, a Reef activation) and, when the card was just added to the projects, i
 gives 1 reputation (done at once, "adding a new conservation project").
 """
 from ark_nova import data
-from ark_nova.engine import animal_abilities, bonuses
+from ark_nova.engine import animal_abilities, bonuses, gamestats
 from ark_nova.engine.actions import Action
 from ark_nova.engine.icons import _TAG_NAME, card_icons, icon_counts
 
@@ -155,6 +155,7 @@ def release_animal(state, seat: int, key: str, building=None) -> None:
         elif b.animals:
             b.animals.pop(0)
     p.released.append(key)
+    gamestats.count(state, p.seat, "animals_released")
     state.main_discard.append(key)
     p.appeal -= data.cards_by_key()[key].get("appeal") or 0
 

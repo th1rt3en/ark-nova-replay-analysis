@@ -25,6 +25,23 @@ def reputation_cap(p) -> int:
     return 15 if any(c.type == "cards" and c.level >= 2 for c in p.action_cards) else 9
 
 
+# the 16 bonuses that the 5 and 8 conservation spaces (two each) and the 16 reputation space (one, Marine Worlds) draw from at the start of a game, as seen in the logs;
+# the option of 5 money is always there besides
+CONSERVATION_POOL = [{"Partner-Zoo": 1}, {"Fac": 1}, {"Multiplier": 1}, {"xtoken": 3}, {"take-in-range-or-deck": 3}, {"size-3": 1}, {"bonus-ignore-conditions": 3},
+                     {"bonus-increased-hand": 1}, {"bonus-icon": 1}, {"bonus-scoring-cards": 3}, {"bonus-sponsor-gray": 1}, {"bonus-sponsor": 1}, {"reputation": 2},
+                     {"bonus-extra-shift": 1}, {"bonus-kiosk-pavilion": 3}, {"money": 10}]
+
+
+def draw_conservation_bonuses(rng, marine_worlds: bool) -> dict:
+    """The bonuses of a new game (each bonus once on the board): two for the 5 space, two for the 8 space and, in Marine Worlds, one for the 16 reputation space."""
+    pool = [dict(b) for b in CONSERVATION_POOL]
+    rng.shuffle(pool)
+    out = {"5": pool[:2], "8": pool[2:4]}
+    if marine_worlds:
+        out["99"] = pool[4:5]
+    return out
+
+
 def defer(state, effect: dict) -> None:
     """A pending effect that arises while another one resolves: it joins the open prompt or waits for the end of the step."""
     if effect["kind"] in ("upgrade", "threshold2") and not upgradable(state.players[effect["player"]])             and not (effect["kind"] == "threshold2" and worker_tokens(state.players[effect["player"]], "supply_")):
@@ -177,7 +194,7 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             if not hire_worker(state, seat):
                 defer(state, {"kind": "extra_shift", "source": "bonus", "optional": False, "player": seat})
         elif k == "size-2":
-            defer(state, {"kind": "build", "source": "bonus", "type": "size-2", "rules": {}, "optional": income, "double": False, "player": seat})      # (a player may pass on the income enclosure)
+            defer(state, {"kind": "build", "source": "bonus", "type": "size-2", "rules": {}, "optional": True, "double": False, "player": seat})      # (optional wherever it comes from: income, a project bonus, the reward track)
         elif k == "take-in-range-or-deck":               # v cards (3 for the conservation bonus)
             for _ in range(int(v)):
                 defer(state, {"kind": "take", "source": "bonus", "optional": False, "player": seat})
@@ -228,7 +245,7 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             state.players[seat].tokens.append(Token(max(ids, default=0) + 1, "bonus-increased-hand", "notepad"))
             defer(state, {"kind": "take", "source": "bonus", "snap": True, "optional": False, "player": seat})      # (the bonus also gives one Snapping)
         elif k == "size-3":                              # a free size 3 enclosure
-            defer(state, {"kind": "build", "source": "bonus", "type": "size-3", "rules": {}, "optional": income, "double": False, "player": seat})
+            defer(state, {"kind": "build", "source": "bonus", "type": "size-3", "rules": {}, "optional": True, "double": False, "player": seat})
         elif k == "bonus-kiosk-pavilion":                # Posturing 3: up to 3 free kiosks / pavilions, each one can be skipped
             for _ in range(3):
                 defer(state, {"kind": "build", "source": "bonus", "types": ["kiosk", "pavilion"], "type": "kiosk", "rules": {},

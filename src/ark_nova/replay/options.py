@@ -36,18 +36,20 @@ def effect_name(e: dict) -> str | None:
     return f"{prefix} {n}" if isinstance(n, int) and n > 1 else prefix
 
 
-def step_options(state: GameState) -> dict | None:
+def step_options(state: GameState, seat: int | None = None) -> dict | None:
+    """What the bar is drawn from. `seat`: a live game gives each player their own (both discard at once in a break: each one sees their own discard); None = the player of the prompt."""
     pr = state.prompt
     if pr is None or state.phase in (Phase.SETUP, Phase.SCORING, Phase.OVER):
         return None
     try:
-        acts = [a for a in legal_actions(state) if a.kind not in FREE]
+        acts = [a for a in legal_actions(state) if a.kind not in FREE and (seat is None or a.player == seat)]
     except NotImplementedError:
         return None
     kinds: dict[str, int] = {}
     for a in acts:
         kinds[a.kind] = kinds.get(a.kind, 0) + 1
-    out: dict = {"prompt": pr.kind, "seat": pr.player, "kinds": kinds}
+    who = pr.player if seat is None else seat
+    out: dict = {"prompt": pr.kind, "seat": who, "kinds": kinds}
     pieces = []
     for a in acts:                                                      # the building pieces that can be placed (the additional kiosk / pavilion of a Build variant first)
         if a.kind != "place_building":
@@ -74,7 +76,7 @@ def step_options(state: GameState) -> dict | None:
     if pr.kind == "cards_discard":                                      # discarding: the bar only says how many (the player picks the cards in the hand)
         out["discard"] = {"count": pr.args.get("count", 1), "what": "card"}
     elif pr.kind == "effects":
-        mine = [e for e in pr.args.get("pending", []) if e.get("player", pr.player) == pr.player]
+        mine = [e for e in pr.args.get("pending", []) if e.get("player", pr.player) == who]
         d = next((e for e in mine if e.get("kind") in ("break_discard", "endgame_discard")), None)
         if d is not None:
             out["discard"] = {"count": d.get("n", 1), "what": "card" if d["kind"] == "break_discard" else "endgame card"}
@@ -87,7 +89,7 @@ def step_options(state: GameState) -> dict | None:
             take.update(remaining=pr.args.get("remaining"), snapping=bool(pr.args.get("snap")), taken=pr.args.get("taken", 0), discard=pr.args.get("discard", 0),
                         snaps_left=pr.args.get("snaps_left", 1))
         elif pr.kind == "effects":
-            e = next((e for e in pr.args.get("pending", []) if e.get("kind") == "take" and e.get("player", pr.player) == pr.player
+            e = next((e for e in pr.args.get("pending", []) if e.get("kind") == "take" and e.get("player", pr.player) == who
                       and bool(e.get("snap")) == bool(take["snap"])), None)
             if e is not None:
                 take.update(source=e.get("source"), is_snap=bool(e.get("snap")), small=bool(e.get("small")), range_only=bool(e.get("range_only")))
@@ -108,5 +110,5 @@ def step_options(state: GameState) -> dict | None:
         out["pending"] = [e.get("kind") for e in pending][:12]
         out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category") if k in e and isinstance(e[k], (str, int, bool))},
                            **({"name": effect_name(e)} if effect_name(e) else {}), "index": i}
-                          for i, e in enumerate(pending) if e.get("player", pr.player) == pr.player][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
+                          for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
     return out

@@ -740,6 +740,8 @@ def draft_states(parsed: ParsedLog, seats: list, first_turn: int) -> dict:
                 d["picked"][seat] = (pk[3] + pk[4]) if pk else []
             else:
                 d["picked"][seat] = prev + chosen if made else list(prev)
+        if d["stage"] == "keep" and all(d["kept"]):                          # both players have locked in their cards (the 8 starting cards are dealt): the draft is over, the chosen variants are on the table
+            d["stage"] = "done"
         out[m.index] = d
     return out
 

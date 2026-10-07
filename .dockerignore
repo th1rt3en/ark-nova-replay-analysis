@@ -24,3 +24,9 @@ data_manual/
 tests/
 scripts/
 *.md
+
+# The live table keeper runs on Cloudflare, not in this image; node tooling is not needed at runtime
+cloudflare/
+.wrangler/
+package.json
+package-lock.json

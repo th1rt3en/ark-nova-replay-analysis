@@ -32,6 +32,11 @@ def main(game: str, turn: str = None) -> None:
                 pr = st.prompt
                 print("  break", st.break_position, "x", [q.x_tokens for q in st.players]); print("  prompt", pr.kind if pr else None, {k: v for k, v in (pr.args.items() if pr else []) if k != "resume"})
                 print("  hands", [q.hand for q in st.players])
+                import re
+                m_ = re.search(r"play_animal \{'card': '(A\d+)'", x)
+                if m_ and pr is not None and pr.kind == "animals_play":          # why the animal is not playable
+                    from ark_nova.engine import animals_action as aa_
+                    print("  conditions of", m_.group(1), aa_.failed_conditions(st, pr.player, m_.group(1), aa_.live_level(st.players[pr.player], pr.args)), "credit", (st.current_action or {}).get("camouflage"), "money", st.players[pr.player].money, "icons", dict(st.players[pr.player].icons))
                 print("  legal", [(a.kind, a.args) for a in r][:10])
                 if os.environ.get("LEGALCARD"):          # every legal action that mentions this text (e.g. LEGALCARD=A518)
                     print("  legal matching", [(a.kind, a.args) for a in r if os.environ["LEGALCARD"] in str(a.args)][:40])

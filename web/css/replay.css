@@ -895,3 +895,27 @@ body.viewer .status .progresscircle .ppct { fill: #2b1d12; }
 body.viewer .status .peta { color: #5b4636; }
 body.viewer .status.error { border-color: #a12f2f; color: #8b1f1f; font-weight: 600; }
 body.viewer .status.loading::before { display: none; }
+
+body.viewer .lobby a { color: #7a3b00; font-weight: 600; }
+
+/* the form that creates a live game */
+.lobby form { display: flex; flex-direction: column; gap: 1.1rem; }
+.lobbyfield { display: flex; flex-direction: column; gap: .4rem; }
+.lobbyfield > span { font-weight: 700; font-size: 1.05rem; }
+.lobbyfield select { width: 100%; padding: .65rem 2.4rem .65rem .85rem; font: inherit; font-size: 1rem; color: #2b1d12; background-color: #fffaf0; border: 2px solid #3b2a1c; border-radius: 8px;
+  cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath d='M1 1l7 7 7-7' fill='none' stroke='%233b2a1c' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .85rem center; }
+.lobbyfield select:hover { background-color: #fff3d6; }
+.lobbyfield select:focus-visible, .lobbycheck input:focus-visible, .lobby button:focus-visible { outline: 3px solid #4a76b8; outline-offset: 2px; }
+.lobbyhelp { padding: .55rem .8rem; background: rgba(59, 42, 28, .08); border-left: 4px solid #4a76b8; border-radius: 0 6px 6px 0; color: #4a3727; font-size: .95rem; min-height: 1.3em; }
+.lobbycheck { display: flex; align-items: flex-start; gap: .75rem; padding: .7rem .85rem; background: #fffaf0; border: 2px solid #3b2a1c; border-radius: 8px; cursor: pointer; }
+.lobbycheck:hover { background: #fff3d6; }
+.lobbycheck input { width: 1.35rem; height: 1.35rem; margin-top: .1rem; accent-color: #4a76b8; cursor: pointer; flex: 0 0 auto; }
+.lobbycheck small { color: #4a3727; }
+.lobby form button[type=submit] { width: 100%; margin-top: .2rem; padding: .8rem 1rem; font-size: 1.1rem; }
+.lobby form button[type=submit]:hover { background: #3d639d; }
+
+/* live play: an open proposal to abandon, the turn alert switch */
+.abandonbox { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: 0 0 .6rem; padding: .55rem .8rem; background: #fff3d6; border: 2px solid #b8862e; border-radius: 8px; color: #2b1d12; }
+.alertbtn { margin-left: .6rem; padding: .15rem .55rem; font: inherit; font-size: .85rem; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 6px; cursor: pointer; opacity: .85; }
+.alertbtn:hover { opacity: 1; }

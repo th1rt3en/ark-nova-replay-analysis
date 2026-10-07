@@ -109,3 +109,4 @@ def apply(state, action: Action) -> None:
             pending = g.play_sponsor_outside_action(state, p.seat, args["play"])
             if g._open_effects(state, p.seat, pending, {"kind": "sponsors_play", "args": a}):
                 return
+    g._open_effects(state, p.seat, [], {"kind": "sponsors_play", "args": a})          # a reputation gained by the side action may reach a track bonus (a card to take: 802528333 turn 59)

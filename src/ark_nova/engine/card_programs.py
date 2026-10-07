@@ -13,7 +13,7 @@ UNIQUE_BUILD = {
     "S271": ("excavation", {}), "S272": ("size-3", {}), "S274": ("victory", {}), "S276": ("pavilion", {}),
     "S278": ("amazon", {}), "S279": ("underwater-tunnel", {"on_water": True}), "S281": ("arcade", {}),
 }
-OPTIONAL_BUILD = {"S265"}                   # Franchise Business: the kiosk may be declined
+OPTIONAL_BUILD = {"S265", "S263", "S272"}   # Franchise Business (kiosk), Waza Large Animal Program (size-5), Expansion Area (size-3): the building may be declined (user)
 DOUBLE_PLACEMENT_BONUS = {"S271"}            # excavation site: placement bonuses are gained twice
 TAKE_ONE_CARD = {"S201", "S254"}             # take 1 card from the deck or within the reputation range
 PRINTED_ONLY = {"S236", "S237", "S238", "S239", "S240", "S266", "S216", "S273", "S205", "S226", "S277", "S217", "S202", "S243", "S244", "S245", "S246", "S247", "S248", "S249", "S250", "S251", "S252",
@@ -30,7 +30,7 @@ GAIN_PER_ICON = {
 # Program (passive, see animals_action), Reconstruction
 SPECIAL_PROGRAMS = {"S207", "S222", "S262", "S227", "S228", "S280", "S229", "S230", "S203", "S206", "S219",
                     "S258", "S259", "S260", "S264", "S267", "S268", "S269"}
-EXTRA_REQUIREMENTS = {"S280": ["sponsorsII"]}      # requirements the card data lacks
+EXTRA_REQUIREMENTS = {}      # requirements the card data lacks (Reconstruction has none: user)
 # printed gains where the card data is wrong or missing (read off the logs): sponsor -> {appeal, reputation, conservation}
 PRINTED_OVERRIDE = {"S256": {"appeal": 4}, "S265": {}, "S278": {"appeal": 4, "reputation": 1, "conservation": 2}}
 PER_PAVILION_APPEAL = {"S276"}               # Landscape Gardener: appeal = number of pavilions in the zoo, after its free pavilion

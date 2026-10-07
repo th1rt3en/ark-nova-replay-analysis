@@ -15,6 +15,7 @@ import re
 from ark_nova import data
 from ark_nova.engine.actions import Action
 from ark_nova.engine.build_action import SIZES, UNIQUE_SHAPES, knows_shape, shape_of
+from ark_nova.engine import turns
 from ark_nova.engine.game import IllegalAction, apply, deck_cards, legal_actions
 from ark_nova.engine.rng import Rng, build_deck
 from ark_nova.engine.state import GameState
@@ -151,19 +152,7 @@ def play(state_dict: dict, action_dict: dict, names: list[str]) -> dict:
     return step_payload(new, narrate(state, action, new, who), is_irreversible(state, action, new))
 
 
-SECRET_EFFECTS = ("pilfer", "tutor", "search_discard", "adapt", "wave", "waza", "scavenge", "ability_draw")                                     # effects whose choice shows hidden information (the cards searched for, the card / money given)
-
-
-def is_irreversible(before: GameState, action: Action, after: GameState) -> str:
-    """Why the turn cannot be taken back after this move (cards were drawn / shuffled: the deck order is revealed; a secret choice was made), '' if it can."""
-    if before.rng != after.rng or len(before.main_deck) != len(after.main_deck) or len(before.endgame_deck) != len(after.endgame_deck):
-        return "cards are drawn from a deck"
-    if action.kind in ("choose_effect", "skip_effect") and before.prompt is not None:
-        pending = before.prompt.args.get("pending") or []
-        i = action.args.get("index", -1)
-        kind = str(pending[i].get("kind", "")) if isinstance(i, int) and 0 <= i < len(pending) else ""
-        return "a hidden choice is made (" + kind.replace("_", " ") + ")" if any(w in kind for w in SECRET_EFFECTS) else ""
-    return ""
+is_irreversible = turns.irreversible                                       # (the rule of what cannot be taken back lives in the engine: engine/turns.py)
 
 
 GAINS = (("money", "money"), ("appeal", "appeal"), ("reputation", "reputation"), ("conservation", "conservation"), ("x_tokens", "X token"))
@@ -179,6 +168,8 @@ def _article(word: str) -> str:
 
 def narrate(before: GameState, action: Action, after: GameState, who: str) -> str:
     """The log line of a move of a fork, in words: what was done and what it cost / gave (read off the states before and after)."""
+    if action.kind == "concede":
+        return f"{who} conceded the game"
     p0, p1 = before.players[action.player], after.players[action.player]
     args = action.args
     delta = {k: getattr(p1, k) - getattr(p0, k) for k, _ in GAINS}
@@ -233,6 +224,12 @@ def narrate(before: GameState, action: Action, after: GameState, who: str) -> st
         text = "gained a worker"
     elif k == "choose_effect" and isinstance(args.get("upgrade"), str):
         text = f"upgraded the {args['upgrade'].capitalize()} action card"
+    elif k == "confirm_turn":
+        text = "confirmed the turn"
+    elif k == "undo_last":
+        text = "took back the last step"
+    elif k == "restart_turn":
+        text = "restarted the turn"
     elif k == "skip_effect":
         text = "passed on " + describe_action(action, before).removeprefix("Skip: ")
     elif k == "association_task":

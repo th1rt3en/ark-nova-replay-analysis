@@ -23,6 +23,20 @@ def matches(cond: Condition, key: str) -> bool:
     raise ValueError(cond)
 
 
+def ensure_main_deck(state, need: int) -> None:
+    """The draw pile has to hold `need` cards: when it does not, the discard pile is shuffled and goes under what is left (the rule for an empty draw pile). It moves the
+    random state, so a move that does it cannot be taken back."""
+    if len(state.main_deck) >= need or not state.main_discard:
+        return
+    from ark_nova.engine.rng import Rng
+    rng = Rng(state.rng)
+    pile = list(state.main_discard)
+    rng.shuffle(pile)
+    state.rng = rng.state
+    state.main_discard = []
+    state.main_deck = state.main_deck + pile
+
+
 def search_deck(deck: list[str], cond: Condition) -> Optional[str]:
     """Remove and return the first card of `deck` (top first) that satisfies `cond`; everything else keeps its order."""
     for i, key in enumerate(deck):

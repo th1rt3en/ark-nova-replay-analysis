@@ -13,7 +13,7 @@ See docs/engine_design.md, End of the game.
 from collections import Counter
 
 from ark_nova import data
-from ark_nova.engine import build_action, tracks
+from ark_nova.engine import build_action, gamestats, tracks
 from ark_nova.engine.board import board, neighbours
 from ark_nova.engine.icons import icon_counts
 from ark_nova.engine.state import Phase, Result
@@ -297,8 +297,10 @@ def final_scoring(state) -> list:
     def add(seat, source, res, n):
         if n:
             p = state.players[seat]
+            before = tracks.score(p.appeal, p.conservation)
             setattr(p, res, getattr(p, res) + n)
             log.append((seat, source, res, n))
+            gamestats.book(state, seat, "sponsors" if str(source).startswith("S") else "others", tracks.score(p.appeal, p.conservation) - before)
 
     base = {s: state.players[s].appeal for s in range(len(state.players))}
     for s, p in enumerate(state.players):                       # Arcade: score first

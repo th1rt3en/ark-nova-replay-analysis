@@ -152,6 +152,7 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
     """The peaceful variant (hostile effects replaced): an animal with a hostile ability was played and no hostile event ever shows in the log."""
     played = hostile = peaceful = 0
     names: set = set()
+    inventive_seen = False                                 # (a Reef Dweller "Inventive" animal of the zoo also pays X tokens: no proof of a peaceful Venom)
     for m in parsed.moves:
         for e in m.events:
             a = e.args if isinstance(e.args, dict) else {}
@@ -162,12 +163,13 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
             if e.type == "buyAnimal" and isinstance(a.get("card"), dict):
                 card = data.cards_by_key()[data.parse_bga_card_id(a["card"]["id"])[0]]
                 own = {ab["keyword"]["name"] for ab in card.get("abilities") or []} | {ab["keyword"]["name"] for ab in card.get("reefDwellerEffect") or []}
+                inventive_seen = inventive_seen or "Inventive" in own
+                names |= own
                 if own & HOSTILE:
                     played += 1
-                    names |= own
             elif names:                                    # what BGA logs instead of a hostile ability
                 b = a.get("bonuses") or {}
-                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                         or (e.type == "actionCardCleanup" and "Constriction" in names and "Clever effect" in e.log)                         or (e.type == "pDrawCards" and "Pilfering 2" in names and "sprint" in e.log)                         or (e.type == "markCard" and "Hypnosis" in names):
+                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and not inventive_seen and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                         or (e.type == "actionCardCleanup" and "Constriction" in names and "Clever" not in names and "Clever effect" in e.log)                         or (e.type == "pDrawCards" and "Pilfering 2" in names and "Sprint" not in names and "sprint" in e.log)                         or (e.type == "markCard" and "Hypnosis" in names):
                     peaceful += 1
     return bool(played) and not hostile and bool(peaceful)
 

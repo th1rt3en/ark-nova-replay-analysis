@@ -1,0 +1,28 @@
+[
+    {
+        "version": "0.1.0",
+        "code_hash": "e2d1e98094571b7a97ead094bb30c2607a3a8d4e6cc7497f1ccef5f71a3a2d42",
+        "data_hash": "44d7dc435f71dec099304d6d461687c90155099fe851d7646dffb4f96ce06e40+c35c11942ee2b15a1dbf589bd9347bc4db6f144f93cd3418466a0407cbf27b34",
+        "schema_version": 1,
+        "commit": "7b270d1e553be1fc44f2f060f0748b5d7fd18fa8",
+        "uncommitted_changes": true,
+        "date": "2026-10-07",
+        "notes": [
+            "first release: confirm / undo / restart turn for live play, reshuffle of an empty draw pile, self-play dead ends fixed, bonus enclosures and kiosk/pavilion bonuses optional"
+        ]
+    },
+    {
+        "version": "0.2.0",
+        "code_hash": "4f7bf26513fd3bb6be3751d626e0d128df0ba35d0e515dd4573e0138f848711d",
+        "data_hash": "44d7dc435f71dec099304d6d461687c90155099fe851d7646dffb4f96ce06e40+c35c11942ee2b15a1dbf589bd9347bc4db6f144f93cd3418466a0407cbf27b34",
+        "schema_version": 1,
+        "commit": "7b270d1e553be1fc44f2f060f0748b5d7fd18fa8",
+        "uncommitted_changes": true,
+        "date": "2026-10-08",
+        "notes": [
+            "the engine keeps the statistics of the game (GameState.stats)",
+            "a concession is a move of the game (concede), the conceding player loses",
+            "simultaneous break / endgame discards in live play, bonus enclosures optional"
+        ]
+    }
+]

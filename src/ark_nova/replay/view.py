@@ -32,7 +32,7 @@ TIMED_BY_LOG = ("break_position", "round", "display", "main_deck_size", "main_de
 GAIN_FIELDS = ("reputation", "appeal", "conservation")
 LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "hand_limit")      # per player, same reason
 PICTURE_OF = {"6a": "6"}              # map 6a has the same board as map 6; its own picture has the placement bonuses baked in (bugged)
-STATE_DROP = ("endgame_discard", "seed", "config", "rng", "base_projects_unused", "version")
+STATE_DROP = ("endgame_discard", "seed", "config", "rng", "base_projects_unused", "version", "checkpoint")
 
 
 def render_log(template: str, args: Any, depth: int = 0) -> str:

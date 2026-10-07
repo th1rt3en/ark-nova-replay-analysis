@@ -1,0 +1,41 @@
+/* the end of a live game: score cards, the sources of the points, the comparison (js/endstats.js) */
+.endstats { --p0: #c0392b; --p1: #2e6fb7; --gold: #c9971c; color: #2b1d12; background: #fffaf0; border: 2px solid #3b2a1c; border-radius: 12px; padding: 1rem 1.2rem 1.4rem; margin: 0 0 1rem; }
+@media (prefers-color-scheme: dark) { body:not(.viewer) .endstats { color: #e8ece9; background: #1d2420; border-color: #34403a; } }
+.esresult { text-align: center; margin: .2rem 0 .4rem; }
+.eshead { font-size: 1.7rem; margin: 0; }
+.esnote { color: #5d6a62; font-size: .9rem; }
+.esnote.small { font-size: .78rem; margin-top: .7rem; }
+.esboard { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+.esside { padding: 1rem .8rem; text-align: center; border: 2px solid rgba(0, 0, 0, .18); border-top: 6px solid var(--c); border-radius: 12px; background: rgba(0, 0, 0, .03); }
+.esside.winner { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 16%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent); }
+.esside.tie { border-color: #2f6b4f; background: color-mix(in srgb, #2f6b4f 11%, transparent); }
+.esname { font-weight: 700; overflow-wrap: anywhere; color: var(--c); }
+.esscore { font-size: 3rem; font-weight: 800; line-height: 1.15; }
+.estag { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: #5d6a62; min-height: 1.3em; font-weight: 700; }
+.esside.winner .estag { color: var(--gold); font-size: .95rem; }
+.esside.tie .estag { color: #2f6b4f; font-size: .95rem; }
+.esh3 { font-size: 1.1rem; margin: 1.6rem 0 .5rem; }
+.eslegend { display: flex; gap: 1.2rem; font-size: .9rem; margin-bottom: .6rem; flex-wrap: wrap; }
+.eslegend i { display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .35rem; vertical-align: -.05rem; }
+.eschart { display: grid; grid-template-columns: 6.2rem 1fr; gap: .7rem .6rem; align-items: center; }
+.eslab { font-weight: 600; text-align: right; }
+.esbars { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 2px 0; margin: 0 2.8rem; }
+.eszero { position: absolute; top: 0; bottom: 0; width: 1px; background: currentColor; opacity: .45; }
+.esbar { position: relative; height: 1.35rem; }
+.esfill { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: var(--c); }
+.esval { position: absolute; top: 0; line-height: 1.35rem; font-size: .85rem; font-weight: 700; white-space: nowrap; padding: 0 .35rem; }
+.escmp { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.escmp th, .escmp td { padding: .3rem .6rem; border-bottom: 1px solid rgba(0, 0, 0, .15); text-align: center; }
+.escmp th:first-child, .escmp td:first-child { text-align: left; }
+.escmp tr.esgroup td { background: rgba(0, 0, 0, .07); font-weight: 700; text-align: left; }
+.escmp td.lead { font-weight: 700; }
+@media (max-width: 520px) { .esscore { font-size: 2.3rem; } .eschart { grid-template-columns: 4.6rem 1fr; } }
+
+/* on the play page: the stats slide in from the right in place of the player boards */
+.endbar { display: none; align-items: center; gap: .8rem; flex-wrap: wrap; margin: 0 0 .6rem; padding: .5rem .8rem; background: #fff3d6; border: 2px solid #b8862e; border-radius: 8px; color: #2b1d12; }
+body.gameover .endbar { display: flex; }
+#endstats { display: none; }
+body.gameover.showstats #endstats { display: block; animation: esslide .45s ease-out; }
+body.gameover.showstats #zoos { display: none; }
+@keyframes esslide { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body.gameover.showstats #endstats { animation: none; } }

@@ -48,6 +48,8 @@ def card(key: str) -> dict:
 
 
 def _draw(state, seat: int, n: int) -> None:
+    from ark_nova.engine.cards import ensure_main_deck
+    ensure_main_deck(state, n)
     if len(state.main_deck) < n:
         raise NotImplementedError("the deck would run out (reshuffling the discard pile is not implemented yet)")
     state.players[seat].hand += [state.main_deck.pop(0) for _ in range(n)]
@@ -91,6 +93,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     p = state.players[seat]
     icons = icon_counts(state, seat)
     if state.config.peaceful and name in PEACEFUL:
+        if name == "Venom" and any(ab["keyword"]["name"] == "Inventive" for ab in (card(key).get("abilities") or []) + (card(key).get("reefDwellerEffect") or [])):
+            return []                                    # (the peaceful Venom is the Inventive X token: a card with both pays it once, 801244007 T24)
         return peaceful_effects(state, seat, key, name, value)
     if name == "Pack":
         g._gain(state, seat, appeal=icons["Predator"])

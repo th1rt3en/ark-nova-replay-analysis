@@ -17,7 +17,7 @@ from pathlib import Path
 
 from ark_nova import data
 from ark_nova.data.map_quirks import base_map_id
-from ark_nova.engine import animal_abilities, bonuses, cards_action, map_rules, marks, sponsor_extras
+from ark_nova.engine import animal_abilities, bonuses, cards_action, gamestats, map_rules, marks, sponsor_extras
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board, footprint_cells, neighbours
 from ark_nova.engine.icons import icon_counts, requirement
@@ -51,6 +51,11 @@ def play_effects() -> dict:
 
 def card(key: str) -> dict:
     return data.cards_by_key()[key]
+
+
+def live_level(p, a: dict) -> int:
+    """The level of the Animals card now: an upgrade during the action (reputation track, conservation) counts at once."""
+    return max(a["level"], max((c.level for c in p.action_cards if c.type == "animals"), default=0))
 
 
 def max_animals(level: int, strength: int, variant: int = 0) -> int:
@@ -198,9 +203,16 @@ def conditions_met(state: GameState, seat: int, key: str, level: int) -> bool:
     if not waza_allows(state.players[seat], card(key)):
         return False
     failed = failed_conditions(state, seat, key, level)
-    credit = bool(state.current_action and state.current_action.get("camouflage")) or ignore_credit(state) or institute_connected(state.players[seat])          or ("S263" in state.players[seat].sponsors and sponsor_extras.size_class(card(key)) == "large")        # Waza Large Animal Program: a large animal ignores 1 condition
     token = any(t.type == "bonus-ignore-conditions" for t in state.players[seat].tokens)       # (the rock / water of the enclosure still counts)
-    return not failed or token or (credit and len(failed) == 1)
+    return not failed or token or len(failed) <= len(credits(state, seat, key))          # (the credits add up: Camouflage and the Research Institute ignore 2 icons, 831125835 T63)
+
+
+def credits(state: GameState, seat: int, key: str) -> list:
+    """What ignores one condition of the animal each: Ignore Animals, the Research Institute, the Waza Large Animal Program, Camouflage (in this order of use)."""
+    p = state.players[seat]
+    return ([c for c, on in (("ignore", ignore_credit(state)), ("institute", institute_connected(p)),
+                              ("waza", "S263" in p.sponsors and sponsor_extras.size_class(card(key)) == "large"),
+                              ("camouflage", bool(state.current_action and state.current_action.get("camouflage")))) if on])
 
 
 def institute_connected(p) -> bool:
@@ -343,7 +355,7 @@ def open_action(state: GameState, seat: int, level: int, strength: int, variant:
 
 def small_extra(p, a) -> bool:
     """Waza Small Animal Program (S228): when only small animals were played, one more small animal from the hand may follow."""
-    return ("S228" in p.sponsors and bool(a["played"]) and len(a["played"]) == max_animals(a["level"], a["strength"])
+    return ("S228" in p.sponsors and bool(a["played"]) and len(a["played"]) == max_animals(live_level(p, a), a["strength"])
             and all(sponsor_extras.size_class(card(k)) == "small" for k in a["played"]))
 
 
@@ -353,8 +365,8 @@ def legal(state: GameState, p) -> list:
     extra = small_extra(p, a)
     if can_single(a):                                       # Ignore Animals: the choice has to be made before the first animal is played
         acts.append(Action(p.seat, "animals_single", {}))
-    if (len(a["played"]) < (1 if a.get("single") else max_animals(a["level"], a["strength"])) and not a.get("capped")) or extra:
-        for k, d, folder in playable(state, p.seat, a["level"]):
+    if (len(a["played"]) < (1 if a.get("single") else max_animals(live_level(p, a), a["strength"])) and not a.get("capped")) or extra:
+        for k, d, folder in playable(state, p.seat, live_level(p, a)):
             if extra and (d or sponsor_extras.size_class(card(k)) != "small"):
                 continue
             for x, y in enclosure_options(state, p.seat, k):
@@ -362,11 +374,11 @@ def legal(state: GameState, p) -> list:
             if flock_free(state, p.seat, k):                      # Flock Animal: no enclosure is flipped
                 acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": d, "flock": True}))
         for k in sorted(set(p.stored)):                          # map 11: an animal of the storage is played directly (the price is the same)
-            if k.startswith("A") and conditions_met(state, p.seat, k, a["level"]) and _cost_ok(state, p.seat, k, False, 0):
+            if k.startswith("A") and conditions_met(state, p.seat, k, live_level(p, a)) and _cost_ok(state, p.seat, k, False, 0):
                 acts += [Action(p.seat, "play_animal", {"card": k, "from_display": False, "x": x, "y": y, "stored": True}) for x, y in enclosure_options(state, p.seat, k)]
                 if flock_free(state, p.seat, k):
                     acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": False, "flock": True, "stored": True}))
-    if a["played"]:
+    if a["played"] or not acts:                              # (with no animal that can be played the player can only end the action: found by self-play)
         acts.append(Action(p.seat, "finish_animals", {}))
     return acts
 
@@ -380,16 +392,18 @@ def play(state: GameState, action: Action) -> None:
     k, from_display = action.args["card"], bool(action.args["from_display"])
     if not implemented(k):
         raise NotImplementedError(f"the play of animal {k} ({card(k)['name']}) is not implemented yet: {unsupported_abilities(k)} (see ISSUES.md)")
-    if failed_conditions(state, p.seat, k, a["level"]):
-        if ignore_credit(state):
-            a["capped"] = True                               # Ignore Animals: that was the only animal of the action
-        elif institute_connected(p) and len(failed_conditions(state, p.seat, k, a["level"])) == 1:
-            pass                                             # the Research Institute ignores it
-        elif "S263" in p.sponsors and sponsor_extras.size_class(card(k)) == "large" and len(failed_conditions(state, p.seat, k, a["level"])) == 1:
-            pass                                             # Waza Large Animal Program ignores it
-        elif state.current_action.get("camouflage") and len(failed_conditions(state, p.seat, k, a["level"])) == 1:
-            state.current_action.pop("camouflage")           # the Camouflage credit is used
-        else:                                                # the bonus token that ignores the conditions is used up
+    failed = failed_conditions(state, p.seat, k, live_level(p, a))
+    if failed:
+        need = len(failed)
+        for name in credits(state, p.seat, k):
+            if need <= 0:
+                break
+            need -= 1
+            if name == "ignore":
+                a["capped"] = True                           # Ignore Animals: that was the only animal of the action
+            elif name == "camouflage":
+                state.current_action.pop("camouflage")       # the Camouflage credit is used
+        if need > 0:                                         # the bonus token that ignores the conditions is used up
             p.tokens.remove(next(t for t in p.tokens if t.type == "bonus-ignore-conditions"))
     c = card(k)
     price = cost(state, p.seat, k, state.display.index(k) + 1 if from_display else 0)
@@ -404,6 +418,7 @@ def play(state: GameState, action: Action) -> None:
     else:
         p.hand.remove(k)
     p.money -= price
+    gamestats.spent(state, p.seat, price)
     b = None if action.args.get("flock") else next(b for b in p.buildings if (b.x, b.y) == (action.args["x"], action.args["y"]))
     if b is None:
         pass                                                  # Flock Animal: it lives with the herd, no enclosure is flipped
@@ -412,6 +427,7 @@ def play(state: GameState, action: Action) -> None:
     else:                                                     # special enclosures
         b.animals.append(k)
     p.animals.append(k)
+    gamestats.count(state, p.seat, "animals_played")
     a["played"].append(k)
     if state.current_action is not None:
         state.current_action["trigger_appeal"] = {}               # (the appeal that the triggers of this animal give: see `pilfer_hits`)
@@ -432,12 +448,15 @@ def play(state: GameState, action: Action) -> None:
         if tower:
             printed.append({"kind": "gain", "source": "map1", "res": "appeal", "n": tower, "optional": False})
     pending = printed + ability_effects(state, k, pairs) + reef_effects(state, k, b) + fx.fire_icons(state, p.seat, k) + map_rules.continent_effects(state, p, k, b)
+    if "S228" in p.sponsors and len(a["played"]) == max_animals(live_level(p, a), a["strength"]) + 1 and all(sponsor_extras.size_class(card(x)) == "small" for x in a["played"]) and not a.get("s228"):
+        a["s228"] = True                                          # Waza Small Animal Program: the extra small animal is played, the snap is one of its effects (the player orders them: 889209922 turn 46)
+        pending.append({"kind": "take", "source": "S228", "snap": True, "small": True, "optional": True})
     if not g._open_effects(state, p.seat, pending, {"kind": "animals_play", "args": a}):
         after_step(state, p.seat)
 
 
 def finish(state: GameState, action: Action) -> None:
-    if not state.prompt.args["played"]:
+    if action not in legal(state, state.players[action.player]):
         raise _fx().IllegalEffect("play an animal first")
     _end(state, action.player)
 
@@ -449,7 +468,7 @@ def _end(state: GameState, seat: int) -> None:
     if a.get("variant") == 2:                                                   # Hunter Animals: no animals left in hand: Hunter 4 (level I) / 6 (level II); checked when the effect is resolved (a pouch of a later action counts)
         state.current_action.setdefault("after", []).append({"kind": "reveal", "source": "animals2", "x": 4 if a["level"] == 1 else 6,
                                                               "filter": "animal", "optional": True, "cond": "no_animals"})
-    if "S228" in p.sponsors and a["played"] and all(sponsor_extras.size_class(card(k)) == "small" for k in a["played"]):
+    if "S228" in p.sponsors and a["played"] and not a.get("s228") and all(sponsor_extras.size_class(card(k)) == "small" for k in a["played"]):
         state.current_action.setdefault("after", []).append({"kind": "take", "source": "S228", "snap": True, "small": True, "optional": True})
     _g()._end_turn(state)
 

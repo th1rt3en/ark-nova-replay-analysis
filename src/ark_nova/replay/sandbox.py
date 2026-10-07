@@ -24,9 +24,7 @@ from ark_nova.replay import fork as forking
 from ark_nova.replay.view import card_catalog, map_view  # noqa: F401 (map_view is used by the API too)
 
 # the 16 bonuses that the 5 and 8 conservation spaces (and the 16 reputation space) draw two (one) of at random, as seen in the logs; the 5 money option is always there
-BONUS_POOL = [{"Partner-Zoo": 1}, {"Fac": 1}, {"Multiplier": 1}, {"xtoken": 3}, {"take-in-range-or-deck": 3}, {"size-3": 1}, {"bonus-ignore-conditions": 3},
-              {"bonus-increased-hand": 1}, {"bonus-icon": 1}, {"bonus-scoring-cards": 3}, {"bonus-sponsor-gray": 1}, {"bonus-sponsor": 1}, {"reputation": 2},
-              {"bonus-extra-shift": 1}, {"bonus-kiosk-pavilion": 3}, {"money": 10}]
+BONUS_POOL = bonuses.CONSERVATION_POOL                      # (the engine draws from the same list at the start of a game)
 COLORS = ["#b91b1b", "#1863a5"]
 UNIVERSITIES = ("fac-rep-hand", "fac-science-rep", "fac-science-science")
 MAX_BOT_MOVES = 60

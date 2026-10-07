@@ -135,6 +135,8 @@ def _sponsor_cards(e: Event, seat: int, seat_of: dict, add, revealed: list, st: 
         add(Action(seat, "choose_effect", {"waza": a["type"]}), e)
     elif t == "pDiscardCards" and log.startswith("You sell") and (a.get("bonuses") or {}).get("money") == 3 and len(cards) == 1:
         add(Action(seat_of[str(e.player or a.get("player_id"))], "harbor_sell", {"card": cards[0]}), e)           # map 4 Commercial Harbor
+    elif t == "pDiscardCards" and log.startswith("You sell") and not cards:
+        pass                                                         # a sale of no card: nothing happens
     elif t == "pDiscardCards" and log.startswith("You sell"):
         if (a.get("bonuses") or {}).get("money") != 4 * len(cards):       # Sunbathing pays 4 a card, other abilities differ (Commercial Harbor)
             return "sell for another reason than Sunbathing"
@@ -165,6 +167,18 @@ def _special_card_event(e) -> bool:
 CONSUMED_MARKS: set = set()           # the markCard events that earlier turns have taken (set by the differential harness)
 
 _NOT_HANDLED = object()
+
+
+def _draw_after_rescue(events: list, e) -> bool:
+    """The first draw from the deck after a hand card went to the Rescue Station, with only gains in between."""
+    i = events.index(e)
+    for x in reversed(events[:i]):
+        if x.type == "buyAnimal" and isinstance(x.args, dict) and (x.args.get("card") or {}).get("location") == "rescueStation":
+            before = [y for y in events[:events.index(x)] if y.type not in ("gameStateChange", "gameStateChangePrivateArg")]
+            return not (before and before[-1].type == "pDrawCards" and before[-1].log == "You draw ${card_names} from the deck")      # (a draw right before the tuck was its own)
+        if x.type not in ("getBonuses", "gameStateChange", "gameStateChangePrivateArg"):
+            return False
+    return False
 
 
 def nxt_event(events: list, e):
@@ -509,6 +523,9 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 continue
             if t == "snapCard" or (t == "pDrawCards" and e.log == "You draw ${card_names} from the deck"):         # a card taken as income (map bonus space, Science Lab): either player
                 who = seat_of[str(a.get("player_id") or e.player)]
+                if t == "pDrawCards" and (_draw_after_rescue(events, e) or (nxt_event(events, e) is not None and nxt_event(events, e).type == "buyAnimal"
+                                                                           and (nxt_event(events, e).args["card"] or {}).get("location") == "rescueStation")):
+                    continue                                         # the card drawn for a rescued hand card (map 10): the engine draws it itself (855033887 turn 57)
                 if t == "pDrawCards":
                     add(Action(who, "take_cards", {"mode": "deck", "count": 1}), e)
                 else:
@@ -539,10 +556,11 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                     break
             paid = -sum((x.args.get("bonuses") or {}).get("xtoken", 0) for x in before
                         if x.type == "getBonuses" and isinstance(x.args, dict) and x.args.get("source") == "increasing card strength")
-            if paid > spend:                               # (BGA sometimes reports the card with the strength it has after paying)
-                spend = paid
-            unpaid = max(0, spend - paid - (1 if t1_card else 0))      # strength the log shows without X tokens: map 12 (AI) conceals low strengths, the harness checks it
-            add(Action(seat, "choose_action_card", {"type": chosen, "spend": spend - unpaid - (1 if t1_card else 0), **({"unpaid": unpaid} if unpaid else {}),
+            t1_in = 1 if t1_card else 0                    # (the strength difference includes the +1 of the Map T1 discard)
+            if paid > spend - t1_in:                       # (BGA sometimes reports the card with the strength it has after paying)
+                spend = paid + t1_in
+            unpaid = max(0, spend - paid - t1_in)      # strength the log shows without X tokens: map 12 (AI) conceals low strengths, the harness checks it
+            add(Action(seat, "choose_action_card", {"type": chosen, "spend": spend - unpaid - t1_in, **({"unpaid": unpaid} if unpaid else {}),
                                                     **({"t1": t1_card} if t1_card else {}),
                                                     **({"hypnosis": True} if hypnotised else {})}), e)
             t1_card = None                                 # (the discard counts for this action only: a Multiplier repetition pays its own strength)
@@ -596,7 +614,9 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 add(Action(seat, "choose_effect", {"gain": "appeal" if "appeal" in b else "reputation"}), e)
         elif t == "pDrawCards" and a.get("source") == "Map 14 effect":
             pass                                                     # the person sponsor of the Lagoon: the engine finds it itself
-        elif t == "pDrawCards" and e.log == "You draw ${card_names} from the deck" and chosen == "build"                 and (nxt_event(events, e) is not None and nxt_event(events, e).type == "buyAnimal" and nxt_event(events, e).args["card"].get("location") == "rescueStation"):
+        elif t == "pDrawCards" and e.log == "You draw ${card_names} from the deck" and _draw_after_rescue(events, e):
+            pass                                                     # the card drawn for a rescued hand card, logged after the animal's own gains (a Meerkat Den: 837771519 turn 60)
+        elif t == "pDrawCards" and e.log == "You draw ${card_names} from the deck" and (nxt_event(events, e) is not None and nxt_event(events, e).type == "buyAnimal" and nxt_event(events, e).args["card"].get("location") == "rescueStation"):
             pass                                                     # the card drawn for a rescued hand card: the engine draws it itself
         elif (chosen in ("sponsors", "association", "animals", "build") or (chosen == "cards" and (_special_card_event(e) or flags.get("dig")))) and t in ("pDrawCards", "snapCard", "pDiscardCards"):
             why = _sponsor_cards(e, seat, seat_of, add, revealed, flags)
@@ -656,6 +676,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             if _key(a["card"]["id"]) in prog.HIRE_WORKER:
                 assoc.auto_hire = True                                 # (Talented Communicator hires the worker that follows, it is not a notepad bonus)
             add(Action(seat_of[str(a["player_id"])] if in_break and a.get("player_id") is not None else seat, "choose_effect", {"card": _key(a["card"]["id"])}), e)
+            marketing_open = False                                   # (one Marketing effect plays one sponsor: the next one is a play of the action again, 874274513 turn 63)
         elif t == "playSponsor" and flags.get("s4"):                   # Snap Sponsors (4), level II: a card discarded to play a sponsor for money
             played.add(_key(a["card"]["id"]))
             add(Action(seat, "sponsor_side", {"op": "discard_play", "card": flags.pop("s4"), "play": _key(a["card"]["id"])}), e)

@@ -20,7 +20,7 @@ from pathlib import Path
 
 from ark_nova import data
 from ark_nova.data import map_quirks
-from ark_nova.engine import bonuses, cards_action, project_effects
+from ark_nova.engine import bonuses, cards_action, gamestats, project_effects
 from ark_nova.engine.actions import Action
 from ark_nova.engine.icons import icon_counts
 from ark_nova.engine.rng import Rng
@@ -360,7 +360,7 @@ def task_actions(state, p, a) -> list:
             elif task == "conservation":
                 for act in conservation_actions(state, p, level):
                     acts.append(Action(act.player, act.kind, {**act.args, **mark}))
-                if variant == 2 and not extra:                  # Hire Association: a new worker instead of supporting a project (strength 5)
+                if variant == 2 and not extra and bonuses.worker_tokens(p, "supply_"):                  # Hire Association: a new worker instead of supporting a project (strength 5)
                     acts.append(Action(p.seat, "association_task", {"task": "hire"}))
     if variant == 4 and level == 1 and not a["done"] and a["strength"] >= 5:
         acts.append(Action(p.seat, "self_clever", {}))
@@ -439,6 +439,8 @@ def do_task(state, action: Action) -> None:
     if Action(p.seat, "association_task", args) not in task_actions(state, p, a):
         raise fx.IllegalEffect(f"that association task is not possible: {args}")
     task = args["task"]
+    if task in gamestats.ASSOCIATION_TASKS:
+        gamestats.count(state, p.seat, "assoc", sub=task)
     kind = "conservation" if task == "hire" else task
     extra = int(args.get("extra", 0))
     need = workers_needed(p, kind)
@@ -581,6 +583,7 @@ def start_project(state, p, args: dict) -> None:
     elif src == "display":
         i = state.display.index(key)
         p.money -= i + 1
+        gamestats.spent(state, p.seat, i + 1)
         state.display[i] = None
     if src in ("hand", "display"):
         state.projects_in_play.insert(0, key)
@@ -648,6 +651,7 @@ def make_donation(state, p, x_discount: bool = False) -> None:
     if cost > p.money:
         raise _fx().IllegalEffect("not enough money")
     p.money -= cost
+    gamestats.spent(state, p.seat, cost)
     loc = DONATION_SLOTS[n] if n < len(DONATION_SLOTS) else DONATION_OVERFLOW_SLOT
     ids = [t.id for q in state.players for t in q.tokens]
     p.tokens.append(Token(max(ids, default=0) + 1, "token", loc))
@@ -700,4 +704,6 @@ def after_step(state, seat: int) -> None:
     if g._open_effects(state, seat, [], {"kind": "association_tasks", "args": a}):
         return
     if a["level"] < 2 or not task_actions(state, p, a) or all(x.kind == "finish_association" for x in task_actions(state, p, a)):
+        if a["level"] >= 2 and a.get("done") and not a.get("donated") and g.harbor_ready(state, seat) and donation_cost(state, p, a.get("variant") == 3) <= p.money + 3:
+            return                                          # Commercial Harbor: a sale may pay for the donation, the player ends the action (859461296 turn 51)
         g._end_turn(state)
