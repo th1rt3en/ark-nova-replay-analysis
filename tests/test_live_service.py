@@ -359,3 +359,57 @@ def test_both_players_proposing_abandons_the_table_at_once():
     r = post(b, "abandon")                                                                    # b proposes while a's proposal is open
     assert r.status_code == 200 and r.json()["status"] == "abandoned"
     assert client.get(f"/api/games/{game_id}").status_code == 404
+
+
+def test_time_control_presets_custom_limits_and_the_increment(monkeypatch):
+    from ark_nova.live import clock as tc
+    assert tc.create(None)["start"] == 240_000 and tc.create(None)["increment"] == 74_000
+    assert (tc.create({"speed": "slow"})["start"], tc.create({"speed": "slow"})["increment"]) == (360_000, 118_000)
+    assert (tc.create({"speed": "fast"})["start"], tc.create({"speed": "fast"})["increment"]) == (180_000, 46_000)
+    assert tc.create({"start": 1800, "increment": 0})["mode"] == "custom"
+    for bad in ({"speed": "warp"}, {"start": 170, "increment": 10}, {"start": 1801, "increment": 10}, {"start": 300, "increment": 121}, {"start": 300}):
+        with pytest.raises(tc.ClockError):
+            tc.create(bad)
+    c = tc.create({"speed": "fast"})
+    c = tc.advance(c, 1000, [0, 1], None, False)                          # the setup: both clocks run
+    c = tc.advance(c, 11_000, [0], [0, 0], False)                          # 10 s later; seat 0's turn begins: +46 s but capped at the start
+    assert c["remaining"] == [180_000, 170_000] and c["running"] == [True, False]
+    c = tc.advance(c, 21_000, [1], [1, 1], False)
+    assert c["remaining"] == [170_000, 180_000] and c["turn_key"] == [1, 1]
+    c = tc.advance(c, 31_000, [1], [1, 1], False)                          # same turn: no second increment
+    assert c["remaining"][1] == 170_000
+    assert tc.overtime(c, 31_000 + 171_000, 1) and not tc.overtime(c, 31_000 + 171_000, 0) and not tc.overtime(c, 31_000 + 100_000, 1)
+    c = tc.advance(c, 31_000 + 200_000, [1], [1, 1], False)                  # 200 s on a 170 s clock: -30 s, and it runs on
+    assert c["remaining"][1] == -30_000
+    c = tc.advance(c, 31_000 + 200_000, [0], [2, 0], False)                  # seat 0's turn: its increment; seat 1's clock stays negative
+    assert c["remaining"] == [180_000, -30_000]
+    c = tc.advance(c, 31_000 + 200_000, [1], [3, 1], False)                  # seat 1's turn: the increment brings the negative clock back up
+    assert c["remaining"][1] == 16_000 and not tc.overtime(c, 31_000 + 200_000, 1)
+
+
+def test_a_game_with_a_clock_flags_the_player_who_runs_out_of_time():
+    from ark_nova.live import archive as arch, registry as reg
+    keeper = FakeKeeper()
+    service = LiveService(keeper, engine_version="test", registry=reg.FakeRegistry(), archive=arch.FakeArchive())
+    client = TestClient(create_app(Settings(cache_dir="off"), Idx(), Logs(), live=service))
+    r = client.post("/api/games", json={"time_control": {"start": 300, "increment": 10}})
+    g = r.json()
+    players = [Player(client, g["game_id"], t, random.Random(1)) for t in g["tokens"]]
+    _join_both(client, g["game_id"], players)
+    gid = g["game_id"]
+    setup = client.get(f"/api/games/{gid}/setup", headers=players[0].h).json()
+    assert setup["clock"]["start"] == 300_000 and setup["clock"]["running"] == [True, True]       # the map pick: both clocks run
+    assert client.post(f"/api/games/{gid}/timeout", headers=players[1].h, json={}).status_code == 422      # nobody is out of time yet
+    st = keeper.state(gid)["config"]["clock"]
+    st["remaining"] = [300_000, -5]                                                                  # the second player's clock has run out
+    st["at"] = int(__import__("time").time() * 1000) - 1
+    keeper.update_config(gid, {"clock": st})
+    service._cache.clear()
+    assert client.post(f"/api/games/{gid}/timeout", headers=players[1].h, json={}).status_code == 422      # (the one out of time cannot claim anything)
+    r = client.post(f"/api/games/{gid}/timeout", headers=players[0].h, json={})
+    assert r.status_code == 200 and r.json()["seat"] == 1 and r.json()["timeout"]
+    res = client.get(f"/api/games/{gid}/result")
+    assert res.status_code == 200, res.text
+    assert res.json()["result"]["reason"] == "overtime" and "overtime" in res.json()["end_reason"]
+    assert any("ran out of time" in (m.get("label") or "") for m in [r.json().get("view", {}) or {}]) or r.json()["status"] == "conceded"
+    assert client.post("/api/games", json={"time_control": {"speed": "bogus"}}).status_code == 422

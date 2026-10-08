@@ -102,10 +102,32 @@
     const hint = document.createElement('div');
     const showHint = () => { const m = opts.game_modes.find((x) => x.id === mode.value); hint.textContent = m ? m.description : ''; };
     mode.onchange = showHint; showHint();
-    $('lobbyform').append(stack('Game mode', mode, hint), check('Marine Worlds', mw), button('Create the game'));
+    // time control: a speed (simple) or a starting clock and an increment (fine-grained)
+    const tcOpts = opts.time_control || { presets: [], default: 'normal', start_range: [180, 1800], increment_range: [0, 120] };
+    const fmt = (s) => (s >= 60 ? Math.floor(s / 60) + 'm' + (s % 60 ? String(s % 60).padStart(2, '0') + 's' : '') : s + 's');
+    const speed = document.createElement('select');
+    for (const p of tcOpts.presets) { const o = document.createElement('option'); o.value = p.id; o.textContent = p.id[0].toUpperCase() + p.id.slice(1) + ': ' + fmt(p.start) + ' + ' + fmt(p.increment) + ' per turn'; speed.append(o); }
+    speed.value = tcOpts.default;
+    const startIn = document.createElement('input'); startIn.type = 'number'; startIn.min = tcOpts.start_range[0] / 60; startIn.max = tcOpts.start_range[1] / 60; startIn.step = 1; startIn.value = 4;
+    const incIn = document.createElement('input'); incIn.type = 'number'; incIn.min = tcOpts.increment_range[0]; incIn.max = tcOpts.increment_range[1]; incIn.step = 1; incIn.value = 74;
+    const fine = document.createElement('div'); fine.hidden = true;
+    fine.append(field('Starting clock (minutes, also the maximum)', startIn), field('Increment per turn (seconds)', incIn));
+    const simple = document.createElement('div'); simple.append(speed);
+    const toggle = document.createElement('input'); toggle.type = 'checkbox'; toggle.setAttribute('role', 'switch'); toggle.setAttribute('aria-label', 'Fine-grained time control');
+    let custom = false;
+    toggle.onchange = () => { custom = toggle.checked; fine.hidden = !custom; simple.hidden = custom; };
+    const sw = document.createElement('label'); sw.className = 'lobbyswitch'; sw.title = 'Choose the starting clock and the increment yourself';
+    const track = document.createElement('span'); track.className = 'switchtrack';
+    sw.append(document.createTextNode('Fine-grained '), toggle, track);
+    const hintTc = document.createElement('div'); hintTc.textContent = 'Each player has a clock; it gains the increment at the start of their turn (never more than the starting clock) and runs while they have to decide. A clock can go below zero; then the opponent may end the game and win on overtime.';
+    const tcBox = document.createElement('div'); tcBox.append(simple, fine);
+    const tcField = stack('Time control', tcBox, hintTc);
+    const tcHead = tcField.firstChild; tcHead.className = 'lobbyhead'; tcHead.append(sw);                // (the switch sits on the line of the label)
+    $('lobbyform').append(stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), button('Create the game'));
     $('lobbyform').onsubmit = async (e) => {
       e.preventDefault();
-      const r = await api('', { marine_worlds: mw.checked, game_mode: mode.value });
+      const time_control = custom ? { start: Math.round(+startIn.value * 60), increment: Math.round(+incIn.value) } : { speed: speed.value };
+      const r = await api('', { marine_worlds: mw.checked, game_mode: mode.value, time_control });
       if (!r.ok) { $('lobbytext').textContent = r.body.message || 'The game could not be created.'; return; }
       const g = r.body, base = location.origin + '/play.html?game=' + g.game_id;
       $('lobbyform').hidden = true;

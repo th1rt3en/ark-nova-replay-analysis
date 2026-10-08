@@ -85,7 +85,7 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
             body = await body_of(request)
         except LiveError as e:
             return _map(e)
-        return await run(service.create, bool(body.get("marine_worlds")), None, body.get("game_mode"))
+        return await run(service.create, bool(body.get("marine_worlds")), None, body.get("game_mode"), body.get("time_control"))
 
     @app.get("/api/games/{game_id}")
     async def lobby(game_id: str):
@@ -141,6 +141,12 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
         except LiveError as e:
             return _map(e)
         return await run(service.move, game_id, token_of(request, body) or "", version, action, body.get("request_id"))
+
+    @app.post("/api/games/{game_id}/timeout")
+    async def timeout(game_id: str, request: Request):
+        if (bad := game_or_404(game_id)):
+            return bad
+        return await run(service.timeout, game_id, token_of(request) or "")
 
     @app.get("/api/games/{game_id}/abandon")
     async def abandon_state(game_id: str):

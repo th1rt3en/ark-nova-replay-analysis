@@ -25,6 +25,7 @@ from ark_nova.engine.game import IllegalAction, apply, legal_actions, new_game
 from ark_nova.engine.state import GameState, Phase
 from ark_nova.engine.version import ENGINE_VERSION, fingerprint
 from ark_nova.live import archive as arch
+from ark_nova.live import clock as tc
 from ark_nova.live import projection, stepdata
 from ark_nova.live import registry as reg
 from ark_nova.live.keeper import Forbidden, Keeper, LiveError, NoSuchTable, StaleVersion
@@ -100,6 +101,7 @@ class Cached:
     status: str
     names: list
     eff: list = dataclasses.field(default_factory=list)      # the numbers of the effective steps (what an undo or a restart has not taken back)
+    clock: dict | None = None                                # the time control's clocks (live/clock.py; None = a table without one)
 
 
 GAME_MODES = {
@@ -111,7 +113,7 @@ GAME_MODES = {
 
 def options() -> dict:
     """The game modes of the engine (`engine/map_select.py` is the list), with a name and a line of text each."""
-    return {"default": map_select.DEFAULT_MODE, "game_modes": [{"id": m, "label": GAME_MODES.get(m, (m, ""))[0], "description": GAME_MODES.get(m, (m, ""))[1]} for m in map_select.MODES]}
+    return {"default": map_select.DEFAULT_MODE, "time_control": tc.options(), "game_modes": [{"id": m, "label": GAME_MODES.get(m, (m, ""))[0], "description": GAME_MODES.get(m, (m, ""))[1]} for m in map_select.MODES]}
 
 
 def token_hash(token: str) -> str:
@@ -128,21 +130,25 @@ class LiveService:
         self._stat_cache: dict = {}                                 # gcs path -> the statistics of that record
 
     # ---- creating and joining -----------------------------------------------------------------------------------------------------------
-    def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None) -> dict:
+    def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None) -> dict:
         """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`)."""
         seed = secrets.randbelow(2 ** 31) if tail_seed is None else tail_seed
         mode = game_mode or map_select.DEFAULT_MODE
         if mode not in map_select.MODES:
             raise IllegalMove(f"the game mode must be one of {list(map_select.MODES)}", 422)
         options = {"game_mode": mode, "marine_worlds_flag": bool(marine_worlds), "confirm_turns": True}
+        try:
+            clock0 = tc.create(time_control)
+        except tc.ClockError as e:
+            raise IllegalMove(str(e), 422)
         state = new_game(options, ["1", "2"], seed)
         table_id = f"E{self.keeper.next_number()}"
         tokens = [secrets.token_urlsafe(24), secrets.token_urlsafe(24)]
         config = {"game_id": table_id, "options": options, "tail_seed": seed, "player_ids": ["1", "2"], "maps": list(state.config.maps), **fingerprint(), "engine_version": self.engine_version,
-                  "viewer": stepdata.viewer_header(state)}
+                  "viewer": stepdata.viewer_header(state), "clock": clock0}
         self.keeper.init(table_id, config, self.engine_version, [token_hash(t) for t in tokens], views=projection.views(state, {r: "The game starts" for r in projection.ROLES}), snapshot={"engine": state.to_dict(), "eff": []},
                          registry_event={"status": "waiting", "n_actions": 0})
-        self._remember(table_id, Cached(0, state, [token_hash(t) for t in tokens], "waiting", [None, None]))
+        self._remember(table_id, Cached(0, state, [token_hash(t) for t in tokens], "waiting", [None, None], clock=clock0))
         self.sync_registry(table_id)
         return {"game_id": table_id, "tokens": tokens, "creator_seat": secrets.randbelow(2)}
 
@@ -157,6 +163,9 @@ class LiveService:
         if all(names) and c.status == "waiting":
             self.keeper.set_status(game_id, "playing", registry_event={"status": "playing", "started_at": int(time.time() * 1000), "n_actions": c.version})
             c.status = "playing"
+            if c.clock is not None:                                      # the clocks start with the game
+                c.clock = tc.advance(c.clock, int(time.time() * 1000), self._to_act(c.state), self._turn_key(c.state), False)
+                self.keeper.update_config(game_id, {"clock": c.clock})
             self.sync_registry(game_id)
         return {"seat": seat, "names": names, "status": c.status}
 
@@ -186,7 +195,7 @@ class LiveService:
         seat = None
         if token:
             seat = self._seat_of(Cached(s["version"], None, [x["token_hash"] for x in s["seats"]], s["status"], []), token)
-        return {"game_id": game_id, "status": s["status"], "version": s["version"], "seat": seat, "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
+        return {"game_id": game_id, "clock": tc.view(s["config"]["clock"], int(time.time() * 1000)) if s["config"].get("clock") else None, "status": s["status"], "version": s["version"], "seat": seat, "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
                 "first_player": 0, "players": [{"seat": i, "id": str(i + 1), "name": x["name"] or f"Seat {i + 1}", "color": (v.get("colors") or [None, None])[i]} for i, x in enumerate(s["seats"])],
                 "maps": v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in card_data.maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") else {}, "cards": v.get("cards"), "base_projects": v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
                 "abandon": self.abandon_view(s["config"])}
@@ -257,7 +266,7 @@ class LiveService:
             raise EngineStopped("game stopped, please report", 503)
         return self._commit(game_id, c, seat, act, new, request_id)
 
-    def _commit(self, game_id: str, c: "Cached", seat: int, act: Action, new: GameState, request_id: str | None) -> dict:
+    def _commit(self, game_id: str, c: "Cached", seat: int, act: Action, new: GameState, request_id: str | None, timeout: bool = False) -> dict:
         """Store the move that took the state `c.state` to `new`: the step with the views of both players and, when the game is over, its end (played out or conceded)."""
         n = c.version + 1
         names = [nm or f"Player {i + 1}" for i, nm in enumerate(c.names)]
@@ -266,19 +275,35 @@ class LiveService:
         eff = list(c.eff)
         step = stepdata.step_for(c.state, act, new, n, eff, names[seat])
         labels = stepdata.labels_for(act, step["label"], names[seat])
+        if timeout:                                                        # (`seat` is the player who ran out of time)
+            labels = {role: f"{names[seat]} ran out of time" for role in labels}
+            step["label"] = f"{names[seat]} ran out of time"
         if over:                                                           # the end is announced in the game log of both players
             end = stepdata.announcement(new, names)
             labels = {role: f"{text}. {end}" for role, text in labels.items()}
             step["label"] = f"{step['label']}. {end}"
         end_status = "conceded" if conceded else "finished"
+        all_views = projection.views(new, labels)
+        clock_now = None
+        if c.clock is not None:                                            # the time used by this move comes off the clocks that ran; a new turn brings the increment
+            now = int(time.time() * 1000)
+            clock_now = tc.advance(c.clock, now, all_views["spectator"]["view"].get("to_act") or [], self._turn_key(new), over)
+            for item in all_views.values():
+                item["view"]["clock"] = tc.view(clock_now, now)
+        if timeout and over:
+            for item in all_views.values():
+                item["view"]["end"]["reason"] = "overtime"                 # (the end screen says why the other player won)
         result = self.keeper.append(
-            game_id, c.version, request_id or uuid.uuid4().hex, {"player": act.player, "kind": act.kind, "args": act.args}, step, projection.views(new, labels),
+            game_id, c.version, request_id or uuid.uuid4().hex, {"player": act.player, "kind": act.kind, "args": act.args}, step, all_views,
             snapshot={"engine": new.to_dict(), "eff": eff} if n % SNAPSHOT_EVERY == 0 or over else None, status=end_status if over else None,
-            end_reason=(f"seat {seat + 1} conceded" if conceded else "the game was played to the end") if over else None,
-            registry_event={"status": end_status, "n_actions": n, "result": dataclasses.asdict(new.result) if new.result is not None else None} if over else None)
+            end_reason=((f"seat {seat + 1} ran out of time (overtime)" if timeout else f"seat {seat + 1} conceded") if conceded else "the game was played to the end") if over else None,
+            registry_event={"status": end_status, "n_actions": n, "result": ({**dataclasses.asdict(new.result), **({"reason": "overtime"} if timeout else {})}) if new.result is not None else None} if over else None)
         if not result.get("duplicate"):
             had_maps = bool(c.state.config.maps)
             c.version, c.state, c.eff = result["version"], new, eff
+            if clock_now is not None:
+                c.clock = clock_now
+                self.keeper.update_config(game_id, {"clock": clock_now})
             if not had_maps and new.config.maps:
                 self._complete_header(game_id, new)                # (the players have chosen their maps: the viewer header gets them)
             if over:
@@ -287,6 +312,36 @@ class LiveService:
         if over and not result.get("duplicate"):
             self.wrap_up(game_id)                              # (after the answer is read: the keeper deletes the table once the record is exported)
         return out
+
+    # ---- the time control -------------------------------------------------------------------------------------------------------------
+    @staticmethod
+    def _to_act(state: GameState) -> list:
+        return [s for s in (0, 1) if projection.decision(state, s) is not None]
+
+    @staticmethod
+    def _turn_key(state: GameState) -> list | None:
+        """[turns completed, the player to move] while a turn is on (the clock's increment is given when it changes), None otherwise."""
+        return [state.turn, state.active_player] if state.phase in turns.PLAYING else None
+
+    def _flag(self, game_id: str, c: "Cached", seat: int) -> dict:
+        """The player's clock is at zero or below and the opponent claims the win: a concession of the player (the other wins with the scores of the position), announced as overtime."""
+        act = Action(seat, "concede", {})
+        try:
+            new = apply(c.state, act)
+        except IllegalAction as e:
+            raise IllegalMove(str(e), 422)
+        out = self._commit(game_id, c, seat, act, new, None, timeout=True)
+        return {**out, "status": "conceded", "seat": seat, "timeout": True}
+
+    def timeout(self, game_id: str, token: str) -> dict:
+        """The player ends the game and wins on overtime; allowed while the opponent's clock is at zero or below, whether it runs or not."""
+        c = self._load(game_id, fresh=True)
+        seat = self._seat_of(c, token)
+        if c.status != "playing" or c.clock is None:
+            raise IllegalMove("this game has no clock running", 409)
+        if not tc.overtime(c.clock, int(time.time() * 1000), 1 - seat):
+            raise IllegalMove("your opponent still has time on their clock", 409)
+        return self._flag(game_id, c, 1 - seat)
 
     # ---- abandoning by agreement ---------------------------------------------------------------------------------------------------------
     # One player proposes, the other agrees (the game ends as `abandoned`: no winner, no record) or rejects (the proposer may not propose again for ABANDON_COOLDOWN seconds).
@@ -522,7 +577,7 @@ class LiveService:
                     del eff[-took:]
             else:
                 eff.append(n)
-        c = Cached(s["version"], state, [x["token_hash"] for x in s["seats"]], s["status"], [x["name"] for x in s["seats"]], eff)
+        c = Cached(s["version"], state, [x["token_hash"] for x in s["seats"]], s["status"], [x["name"] for x in s["seats"]], eff, s["config"].get("clock"))
         self._remember(game_id, c)
         return c
 

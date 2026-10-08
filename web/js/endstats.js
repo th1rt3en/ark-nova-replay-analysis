@@ -8,20 +8,21 @@
   const color = (i) => (i === 0 ? 'var(--p0)' : 'var(--p1)');
 
   function scoreCards(box, d) {
-    const { names, scores, winner, conceded, status } = d;
+    const { names, scores, winner, conceded, status, reason } = d;
     const abandoned = status === 'abandoned';
     const tie = !abandoned && (winner === null || winner === undefined) && scores.length === 2 && scores[0] === scores[1];
     const win = winner === 0 || winner === 1 ? winner : null;
     const head = el('div', 'esresult');
     head.append(el('h2', 'eshead', abandoned ? 'Game abandoned' : tie ? "It's a tie" : win === null ? 'Game over' : names[win] + ' wins'));
     head.append(el('div', 'esnote', abandoned ? 'Both players agreed to abandon the game: there is no winner.'
+      : reason === 'overtime' && (conceded === 0 || conceded === 1) ? 'Won on overtime: ' + names[conceded] + "'s clock ran out · the scores are those of the position"
       : (conceded === 0 || conceded === 1) ? names[conceded] + ' conceded · the scores are those of the position when they gave up' : 'The game ended normally'));
     box.append(head);
     const board = el('div', 'esboard');
     for (const i of [0, 1]) {
       const c = el('div', 'esside' + (win === i ? ' winner' : tie ? ' tie' : ''));
       c.style.setProperty('--c', color(i));
-      c.append(el('div', 'estag', win === i ? '\u{1F451} Winner' : tie ? 'Tie' : conceded === i ? 'Conceded' : ''), el('div', 'esname', names[i]),
+      c.append(el('div', 'estag', win === i ? '\u{1F451} Winner' : tie ? 'Tie' : conceded === i ? (reason === 'overtime' ? 'Out of time' : 'Conceded') : ''), el('div', 'esname', names[i]),
                el('div', 'esscore', scores[i] === undefined ? '–' : String(scores[i])));
       board.append(c);
     }

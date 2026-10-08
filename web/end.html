@@ -46,7 +46,7 @@
   $('end').hidden = false;
   const res = data.result || {};
   document.title = 'Game ' + game + ' over - Ark Nova';
-  EndStats.render($('endstats'), { names: [0, 1].map((i) => data.names[i] || 'Seat ' + (i + 1)), scores: res.scores || [], winner: res.winner, conceded: res.conceded,
+  EndStats.render($('endstats'), { names: [0, 1].map((i) => data.names[i] || 'Seat ' + (i + 1)), scores: res.scores || [], winner: res.winner, conceded: res.conceded, reason: res.reason || (/overtime/.test(data.end_reason || '') ? 'overtime' : undefined),
                                    status: data.status, stats: data.stats && data.stats.players });
   const bits = ['Game ' + game];
   if (data.marine_worlds) bits.push('Marine Worlds');

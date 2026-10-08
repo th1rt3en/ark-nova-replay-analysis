@@ -1960,6 +1960,8 @@
     const h = el('h2', '', who.name);
     h.style.borderBottom = '3px solid ' + seatColor(seat);
     h.append(el('span', 'map', 'Map ' + map.id + (map.name ? ': ' + map.name : '')));
+    const cb = clockBadge(seat);
+    if (cb) h.append(cb);
     box.append(h);
 
     const row = el('div', 'zooRow');
@@ -2555,6 +2557,47 @@
   // The server keeps the game (the Table Durable Object) and pushes a view + the seat's legal actions after every move; the page draws them with the same code as the fork and
   // turns a click into one of the legal actions, which it posts. A step is a pushed state; the latest one is the position. The game id and the seat token come from the url
   // (`play.html?game=E12&s=<token>`; no token = a spectator).
+  // ---- the clocks (time control): the server sends the time left at one moment and who runs; the page counts down by itself ----------------------------------------
+  let playClock = null, playClockSkew = 0;
+  function setClock(c) {
+    if (!c) return;
+    playClock = c;
+    playClockSkew = (c.now || Date.now()) - Date.now();
+    tickClocks();
+  }
+  function clockLeft(seat) {                                                  // milliseconds left on a seat's clock now (may be below zero)
+    if (!playClock) return null;
+    const spent = playClock.running[seat] && playStatus === 'playing' ? Math.max(0, Date.now() + playClockSkew - playClock.at) : 0;
+    return playClock.remaining[seat] - spent;
+  }
+  function clockText(seat) {
+    const ms = clockLeft(seat);
+    if (ms === null) return '';
+    const s = Math.ceil(Math.abs(ms) / 1000);                              // (a clock below zero is shown with a minus sign)
+    return (ms < 0 && s > 0 ? '-' : '') + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  function tickClocks() {
+    for (const n of document.querySelectorAll('.clock[data-seat]')) {
+      const seat = +n.dataset.seat, ms = clockLeft(seat);
+      n.textContent = clockText(seat);
+      n.classList.toggle('running', !!(playClock && playClock.running[seat] && playStatus === 'playing'));
+      n.classList.toggle('low', ms !== null && ms < 30000);
+      n.classList.toggle('negative', ms !== null && ms < 0);
+    }
+    const claim = $('claimtime');                                              // the menu's button to win on overtime: enabled while the opponent's clock is not above zero
+    if (claim) claim.disabled = !(playSeat !== null && playClock && clockLeft(1 - playSeat) <= 0);
+  }
+  function clockBadge(seat) {
+    if (!PLAY || !playClock) return null;
+    const b = el('span', 'clock', clockText(seat));
+    b.dataset.seat = String(seat);
+    b.title = 'Time left (' + (playClock.mode === 'custom' ? 'custom' : playClock.speed) + ' time control: ' + Math.round(playClock.start / 60000 * 10) / 10 + ' min, +' + Math.round(playClock.increment / 1000) + ' s per turn)';
+    return b;
+  }
+  async function refreshClock() {
+    const r = await playApi('/setup' + (playToken ? '?s=' + encodeURIComponent(playToken) : '')).catch(() => null);
+    if (r && r.ok && r.body.clock) setClock(r.body.clock);
+  }
   let playMapPick = null;                                                     // the map clicked in the map pick, not yet confirmed
   const firstPlayerText = () => (replay.players && replay.players[0] ? replay.players[0].name + ' plays first. ' : '');
   let playId = null, playToken = null, playSeat = null, playVersion = -1, playSocket = null, playPoll = null, playStatus = 'playing', playBackoff = 1000, playLeaving = false, playAbandonState = { proposal: null, cooldown: {}, skew: 0 };
@@ -2583,12 +2626,14 @@
     playVersion = state.body.version;
     playStatus = state.body.status || setup.body.status;
     setAbandon(setup.body.abandon);
+    setClock(setup.body.clock);
     return { ...setup.body, table_id: playId, result: [], setup_steps: 0, steps: [playStep(state.body, 0)] };
   }
   function pushLive(p) {
     if (p.version <= playVersion) return;
     playVersion = p.version;
     if (p.status) playStatus = p.status;
+    if (p.view && p.view.clock) setClock(p.view.clock);
     const wasLast = step === replay.steps.length - 1;
     const hadMove = replay.steps.some((st) => (st.actions || []).length > 0);
     for (const st of replay.steps) st.actions = [];                          // (only the latest position can be played)
@@ -2611,8 +2656,8 @@
   function playMessage(m) {
     if (m.type === 'abandon') setAbandon(m, true);
     else if (m.type === 'state') pushLive(m);
-    else if (m.type === 'lobby') { (m.names || []).forEach((n, i) => { if (n) replay.players[i].name = n; }); if (m.status) playStatus = m.status; playHeadline(); render(); }
-    else if (m.type === 'status') { playStatus = m.status; render(); playEndCheck(); }
+    else if (m.type === 'lobby') { (m.names || []).forEach((n, i) => { if (n) replay.players[i].name = n; }); if (m.status) playStatus = m.status; playHeadline(); render(); if (playStatus === 'playing') refreshClock(); }
+    else if (m.type === 'status') { playStatus = m.status; render(); playEndCheck(); if (playStatus === 'playing') refreshClock(); }
   }
   async function playConnect() {
     let base = '';
@@ -2628,7 +2673,7 @@
     if (base) { open(); return; }
     playPoll = setInterval(async () => {                                      // (no socket server configured: ask every 2 seconds)
       const r = await playApi('/state' + (playToken ? '?s=' + encodeURIComponent(playToken) : '')).catch(() => null);
-      if (r && r.ok) { if (r.body.version > playVersion) pushLive(r.body); else if (r.body.status && r.body.status !== playStatus) { playStatus = r.body.status; render(); } }
+      if (r && r.ok) { if (r.body.version > playVersion) pushLive(r.body); else if (r.body.status && r.body.status !== playStatus) { const was = playStatus; playStatus = r.body.status; render(); if (was === 'waiting') refreshClock(); } }
       if (r && r.ok && playStatus === 'playing') {                            // (and the proposal to abandon, which a socket would push)
         const ab = await playApi('/abandon').catch(() => null);
         if (ab && ab.ok) { if (ab.body.status && ab.body.status !== playStatus) { playStatus = ab.body.status; render(); playEndCheck(); } else setAbandon(ab.body, true); }
@@ -2644,7 +2689,7 @@
     endShown = true;
     const names = [0, 1].map((i) => (replay.players[i] ? replay.players[i].name : 'Player ' + (i + 1)));
     const conceded = end.conceded === 0 || end.conceded === 1;
-    EndStats.render($('endstats'), { names, scores: end.scores || [], winner: end.winner, conceded: conceded ? end.conceded : null, status: conceded ? 'conceded' : 'finished', stats: end.stats });
+    EndStats.render($('endstats'), { names, scores: end.scores || [], winner: end.winner, conceded: conceded ? end.conceded : null, status: conceded ? 'conceded' : 'finished', reason: end.reason, stats: end.stats });
     const bar = $('endbar');
     bar.replaceChildren();
     const w = end.winner === 0 || end.winner === 1 ? end.winner : null;
@@ -2842,6 +2887,18 @@
       if (r.ok) { if (r.body.view) pushLive(r.body); playStatus = 'conceded'; render(); } else renderForkMoves(r.body.message || 'could not concede');
     };
     list.append(concede);
+    if (playClock && playStatus === 'playing') {                               // time control: win on overtime
+      const ot = el('button', 'gamemenuitem', 'End the game: opponent out of time');
+      ot.type = 'button'; ot.id = 'claimtime'; ot.disabled = !(clockLeft(1 - playSeat) <= 0);
+      ot.title = "Available while your opponent's clock is at zero or below: you win on overtime";
+      ot.onclick = async () => {
+        gameMenuOpen = false; list.hidden = true;
+        if (!confirm("End the game now? You win on overtime because your opponent's clock has run out.")) return;
+        const r = await playApi('/timeout', {});
+        if (r.ok) { if (r.body.view) pushLive(r.body); playStatus = 'conceded'; render(); playEndCheck(); } else renderForkMoves(r.body.message || 'could not end the game');
+      };
+      list.append(ot);
+    }
     const ab = abandonButton();
     if (ab) { ab.className = 'gamemenuitem'; const click = ab.onclick; ab.onclick = () => { gameMenuOpen = false; list.hidden = true; return click(); }; list.append(ab); }
     wrap.append(toggle, list);
@@ -2878,6 +2935,7 @@
     if (playSeat !== null) $('tableInfo').after(alertToggle());
     renderAbandon();
     playConnect();
+    setInterval(tickClocks, 500);
   }
 
   function initFork() {

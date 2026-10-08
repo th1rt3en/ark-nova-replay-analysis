@@ -858,6 +858,10 @@ body.viewer { padding-bottom: 5rem; }
 .encpick { fill: rgba(47, 128, 232, .22); stroke: #2f80e8; stroke-width: 4; pointer-events: all; cursor: pointer; }
 .encpick:hover { fill: rgba(47, 128, 232, .4); }
 .encpick.on { fill: rgba(46, 190, 84, .4); stroke: #2ebe54; }
+.clock { margin-left: auto; font: 700 1.15rem ui-monospace, Consolas, monospace; padding: .05rem .5rem; border-radius: 6px; background: rgba(0, 0, 0, .12); color: #2b1d12; }
+.clock.running { background: #2f6b4f; color: #fff; }
+.clock.negative { background: #b3261e; color: #fff; }
+.clock.running.low, .clock.low { background: #b3261e; color: #fff; }
 .mappreview { flex-basis: 100%; width: min(100%, 62rem); margin: .4rem auto 0; padding: .4rem; box-sizing: border-box; }
 .mappreview .zooRow { margin-bottom: 0; }
 .mappreview > img { display: block; max-width: 100%; max-height: 62vh; margin: 0 auto; border-radius: 8px; }
@@ -909,6 +913,14 @@ body.viewer .lobby a { color: #7a3b00; font-weight: 600; }
 .lobby form { display: flex; flex-direction: column; gap: 1.1rem; }
 .lobbyfield { display: flex; flex-direction: column; gap: .4rem; }
 .lobbyfield > span { font-weight: 700; font-size: 1.05rem; }
+.lobbyfield > span.lobbyhead { display: flex; align-items: center; justify-content: space-between; }
+.lobbyswitch { display: inline-flex; align-items: center; gap: .5rem; font-weight: 600; font-size: .9rem; cursor: pointer; position: relative; }
+.lobby .lobbyswitch input[type=checkbox] { position: absolute; opacity: 0; width: 0; height: 0; }
+.switchtrack { width: 2.6rem; height: 1.45rem; border-radius: 999px; background: #bfae8a; border: 2px solid #3b2a1c; position: relative; transition: background .15s; }
+.switchtrack::after { content: ''; position: absolute; top: 1px; left: 1px; width: 1rem; height: 1rem; border-radius: 50%; background: #fffaf0; border: 1px solid #3b2a1c; transition: transform .15s; }
+.lobbyswitch input:checked + .switchtrack { background: #4a76b8; }
+.lobbyswitch input:checked + .switchtrack::after { transform: translateX(1.15rem); }
+.lobbyswitch input:focus-visible + .switchtrack { outline: 3px solid #4a76b8; outline-offset: 2px; }
 .lobbyfield select { width: 100%; padding: .65rem 2.4rem .65rem .85rem; font: inherit; font-size: 1rem; color: #2b1d12; background-color: #fffaf0; border: 2px solid #3b2a1c; border-radius: 8px;
   cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath d='M1 1l7 7 7-7' fill='none' stroke='%233b2a1c' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right .85rem center; }
