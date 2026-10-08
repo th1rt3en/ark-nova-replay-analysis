@@ -24,5 +24,18 @@
             "a concession is a move of the game (concede), the conceding player loses",
             "simultaneous break / endgame discards in live play, bonus enclosures optional"
         ]
+    },
+    {
+        "version": "0.2.1",
+        "code_hash": "828138b4542b8aca1144b9ab957807fb15b02fe98d128621474e1b90523f8d7d",
+        "data_hash": "44d7dc435f71dec099304d6d461687c90155099fe851d7646dffb4f96ce06e40+c35c11942ee2b15a1dbf589bd9347bc4db6f144f93cd3418466a0407cbf27b34",
+        "schema_version": 1,
+        "commit": "593a3cc4879e9f2e519841030b84c62bc22a346c",
+        "uncommitted_changes": false,
+        "date": "2026-10-08",
+        "notes": [
+            "Sponsor triggers are separate effects the player resolves (only Science Library, species experts, Horse Whisperer and Polar Bear Exhibit for the opponent are automatic)",
+            "Constriction compares current appeal; Venom early payment refund; Waza Special Assignment appeal is an effect; Pilfering peaceful choice; sea animal icon for Amazon House; Technology/Enlarge/terrain fixes"
+        ]
     }
 ]
