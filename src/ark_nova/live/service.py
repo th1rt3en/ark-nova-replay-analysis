@@ -161,11 +161,11 @@ class LiveService:
         names = self.keeper.seat(game_id, seat, name)
         c.names = list(names)
         if all(names) and c.status == "waiting":
-            self.keeper.set_status(game_id, "playing", registry_event={"status": "playing", "started_at": int(time.time() * 1000), "n_actions": c.version})
-            c.status = "playing"
-            if c.clock is not None:                                      # the clocks start with the game
+            if c.clock is not None:                                      # the clocks start when both players are in and the first choices (the maps) are open; stored before the status push
                 c.clock = tc.advance(c.clock, int(time.time() * 1000), self._to_act(c.state), self._turn_key(c.state), False)
                 self.keeper.update_config(game_id, {"clock": c.clock})
+            self.keeper.set_status(game_id, "playing", registry_event={"status": "playing", "started_at": int(time.time() * 1000), "n_actions": c.version})
+            c.status = "playing"
             self.sync_registry(game_id)
         return {"seat": seat, "names": names, "status": c.status}
 

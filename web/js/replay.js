@@ -1762,7 +1762,8 @@
       const scoreValue = p.score !== undefined ? p.score : trackScore(p);
       score.append(document.createTextNode(scoreValue + ' ★'));
       flash(seat + ':score', scoreValue, score);
-      head.append(name, score);
+      const cb = clockBadge(seat);                                          // the clock of the time control, to the right of the name
+      head.append(...(cb ? [name, cb, score] : [name, score]));
       box.append(head);
 
       const res = el('div', 'ppres');
@@ -1960,8 +1961,6 @@
     const h = el('h2', '', who.name);
     h.style.borderBottom = '3px solid ' + seatColor(seat);
     h.append(el('span', 'map', 'Map ' + map.id + (map.name ? ': ' + map.name : '')));
-    const cb = clockBadge(seat);
-    if (cb) h.append(cb);
     box.append(h);
 
     const row = el('div', 'zooRow');
@@ -2674,6 +2673,12 @@
     playPoll = setInterval(async () => {                                      // (no socket server configured: ask every 2 seconds)
       const r = await playApi('/state' + (playToken ? '?s=' + encodeURIComponent(playToken) : '')).catch(() => null);
       if (r && r.ok) { if (r.body.version > playVersion) pushLive(r.body); else if (r.body.status && r.body.status !== playStatus) { const was = playStatus; playStatus = r.body.status; render(); if (was === 'waiting') refreshClock(); } }
+      const lobby = await playApi('').catch(() => null);                      // (and the names of the seats, which a socket would push)
+      if (lobby && lobby.ok) {
+        let changed = false;
+        (lobby.body.names || []).forEach((n, i) => { if (n && replay.players[i] && replay.players[i].name !== n) { replay.players[i].name = n; changed = true; } });
+        if (changed) { playHeadline(); render(); }
+      }
       if (r && r.ok && playStatus === 'playing') {                            // (and the proposal to abandon, which a socket would push)
         const ab = await playApi('/abandon').catch(() => null);
         if (ab && ab.ok) { if (ab.body.status && ab.body.status !== playStatus) { playStatus = ab.body.status; render(); playEndCheck(); } else setAbandon(ab.body, true); }
@@ -3143,7 +3148,7 @@
     }
     if (PLAY && bar) {                                                       // a live game: the confirm / undo / restart are legal actions of their own
       for (const a of acts) if (['confirm_turn', 'undo_last', 'restart_turn'].includes(a.kind)) forkClaimed.add(a);
-      if (!acts.length) { playWaitingBar(bar); return; }
+      if (!acts.length || playStatus === 'waiting') { playWaitingBar(bar); return; }                 // (nothing is offered until both players have joined)
       const picks = acts.filter((a) => a.kind === 'choose_map');
       if (picks.length) {                                                    // the maps are chosen in the bar: one button per map on offer
         for (const a of picks) forkClaimed.add(a);

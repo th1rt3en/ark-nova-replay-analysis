@@ -115,10 +115,11 @@
     const simple = document.createElement('div'); simple.append(speed);
     const toggle = document.createElement('input'); toggle.type = 'checkbox'; toggle.setAttribute('role', 'switch'); toggle.setAttribute('aria-label', 'Fine-grained time control');
     let custom = false;
-    toggle.onchange = () => { custom = toggle.checked; fine.hidden = !custom; simple.hidden = custom; };
+    const mode_label = document.createElement('span'); mode_label.textContent = 'Simple';                  // (names the mode that is on now)
+    toggle.onchange = () => { custom = toggle.checked; fine.hidden = !custom; simple.hidden = custom; mode_label.textContent = custom ? 'Fine-grained' : 'Simple'; };
     const sw = document.createElement('label'); sw.className = 'lobbyswitch'; sw.title = 'Choose the starting clock and the increment yourself';
     const track = document.createElement('span'); track.className = 'switchtrack';
-    sw.append(document.createTextNode('Fine-grained '), toggle, track);
+    sw.append(mode_label, toggle, track);
     const hintTc = document.createElement('div'); hintTc.textContent = 'Each player has a clock; it gains the increment at the start of their turn (never more than the starting clock) and runs while they have to decide. A clock can go below zero; then the opponent may end the game and win on overtime.';
     const tcBox = document.createElement('div'); tcBox.append(simple, fine);
     const tcField = stack('Time control', tcBox, hintTc);

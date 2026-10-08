@@ -858,6 +858,7 @@ body.viewer { padding-bottom: 5rem; }
 .encpick { fill: rgba(47, 128, 232, .22); stroke: #2f80e8; stroke-width: 4; pointer-events: all; cursor: pointer; }
 .encpick:hover { fill: rgba(47, 128, 232, .4); }
 .encpick.on { fill: rgba(46, 190, 84, .4); stroke: #2ebe54; }
+.pphead .clock { margin-left: .6rem; margin-right: auto; font-size: 1rem; }
 .clock { margin-left: auto; font: 700 1.15rem ui-monospace, Consolas, monospace; padding: .05rem .5rem; border-radius: 6px; background: rgba(0, 0, 0, .12); color: #2b1d12; }
 .clock.running { background: #2f6b4f; color: #fff; }
 .clock.negative { background: #b3261e; color: #fff; }

@@ -395,8 +395,11 @@ def test_a_game_with_a_clock_flags_the_player_who_runs_out_of_time():
     r = client.post("/api/games", json={"time_control": {"start": 300, "increment": 10}})
     g = r.json()
     players = [Player(client, g["game_id"], t, random.Random(1)) for t in g["tokens"]]
-    _join_both(client, g["game_id"], players)
     gid = g["game_id"]
+    assert client.post(f"/api/games/{gid}/join", headers=players[0].h, json={"name": "A"}).status_code == 200
+    waiting = client.get(f"/api/games/{gid}/setup", headers=players[0].h).json()["clock"]
+    assert waiting["running"] == [False, False] and waiting["remaining"] == [300_000, 300_000]          # (nothing runs until both players are in)
+    assert client.post(f"/api/games/{gid}/join", headers=players[1].h, json={"name": "B"}).status_code == 200
     setup = client.get(f"/api/games/{gid}/setup", headers=players[0].h).json()
     assert setup["clock"]["start"] == 300_000 and setup["clock"]["running"] == [True, True]       # the map pick: both clocks run
     assert client.post(f"/api/games/{gid}/timeout", headers=players[1].h, json={}).status_code == 422      # nobody is out of time yet
