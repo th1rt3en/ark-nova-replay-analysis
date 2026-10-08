@@ -24,7 +24,7 @@ SCHEMA = [
     ("n_actions", "INT64", "NULLABLE"), ("result", "STRING", "NULLABLE"),
     ("gcs_path", "STRING", "NULLABLE"), ("exported_at", "TIMESTAMP", "NULLABLE"), ("record_bytes", "INT64", "NULLABLE"), ("schema_version", "INT64", "NULLABLE"),
 ]
-FINAL = ("finished", "conceded", "abandoned", "error")
+FINAL = ("finished", "conceded", "abandoned", "error", "cancelled")
 
 
 def view_sql(project: str = PROJECT, dataset: str = DATASET) -> str:
