@@ -429,17 +429,17 @@ def play(state: GameState, action: Action) -> None:
     p.animals.append(k)
     gamestats.count(state, p.seat, "animals_played")
     a["played"].append(k)
-    if state.current_action is not None:
-        state.current_action["trigger_appeal"] = {}               # (the appeal that the triggers of this animal give: see `pilfer_hits`)
     own = own_gain(k)
-    waza = p.flags.get("waza")                                # Waza Special Assignment: appeal for every animal of the chosen kind
+    waza = p.flags.get("waza")                                # Waza Special Assignment: appeal for every animal of the chosen kind (an effect of its own)
+    waza_effect = []
     if waza and sponsor_extras.size_class(c) == ("small" if waza == sponsor_extras.WAZA_SMALL else "large"):
-        g._gain(state, p.seat, appeal=sponsor_extras.WAZA_APPEAL[waza])
+        waza_effect = [{"kind": "gain", "source": "S227", "res": "appeal", "n": sponsor_extras.WAZA_APPEAL[waza], "optional": False}]
     pairs = own_abilities(k, b)
     # the printed appeal, reputation and conservation points are effects of their own, resolved in any order the player likes
     printed = [{"kind": "gain", "source": k, "res": res, "n": n, "optional": False}
                for res, n in (("appeal", (c.get("appeal") or 0) + own.get("appeal", 0)), ("reputation", (c.get("reputation") or 0) + own.get("reputation", 0)),
                               ("conservation", (c.get("conservationPoint") or 0) + own.get("conservation", 0))) if n]
+    printed += waza_effect
     g._gain(state, p.seat, money=own.get("money", 0), x_tokens=own.get("xtoken", 0))
     if a.get("variant") == 3 and a["level"] >= 2:            # Discount Animals, level II: pay 2 for 1 appeal, once per animal
         printed.append({"kind": "pay_appeal", "source": k, "optional": True})

@@ -29,6 +29,7 @@ from ark_nova.live import projection, stepdata
 from ark_nova.live import registry as reg
 from ark_nova.live.keeper import Forbidden, Keeper, LiveError, NoSuchTable, StaleVersion
 from ark_nova.replay import fork
+from ark_nova.replay.view import PICTURE_OF, map_view
 
 SNAPSHOT_EVERY = 25
 ABANDON_COOLDOWN = int(os.environ.get("ABANDON_COOLDOWN_SECONDS", "600"))      # after a rejected proposal to abandon the proposer waits this long (10 minutes)
@@ -128,7 +129,7 @@ class LiveService:
 
     # ---- creating and joining -----------------------------------------------------------------------------------------------------------
     def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None) -> dict:
-        """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes)."""
+        """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`)."""
         seed = secrets.randbelow(2 ** 31) if tail_seed is None else tail_seed
         mode = game_mode or map_select.DEFAULT_MODE
         if mode not in map_select.MODES:
@@ -143,7 +144,7 @@ class LiveService:
                          registry_event={"status": "waiting", "n_actions": 0})
         self._remember(table_id, Cached(0, state, [token_hash(t) for t in tokens], "waiting", [None, None]))
         self.sync_registry(table_id)
-        return {"game_id": table_id, "tokens": tokens}
+        return {"game_id": table_id, "tokens": tokens, "creator_seat": secrets.randbelow(2)}
 
     def join(self, game_id: str, token: str, name: str) -> dict:
         """The holder of a seat link gives their name; the game starts when both seats have one."""
@@ -186,9 +187,15 @@ class LiveService:
         if token:
             seat = self._seat_of(Cached(s["version"], None, [x["token_hash"] for x in s["seats"]], s["status"], []), token)
         return {"game_id": game_id, "status": s["status"], "version": s["version"], "seat": seat, "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
-                "players": [{"seat": i, "id": str(i + 1), "name": x["name"] or f"Seat {i + 1}", "color": (v.get("colors") or [None, None])[i]} for i, x in enumerate(s["seats"])],
-                "maps": v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "cards": v.get("cards"), "base_projects": v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
+                "first_player": 0, "players": [{"seat": i, "id": str(i + 1), "name": x["name"] or f"Seat {i + 1}", "color": (v.get("colors") or [None, None])[i]} for i, x in enumerate(s["seats"])],
+                "maps": v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in card_data.maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") else {}, "cards": v.get("cards"), "base_projects": v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
                 "abandon": self.abandon_view(s["config"])}
+
+    def _map_views(self) -> dict:
+        """The boards of the maps (picture, placement bonuses, bonus slots) for the map pick, which shows each map as it looks in play."""
+        if not hasattr(self, "_map_view_cache"):
+            self._map_view_cache = {m["id"]: map_view(m["id"]) for m in card_data.maps() if m.get("geometry")}
+        return self._map_view_cache
 
     def preview(self, game_id: str, token: str, version: int, action: dict) -> dict:
         """Check a move without playing it: is it legal now, and does it make the turn impossible to take back (the page asks the player before sending it)."""
@@ -304,6 +311,8 @@ class LiveService:
         s, a = self._abandon_state(game_id)
         if s["status"] != "playing":
             raise AbandonRefused("only a running game can be abandoned", 409)
+        if a["proposal"] and a["proposal"]["by"] != seat:             # both players want to stop: the other's proposal is answered by this one, the table is abandoned at once
+            return self._abandon_now(game_id, c, a)
         if a["proposal"]:
             raise AbandonRefused("a proposal to abandon is already open", 409, {"proposal": a["proposal"]})
         now_ms = int(time.time() * 1000)
@@ -312,6 +321,19 @@ class LiveService:
             raise AbandonRefused(f"you cannot propose to abandon again for {-(-wait // 60000)} minute(s)", 429, {"retry_after": -(-wait // 1000)})
         a["proposal"] = {"by": seat, "at": now_ms}
         return self._abandon_store(game_id, a)
+
+    def _abandon_now(self, game_id: str, c: "Cached", a: dict) -> dict:
+        a["proposal"] = None
+        self._abandon_store(game_id, a)
+        self.keeper.set_status(game_id, "abandoned", end_reason="abandoned by agreement", registry_event={"status": "abandoned", "n_actions": c.version})
+        c.status = "abandoned"
+        self.wrap_up(game_id)
+        return {"status": "abandoned"}
+
+    def abandon_status(self, game_id: str) -> dict:
+        """The open proposal and the cooldowns with the game's status (for the pages that poll: no socket server pushes them)."""
+        s = self.keeper.state(game_id)
+        return {"status": s["status"], **self.abandon_view(s["config"])}
 
     def abandon_withdraw(self, game_id: str, token: str) -> dict:
         c = self._load(game_id, fresh=True)
@@ -332,12 +354,7 @@ class LiveService:
         if prop["by"] == seat:
             raise AbandonRefused("the other player answers your proposal", 403)
         if agree:
-            a["proposal"] = None
-            self._abandon_store(game_id, a)
-            self.keeper.set_status(game_id, "abandoned", end_reason="abandoned by agreement", registry_event={"status": "abandoned", "n_actions": c.version})
-            c.status = "abandoned"
-            self.wrap_up(game_id)
-            return {"status": "abandoned"}
+            return self._abandon_now(game_id, c, a)
         a["proposal"] = None
         a["cooldown"][str(prop["by"])] = int(time.time() * 1000) + ABANDON_COOLDOWN * 1000
         return {"status": "playing", **self._abandon_store(game_id, a)}

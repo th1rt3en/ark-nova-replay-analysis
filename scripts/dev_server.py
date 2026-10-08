@@ -1,10 +1,12 @@
 """Run the website with the local `log_examples/` first (every table with a file there counts as indexed and logged); other tables go to
 BigQuery / GCS when they are available.
 
-Usage: python scripts/dev_server.py [--port 8000]
+Usage: python scripts/dev_server.py [--port 8000] [--live]
+--live: live games on in-memory twins of the keeper, the registry and the archive (open /play.html; no socket server, the page asks every 2 seconds; games are lost on restart).
 Maps and the Marine Worlds flag are inferred from the log, as the replay config does in tests.
 """
 import argparse
+import os
 from pathlib import Path
 
 import uvicorn
@@ -86,7 +88,13 @@ def _planning_routes(app) -> None:
 def build_app():
     settings = Settings()
     index, logs = _remote_index(settings)
-    app = create_app(settings, LocalIndex(index), LocalLogs(logs))
+    live = None
+    if os.environ.get("DEV_LIVE") == "1":
+        from ark_nova.live import archive as arch, registry as reg
+        from ark_nova.live.fake import FakeKeeper
+        from ark_nova.live.service import LiveService
+        live = LiveService(FakeKeeper(), engine_version="dev", registry=reg.FakeRegistry(), archive=arch.FakeArchive())
+    app = create_app(settings, LocalIndex(index), LocalLogs(logs), live=live)
     _planning_routes(app)
     return app
 
@@ -96,7 +104,10 @@ if __name__ == "__main__":
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--host", default="127.0.0.1", help="address to listen on; 0.0.0.0 makes the server reachable from other devices on the network (it can then also save the planning sheets for them)")
     ap.add_argument("--reload", action="store_true", help="restart the server when a Python file under src/ changes (the web/ files are always read from disk)")
+    ap.add_argument("--live", action="store_true", help="play live games (play.html) on in-memory twins of the keeper, registry and archive")
     args = ap.parse_args()
+    if args.live:
+        os.environ["DEV_LIVE"] = "1"
     if args.reload:
         uvicorn.run("dev_server:build_app", factory=True, app_dir=str(Path(__file__).resolve().parent), host=args.host, port=args.port,
                     reload=True, reload_dirs=[str(Path(__file__).resolve().parents[1] / "src")], reload_includes=["*.py", "*.json"])

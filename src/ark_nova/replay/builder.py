@@ -91,7 +91,7 @@ def _apply_bonuses(p, bonuses) -> None:
         if k == "money":
             p.money += v
         elif k == "appeal":
-            p.appeal += v
+            p.appeal = tracks.clamp_appeal(p.appeal + v)               # (the appeal track ends at 113: 826568675 turn 67)
         elif k == "reputation":
             p.reputation = min(15, p.reputation + v)               # (BGA never shows 16: the bonus at 15 replaces the point)
         elif k == "conservation":
@@ -534,15 +534,25 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
         p.animals.remove(k)
     p.released.append(k)
     s.main_discard.append(k)
+    emptied = False
     for b in a.get("buildings") or []:                       # the enclosure that was emptied (an animal is not tied to an enclosure)
         for mine in p.buildings:
             if mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"]):          # (the starting enclosure has an id of its own in the engine)
                 if mine.type.startswith("size-"):
+                    emptied = emptied or mine.animal is not None
                     mine.animal = None
                 elif k in mine.animals:
                     mine.animals.remove(k)
+                    emptied = True
                 elif mine.animals:
                     mine.animals.pop(0)
+                    emptied = True
+    if not emptied:                                           # BGA names an empty enclosure as the one that is freed: the animal leaves the one it lived in (820534913 turn 56)
+        for mine in p.buildings:
+            if k in mine.animals:
+                mine.animals.remove(k)
+            if mine.animal == k:
+                mine.animal = None
     p.appeal -= (a.get("bonuses") or {}).get("appeal", 0)
 
 

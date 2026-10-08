@@ -322,7 +322,8 @@ def test_abandon_by_agreement_and_the_cooldown_after_a_rejection():
     assert post(a, "abandon/answer", {"agree": True}).status_code == 409                    # nothing to answer yet
     r = post(a, "abandon")
     assert r.status_code == 200 and r.json()["proposal"]["by"] == 0
-    assert post(b, "abandon").status_code == 409                                             # one proposal at a time
+    assert post(a, "abandon").status_code == 409                                             # one proposal at a time
+    assert client.get(f"/api/games/{game_id}/abandon").json()["proposal"]["by"] == 0         # (what a polling page reads)
     assert post(a, "abandon/answer", {"agree": True}).status_code == 403                     # the proposer cannot answer their own
     assert client.get(f"/api/games/{game_id}/setup").json()["abandon"]["proposal"]["by"] == 0
     r = post(b, "abandon/answer", {"agree": False})
@@ -336,3 +337,25 @@ def test_abandon_by_agreement_and_the_cooldown_after_a_rejection():
     r = post(b, "abandon/answer", {"agree": True})
     assert r.status_code == 200 and r.json()["status"] == "abandoned"
     assert client.get(f"/api/games/{game_id}").status_code == 404                           # (an abandoned table has no record: the keeper deleted it)
+
+
+def test_creator_seat_is_drawn_and_the_skeleton_names_the_first_player():
+    from ark_nova.live.fake import FakeKeeper
+    svc = LiveService(FakeKeeper())
+    seats = {svc.create()["creator_seat"] for _ in range(40)}
+    assert seats == {0, 1}                                   # either player can be the first one
+    g = svc.create()
+    sk = svc.skeleton(g["game_id"], g["tokens"][0])
+    assert sk["first_player"] == 0 and sk["map_images"]["1"].startswith("/maps/map-")
+
+
+def test_both_players_proposing_abandons_the_table_at_once():
+    client, keeper, service = _app()
+    game_id, players = _start(client)
+    _join_both(client, game_id, players)
+    a, b = players
+    post = lambda p, path, body=None: p.c.post(f"/api/games/{game_id}/{path}", headers=p.h, json=body or {})       # noqa: E731
+    assert post(a, "abandon").status_code == 200
+    r = post(b, "abandon")                                                                    # b proposes while a's proposal is open
+    assert r.status_code == 200 and r.json()["status"] == "abandoned"
+    assert client.get(f"/api/games/{game_id}").status_code == 404

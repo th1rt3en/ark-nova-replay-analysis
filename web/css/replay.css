@@ -248,6 +248,7 @@ aside { max-height: calc(100vh - 5.5rem); overflow-y: auto; }
 /* hover preview: the base positioning was lost in an earlier rewrite, so the preview never showed */
 .preview { position: fixed; right: 21rem; bottom: 1rem; z-index: 30; width: auto; height: min(92vh, 44rem); max-width: 40vw; border-radius: 12px; box-shadow: 0 6px 28px rgba(0, 0, 0, .6); pointer-events: none; }
 .preview[hidden] { display: none; }
+.preview.center { right: auto; bottom: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 60; }
 
 /* the action card of the running action: red border, lifted a little */
 .ac { transition: none; }
@@ -854,6 +855,12 @@ body.viewer { padding-bottom: 5rem; }
 .lobby button[type=submit]:disabled { opacity: .6; }
 .lobby input[type=checkbox] { width: 1.1rem; height: 1.1rem; }
 .sbmaps { display: flex; flex-wrap: wrap; gap: .3rem; flex-basis: 100%; justify-content: center; }
+.encpick { fill: rgba(47, 128, 232, .22); stroke: #2f80e8; stroke-width: 4; pointer-events: all; cursor: pointer; }
+.encpick:hover { fill: rgba(47, 128, 232, .4); }
+.encpick.on { fill: rgba(46, 190, 84, .4); stroke: #2ebe54; }
+.mappreview { flex-basis: 100%; width: min(100%, 62rem); margin: .4rem auto 0; padding: .4rem; box-sizing: border-box; }
+.mappreview .zooRow { margin-bottom: 0; }
+.mappreview > img { display: block; max-width: 100%; max-height: 62vh; margin: 0 auto; border-radius: 8px; }
 .sbmapbtn.on { background: #4a76b8; color: #fff; outline: 3px solid #f5c542; }
 
 /* selections that are confirmed afterwards (fork / sandbox) are blue; the plain highlight of the replay stays yellow */
@@ -919,3 +926,19 @@ body.viewer .lobby a { color: #7a3b00; font-weight: 600; }
 .abandonbox { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: 0 0 .6rem; padding: .55rem .8rem; background: #fff3d6; border: 2px solid #b8862e; border-radius: 8px; color: #2b1d12; }
 .alertbtn { margin-left: .6rem; padding: .15rem .55rem; font: inherit; font-size: .85rem; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 6px; cursor: pointer; opacity: .85; }
 .alertbtn:hover { opacity: 1; }
+
+/* the game menu in the row of the round counter */
+.breaktrack .gamemenu { margin-left: auto; position: relative; font-size: .95rem; }
+.gamemenubtn { padding: .25rem .6rem; border: 1px solid #4a3727; border-radius: 6px; background: #f6efcf; color: #2b1d12; cursor: pointer; font: inherit; }
+.gamemenulist { position: absolute; right: 0; top: calc(100% + 4px); z-index: 50; min-width: 12rem; display: flex; flex-direction: column; background: #f6efcf; border: 2px solid #1b110a; border-radius: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, .5); overflow: hidden; }
+.gamemenulist[hidden] { display: none; }
+.gamemenuitem { padding: .5rem .8rem; border: 0; border-bottom: 1px solid #c9b98a; background: transparent; color: #2b1d12; text-align: left; cursor: pointer; font: inherit; }
+.gamemenuitem:hover:not(:disabled) { background: #e3d49a; }
+.gamemenuitem:disabled { opacity: .5; cursor: not-allowed; }
+
+/* the dock: one group per player with its two buttons (hand | endgame cards) */
+.dockbar { border-radius: 18px; align-items: flex-end; }
+.dockgroup { display: flex; flex-direction: column; align-items: center; gap: .1rem; }
+.dockwho { font-size: .7rem; color: #f3e9c9; max-width: 7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dockpair { display: flex; gap: .3rem; padding: 0 .15rem .15rem; border-bottom: 3px solid var(--pc, #888); }
+.dockfold { align-self: center; }

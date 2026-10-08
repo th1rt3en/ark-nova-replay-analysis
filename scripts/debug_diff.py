@@ -69,6 +69,8 @@ def main(game: str, turn: str = None) -> None:
             if cur["k"]:
                 pl = out.players[act.player]
                 print("  apply", act.kind, act.args, "->", out.prompt.kind if out.prompt else None, (pl.money, pl.appeal, pl.reputation, pl.conservation, pl.x_tokens), "display", out.display, "deck", out.main_deck[:2], ("ca", {k: v for k, v in (out.current_action or {}).items() if k in ("camouflage", "after")}) if os.environ.get("CA") else "", [(e["kind"], e.get("source")) for e in out.prompt.args.get("pending", [])] if os.environ.get("CA") and out.prompt is not None and out.prompt.kind == "effects" else "")
+            if cur["k"] and os.environ.get("HANDS"):                       # HANDS=<seat>: that player's hand after every action
+                print("      hand", out.players[int(os.environ["HANDS"])].hand)
             return out
 
         d.turn_actions, d.apply = ta, ap

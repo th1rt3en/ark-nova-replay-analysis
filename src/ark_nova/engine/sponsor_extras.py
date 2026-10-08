@@ -193,8 +193,12 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if b is None or opt not in enlarge_options(state, action.player, b):
             raise fx.IllegalEffect("that enclosure cannot be enlarged like this")
         old = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
+        bd_ = g.board(p.map_id)
+        full_before = build_action.covers_map(bd_, [(q.type, q.x, q.y, q.rotation) for q in p.buildings])
         b.type = f"size-{int(b.type[5:]) + 1}"
         b.x, b.y, b.rotation = opt
+        if bd_.map_id not in build_action.NO_FULL_MAP_BONUS and not full_before and build_action.covers_map(bd_, [(q.type, q.x, q.y, q.rotation) for q in p.buildings]):
+            g._gain(state, p.seat, appeal=build_action.FULL_MAP_APPEAL)          # (the enlarged enclosure covers the last free space: 874269610 turn 68)
         g.hydrologist_geologist(state, p.seat, [c for c in build_action.footprint(b.type, b.x, b.y, b.rotation) if c not in old])      # (the new spaces pay the Hydrologist / Geologist)
         for c in build_action.footprint(b.type, b.x, b.y, b.rotation):
             if c not in old and "S280" not in p.sponsors:

@@ -142,6 +142,10 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
             return _map(e)
         return await run(service.move, game_id, token_of(request, body) or "", version, action, body.get("request_id"))
 
+    @app.get("/api/games/{game_id}/abandon")
+    async def abandon_state(game_id: str):
+        return game_or_404(game_id) or await run(service.abandon_status, game_id)
+
     @app.post("/api/games/{game_id}/abandon")
     async def abandon(game_id: str, request: Request):
         if (bad := game_or_404(game_id)):

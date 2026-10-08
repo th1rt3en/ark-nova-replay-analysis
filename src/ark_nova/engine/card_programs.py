@@ -44,6 +44,16 @@ UNSUPPORTED_IN_BUILD: dict = {}
 # passive triggers: sponsor -> [(icon, scope, effect)]. scope: 'self' = icons played into the owner's zoo, 'any' = into any zoo (the
 # owner gains). effect: ('gain', {resource: n}) | ('build', type) | ('reveal', x, animals_only) | ('sell', max) | ('pouch',) |
 # ('slot1',) | ('explorer',) | ('unsupported', text). Triggered once per icon instance.
+# Triggers that pay at once (nothing to decide): the Science Library, the species experts (Primatologist, Herpetologist, Ornithologist, Expert in Predators / Herbivores, Marine
+# Biologist), the Horse Whisperer, and the Polar Bear Exhibit for the opponent's icons. Every other gain of a trigger is an effect of its own that the owner resolves in the
+# order they like (Meerkat Den, Penguin Pool, Aquarium, Cable Car, Baboon Rock, Rhesus Monkey Park, Science Museum, the Polar Bear Exhibit for the owner's own icons ...).
+AUTOMATIC_TRIGGERS = {"S208", "S236", "S237", "S238", "S239", "S240", "S266", "S275"}
+
+
+def trigger_is_automatic(sponsor: str, owner: int, seat: int) -> bool:
+    return sponsor in AUTOMATIC_TRIGGERS or (sponsor == "S251" and owner != seat)
+
+
 TRIGGERS = {
     "S202": [("Science", "self", ("gain", {"reputation": 1}))],
     "S204": [("Science", "self", ("gain", {"conservation": 1}))],

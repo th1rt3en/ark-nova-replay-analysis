@@ -169,7 +169,7 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
                     played += 1
             elif names:                                    # what BGA logs instead of a hostile ability
                 b = a.get("bonuses") or {}
-                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and not inventive_seen and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                         or (e.type == "actionCardCleanup" and "Constriction" in names and "Clever" not in names and "Clever effect" in e.log)                         or (e.type == "pDrawCards" and "Pilfering 2" in names and "Sprint" not in names and "sprint" in e.log)                         or (e.type == "markCard" and "Hypnosis" in names):
+                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and not inventive_seen and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                         or (e.type == "actionCardCleanup" and "Constriction" in names and "Clever" not in names and "Clever effect" in e.log)                         or (e.type == "pDrawCards" and ("Pilfering 2" in names or "Pilfering 1" in names) and "Sprint" not in names and "sprint" in e.log)                         or (e.type == "markCard" and "Hypnosis" in names):
                     peaceful += 1
     return bool(played) and not hostile and bool(peaceful)
 

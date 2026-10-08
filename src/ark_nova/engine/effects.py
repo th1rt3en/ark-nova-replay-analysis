@@ -142,13 +142,13 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                 for _ in range(own[icon]):
                     if eff[0] == "gain" and eff[1].get("reputation") and len(eff[1]) == 1:        # a reputation gain of a trigger is an effect of its own (an upgrade of the Cards action may lift the cap of 9 first: 726284828 turn 59)
                         pending.append({"kind": "gain", "source": s, "res": "reputation", "n": eff[1]["reputation"], "optional": False, "player": owner})
+                    elif eff[0] == "gain" and not prog.trigger_is_automatic(s, owner, seat):          # an effect of its own: the owner resolves it when they like (before or after a Pilfering, a Constriction ...)
+                        for res_, n_ in eff[1].items():
+                            pending.append({"kind": "gain", "source": s, "res": res_, "n": n_, "optional": False, "player": owner})
                     elif eff[0] == "gain":
                         v = eff[1]
                         g._gain(state, owner, money=v.get("money", 0), appeal=v.get("appeal", 0), x_tokens=v.get("xtoken", 0),
                                 reputation=v.get("reputation", 0), conservation=v.get("conservation", 0))
-                        if v.get("appeal") and state.current_action is not None:       # (BGA logs a trigger's appeal after the Pilfering of the same animal: `pilfer_hits` does not count it)
-                            ta = state.current_action.setdefault("trigger_appeal", {})
-                            ta[owner] = ta.get(owner, 0) + v["appeal"]
                     elif eff[0] == "build":
                         pending.append({"kind": "build", "source": s, "type": eff[1], "rules": {}, "optional": True, "double": False, "player": owner})
                     elif eff[0] == "reveal":
@@ -304,7 +304,9 @@ def _find(state, kind: str, match=None) -> int:
 def _done(state, i: int) -> None:
     a = state.prompt.args
     seat = a["pending"][i].get("player", state.prompt.player)
-    a["pending"].pop(i)
+    gone = a["pending"].pop(i)
+    if gone.get("xor") and not gone.get("skipped"):                  # one of several alternatives was taken: the others are gone
+        a["pending"][:] = [e for e in a["pending"] if e.get("xor") != gone["xor"]]
     if any(e.get("source") == "map13" and e.get("area") for e in a["pending"]):          # map 13: an area that is no longer covered (a Cut Down) pays nothing any more
         from ark_nova.engine import map_rules
         a["pending"][:] = [e for e in a["pending"] if not (e.get("source") == "map13" and e.get("area")
@@ -387,7 +389,11 @@ def resolve_choice(state, action: Action) -> None:
     if e.get("player", state.prompt.player) != action.player:
         raise IllegalEffect("this effect belongs to the other player")
     if action.args.get("refill") and k == "take" and None in state.display:
-        _g()._refill_display(state)
+        if e.get("snap"):
+            _g()._refill_display(state)
+        else:                                           # the cards only close the gap: the new ones come at the end of the turn (888792457 turn 33: the next card of the deck is drawn by the player)
+            cards = [c for c in state.display if c]
+            state.display = cards + [None] * (len(state.display) - len(cards))
         return
     if k in bonuses.KINDS:
         bonuses.resolve(state, action, e, i)
@@ -476,6 +482,7 @@ def skip(state, action: Action) -> None:
     e = state.prompt.args["pending"][i]
     if not e.get("optional") and e["kind"] not in bonuses.KINDS and not _nothing_to_do(state, e, i):
         raise IllegalEffect("this effect is mandatory")
+    e["skipped"] = True
     if e["kind"] == "rep_bonus":                        # at 15 reputation: the point is not wasted but pays 1 appeal when the bonus is declined
         _g()._gain(state, state.prompt.args["pending"][i].get("player", state.prompt.player), appeal=1)
     _done(state, i)

@@ -1,0 +1,6 @@
+{
+    "823017370 40": "After the kiosk and pavilion BGA's lists lack three size-3 positions (and later three size-1 positions) that the engine allows: (0,1,0), (0,3,4), (0,7,5) and (0,3), (1,8), (2,3), all in the two left columns next to cells that the engine treats as plain. The cost and the strength are not the cause (the additional-building check by the strength that is left agrees with BGA); a rule about those cells is missing.",
+    "843469060 46": "Map T1 (Multiplier repeat of Association II): the project's notepad bonus leaves no trace in the log, the engine takes slot 3 (reputation 3) and BGA took nothing visible. Slot 0 (the discard for +1 strength) is marked used by the replay builder (turn 16's discard), so the free slot with no trace is not known.",
+    "843469060 66": "Follows from turn 46 (display card order after the turn).",
+    "901779082 49": "Association II with a Clever effect (places Build at position 1) that no engine rule explains: the Sea Animals project support, the Snapping slot and the donation do not trigger one."
+}

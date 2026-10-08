@@ -129,7 +129,7 @@ def _sponsor_cards(e: Event, seat: int, seat_of: dict, add, revealed: list, st: 
             cards2 = kept
         if (len(kept) > 1 and len(kept) != 2) or (kept and "(no" in log):
             return "unsupported reveal"
-        add(Action(seat, "choose_effect", {"keep": sorted(kept) if len(kept) == 2 else (kept[0] if kept else None)}), e)
+        add(Action(seat, "choose_effect", {"keep": sorted(kept) if len(kept) == 2 else (kept[0] if kept else None), "shown": len(revealed)}), e)       # ("shown": how many cards were revealed: it says which reveal effect this was)
         revealed.clear()
     elif t == "wazaSpecial":
         add(Action(seat, "choose_effect", {"waza": a["type"]}), e)
@@ -306,7 +306,8 @@ class _AssocMap:
                 return f"unsupported association event: {log[:40]}"
             return None
         if t == "discardTokens" and any(m["location"][:4] in ("S215", "S218") for m in a.get("meeples") or []):
-            token = next(m["location"][:4] for m in a["meeples"] if m["location"][:4] in ("S215", "S218"))      # a token of Breeding Cooperation / Program as an icon
+            tokens = [m["location"][:4] for m in a["meeples"] if m["location"][:4] in ("S215", "S218")]      # a token of Breeding Cooperation / Program as an icon (both sponsors may give one: 837033009 turn 74)
+            token = tokens[0] if len(tokens) == 1 else sorted(tokens)
             both = any(m["type"] == "bonus-icon" for m in a.get("meeples") or [])             # (the bonus-icon token may go with it in the same event)
             if self.support is not None and self.expect != "support":
                 self.support.args["token"] = token
@@ -379,6 +380,30 @@ class _AssocMap:
             self.bonus({"type": "special-enclosure"})                  # map 5 / 5a: the free special enclosure of the notepad
         return _NOT_HANDLED
 
+
+def _trigger_units(k: str) -> dict:
+    """What one icon instance of the trigger of sponsor `k` gives ({resource: n}): the log's line may add several instances (Cable Car: 2 rocks, 4 appeal)."""
+    if k == "S227":
+        from ark_nova.engine import sponsor_extras
+        return {"appeal": min(sponsor_extras.WAZA_APPEAL.values())}
+    return {r: n for _, _, e in prog.TRIGGERS.get(k, []) if e[0] == "gain" for r, n in e[1].items()}
+
+
+def _printed_amounts(k: str) -> dict:
+    """What a sponsor gives when it is played, as resources: its printed appeal / reputation / conservation and the fixed gain of its program."""
+    from ark_nova.engine import card_programs, sponsors_action
+    card = data.cards_by_key()[k]
+    printed = card_programs.PRINTED_OVERRIDE[k] if k in card_programs.PRINTED_OVERRIDE else {"appeal": card.get("appeal") or 0, "reputation": card.get("reputation") or 0,
+                                                                                         "conservation": card.get("conservationPoint") or 0}
+    out = dict(printed)
+    for r, v in sponsors_action.own_gain(k).items():
+        out[r] = out.get(r, 0) + v
+    return {r: v for r, v in out.items() if v}
+
+
+# the gains of sponsors' triggers that are effects of their own (the owner resolves them in the order they like): the log's line is the moment they chose
+TRIGGER_GAINS = {s for s, effs in prog.TRIGGERS.items() if any(e[0] == "gain" and set(e[1]) <= {"appeal", "money", "xtoken", "conservation"} for _, _, e in effs)
+                 and s not in prog.AUTOMATIC_TRIGGERS} | {"S227"}
 
 _INCOME_RESOURCE = {"S209": "xtoken", "S220": "money", "S206": "conservation", "S274": "appeal", "S281": "money", "S265": "money", "S257": "money",
                     "S231": "money", "S232": "money", "S233": "money", "S234": "money", "S235": "money"}
@@ -454,6 +479,35 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         t = e.type
         if t == "startBreak":
             in_break = True
+            continue
+        if t == "getBonuses" and isinstance(a, dict) and a.get("card_id") and a.get("player_id") is not None and _key(a["card_id"]) in TRIGGER_GAINS                 and set(a.get("bonuses") or {}) <= {"appeal", "money", "xtoken", "conservation"} and str(a["player_id"]) in seat_of:
+            k_ = _key(a["card_id"])
+            owner_ = seat_of[str(a["player_id"])]
+            got_ = dict(a["bonuses"])
+            units = _trigger_units(k_) if k_ != "S227" else {"appeal": max(1, got_.get("appeal", 1))}          # (one line per animal for the Waza Special Assignment: 2 or 4)
+            if k_ in played and k_ not in printed_seen:                  # the sponsor was just played: its printed gain comes first and the engine pays it with the play
+                printed_seen.add(k_)
+                for r_, n_ in _printed_amounts(k_).items():
+                    if r_ in got_:
+                        got_[r_] -= n_
+            made = False
+            for res_, total_ in got_.items():
+                unit_ = units.get(res_)
+                if unit_ and total_ >= unit_ and not (k_ == "S251" and owner_ != seat):
+                    for _ in range(max(1, total_ // unit_)):
+                        add(Action(owner_, "choose_effect", {"apply": "gain", "res": res_, "trigger": k_}), e)      # (a trigger: an effect of the owner's own; "from" tells which one when several are pending)
+                    made = True
+            if made or all(v_ <= 0 for v_ in got_.values()):
+                continue
+        if t == "fillPool" and not in_break and chose:
+            idx_ = events.index(e)
+            rest_ = []
+            for x_ in events[idx_ + 1:]:
+                if x_.type == "actionCardCleanup":
+                    break
+                rest_.append(x_)
+            if not any(x_.type == "actionCardCleanup" for x_ in events[:idx_]) and any(x_.type == "snapCard" for x_ in events[:idx_]) and any(x_.type == "snapCard" for x_ in rest_):
+                add(Action(seat, "choose_effect", {"refill": True}), e)      # the display was refilled between two snaps: the player chose it (Snapping 2; 881630407 turn 61)
             continue
         if t == "getBonuses" and isinstance(a, dict) and a.get("source") == "Map 13 quarter bonus":      # a covered area pays (when it is covered and in every break): an effect to resolve
             for res in a["bonuses"]:
@@ -762,7 +816,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 if "Boost effect" in render_log(e.log, e.args):             # a Boost of a reef dweller that the new animal triggered
                     boosts.append(parse_action_type(a["actionCard"]["type"])[0])
                 else:
-                    add(Action(seat, "choose_effect", {"type": parse_action_type(a["actionCard"]["type"])[0]}), e)
+                    add(Action(seat_of.get(str(a.get("player_id")), seat), "choose_effect", {"type": parse_action_type(a["actionCard"]["type"])[0]}), e)          # (a Clever of the other player in the break: 814075010 turn 58)
         elif t == "actionCardCleanup":
             cleanup_type, _ = parse_action_type(a["actionCard"]["type"])
         elif t == "slideMeeples" and e.log == "" and _bonus_tile(seat, a["meeples"][0]) is not None:

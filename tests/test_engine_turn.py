@@ -278,7 +278,12 @@ def test_sponsor_building_is_placed_free_and_own_icons_trigger():
     s.players[0].reputation = 3
     s = _play(s, "S243", ["S243"])                      # Meerkat Den: herbivore icon, builds next to a rock; own herbivore trigger gives 2 appeal
     p = s.players[0]
-    assert s.prompt.kind == "effects" and p.appeal == 2 + 1 * 0 and not p.buildings
+    assert s.prompt.kind == "effects" and p.appeal == 0 and not p.buildings             # the trigger is a separate effect: the appeal waits to be taken
+    gain = [a for a in legal_actions(s) if a.kind == "choose_effect" and a.args.get("apply") == "gain"]
+    assert gain
+    s = apply(s, gain[0])
+    p = s.players[0]
+    assert p.appeal == 2 and not p.buildings
     money = p.money
     placements = [a for a in legal_actions(s) if a.kind == "place_building"]
     assert placements and all(a.args["type"] == "meerkat" for a in placements)

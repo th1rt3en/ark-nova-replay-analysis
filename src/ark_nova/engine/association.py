@@ -422,7 +422,8 @@ def legal(state, p) -> list:
         srcs = extra_icon_sources(state, p, project(pr["key"], state.config.marine_worlds))
         for n in range(1, len(srcs) + 1):                          # every token counts as one more icon of the project (the bonus-icon token and a sponsor's token may be used together)
             for combo in itertools.combinations(srcs, n):
-                args = {**({"icon": True} if "icon" in combo else {}), **({"token": [c for c in combo if c != "icon"][0]} if len(combo) - ("icon" in combo) > 0 else {})}
+                toks = [c for c in combo if c != "icon"]
+                args = {**({"icon": True} if "icon" in combo else {}), **({"token": toks[0] if len(toks) == 1 else sorted(toks)} if toks else {})}
                 out += [Action(p.seat, "choose_slot", {"slot": i, **args}) for i, c, r in slot_options(state, p.seat, pr["key"], extra=n) if (i, c, r) not in plain
                         and not any(Action(p.seat, "choose_slot", {"slot": i, **args}) == o for o in out)
                         and (n == 1 or (i, c, r) not in slot_options(state, p.seat, pr["key"], extra=n - 1))]
@@ -608,8 +609,10 @@ def choose_slot(state, action: Action) -> None:
     if action.args.get("icon"):
         p.tokens.remove(next(t for t in p.tokens if t.type == "bonus-icon"))
     if action.args.get("token"):
-        loc = token_location(action.args["token"])
-        p.tokens.remove(next(t for t in p.tokens if t.location == loc))
+        used = action.args["token"] if isinstance(action.args["token"], list) else [action.args["token"]]
+        for key in used:                                                   # (a token of each sponsor named)
+            loc = token_location(key)
+            p.tokens.remove(next(t for t in p.tokens if t.location == loc))
     slot = int(action.args["slot"])
     ids = [t.id for q in state.players for t in q.tokens]
     p.tokens.append(Token(max(ids, default=0) + 1, "token", project_location(pr["key"], slot, state.config.marine_worlds)))

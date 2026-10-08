@@ -337,7 +337,7 @@ def _build_actions(state: GameState, p, only=None) -> list[Action]:
         if not normal and not extra and not engineer:
             continue
         for x, y, k in build_action.valid_placements(bd, mine, t, a["level"], rules):
-            tcost = TERRAIN_COST if _covers_terrain(bd, t, x, y, k) and variant == 4 and a["level"] == 1 else 0
+            tcost = TERRAIN_COST if _covers_terrain(bd, t, x, y, k) and variant == 4 and a["level"] == 1 and "S219" not in p.sponsors else 0
             if normal and build_action.cost(t) + tcost <= p.money:
                 acts.append(Action(p.seat, "place_building", {"type": t, "x": x, "y": y, "rotation": k}))
             if extra and BUILD_EXTRA_COST[a["level"]] <= p.money:
@@ -474,7 +474,7 @@ def _choose_action_card(state: GameState, action: Action) -> None:
         p.flags["t1_used"] = 1
     strength = max(1, idx + 1 + map_rules.strength_bonus(p, idx + 1) + spend + (1 if t1 is not None else 0) - venom.strength_penalty(card))              # Constriction: -2 strength (on a hypnotised card too)
     if not hypnosis:
-        venom.remove_tokens(p, card)
+        venom.remove_tokens(p, card, state=state)
     p.x_tokens -= spend
     gamestats.xtokens(state, p.seat, -spend)
     gamestats.count(state, p.seat, "actions", sub=card.type)
@@ -585,7 +585,7 @@ def _place_building(state: GameState, action: Action) -> None:
         _pay(state, p, build_action.cost(t))
         a["remaining"] -= build_action.SIZES[t]
         a["placed"].append(t)
-    if variant == 4 and _covers_terrain(bd, t, x, y, k):  # Terrain Build: 2 more at level I, level II: gain 2 money
+    if variant == 4 and _covers_terrain(bd, t, x, y, k) and not ("S219" in p.sponsors and a["level"] == 1):  # Terrain Build: 2 more at level I (not with the Diversity Researcher, who may build over water and rock anyway: 854263310 turn 37), level II: gain 2 money
         a["terrain_used"] = True
         if a["level"] == 1:
             _pay(state, p, TERRAIN_COST)
@@ -766,6 +766,8 @@ def play_sponsor_outside_action(state: GameState, seat: int, k: str) -> list:
     gamestats.count(state, seat, "sponsors_played")
     _put_sponsor_tokens(state, p, k)
     in_break = (state.current_action is not None and (state.current_action.get("type") == "break" or (state.current_action.get("type") == "window" and p.flags.get("post_break"))))
+    if in_break and state.prompt is not None and state.prompt.kind == "effects" and any(e["kind"] == "break_discard" for e in state.prompt.args["pending"]):
+        in_break = False                                          # the hand limit is not settled yet: BGA has not started the break (the income comes with the others: 811076698 turn 61)
     own = sponsors_action.own_gain(k)
     printed = card_programs.PRINTED_OVERRIDE[k] if k in card_programs.PRINTED_OVERRIDE else {"appeal": card.get("appeal") or 0, "reputation": card.get("reputation") or 0,
                                                       "conservation": card.get("conservationPoint") or 0}
@@ -927,7 +929,7 @@ def _skip_action(state: GameState, action: Action) -> None:
     p.x_tokens = min(MAX_X_TOKENS, p.x_tokens + 1 + again)
     gamestats.xtokens(state, p.seat, p.x_tokens - x_before)
     gamestats.count(state, p.seat, "passes")
-    venom.remove_tokens(p, card)
+    venom.remove_tokens(p, card, state=state)
     state.current_action = {"seat": p.seat, "type": card.type, "slot": idx + 1, "strength": 0, "skipped": True}
     _end_turn(state)
 

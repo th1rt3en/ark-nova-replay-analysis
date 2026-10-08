@@ -79,8 +79,9 @@ def peaceful_effects(state, seat: int, key: str, name: str, value) -> list:
         return [{"kind": "gain", "source": key, "res": "xtoken", "n": int(value or 1), "optional": False}]
     if name == "Constriction":
         state.current_action.setdefault("after", []).append({"kind": "slot1", "source": key, "optional": True})
-    elif name == "Pilfering 1":
-        return [{"kind": "gain", "source": key, "res": "money", "n": 3, "optional": False}]
+    elif name == "Pilfering 1":                                    # 3 money or a card (Sprint 1): one of the two (BGA logs either: 894764261 turn 82)
+        return [{"kind": "gain", "source": key, "res": "money", "n": 3, "optional": True, "xor": key},
+                {"kind": "ability", "name": "Sprint", "value": 1, "source": key, "optional": True, "xor": key}]
     elif name == "Pilfering 2":
         return [{"kind": "ability", "name": "Sprint", "value": 2, "source": key, "optional": True}]
     elif name == "Hypnosis":
@@ -187,7 +188,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         _monkey_gang(state, seat)
     elif name in ("Sea Animal Magnet", "Sponsor Magnet"):
         for i, c in enumerate(state.display):
-            if c and ((name == "Sponsor Magnet" and c.startswith("S")) or (name == "Sea Animal Magnet" and _sea_animal(c))):
+            if c and ((name == "Sponsor Magnet" and c.startswith("S")) or (name == "Sea Animal Magnet" and _sea_animal(c, state.config.marine_worlds, any_card=True))):
                 state.display[i] = None
                 marks.taken(state, c)
                 p.hand.append(c)
@@ -222,8 +223,13 @@ def activate(state, seat: int, key: str, name: str, value) -> list:
     return []
 
 
-def _sea_animal(key: str) -> bool:
-    return key.startswith("A") and "seaAnimal" in card(key).get("tags", [])
+def _sea_animal(key: str, marine_worlds: bool = False, any_card: bool = False) -> bool:
+    """A card with the sea animal icon (`any_card`: a sponsor counts too, like the Marine Biologist and, in Marine Worlds, the Sea Turtle Tank: 804988782 turn 66)."""
+    if not any_card and not key.startswith("A"):
+        return False
+    c = card(key)
+    tags = (c.get("variants", {}).get("marine_worlds", {}).get("tags") if marine_worlds else None) or c.get("tags", [])
+    return "seaAnimal" in tags
 
 
 def _monkey_gang(state, seat: int) -> None:
@@ -314,7 +320,7 @@ def pilfer_hits(state, e: dict) -> bool:
     if tracks.is_protected(victim.appeal) or "S225" in victim.sponsors:                             # below 5 appeal a player is protected
         return False
     if e.get("by", "appeal") == "appeal":
-        return victim.appeal >= thief.appeal - (state.current_action or {}).get("trigger_appeal", {}).get(thief.seat, 0)
+        return victim.appeal >= thief.appeal
     return victim.conservation >= thief.conservation and victim.conservation > 0                    # (a tie at 0 does not count: logs)
 
 

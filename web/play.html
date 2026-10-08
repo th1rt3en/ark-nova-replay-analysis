@@ -110,8 +110,9 @@
       const g = r.body, base = location.origin + '/play.html?game=' + g.game_id;
       $('lobbyform').hidden = true;
       $('lobbytitle').textContent = 'Game ' + g.game_id;
-      $('lobbytext').textContent = 'Open your link, then send the other one to your opponent. Each link is a seat: do not share your own.';
-      const mine = base + '&s=' + encodeURIComponent(g.tokens[0]), theirs = base + '&s=' + encodeURIComponent(g.tokens[1]);
+      $('lobbytext').textContent = 'Open your link, then send the other one to your opponent. Each link is a seat: do not share your own. Who plays first is drawn at random.';
+      const me = g.creator_seat || 0;                                   // the creator's seat is drawn: either player may be the first one
+      const mine = base + '&s=' + encodeURIComponent(g.tokens[me]), theirs = base + '&s=' + encodeURIComponent(g.tokens[1 - me]);
       const box = $('links');
       const row = (title, url, open) => {
         const d = document.createElement('div'); d.className = 'lobbyrow';
@@ -122,8 +123,8 @@
         if (open) d.append(link('Open', url));
         box.append(d);
       };
-      row('Your seat (seat 1)', mine, true);
-      row('Your opponent (seat 2)', theirs, false);
+      row('Your seat', mine, true);
+      row('Your opponent', theirs, false);
       row('Spectators', base, false);
     };
     show();
@@ -139,7 +140,7 @@
   if (['finished', 'conceded'].includes(info.status)) { location.replace('/end.html?game=' + game); return; }
   if (token && info.seat !== null && !info.named[info.seat]) {          // a seat that has not given its name yet
     $('lobbytitle').textContent = 'Join game ' + game;
-    $('lobbytext').textContent = 'You are seat ' + (info.seat + 1) + '. Type your name to take the seat; the game starts when both players have one.';
+    $('lobbytext').textContent = 'Type your name to take the seat; the game starts when both players have one.';
     const name = document.createElement('input'); name.type = 'text'; name.maxLength = 40; name.required = true; name.value = store('playerName') || '';
     $('lobbyform').append(field('Your name', name), button('Join'));
     $('lobbyform').onsubmit = async (e) => {

@@ -45,10 +45,13 @@ def settle(state, seat: int) -> None:
         p.flags["venom_owed"] = 1
 
 
-def remove_tokens(p, card, owner_paid: bool = True) -> None:
+def remove_tokens(p, card, owner_paid: bool = True, state=None) -> None:
     """The action of this card is performed (or put back for an X token): its Venom and Constriction tokens go. At the end of a Hypnosis the
     tokens of the opponent's card go too, without counting as the owner's Venom removal (`owner_paid` False)."""
     if "Venom" in card.tokens and owner_paid:
+        if p.flags.pop("venom_early", None) and state is not None:
+            _g()._gain(state, p.seat, money=VENOM_COST)           # the payment of the first action was early: the turn removed a token after all, nothing is owed
+            p.flags.pop("venom_paid", None)
         p.flags["venom_removed"] = 1
     card.tokens = [t for t in card.tokens if t not in ("Venom", "Constriction")]
 
@@ -63,6 +66,7 @@ def end_of_action(state, seat: int) -> None:
     p = state.players[seat]
     if (p.flags.get("venom_owed") or due(p)) and p.money >= VENOM_COST:
         p.flags.pop("venom_owed", None)
+        p.flags["venom_early"] = 1                               # (an extra action of this turn that removes a Venom token takes the payment back: 844027463 turn 34)
         _g()._gain(state, seat, money=-VENOM_COST)
         p.flags["venom_paid"] = 1
 
@@ -78,6 +82,7 @@ def finish_turn(state, seat: int) -> None:
             _g()._gain(state, seat, money=-min(VENOM_COST, p.money))
     p.flags.pop("venom_removed", None)
     p.flags.pop("venom_paid", None)
+    p.flags.pop("venom_early", None)
 
 
 def pay_late(state, seat: int) -> None:
@@ -100,7 +105,7 @@ def give_constriction(state, seat: int) -> None:
     me, other = state.players[seat], state.players[1 - seat]
     if _tracks().is_protected(other.appeal) or "S225" in other.sponsors:                            # below 5 appeal a player is protected
         return
-    ahead = (other.appeal > me.appeal) + (other.conservation > me.conservation)
+    ahead = (other.appeal > me.appeal) + (other.conservation > me.conservation)          # (the appeal now: the animal's own appeal and the sponsors' triggers are effects of their own that the player may resolve first)
     for card in other.action_cards[::-1][:ahead]:                       # the cards at strength 5, then 4
         card.tokens.append("Constriction")
 
