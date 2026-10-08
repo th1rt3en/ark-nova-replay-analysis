@@ -1306,7 +1306,7 @@
     let text;
     if (t.remaining !== undefined) {                      // the Cards action: draw (and discard) or snap
       const n = t.remaining, s = n === 1 ? ' card' : ' cards';
-      text = ' must take ' + n + (t.taken ? ' more' : '') + s + (t.range.length ? ' from deck or display in reputation range' : ' from deck') + (t.discard ? ' (and discard ' + t.discard + ')' : '')
+      text = ' must ' + (t.all_at_once && n > 1 ? 'draw all ' + n + (t.taken ? ' more' : '') + s + ' from the deck at once' : 'take ' + n + (t.taken ? ' more' : '') + s + (t.range.length ? ' from deck or display in reputation range' : ' from deck')) + (t.discard ? ' (and discard ' + t.discard + ')' : '')
         + (t.snapping && !t.taken ? ' or snap ' + t.snaps_left + ' card(s)' : '');
     }
     else {
@@ -1317,7 +1317,7 @@
     if (t.deck && !t.range_only) {
       const b = el('span', 'abtn deckbtn');
       b.title = 'Draw from the deck';
-      b.append(el('b', '', t.remaining !== undefined && t.deck === t.remaining && t.deck > 1 ? 'Draw all ' + t.deck + ' cards from deck' : t.deck > 1 ? 'Draw up to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
+      b.append(el('b', '', t.all_at_once && t.deck > 1 ? 'Draw all ' + t.deck + ' cards from deck' : t.deck > 1 ? 'Draw 1 to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
       bindActs(b, forkActs((a) => a.kind === 'take_cards' && a.args.mode === 'deck'));
       bar.append(b);
     }
@@ -1376,8 +1376,8 @@
         let inBreak = false;
         for (let j = step; j >= 0; j--) {
           const label = replay.steps[j].label || '';
-          if (/^End of the break/.test(label)) break;
-          if (/^Starting a new break/.test(label)) { inBreak = true; break; }
+          if (/^End of the break/m.test(label)) break;
+          if (/^Starting a new break/m.test(label)) { inBreak = true; break; }
         }
         const over = st.players.map((q, i) => ({ i, n: q.hand.length - q.hand_limit })).filter((q) => q.n > 0);
         if (!inBreak || !over.length) { bar.hidden = true; return; }
@@ -2081,6 +2081,8 @@
       const t = $('asideToggle'); if (t) t.style.top = (bar.offsetHeight + 12) + 'px';
       return;
     }
+    aside.style.height = ''; aside.style.position = ''; aside.style.top = ''; side.style.zoom = '';        // a wide window: the column is part of the page and scrolls with it (css), nothing to fit
+    return;
     aside.style.top = bar.offsetHeight + 8 + 'px';
     const top = bar.offsetHeight + 8;
     aside.style.top = top + 'px';
@@ -2160,7 +2162,7 @@
   // ---- timeline: |----|------|----|, each | is the start of a round (the step after a break ends) ---------------------
   function roundStarts() {
     const starts = [0];
-    replay.steps.forEach((s, i) => { if (/^End of the break/i.test(s.label || '') && i + 1 < replay.steps.length) starts.push(i + 1); });
+    replay.steps.forEach((s, i) => { if (/^End of the break/im.test(s.label || '') && i + 1 < replay.steps.length) starts.push(i + 1); });
     return starts;
   }
   function buildTimeline() {

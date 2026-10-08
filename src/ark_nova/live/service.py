@@ -25,6 +25,7 @@ from ark_nova.engine.game import IllegalAction, apply, legal_actions, new_game
 from ark_nova.engine.state import GameState, Phase
 from ark_nova.engine.version import ENGINE_VERSION, fingerprint
 from ark_nova.live import archive as arch
+from ark_nova.live import bgalog
 from ark_nova.live import clock as tc
 from ark_nova.live import projection, stepdata
 from ark_nova.live import registry as reg
@@ -274,14 +275,16 @@ class LiveService:
         conceded = over and act.kind == "concede"
         eff = list(c.eff)
         step = stepdata.step_for(c.state, act, new, n, eff, names[seat])
-        labels = stepdata.labels_for(act, step["label"], names[seat])
+        written = bgalog.texts(c.state, act, new, names)                     # (the log of the step in BGA's words, one text per viewer)
+        labels = {role: written[role] for role in bgalog.ROLES}
+        step["label"] = written["full"]
         if timeout:                                                        # (`seat` is the player who ran out of time)
             labels = {role: f"{names[seat]} ran out of time" for role in labels}
             step["label"] = f"{names[seat]} ran out of time"
         if over:                                                           # the end is announced in the game log of both players
             end = stepdata.announcement(new, names)
-            labels = {role: f"{text}. {end}" for role, text in labels.items()}
-            step["label"] = f"{step['label']}. {end}"
+            labels = {role: f"{text}" + chr(10) + end for role, text in labels.items()}
+            step["label"] = step["label"] + chr(10) + end
         end_status = "conceded" if conceded else "finished"
         all_views = projection.views(new, labels)
         clock_now = None

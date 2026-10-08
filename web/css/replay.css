@@ -955,3 +955,15 @@ body.viewer .lobby a { color: #7a3b00; font-weight: 600; }
 .dockwho { font-size: .7rem; color: #f3e9c9; max-width: 7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dockpair { display: flex; gap: .3rem; padding: 0 .15rem .15rem; border-bottom: 3px solid var(--pc, #888); }
 .dockfold { align-self: center; }
+
+/* a step of a live game can have several lines of log (BGA words, one line per event) */
+.current, .moves li { white-space: pre-line; }
+
+/* the tracker on the right is part of the page and scrolls with it, whatever the height of the window (below 1100 px wide it stays a drawer) */
+@media (min-width: 1101px) {
+  .layout { grid-template-columns: minmax(0, 1fr) 19rem; }
+  aside { position: static !important; transform: none !important; top: auto; width: auto; height: auto !important; max-height: none !important; overflow: visible !important; z-index: auto;
+          display: block !important; padding: 0; background: none; border: 0; box-shadow: none; }
+  aside .moves { max-height: none; }
+  .asidetoggle { display: none !important; }
+}

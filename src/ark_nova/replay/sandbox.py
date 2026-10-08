@@ -103,7 +103,7 @@ def settle(state: GameState, meta: dict, steps: list) -> GameState:
             new = apply(state, a)
         except (IllegalAction, NotImplementedError):
             break
-        steps.append(payload(new, forking.narrate(state, a, new, who[a.player]), meta, forking.is_irreversible(state, a, new)))
+        steps.append(payload(new, _log(state, a, new, who), meta, forking.is_irreversible(state, a, new)))
         state = new
     return state
 
@@ -120,6 +120,12 @@ def ready(meta: dict) -> bool:
     return not any(any(v) for v in meta["unset"].values())
 
 
+def _log(old: GameState, act: Action, new: GameState, who: list) -> str:
+    """The log of a move in BGA's words, as in a live game; the sandbox player sees both seats, so every card is named."""
+    from ark_nova.live import bgalog
+    return bgalog.texts(old, act, new, who)["full"]
+
+
 def play(state_dict: dict, meta: dict, action_dict: dict) -> list:
     """One move of the controller, then the bot's moves: the steps that come out."""
     if not ready(meta):
@@ -128,6 +134,8 @@ def play(state_dict: dict, meta: dict, action_dict: dict) -> list:
     if int(action_dict.get("player", -1)) != meta["controller"]:
         raise IllegalAction("you play the other seat's moves with the bot: it passes by itself")
     first = forking.play(state_dict, action_dict, who)
+    first["label"] = _log(GameState.from_dict(state_dict), Action(int(action_dict["player"]), str(action_dict["kind"]), dict(action_dict.get("args") or {})),
+                          GameState.from_dict(first["engine_state"]), who)
     first["sandbox"] = meta
     steps = [first]
     settle(GameState.from_dict(first["engine_state"]), meta, steps)

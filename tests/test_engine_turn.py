@@ -692,3 +692,16 @@ def test_management_and_breeding_projects_requirements_and_effects():
     s = apply(s, [a for a in legal_actions(s) if a.kind == "choose_bonus"][0])
     kinds = [e["kind"] for e in s.prompt.args["pending"]]
     assert "tutor" in kinds and "reveal" in kinds                                                              # tutor (slot) + Hunter (the place bonus)
+
+
+def test_an_unupgraded_cards_action_draws_all_its_cards_from_the_deck_at_once():
+    s = _started()
+    s = apply(s, Action(0, "choose_action_card", {"type": "cards", "spend": 0}))                # level I, strength 4: 2 cards
+    deck_moves = [a for a in legal_actions(s) if a.kind == "take_cards" and a.args["mode"] == "deck"]
+    assert [a.args["count"] for a in deck_moves] == [2]                                         # not 1 and then 1
+    with pytest.raises(IllegalAction):
+        apply(s, Action(0, "take_cards", {"mode": "deck", "count": 1}))
+    s2 = _started()
+    s2.players[0].action_cards[3].level = 2                                                     # upgraded: one at a time is allowed
+    s2 = apply(s2, Action(0, "choose_action_card", {"type": "cards", "spend": 0}))
+    assert sorted(a.args["count"] for a in legal_actions(s2) if a.kind == "take_cards" and a.args["mode"] == "deck") == [1, 2, 3]

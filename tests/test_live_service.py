@@ -261,7 +261,7 @@ def test_the_text_of_a_hidden_choice_is_not_shown_to_the_opponent_or_the_spectat
     mine = keeper.view(game_id, str(mover))["label"]
     theirs = keeper.view(game_id, str(1 - mover))["label"]
     spectator = keeper.view(game_id, "spectator")["label"]
-    assert "discard" in mine.lower() and theirs == spectator == f"Player {mover} discarded 4 cards"
+    assert "discard" in mine.lower() and theirs == spectator == f"Player {mover} discards 4 cards (initial selection)"
     names = [c for c in act["args"]["cards"]]
     from ark_nova import data as card_data
     assert not any(card_data.cards_by_key()[k]["name"].lower() in theirs.lower() for k in names)

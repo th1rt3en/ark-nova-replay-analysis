@@ -199,7 +199,8 @@ def wrap_tokens(d, tokens, fnt, width_at, x0, y, line_h, icon_h):
         else:
             wid = d.textlength(w, font=fnt)
             fit = d.textlength(w.rstrip(), font=fnt)
-        if x + fit > x0 + width_at(y) and x > x0:
+        sticks = bool(cmds) and isinstance(cmds[-1][0], tuple) and not isinstance(w, tuple) and w.strip() in (".", ",", ";", ":", ")", ").")          # (a full stop after an icon stays with it)
+        if x + fit > x0 + width_at(y) and x > x0 and not sticks:
             x, y = x0, y + line_h
         if not isinstance(w, tuple) and x == x0:
             w = w.lstrip()
@@ -209,7 +210,10 @@ def wrap_tokens(d, tokens, fnt, width_at, x0, y, line_h, icon_h):
     return cmds, y + line_h
 
 
-def build(key: str, out_dir: Path, fmt: str = "png") -> Path:
+SC_MAX, SC_MIN, SC_STEP = 2.2, 0.5, 0.02             # the text of a card is drawn as large as it can be: from SC_MAX down until nothing overflows
+
+
+def build(key: str, out_dir: Path, fmt: str = "png", sc: float = SC_MAX) -> Path:
     cards = {c["key"]: c for c in json.load(open(ROOT / "src" / "ark_nova" / "data" / "animals.json", encoding="utf-8"))}
     c = cards[key]
     art = Image.open(VENDOR / "img" / "animals" / f"{c['bga_id']}.jpg").convert("RGBA")
@@ -304,64 +308,75 @@ def build(key: str, out_dir: Path, fmt: str = "png") -> Path:
         bg = scaled(icon("r10c9"), 56)
         paste(card, bg, 0, cy)
         if name_:
-            sc = bg.height / 86                                              # the white circle of the background: x 34..117, y 0..85 of 118 x 86
-            ic = circle_badge(name_, 85 * sc * 0.84 / U, ring=0)
-            paste(card, ic, (34 + 85 / 2) * sc - ic.width / 2, cy + 85 * sc / 2 - ic.height / 2)
+            k86 = bg.height / 86                                             # the white circle of the background: x 34..117, y 0..85 of 118 x 86
+            ic = circle_badge(name_, 85 * k86 * 0.84 / U, ring=0)
+            paste(card, ic, (34 + 85 / 2) * k86 - ic.width / 2, cy + 85 * k86 / 2 - ic.height / 2)
         cy += bg.height + 5 * U
 
     # the abilities: a text box each
     ty = art_h + bar_h + 10 * U
     bonus_h = 86 * U
-    bonus_top = H - bonus_h - 12 * U
+    bonus_top = H - TAG_H * 0.70 * U
     shown_n = sum(1 for v in (c.get("reputation"), c.get("conservationPoint"), c.get("appeal")) if v)
     tag_w = [scaled(t, TAG_H).width for t in tag_sheet()]
     bonus_w = (sum(sorted(tag_w)[-shown_n:]) if shown_n else 0) + max(0, shown_n - 1) * 8 * U + 22 * U
     abilities = c.get("abilities") or []
-    nfs = font("MyriadPro-Bold.ttf", 17)
-    tfs = font("MyriadPro-Regular.ttf", 15)
+    nfs = font("MyriadPro-Bold.ttf", 26 * sc)
+    tfs = font("MyriadPro-Regular.ttf", 24 * sc)
     for ab in abilities:
         kw = ab["keyword"]
         label = kw["name"] + (f" {ab['value']}" if ab.get("value") not in (None, "") and not kw["name"].startswith("Multiplier") else "")
         box_x0, box_x1 = 12 * U, W - 12 * U
         body = description(ab)
-        line_h = 19 * U
-        lay_w = lambda yy: (box_x1 - box_x0 - 16 * U) - (bonus_w if yy + line_h > bonus_top - 8 * U else 0)
-        cmds, ybot = wrap_tokens(d, body, tfs, lay_w, box_x0 + 8 * U, ty + 31 * U, line_h, 19)
-        box_h = ybot - ty + 6 * U
-        if ty + box_h > bonus_top - 8 * U:                            # a box that reaches the bonuses stops short of them
-            box_x1 -= bonus_w - 12 * U
+        line_h = 31 * sc * U
+        narrow = 0
+        for attempt in range(2):                                      # a box that would reach the bonuses is laid out again, narrower, so that text and border stop short of them
+            lay_w = lambda yy, nw=narrow: (box_x1 - box_x0 - 16 * U) - nw
+            cmds, ybot = wrap_tokens(d, body, tfs, lay_w, box_x0 + 8 * U, ty + 45 * sc * U, line_h, 30 * sc)
+            box_h = ybot - ty + 6 * U
+            if attempt == 0 and ty + box_h > bonus_top - 8 * U:
+                narrow = bonus_w - 12 * U
+                continue
+            break
+        if narrow:
+            box_x1 -= narrow
+        too_wide = any(not isinstance(w, tuple) and xx + d.textlength(w.rstrip(), font=tfs) > box_x1 - 4 * U for w, xx, yy in cmds) or d.textlength(label, font=nfs) > box_x1 - box_x0 - 16 * U
+        if too_wide and sc > SC_MIN:
+            return build(key, out_dir, fmt, sc - SC_STEP)                    # (a word that does not fit the box: smaller text)
         d.rounded_rectangle((box_x0, ty, box_x1, ty + box_h), radius=int(9 * U), fill=(255, 255, 255, 255), outline=(240, 196, 140, 255), width=2)
-        d.text((box_x0 + 8 * U, ty + 5 * U), label, font=nfs, fill=(150, 70, 0, 255))
+        d.text((box_x0 + 8 * U, ty + 8 * sc * U), label, font=nfs, fill=(150, 70, 0, 255))
         for w, xx, yy in cmds:
             if isinstance(w, tuple):
                 tok, _, param = w[1].partition("-")
-                numf_ = font("MyriadPro-Bold.ttf", 12)
+                numf_ = font("MyriadPro-Bold.ttf", 18 * sc)
                 if tok == "Money":
-                    money_tile(card, d, xx, yy - 1 * U, 19, param)
+                    money_tile(card, d, xx, yy - 1 * U, 30 * sc, param)
                 elif tok in TOKEN_TAG:
-                    paste(card, circle_badge(TOKEN_TAG[tok], 19, ring=1), xx, yy - 1 * U)
+                    paste(card, circle_badge(TOKEN_TAG[tok], 30 * sc, ring=1), xx, yy - 1 * U)
                 elif tok == "Size":                                           # Size-X+ / X-: the empty size symbol with the value and the sign
-                    im = scaled(icon("r6c17"), 19)
+                    im = scaled(icon("r6c17"), 30 * sc)
                     paste(card, im, xx, yy - 1 * U)
                     sign = param.replace("X", "").replace("Animal", "").replace("Enclosure", "")
-                    outlined(d, (xx + im.width / 2, yy + 9 * U), (w[2] if len(w) > 2 else "") + sign, numf_, (255, 255, 255, 255), (20, 20, 20, 255), 2)
+                    outlined(d, (xx + im.width / 2, yy + 15 * sc * U), (w[2] if len(w) > 2 else "") + sign, numf_, (255, 255, 255, 255), (20, 20, 20, 255), 2)
                 elif tok == "SizeAnimal":
-                    im = scaled(icon("r9c3"), 19)
+                    im = scaled(icon("r9c3"), 30 * sc)
                     paste(card, im, xx, yy - 1 * U)
-                    outlined(d, (xx + im.width / 2, yy + 9 * U), param, numf_, (255, 255, 255, 255), (50, 30, 10, 255), 2)
+                    outlined(d, (xx + im.width / 2, yy + 15 * sc * U), param, numf_, (255, 255, 255, 255), (50, 30, 10, 255), 2)
                 elif tok in ICON_TOKENS or tok in ("Appeal", "ConservationPoint", "Reputation", "MultiplierToken", "AssociationActionCard"):
                     rc = ICON_TOKENS[tok]
-                    im = scaled(icon(rc), 19)
+                    im = scaled(icon(rc), 30 * sc)
                     paste(card, im, xx, yy - 1 * U)
                     if param and tok in ("Appeal", "Reputation", "ConservationPoint", "Slot"):
-                        outlined(d, (xx + im.width / 2, yy + 9 * U), param, numf_, (255, 255, 255, 255), (20, 20, 20, 255), 2)
+                        outlined(d, (xx + im.width / 2, yy + 15 * sc * U), param, numf_, (255, 255, 255, 255), (20, 20, 20, 255), 2)
                 else:
                     WARN.append(f"{key}: no icon for {{{w[1]}}}")
-                    d.text((xx, yy), w[1].split("-")[0], font=font("MyriadPro-Bold.ttf", 15), fill=(90, 60, 20, 255))
+                    d.text((xx, yy), w[1].split("-")[0], font=font("MyriadPro-Bold.ttf", 24 * sc), fill=(90, 60, 20, 255))
             else:
                 d.text((xx, yy), w, font=tfs, fill=(40, 25, 10, 255))
         ty += box_h + 6 * U
         if ty > H - 4 * U:
+            if sc > SC_MIN:
+                return build(key, out_dir, fmt, sc - SC_STEP)                  # the text does not fit: draw the card again with smaller text
             WARN.append(f"{key}: the ability text runs past the bottom of the card")
 
     # bonuses at the bottom right: reputation, conservation, appeal; only the top 70 % of each tag, on the bottom edge of the card

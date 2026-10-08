@@ -87,7 +87,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
                       "snap": [a.args["card"] for a in takes if a.args["mode"] == "snap"]}
         if pr.kind == "cards_take":
             take.update(remaining=pr.args.get("remaining"), snapping=bool(pr.args.get("snap")), taken=pr.args.get("taken", 0), discard=pr.args.get("discard", 0),
-                        snaps_left=pr.args.get("snaps_left", 1))
+                        snaps_left=pr.args.get("snaps_left", 1), all_at_once=pr.args.get("level") == 1)
         elif pr.kind == "effects":
             e = next((e for e in pr.args.get("pending", []) if e.get("kind") == "take" and e.get("player", pr.player) == who
                       and bool(e.get("snap")) == bool(take["snap"])), None)

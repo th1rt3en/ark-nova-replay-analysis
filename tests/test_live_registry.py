@@ -172,4 +172,4 @@ def test_the_statistics_come_from_the_engine_and_the_end_is_announced_in_the_log
     assert body["result"]["winner"] == 0 and body["result"]["conceded"] == 1
     record = arch.decode(archive.read(registry.latest(game_id)["gcs_path"]))
     assert record["stats"] == st
-    assert "conceded the game. Game over: Player 0 wins" in json.dumps(record)
+    assert "conceded the game\\nGame over: Player 0 wins" in json.dumps(record)
