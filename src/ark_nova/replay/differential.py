@@ -8,6 +8,7 @@ the coverage grows with the engine.
 """
 import copy
 import re
+import threading
 from collections import Counter
 from dataclasses import dataclass, field
 
@@ -789,7 +790,15 @@ def _result(rep: DiffReport, counts: tuple, trace: list, last: int):
     return None
 
 
+_RUN_LOCK = threading.RLock()     # `_ARCH_TAKEN` and `_UPCOMING` are shared by every run: two replays built at the same time (the API serves requests in threads) would corrupt each other, so runs go one at a time
+
+
 def run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int], chain: bool = False) -> DiffReport:
+    with _RUN_LOCK:
+        return _run_differential(parsed, replay, seat_of, chain)
+
+
+def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int], chain: bool = False) -> DiffReport:
     """`chain`: a turn that the engine replayed and that matched the log starts the next turn from the engine's own state (instead of the
     log-built snapshot), so a good stretch of turns is played by the engine alone. `DiffReport.results` has one `TurnResult` per turn."""
     rep = DiffReport()
