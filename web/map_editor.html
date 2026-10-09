@@ -32,18 +32,45 @@
     </section>
     <section>
       <h2>Placement bonuses</h2>
-      <p class="muted small">Only on plain hexes.</p>
-      <label class="mevalue" id="valueBox" hidden>Number <input id="value" type="number" min="1" max="99" step="1" value="1" aria-label="Number of the placement bonus"></label>
+      <p class="muted small">On plain hexes. They can also go on the worker, partner zoo, university and project bonus spaces.</p>
+      <label class="mevalue" id="valueBox" hidden>Number <input id="value" type="number" min="1" max="99" step="1" value="1" aria-label="Number of the bonus"></label>
       <div class="metools bonuses" id="bonusTools"></div>
     </section>
     <section>
+      <h2>Project bonuses</h2>
+      <p class="muted small">For the worker, partner zoo, university and project bonus spaces next to the map (one bonus each).</p>
+      <div class="metools bonuses" id="projectTools"></div>
+    </section>
+    <section>
+      <h2>Project bonus spaces</h2>
+      <p class="muted small">7 spaces: purple ones give the bonus now and again as income, yellow ones only now.</p>
+      <div class="mecount"><span class="mepurple">Purple</span> <button type="button" id="incDown" aria-label="One purple space less">&minus;</button><b id="incN">4</b><button type="button" id="incUp" aria-label="One purple space more">+</button></div>
+      <div class="mecount"><span class="meyellow">Yellow</span> <button type="button" id="insDown" aria-label="One yellow space less">&minus;</button><b id="insN">3</b><button type="button" id="insUp" aria-label="One yellow space more">+</button></div>
+    </section>
+    <section>
+      <h2>Action card upgrade</h2>
+      <p class="muted small">Where the association gives an upgrade.</p>
+      <label class="meradio"><input type="radio" name="upg" value="second" checked> On the 2nd partner zoo and the 2nd university</label>
+      <label class="meradio"><input type="radio" name="upg" value="pairs"> On a pair of partner zoo + university</label>
+      <div class="mepairs" id="pairBox" hidden>
+        <span class="muted small">Pairs (1st / 2nd / 3rd partner zoo with the university of the same number):</span>
+        <label><input type="checkbox" class="pair" value="1"> 1</label>
+        <label><input type="checkbox" class="pair" value="2"> 2</label>
+        <label><input type="checkbox" class="pair" value="3"> 3</label>
+      </div>
+    </section>
+    <section>
       <h2>Remove</h2>
-      <p class="muted small">Makes a hex plain again (terrain, bonus and requirement).</p>
+      <p class="muted small">Makes a hex plain again (terrain, bonus and requirement) or empties a space.</p>
       <div class="metools" id="removeTools"></div>
     </section>
   </aside>
   <main class="mecanvas">
-    <svg id="board" class="board" viewBox="0 0 1122 976" role="img" aria-label="Zoo map"></svg>
+    <div class="zooRow" id="row">
+      <div id="panelHolder" class="meholder panelholder"></div>
+      <svg id="board" class="board" viewBox="0 0 1122 976" role="img" aria-label="Zoo map"></svg>
+      <div id="stripHolder" class="meholder stripholder"></div>
+    </div>
   </main>
 </div>
 <div id="exportBox" class="meexport" hidden>
@@ -55,6 +82,7 @@
   </div>
   <textarea id="exportText" readonly spellcheck="false" aria-label="The map as JSON"></textarea>
 </div>
+<script>window.MAP_EDITOR = true;</script>
 <script type="module" src="/js/map_editor.js"></script>
 </body>
 </html>

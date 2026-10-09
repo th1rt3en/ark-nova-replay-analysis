@@ -229,11 +229,12 @@ export function associationStrip(p, map, seat) {
     s.append(img);
   };
   const SETS = { '12': [1, 2], T1: [1, 2], '11': [1] };
-  if (!SETS[map.id]) {
+  const sets = map.upgrade_sets || SETS[map.id];                          // (the map editor gives the sets itself)
+  if (!sets) {
     putUpgrade(175, STRIP.partner[2] + 22, 84, 'Upgrade an action card (2nd partner zoo)');
     putUpgrade(175, STRIP.university[2] + 22, 84, 'Upgrade an action card (2nd university)');
   } else {
-    SETS[map.id].forEach((n, i) => {
+    sets.forEach((n, i) => {
       const side = i % 2 === 0 ? 1 : -1, ex = side === 1 ? 34 : 351 - 34, cx = side === 1 ? -34 : 351 + 34;        // the first set on the left margin, the second on the right
       const y1 = STRIP.partner[n], y2 = STRIP.university[n];
       const pt = (t) => [(1 - t) * (1 - t) * ex + 2 * (1 - t) * t * cx + t * t * ex, (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * ((y1 + y2) / 2) + t * t * y2];

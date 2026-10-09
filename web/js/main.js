@@ -166,4 +166,4 @@ function boot() {
     m.textContent = 'Could not load this table: ' + err.message;
   });
 }
-boot();
+if (!window.MAP_EDITOR) boot();                                          // (the map editor imports the drawing code of the viewer but has no replay to load)

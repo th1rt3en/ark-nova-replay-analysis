@@ -22,10 +22,10 @@ body.mapeditor { padding-bottom: 2rem; }
 .mevalue input { width: 4.5rem; padding: .25rem; font: inherit; }
 .mecanvas { min-width: 0; }
 .mecanvas .board { width: 100%; max-width: 1122px; display: block; border-radius: 6px; user-select: none; -webkit-user-select: none; touch-action: none; }
-.mecanvas .board .cell { fill: rgba(255, 255, 255, 0); stroke: none; cursor: pointer; }
-.mecanvas .board .cell:hover { fill: rgba(255, 255, 255, .28); stroke: #fff; stroke-width: 3; }
-.mecanvas .board .cell.bad { cursor: not-allowed; }
-.mecanvas .board .cell.bad:hover { fill: rgba(222, 48, 38, .3); stroke: #de3026; }
+.mecanvas .cell { fill: rgba(255, 255, 255, 0); stroke: none; cursor: pointer; }
+.mecanvas .cell:hover { fill: rgba(255, 255, 255, .28); stroke: #fff; stroke-width: 3; }
+.mecanvas .cell.bad { cursor: not-allowed; }
+.mecanvas .cell.bad:hover { fill: rgba(222, 48, 38, .3); stroke: #de3026; }
 .meexport { position: fixed; right: 1rem; bottom: 1rem; width: min(38rem, calc(100vw - 2rem)); height: min(28rem, 70vh); z-index: 50; display: flex; flex-direction: column; gap: .4rem; padding: .6rem; background: #ece3b4; color: #2b1d12; border: 3px solid #1b110a; border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, .6); }
 .meexport[hidden] { display: none; }
 .meexporthead { display: flex; align-items: center; gap: .5rem; }
@@ -38,3 +38,22 @@ body.mapeditor { padding-bottom: 2rem; }
 .metool .flag-badge { fill: #a63aa6; stroke: #fff; stroke-width: 4; }
 .metool .flag-label { font: 900 21px Georgia, 'Times New Roman', serif; fill: #fff; text-anchor: middle; }
 .metool .money-border { fill: none; stroke: #fff; stroke-width: 3.5; }
+
+.mecanvas { max-width: 1500px; }
+.mecanvas .zooRow { align-items: flex-start; }
+.meholder { min-width: 0; }
+.panelholder { flex: 0 0 16%; width: 16%; }
+.stripholder { flex: 0 0 13%; width: 13%; }
+.meholder svg { width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 3px 10px rgba(0, 0, 0, .55); }
+.mecount { display: flex; align-items: center; gap: .5rem; margin: .25rem 0; font-weight: 700; }
+.mecount span { min-width: 4.5rem; padding: .1rem .5rem; border-radius: 6px; color: #fff; }
+.mepurple { background: #9a4ba7; } .meyellow { background: #c79a00; }
+.mecount button { width: 2rem; height: 2rem; border: 2px solid #3b2a1c; border-radius: 6px; background: #fffaf0; font: inherit; font-weight: 800; cursor: pointer; }
+.mecount button:disabled { opacity: .4; cursor: not-allowed; }
+.mecount b { min-width: 1.5rem; text-align: center; }
+.meradio { display: block; margin: .2rem 0; cursor: pointer; }
+.mepairs { margin: .2rem 0 .2rem 1.4rem; display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: center; }
+.meholder .bonus-label { font: 700 34px system-ui, sans-serif; fill: #222; text-anchor: middle; pointer-events: none; }
+.meholder .bonus-number { font: 800 44px system-ui, sans-serif; fill: #fff; stroke: #222; stroke-width: 8px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
+.meholder .money-border { fill: none; stroke: #fff; stroke-width: 3.5; pointer-events: none; }
+.mecanvas .cell.slot:hover { fill: rgba(255, 255, 255, .25); stroke: #2f80e8; stroke-width: 4; }
