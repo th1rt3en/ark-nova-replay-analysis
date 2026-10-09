@@ -213,7 +213,7 @@ def map_income(state, p) -> list:
 
 def map_ability_income(state, p) -> int:
     """Money from the printed ability of the zoo map: Park Restaurant (5): 1 per covered space next to the restaurant; Caves (11): 2 per
-    stored card. Ice Cream Parlors (7) and Drawing Board (13) need map data that is not there yet."""
+    stored card; Ice Cream Parlors (7 / 7a): 1 per kiosk once all kiosk hexes are covered. The Drawing Board (13) is paid in `_income` (`map_rules.quarter_bonus`)."""
     if p.map_id in ("5", "5a"):
         from ark_nova.engine.board import board
         bd = board(p.map_id)

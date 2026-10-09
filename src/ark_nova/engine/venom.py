@@ -3,8 +3,7 @@
 Venom X (animal): if the other player has more appeal than the player who activates it, they get a Venom token on their action cards at
 strength 1 (and 2 for Venom 2). A player who performs an action with a Venom card (or puts it back for an X token) loses that token; if they
 removed a token this turn they owe nothing, otherwise they pay 2 money before the turn ends when any Venom token is left on any of their cards
-(at any time of the turn; before an irreversible action, drawing cards from the deck, they have to have paid: with less than 2 money that action
-is not allowed). Constriction: if the other player is ahead in appeal and in conservation points, their cards at strength 5 and 4 get a token, if
+(at any time of the turn; BGA's logs show that nothing is blocked while it is unpaid, so `blocked()` is always False and the 2 money are taken at the end of the action or of the turn). Constriction: if the other player is ahead in appeal and in conservation points, their cards at strength 5 and 4 get a token, if
 only in one of them the card at strength 5; a card with a token has 2 less strength, the token goes when the action is performed (or put back)
 and at the break. Putting a card back with Clever does not remove tokens. `ActionCardState.tokens` holds the tokens.
 """
