@@ -117,7 +117,15 @@ def main():
         if t in sizes and sources.get(t):
             table[t] = {"cards": sorted(sources[t]), "size": sizes[t], "anchor": list(ba.UNIQUE_ANCHOR),
                         "cells": ba.shape_to_cells(resolved[t]) if t in resolved else None, "verified": False}
-    with open(ROOT / "src" / "ark_nova" / "data" / "unique_shapes.json", "w") as fh:
+    path = ROOT / "src" / "ark_nova" / "data" / "unique_shapes.json"
+    if path.exists():                                                  # verified entries (checked by hand) are never overwritten
+        with open(path) as fh:
+            old = json.load(fh)
+        for t, entry in old.items():
+            if entry.get("verified"):
+                table[t] = entry
+        table = dict(sorted(table.items()))
+    with open(path, "w") as fh:
         json.dump(table, fh, indent=4)
         fh.write("\n")
     print("resolved", sorted(resolved), "unresolved", sorted(set(samples) - set(resolved)))
