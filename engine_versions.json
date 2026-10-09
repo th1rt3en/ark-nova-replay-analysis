@@ -49,5 +49,17 @@
         "notes": [
             "An unupgraded Cards action draws all its cards from the deck at once (an upgraded one still draws one at a time)"
         ]
+    },
+    {
+        "version": "0.2.3",
+        "code_hash": "779064cab652428186af3360bb9e8cd0867ce1860e0eb0a8e47c05aadecae344",
+        "data_hash": "44d7dc435f71dec099304d6d461687c90155099fe851d7646dffb4f96ce06e40+c35c11942ee2b15a1dbf589bd9347bc4db6f144f93cd3418466a0407cbf27b34",
+        "schema_version": 1,
+        "commit": "0396f11b8a8456451f51e8de6290da28442e2b8e",
+        "uncommitted_changes": true,
+        "date": "2026-10-09",
+        "notes": [
+            "comment-only changes in engine/breaks.py and engine/venom.py (Ice Cream Parlors / Drawing Board income docs, Venom is never blocked); no rule changed"
+        ]
     }
 ]
