@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Map editor - Ark Nova</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/replay.css">
+<link rel="stylesheet" href="/css/map_editor.css">
+</head>
+<body class="viewer mapeditor">
+<header class="mebar">
+  <a href="/" class="home" title="Back to the start page">Ark Nova</a>
+  <h1>Map editor</h1>
+  <div class="mebtns" role="group" aria-label="Edit">
+    <button id="undo" type="button" title="Undo (Ctrl+Z)" disabled>&#8630; Undo</button>
+    <button id="redo" type="button" title="Redo (Ctrl+Y)" disabled>Redo &#8631;</button>
+    <button id="exportBtn" type="button" title="Show the map as JSON, copy it or download it">Export JSON</button>
+  </div>
+  <span id="status" class="mestatus" role="status"></span>
+</header>
+<div class="melayout">
+  <aside class="mepalette" aria-label="Tools">
+    <section>
+      <h2>Terrain</h2>
+      <div class="metools" id="terrainTools"></div>
+    </section>
+    <section>
+      <h2>Upgrade requirement</h2>
+      <p class="muted small">Needs the upgraded Build action. Goes on any plain hex, also one with a placement bonus.</p>
+      <div class="metools" id="flagTools"></div>
+    </section>
+    <section>
+      <h2>Placement bonuses</h2>
+      <p class="muted small">Only on plain hexes.</p>
+      <label class="mevalue" id="valueBox" hidden>Number <input id="value" type="number" min="1" max="99" step="1" value="1" aria-label="Number of the placement bonus"></label>
+      <div class="metools bonuses" id="bonusTools"></div>
+    </section>
+    <section>
+      <h2>Remove</h2>
+      <p class="muted small">Makes a hex plain again (terrain, bonus and requirement).</p>
+      <div class="metools" id="removeTools"></div>
+    </section>
+  </aside>
+  <main class="mecanvas">
+    <svg id="board" class="board" viewBox="0 0 1122 976" role="img" aria-label="Zoo map"></svg>
+  </main>
+</div>
+<div id="exportBox" class="meexport" hidden>
+  <div class="meexporthead">
+    <b>Map as JSON</b>
+    <button id="copyBtn" type="button">Copy</button>
+    <button id="downloadBtn" type="button">Download</button>
+    <button id="closeExport" type="button" aria-label="Close">&#10005;</button>
+  </div>
+  <textarea id="exportText" readonly spellcheck="false" aria-label="The map as JSON"></textarea>
+</div>
+<script type="module" src="/js/map_editor.js"></script>
+</body>
+</html>
