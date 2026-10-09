@@ -137,20 +137,23 @@ export async function playConnect() {
       if (ab && ab.ok) { if (ab.body.status && ab.body.status !== P.status) { P.status = ab.body.status; render(); playEndCheck(); } else setAbandon(ab.body, true); }
     }
     else if (r && r.status === 404) { clearInterval(P.poll); P.status = 'closed'; render(); playEndCheck(); }
+    if (['finished', 'conceded', 'abandoned', 'closed'].includes(P.status)) clearInterval(P.poll);        // (over: nothing more to ask)
   }, 2000);
 }
 // ---- the end of the game ------------------------------------------------------------------------------------------------------------
 // The result and the statistics of the game slide in from the right in place of the player boards; a button switches between them and the final position.
 function showGameEnd(end) {
   if (P.endShown || !window.EndStats) return;
-  P.endShown = true;
   const names = [0, 1].map((i) => (S.replay.players[i] ? S.replay.players[i].name : 'Player ' + (i + 1)));
   const conceded = end.conceded === 0 || end.conceded === 1;
-  EndStats.render($('endstats'), { names, scores: end.scores || [], winner: end.winner, conceded: conceded ? end.conceded : null, status: conceded ? 'conceded' : 'finished', reason: end.reason, stats: end.stats });
+  const w = end.winner === 0 || end.winner === 1 ? end.winner : null;
+  try {
+    EndStats.render($('endstats'), { names, scores: end.scores || [], winner: end.winner, conceded: conceded ? end.conceded : null, status: end.abandoned ? 'abandoned' : conceded ? 'conceded' : 'finished', reason: end.reason, stats: end.stats });
+  } catch (err) { console.error('end screen', err); return; }                // (not marked as shown: the next check draws it again)
+  P.endShown = true;
   const bar = $('endbar');
   bar.replaceChildren();
-  const w = end.winner === 0 || end.winner === 1 ? end.winner : null;
-  bar.append(el('b', '', w === null ? 'Game over: a tie.' : 'Game over: ' + names[w] + ' wins ' + end.scores[w] + ' to ' + end.scores[1 - w] + '.'));
+  bar.append(el('b', '', end.abandoned ? 'Game abandoned: no winner.' : w === null ? 'Game over: a tie.' : 'Game over: ' + names[w] + ' wins ' + end.scores[w] + ' to ' + end.scores[1 - w] + '.'));
   const sw = el('button', 'turnbtn confirm');
   sw.type = 'button';
   const paint = () => { sw.textContent = document.body.classList.contains('showstats') ? 'Show the final board' : 'Show the game statistics'; };
@@ -165,15 +168,15 @@ function showGameEnd(end) {
 
 // the game has ended but its last position did not reach the page (the socket closed first, or there is none): ask for the result instead
 export function playEndCheck() {
-  if (['finished', 'conceded', 'closed'].includes(P.status) && !P.endShown && !P.leaving) { P.leaving = true; setTimeout(endFromResult, 1500); }
+  if (['finished', 'conceded', 'abandoned', 'closed'].includes(P.status) && !P.endShown && !P.leaving) { P.leaving = true; setTimeout(endFromResult, 1500); }
 }
 async function endFromResult() {
   for (let i = 0; i < 15 && !P.endShown; i++) {
     const r = await fetch('/api/games/' + encodeURIComponent(P.id) + '/result').catch(() => null);
     if (r && r.ok) {
       const d = await r.json();
-      if (d.status === 'abandoned') return;
-      if (d.stats && d.result) { showGameEnd({ scores: d.result.scores || [], winner: d.result.winner, conceded: d.result.conceded, stats: d.stats.players }); return; }
+      if (d.status === 'abandoned') { showGameEnd({ abandoned: true, scores: [], winner: null }); if (P.endShown) return; }
+      else if (d.stats && d.result) { showGameEnd({ scores: d.result.scores || [], winner: d.result.winner, conceded: d.result.conceded, reason: d.result.reason || (/overtime/.test(d.end_reason || '') ? 'overtime' : undefined), stats: d.stats.players }); if (P.endShown) return; }
     }
     await new Promise((ok) => setTimeout(ok, 1000));
   }
@@ -187,6 +190,9 @@ function setAbandon(a, fromSocket) {
   const was = P.abandon.proposal;
   P.abandon = { proposal: a.proposal || null, cooldown: a.cooldown || {}, skew: (a.now || Date.now()) - Date.now() };
   renderAbandon();
+  clearTimeout(P.abandonTimer);
+  const wait = P.seat === null ? 0 : abandonWait();
+  if (wait > 0) P.abandonTimer = setTimeout(refreshGameMenu, wait * 1000 + 300);      // (the menu button is enabled again when the cooldown is over)
   if (fromSocket && P.abandon.proposal && (!was || was.at !== P.abandon.proposal.at) && P.abandon.proposal.by !== P.seat && P.seat !== null) turnAlert('Your opponent proposes to abandon the game');
   if (fromSocket && $('actionbar')) refreshBar();
 }
@@ -340,7 +346,7 @@ export function gameMenu() {
     P.menuOpen = false; list.hidden = true;
     if (!confirm('Concede the game?')) return;
     const r = await playApi('/concede', {});
-    if (r.ok) { if (r.body.view) pushLive(r.body); P.status = 'conceded'; render(); } else renderForkMoves(r.body.message || 'could not concede');
+    if (r.ok) { if (r.body.view) pushLive(r.body); P.status = 'conceded'; render(); playEndCheck(); } else renderForkMoves(r.body.message || 'could not concede');
   };
   list.append(concede);
   if (P.clock && P.status === 'playing') {                               // time control: win on overtime

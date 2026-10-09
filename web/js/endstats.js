@@ -1,6 +1,6 @@
 // The end of a live game: the score cards, the sources of the points and the comparison of the two players.
 // `EndStats.render(box, { names, scores, winner, conceded, status, stats })` fills `box`; `stats` = [one dict per player] of the engine (engine/gamestats.py).
-// Used by the end page (end.html) and by the play page, where it replaces the player boards when the game ends (replay.js).
+// Used by the end page (end.html) and by the play page, where it replaces the player boards when the game ends (play.js).
 (function () {
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const SOURCES = [['animals', 'Animals'], ['sponsors', 'Sponsors'], ['projects', 'Projects'], ['others', 'Others']];
