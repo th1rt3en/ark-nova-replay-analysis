@@ -1018,3 +1018,5 @@ body.viewer .lobby a { color: #7a3b00; font-weight: 600; }
 
 /* a step of a live game can have several lines of log (BGA words, one line per event) */
 .current, .moves li { white-space: pre-line; }
+
+.abandonbox[hidden] { display: none; }
