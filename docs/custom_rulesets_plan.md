@@ -76,12 +76,12 @@ Open questions:
 
 - A map is the existing geometry schema (hexes with terrain, level-II flags, placement bonuses, notepad bonus slots, in `maps.json` format). A custom map goes into the ruleset, `board()` resolves it from the catalog, and `map_select.pool` can list it.
 - Map abilities (tower, restaurants, ...) are code keyed by map id in `map_rules.py`. A custom map starts with no ability or uses one from a small registry. Everything else is data.
-- A validator checks the grid (x + y odd, cell count, ...). The viewer has no background image for it, so it needs a plain hex rendering.
+- A validator checks the grid (x + y odd, cell count, ...). The viewer has no background image for it, so it needs a plain hex rendering (the map editor already draws one: `web/map_editor/blank_map.png`).
 
 Open questions:
 - Does a custom map need its own ability, or are plain maps enough at first?
 - Are the 7 notepad slots part of a custom map?
-- Is the viewer rendering in scope? (`web/` has been left alone so far.)
+- Is the viewer rendering in scope? (`web/` now has the viewer modules in `web/js` for replay, fork, sandbox and live play, and the map editor `web/map_editor.html` + `web/js/map_editor.js`, which draws a blank 58-hex board and exports the `data_manual/maps_geometry/<id>.json` format. None of it knows about rulesets yet: that is what is left alone.)
 
 ### 7 and 8. Randomized bonuses and terrain
 

@@ -4,18 +4,18 @@
 https://github.com/Ender-Wiggin2019/Next-Ark-Nova-Cards, cloned (shallow) into `vendor/Next-Ark-Nova-Cards/` (not committed). **License: the repo has no LICENSE file; its About page says images/text belong to Capstone Games. TODO: confirm terms with the maintainer before publishing the data or the site.**
 
 Data is TypeScript (`src/data/*.ts`). `python scripts/import_data.py` bundles it with esbuild (`scripts/ts_extract/`, zod stubbed) and runs it under node, writing normalized JSON to `src/ark_nova/data/`:
-`animals.json` (161), `sponsors.json` (82), `projects.json` (32), `endgames.json` (17), `project_bonuses.json`, `maps.json` (25). Env: `ESBUILD_BIN`, `NODE_BIN`. Locale strings for effect text are resolved from `public/locales/en/common.json` (`text` fields).
+`animals.json` (161), `sponsors.json` (82), `projects.json` (39: 32 upstream + the 7 manual Marine Worlds projects P133-P139), `endgames.json` (17), `project_bonuses.json` (18), `action_cards.json` (20 action card faces: rule lines of level I and II), `maps.json` (25). Env: `ESBUILD_BIN`, `NODE_BIN`. Locale strings for effect text are resolved from `public/locales/en/common.json` (`text` fields).
 
 Each card has `key` = letter + 3-digit number (`A414`, `S231`, `P127`, `F003`). This matches the letter+number part of BGA log ids (`A414_SouthAmericanCoati`), which is the join key; the name part is unreliable (upstream `cardNames` covers only some cards). Card `source` is `base`, `marine_worlds` or `promo`.
 
-## Coverage vs the 29 sample logs (`python scripts/check_data_coverage.py`)
-296 distinct card keys are seen in logs. Gaps in upstream:
+## Coverage vs the sample logs (`python scripts/check_data_coverage.py`)
+The script lists every card key seen in `log_examples/*.json` that is missing from the data (none at present). Gaps in upstream, and what filled them:
 
-1. **Missing Marine Worlds conservation projects: P133-P139** (Sea Animals + the six "Management Plan" projects). `data_manual/projects_mw.json` holds skeleton entries (id, name, tag); slots, place bonuses and description are to be filled in manually (`"verified": false` until done). `import_data.py` merges the file into `projects.json`.
-2. **Marine Worlds reprint variants** (`_MW` ids in logs): final scoring cards via `scoring` (see below); P131 and S250 via `data_manual/variants_mw.json`. Every card can carry `variants.marine_worlds` = field overrides applied over the base card when Marine Worlds is enabled: P131 Large Animals needs 3/2/1 large animals for 4/3/2 conservation (base: 4/3/2 icons for 4/3/2); S250 Sea Turtle Tank gets water 2 and tags reptile + seaAnimal, rest unchanged. The same file's `patches` fix upstream bugs (P131 upstream wrongly uses `bonusRequirement: water`; corrected to `animal-size-4`).
-3. **Map geometry is missing.** Upstream only has map names, ability text and an image (`public/img/maps/plan*.jpg`). Tile layout, bonus spaces, starting placements and building-space adjacency need to come from elsewhere (BGA's game assets / hand encoding from the images). `maps.json` has `geometry: null` until filled in by hand: see `docs/map_geometry.md` (BGA coordinate system, per-map templates in `data_manual/maps_geometry/`). Map ids: `1`-`14`, `1a`-`8a`, `T1`, plus beginner boards `0` and `A` (flagged `beginner`, not BGA-selectable).
+1. **Missing Marine Worlds conservation projects: P133-P139** (Sea Animals + the six "Management Plan" projects). `data_manual/projects_mw.json` holds them with slots, place bonuses and description (all `"verified": true`). `import_data.py` merges the file into `projects.json`.
+2. **Marine Worlds reprint variants** (`_MW` ids in logs): final scoring cards via `scoring` (see below); P131 and S250 via `data_manual/variants_mw.json`. Every card can carry `variants.marine_worlds` = field overrides applied over the base card when Marine Worlds is enabled: P131 Large Animals needs 3/2/1 large animals for 4/3/2 conservation (base: 4/3/2 icons for 4/3/2); S250 Sea Turtle Tank gets water 2 and tags reptile + seaAnimal, rest unchanged. The same file's `patches` fix upstream data: P131 (upstream wrongly uses `bonusRequirement: water`; corrected to `animal-size-4`), P129 slots (rock requirement), S274 and S281 (upstream source `marine_worlds` / `promo`, patched to `base`: they are base game cards on BGA), and A341 and S282 (not in the BGA game: `active: false`, never in a deck).
+3. **Map geometry is not upstream.** Upstream only has map names, ability text and an image (`public/img/maps/plan*.jpg`). Tile layout, bonus spaces and starting placements come from hand encoding (`data_manual/maps_geometry/<id>.json`, 25 files, all `"verified": true`); `import_data.py` copies verified files into `maps.json` under `geometry` (`null` for an unverified map). See `docs/map_geometry.md` (BGA coordinate system, file format). Map ids: `1`-`14`, `1a`-`8a`, `T1`, plus beginner boards `0` and `A` (flagged `beginner`, not BGA-selectable).
 4. Text has some mojibake from upstream (e.g. "someone�s"); cosmetic only.
-5. Card effects are text + keyword enums, not executable rules. Engine ability implementations are still all to be written; use `text` as spec.
+5. Card effects are text + keyword enums, not executable rules. The engine implements them in code (`engine/animal_abilities.py`, `engine/card_programs.py`, `engine/sponsors_action.py`, ...); `text` is the spec where something is missing (see the inferred files below).
 6. Prehistoric expansion data upstream (`src/data/prehistoric`) is ignored.
 
 ## Manual Marine Worlds projects: bonus schema (data_manual/projects_mw.json)
@@ -33,3 +33,15 @@ P133 (Sea Animals) follows the base icon-count projects: indicators 5/4/2 giving
 
 ## Final scoring cards: base vs Marine Worlds
 Upstream already stores both versions: `scoreArray` = Marine Worlds scoring, `originalArray` = base-game scoring (present for F001, F003, F005, F008, F010, F011; verified against the values supplied by the user). `import_data.py` exposes them as `endgames.json` -> `scoring: {"base": [...], "marine_worlds": [...]}`. The engine must pick `scoring["marine_worlds"]` only if the game has Marine Worlds enabled (BigQuery `marine_worlds` flag), otherwise `scoring["base"]`. Log ids with the `_MW` suffix (e.g. `F001_LargeAnimalZoo_MW`) map to the same key with the `marine_worlds` variant. Cards F012-F017 are Marine Worlds-only.
+
+## Other data files
+Generated from the logs (rerun after adding logs; the scripts read `log_examples/*.json`), all in `src/ark_nova/data/`:
+- `animal_play_effects.json` (160 animals) and `sponsor_play_effects.json` (81 sponsors): what a card gives when played, per card `kind` (`fixed`, `variable`, `complex`, `unseen`). `scripts/infer_animal_effects.py`, `scripts/infer_sponsor_effects.py`.
+- `sponsor_thresholds.json` (15 sponsors): appeal / reputation a sponsor needs (`scripts/infer_sponsor_thresholds.py`; unverified values are not enforced).
+- `association_bonuses.json` (25 maps): conservation for the 4th partner zoo, the 3rd university and the last worker (`scripts/infer_association_bonuses.py`).
+- `unique_shapes.json` (20 sponsor buildings): cells of each unique building (`scripts/fit_unique_shapes.py`, completed by hand).
+- Python modules: `map_support.py` (maps the engine can replay; none are unsupported now) and `map_quirks.py` (rules BGA implemented differently in older tables, e.g. map `6a-legacy`).
+
+Hand-made, in `data_manual/` (not generated): `projects_mw.json`, `variants_mw.json` (above), `maps_geometry/<id>.json` (`docs/map_geometry.md`), `map_label_fixes.json` (tables whose map label in the index is wrong, e.g. T1 shown as Map 0), `unsupported_logs.json` (currently empty; tables moved out of `log_examples/` by `scripts/quarantine_unsupported_maps.py`), `problem_notes.json` (notes per problem of `docs/problem_report.md`), `planning/visibility.json` and `planning/reversibility.json` (the planning sheets of the live game, `scripts/gen_planning.py`, `docs/live_game_plan.md`).
+
+`web/planning.html` edits the planning sheets. It is a **local-only dev tool**: it needs `python scripts/dev_server.py` (it reads and saves through `/api/dev/planning/<name>`) and is not linked from the site.

@@ -1,6 +1,6 @@
 # Frontend architecture (audience: AI coding agents)
 
-Scope: `web/` of the replay / fork / sandbox viewer (`replay.html`, `fork.html`, `sandbox.html`). Other pages (`index`, `guide`, `planning`, `submit`) are independent and use only `style.css` (`submit.html` also loads `logstore.js` and stores the uploaded log; `index` / `planning` call their own `/api/` endpoints).
+Scope: `web/` of the replay / fork / sandbox / live play viewer (`replay.html`, `fork.html`, `sandbox.html`, `play.html`; `end.html` shows the result of a finished live game; `map_editor.html` + `js/map_editor.js` is a separate tool that imports the viewer's drawing modules). Other pages (`index`, `guide`, `planning`, `submit`, `import`) are independent and use mainly `style.css` (`submit.html` and `import.html` load `logstore.js` and store the uploaded log, `submit.html` also `progress.js`; `index` / `planning` call their own `/api/` endpoints; `planning.html` is a dev tool that needs `scripts/dev_server.py`; `import.html` is opened only by the browser extension).
 
 ## Hard constraints
 - Static files served by FastAPI `StaticFiles` from `web/`. **No build step, no bundler, no npm.** JS is native ES modules (`<script type="module" src="/js/main.js">`).
@@ -8,7 +8,7 @@ Scope: `web/` of the replay / fork / sandbox viewer (`replay.html`, `fork.html`,
 - Backend (`src/`) is owned by someone else. If a frontend change needs a new API field, write "BACKEND NEEDED" in the matching section of `changelog.md`; do not edit `src/`.
 
 ## Page -> script wiring
-`replay.html`, `fork.html`, `sandbox.html` load `/js/main.js` as a module; `replay.html` sets no mode flag, `fork.html` sets `window.FORK_MODE = true` (inline script), `sandbox.html` sets `FORK_MODE` and `SANDBOX_MODE` only when started with `?play=1` and a stored game. `state.js` reads those flags once and exports them as `FORK` / `SANDBOX`. CSS: `/style.css` (site-wide) + `/css/replay.css` (viewer; ~930 lines, deliberately left as one file with later rules overriding earlier "round N" blocks - **do not reorder or merge rules**: an automated merge changed computed layout by 1-4 px).
+`replay.html`, `fork.html`, `sandbox.html` load `/js/main.js` as a module; `replay.html` sets no mode flag, `fork.html` sets `window.FORK_MODE = true` (inline script), `sandbox.html` sets `FORK_MODE` and `SANDBOX_MODE` only when started with `?play=1` and a stored game; `play.html` sets `FORK_MODE` and `PLAY_MODE` once a game id is in the URL (`state.js` exports `PLAY`; PLAY implies FORK). `main.js` does not boot when `window.MAP_EDITOR` is set. `state.js` reads those flags once and exports them as `FORK` / `SANDBOX`. CSS: `/style.css` (site-wide) + `/css/replay.css` (viewer; ~930 lines, deliberately left as one file with later rules overriding earlier "round N" blocks - **do not reorder or merge rules**: an automated merge changed computed layout by 1-4 px).
 
 ## Scaling (changelog.md section 2)
 Desktop (window >= 900 px) is laid out at a fixed design viewport of 1920x1080 and zoomed (`body.style.zoom`, `fitScale` in `layout.js`) to the window width. Consequences for every future edit: do not add width / height `@media` queries or raw `vh` / `vw` for desktop styles (use `--vh` / `--vw`); when JS mixes `getBoundingClientRect` / mouse coordinates (zoomed px) with `offsetWidth` / `clientWidth` / CSS px (layout px), divide by `S.scale`. Below 900 px the old responsive rules (`@media (max-width: 899px) and ...`) apply unscaled.
@@ -49,7 +49,10 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `settings.js` | settings pop-up (autoplay speed, timeline row on/off; localStorage `settings`), changelog.md 8.10 |
 | `sandbox.js` | sandbox lobby/setup tools |
 | `logstore.js` | IndexedDB store for uploaded logs. Stays a CLASSIC script (global `LogStore`), loaded in `replay.html` (before `main.js`) and in `submit.html`; `load.js` reads the global for `source=upload`. Do not convert it. |
-| `main.js` | `render()`, `boot()` |
+| `main.js` | `render()` (redraws only the zones whose position changed, `S.lastBoard`, `reconcile`; changelog.md 13.2), `boot()` |
+| `play.js` | live play (play.html; the lobby / create / join form is the inline script of `play.html`): sockets or polling, clocks, game menu, abandon proposals, turn alert, end of game (also for abandoned games; a render error is retried), polling stops when the game is over; state in `S.play`; changelog.md sections 13 and 13.3 |
+| `endstats.js` | classic script: the statistics of a finished game (`end.html`, and the play page at the end) |
+| `progress.js` | classic script: the progress circle of the loading box (`window.Progress`), loaded before `main.js` in `replay.html` / `fork.html` |
 
 Import graph is cyclic on purpose (e.g. `shared.js` <-> `sandbox.js`). That is safe because modules only use imported *functions* at call time, never at load time. Keep it that way: do not read imported bindings in top-level statements except `state.js` exports.
 

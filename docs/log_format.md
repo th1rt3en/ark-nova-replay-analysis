@@ -5,12 +5,12 @@ Findings from the 114 logs in `log_examples/` (2026-09-30 analysis). Raw generat
 ## Envelope
 `{status, data: {logs: [packet...], players: [{id, color, name, avatar}]}}`.
 
-Packet: `{channel, table_id, packet_id, packet_type ("resend" everywhere), move_id, time, data: [event...]}`.
+Packet: `{channel, table_id, packet_id, packet_type ("resend" everywhere), move_id, time, data: [event...]}`. `packet_id`, `move_id` and `time` are strings (numbers in a string; `move_id` can be `null`), `table_id` is a string or a number: the parser converts with `int()`.
 - `channel`: `/table/t<id>` = public events; `/player/p<id>` = events private to that player. **Both players' private channels are in every log**, so every card a player sees is recoverable.
-- Ordering: packets are in `packet_id` order and this is chronological order; within one `move_id` the private packets come first and the table packet last; events inside a packet keep their real order (e.g. `discardCardsOnDisplay` then `fillPool`).
+- Ordering: packets are in numeric `packet_id` order and this is chronological order; within one `move_id` the private packets come first and the table packet last; events inside a packet keep their real order (e.g. `discardCardsOnDisplay` then `fillPool`).
 - `move_id`: BGA's step counter (one per player request), never decreasing, but with gaps (a step with no notification) and 171 packets with `null` (e.g. `wakeupPlayers`). `packet_id` is not gap free either.
 - Event: `{uid, type, log (template), args, [h, lock_uuid, synchro]}`. `args` is usually an object, sometimes `[]`.
-- Cards: `{id, location, state, pId, extraDatas}`; ids are `<A|S|P|F><number>_<Name>[_MW]` (see `docs/data_sources.md`). Locations seen: `hand`, `scoringHand`, `pool-1..6` (display), `inPlay`, `discard`, `projects_0`, `board`, `notepad`, ...
+- Cards: `{id, location, state, pId, extraDatas}`; ids are `<A|S|P|F><number>_<Name>[_MW]` (see `docs/data_sources.md`); base projects carry a `_<n>` suffix as well (`P111_Herbivores_1`). Buildings and tokens have the same shape plus `type, x, y` (buildings also `rotation`, `size`). Locations seen: `hand`, `scoringHand`, `scoringDeck`, `pool-1..6` (display), `inPlay`, `discard`, `projects_0/1`, `base_0..2`, `board`, `reserve`, `stored`, `notepad`, `association_*`, `partner_*`, `university_*`, ...
 
 ## Games in the sample
 113 of 114 have a 2-player `players` list; 100 finish with `finalScoring`, 13 end by `playerConcedeGame` (no `finalScoring`, result only in state 99). Special files:
@@ -18,7 +18,7 @@ Packet: `{channel, table_id, packet_id, packet_type ("resend" everywhere), move_
 - `800035115`: aborted after 21 packets (`skipTurnOfPlayer`, `gameResultNeutralized`). Unusable, skip.
 - `800629934`: `reconstructionRemove` / `reconstructionPlaceBack` are the sponsor card *Reconstruction* effect (buildings picked up and put back), not an anomaly.
 - `newUndoableStep` ("Undo here", 15 files) marks BGA undo checkpoints. No undo events appear, so undone actions seem to be absent from the log (to confirm).
-- 95 logs contain `_MW` card ids (Marine Worlds); 11 have no MW cards at all. The BigQuery flag is authoritative. Note `S274_VictoryColumn` (tagged Marine Worlds upstream) appears in 6 logs with no other MW card, so it is probably not MW-only.
+- 95 logs contain `_MW` card ids (Marine Worlds); 11 have no MW cards at all. The BigQuery flag is authoritative. Note `S274_VictoryColumn` (tagged Marine Worlds upstream) appears in 6 logs with no other MW card: it is a base game card on BGA, and `data_manual/variants_mw.json` patches its source to `base`.
 
 ## Turn structure (what a "move" is)
 `move_id` = one player request; the sequence for a turn looks like this (public non-noise events, state ids in brackets):
@@ -43,7 +43,7 @@ Everything below was checked over all 114 logs. **Counting every card that leave
 - There are **three decks** (rules confirmed by the user): see "The three decks" below. The seed prefix applies to the *main* deck; the other two have their own logged draws.
 - **Top-of-deck exits, fully logged** (`pDrawCards`, by `log` template): "from the deck", `hunter`, `perception`, `scuba dive`, `sprint` effects (draw n, keep some; the rest is discarded and logged with `pDiscardCards` "keep X and discard Y"), plus `fillPool` (`args.cards` = the *new* cards only, in the order they enter pool-6; `args.pool` = the whole display).
 - **Search / tutor exits, only the found card is logged**: "gaining a new university with <SEARCH-type>", "monkey gang", "<type> card (source)" (e.g. management plan, Map 14, worker bonuses: person sponsors), "Map 8 effect" (first sponsor), "Waza Special Assignement" (animal). *Dominance* is not a deck exit: like *Assertion* it fetches a base project that is not in the deck. **Rule (confirmed): the engine takes the first card in deck order that satisfies the condition; all other cards keep their order (no shuffle, nothing discarded).** So a search removes one card from somewhere below the top and leaves the rest untouched: the skipped cards are simply still in the deck, and later top draws are unaffected. The deck order is therefore still one consistent permutation of which we observe a subsequence. See "Seed construction" below.
-- **Not deck exits** (do not add to the order): `scavenging` / `Horse Whisperer` (drawn from the discard pile, random, all 218 cards had been seen earlier), `Pilfering` (from the opponent's hand), `Assertion` (a base project taken from the unused ones, see below) `Assertion` (a base project taken from the unused ones, see below) and every `scoringCard` draw (`adapt`, `resistance`, setup).
+- **Not deck exits** (do not add to the order): `scavenging` / `Horse Whisperer` (drawn from the discard pile, random, all 218 cards had been seen earlier), `Pilfering` (from the opponent's hand), `Assertion` / `Dominance` (a base project taken from the unused ones, see below) and every `scoringCard` draw (`adapt`, `resistance`, setup).
 - Display removals (`discardCardsOnDisplay`: first two at a break, Wave icons, `digs`, rightmost project, Shark Attack, expedition) go to the discard pile and are logged with ids.
 - Public `drawCards` duplicates the private draw with only a count (`n`) or `cards`; use the private one for identities. Counts match (public n vs private cards) except a few +1 differences (searches).
 

@@ -35,7 +35,7 @@ Some maps have icons outside the 58 cells (e.g. map 13 has icons on the left edg
 ```
 - **`hexes[].terrain`**: `plain` (default), `rock` (rock formation) or `water` (pond). Only change the ones that are not plain.
 - **`placement_bonuses`**: the yellow pentagon icons printed on hexes, given when a building covers that hex (BGA source label "placement bonus"). One entry per icon: the hex coordinates + `bonus`.
-- **`special_hexes`**: everything else printed on the map that a map rule refers to (tower, harbor, the red "II" upgrade flags, ...). `kind` is a free identifier (`observation_tower`, `commercial_harbor`, `upgrade_flag`...); set `"off_board": true` and use the coordinates the hex would have if the grid were extended (e.g. the second tower below map 1 is at about (2, 13)). Use `note` for anything unclear. The engine implements the behaviour per map id in code, so these entries only need to say *where* things are and *what they are*.
+- **`special_hexes`**: everything else printed on the map that a map rule refers to (tower, harbor, the red "II" upgrade flags, ...). `kind` is a free identifier (`observation_tower`, `commercial_harbor`, `upgrade_flag`...); set `"off_board": true` and use the coordinates the hex would have if the grid were extended (e.g. the commercial harbor of map 4 is at (-1, 12)). Use `note` for anything unclear. The engine implements the behaviour per map id in code, so these entries only need to say *where* things are and *what they are*.
 - **`bonus_slots`**: the 7 bonus spaces in the panel on the left of the board, **top to bottom, index 0..6**. In the logs each player starts with tokens `bonus_0`..`bonus_6` (from `setupPlayer.meeples`) and gains them as "map bonus space" bonuses, so the order/index must match the picture. There are always 7 in total, but the split between the upper and lower panel differs per map (map 1: 4 + 3, map T1: 3 + 4); count top to bottom across both panels. Each slot has a **`kind`** given by its colour:
   - `"instant_income"`: purple slot, the bonus is gained immediately **and** again as income (each break).
   - `"instant"`: yellow slot, the bonus is gained immediately only.
@@ -43,13 +43,14 @@ Some maps have icons outside the 58 cells (e.g. map 13 has icons on the left edg
 - **`map_rules`**: the map's printed ability text (already in `maps.json` `description`; only add here if you want a cleaned-up version).
 
 ### Bonus vocabulary
-`{"type": ..., "value": n}`. Types used so far (log names where they exist): `money`, `appeal`, `reputation`, `conservation`, `xtoken`, `take-in-range-or-deck` (take a card from the deck or reputation range), `Snapping`, `size-2` (free size-2 enclosure), `Worker`, `Clever`, `Digging`, `Multiplier` (x2 icon), `Partner-Zoo`, `bonus-sponsor`, `sponsor-person-card`, `upgrade-card`. `"bonus": null` = an icon that has not been identified yet (see `note`). Several bonuses on one hex: repeat the entry with the same x, y.
+`{"type": ..., "value": n}`. Types used so far (log names where they exist): `money`, `appeal`, `reputation`, `conservation`, `xtoken`, `take-in-range-or-deck` (take a card from the deck or reputation range), `Snapping`, `size-2` (free size-2 enclosure), `special-enclosure`, `kiosk`, `Worker`, `Clever`, `Digging`, `Determination`, `Pouch`, `Mark`, `Scavenging`, `Fac`, `Multiplier` (x2 icon), `Partner-Zoo`, `bonus-sponsor`, `bonus-scoring-cards`, `sponsor-person-card`, `upgrade-card`, `store`, `conceal`, `wave`, `shark-attack`, `adapt`, `animal-magnet`, `cut-down`, `continent`. `"bonus": null` = an icon that has not been identified yet (see `note`). Several bonuses on one hex: repeat the entry with the same x, y.
 
 Optional extra keys: `note` on any `placement_bonuses` / `special_hexes` / `bonus_slots` entry, and `bonus` on `special_hexes` entries that carry a bonus themselves (map 13 area bonuses).
 
 Special hex kinds used: `observation_tower`, `upgrade_flag` (red flag with shovel + II: needs the upgraded Build action), `gate`, `restaurant`, `commercial_harbor`, `research_institute` (off-board at (-1, 12)), `hollywood_h`, `continent_area` / `continent_marker` (map 9), `digging_card_slot` (map 10), `area_bonus` / `map_center` (map 13).
 
-## Worked reading of the attached image (map 1, Observation Tower). Not saved to the data file, so please verify
+## Worked reading of the attached image (map 1, Observation Tower): the first reading, now superseded by `data_manual/maps_geometry/1.json` (verified)
+The file agrees on rock, water, pentagons, flags and the tower at (1,6); it has no second tower off-board, and its left panel is Snapping, size-2, money 5, bonus-sponsor (indices 0-3, income) then Worker, money 12, 3 X tokens (4-6).
 Rock: (1,0), (2,1), (3,0) top cluster; (0,5), (1,6) with the tower, (0,7), (0,9) left cluster (the 4 rock spaces of the tower rule); (3,10), (3,12).
 Water: (4,5), (5,6), (6,7), (7,6), (8,5), (8,7), (5,12).
 Yellow pentagons at: (0,1), (4,1), (7,2), (6,5), (3,6), (7,8), (0,11), (4,11), (7,12).
