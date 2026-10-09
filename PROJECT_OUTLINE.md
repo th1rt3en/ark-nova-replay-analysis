@@ -7,7 +7,7 @@ A website where a user enters a BGA table ID for a finished Ark Nova game and ca
 1. Step through the replay move by move (no animations, forwards and backwards).
 2. At any point, **fork** the current game state into a new tab and play alternative lines for **both** players, switching POV freely, until the game ends or they quit.
 
-Powered by a from-scratch Python rules engine covering the full base game plus **Marine Worlds**: all animal, sponsor, conservation project and final scoring cards, and every BGA map (1–14, 1a–8a, T1).
+Powered by a from-scratch Python rules engine covering the full base game plus **Marine Worlds**: all animal, sponsor, conservation project and final scoring cards, and every BGA map (1–14, 1a–8a, T1, plus the beginner maps 0 and A: 25 in `data/maps.json`). Data: 160 playable animals, 81 sponsors, 39 conservation projects (13 base projects, 26 others) and 17 final scoring cards (cards A341 Capybara and S282 Promotion Team are `active: false` and in no deck).
 
 **Stack:** Python (backend + engine), HTML, JavaScript (frontend, no heavy framework needed).
 **Deploy:** Cloud Run service. **Storage:** BigQuery (log index) + GCS (raw logs).
@@ -17,16 +17,25 @@ Powered by a from-scratch Python rules engine covering the full base game plus *
 ```
 Browser (HTML/JS)
    │  REST/JSON
-Cloud Run service (Python, FastAPI or Flask)
-   ├─ /api/tables/{id}        → BigQuery lookup → GCS log fetch → parser → replay
-   ├─ /api/replay/{id}/state?move=N
-   ├─ /api/fork               → seed finder → new game session
-   └─ /api/game/{sid}/...     → legal actions, apply action, undo, switch POV
+Cloud Run service (Python, FastAPI; api/main.py, api/live.py)
+   ├─ GET  /api/lookup?q=                  → table id / url → ready | needs_log | not_indexed | unsupported | invalid
+   ├─ GET  /api/tables/{id}, /log          → config (BigQuery index) and the raw log (GCS)
+   ├─ GET/POST /api/tables/{id}/replay     → parser → replay (steps with engine states)
+   ├─ POST /api/tables/{id}/fork           → engine state of a step (seed rule in replay/fork.py)
+   ├─ POST /api/fork/apply                 → play one action on a posted state (stateless)
+   ├─ POST /api/tables/{id}/verify         → check an uploaded log
+   ├─ /api/sandbox/{maps,map/{id},new,apply,edit}
+   ├─ /api/games..., /api/live/...         → live games (only with LIVE_KEEPER_URL + INTERNAL_SECRET), GET /api/tables/E{n}/replay
+   └─ GET  /healthz
    │
    ├─ ark_nova.engine   (pure Python, no I/O, deterministic given seed)
    ├─ ark_nova.parser   (BGA log → normalized event list + deck-order prefix)
    └─ ark_nova.data     (cards, maps as JSON, generated from upstream sources)
 ```
+
+The service has 14 routes in `api/main.py` and 17 in `api/live.py` (31 in all, counted from the `@app` decorators). `scripts/dev_server.py` adds `GET/PUT /api/dev/planning/{name}` for `web/planning.html` (local development only).
+
+**Live games** (two players, links per seat): the Cloudflare Worker + `Table` Durable Object in `cloudflare/` keeps the table and orders the moves, Cloud Run (`live/service.py`) validates and applies them with the engine; BigQuery holds the registry and a finished or conceded game is archived to GCS and replays without the engine (`replay/from_record.py`). See CLAUDE.md and `docs/live_game_plan.md`.
 
 Design principles:
 - **Engine is pure and deterministic**: `state' = apply(state, action)`; all randomness comes from one seeded RNG stored in the state. Immutable/copy-on-write state makes backward stepping and forking trivial.
@@ -38,25 +47,26 @@ Design principles:
 ```
 ark-nova-replay-analysis/
 ├─ CLAUDE.md                     # conventions, commands, gotchas for Claude sessions
-├─ PROJECT_OUTLINE.md
+├─ PROJECT_OUTLINE.md, ISSUES.md, changelog.md (frontend changes)
 ├─ pyproject.toml
-├─ Dockerfile                    # Cloud Run
+├─ Dockerfile, .gcloudignore     # Cloud Run (not in every copy of the repo)
 ├─ src/ark_nova/
-│  ├─ engine/
-│  │  ├─ state.py                # GameState, PlayerState, Zoo map, decks, break track
-│  │  ├─ actions.py              # Action types + legality
-│  │  ├─ rules/                  # cards.py, animals, sponsors, projects, marine, scoring, breaks
-│  │  ├─ rng.py                  # deck shuffling + seed strategy (see §6)
-│  │  └─ game.py                 # turn loop, phases, end game
-│  ├─ data/                      # cards.json, maps.json (generated)
-│  ├─ parser/                    # BGA log parsing
-│  ├─ replay/                    # replay builder: events → engine actions → states
-│  ├─ seedfinder/
-│  ├─ api/                       # web layer
-│  └─ storage/                   # bigquery.py, gcs.py, requests.py
-├─ web/                          # index.html, replay.html, play.html, js/, css/
-├─ scripts/                      # import_cards.py, import_maps.py, log fixtures
-├─ tests/                        # unit, per-card, golden replay tests
+│  ├─ engine/                    # state.py, actions.py, game.py (turn loop), rng.py; one module per rule area (animals_action, animal_abilities,
+│  │                             # build_action, cards_action, sponsors_action, association, project_effects, breaks, endgame, tracks, map_rules, ...)
+│  ├─ data/                      # animals, sponsors, projects, endgames, maps, action_cards ... as JSON (+ inferred effects), map_support.py
+│  ├─ parser/                    # BGA log parsing (log.py, deck.py, setup.py, conservation.py, verify.py)
+│  ├─ replay/                    # replay builder, differential test harness, view (viewer steps), fork, sandbox, from_record
+│  ├─ seedfinder/                # only the docstring of the seed strategy; the seed rule is in replay/fork.py and engine/rng.py
+│  ├─ live/                      # live games: service, keeper client, registry, archive, clock, projection, bgalog
+│  ├─ api/                       # main.py, live.py, ratelimit.py, tableid.py
+│  └─ storage/                   # index.py (BigQuery), logs.py (GCS), cache.py, requests.py
+├─ web/                          # index, replay, fork, sandbox, play, end, submit, guide, import, map_editor, planning (.html); js/, css/ (see section 8)
+├─ cloudflare/                   # Worker + Durable Objects of the live game keeper (TypeScript)
+├─ extension/                    # browser extension: "Open in Ark Nova Replay" button on BGA
+├─ data_manual/                  # hand-entered data: map geometry, MW projects / variants, planning sheets, notes
+├─ scripts/                      # data import and inference, art builders, differential / problem tools, dev server, live demo and registry tools
+├─ tests/                        # unit, per-card, golden replay tests (25 test files)
+├─ log_examples/                 # sample BGA logs
 └─ docs/
 ```
 
@@ -68,18 +78,18 @@ ark-nova-replay-analysis/
 3. **Indexed + logged:** `/replay.html?table=<id>`; the page loads the config (`GET /api/tables/{id}`: maps, `marine_worlds`) and the raw log (`GET /api/tables/{id}/log`, downloaded from GCS) and enters the replay flow.
 4. **Indexed, not logged:** `/submit.html?table=<id>` (links to `/guide.html`, how to get the log). `POST /api/tables/{id}/verify` checks the upload (`parser/verify.py`: BGA envelope, same table, 2 players, Ark Nova, finished, parses), then `/replay.html?table=<id>&source=upload` reads the log from IndexedDB in the browser. Uploads are not stored server side.
 5. **Not indexed:** `404 not_indexed`; the landing page says an index request has been raised, check back later. `request_log(table_id)` is still a stub (TODO: BigQuery `log_requests` insert, Pub/Sub or Cloud Tasks).
-6. TODO: the 3 base conservation projects are still to be entered/confirmed by the user before the replay is built (not part of this flow yet).
+6. The 3 base conservation projects are not entered by the user: `replay/config.py` infers them from the log (`infer_base_projects`, `refine_base_projects`).
 
 ### Flow 2 — Replay page
 Buttons: **A** forward 1 move, **B** back 1 move, **C** jump to move #, **D** fork from here. Also keyboard arrows, a move list sidebar, and both players' zoos/hands/tableau shown at each step (no animation, instant re-render).
 - **A "move" is one sub-decision**: a player's turn is choosing an action card and then resolving its effects, and each single effect resolution is one move (this matches how the BGA log records them). Forward/back/jump-to step through these moves. The move list groups moves under their parent turn/action card for readability. The engine's atomic action must line up with this definition, so each logged move maps to exactly one engine action.
 
 ### Flow 3 — Fork
-1. D opens a new tab: `/play?table={id}&move={n}`.
-2. Server rebuilds the replay state at move `n` and its deck-order info from the log.
-3. **Seed finder** produces an engine seed consistent with the known card order (see §6).
-4. Load the state at move `n` with that seed; from here the RNG is authoritative and further draws beyond the known prefix are random.
-5. Play UI: user acts as either player, with a POV toggle; legal-action list from the engine; undo; end/quit; game-over scoring screen.
+1. D opens a new tab: `/fork.html?table={id}&step={n}&seed={s}` (same viewer as the replay, fork mode).
+2. `POST /api/tables/{id}/fork` returns the engine state of that step (the server rebuilds the replay and its deck-order info from the log; steps the engine did not play cannot be forked).
+3. **Seed rule** (`replay/fork.py`, see §6): seed 1 = the replay's card order; any other seed reorders the cards never seen in the log, the same way from every fork point.
+4. From here the RNG is authoritative and further draws beyond the known prefix are random.
+5. Play UI: user acts as either player, with a POV toggle; legal-action list from the engine; each action is sent with the posted state to `POST /api/fork/apply` (stateless); game-over scoring screen.
 
 ## 5. Game Engine Scope
 
@@ -96,9 +106,9 @@ Implement in layers, each with tests:
 **Validation strategy:** golden tests replaying real BGA logs through the engine and checking that final scores match the logged result. This is the primary correctness harness; also write per-card tests.
 
 ### Data sources
-- Cards and maps: https://github.com/Ender-Wiggin2019/Next-Ark-Nova-Cards (single upstream repo for both). **Imported** (`scripts/import_data.py`; see `docs/data_sources.md`). Findings: no license file; Marine Worlds projects P133–P139 are skeletons in `data_manual/projects_mw.json`, to be filled in manually; `_MW` reprint variants not modelled; **no map geometry, only names/text/images**, so maps need another source.
+- Cards and maps: https://github.com/Ender-Wiggin2019/Next-Ark-Nova-Cards (single upstream repo for both). **Imported** (`scripts/import_data.py`; see `docs/data_sources.md`). Findings: no license file; the upstream has **no map geometry, only names/text/images**. Added by hand: Marine Worlds projects P133–P139 (`data_manual/projects_mw.json`, all 7 `verified` in `projects.json`), the `_MW` reprint variants (`data_manual/variants_mw.json`) and the map geometry of all 25 maps (`data_manual/maps_geometry/`, see `docs/map_geometry.md`).
 - BGA card IDs in the logs look like `A414_SouthAmericanCoati`, `S231_SponsorshipPrimates`, `P127_PrimateBreeding`, `F003_ResearchZoo_MW`; these prefixes (A/S/P/F, `_MW` suffix) should be the join key to the upstream data.
-- `scripts/import_*.py` normalize them into `src/ark_nova/data/*.json`. Keep provenance and a license note in `docs/data_sources.md`.
+- `scripts/import_data.py` normalizes them into `src/ark_nova/data/*.json`. Keep provenance and a license note in `docs/data_sources.md`.
 
 ## 6. Seed Finder (Key Technical Risk)
 
@@ -119,10 +129,9 @@ Details to define:
 
 ## 7. Log Parsing
 
-- Input: raw BGA replay JSON stored in GCS (samples in `log_examples/`, 29 games, 5–17 MB each). Shape: `{status, data: {logs: [packet...], players: [{id, color, name, avatar}]}}`. Each packet has `packet_id`, `move_id`, `time`, `channel` (`/table/t…` or `/player/p…` for private data), and `data: [event...]`. Each event has `uid`, `type`, `log` (template string), `args`.
+- Input: raw BGA replay JSON stored in GCS (samples in `log_examples/`: 114 games analysed in `docs/log_format.md`, 5–17 MB each). Shape: `{status, data: {logs: [packet...], players: [{id, color, name, avatar}]}}`. Each packet has `packet_id`, `move_id`, `time`, `channel` (`/table/t…` or `/player/p…` for private data), and `data: [event...]`. Each event has `uid`, `type`, `log` (template string), `args`.
 - Observed event types (from one sample): gameStateChange, getBonuses, actionCardCleanup, chooseActionCard, slideMeeples, fillPool, takeBonus, pDiscardCards/discardCards, pDrawCards/drawCards, buyBuilding, snapCard, buyAnimal, discardCardsOnDisplay, playSponsor, advanceBreak, startBreak/finishBreak, upgradeCard, donation, moveProjects, markCard/markAssign, pilfering(Money), releaseAnimal, endOfGame, finalScoring, setupActionCards, initial-selection updates. Drop noise types (updateReflexionTime, wakeupPlayers, midmessage, gameStateMultipleActiveUpdate).
 - Note: the same event can appear twice, as a public event (`drawCards`, count only) and a private one (`pDrawCards`, card identities). Parser must dedupe and merge these.
-- Output: normalized event list `[ {move_no, player, type, payload} ]`, map + expansion settings, player info, final result, and the **observed deck-order prefixes**.
 - Output: normalized event list `[ {move_no, player, type, payload} ]`, map + expansion settings, player info, final result, and the **observed deck-order prefixes**.
 - Build a mapping from BGA card IDs to engine card IDs (a single source of truth in `data/`).
 - `log_examples/` is the fixture folder (keep out of the Docker image via `.dockerignore`; large files, consider git LFS or gitignore). Tests assert parse → replay → final score agreement.
@@ -130,7 +139,7 @@ Details to define:
 
 ## 8. Frontend
 
-- Pages: `index.html` (table ID entry + modal), `replay.html`, `play.html`.
+- Pages: `index.html` (table ID entry and the mode cards), `replay.html`, `fork.html`, `sandbox.html`, `play.html` (live game), `end.html` (result of a finished live game), `submit.html` + `guide.html` (upload a log), `import.html` (opened only by the browser extension), `map_editor.html` (standalone dev tool, no engine or viewer), `planning.html` (local dev tool for the live game planning sheets: needs `scripts/dev_server.py`, endpoint `/api/dev/planning`; not linked from the site).
 - Vanilla JS modules (state store, renderer, API client), or a small lib (Alpine/Preact via CDN) if needed.
 - Renders: zoo grid for both players, hand, display, tracks, break track, action card stacks, log/move list.
 - Replay is fully client-side after loading the state list (snapshot + diffs) to make stepping instant. Play mode calls the server for legal actions and applying actions.
@@ -139,11 +148,11 @@ Details to define:
 ## 9. Deployment (Cloud Run)
 
 - Dockerfile with a gunicorn/uvicorn server, `PORT` env var, non-root user.
-- Rate limiting: add the structure now (a middleware/dependency hook with a per-IP key and configurable limits in settings) but keep it a no-op: limits disabled, nothing enforced. Later this can be turned on via config or moved to Cloud Armor/API Gateway.
+- Request guards (`api/ratelimit.py`, middleware): a rate limit per client (the first `X-Forwarded-For` address), **off unless `RATE_LIMIT_ENABLED`**, for `/api/` paths only (`/api/games/` is exempt), `RATE_LIMIT_PER_MINUTE` default 60, answers 429; always on: a request body over 64 MB gets 413. Later the limit can be moved to Cloud Armor/API Gateway.
 - Service account with least-privilege access: BigQuery Data Viewer + Job User, GCS Object Viewer, plus write access for request logging.
 - Config through env vars (`BQ_TABLE`, `GCS_BUCKET`, etc.); no secrets in the image.
 - CI: run tests → build container → deploy to Cloud Run (Cloud Build or GitHub Actions).
-- Local dev: `docker compose` or plain `uvicorn`, with a fake storage layer backed by local files for tests.
+- Local dev: plain `uvicorn`, or `scripts/dev_server.py` (the tables in `log_examples/` count as indexed and logged; `--live` runs live games on in-memory twins of the keeper).
 
 ## 10. Phased Plan
 
@@ -151,7 +160,7 @@ Details to define:
 |---|---|---|
 | 0 | Repo scaffold, CLAUDE.md, Dockerfile, hello-world on Cloud Run | Deployed URL responds |
 | 1 | Data import for cards and maps | JSON validated by schema, counts match known totals |
-| 2 | Engine core (base game, 1 map) | Simple scripted game plays to the end. Setup done and verified on 113 logs; turn loop + Cards action done and checked turn by turn against the logs (588 turns); Build, Sponsors (60 of 81 cards), Association (icon based projects) and Animals (74 of 160 animals) done and compared with 1478 turns of the logs; icon counters and breaks done; animal abilities, the other action card variants, end of game and the release / breed / management projects next |
+| 2 | Engine core (base game, 1 map) | Simple scripted game plays to the end. Done: setup (verified on 113 logs), all five action cards with their variants, all 160 playable animals and 81 sponsors, conservation projects of all five kinds, icon counters, breaks, end of game and final scoring, all 25 maps; compared turn by turn with the logs by the differential test (`scripts/engine_coverage.py`; counts in `docs/engine_design.md`); open points in `ISSUES.md` |
 | 3 | All base cards + all base maps | Rules tests pass per card |
 | 4 | Marine Worlds + remaining maps | Rules tests pass per card and map |
 | 5 | Log parser + replay builder | Real logs replay with final scores matching. Parser, deck-order extraction and the log-driven replay builder done: all 113 usable logs replay with 0 mismatches against the log's hand/money/score oracles; the move -> Action mapping comes with the rules |
@@ -169,7 +178,7 @@ Phases 2–4 (the engine) are the bulk of the work; phases 5–6 can start in pa
 4. ~~Player count~~: resolved, 2-player only.
 5. ~~Session persistence~~: resolved, ephemeral client-side.
 6. ~~Data source~~ — provided (Next-Ark-Nova-Cards repo). Still to check: licensing and completeness.
-7. ~~Auth/rate limiting~~: resolved, no auth; rate-limit hook stubbed but not enforced.
+7. ~~Auth/rate limiting~~: resolved, no auth; a rate limiter exists (`api/ratelimit.py`) but is off unless `RATE_LIMIT_ENABLED`.
 
 ## 12. First Steps for Claude Sessions
 

@@ -27,7 +27,6 @@ because the last action of the game is logged in the same move as the final scor
   796192448 and 797350569 (BGA offers no aquarium, the engine still does; the base / Marine Worlds flag comes from the index later), and sponsor building
   placements (kiosk, size-1, sea-turtle, entrance) of games whose map could not be inferred.
 - Games with an unknown map give wrong map income.
-- Break income of maps 7 / 7a / 13 is not implemented (raises NotImplementedError).
 - Conference on Europe marks use the Mark rules of `engine/marks.py` (rules given for the Mark ability); not checked separately in the logs.
 - Basic Research: pairs are counted as the number of different continent / species kinds present, divided by 2.
 
@@ -41,8 +40,8 @@ All 160 animals are implemented, on the assumptions below. `scripts/engine_probl
   one). The differential test joins such turns with the previous one; the engine's repeat prompt (a new choice at the card's strength plus X tokens) is checked this way.
 - **Hypnosis and tokens (confirmed):** the Constriction token on the hypnotised card applies (strength - 2, minimum 1); at the end of the hypnosis the Venom and
   Constriction tokens of that card are removed (the owner pays nothing then, it is not their turn; Venom is only paid at the end of the owner's own turn, and the hypnosis removal does not count as their own removal).
-- **Marketing sponsors / AI map (12):** the extra Sponsors-card cleanup after a Marketing play belongs to the "marketing sponsors" variant (Marine Worlds), and
-  the unexplained +1 strength (60 turns) to the map ability of AI (12); neither is implemented (turns with them are skipped or differ).
+- **Marketing sponsors:** the extra Sponsors-card cleanup after a Marketing play belongs to the "marketing sponsors" variant (Marine Worlds); it is not
+  implemented (turns with it are skipped or differ). The map ability of AI (12), the concealed strength numbers, is implemented (`map_rules.strength_bonus`).
 - **Marks of Animals4:** BGA logs the mark of an Animals4 turn after the next action of the same player in some turns (791295095 turn 64, 763400083 turn 5);
   the differential test skips those turns ("mark logged in a later turn").
 
@@ -57,7 +56,7 @@ All 160 animals are implemented, on the assumptions below. `scripts/engine_probl
 - **Supports of discarded projects** still count for Conservation Zoo, Breeding Cooperation / Program (the tokens leave the board but the count stays).
 - **Reputation track** corrected from the logs (the old table was shifted and lacked the worker at 8 and the cards at 10 / 13); players below 5 appeal are
   protected from Venom, Constriction, Pilfering and Hypnosis (was defined, now applied).
-- **Map T1:** the 1st and the 2nd hired worker give 1 reputation each (logs); the rest of the map abilities are still missing.
+- **Map T1:** the 1st and the 2nd hired worker give 1 reputation each (logs); the hand-card discard for +1 strength is implemented (`map_rules.t1_discard_possible`).
 
 ## Action card variants: rulings assumed
 Implemented for all five action cards, levels I and II (texts in `data/action_cards.json`). Printed appeal / reputation / conservation of every played animal

@@ -4,6 +4,8 @@ Audience: an AI coding agent, not a human. This document describes **the final s
 
 ## 0. How to use this document
 
+Status: this change set has been applied to the repo that also has the live games (section 13 lists what the merge added: live play, render reconciliation, loading progress). The reference files in `web/` are the merged result; a later port to another codebase follows the same rules.
+
 Scope
 - Only `web/` changed (plus `docs/frontend_architecture.md` and the local-only helpers of section 10). The backend (`src/`, `data/`, `data_manual/`) was not edited and **no change here REQUIRES a backend change** (sections 9.6 / 9.7 list optional improvements marked BACKEND NEEDED). The frontend only reads fields the replay API already returned when these changes were made. Fields read by the new code (check each still exists with the same meaning on the live API; if one was renamed, adapt the read in the frontend only): per step `fork` (truthy = the Fork button is enabled), `index`, `actor`, `irreversible` / `irreversible_reason`, `actions` (fork: legal moves), `sandbox`, `label`, `label_pov[]`, `move_id`, `options` (`prompt`, `seat`, `kinds`, `pieces`, `effects`, `take`, `sponsors`, `discard`, `skip`, `association`, `value`, `only`, `cards`), `engine` (`source`, `status`), `engine_state` (fork / sandbox), `state` (`turn`, `phase` setup / turn / final_turns / over, `draft` {`stage` pick1 / pick2 / keep / done, `offers`, `picked`, `kept`}, `current_action` {`seat`, `slot`, `strength`}, `active_player`, `display`, `conservation_options`, `projects_in_play`, `base_projects`, `players[]` {`hand`, `endgame_hand`, `action_cards[]` {`type`, `level`, `variant`}, `hand_limit`, `initial_offer`, `icons`, `tokens`, `x_tokens`, `score`, ...}); per replay `table_id`, `players[]` {`seat`, `id`, `name`, `color`}, `marine_worlds`, `cards`, `base_projects`, `base_pool`, `maps`, `shapes`, `setup`, `sandbox`; the fork response also carries `fork` {`step`, `seed`}. The exact set is whatever the modules read: grep `S.replay.` and `st.` in `web/js` if in doubt. The BGA profile link of a player name is built from `players[].id`. If the live API renamed or dropped such a field, adapt the read in the frontend; do not touch the backend.
 - The live site serves `web/` with FastAPI `StaticFiles`. There is no build step and none may be introduced. JS is native ES modules.
@@ -22,11 +24,11 @@ Vocabulary: "design viewport" = 1920x1080 CSS px. "zoomed px" = the unit `getBou
 
 ### 0.1 Interfaces the frontend relies on (check each against the live site)
 
-API calls (all JSON): `GET /api/tables/{id}/replay` (the replay); `POST /api/tables/{id}/replay` (body: the raw text of an uploaded log, when the URL has `source=upload`; the log itself is read from IndexedDB, see below); `POST /api/tables/{id}/fork` (body `{step, seed}`; the fork page's start state); `POST /api/fork/apply` (body `{state, action, names, ...}`; plays one legal action in a fork); `POST /api/sandbox/new`, `POST /api/sandbox/apply`, `POST /api/sandbox/edit`, `GET /api/sandbox/map/{id}`, `GET /api/sandbox/maps?marine_worlds=true|false` (sandbox). Static JSON: `/enclosures/sprites.json`, `/icons/icons.json`, `/icons/names.json` (a failed load falls back to an empty object). The exact request bodies are in `load.js`, `fork.js`, `sandbox.js` (reference files win).
+API calls (all JSON): `GET /api/tables/{id}/replay` (the replay); `POST /api/tables/{id}/replay` (body: the raw text of an uploaded log, when the URL has `source=upload`; the log itself is read from IndexedDB, see below); `POST /api/tables/{id}/fork` (body `{step, seed}`; the fork page's start state); `POST /api/fork/apply` (body `{state, action, names, ...}`; plays one legal action in a fork); `POST /api/sandbox/new`, `POST /api/sandbox/apply`, `POST /api/sandbox/edit`, `GET /api/sandbox/map/{id}`, `GET /api/sandbox/maps?marine_worlds=true|false` (sandbox). Static JSON: `/enclosures/sprites.json`, `/icons/icons.json`, `/icons/names.json` (a failed load falls back to an empty object). Live play (`play.html`, `play.js`, `end.html`): `GET /api/live/options`, `GET /api/live/config` (`{ws_base}`; empty = poll every 2 s), `POST /api/games` (create; returns the two seat tokens), `GET /api/games/E<n>`, `POST /api/games/E<n>/join`, `GET .../setup`, `GET .../state`, `POST .../preview`, `POST .../actions` (`{version, action, request_id}`), `POST .../concede`, `POST .../timeout`, `GET|POST .../abandon`, `POST .../abandon/withdraw`, `POST .../abandon/answer`, `GET .../result`, and the WebSocket `<ws_base>/ws/E<n>?s=<token>` (messages `state`, `lobby`, `status`, `abandon`, `waiting`; the client sends `ping`, the server answers `pong`). The seat token goes in the header `X-Seat-Token` (or `?s=`). Other: `GET /api/lookup?q=`, `GET /api/tables/{id}/log`, `POST /api/tables/{id}/verify` (used by `index.html` / `submit.html`). The exact request bodies are in `load.js`, `fork.js`, `sandbox.js`, `play.js` (reference files win). Check the HTTP status before reading the body: error bodies have a `status` field too.
 
-URL parameters (`state.js` exports `params`, `table`): `table` (game id; the replay page redirects to `/` when it is missing or not numeric), `step` and `seed` (fork page), `pov` (fork page: `all` | `0` | `1`, see 8.8), `source=upload` (replay of a manually submitted log), `play=1` (sandbox page: start the stored game), and the hash `#<step>` or `#<step>.<frame>` (replay; written by `go()`, read once at start).
+URL parameters (`state.js` exports `params`, `table`): `table` (game id; the replay page redirects to `/` when it is missing or not numeric), `step` and `seed` (fork page), `pov` (fork page: `all` | `0` | `1`, see 8.8), `source=upload` (replay of a manually submitted log), `play=1` (sandbox page: start the stored game), `game=E<n>` and `s=<seat token>` (play page; `end.html` takes `game`), and the hash `#<step>` or `#<step>.<frame>` (replay; written by `go()`, read once at start).
 
-Browser storage: localStorage `settings` (8.10), `pov:<table id>` (8.8), `sidebarTab` (`control` | `log`, 4), `dockSel` and `dockHidden` (the hand dock: selected cards and folded state, `dock.js`); sessionStorage `sandboxGame` (the sandbox game handed from the lobby to `?play=1`); IndexedDB database `ark-nova-replay`, object store `logs` (`logstore.js`, a classic script: uploaded logs are too big for sessionStorage; written by `submit.html`, read by `load.js` for `source=upload`).
+Browser storage: localStorage `settings` (8.10), `pov:<table id>` (8.8), `sidebarTab` (`control` | `log`, 4), `dockSel` and `dockHidden` (the hand dock: selected cards and folded state, `dock.js`); sessionStorage `sandboxGame`; localStorage `playToken.<game id>`, `playerName`, `playAlerts` (turn alert on/off), `liveUnlocked` (set by the start page; without it `play.html` shows "coming soon"), `progress.<key>` (`progress.js`: past loading times) (the sandbox game handed from the lobby to `?play=1`); IndexedDB database `ark-nova-replay`, object store `logs` (`logstore.js`, a classic script: uploaded logs are too big for sessionStorage; written by `submit.html` and by `import.html`, read by `load.js` for `source=upload`). `import.html` is opened by the browser extension (`extension/button.js`) with `?table=<id>` and receives the BGA log with `window.postMessage` (`ark-nova-import-ready` from the page, `ark-nova-log` from the extension).
 
 ---
 
@@ -468,9 +470,9 @@ const PREVIEW_DELAY = 1000;
 let previewTimer = 0, lastTouch = false;
 document.addEventListener('pointerdown', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
 document.addEventListener('pointermove', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
-export function showPreview(src) {
+export function showPreview(src, centered) {
   clearTimeout(previewTimer);
-  const show = () => { const p = $('preview'); p.src = src; p.hidden = false; };
+  const show = () => { const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false; };
   if (lastTouch) show(); else previewTimer = setTimeout(show, PREVIEW_DELAY);
 }
 export function hidePreview() { clearTimeout(previewTimer); $('preview').hidden = true; }
@@ -644,7 +646,7 @@ export function cardRow(rawKeys, cls, emptyText, zone, dimmed, markable) {
 const POV_KEY = 'pov:' + (table || 'local');
 const readPov = (v) => (v === 'all' ? null : v === '0' ? 0 : v === '1' ? 1 : undefined);
 export const povParam = () => (S.pov === null ? 'all' : String(S.pov));
-{ let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = v === undefined ? 0 : v; }
+{ let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = PLAY ? null : v === undefined ? 0 : v; }       // (a live game: the server already left out what this seat may not see, nothing is hidden by the page)
 ```
 ```js
 export const eyeOpen = (seat) => S.pov === null || S.pov === seat;
@@ -658,6 +660,7 @@ export function toggleEye(seat) {
 `side-panel.js` (the header of every info box: `<span class="who">` holds the name link and the eye button, then the score; the eye is redrawn from `S.pov` on every `render()`):
 ```js
 function eyeButton(seat) {                                          // open eye = this player's cards are shown; the only open eye cannot be closed
+  if (PLAY) return document.createTextNode('');                     // (a live game: no eyes, the server decides what a seat sees)
   const open = eyeOpen(seat), locked = eyeLocked(seat), nm = S.replay.players[seat].name;
   const b = el('button', 'poveye' + (open ? '' : ' closed') + (locked ? ' only' : ''));
   b.type = 'button';
@@ -675,7 +678,8 @@ function eyeButton(seat) {                                          // open eye 
     const who = el('span', 'who');
     who.append(name);
     who.append(eyeButton(seat));
-    head.append(who, score);
+    const cb = clockBadge(seat);                                            // the clock of the time control, to the right of the name
+    head.append(...(cb ? [who, cb, score] : [who, score]));
 ```
 CSS (end of `replay.css`):
 ```css
@@ -945,13 +949,14 @@ export function go(n, phase = 0) {
   const before = S.step;
   S.step = Math.max(0, Math.min(S.replay.steps.length - 1, n));
   S.phase = Math.max(0, Math.min(framesOf(S.step).length - 1, phase));
-  if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.placement = null; }
+  if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
   render();
 }
 ```
 and in `web/js/main.js`: the buttons `#prev` / `#next` and the keys ArrowLeft / ArrowRight call `stepBy(-1)` / `stepBy(1)`; `#last` and End call `go(steps.length - 1, 99)`; `#first` / `#prev` are disabled when `atStart()`, `#next` / `#last` when `atEnd()`; the hash is written as `'#' + S.step + (S.phase ? '.' + S.phase : '')` and read in `init()`:
 ```js
-  const [h1, h2] = FORK ? [0, 0] : location.hash.slice(1).split('.').map((x) => parseInt(x, 10));
+  const [h1, h2] = PLAY ? [S.replay.steps.length - 1, 0] : FORK ? [0, 0] : location.hash.slice(1).split('.').map((x) => parseInt(x, 10));
+  if (loadProgress) loadProgress.done();
   $('loading').hidden = true;
   $('app').hidden = false;
   go(Number.isFinite(h1) ? h1 : 0, Number.isFinite(h2) ? h2 : 0);
@@ -1074,7 +1079,7 @@ Verification: `/replay.html?table=798345117#13`: `#13` (text: "places action car
 
 ## 12. Maintaining this document
 
-This is documentation of the final state, not a log. When a later task changes something described here, rewrite the affected section (delete what became obsolete); when it adds a feature, append a new numbered section before the "Local-only helpers" section (renumbering the later sections and every cross-reference to them, e.g. "section 10" in 0 and 12). Mention "BACKEND NEEDED" explicitly if a change ever depends on the backend. Update `docs/frontend_architecture.md` for new modules.
+This is documentation of the final state, not a log. When a later task changes something described here, rewrite the affected section (delete what became obsolete); when it adds a feature, append a new numbered section at the END of the document (the numbers 10-13 are historical order; do not renumber). Mention "BACKEND NEEDED" explicitly if a change ever depends on the backend. Update `docs/frontend_architecture.md` for new modules.
 
 ---
 
@@ -1088,3 +1093,23 @@ Scope: `web/play.html`, `web/js/play.js` (new), `web/js/state.js` (`PLAY`, `S.pl
 - The log of a live game has several lines per step (newline separated, BGA's wording; `white-space: pre-line` on `.current` and `.moves li`); the labels `Starting a new break` / `End of the break` are matched with the `m` flag.
 - The hand dock has a group (name + hand | endgame cards) per player; a card of the dock previews in the middle of the screen (`.preview.center`).
 - Not part of this document: the server side (`src/ark_nova/live`, `bgalog.py`, the time control) is described in CLAUDE.md.
+
+13.2 Other changes of the merge (everything below is in the reference files; nothing here needs a backend change except where marked):
+- `main.js` `render()` no longer redraws boards that did not change: `S.lastBoard = {st, pov}` remembers what the boards on show were drawn from; in the replay (not fork / sandbox / live) the next frame of the same step (same `st`, same `S.pov`) skips drawing the zones and the zone-flash bookkeeping (`S.prevZones` ...). When the position did change, `redraw(root, draw)` draws the zone and puts back the old DOM nodes whose markup (`outerHTML` with the `mt<N>` clip-path ids normalised) is identical (`reconcile`), so pictures are not reloaded and only the changed parts flash. This is why frames of one step no longer flicker. Anything that must show a change without a new position or a new `S.pov` (for example the dock after a drag, `cardorder`) must call its own render function, as `dock.js` already does.
+- Loading box: `web/js/progress.js` (new classic script, loaded after `logstore.js` in `replay.html` and `fork.html`, before `main.js`) defines `window.Progress.start(box, {key, title, expected, stages})` which draws a progress circle with stage texts and an estimate learned per `key`; `boot()` in `main.js` starts it (`replay` / `fork`; not in the sandbox or in play), calls `.stage('Preparing the board')` when the data arrived, `.done()` after the first render and `.fail()` on an error. The loading text in the HTML is now just "Loading…" and `replay.css` styles `body.viewer .status` (solid parchment card), `.status.error` and the progress colours.
+- Table ids: the replay page accepts live game ids `E<n>` as well as digits (`/^(E\d+|\d+)$/` in `boot()`), `GET /api/tables/E12/replay` is served from the game record (`replay/from_record.py`).
+- `window.MAP_EDITOR`: `map_editor.html` imports the drawing modules; `main.js` ends with `if (!window.MAP_EDITOR) boot();`. `association.js` reads `map.upgrade_sets || SETS[map.id]` (the map editor supplies its own sets).
+- `cards.js`: card images are no longer `loading="lazy"` (a card drawn again with the next render showed an empty frame first); `showPreview(src, centered)` and the `afterMark()` export of `action-bar.js` replace the old `refreshBar()` call on card marks in a fork (`refreshBar` still exists).
+- `replay.css`: a phones-only block `@media (max-width: 800px)` (project panels as columns, card preview as a corner thumbnail). It does not break the rule of section 2 (the desktop layout is always the 1920 layout, scaled from 900 px up), but it is the one width query allowed to stay; do not add others for desktop. Also the lobby form styles (`.lobby ...`), the clock badges, the game menu, `.abandonbox`, `.alertbtn`, `.encpick`, `.mappreview`, `.dockgroup` / `.dockwho` / `.dockpair`.
+- `play.js` adds the classes `forkpage playpage` to `<body>` (`play.js` `initPlay`), so in a live game the gear, the timeline and the play button are hidden (`.forkpage #settings`, `.forkpage #timeline, .forkpage #play`), the S key does nothing there (`toggleSettings()` ignores a hidden gear) and there is no autoplay: `main.js` ignores the Space key in every FORK mode (fork, sandbox, live) so that Space keeps pressing the focused button.
+- `play.html` has the control panel markup of 8.9 without the Fork button (the second row has the gear and the Move box; the gear is hidden by `.forkpage`).
+
+13.3 Fixes after the merge (small, frontend-only; the behaviour in the reference files wins):
+- Replay frames (`main.js` `render()`): the boards are skipped when the position did not change (`same`), but the decision / confirm bar is drawn by `actionBar(st)`, which `renderShared` calls. So `render()` must call `actionBar(st)` itself in the `same` case (`{ ... } else actionBar(st);`), otherwise every decision and confirm frame is an empty box. Check: for every frame of the replay exactly one of `#current` and `#actionbar` is visible (never both, never none; table 798345117: 1001 frames = 9 draft + 599 text + 326 decision + 67 gate).
+- End of the game (`play.js`): `showGameEnd` marks the end screen as shown only after `EndStats.render` succeeded (an error is logged and the next `playEndCheck` draws it again). `playEndCheck` also runs for `abandoned` and after a concede; for `abandoned` the screen says "Game abandoned: no winner." (`EndStats` status `abandoned`). `endFromResult` passes `reason` (`result.reason`, or `overtime` when `end_reason` says so) so an overtime win is not shown as a concession, and keeps asking while nothing is shown.
+- Polling (no `ws_base`): the 2 s loop stops once the status is `finished`, `conceded`, `abandoned` or `closed`.
+- Abandon: `setAbandon` schedules `refreshGameMenu` for the end of this seat's cooldown, so the menu entry is enabled again without a reload.
+- `play.html` lobby: `api()` never rejects (a network failure returns `{ok:false, status:0, body:{message}}`, shown in the lobby; the title says "No connection"); the options request falls back to an empty list; the Create / Join submit button is disabled while the request runs (and enabled again on an error); form controls get `aria-label`s.
+- `end.html`: a game whose status is `waiting` or `playing` shows "This game is not over yet." with a link to the game instead of a result.
+- `planning.html` (dev tool): one save timer per sheet, so switching sheets within 400 ms no longer drops the first sheet's save.
+- Not changed on purpose (needs a decision or a backend change): the stored seat token is still used when the URL has none; no pong watchdog for half-open sockets; `import.html` still checks `e.source` only (the origin of the BGA page is not pinned); action-bar controls that are `span`/`div` are not keyboard-operable.
