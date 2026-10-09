@@ -54,7 +54,7 @@
 <script>
 const SHEETS = ['visibility', 'reversibility'];
 const data = {};
-let current = 'visibility', onlyTodo = false, saveTimer = null, serverSave = true;
+let current = 'visibility', onlyTodo = false, saveTimers = {}, serverSave = true;
 const $ = (id) => document.getElementById(id);
 const make = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 
@@ -72,9 +72,9 @@ async function load(name) {
 function persist(name) {
   const sheet = data[name];
   if (serverSave) {
-    clearTimeout(saveTimer);
+    clearTimeout(saveTimers[name]);
     $('status').textContent = 'saving...';
-    saveTimer = setTimeout(async () => {
+    saveTimers[name] = setTimeout(async () => {
       try {
         const r = await fetch('/api/dev/planning/' + name, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sheet) });
         $('status').textContent = r.ok ? 'saved to data_manual/planning/' + name + '.json' : 'could not save (' + r.status + ')';

@@ -71,8 +71,11 @@
   const game = params.get('game');
   const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const api = async (path, body, token) => {
-    const res = await fetch('/api/games' + path, body === undefined ? { headers: token ? { 'X-Seat-Token': token } : {} }
-      : { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Seat-Token': token } : {}) }, body: JSON.stringify(body) });
+    let res;
+    try {
+      res = await fetch('/api/games' + path, body === undefined ? { headers: token ? { 'X-Seat-Token': token } : {} }
+        : { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Seat-Token': token } : {}) }, body: JSON.stringify(body) });
+    } catch (err) { return { ok: false, status: 0, body: { message: 'The server cannot be reached. Check the connection and try again.' } }; }       // (offline)
     return { ok: res.ok, status: res.status, body: await res.json().catch(() => ({})) };
   };
   const show = () => { $('lobby').hidden = false; };
@@ -85,6 +88,7 @@
   const stack = (label, input, help) => {
     const d = document.createElement('div'); d.className = 'lobbyfield';
     const l = document.createElement('span'); l.textContent = label;
+    if (/^(INPUT|SELECT)$/.test(input.tagName)) input.setAttribute('aria-label', label);       // (the visible label is a plain span)
     d.append(l, input);
     if (help) { help.classList.add('lobbyhelp'); d.append(help); }
     return d;
@@ -110,7 +114,7 @@
     $('lobbytext').textContent = 'Play a game against a friend. You get two links: keep one, send the other.';
     const mw = document.createElement('input'); mw.type = 'checkbox';
     const mode = document.createElement('select');
-    const opts = await (await fetch('/api/live/options')).json().catch(() => ({ game_modes: [], default: '' }));
+    const opts = await fetch('/api/live/options').then((r) => r.json()).catch(() => ({ game_modes: [], default: '' }));
     for (const m of opts.game_modes) { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; o.title = m.description; mode.append(o); }
     mode.value = opts.default;
     const hint = document.createElement('div');
@@ -121,7 +125,7 @@
     const fmt = (s) => (s >= 60 ? Math.floor(s / 60) + 'm' + (s % 60 ? String(s % 60).padStart(2, '0') + 's' : '') : s + 's');
     const speed = document.createElement('select');
     for (const p of tcOpts.presets) { const o = document.createElement('option'); o.value = p.id; o.textContent = p.id[0].toUpperCase() + p.id.slice(1) + ': ' + fmt(p.start) + ' + ' + fmt(p.increment) + ' per turn'; speed.append(o); }
-    speed.value = tcOpts.default;
+    speed.value = tcOpts.default; speed.setAttribute('aria-label', 'Time control speed');
     const startIn = document.createElement('input'); startIn.type = 'number'; startIn.min = tcOpts.start_range[0] / 60; startIn.max = tcOpts.start_range[1] / 60; startIn.step = 1; startIn.value = 4;
     const incIn = document.createElement('input'); incIn.type = 'number'; incIn.min = tcOpts.increment_range[0]; incIn.max = tcOpts.increment_range[1]; incIn.step = 1; incIn.value = 74;
     const fine = document.createElement('div'); fine.hidden = true;
@@ -141,9 +145,10 @@
     $('lobbyform').append(stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), button('Create the game'));
     $('lobbyform').onsubmit = async (e) => {
       e.preventDefault();
+      const submit = e.submitter; if (submit) submit.disabled = true;                      // (one click, one game)
       const time_control = custom ? { start: Math.round(+startIn.value * 60), increment: Math.round(+incIn.value) } : { speed: speed.value };
       const r = await api('', { marine_worlds: mw.checked, game_mode: mode.value, time_control });
-      if (!r.ok) { $('lobbytext').textContent = r.body.message || 'The game could not be created.'; return; }
+      if (!r.ok) { $('lobbytext').textContent = r.body.message || 'The game could not be created.'; if (submit) submit.disabled = false; return; }
       const g = r.body, base = location.origin + '/play.html?game=' + g.game_id;
       $('lobbyform').hidden = true;
       $('lobbytitle').textContent = 'Game ' + g.game_id;
@@ -172,7 +177,7 @@
   if (token) store('playToken.' + game, token); else token = store('playToken.' + game);
   const setup = await api('/' + game + '/setup' + (token ? '?s=' + encodeURIComponent(token) : ''), undefined, token);
   if (!setup.ok && setup.status === 404) { location.replace('/end.html?game=' + game); return; }     // the table is gone: it ended and was exported (the end page says so when there never was one)
-  if (!setup.ok) { $('lobbytitle').textContent = 'No such game'; $('lobbytext').textContent = setup.body.message || 'Check the link.'; show(); return; }
+  if (!setup.ok) { $('lobbytitle').textContent = setup.status === 0 ? 'No connection' : 'No such game'; $('lobbytext').textContent = setup.body.message || 'Check the link.'; show(); return; }
   const info = setup.body;
   if (['finished', 'conceded'].includes(info.status)) { location.replace('/end.html?game=' + game); return; }
   if (token && info.seat !== null && !info.named[info.seat]) {          // a seat that has not given its name yet
@@ -182,8 +187,9 @@
     $('lobbyform').append(field('Your name', name), button('Join'));
     $('lobbyform').onsubmit = async (e) => {
       e.preventDefault();
+      const submit = e.submitter; if (submit) submit.disabled = true;
       const r = await api('/' + game + '/join', { name: name.value }, token);
-      if (!r.ok) { $('lobbytext').textContent = r.body.message || 'Could not join.'; return; }
+      if (!r.ok) { $('lobbytext').textContent = r.body.message || 'Could not join.'; if (submit) submit.disabled = false; return; }
       store('playerName', name.value);
       start();
     };

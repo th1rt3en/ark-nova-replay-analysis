@@ -42,6 +42,13 @@
     msg.textContent = lastStatus === 404 ? 'No such game.' : 'The result is not available yet. Reload the page in a moment.';
     return;
   }
+  if (data.status === 'waiting' || data.status === 'playing') {                        // (not over: this page has no result to show)
+    msg.className = 'error';
+    msg.textContent = 'This game is not over yet.';
+    const a = document.createElement('a'); a.href = '/play.html?game=' + game; a.textContent = ' Go to the game';
+    msg.append(a);
+    return;
+  }
   msg.hidden = true;
   $('end').hidden = false;
   const res = data.result || {};
