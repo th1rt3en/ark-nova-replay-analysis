@@ -93,7 +93,7 @@ function conservationBonus(root, cx, cy, h, value, tip) {
   const id = ICON_IDS.conservation, [w0, h0] = S.iconSizes[id] || [h, h];
   const g = svg('g', { class: 'consbonus' });
   g.append(svg('image', { href: iconUrl(id), x: cx - (w0 * h / h0) / 2, y: cy - h / 2, width: w0 * h / h0, height: h }));
-  const t = svg('text', { x: cx, y: cy + h * 0.18, class: 'cons-number', style: 'font-size:' + (h * 0.5).toFixed(1) + 'px' });
+  const t = svg('text', { x: cx, y: cy + h * 0.18, class: 'cons-number', style: 'font-size:' + (h * 0.62).toFixed(1) + 'px' });
   t.textContent = value;
   g.append(t);
   if (tip) { const tt = svg('title'); tt.textContent = tip; g.append(tt); }
@@ -128,7 +128,7 @@ export function bonusPanel(map, p, seat) {
       const id = ICON_IDS.reputation, [w0, h0] = S.iconSizes[id] || [38, 38], h = 38, w = w0 * h / h0;
       const g = svg('g', { class: 'consbonus' });
       g.append(svg('image', { href: iconUrl(id), x: cx - w / 2, y: 72 - h / 2, width: w, height: h }));
-      const t = svg('text', { x: cx, y: 72 + h * 0.18, class: 'cons-number', style: 'font-size:' + (h * 0.5).toFixed(1) + 'px' });
+      const t = svg('text', { x: cx, y: 72 + h * 0.2, class: 'cons-number rep-number', style: 'font-size:' + (h * 0.62).toFixed(1) + 'px' });
       t.textContent = '1';
       g.append(t);
       const tt = svg('title'); tt.textContent = 'Worker ' + k + ': 1 reputation'; g.append(tt);

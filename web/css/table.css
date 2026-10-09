@@ -106,3 +106,25 @@ aside.sidebar { position: fixed; top: .8rem; right: 1rem; width: var(--sidebar-w
 .setswitch:checked { background: #5cae78; }
 .setswitch:checked::after { left: calc(3rem - 1.6rem + 2px); }
 .forkpage #settings { display: none; }
+
+/* ---- conservation projects like on BGA: a base with a dark green part (25 %, the icon(s) of the project) and a light green part (the three slots and their cubes). The base is drawn here, the icons and slots are the picture web/project_strips/<key>.webp (scripts/build_cards.py) laid over it; this replaces the cut of the card of the earlier rounds ---- */
+.projslot { aspect-ratio: 1000 / 412; box-sizing: border-box; padding: 0; border: 0; border-radius: 5px; overflow: hidden; position: relative; background: linear-gradient(90deg, #528b43 25%, #c8d7c4 25%); box-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
+.shared .projpanel .projslot { align-self: center; height: auto; min-height: 0; }
+.projslot .withtokens, .projslot .projline { width: 100%; height: 100%; gap: 0; }
+.projstrip { position: relative; display: block; overflow: visible; border-radius: 0; box-shadow: none; }
+.projstripart { display: block; width: 100%; height: 100%; }
+.projstrip .blockcube { top: 50%; width: 11%; }
+@media (max-width: 899px) { .projpanel .projslot { min-height: 0; } }
+.projslot.projempty { background: rgba(255, 255, 255, .35); box-shadow: inset 0 0 0 1px rgba(27, 17, 10, .35); }       /* (no project there: a pale empty place, not the green base) */
+.projslot .sbcenter { flex-direction: row; flex-wrap: wrap; gap: .3rem; }       /* (the sandbox's two buttons on an empty project place, which is only as high as a strip) */
+
+/* ---- the numbers of money, appeal, conservation points and reputation use BGA's own font and settings (BGA's CSS `.player-info .icon-*`, `.icon-container .icon-*`): MyriadPro-Bold, letter-spacing -1px, text-indent -1px, font size = 0.625 x the height of the icon (20px on its 32px icons; reputation 19px), white on money and reputation, BLACK on appeal and conservation, no outline; everywhere on the page: the player panels (number over the icon, income over the money icon) and the conservation / reputation bonuses of the maps and the bonus tiles ---- */
+@font-face { font-family: MyriadPro-Bold; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/MyriadPro-Bold.woff) format("woff"); }
+.rs.inside b, .rs.inside .income i { font-family: MyriadPro-Bold, system-ui, sans-serif; font-weight: 400; letter-spacing: -.05em; text-indent: -.05em; text-shadow: none; }
+.rs.inside b { font-size: 1.625rem; }
+.rs.inside.rs-reputation b { font-size: 1.55rem; }
+.rs.inside.rs-appeal b, .rs.inside.rs-conservation b { color: #000; }
+.rs.inside .income i { font-size: 1.3rem; }
+.cons-number, .board .bonus-number, .ctcomposed .bonus-number { font-family: MyriadPro-Bold, system-ui, sans-serif; font-weight: 400; letter-spacing: -.05em; }
+.cons-number { fill: #000; stroke: none; }
+.cons-number.rep-number { fill: #fff; }

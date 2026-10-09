@@ -1,0 +1,18 @@
+{
+  "name": "ark-nova-cardgen",
+  "private": true,
+  "description": "Renders every Ark Nova card (animals, sponsors, projects, endgame) to web/cards + web/cards_large. See README.md.",
+  "scripts": { "build": "node build.mjs" },
+  "dependencies": {
+    "clsx": "^1.2.1",
+    "esbuild": "^0.21.5",
+    "i18next": "^23.2.6",
+    "playwright": "^1.45.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^1.13.2",
+    "tailwindcss": "^3.3.2",
+    "tailwindcss-animate": "^1.0.6",
+    "@tailwindcss/forms": "^0.5.7"
+  }
+}

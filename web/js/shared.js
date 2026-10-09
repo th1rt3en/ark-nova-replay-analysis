@@ -9,6 +9,9 @@ import { blockedCube, markCube, markOwner, projectPanel } from './projects.js';
 import { actionBar, afterMark, cardPickAct, forkActs, forkSingleSelect, pickCardOf } from './action-bar.js';
 import { sbButton, sbEdit, sbMeta, sbPickProjects, sbSlotButtons } from './sandbox.js';
 
+// zoo place printed on the tab of each display folder (BGA: folder 1..6)
+const FOLDER_PLACES = ['San Diego, USA', 'Frankfurt, GER', 'Johannesburg, SA', 'São Paulo, BR', 'Okinawa, JP', 'Sydney, AUS'];
+
 
 // the cards of the display a player can reach at this reputation (engine cards_action.reputation_range)
 const repRange = (rep) => (rep <= 1 ? 1 : rep <= 3 ? 2 : rep <= 6 ? 3 : rep <= 9 ? 4 : rep <= 12 ? 5 : 6);
@@ -107,6 +110,7 @@ export function renderShared(st) {
       f.addEventListener('click', () => { if (dim && forkSingleSelect()) return; const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if (x.startsWith('display#') || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); afterMark(); });
     }
     for (const g of displayGone) if (g.index === i) f.append(ghost(g.key));       // the card that left this slot fades away on top of it
+    f.append(el('span', 'folname', FOLDER_PLACES[i] || ''));
     f.append(el('span', 'folnum', i + 1));
     const owner = k ? markOwner(st, k) : -1;                         // a Mark cube of a player lies on the animal
     if (owner >= 0) f.append(markCube(owner));

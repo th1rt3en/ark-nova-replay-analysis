@@ -128,7 +128,7 @@ export function sidePanel(st) {
     xr.append(el('b', '', p.x_tokens), pic('xtoken', 40));
     flash(seat + ':x', p.x_tokens, xr);
     for (const [icon, n, label] of [['money', p.money, 'Money'], ['reputation', p.reputation, 'Reputation'], ['appeal', p.appeal, 'Appeal'], ['conservation', p.conservation, 'Conservation']]) {
-      const r = el('span', 'rs inside' + (icon === 'money' ? ' money' : ''));    // the number is printed over the icon
+      const r = el('span', 'rs inside rs-' + icon + (icon === 'money' ? ' money' : ''));    // the number is printed over the icon
       r.title = label;
       r.append(pic(icon, 42), el('b', '', n));
       flash(seat + ':' + icon, n, r);

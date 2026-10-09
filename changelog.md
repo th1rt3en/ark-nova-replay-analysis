@@ -290,10 +290,32 @@ aside.sidebar { position: fixed; top: .8rem; right: 1rem; width: var(--sidebar-w
 .setswitch:checked { background: #5cae78; }
 .setswitch:checked::after { left: calc(3rem - 1.6rem + 2px); }
 .forkpage #settings { display: none; }
+
+/* ---- conservation projects like on BGA: a base with a dark green part (25 %, the icon(s) of the project) and a light green part (the three slots and their cubes). The base is drawn here, the icons and slots are the picture web/project_strips/<key>.webp (scripts/build_cards.py) laid over it; this replaces the cut of the card of the earlier rounds ---- */
+.projslot { aspect-ratio: 1000 / 412; box-sizing: border-box; padding: 0; border: 0; border-radius: 5px; overflow: hidden; position: relative; background: linear-gradient(90deg, #528b43 25%, #c8d7c4 25%); box-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
+.shared .projpanel .projslot { align-self: center; height: auto; min-height: 0; }
+.projslot .withtokens, .projslot .projline { width: 100%; height: 100%; gap: 0; }
+.projstrip { position: relative; display: block; overflow: visible; border-radius: 0; box-shadow: none; }
+.projstripart { display: block; width: 100%; height: 100%; }
+.projstrip .blockcube { top: 50%; width: 11%; }
+@media (max-width: 899px) { .projpanel .projslot { min-height: 0; } }
+.projslot.projempty { background: rgba(255, 255, 255, .35); box-shadow: inset 0 0 0 1px rgba(27, 17, 10, .35); }       /* (no project there: a pale empty place, not the green base) */
+.projslot .sbcenter { flex-direction: row; flex-wrap: wrap; gap: .3rem; }       /* (the sandbox's two buttons on an empty project place, which is only as high as a strip) */
+
+/* ---- the numbers of money, appeal, conservation points and reputation use BGA's own font and settings (BGA's CSS `.player-info .icon-*`, `.icon-container .icon-*`): MyriadPro-Bold, letter-spacing -1px, text-indent -1px, font size = 0.625 x the height of the icon (20px on its 32px icons; reputation 19px), white on money and reputation, BLACK on appeal and conservation, no outline; everywhere on the page: the player panels (number over the icon, income over the money icon) and the conservation / reputation bonuses of the maps and the bonus tiles ---- */
+@font-face { font-family: MyriadPro-Bold; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/MyriadPro-Bold.woff) format("woff"); }
+.rs.inside b, .rs.inside .income i { font-family: MyriadPro-Bold, system-ui, sans-serif; font-weight: 400; letter-spacing: -.05em; text-indent: -.05em; text-shadow: none; }
+.rs.inside b { font-size: 1.625rem; }
+.rs.inside.rs-reputation b { font-size: 1.55rem; }
+.rs.inside.rs-appeal b, .rs.inside.rs-conservation b { color: #000; }
+.rs.inside .income i { font-size: 1.3rem; }
+.cons-number, .board .bonus-number, .ctcomposed .bonus-number { font-family: MyriadPro-Bold, system-ui, sans-serif; font-weight: 400; letter-spacing: -.05em; }
+.cons-number { fill: #000; stroke: none; }
+.cons-number.rep-number { fill: #fff; }
 ```
 Why these choices: `.layout` must be `display: block` (replay.css still declares a grid for it). The sidebar is `position: fixed` because `sticky` stops at the end of its grid row. `overflow-x: clip` instead of `hidden` because `hidden` turns `<body>` into a scroll container. The 50 px heights are the product decision: move bar and tab switch are 50 px, the move bar may grow when its content wraps.
 
-3.4 The shared area: the display element (display + the conservation track above + the reputation track below) and the association element (project area + association board + project area) are EXACTLY equally high. The two have different widths (at the 1920 design viewport about 904 px display : 652 px association, heights 391.4 px); the project areas no longer have to be as high as the conservation track (the old `--projh` coupling is removed from `layout.js` and `table.css`). Both elements have a fixed proportion: the display (zoomed `.displaybox`) height = 0.433 x width, the board 0.2955 x its width (aspect 2000 x 591), each project area has a fixed height (91.3 px, content driven, it does not depend on the width), the association column adds two gaps (.5rem each). With W = the width of the shared area minus the grid gap, rd = display height / width, rb = board height / width and c = the fixed part of the association height (project areas + gaps = measured association height - rb x its width): rd x (W - wa) = rb x wa + c, so wa = (rd x W - c) / (rd + rb). `fitDisplay()` (below) measures rd, rb and c every time it runs (after every render and on resize), sets `--assocw` (px) on `#shared` and zooms the display to the remaining width. `.shared` in `table.css` is `grid-template-columns: minmax(0, 1fr) var(--assocw, 40rem)` (the fallback is only used before the first fit); on windows below 900 px (single column) the old rule is kept and the display is simply fitted to its column. Measured (the two heights, layout px): 1920 px window 391.36 / 391.38, 1500 px 389.66 / 389.7, 2560 px 390.19 / 390.19, in every step including the end of the game. The conservation track is always drawn, also when both players have passed 10 conservation (then without cubes; `conservationTrack()` in `shared.js` still returns the track with the remaining bonus tiles and only skips the cube of a player whose conservation is above 10), so the display keeps its height in every state. The `.projpanel` rules in `table.css` now are: `.shared .projpanel { box-sizing: border-box; }`, `.shared .projpanel .projslot { align-self: stretch; height: auto; min-height: 0; }`, `.shared .projpanel .projicon { height: auto; width: auto; max-width: 3.4rem; }`. `.shared > .displaycol` is `min-width: 0; overflow: hidden`, `.shared > .tablecol` is `flex: none; min-width: 0; max-width: none; width: auto`.
+3.4 The shared area: the display element (display + the conservation track above + the reputation track below) and the association element (project area + association board + project area) are EXACTLY equally high. The two have different widths (at the 1920 design viewport about 904 px display : 652 px association, heights 391.4 px); the project areas no longer have to be as high as the conservation track (the old `--projh` coupling is removed from `layout.js` and `table.css`). Both elements have a fixed proportion: the display (zoomed `.displaybox`) height = 0.433 x width, the board 0.2955 x its width (aspect 2000 x 591), each project area has the height of its project strips (about 93 px at the 1920 design viewport; a strip keeps the aspect ratio 1000 : 412 of its width, see section 15; `fitDisplay()` measures the fixed part c every time, so the two heights stay equal: measured 393.03 / 393.02 at 1920 px, 523.0 / 523.0 at 2560 px), the association column adds two gaps (.5rem each). With W = the width of the shared area minus the grid gap, rd = display height / width, rb = board height / width and c = the fixed part of the association height (project areas + gaps = measured association height - rb x its width): rd x (W - wa) = rb x wa + c, so wa = (rd x W - c) / (rd + rb). `fitDisplay()` (below) measures rd, rb and c every time it runs (after every render and on resize), sets `--assocw` (px) on `#shared` and zooms the display to the remaining width. `.shared` in `table.css` is `grid-template-columns: minmax(0, 1fr) var(--assocw, 40rem)` (the fallback is only used before the first fit); on windows below 900 px (single column) the old rule is kept and the display is simply fitted to its column. Measured (the two heights, layout px): 1920 px window 391.36 / 391.38, 1500 px 389.66 / 389.7, 2560 px 390.19 / 390.19, in every step including the end of the game. The conservation track is always drawn, also when both players have passed 10 conservation (then without cubes; `conservationTrack()` in `shared.js` still returns the track with the remaining bonus tiles and only skips the cube of a player whose conservation is above 10), so the display keeps its height in every state. The `.projpanel` rules in `table.css` now are: `.shared .projpanel { box-sizing: border-box; }`, `.shared .projpanel .projslot { align-self: stretch; height: auto; min-height: 0; }`, `.shared .projpanel .projicon { height: auto; width: auto; max-width: 3.4rem; }`. `.shared > .displaycol` is `min-width: 0; overflow: hidden`, `.shared > .tablecol` is `flex: none; min-width: 0; max-width: none; width: auto`.
 
 Verification: zero console errors in replay, fork, sandbox; the sidebar stays in place while scrolling at 1920x1080 and 1280x551; the Log tab shows the list with the current move centred; scripted fork / sandbox click sequences still work.
 
@@ -353,11 +375,57 @@ window.addEventListener('load', () => fitSidebar());                       // (t
 export function fitSidebar() {
   const pane = $('paneControl'), side = $('side');
   if (!pane || !side || pane.hidden) return;
-  if (!S.scaled) { side.style.zoom = ''; side.parentElement.style.marginTop = ''; const b = pane.querySelector('.bar'); if (b) b.style.height = ''; return; }       // phones: not handled yet
+  if (!S.scaled) { side.style.zoom = ''; side.parentElement.style.marginTop = ''; const b = pane.querySelector('.bar'); if (b) b.style.height = ''; side.style.removeProperty('--ppx-gap'); side.style.removeProperty('--ppx-badge'); side.style.removeProperty('--ppx-pad'); return; }       // phones: not handled yet
   alignControl(pane);
-  side.style.zoom = 1;
-  side.style.zoom = pane.clientWidth / side.offsetWidth;
-  if (pane.scrollHeight > pane.clientHeight) side.style.zoom = pane.clientWidth / side.offsetWidth;       // (a scrollbar appeared and took some width: fit to what is left)
+  const fitWidth = () => { side.style.zoom = 1; side.style.zoom = pane.clientWidth / side.offsetWidth; };
+  fitWidth();
+  spreadInfo(pane, side);
+  if (pane.scrollHeight > pane.clientHeight) { fitWidth(); spreadInfo(pane, side); }       // (a scrollbar appeared and took some width: fit to what is left)
+}
+// The player boxes get a constant extra height, so that in the basic state (full window 16:9, no timeline row, no bonus-token row, no fork box) they fill the pane down to its bottom edge without a scrollbar.
+// The extra is worked out for that state and for a window of at least 16:9 height (a lower window keeps the same extra and the pane scrolls); whatever else is visible only makes the pane scroll too (the boxes never shrink to avoid it).
+// The extra goes to the icon rows (continents, species, science, rock, water): the badges grow as far as the column allows, with the number beside the badge (like BGA's .icons-summary) or below it,
+// whichever lets the badge grow more; what is left moves the rows apart and is empty space at the bottom of each box.
+// All measurements are viewport px; the CSS variables are in the layout px of #side (one px of it = k viewport px).
+function spreadInfo(pane, side) {
+  const bar = pane.querySelector('.bar'), proj = document.querySelector('.tablecol .projpanel');
+  const boxes = [...side.querySelectorAll('.pp')];
+  const reset = () => { side.classList.remove('ppbelow'); for (const v of ['--ppx-gap', '--ppx-badge', '--ppx-pad']) side.style.setProperty(v, '0px'); };
+  reset();
+  if (!bar || !proj || !boxes.length) return;
+  const k = side.getBoundingClientRect().height / side.offsetHeight || 1;
+  const pr = proj.getBoundingClientRect();
+  const gap = parseFloat(getComputedStyle(pane).rowGap || getComputedStyle(pane).gap) * (pane.getBoundingClientRect().height / pane.offsetHeight || 1);
+  const baseTop = pr.bottom + gap;                                                  // the info boxes start here in the basic state (control panel as high as the project area)
+  const paneBottom = pane.getBoundingClientRect().bottom + Math.max(0, window.innerWidth * 9 / 16 - window.innerHeight);       // (a window lower than 16:9 counts as 16:9)
+  let extras = 0;                                                                   // height of the bonus-token rows (an additional element)
+  for (const r of side.querySelectorAll('.bonusrow')) extras += r.getBoundingClientRect().height + parseFloat(getComputedStyle(r).marginTop) * k;
+  const cols = S.replay && S.replay.marine_worlds ? 6 : 5;
+  const colW = (boxes[0].querySelector('.ppicons') || side).offsetWidth / cols;      // layout px
+  const plan = (below) => {
+    reset(); side.classList.toggle('ppbelow', below);
+    const e = Math.max(0, (paneBottom - baseTop - (side.getBoundingClientRect().height - extras) - 2) / boxes.length / k);       // free height per box
+    const cap = below ? colW - 6 - 30 : colW - 20 - 30;                              // the badge may be as wide as the column minus its number
+    const g = Math.max(0, Math.min(cap, e / 3 - 3));
+    return { below, e, g };
+  };
+  const best = [plan(false), plan(true)].sort((a, b) => b.g - a.g)[0];
+  reset(); side.classList.toggle('ppbelow', best.below);
+  if (best.e < 1) return;
+  const target = paneBottom - baseTop - 2;                                          // height the boxes (without the bonus rows) may have
+  const apply = (g, rest) => {
+    side.style.setProperty('--ppx-badge', g + 'px');
+    side.style.setProperty('--ppx-gap', rest * 0.7 / 2 + 'px');
+    side.style.setProperty('--ppx-pad', rest * 0.3 + 'px');
+  };
+  let g = best.g, rest = Math.max(0, best.e - 3 * g);
+  for (let i = 0; i < 6; i++) {                                                     // (the numbers grow with the badges: correct what the estimate missed, the badge shrinks only if the spacing is used up)
+    apply(g, rest);
+    const over = (side.getBoundingClientRect().height - extras - target) / boxes.length / k;
+    if (Math.abs(over) < 0.5) break;
+    if (over > 0) { const cut = Math.min(rest, over); rest -= cut; g = Math.max(0, g - (over - cut) / 4); }
+    else rest += -over;
+  }
 }
 ```
 
@@ -986,6 +1054,7 @@ and the gate branch is entered with `if (turnEnds(S.step) && kind !== 'decision'
 
 9.6 Known differences from BGA (the frontend can only show what the payload says). BACKEND NEEDED where the data should change; none of it blocks this section:
 - Some prompts come from the engine, not from BGA, and are worded by the frontend (`PROMPT_TEXT`, effect buttons): e.g. after "chooses Sponsors I" BGA asks "choose which effect to resolve: Sponsors 4 ..." and then "must snap one card", the engine says "may play a sponsor" (and repeats it after the discard and the snap); the Long-billed Vulture's "Draw 3 from shuffled discard, keep 1" button says "Animal ability". BACKEND NEEDED (optional): send the prompt text / button names of BGA with each step (BGA state ids of the raw log map cleanly onto the engine prompts: 30 build, 32 animals, 33 association, 34 cards take, 35 sponsors, 36 discard, 20 choose action card, 91 effect, 93 confirm turn).
+- The replay JSON (incl. the card catalog with the `image` / `large` paths) is cached in memory and on disk under a key made from the newest `.py` / `.json` under `src` (`_code_version()` in `api/main.py`), so changed card images (web/cards, web/cards_large) are not picked up by an already cached replay until the code version changes. BACKEND NEEDED (optional): add the newest mtime of `web/cards*` to the key.
 - Steps the engine could not play (`engine.status` skipped / illegal / mismatch, `source: 'log'`) have no `options`, so they get only a text frame (and, where the log-built state says a card is to be chosen, the old guessed action card bar).
 - Simultaneous decisions in the game setup follow one player (9.7); the discards of a break are shown one after the other (the log's order), BGA lets both players act at once.
 - The "Move N" box (no total any more) counts steps (0 to 605 in the example), not BGA's move numbers (1 to 453); the step's `move_id` is in the data if the live site wants to show BGA's number.
@@ -1113,3 +1182,54 @@ Scope: `web/play.html`, `web/js/play.js` (new), `web/js/state.js` (`PLAY`, `S.pl
 - `end.html`: a game whose status is `waiting` or `playing` shows "This game is not over yet." with a link to the game instead of a result.
 - `planning.html` (dev tool): one save timer per sheet, so switching sheets within 400 ms no longer drops the first sheet's save.
 - Not changed on purpose (needs a decision or a backend change): the stored seat token is still used when the URL has none; no pong watchdog for half-open sockets; `import.html` still checks `e.source` only (the origin of the BGA page is not pinned); action-bar controls that are `span`/`div` are not keyboard-operable.
+
+## 14. Card images: one process for all cards (`scripts/build_cards.py`)
+
+Scope: `web/js` changed only in the three hover-preview calls (see the `largeOf` bullet below); no change in `web/css`. The files `web/cards/<key>.webp` (360 x 503) and `web/cards_large/<key>.webp` (745 x 1040) are now produced for **every** card (animals A###, sponsors S###, conservation projects P101-P139, endgame cards F001-F017, variants `S250_MW`, `P131_MW`: 300 cards) by one script, and replace the old files (animals composed with Pillow, sponsors / projects / endgame cut from community sprite sheets at 240 x 335, large images only for sponsors). `card_catalog` (`replay/view.py`, unchanged) hands out `image` = `/cards/<key>.webp` and, because the large file now exists for every card, `large` = `/cards_large/<key>.webp`; `cards.js` `showPreview(c.large || c.image)` therefore shows the sharp 745 x 1040 card with its full ability text for animals, sponsors, projects and endgame cards alike. The card box keeps the aspect ratio 240 / 335 (`.card { aspect-ratio: 240 / 335 }`), the new files are 360 / 503 (0.716), so no CSS changed.
+
+How the cards are made (details: `scripts/cardgen/README.md`):
+- The cards are drawn as HTML/CSS by the React card components and the stylesheet (`arknova.css`, BGA's own card CSS) of the fan site Next-Ark-Nova-Cards (permission given), copied into `scripts/cardgen/src` together with its fonts, icon sprites, card backgrounds, animal photos, sponsor pictures and the English texts (`scripts/cardgen/site`). esbuild bundles them; headless Chromium (Playwright) draws every card at 2 x the design size (750 x 1044) and screenshots it; Pillow scales the screenshots to the two sizes and writes webp (`python scripts/build_cards.py`, needs node + npm, Pillow, a Chromium; `--only A401,S201` rebuilds single cards; a full build takes about 4 minutes).
+- Two versions of every card, like on BGA: the large one (`web/cards_large`, the hover preview) has all texts; the small one (`web/cards`, used in hands, zoos, display, dock) shows only the names of the abilities of an animal and no effect text on sponsors and projects (`scripts/cardgen/site/compact.css`, applied by `shoot.mjs` as `body.compact`) with BGA's own no-description mode of `arknova.css` (`data-card-desc="0"` on the body: names 32px instead of the normal size, ability names 32px, taller title bar (70px animals/scoring, 77px projects, 75px sponsors), no Latin name and no card number). Endgame cards keep their text in both. The hover preview takes its image from `largeOf(card)` (`cards.js`, exported; used by `cards.js`, `projects.js`, `sandbox.js`): `card.large` of the catalog, else the small image path with `/cards/` replaced by `/cards_large/`, so a replay cached by the server before the large images existed (the catalog is part of the cached replay JSON) still shows the full card. The card catalog (`image`/`large` paths) is part of the cached replay JSON: after the card images change, restart the server so the cache key (code version) changes.
+- Animals: photo, enclosure / size / price badges, requirement and tag badges, bonus bubbles, wave icon and the ability boxes (title + text) as on the printed card. Sponsors: the printed card picture (top part with the icons) plus the effect text and the income / endgame bars. Projects and endgame cards: tag icon, description, slots with their rewards or the score table.
+- Ability texts that do not fit are shrunk (CSS `zoom` 0.6 to 1, in `shoot.mjs`) until they end above the bottom of the card (sponsors: above the income / endgame bars). 15 cards are shrunk (the longest: S215, S218, S270, A524, A551).
+- Our own additions to the fan site's data: the patched slots of P129 / P131 and the Marine Worlds slot indicators of `P131_MW` (`data_manual/variants_mw.json`, `src/ark_nova/data/projects.json`); `S250_MW` is painted from `S250` by `scripts/build_mw_card_images.py` (the top part of a sponsor is a photo, so its icons cannot be changed in HTML); the Marine Worlds projects P133-P139, which the fan site does not have, are drawn by `scripts/cardgen/harness/mw.tsx` + `site/mw.css` from our own data (P133 with the base project template; P134-P139, the six Management Plans, with their own layout: two requirement icons, three slots with 2 conservation points and a keyword / reputation per 2 science / tutor reward, the place bonus tab). Their photos (`site/art/P133.jpg` ... `P139.jpg`) are cut from our old 240 px card images (badge removed by inpainting), so they are softer than the other cards; a better photo of the same name (374 x 264 px or larger) dropped into `site/art/` is used by the next build.
+- `web/cards` and `web/cards_large` are generated files that are committed (the live site serves them); `scripts/cardgen/node_modules`, `out/` and the intermediate files are in `.gitignore`.
+- The old scripts `build_card_images.py`, `build_large_art.py` and `build_animal_cards.py` are superseded (they need the git-ignored `vendor/` folder); `build_mw_card_images.py` is still used (called by `build_cards.py`).
+- Project texts: the fan site's locale had a hard `<br>` between "partner" and "zoo" in the five Breeding Program texts (desc_123-127); it produced a lone "partner" line. The `<br>` is removed there (the herbivore text is a bit longer: `shoot.mjs` shrinks every project text that needs more than 2 lines with CSS `zoom` in steps of 2 % down to 0.8; only P126 is affected, at 0.98), and the Research text (desc_132) got the same `<br>` as the other "icons in your zoo" texts. Edited in `scripts/cardgen/site/locales/en/common.json`; all 40 project cards rebuilt.
+- A341, S281, S282 (inactive cards) are rendered too. `replay/view.py` only had two comments naming the old scripts (now `scripts/build_cards.py`).
+
+## 15. Conservation projects in the project areas, like BGA (`web/project_strips`)
+
+Scope: `web/js/projects.js`, `web/css/table.css` (end of the file), the new folder `web/project_strips/` (40 pictures and `cubes.json`, committed, made by `scripts/build_cards.py`). Nothing in the backend.
+
+Final state: every project of the two project areas (conservation projects in play above the association board, base projects below it) is ONE element like on BGA: a base whose left 25 % is dark green (`#528b43`, the green of BGA's project icon tab) and whose right 75 % is light green (`#c8d7c4`); the icon(s) of the project (a circle with the tag; two circles for release / breeding / Marine Worlds plans, with the size / partner symbol) stand in the dark part, the three slots (indicator number, shield with the conservation points, extra rewards such as reputation or tutor) in the light part, and the cubes of the players lie on the slots. The old cut-out of the card (`.projcrop`, `.projbar`) is no longer used by the page (its rules stay in `replay.css`, overridden).
+
+- `projectPanel()` (`projects.js`): per project `.projslot > .withtokens > .projline.projstrip` containing `<img class="projstripart" src="/project_strips/<key>.webp">` (the path is the small card's `image` with `/cards/` replaced by `/project_strips/`, so `P131_MW` works) and the cubes: `blockedCube(slot)` for the 2 player blocked slots of the base projects and for every supporter token. A cube is placed from `web/project_strips/cubes.json` (`{key: [[x, y, width], x3]}`, fractions of the strip, loaded once with a top-level `await fetch` in `projects.js` as `STRIP_CUBES`; passed to `blockedCube(slot, colour, title, spot)`, which sets `left`, `top` and `width` in %). The spot is the cube holder of the card slot (the green square above the shield; on the Marine Worlds plans the middle of the slot). Without an entry the fallback is `SLOT_X` (37.5 %, 62.5 %, 87.5 %) and the CSS default `top: 50 %`, width 11 % (`.projstrip .blockcube`). Hovering the strip shows the whole large card (`largeOf`). An empty place (no project yet, sandbox) has the class `projempty` (pale, no green base).
+- CSS (`table.css`, end): `.projslot` has `aspect-ratio: 1000 / 412`, no padding / border, `background: linear-gradient(90deg, #528b43 25%, #c8d7c4 25%)`; `.projstripart` fills it. The panel keeps its grid (icon + 3 columns; the pair shift of `layout.js` is unchanged).
+- The pictures: `build_cards.py` (`build_strips`) composes 1000 x 412 px (saved at 600 x 247, webp with transparency): the icon element(s) of the card centred in the left 250 px, every slot of the card (cut from a screenshot with transparent background, `site/bare.css`, `body.bare` in `shoot.mjs`, boxes in `out/bare/geometry.json`) enlarged as far as the strip allows (one factor for the three slots: at most 1.5, the three visible parts together at most 90 % of the light green part's width and not higher than 80 % of the strip) and placed by their VISIBLE part (alpha channel): the three visible parts are spread with EQUAL space left of the first, between them and right of the last (so the breeding projects P123-P127, whose first two slots are wider than the third (shield + cap), look centred as a whole), their tops on one line (the shields of the Marine Worlds plans stand side by side) and the tallest part in the middle of the strip's height. `cubes.json` gets the position of each cube holder after this move. Because the green is CSS, the strips stay sharp and any panel width works.
+- Marine Worlds management plans (P134-P139) show their three slots (shield + reef / reputation / tutor reward); the place bonus tab of the card is not part of the strip (hover shows it).
+- Rebuild after a card change: `python scripts/build_cards.py` (all 300 cards and the strips) or `--only P101,P120`.
+
+Verification: with a replay at the end of a game the project areas show the green bases with the project icons left and the slots right; the base projects of a 2 player game show one cube per project on slot 1 / 2 / 3; supporters' cubes lie on their slot; hovering a project shows the large card; no console errors, no broken `.projstripart` images.
+
+## 16. BGA's number font for money, appeal, conservation and reputation
+
+Scope: `web/fonts/MyriadPro-Bold.woff` (new, the font the fan-site cards and BGA use), the end of `web/css/table.css`, one class in `side-panel.js` (`rs-<icon>` on the number-over-icon spans) and the font size / class of the two `cons-number` texts in `association.js`.
+
+Final state (settings taken from BGA's own CSS, `.player-info .icon-*` and `.icon-container .icon-*`): every number of money, appeal, conservation points and reputation is set in MyriadPro-Bold (`@font-face` in `table.css`, weight 400 because the font is already bold), `letter-spacing` -1px at 20px (-.05em), `text-indent` -.05em, no outline / shadow, font size = 0.625 x the height of the icon (BGA: 20px on 32px icons; reputation 19px): in the player panels `.rs.inside b` is 1.625rem (reputation 1.55rem) over our 42px icons, the income over the money icon (`.rs.inside .income i`) 1.3rem. Colours as on BGA: white on money and reputation, BLACK on appeal and conservation (`.rs-appeal b`, `.rs-conservation b`). The SVG numbers of the maps (`.cons-number`: conservation bonus of the 4th worker etc. black, font size 0.62 x icon height; with the extra class `rep-number` white: the 1 reputation of worker 1 / 2 on map T1) and the bonus tiles (`.board .bonus-number`, `.ctcomposed .bonus-number`, white with their dark outline as before) use the same font. Not changed on purpose: the score next to the star, X tokens, workers, card counts, tag counts and all texts.
+
+Verification: a player panel shows the numbers in the narrower Myriad digits; no request for `/fonts/MyriadPro-Bold.woff` fails.
+## 17. Display folders like BGA (number and zoo place names)
+
+Scope: `web/js/shared.js` (`FOLDER_PLACES`, one extra `span.folname` per folder), the end of `web/css/replay.css`.
+
+Final state: the folder picture (`web/assets/folder.webp`) already contains the brown number square; the number (`.folnum`) is centred in it (left 82.2 %, top 7.9 %) in MyriadPro-Bold, white, no shadow, letter-spacing -0.05em (BGA `.folder-number` is 17px of a 150px folder; we deliberately use 19px = 1.47rem of our 11.6rem folder). The zoo place of each folder is printed in the tab (`.folname`, italic, `#624c0a`, 0.55rem, centred, ellipsis; BGA `.folder-name`): 1 San Diego, USA; 2 Frankfurt, GER; 3 Johannesburg, SA; 4 São Paulo, BR (with ã, deliberately differs from BGA); 5 Okinawa, JP; 6 Sydney, AUS. BGA's CSS has no place data (it is in the picture/locale of BGA), so the names are hard-coded in `FOLDER_PLACES`.
+
+Verification: all six tabs show their place name without clipping; numbers sit centred in the brown squares.
+## 18. Player info boxes fill the side bar (`spreadInfo()` in `web/js/sidebar.js`)
+
+Scope: `web/js/sidebar.js` (`fitSidebar()` calls `spreadInfo()`), end of `web/css/replay.css`.
+
+Final state: the width of the info panel is unchanged (still zoomed to the sidebar width). Each of the two player boxes gets an extra height that is worked out for the basic state: full window, control panel as high as the project area (no timeline row), no bonus-token row, no fork box. In that state the two boxes end exactly at the bottom of the pane (no scrollbar). The extra is the same in every window: the pane bottom is taken at a 16:9 window (`innerWidth * 9/16`) when the window is lower, so outside full screen the boxes keep their height and the sidebar scrolls (a window higher than 16:9 gets more room and the boxes fill it). The extra goes to the icon rows (continents / species / science, rock, water) through CSS variables on `#side` (`--ppx-badge`, `--ppx-gap`, `--ppx-pad`, layout px of `#side`): the badges grow as far as the column allows (column width minus the number when the number sits beside the badge, as in BGA's `.icons-summary .icon-counter`; or minus a little when the number sits below it, class `ppbelow` = `flex-direction: column-reverse`); `spreadInfo()` tries both layouts and keeps the one that lets the badge grow more (MW's 6-column row is narrower). What is left moves the rows apart (70 %) and stays as empty space at the bottom (30 %). A short correction loop (up to 6 steps) removes any overshoot caused by the numbers growing with the badges. Whatever else is visible (timeline row, bonus tokens, fork box) does NOT shrink the boxes: the pane just scrolls (the extra is measured without the bonus rows and with the control panel at project-area height). If the window is too low even for the 16:9 case, the extra is 0. `fitSidebar()` runs on resize / tab change / render. CSS (end of `replay.css`): `.ppicons {row-gap: calc(.35rem + var(--ppx-gap)); padding-bottom: var(--ppx-pad)}`, `.ppicons .badge` 30px + `--ppx-badge`, number font grows with the badge.
+
+Verification (1920x1080, 1600x900, 1366x768): no scroll, the last box ends 2px above the pane bottom; at 1920x700 the boxes keep the same extra and the pane scrolls; with the timeline row shown the pane scrolls by its height and the variables stay the same.

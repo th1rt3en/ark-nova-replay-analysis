@@ -2,7 +2,7 @@
 
 The icons sit in rows separated by empty bands, and within a row they are separated by empty columns, so the sheet is split by projection
 (row band, then column band inside it). Every icon is saved as web/icons/r<row>c<col>.webp (row / column counted from 1, trimmed to its
-bounding box) and listed in web/icons/icons.json with its size; web/js/icons.js refers to them by these ids (see ICON_IDS there).
+bounding box) and listed in web/icons/icons.json with its size; web/js/replay.js refers to them by these ids (see ICON_IDS there).
 
 Needs Pillow and numpy:  python scripts/build_icons.py [--contact-sheet out.png]
 """
