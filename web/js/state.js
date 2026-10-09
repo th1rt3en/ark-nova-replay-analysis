@@ -11,6 +11,7 @@ export const SANDBOX = !!window.SANDBOX_MODE;                                   
 // bits. Everything here used to be a `let` inside the one big function of the old replay.js.
 export const S = {
   forkInfo: null,
+  lastBoard: null,   // replay: {st, pov} the boards on show were drawn from (render() skips redrawing identical boards)
   animalEnc: null,   // {card, x, y}: the enclosure clicked for the animal that is selected (not yet confirmed)
   // live play (play.js): the game id, the seat token and seat, the last version pushed, the socket / poll, the status, the abandon proposal, the clocks and the map picked but not confirmed
   play: { id: null, token: null, seat: null, version: -1, socket: null, poll: null, status: 'playing', backoff: 1000, leaving: false, abandon: { proposal: null, cooldown: {}, skew: 0 },

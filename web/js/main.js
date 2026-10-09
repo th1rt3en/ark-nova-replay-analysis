@@ -39,11 +39,17 @@ export function render() {
     forkBar();
     return;
   }
-  renderShared(st);
-  sidePanel(st);
-  const zoos = $('zoos');
-  zoos.replaceChildren(renderZoo(st, 0), renderZoo(st, 1));
-  renderDock(st);
+  // The boards are drawn again only when the position changed: the next frame of the same step (the step text, then the decision) has the same boards, and drawing ~100 pictures again
+  // made the whole page flicker with every frame. A fork / sandbox / live game draws every time (what is selected or clicked changes the boards).
+  const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov;
+  if (!same) {
+    renderShared(st);
+    sidePanel(st);
+    const zoos = $('zoos');
+    zoos.replaceChildren(renderZoo(st, 0), renderZoo(st, 1));
+    renderDock(st);
+    S.lastBoard = { st, pov: S.pov };
+  }
   if (FORK) {
     const prev = S.step > 0 ? S.replay.steps[S.step - 1].state : null;          // the hand that just changed (a card found by a search...) is the one the dock shows
     if (prev && S.dockHandStep !== S.step) {
@@ -54,7 +60,7 @@ export function render() {
     forkBar(); renderForkMoves();
     if (SANDBOX) renderSandboxTools(st);
   }
-  S.prevZones = S.curZones; S.curZones = {}; S.prevZoneData = S.curZoneData; S.curZoneData = {};
+  if (!same) { S.prevZones = S.curZones; S.curZones = {}; S.prevZoneData = S.curZoneData; S.curZoneData = {}; }
   $('jump').value = S.step;
   for (const id of ['first', 'prev']) $(id).disabled = atStart();
   const fb = $('fork');

@@ -18,7 +18,7 @@ export function card(key, extraClass) {
   d.title = cardName(key) + ' (' + key + ')';
   if (c.image) {
     const img = el('img');
-    img.src = c.image; img.alt = cardName(key); img.loading = 'lazy';
+    img.src = c.image; img.alt = cardName(key);                // (not lazy: a card drawn again with the page's next render would show an empty frame first)
     img.onerror = () => { img.remove(); d.append(textFace(key, c)); };
     d.append(img);
     d.addEventListener('mouseenter', () => showPreview(c.large || c.image, !!d.closest('#dock')));           // the full size card where there is one (sponsors), else the 240 px card; a card of the hand in the middle of the screen
