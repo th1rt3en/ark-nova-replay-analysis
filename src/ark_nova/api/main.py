@@ -9,7 +9,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -326,10 +326,10 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             raw = json.loads(await request.body())
         except ValueError:
             return _error(422, "invalid", "The file is not valid JSON.", table_id=table_id)
-        errors = verify_log(raw, table_id)
+        errors = await run_in_threadpool(verify_log, raw, table_id)               # (seconds of work: not on the event loop, which serves every other request)
         if errors:
             return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
-        return _replay(table_id, rec, raw)
+        return await run_in_threadpool(_replay, table_id, rec, raw)
 
     @app.post("/api/tables/{table_id}/verify")
     async def verify(table_id: int, request: Request):
@@ -340,17 +340,12 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             raw = json.loads(await request.body())
         except ValueError:
             return JSONResponse(status_code=422, content={"ok": False, "errors": ["The file is not valid JSON."]})
-        errors = verify_log(raw, table_id)
+        errors = await run_in_threadpool(verify_log, raw, table_id)
         return JSONResponse(status_code=200 if not errors else 422, content={"ok": not errors, "errors": errors})
 
     if IMG_DIR.is_dir():
         app.mount("/img", StaticFiles(directory=IMG_DIR), name="img")
-    pages_url = os.environ.get("PAGES_URL", "").rstrip("/")
-    if pages_url:                                                                   # the site lives on Cloudflare Pages: old links to this service go there
-        @app.get("/{path:path}", include_in_schema=False)
-        def to_pages(path: str, request: Request):
-            return RedirectResponse(pages_url + "/" + path + (("?" + request.url.query) if request.url.query else ""), status_code=307)
-    elif WEB_DIR.is_dir():
+    if WEB_DIR.is_dir():
         app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app
 
