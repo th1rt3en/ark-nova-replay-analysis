@@ -129,11 +129,13 @@ class LiveService:
         self._lock = threading.Lock()
         self._replays: dict = {}                                    # gcs path -> the replay built from that record (a record never changes)
         self._stat_cache: dict = {}                                 # gcs path -> the statistics of that record
+        self._wrap_tried: dict = {}                                 # game id -> when a failed wrap-up was last tried again (see `_retry_wrap_up`)
+        self._wrapping: set = set()                                 # the games whose wrap-up is running
 
     # ---- creating and joining -----------------------------------------------------------------------------------------------------------
     def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None) -> dict:
         """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`)."""
-        seed = secrets.randbelow(2 ** 31) if tail_seed is None else tail_seed
+        seed = secrets.randbits(52) if tail_seed is None else tail_seed         # (52 bits: the largest whole number a browser reads exactly; 31 bits could be tried out one by one to learn the deck order)
         mode = game_mode or map_select.DEFAULT_MODE
         if mode not in map_select.MODES:
             raise IllegalMove(f"the game mode must be one of {list(map_select.MODES)}", 422)
@@ -235,7 +237,30 @@ class LiveService:
         role = "spectator"
         if token:
             role = str(self._seat_of(self._load(game_id), token))
-        return self.keeper.view(game_id, role)
+        out = self.keeper.view(game_id, role)
+        self._retry_wrap_up(game_id)
+        return out
+
+    def _retry_wrap_up(self, game_id: str) -> None:
+        """A finished table whose export or registry row failed (storage or BigQuery was down) is still in the keeper: the players' next requests try it again, at most once a
+        minute and out of the request. A table whose wrap-up worked is gone from the cache."""
+        c = self._cache.get(game_id)
+        if c is None or c.status not in ("finished", "conceded", "abandoned") or (self.archive is None and self.registry is None):
+            return
+        now = time.monotonic()
+        with self._lock:
+            if game_id in self._wrapping or now - self._wrap_tried.get(game_id, -1e9) < 60:
+                return
+            self._wrapping.add(game_id)
+            self._wrap_tried[game_id] = now
+
+        def run() -> None:
+            try:
+                self.wrap_up(game_id)
+            finally:
+                with self._lock:
+                    self._wrapping.discard(game_id)
+        threading.Thread(target=run, daemon=True).start()
 
     # ---- moves ----------------------------------------------------------------------------------------------------------------------------
     def move(self, game_id: str, token: str, version: int, action: dict, request_id: str | None = None) -> dict:
@@ -244,7 +269,9 @@ class LiveService:
         if c.version != version:                                             # the cache may be behind: ask the keeper before refusing
             c = self._load(game_id, fresh=True)
         if c.status == "waiting":
-            raise NotStarted("the game starts when both players have joined", 409)
+            c = self._load(game_id, fresh=True)                              # (the second player may have joined through another instance: the cache is behind)
+            if c.status == "waiting":
+                raise NotStarted("the game starts when both players have joined", 409)
         act = Action(int(action.get("player", -1)), str(action.get("kind", "")), dict(action.get("args") or {}))
         if c.version != version:
             if request_id and (done := self.keeper.request_result(game_id, request_id)) is not None:        # a retry after a lost answer: the move is in already
