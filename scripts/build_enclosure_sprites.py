@@ -44,8 +44,8 @@ STANDARD = {
 # necessarily the anchor; the other cells are the coloured hexes around it. `victory_mw` is the Mascot Statue (the Victory Column has the laurel).
 ICONS = {
     "victory": (2, 0), "victory_mw": (11, 1), "arcade": (4, 0), "meerkat": (3, 9), "penguin": (9, 1), "polar-bear": (1, 15), "owl": (7, 5),
-    "sea-turtle": (7, 11), "okapi": (7, 13), "water-playground": (7, 15), "monkey": (8, 4), "amazon": (8, 8), "hyena": (9, 7),
-    "adventure": (9, 15), "aquarium": (10, 4), "baboon": (10, 12), "cable": (11, 11), "entrance": (11, 17), "excavation": (0, 20),
+    "sea-turtle": (7, 11), "okapi": (7, 13), "water-playground": (7, 15), "monkey": (8, 4), "amazon": (11, 17), "hyena": (9, 7),
+    "adventure": (9, 15), "aquarium": (10, 4), "baboon": (10, 12), "cable": (11, 11), "entrance": (8, 8), "excavation": (0, 20),
     "zoo-school": (5, 15),
 }
 # the underwater tunnel has no silhouette hex: its two cells are drawn as one picture across the cell border

@@ -337,6 +337,18 @@
             ],
             "cells": 4
         },
+        "amazon": {
+            "image": "amazon.webp",
+            "anchor": [
+                340,
+                353
+            ],
+            "size": [
+                884,
+                589
+            ],
+            "cells": 5
+        },
         "hyena": {
             "image": "hyena.webp",
             "anchor": [
@@ -405,7 +417,7 @@
             ],
             "size": [
                 476,
-                353
+                354
             ],
             "cells": 2
         },
