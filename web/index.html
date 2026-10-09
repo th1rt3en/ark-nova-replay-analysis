@@ -22,10 +22,10 @@
       (<code>https://boardgamearena.com/table?table=924000095</code>).</p>
     <div id="msg" role="status" hidden></div>
   </section>
-  <section class="mode" aria-labelledby="m-live">
-    <h2 id="m-live">Play a live game</h2>
+  <section class="mode unavailable" id="live" aria-labelledby="m-live" aria-disabled="true">
+    <h2 id="m-live">Play a live game <span class="badge" id="liveBadge">Coming soon</span></h2>
     <p class="muted">Play a real game against a friend on the from-scratch engine: you get a link for each seat, hidden cards stay hidden, and every game is recorded for a replay.</p>
-    <a href="/play.html"><button type="button">Create a game</button></a>
+    <button type="button" id="liveBtn" disabled>Not available yet</button>
   </section>
   <section class="mode" aria-labelledby="m-sandbox">
     <h2 id="m-sandbox">Sandbox mode</h2>
@@ -41,8 +41,27 @@
 <script>
 const msg = document.getElementById('msg');
 function show(text, kind) { msg.textContent = text; msg.className = kind; msg.hidden = false; }
+// The live game mode is switched off for now (coming soon). Whoever knows the word can open it for this browser: type it where a table id goes and click Open.
+const LIVE_KEY = 'liveUnlocked', LIVE_WORD = 'ilovejdansp';
+function unlockLive() {
+  const sec = document.getElementById('live');
+  sec.classList.remove('unavailable'); sec.removeAttribute('aria-disabled');
+  document.getElementById('liveBadge').remove();
+  const btn = document.getElementById('liveBtn');
+  const a = document.createElement('a'); a.href = '/play.html';
+  const nb = document.createElement('button'); nb.type = 'button'; nb.textContent = 'Create a game';
+  a.append(nb); btn.replaceWith(a);
+}
+try { if (localStorage.getItem(LIVE_KEY) === '1') unlockLive(); } catch (e) { /* no storage */ }
 document.getElementById('f').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (document.getElementById('q').value.trim().toLowerCase() === LIVE_WORD) {          // (stay on this page)
+    try { localStorage.setItem(LIVE_KEY, '1'); } catch (err) { /* no storage */ }
+    if (document.getElementById('live').classList.contains('unavailable')) unlockLive();
+    document.getElementById('q').value = '';
+    msg.hidden = true;
+    return;
+  }
   const go = document.getElementById('go');
   go.disabled = true; show('Checking the table…', 'loading');
   try {

@@ -100,6 +100,12 @@
   const button = (text) => { const b = document.createElement('button'); b.type = 'submit'; b.textContent = text; return b; };
   const link = (text, href) => { const a = document.createElement('a'); a.href = href; a.textContent = text; return a; };
 
+  if (!game && store('liveUnlocked') !== '1') {                      // no game yet and the live mode is not open for this browser (seat links of a running game still work)
+    $('lobbytitle').textContent = 'Live games are coming soon';
+    $('lobbytext').textContent = 'This mode is not open yet.';
+    show();
+    return;
+  }
   if (!game) {                                                       // no game yet: make one
     $('lobbytext').textContent = 'Play a game against a friend. You get two links: keep one, send the other.';
     const mw = document.createElement('input'); mw.type = 'checkbox';
