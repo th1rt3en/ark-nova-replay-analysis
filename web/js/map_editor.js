@@ -18,23 +18,21 @@ const centre = (x, y) => [MAP.x0 + x * MAP.dx, MAP.y0 + y * MAP.dy];
 // the placement bonuses (the types of data_manual/maps_geometry, and the ones that the data does not have yet), with the default number of the ones that have one
 const BONUSES = [
   ['money', 'Money', 5], ['reputation', 'Reputation', 1], ['appeal', 'Appeal', 1], ['xtoken', 'X token', 1], ['Scavenging', 'Scavenging', 3], ['Multiplier', 'Multiplier', 2],
-  ['take-in-range-or-deck', 'Take a card', 1], ['bonus-sponsor', 'Sponsor', 1], ['search-sponsor-person', 'Find a person', 1], ['Clever', 'Clever', 1], ['digging', 'Digging', 1],
+  ['take-in-range-or-deck', 'Take a card', 1], ['bonus-sponsor', 'Marketing', 1], ['search-sponsor-person', 'Find a person', 1], ['Clever', 'Clever', 1], ['digging', 'Digging', 1],
   ['rescue', 'Rescue', 1], ['Mark', 'Mark', 1], ['Worker', 'Worker', 1], ['extra-shift', 'Extra shift', 1], ['Pouch', 'Pouching X', 1], ['perception', 'Perception X', 1],
   ['Partner-Zoo', 'Partner zoo', 1], ['Fac', 'University', 1], ['kiosk', 'Kiosk', 1], ['pavilion', 'Pavilion', 1], ['store', 'Store', 1], ['conceal', 'Conceal', 1],
   ['shark-attack', 'Shark attack', 1], ['adapt', 'Adapt', 1], ['wave', 'Wave', 1],
 ];
-// the project bonuses (src/ark_nova/data/project_bonuses.json, the pictures are web/map_editor/project_bonuses): `as` = the bonus type and number they stand for in the rest of the data
+// the project bonuses: what the project bonus spaces of the maps hold (data_manual/maps_geometry `bonus_slots`: every type that occurs there, with the number it has most often)
 const PROJECT = [
-  ['upgrade', 'Upgrade', { type: 'upgrade-card', value: 1 }], ['call-worker', 'Call worker', { type: 'Worker', value: 1 }], ['reputation-2', '2 reputation', { type: 'reputation', value: 2 }],
-  ['x-3', '3 X tokens', { type: 'xtoken', value: 3 }], ['build-size-3', 'Size 3', { type: 'size-3', value: 1 }], ['draw-3', 'Draw 3', { type: 'take-in-range-or-deck', value: 3 }],
-  ['money-5', '5 money', { type: 'money', value: 5 }], ['money-10', '10 money', { type: 'money', value: 10 }], ['double-token', 'Double token', { type: 'Multiplier', value: 2 }],
-  ['university', 'University', { type: 'Fac', value: 1 }], ['partner-zoo', 'Partner zoo', { type: 'Partner-Zoo', value: 1 }], ['ignore-3-requirements', 'Ignore 3', { type: 'ignore-3-requirements', value: 1 }],
-  ['base-project-icon-plus-1', 'Project icon +1', { type: 'base-project-icon-plus-1', value: 1 }], ['overtime', 'Overtime', { type: 'overtime', value: 1 }],
-  ['snap-and-hand-limit-plus-1', 'Snap, hand +1', { type: 'snap-and-hand-limit-plus-1', value: 1 }], ['sponsor-money', 'Sponsor money', { type: 'sponsor-money', value: 1 }],
-  ['adaptation-3', 'Adaptation 3', { type: 'adaptation-3', value: 1 }], ['posture-3', 'Posturing 3', { type: 'posture-3', value: 1 }],
+  ['money', 'Money', 5], ['xtoken', 'X tokens', 3], ['reputation', 'Reputation', 2], ['conservation', 'Conservation', 1], ['Snapping', 'Snapping', 1], ['size-2', 'Size 2', 1],
+  ['take-in-range-or-deck', 'Take a card', 1], ['bonus-sponsor', 'Marketing', 1], ['sponsor-person-card', 'Person sponsor', 1], ['Clever', 'Clever', 2], ['Pouch', 'Pouching', 2],
+  ['cut-down', 'Cut down', 1], ['Worker', 'Worker', 1], ['Partner-Zoo', 'Partner zoo', 1], ['Fac', 'University', 1], ['upgrade-card', 'Upgrade', 1], ['Determination', 'Determination', 1],
+  ['animal-magnet', 'Animal magnet', 1], ['bonus-scoring-cards', 'Scoring cards', 3], ['continent', 'Continent', 1], ['special-enclosure', 'Special enclosure', 1],
 ];
+const PROJECT_NUMBERED = new Set(['money', 'xtoken', 'reputation', 'conservation', 'Clever', 'Pouch']);
 const NUMBERED = new Set(['money', 'reputation', 'appeal', 'Scavenging', 'Pouch', 'perception']);          // the bonuses whose number the user types
-const typedValue = Object.fromEntries(BONUSES.map(([t, , v]) => [t, v]));
+const typedValue = { ...Object.fromEntries(BONUSES.map(([t, , v]) => [t, v])), ...Object.fromEntries(PROJECT.map(([t, , v]) => ['p:' + t, v])) };
 const EXTRA_ICONS = { 'extra-shift': 'r5c15', perception: 'r7c10', digging: 'r4c2', rescue: 'r9c13', 'search-sponsor-person': 'r4c13' };      // icons of the new bonuses (names.json: bonus-extra-shift, perception, digging, map10, search-sponsor-person)
 
 // ---- state: everything the user can change (the history is a list of snapshots of it) ----------------------------------------------------------
@@ -52,20 +50,20 @@ function iconBox(g, id, cx, cy, h) {
   return put(g, 'image', { href: iconUrl(id), x: cx - (w0 * h / h0) / 2, y: cy - h / 2, width: w0 * h / h0, height: h });
 }
 function drawBonus(g, bn) {                                              // as zooBoard draws a placement bonus (a project bonus is its picture)
-  if (bn.tile) { put(g, 'image', { href: '/map_editor/project_bonuses/' + bn.tile + '.webp', x: -41, y: -40, width: 82, height: 80 }); return; }
   const icon = EXTRA_ICONS[bn.type] || ICON_IDS['bonus:' + bn.type];
   if (bn.type === 'Digging' || bn.type === 'rescue') { iconBox(g, icon, 0, 0, 80); return; }          // r9c13 (map 10) already has its own background
   iconBox(g, ICON_IDS.pentagon, 0, 0, 80);
   if (bn.type === 'adapt') { iconBox(g, 'r10c15', -14, 3, 36); iconBox(g, 'r10c16', 15, 3, 36); }
   else if (bn.type === 'money') moneyTile(g, 0, 3, 48);
-  else if ((bn.type === 'Scavenging' || bn.type === 'Pouch' || bn.type === 'perception') && icon) {          // the number to the left of the icon, overlapping it a little
+  else if (bn.type === 'special-enclosure') { iconBox(g, 'r9c9', -17, 3, 30); iconBox(g, 'r9c11', 17, 3, 30); }
+  else if ((bn.type === 'Scavenging' || bn.type === 'Pouch' || bn.type === 'perception' || ((bn.type === 'Clever' || bn.type === 'xtoken') && bn.value > 1)) && icon) {          // the number to the left of the icon, overlapping it a little
     iconBox(g, icon, bn.value > 1 ? 9 : 0, 3, 44);
-    if (bn.value > 1 || bn.type !== 'Scavenging') put(g, 'text', { x: -15, y: 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
+    if (bn.value > 1 || bn.type === 'perception' || bn.type === 'Pouch') put(g, 'text', { x: -15, y: 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
   }
   else if (bn.type === 'pavilion') put(g, 'image', { href: '/enclosures/pavilion.webp', x: -23, y: -16, width: 46, height: 40 });
   else if (icon) iconBox(g, icon, 0, 3, bn.type === 'wave' ? 21 : 48);
   if (bn.type === 'appeal' && !icon) put(g, 'text', { x: 0, y: 6, class: 'bonus-label' }, '★');
-  if (SHOW_VALUE.has(bn.type)) put(g, 'text', { x: 0, y: bn.type === 'money' ? 14 : 16, class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);
+  if (SHOW_VALUE.has(bn.type) || bn.type === 'conservation') put(g, 'text', { x: 0, y: bn.type === 'money' ? 14 : 16, class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);
 }
 function drawFlag(g) {                                                    // the red wedge and the purple "II" shovel badge of a hex that needs the upgraded Build action
   const h = R * 0.866;
@@ -92,7 +90,7 @@ function buildBoard() {
 }
 const STRIP = { partner: { 1: 855, 2: 619, 3: 383, 4: 147 }, university: { 1: 1612, 2: 1378, 3: 1144 } };      // y of the middle of the spaces on the association board (association.js)
 function mapStub() {                                                       // what bonusPanel / associationStrip read of a map
-  return { id: 'custom', name: 'Custom map', bonus_slots: model.panel.map((b, i) => ({ index: i, kind: i < model.nIncome ? 'instant_income' : 'instant', bonus: null })), association_bonuses: {},
+  return { id: 'custom', name: 'Custom map', bonus_slots: model.panel.map((b, i) => ({ index: i, kind: i < model.nIncome ? 'instant_income' : 'instant', bonus: b && b.family === 'project' ? { type: b.type, value: b.value } : null })), association_bonuses: {},
            upgrade_sets: model.upgrade.mode === 'pairs' ? model.upgrade.sets : undefined, special_hexes: [], placement_bonuses: [] };
 }
 const playerStub = () => ({ flags: { bonus_used: 127 }, tokens: [], buildings: [] });
@@ -112,14 +110,14 @@ function overlayBonus(parent, bn, cx, cy, scale) {
 function drawPanels() {
   const map = mapStub();
   const panel = bonusPanel(map, playerStub(), 0);
-  panel.querySelectorAll('.slot-label').forEach((n) => { if (n.textContent === '?') n.remove(); });          // (the empty spaces have no icon yet)
+  panel.querySelectorAll('.slot-label').forEach((n) => { if (n.textContent === '?' && !n.dataset.keep) n.remove(); });          // (an empty space has no icon yet)
   // the rows: the same arithmetic as bonusPanel
   const H = 720, n = 7, rowH = (H - 118 - 12 - 13 - 2 * 20) / n, up = Math.max(model.nIncome, 1);
   const height1 = up * rowH + 20, top2 = 118 + height1 + 13;
   for (let i = 0; i < n; i++) {
     const y = i < up ? 118 + 10 + rowH / 2 + rowH * i : top2 + 10 + rowH / 2 + rowH * (i - up);
     hitRect(panel, 'panel', i, 18, y - rowH / 2 + 1, 140, rowH - 2, 12);
-    overlayBonus(panel, model.panel[i], 109, y, 0.72);
+    if (model.panel[i] && model.panel[i].family !== 'project') overlayBonus(panel, model.panel[i], 109, y, 0.72);          // (the panel draws a project bonus itself)
   }
   [0, 1, 2].forEach((i) => {
     const cx = 40 + i * 48;
@@ -192,7 +190,7 @@ function apply(target, k) {
   drawPieces();
   return true;
 }
-const bonusOf = () => ({ type: tool.type, value: tool.value, ...(tool.tile ? { tile: tool.tile } : {}) });
+const bonusOf = () => ({ type: tool.type, value: tool.value, family: tool.family });
 
 // ---- strokes: a click, or a drag over several hexes, is one step of the history ----------------------------------------------------------------
 let stroke = null;
@@ -285,12 +283,12 @@ function buildPalette() {
       s.append(g);
     }, () => { tool = { kind: 'bonus', family: 'placement', type, value: typedValue[type] }; });
   }
-  for (const [id, label, as] of PROJECT) {
-    toolButton($('projectTools'), label, 'Put the project bonus on a space next to the map: ' + label, (s) => {
-      const g = group(0, 0, 1.6);
-      drawBonus(g, { tile: id, ...as });
-      s.append(g);
-    }, () => { tool = { kind: 'bonus', family: 'project', tile: id, ...as }; });
+  for (const [type, label] of PROJECT) {
+    toolButton($('projectTools'), label, 'Put the project bonus on a space next to the map (or a hex-less space): ' + label, (sv) => {
+      const g = group(0, 0, 1.35);
+      drawBonus(g, { type, value: typedValue['p:' + type] });
+      sv.append(g);
+    }, () => { tool = { kind: 'bonus', family: 'project', type, value: typedValue['p:' + type] }; });
   }
   toolButton($('removeTools'), 'Remove', 'Make a hex plain again, or empty a space', (s) => {
     put(s, 'image', { href: '/map_editor/hex_plain.png', x: -78, y: -67.5, width: 156, height: 135 });
@@ -298,21 +296,21 @@ function buildPalette() {
   }, () => { tool = { kind: 'remove' }; });
   buttons[0].b.click();
 }
+const valueKey = () => (tool.family === 'project' ? 'p:' : '') + tool.type;
+const isNumbered = () => tool.kind === 'bonus' && (tool.family === 'project' ? PROJECT_NUMBERED : NUMBERED).has(tool.type);
 function updateValueBox() {
-  const box = $('valueBox'), input = $('value');
-  const numbered = tool.kind === 'bonus' && tool.family === 'placement' && NUMBERED.has(tool.type);
-  box.hidden = !numbered;
-  if (numbered) input.value = typedValue[tool.type];
+  $('valueBox').hidden = !isNumbered();
+  if (isNumbered()) $('value').value = typedValue[valueKey()];
 }
 $('value').addEventListener('input', () => {
-  if (tool.kind !== 'bonus' || !NUMBERED.has(tool.type)) return;
+  if (!isNumbered()) return;
   const v = Math.max(1, Math.min(99, Math.round(+$('value').value) || 1));
-  typedValue[tool.type] = v;
+  typedValue[valueKey()] = v;
   tool = { ...tool, value: v };
 });
 
 // ---- export ----------------------------------------------------------------------------------------------------------------------------------------------------------
-const plainBonus = (b) => (b ? { type: b.type, value: b.value, ...(b.tile ? { project_bonus: b.tile } : {}) } : null);
+const plainBonus = (b) => (b ? { type: b.type, value: b.value } : null);
 function exportJson() {
   const out = {
     map_id: 'custom', verified: false,

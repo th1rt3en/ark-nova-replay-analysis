@@ -57,3 +57,5 @@ body.mapeditor { padding-bottom: 2rem; }
 .meholder .bonus-number { font: 800 44px system-ui, sans-serif; fill: #fff; stroke: #222; stroke-width: 8px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
 .meholder .money-border { fill: none; stroke: #fff; stroke-width: 3.5; pointer-events: none; }
 .mecanvas .cell.slot:hover { fill: rgba(255, 255, 255, .25); stroke: #2f80e8; stroke-width: 4; }
+
+.mecount button { color: #2b1d12; }
