@@ -59,3 +59,4 @@ body.mapeditor { padding-bottom: 2rem; }
 .mecanvas .cell.slot:hover { fill: rgba(255, 255, 255, .25); stroke: #2f80e8; stroke-width: 4; }
 
 .mecount button { color: #2b1d12; }
+.mecount button { display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; font-size: 1.3rem; }
