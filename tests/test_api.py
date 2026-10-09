@@ -226,3 +226,12 @@ def test_setup_steps_show_the_deal_before_the_initial_discard():
     assert hands[0] == [0, 0]                                   # nothing has been dealt at the literal start
     assert max(h[0] for h in hands) >= 8                        # the 8 dealt cards (9 with Map 14's sponsor) are visible
     assert hands[-1][0] <= 5                                    # after the initial discard of 4
+
+
+def test_redirects_to_pages_when_configured(monkeypatch):
+    monkeypatch.setenv("PAGES_URL", "https://site.example/")
+    c = TestClient(create_app(Settings(), Idx(), Logs({})), follow_redirects=False)
+    r = c.get("/replay.html?table=5")
+    assert r.status_code == 307 and r.headers["location"] == "https://site.example/replay.html?table=5"
+    assert c.get("/healthz").json() == {"status": "ok"}
+    assert c.get("/api/tables/999").status_code != 307

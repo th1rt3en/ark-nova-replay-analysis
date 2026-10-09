@@ -9,7 +9,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -345,7 +345,12 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
 
     if IMG_DIR.is_dir():
         app.mount("/img", StaticFiles(directory=IMG_DIR), name="img")
-    if WEB_DIR.is_dir():
+    pages_url = os.environ.get("PAGES_URL", "").rstrip("/")
+    if pages_url:                                                                   # the site lives on Cloudflare Pages: old links to this service go there
+        @app.get("/{path:path}", include_in_schema=False)
+        def to_pages(path: str, request: Request):
+            return RedirectResponse(pages_url + "/" + path + (("?" + request.url.query) if request.url.query else ""), status_code=307)
+    elif WEB_DIR.is_dir():
         app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app
 

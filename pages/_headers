@@ -1,0 +1,26 @@
+# Pictures: a day in the browser, a week stale-while-revalidate in the CDN
+/cards/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/cards_large/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/action_cards/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/action_icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/maps/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/enclosures/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/badges/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/workers/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/map_editor/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+# Code: always revalidate (Pages answers 304 from the ETag)
+/js/*
+  Cache-Control: no-cache
+/css/*
+  Cache-Control: no-cache
