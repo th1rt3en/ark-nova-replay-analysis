@@ -1,0 +1,53 @@
+// [module] Settings pop-up (the wheel in the control panel): the autoplay speed and the switch that adds the timeline to the control panel. Both are remembered in the browser.
+import { $, el } from './util.js';
+import { S } from './state.js';
+import { setSpeed } from './playback.js';
+import { fitSidebar } from './sidebar.js';
+
+const KEY = 'settings';                                                    // localStorage: { speed: 1 | 2 | 4, timeline: boolean }
+const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, timeline: S.showTimeline })); } catch (e) { /* no storage */ } };
+export const settingsOpen = () => { const m = $('settingsModal'); return !!m && !m.hidden; };
+export function toggleSettings() {
+  const m = $('settingsModal'), g = $('settings');
+  if (!m || !g || g.offsetParent === null) return;                 // (no gear on the page, e.g. the fork page: no settings)
+  if (m.hidden) { m.hidden = false; m.querySelector('.modalx').focus(); } else close();
+}
+function close() { const m = $('settingsModal'); if (m) m.hidden = true; }
+// the timeline is a row of its own between the two button rows of the control panel; without it the control panel is as high as the upper project area (sidebar.js)
+export function applyTimeline() {
+  const t = $('timeline');
+  if (t) t.hidden = !S.showTimeline;
+  fitSidebar();
+}
+export function setupSettings() {
+  const st = read();
+  S.showTimeline = st.timeline === true;                                   // default: off
+  S.speed = [1, 2, 4].includes(st.speed) ? st.speed : 1;                  // default: 1x
+  const modal = el('div', 'modal'); modal.id = 'settingsModal'; modal.hidden = true;
+  const box = el('div', 'modalbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Settings');
+  const head = el('div', 'modalhead');
+  const x = el('button', 'modalx'); x.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>'; x.type = 'button'; x.title = 'Close (Esc)'; x.setAttribute('aria-label', 'Close'); x.onclick = close;
+  head.append(el('b', '', 'Settings'), x);
+  const speedRow = el('div', 'setrow');
+  const sp = el('span', 'speed setspeed'); sp.setAttribute('role', 'group'); sp.setAttribute('aria-label', 'Autoplay speed');
+  for (const v of [1, 2, 4]) {
+    const b = el('button', '', v + 'x'); b.type = 'button'; b.dataset.speed = String(v); b.title = 'Autoplay at ' + v + 'x';
+    b.onclick = () => { setSpeed(v); save(); };
+    sp.append(b);
+  }
+  speedRow.append(el('span', 'setlabel', 'Autoplay speed'), sp);
+  const tlRow = el('label', 'setrow');
+  const sw = el('input'); sw.type = 'checkbox'; sw.className = 'setswitch'; sw.checked = S.showTimeline;
+  sw.onchange = () => { S.showTimeline = sw.checked; save(); applyTimeline(); };
+  tlRow.append(el('span', 'setlabel', 'Timeline in the control panel'), sw);
+  box.append(head, speedRow, tlRow);
+  modal.append(box);
+  modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });         // a click on the dimmed background closes it
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen()) { e.stopPropagation(); close(); } }, true);
+  document.body.append(modal);
+  const wheel = $('settings');
+  if (wheel) wheel.onclick = () => { modal.hidden = false; x.focus(); };
+  setSpeed(S.speed);
+  applyTimeline();
+}

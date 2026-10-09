@@ -6,6 +6,7 @@
 <title>Play - Ark Nova</title>
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/css/replay.css">
+<link rel="stylesheet" href="/css/table.css">
 <link rel="stylesheet" href="/css/endstats.css">
 </head>
 <body class="viewer">
@@ -18,39 +19,46 @@
 </section>
 <div id="loading" class="status loading" role="status" hidden>Loading the game…</div>
 <div id="app" hidden>
-  <header class="bar">
-    <a href="/" class="home" title="Back to the start page">Ark Nova</a>
-    <span id="tableInfo" class="muted"></span>
-    <div id="pov" class="pov" role="group" aria-label="Point of view"></div>
-    <div id="timeline" class="timeline" role="slider" aria-label="Game timeline"></div>
-    <div class="controls" role="group" aria-label="Browse the game">
-      <button id="first" title="First position" aria-label="First position">&#9198;</button>
-      <button id="prev" title="Back one position (Left arrow)" aria-label="Back one position">&#9194;&#xFE0E;</button>
-      <button id="play" title="Autoplay" aria-label="Start autoplay">&#9654;</button>
-      <button id="next" title="Forward one position (Right arrow)" aria-label="Forward one position">&#9193;&#xFE0E;</button>
-      <button id="last" title="The current position (End)" aria-label="The current position">&#9197;</button>
-      <label class="jump">Position <input id="jump" type="number" min="0" aria-label="Jump to position"> / <span id="total"></span></label>
-      <span class="speed" role="group" aria-label="Autoplay speed">
-        <button data-speed="1" class="on">1x</button><button data-speed="2">2x</button><button data-speed="4">4x</button>
-      </span>
-    </div>
-  </header>
-  <div id="current" class="current" aria-live="polite"></div>
-  <div id="abandonbox" class="abandonbox" role="alert" hidden></div>
-  <div id="endbar" class="endbar"></div>
-  <div id="forkinfo" class="forkinfo" hidden></div>
   <div class="layout">
     <main>
-      <div id="actionbar" class="actionbar" hidden></div>
+      <div id="abandonbox" class="abandonbox" role="alert" hidden></div>
+      <div id="endbar" class="endbar"></div>
+      <div class="movebar">
+        <div id="actionbar" class="actionbar" hidden></div>
+        <div id="current" class="current" aria-live="polite"></div>
+        <span id="enginemark" class="enginemark"></span>
+      </div>
       <section id="forkpanel" class="forkpanel" aria-label="Legal moves"></section>
       <section id="shared" class="shared"></section>
       <section id="endstats" class="endstats" aria-label="Game result and statistics"></section>
       <section id="zoos" class="zoos"></section>
     </main>
-    <aside>
-      <section id="side" class="side"></section>
-      <h2>Moves</h2>
-      <ol id="moves" class="moves"></ol>
+    <aside class="sidebar">
+      <div class="sbtabs" role="tablist">
+        <button id="tabControl" class="sbtab on" type="button" role="tab" aria-selected="true">Control</button>
+        <button id="tabLog" class="sbtab" type="button" role="tab" aria-selected="false">Log</button>
+      </div>
+      <div id="paneControl" class="sbpane">
+      <header class="bar">
+        <div class="controls" role="group" aria-label="Replay controls">
+          <button id="first" title="First step (Home)" aria-label="First step">&#9198;</button>
+          <button id="prev" title="Back one step (Left arrow)" aria-label="Back one step">&#9194;&#xFE0E;</button>
+          <button id="play" title="Start / stop autoplay (Space)" aria-label="Start autoplay">&#9654;</button>
+          <button id="next" title="Forward one step (Right arrow)" aria-label="Forward one step">&#9193;&#xFE0E;</button>
+          <button id="last" title="Last step (End)" aria-label="Last step">&#9197;</button>
+        </div>
+        <div id="timeline" class="timeline" role="slider" aria-label="Game timeline" title="Timeline: each | is the start of a round" hidden></div>
+        <div class="controls controls2" role="group" aria-label="Settings, move and fork">
+          <button id="settings" class="settingsbtn" title="Settings (S)" aria-label="Settings"><svg class="gearicon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M10.29 3.57 L10.57 1.09 L13.43 1.09 L13.71 3.57 L16.75 4.83 L18.70 3.28 L20.72 5.30 L19.17 7.25 L20.43 10.29 L22.91 10.57 L22.91 13.43 L20.43 13.71 L19.17 16.75 L20.72 18.70 L18.70 20.72 L16.75 19.17 L13.71 20.43 L13.43 22.91 L10.57 22.91 L10.29 20.43 L7.25 19.17 L5.30 20.72 L3.28 18.70 L4.83 16.75 L3.57 13.71 L1.09 13.43 L1.09 10.57 L3.57 10.29 L4.83 7.25 L3.28 5.30 L5.30 3.28 L7.25 4.83Z M12 8.4a3.6 3.6 0 1 0 0 7.2a3.6 3.6 0 1 0 0-7.2Z"/></svg></button>
+          <label class="jump">Move <input id="jump" type="number" min="0" aria-label="Jump to move"></label>
+        </div>
+      </header>
+    <div id="forkinfo" class="forkinfo" hidden></div>
+        <section id="side" class="side"></section>
+      </div>
+      <div id="paneLog" class="sbpane" hidden>
+        <ol id="moves" class="moves"></ol>
+      </div>
     </aside>
   </div>
 </div>
@@ -71,7 +79,7 @@
   const start = () => {
     $('lobby').hidden = true; $('loading').hidden = false;
     window.FORK_MODE = true; window.PLAY_MODE = true;
-    const s = document.createElement('script'); s.src = '/js/replay.js'; document.body.append(s);
+    const s = document.createElement('script'); s.type = 'module'; s.src = '/js/main.js'; document.body.append(s);
   };
   // a labelled control on its own lines (the label above, an optional line of help below)
   const stack = (label, input, help) => {

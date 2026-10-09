@@ -1,0 +1,108 @@
+/* ==== Structure of the table page (replay / fork / sandbox) ====================================================================================
+   Loaded after replay.css. .layout = main column | sidebar.
+   main:    move bar (the prompt of the step, or the step text) / shared area (display | association board, 50:50) / the two zoos side by side.
+   sidebar: fixed on the right (always in view while the page scrolls), as high as the window; tabs "Control" | "Log". Control = control panel (.bar) + info (#side, the player trackers); Log = the move list.
+   Desktop windows are laid out at 1920 px and zoomed (changelog.md, section 2), so these sizes are the same on every screen. */
+
+html, body.viewer { overflow-x: clip; overflow-y: visible; }          /* (hidden would make <body> a scroll container) */
+html { overflow-y: scroll; }
+
+.layout { --sidebar-w: 300px; display: block; padding: .8rem calc(var(--sidebar-w) + 2rem) 1rem 1rem; }          /* the sidebar is fixed on the right, the main column leaves room for it */
+main { min-width: 0; }
+
+/* ---- move bar: ONE parchment box, 50 px high at least, that grows (wraps) with its content. It holds the text of the step (#current: what just happened) and, when there is
+   something to choose / confirm, the action bar (#actionbar: what is pending). In the replay only one of the two is shown at a time (consecutive frames of a step,
+   changelog.md section 9); in the fork and the sandbox the step text and the bar can both be shown and then wrap onto two rows when they do not fit. The engine mark sits in the corner ------------------------------------- */
+.movebar { position: relative; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: .2rem 0; margin-bottom: .8rem; min-height: 50px; padding: .15rem 2.4rem .15rem 1rem;
+  background: rgba(244, 236, 210, .96); color: #2b1d12; border: 2px solid #1b110a; border-radius: 6px; box-shadow: 0 3px 10px rgba(0, 0, 0, .5); font-size: 1.05rem; }
+.movebar .actionbar { flex: 1 1 auto; margin: 0; min-height: 0; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
+.movebar .actionbar.draftbar { padding: .4rem 0; }
+.movebar .actionbar[hidden] { display: none; }
+.movebar .current { order: -1; flex: 1 1 auto; box-sizing: border-box; align-self: stretch; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+  padding: .15rem 0; background: none; border: 0; font-weight: 700; }
+.movebar .actionbar:not([hidden]) ~ .current { flex: 0 1 auto; max-width: 42%; align-items: flex-start; text-align: left; margin-right: 1rem; padding-right: 1rem; border-right: 2px solid rgba(43, 29, 18, .25);
+  font-size: .95rem; color: #5a4636; }
+.enginemark { position: absolute; top: .3rem; right: .5rem; z-index: 2; }
+
+/* ---- shared area: the display element (display + both tracks) | the association element (project area + board + project area). Both are EXACTLY equally high: fitDisplay() (layout.js)
+   solves the width of the association element (--assocw) from the fixed proportions of the two; the display is zoomed to the rest  -------------------------------------------------- */
+.shared { display: grid; grid-template-columns: minmax(0, 1fr) var(--assocw, 40rem); gap: 1rem; align-items: start; margin-bottom: 1rem; }
+.shared > .displaycol { min-width: 0; overflow: hidden; }
+.shared > .tablecol { flex: none; min-width: 0; max-width: none; width: auto; }
+
+/* the project areas above and below the association board have the height their content gives them (they are no longer tied to the conservation track); the icon keeps its proportions */
+.shared .projpanel { box-sizing: border-box; }
+.shared .projpanel .projslot { align-self: stretch; height: auto; min-height: 0; }
+.shared .projpanel .projicon { height: auto; width: auto; max-width: 3.4rem; }
+
+/* ---- sidebar ----------------------------------------------------------------------------------------------------------------------------------------- */
+aside.sidebar { position: fixed; top: .8rem; right: 1rem; width: var(--sidebar-w); z-index: 20; height: calc(var(--vh, 1vh) * 100 - 1.6rem); max-height: none; overflow: hidden; display: flex; flex-direction: column; gap: .5rem; }
+.sbtabs { flex: 0 0 50px; display: flex; gap: .4rem; }
+.sbtab { flex: 1 1 0; height: 50px; padding: 0 .6rem; border: 2px solid #1b110a; border-radius: 10px; background: rgba(40, 25, 14, .94); color: #e8dcb8; font: 700 1rem system-ui, sans-serif; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .45); }
+.sbtab:hover { background: rgba(70, 45, 26, .96); }
+.sbtab.on { background: #e8dcb8; color: #3a2616; }
+.sbpane { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: .5rem; }
+.sbpane[hidden] { display: none; }
+#paneControl { overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
+
+/* control panel */
+.sidebar .bar { position: static; flex: 0 0 auto; box-sizing: border-box; justify-content: center; display: flex; flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: .3rem; padding: .25rem .65rem;
+  border: 2px solid #1b110a; border-radius: 10px; box-shadow: 0 3px 10px rgba(0, 0, 0, .5); }
+.sidebar .timeline { flex: 0 0 1.6rem; width: 100%; max-width: none; margin: 0; }
+.timeline[hidden] { display: none; }
+.sidebar .controls { margin: 0; flex-wrap: nowrap; justify-content: space-between; gap: .4rem; }
+.sidebar .controls .jump { margin-left: 0; display: inline-flex; align-items: center; gap: .4rem; flex: 1 1 0; min-width: 0; font-weight: 700; color: #f1d9a0; }
+.sidebar .controls .jump input { flex: 1 1 0; min-width: 0; width: 3rem; }
+.sidebar .controls button { flex: 0 1 3rem; min-width: 0; padding-top: .2rem; padding-bottom: .2rem; }
+.sidebar .controls .forkbtn, .sidebar .controls .settingsbtn { flex: 0 0 auto; }
+.sidebar .controls .forkbtn { min-width: 0; padding-left: .8rem; padding-right: .8rem; }
+.sidebar .controls .settingsbtn { line-height: 1; padding-top: 0; padding-bottom: 0; display: inline-flex; align-items: center; justify-content: center; }
+.settingsbtn .gearicon { width: 1.9rem; height: 1.9rem; display: block; }
+.sidebar .forkinfo { flex: 0 0 auto; border: 2px solid #1b110a; border-radius: 10px; padding: .5rem .65rem; font-size: .85rem; line-height: 1.6; }
+
+/* info (the player trackers): laid out for 19rem, zoomed by fitSidebar() */
+.sidebar .side { flex: 0 0 auto; width: 19rem; margin: 0 auto; }
+
+/* log */
+.sidebar .moves { flex: 1 1 0; min-height: 0; max-height: none; position: relative; font-size: .95rem; }
+
+/* ---- narrow windows (not designed yet): one column, the sidebar on top ---------------------------------------------------------------------------------- */
+@media (max-width: 899px) {
+  .layout { padding: .6rem; display: flex; flex-direction: column; }
+  aside.sidebar { position: static; width: auto; height: auto; order: -1; overflow: visible; }
+  .sidebar .moves { max-height: 40vh; flex: none; }
+  .shared { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* the piece menu of a Build in the fork: one button in the move bar, the pieces drop down below it */
+.placepick { position: relative; padding: 0; display: inline-flex; }
+.placemenu { position: absolute; top: calc(100% + .25rem); left: 0; z-index: 30; display: flex; flex-direction: column; gap: .3rem; padding: .5rem; min-width: 16rem; background: #f3ead2; border: 1px solid #6f5749; border-radius: 6px; box-shadow: 0 4px 14px rgba(0, 0, 0, .45); }
+.placemenu[hidden] { display: none; }
+.placemenu .forkmove.piece { justify-content: flex-start; }
+.movebar .actionbar .placectl { margin: 0; padding: 0; background: none; border: 0; flex-basis: auto; }
+.movebar .current[hidden] { display: none; }   /* replay: a decision / gate frame shows the bar alone (frames.js) */
+
+
+/* a project area with only two spots (the conservation projects in play) has them centred in the whole area (--shift is set by fitDisplay) */
+.shared .projpanel.pair .projslot { transform: translateX(var(--shift, 0px)); }
+
+/* settings pop-up: dimmed background over the whole page, the box in the middle */
+.modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: rgba(15, 9, 4, .6); }
+.modal[hidden] { display: none; }
+.modalbox { min-width: 24rem; max-width: 90%; padding: 1rem 1.4rem 1.2rem; border: 2px solid #1b110a; border-radius: 12px; background: #ece3b4; color: #2b1d12; box-shadow: 0 10px 40px rgba(0, 0, 0, .7); }
+.modalhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: .9rem; font-size: 1.3rem; }
+.modalx { display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; margin: -.3rem -.4rem 0 0; padding: 0; border: 0; background: none; color: #3a2616; cursor: pointer; }
+.modalx svg { width: 1.4rem; height: 1.4rem; display: block; }
+.modalx:hover { color: #000; }
+.setrow { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; padding: .6rem 0; border-top: 1px solid rgba(111, 87, 73, .45); font-size: 1.05rem; cursor: default; }
+.setlabel { font-weight: 700; }
+.setspeed { display: inline-flex; gap: .3rem; margin: 0; }
+.setspeed button { min-width: 3rem; padding: .3rem .6rem; border: 1px solid #1b110a; border-radius: 6px; background: #e8dcb8; color: #3a2616; font: 700 1rem system-ui, sans-serif; cursor: pointer; }
+.setspeed button:hover { background: #fff3cf; }
+.setspeed button.on { background: #8fd1a8; }
+.setswitch { appearance: none; -webkit-appearance: none; position: relative; width: 3rem; height: 1.6rem; margin: 0; border: 1px solid #1b110a; border-radius: 999px; background: #b9ab86; cursor: pointer; transition: background .15s; }
+.setswitch::after { content: ""; position: absolute; top: 2px; left: 2px; width: calc(1.6rem - 6px); height: calc(1.6rem - 6px); border-radius: 50%; background: #fff3cf; border: 1px solid #1b110a; transition: left .15s; }
+.setswitch:checked { background: #5cae78; }
+.setswitch:checked::after { left: calc(3rem - 1.6rem + 2px); }
+.forkpage #settings { display: none; }

@@ -1,0 +1,87 @@
+// [module] Step navigation: timeline, autoplay, speed, keyboard, move list.
+import { $, el, seatColor } from './util.js';
+import { S } from './state.js';
+import { labelOf } from './pov.js';
+import { cardMarks } from './cards.js';
+import { draftMarks } from './action-bar.js';
+import { engineBadge, labelNode } from './log-labels.js';
+import { render } from './main.js';
+import { keepSel } from './fork.js';
+import { framesOf } from './frames.js';
+
+export function setPlaying(on) {
+  if (S.timer) { clearInterval(S.timer); S.timer = null; }
+  if (on && atEnd()) go(0);                                              // started at the end: play again from the start
+  if (on) S.timer = setInterval(() => { if (atEnd()) setPlaying(false); else stepBy(1); }, 1000 / S.speed);
+  const b = $('play');
+  b.textContent = on ? '⏸︎' : '▶︎';
+  b.title = on ? 'Stop autoplay (Space)' : 'Start autoplay (Space)';
+  b.setAttribute('aria-label', on ? 'Stop autoplay' : 'Start autoplay');
+  b.classList.toggle('on', on);
+}
+export function setSpeed(x) {
+  S.speed = x;
+  for (const b of document.querySelectorAll('.speed button')) b.classList.toggle('on', +b.dataset.speed === x);
+  if (S.timer) setPlaying(true);                                       // restart the timer at the new rate
+}
+
+// ---- timeline: |----|------|----|, each | is the start of a round (the step after a break ends) ---------------------
+function roundStarts() {
+  const starts = [0];
+  S.replay.steps.forEach((s, i) => { if (/^End of the break/im.test(s.label || '') && i + 1 < S.replay.steps.length) starts.push(i + 1); });
+  return starts;
+}
+export function buildTimeline() {
+  const tl = $('timeline'), n = S.replay.steps.length, starts = roundStarts();
+  if (!tl) return;                                                       // (no timeline element on the page)
+  tl.replaceChildren();
+  starts.forEach((a, k) => {
+    const b = k + 1 < starts.length ? starts[k + 1] : n;
+    const seg = el('div', 'tlseg');
+    seg.style.flexGrow = b - a;
+    seg.title = 'Round ' + (k + 1) + ': steps ' + a + '–' + (b - 1);
+    tl.append(seg);
+  });
+  tl.append(el('div', 'tlhead'));
+  tl.onclick = (e) => {
+    const r = tl.getBoundingClientRect();
+    go(Math.round((e.clientX - r.left) / r.width * (n - 1)));
+  };
+}
+export function updateTimeline() {
+  const head = document.querySelector('#timeline .tlhead');
+  if (head) head.style.left = (S.replay.steps.length > 1 ? S.step / (S.replay.steps.length - 1) * 100 : 0) + '%';
+}
+
+// ---- frames: a step is shown in consecutive frames (frames.js); the keys, buttons and autoplay go frame by frame, the timeline, log and jump box step by step ----
+export const atEnd = () => S.step >= S.replay.steps.length - 1 && S.phase >= framesOf(S.step).length - 1;
+export const atStart = () => S.step === 0 && S.phase === 0;
+export function stepBy(d) {
+  if (d > 0) { if (S.phase < framesOf(S.step).length - 1) go(S.step, S.phase + 1); else go(S.step + 1); }
+  else if (S.phase > 0) go(S.step, S.phase - 1);
+  else if (S.step > 0) go(S.step - 1, framesOf(S.step - 1).length - 1);
+}
+export function go(n, phase = 0) {
+  const before = S.step;
+  S.step = Math.max(0, Math.min(S.replay.steps.length - 1, n));
+  S.phase = Math.max(0, Math.min(framesOf(S.step).length - 1, phase));
+  if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
+  render();
+}
+export function buildMoveList() {
+  const list = $('moves');
+  list.replaceChildren();
+  S.replay.steps.forEach((s, i) => {
+    // the step that finishes an action passes the turn in its state, but it still belongs to the player who acted
+    const prev = i > 0 ? S.replay.steps[i - 1].state : null;
+    const named = S.replay.players.findIndex((pl) => (s.label || '').startsWith(pl.name + ' '));        // (a label that starts with a player's name is that player's)
+    const actor = s.actor !== null && s.actor !== undefined ? s.actor : named >= 0 ? named            // the player the log names for this line (a Boost / Clever effect after the turn passed is still the acting player's)
+      : prev && s.state.turn > prev.turn && s.state.active_player !== prev.active_player ? prev.active_player : s.state.active_player;
+    const li = el('li', 'seat' + actor);
+    li.style.borderLeftColor = seatColor(actor);
+    li.append(el('span', 'n', i), labelNode(labelOf(s) || '…'), engineBadge(s.engine));
+    li._step = s;
+    li.onclick = () => { go(i); };
+    list.append(li);
+  });
+}

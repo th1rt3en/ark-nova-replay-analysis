@@ -45,3 +45,8 @@ data_manual/sample_maps.json
 .wrangler/
 cloudflare/.dev.vars
 cloudflare/.env*
+
+# a colleague's frontend update archive and local helper dirs
+*.rar
+_backup_before_FE001/
+log_examples/_stage.tgz

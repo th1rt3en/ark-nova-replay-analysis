@@ -16,10 +16,10 @@ body.viewer { max-width: none; margin: 0; padding: 0; }
 .current .who { font-weight: 600; margin-right: .5rem; }
 
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 19rem; gap: 1rem; padding: 1rem; align-items: start; }
-@media (max-width: 1100px) { .layout { grid-template-columns: minmax(0, 1fr); } aside { order: -1; } }
+@media (max-width: 899px) and (max-width: 1100px) { .layout { grid-template-columns: minmax(0, 1fr); } aside { order: -1; } }
 aside { position: sticky; top: 7rem; }
 aside h2 { margin: 0 0 .4rem; font-size: 1rem; }
-.moves { list-style: none; margin: 0; padding: 0; max-height: calc(100vh - 10rem); overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
+.moves { list-style: none; margin: 0; padding: 0; max-height: calc(calc(var(--vh, 1vh) * 100) - 10rem); overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; font-size: .85rem; }
 .moves li { padding: .3rem .5rem; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; gap: .5rem; }
 .moves li:last-child { border-bottom: 0; }
 .moves li:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
@@ -45,7 +45,7 @@ h3 { margin: 0 0 .4rem; font-size: .95rem; }
 .track span.on { background: var(--accent); color: #fff; border-color: var(--accent); }
 
 .zoos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-@media (max-width: 1500px) { .zoos { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 899px) and (max-width: 1500px) { .zoos { grid-template-columns: minmax(0, 1fr); } }
 .zoo { border: 2px solid var(--border); border-radius: 8px; padding: .6rem; }
 .zoo.active { border-color: var(--accent); }
 .zoo h2 { margin: 0 0 .5rem; font-size: 1.05rem; display: flex; gap: .5rem; align-items: baseline; flex-wrap: wrap; }
@@ -116,7 +116,7 @@ aside h2 { color: #f3e9d2; text-shadow: 0 1px 2px #000; }
 
 .sect { margin-bottom: .6rem; }
 .sect.wide { flex: 1 1 100%; }
-.assoc { width: min(62rem, 90vw); display: block; border-radius: 6px; }
+.assoc { width: min(62rem, calc(var(--vw, 1vw) * 90)); display: block; border-radius: 6px; }
 .assoc text.tile { font: 700 30px system-ui, sans-serif; fill: #fff; stroke: rgba(0, 0, 0, .6); stroke-width: 6px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
 .withtokens { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .dots { display: flex; gap: 2px; min-height: 1.1rem; }
@@ -127,7 +127,7 @@ aside h2 { color: #f3e9d2; text-shadow: 0 1px 2px #000; }
 .shared .cards.small .card { width: 10rem; }
 .zoo .cards .card { width: 11rem; }
 .zoo .cards.small .card { width: 8.5rem; }
-.preview { width: 30rem; max-width: 45vw; right: 21rem; image-rendering: auto; }
+.preview { width: 30rem; max-width: calc(var(--vw, 1vw) * 45); right: 21rem; image-rendering: auto; }
 
 /* side panel */
 .side { margin-bottom: .8rem; }
@@ -140,18 +140,18 @@ aside h2 { color: #f3e9d2; text-shadow: 0 1px 2px #000; }
 .pp:last-child { border-radius: 0 0 8px 8px; }
 .pp.active { box-shadow: inset 0 0 0 3px rgba(79, 143, 106, .75); }
 .pphead { display: flex; justify-content: space-between; align-items: center; margin-bottom: .3rem; }
-.ppname { font-size: 1.05rem; }
+.ppname { font-size: calc(1.05rem + 2px); }
 .ppscore { display: inline-flex; align-items: center; gap: .15rem; font-weight: 700; }
 .ppres { display: flex; justify-content: space-between; align-items: center; margin-bottom: .45rem; }
 .rs { display: inline-flex; align-items: center; gap: .1rem; font-size: 1.05rem; font-weight: 700; }
 .ppactions { display: flex; justify-content: space-between; margin-bottom: .45rem; }
-.ac { display: inline-flex; border: 3px solid #1d9ad6; border-radius: 8px; background: #fff; }
-.ac.lvl2 { border-color: #e04fd0; }
+.ac { display: inline-flex; border: 3px solid #009fe2; border-radius: 8px; background: #fff; }
+.ac.lvl2 { border-color: #a91b71; }
 .ppicons { display: grid; grid-template-columns: repeat(5, 1fr); gap: .35rem .2rem; }
 .ppicons .ic { display: inline-flex; align-items: center; justify-content: center; gap: .1rem; font-size: .95rem; font-weight: 600; }
 .ppicons .ic.zero { opacity: .3; }
 .ppicons .badge { border-radius: 50%; display: block; }
-aside { max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+aside { max-height: calc(calc(var(--vh, 1vh) * 100) - 5.5rem); overflow-y: auto; }
 .moves { max-height: 22rem; }
 .deck-num { font: 800 22px system-ui, sans-serif; fill: #111; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.6); stroke-width: 3px; }
 .dc svg { display: block; }
@@ -181,7 +181,7 @@ aside { max-height: calc(100vh - 5.5rem); overflow-y: auto; }
 .tablecol { flex: 1 1 26rem; min-width: 24rem; max-width: 40rem; }
 .projslot { min-height: 10rem; }
 .projslot .card { width: 6.5rem; }
-@media (max-width: 1400px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 34rem; } }
+@media (max-width: 899px) and (max-width: 1400px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 34rem; } }
 .cardwrap { position: relative; }
 .blockcube { position: absolute; top: 85%; width: 26%; transform: translate(-50%, -50%); pointer-events: auto; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)); }
 
@@ -246,7 +246,7 @@ aside { max-height: calc(100vh - 5.5rem); overflow-y: auto; }
 .ac .variant { position: absolute; left: -9px; top: -9px; width: 25px; height: 25px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .6); pointer-events: none; }
 
 /* hover preview: the base positioning was lost in an earlier rewrite, so the preview never showed */
-.preview { position: fixed; right: 21rem; bottom: 1rem; z-index: 30; width: auto; height: min(92vh, 44rem); max-width: 40vw; border-radius: 12px; box-shadow: 0 6px 28px rgba(0, 0, 0, .6); pointer-events: none; }
+.preview { position: fixed; right: 21rem; bottom: 1rem; z-index: 30; width: auto; height: min(calc(var(--vh, 1vh) * 92), 44rem); max-width: calc(var(--vw, 1vw) * 40); border-radius: 12px; box-shadow: 0 6px 28px rgba(0, 0, 0, .6); pointer-events: none; }
 .preview[hidden] { display: none; }
 .preview.center { right: auto; bottom: auto; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 60; }
 
@@ -309,7 +309,9 @@ body.viewer { --flash-duration: 0.8s; }
 .projbar { flex: 0 0 3.3rem; background-size: 12rem auto; }
 .projcrop { width: 12.3rem; }
 .projicon { height: 4rem; }
-@media (max-width: 2150px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 56rem; } }
+@media (max-width: 899px) and (max-width: 2150px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 56rem; } }
+/* desktop mode: the same rules, always on (the page is laid out at the design width) */
+@media (min-width: 900px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 56rem; } }
 
 /* round 8: projects another 10% bigger (crop 13.5rem, bar 3.6rem) */
 .tablecol { flex: 0 1 61.6rem; min-width: 30rem; max-width: 61.6rem; }
@@ -317,7 +319,9 @@ body.viewer { --flash-duration: 0.8s; }
 .projbar { flex: 0 0 3.6rem; background-size: 13.09rem auto; }
 .projcrop { width: 13.5rem; }
 .projicon { height: 4.4rem; }
-@media (max-width: 2250px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 61.6rem; } }
+@media (max-width: 899px) and (max-width: 2250px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 61.6rem; } }
+/* desktop mode: the same rules, always on (the page is laid out at the design width) */
+@media (min-width: 900px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 61.6rem; } }
 
 /* Mark cube on a display card */
 .markcube { position: absolute; left: 5.65rem; top: 7rem; width: 2.6rem; transform: translate(-50%, -50%); z-index: 2; pointer-events: auto; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .7)); }
@@ -341,7 +345,14 @@ body.viewer { --flash-duration: 0.8s; }
 .engine-detail { font-size: .8rem; font-weight: 400; color: #8a3b12; margin-top: .15rem; word-break: break-word; }
 
 /* side column fits the window: the trackers are scaled down if needed (fitAside in replay.js) and the move list takes the rest and scrolls inside */
-@media (min-width: 1101px) and (min-height: 921px) {
+@media (max-width: 899px) and (min-width: 1101px) and (min-height: 921px) {
+  aside { display: flex; flex-direction: column; overflow: hidden; max-height: none; }
+  aside .side { flex: 0 0 auto; margin-bottom: .5rem; }
+  aside h2 { flex: 0 0 auto; margin-bottom: .3rem; }
+  aside .moves { flex: 1 1 0; min-height: 5rem; max-height: none; }
+}
+/* desktop mode: the same rules, always on (the page is laid out at the design width) */
+@media (min-width: 900px) {
   aside { display: flex; flex-direction: column; overflow: hidden; max-height: none; }
   aside .side { flex: 0 0 auto; margin-bottom: .5rem; }
   aside h2 { flex: 0 0 auto; margin-bottom: .3rem; }
@@ -349,7 +360,18 @@ body.viewer { --flash-duration: 0.8s; }
 }
 
 /* shorter player trackers (side column, wide layout) */
-@media (min-width: 1101px) and (min-height: 921px) {
+@media (max-width: 899px) and (min-width: 1101px) and (min-height: 921px) {
+  aside .sidetop { padding: .2rem .5rem; }
+  aside .breaktrack { font-size: 1.3rem; }
+  aside .deckcounts { margin-top: .15rem; padding-top: .15rem; }
+  aside .pp { padding: .3rem .45rem .35rem; }
+  aside .pphead { margin-bottom: .15rem; }
+  aside .pp .ppres, aside .pp .ppres2, aside .pp .ppactions { padding-bottom: .25rem; margin-bottom: .25rem; }
+  aside .ppres { margin-top: 1.5rem; }
+  aside .ppicons { gap: .15rem .2rem; }
+}
+/* desktop mode: the same rules, always on (the page is laid out at the design width) */
+@media (min-width: 900px) {
   aside .sidetop { padding: .2rem .5rem; }
   aside .breaktrack { font-size: 1.3rem; }
   aside .deckcounts { margin-top: .15rem; padding-top: .15rem; }
@@ -370,8 +392,10 @@ body.viewer { --flash-duration: 0.8s; }
 .projbar { flex: 0 0 4.3rem; background-size: 15.7rem auto; }
 .projcrop { width: 16.2rem; }
 .projicon { height: 5.3rem; }
-@media (max-width: 2750px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 74rem; } }
-@media (max-width: 1250px) { .tablecol { flex-basis: 100%; max-width: 100%; } .projslot { width: auto; flex: 1 1 0; } }
+@media (max-width: 899px) and (max-width: 2750px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 74rem; } }
+/* desktop mode: the same rules, always on (the page is laid out at the design width) */
+@media (min-width: 900px) { .shared { flex-wrap: wrap; } .tablecol { flex-basis: 74rem; } }
+@media (max-width: 899px) and (max-width: 1250px) { .tablecol { flex-basis: 100%; max-width: 100%; } .projslot { width: auto; flex: 1 1 0; } }
 
 /* round 10: the association zone always sits right of the display; it takes the space left and its projects shrink with it */
 .shared { flex-wrap: nowrap; }
@@ -398,8 +422,8 @@ body.viewer { --flash-duration: 0.8s; }
 .timeline + .controls { margin-left: 0; }
 
 /* action buttons: the blue / purple of the unupgraded / upgraded action cards (.ac) */
-.abtn { background: #1d9ad6; border-color: #0f5f87; }
-.abtn.lvl2 { background: #e04fd0; border-color: #8e2a85; }
+.abtn { background: #009fe2; border-color: #006a98; }
+.abtn.lvl2 { background: #a91b71; border-color: #6e1148; }
 
 .abtn { position: relative; }
 .abtn .variant { position: absolute; left: -9px; top: -9px; width: 25px; height: 25px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, .6); pointer-events: none; }
@@ -486,7 +510,7 @@ body.viewer { --flash-duration: 0.8s; }
 .pilebtn:hover { background: rgba(255, 255, 255, .45); outline: 2px solid rgba(79, 143, 106, .8); }
 .pile { position: fixed; inset: 0; z-index: 50; background: rgba(15, 8, 3, .6); display: grid; place-items: center; }
 .pile[hidden] { display: none; }
-.pilewin { width: 96vw; height: 94vh; background: #ece3b4 url(/assets/sheet_background.jpg) center / cover; color: #2b1d12; border: 3px solid #1b110a; border-radius: 12px;
+.pilewin { width: calc(var(--vw, 1vw) * 96); height: calc(var(--vh, 1vh) * 94); background: #ece3b4 url(/assets/sheet_background.jpg) center / cover; color: #2b1d12; border: 3px solid #1b110a; border-radius: 12px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, .7); display: flex; flex-direction: column; overflow: hidden; }
 .pilehead { display: flex; align-items: center; justify-content: space-between; padding: .6rem 1rem; border-bottom: 2px solid rgba(27, 17, 10, .5); }
 .pilehead h2 { margin: 0; font-size: 1.2rem; }
@@ -523,9 +547,9 @@ body.viewer { --flash-duration: 0.8s; }
 html, body.viewer { overflow-x: hidden; }
 .layout, main, .zoo, .shared, .tablecol { min-width: 0; }
 
-@media (max-width: 1100px) {
+@media (max-width: 899px) and (max-width: 1100px) {
   aside .side { zoom: 1 !important; }
-  .moves { max-height: 55vh; }
+  .moves { max-height: calc(var(--vh, 1vh) * 55); }
   .shared { flex-wrap: wrap !important; }
   .tablecol { flex: 1 1 100%; max-width: 100%; min-width: 0; }
   .displaycol { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: .3rem; -webkit-overflow-scrolling: touch; }
@@ -534,7 +558,7 @@ html, body.viewer { overflow-x: hidden; }
   .assoc { width: 100%; }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 899px) and (max-width: 800px) {
   .bar { gap: .35rem .6rem; padding: .35rem .6rem; }
   .bar .home { font-size: .9rem; }
   #tableInfo { display: none; }
@@ -561,17 +585,17 @@ html, body.viewer { overflow-x: hidden; }
   .actionbar[hidden] { height: 56px; }
   .projpanel { gap: .2rem; padding: .25rem; }
   .projicon { max-width: 2rem; }
-  .pilewin { width: 100vw; height: 100vh; border-radius: 0; border-width: 0; }
+  .pilewin { width: calc(var(--vw, 1vw) * 100); height: calc(var(--vh, 1vh) * 100); border-radius: 0; border-width: 0; }
   .pilegrid .card { width: 8.5rem; }
   .pilehead h2 { font-size: 1rem; }
   .pileclose { width: 2.8rem; height: 2.8rem; }
   .turnbtn { padding: .35rem .6rem; }
   .moves li { padding: .45rem .5rem; }
   /* the hover preview of a card: shown centred over the page; a tap on it closes it */
-  .preview { right: 50%; bottom: 50%; transform: translate(50%, 50%); height: auto; width: min(88vw, 24rem); max-width: 88vw; pointer-events: auto; z-index: 70; }
+  .preview { right: 50%; bottom: 50%; transform: translate(50%, 50%); height: auto; width: min(calc(var(--vw, 1vw) * 88), 24rem); max-width: calc(var(--vw, 1vw) * 88); pointer-events: auto; z-index: 70; }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 899px) and (max-width: 480px) {
   .displaybox { zoom: .45; }
   .zooRow .board { flex-basis: 380px; }
   .zoo .cards .card, .shared .cards .card { width: 6.6rem; }
@@ -584,37 +608,33 @@ html, body.viewer { overflow-x: hidden; }
   .pilebtn { padding: .25rem .4rem; }
   .moves li { min-height: 2.4rem; }
 }
-@media (max-width: 800px) {
+@media (max-width: 899px) and (max-width: 800px) {
   .controls { flex-wrap: wrap; row-gap: .3rem; }
   .speed { margin-left: auto; }
   .displaycol, .zooRow, .moves { max-width: 100%; }
 }
 
 /* wide layout: the association zone never goes below 460px (the display is scaled to fit instead, see fitDisplay in replay.js) */
-@media (min-width: 1101px) {
+@media (max-width: 899px) and (min-width: 1101px) {
+  .displaybox { zoom: 1; }
+  .tablecol { flex: 1 1 460px; min-width: 460px; }
+  .shared { flex-wrap: nowrap !important; }
+}
+/* desktop mode: the same rules, always on (the page is laid out at the design width) */
+@media (min-width: 900px) {
   .displaybox { zoom: 1; }
   .tablecol { flex: 1 1 460px; min-width: 460px; }
   .shared { flex-wrap: nowrap !important; }
 }
 
-/* narrow screens: the trackers and the move list are a drawer on the right edge, a tab brings it in and out */
-/* (also on a wide but short window: the column would not fit, and the maps use the full width then) */
-.asidetoggle { display: none; }
-@media (max-width: 1100px), (max-height: 920px) {
-  .layout { grid-template-columns: minmax(0, 1fr); }
-  aside { position: fixed !important; top: 4rem; right: 0; bottom: 0; width: clamp(13.5rem, 32vw, 19rem); height: auto !important; max-height: none !important; z-index: 40; overflow-y: auto !important;
-    display: block !important; padding: .5rem; background: rgba(40, 25, 14, .97); border-left: 2px solid #1b110a; box-shadow: -6px 0 18px rgba(0, 0, 0, .55);
-    transform: translateX(105%); transition: transform .22s ease-out; order: 0; }
-  aside.open { transform: none; }
-  .asidetoggle { display: grid; place-items: center; position: fixed; top: 5rem; right: 0; z-index: 41; width: 2.2rem; height: 3.6rem; padding: 0; border: 2px solid #1b110a; border-right: 0;
-    border-radius: 10px 0 0 10px; background: #e8dcb8; color: #3a2616; font: 700 1rem system-ui, sans-serif; cursor: pointer; box-shadow: -2px 2px 8px rgba(0, 0, 0, .5); transition: right .22s ease-out; }
-  .asidetoggle.open { right: clamp(13.5rem, 32vw, 19rem); }
-  .asidetoggle:hover { background: #fff3cf; }
-}
-@media (prefers-reduced-motion: reduce) { aside, .asidetoggle { transition: none; } }
 
 /* wide layout, little room: the association zone goes under the display (decided in fitDisplay) */
-@media (min-width: 1101px) {
+@media (max-width: 899px) and (min-width: 1101px) {
+  .shared.stacked { flex-wrap: wrap !important; }
+  .shared.stacked .tablecol { flex: 1 1 100%; max-width: 74rem; }
+}
+/* desktop mode: the same rules, always on (the page is laid out at the design width) */
+@media (min-width: 900px) {
   .shared.stacked { flex-wrap: wrap !important; }
   .shared.stacked .tablecol { flex: 1 1 100%; max-width: 74rem; }
 }
@@ -630,7 +650,7 @@ html, body.viewer { overflow-x: hidden; }
 .draftcard.picked { outline: 4px solid #2ebe54; outline-offset: 1px; }
 .draftcard.passed { opacity: .6; filter: grayscale(.4); }
 .draftcheck { position: absolute; right: -.5rem; top: -.6rem; width: 1.9rem; height: 1.9rem; display: grid; place-items: center; border-radius: 50%; background: #2ebe54; color: #fff; font: 800 1.1rem/1 system-ui, sans-serif; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
-@media (max-width: 800px) { .draftcard { width: 8.5rem; } .draftgroup + .draftgroup { border-left: 0; padding-left: 0; } }
+@media (max-width: 899px) and (max-width: 800px) { .draftcard { width: 8.5rem; } .draftgroup + .draftgroup { border-left: 0; padding-left: 0; } }
 
 .draftcards { align-items: stretch; }
 .draftkept { display: flex; align-items: center; padding: .5rem .6rem; margin-right: .3rem; border-radius: 10px; background: rgba(46, 190, 84, .28); border: 2px solid rgba(46, 190, 84, .8); }
@@ -682,7 +702,7 @@ html, body.viewer { overflow-x: hidden; }
 
 /* floating dock: hands and endgame cards, bottom left corner of the screen */
 body.viewer { padding-bottom: 5rem; }
-.dock { position: fixed; left: .8rem; bottom: .8rem; z-index: 35; display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; max-width: calc(100vw - 1.6rem); pointer-events: none; }
+.dock { position: fixed; left: .8rem; bottom: .8rem; z-index: 35; display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; max-width: calc(calc(var(--vw, 1vw) * 100) - 1.6rem); pointer-events: none; }
 .dock > * { pointer-events: auto; }
 .dockbar { display: flex; gap: .45rem; padding: .35rem; border-radius: 999px; background: rgba(40, 25, 14, .9); box-shadow: 0 3px 12px rgba(0, 0, 0, .55); }
 .dockbtn { position: relative; width: 3rem; height: 3rem; padding: 0; border-radius: 50%; border: 3px solid var(--pc, #888); background: #ece3b4; cursor: pointer; display: grid; place-items: center;
@@ -692,27 +712,20 @@ body.viewer { padding-bottom: 5rem; }
 .dockbtn img { width: 1.7rem; height: 1.7rem; object-fit: contain; }
 .dockn { position: absolute; right: -.35rem; top: -.45rem; min-width: 1.25rem; height: 1.25rem; padding: 0 .25rem; box-sizing: border-box; border-radius: 999px; background: var(--pc, #888); color: #fff; font: 800 .75rem/1.25rem system-ui, sans-serif; text-align: center;
   -webkit-text-stroke: .5px rgba(0, 0, 0, .55); paint-order: stroke fill; }
-.dockpanel { max-width: 100%; max-height: 62vh; overflow: auto; padding: .5rem .7rem .7rem; border-radius: 10px; border: 3px solid var(--pc, #888); background: #ece3b4 url(/assets/sheet_background.jpg) center / cover; color: #2b1d12;
+.dockpanel { max-width: 100%; max-height: calc(var(--vh, 1vh) * 62); overflow: auto; padding: .5rem .7rem .7rem; border-radius: 10px; border: 3px solid var(--pc, #888); background: #ece3b4 url(/assets/sheet_background.jpg) center / cover; color: #2b1d12;
   box-shadow: 0 4px 18px rgba(0, 0, 0, .6); }
 .dockhead { font-size: .95rem; margin-bottom: .35rem; }
 .dockpanel .cards { flex-wrap: nowrap; }
 .dockpanel .cards .card { flex: 0 0 auto; width: 11.4rem; }
 .dockpanel .cards.small .card { width: 11.4rem; }
-@media (max-width: 800px) { .dockbtn { width: 2.6rem; height: 2.6rem; } .dockpanel .cards .card { width: 8.4rem; } .dockpanel .cards.small .card { width: 8.4rem; } }
+@media (max-width: 899px) and (max-width: 800px) { .dockbtn { width: 2.6rem; height: 2.6rem; } .dockpanel .cards .card { width: 8.4rem; } .dockpanel .cards.small .card { width: 8.4rem; } }
 
 /* dock round 2: the count badge has a black outline (readable on a white ring), the fold button at the end */
 .dockn { color: #fff; -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 0 0 2px #000; border: 1.5px solid #000; box-sizing: border-box; }
 .dockfold { width: 2.2rem; height: 2.2rem; align-self: center; padding: 0; margin-left: .15rem; border-radius: 50%; border: 2px solid #8c7254; background: #e8dcb8; color: #3a2616; font: 700 .9rem/1 system-ui, sans-serif; cursor: pointer; }
 .dockfold:hover { background: #fff3cf; }
 
-/* point of view buttons (god mode / seat 0 / seat 1) and the back of a hidden card */
-.pov { display: inline-flex; gap: .25rem; padding: .2rem; border-radius: 999px; background: rgba(0, 0, 0, .3); }
-.povbtn { display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .65rem; border-radius: 999px; border: 2px solid transparent; background: transparent; color: #e8dcb8; font: 600 .85rem system-ui, sans-serif; cursor: pointer; }
-.povbtn:hover { background: rgba(255, 255, 255, .12); }
-.povbtn.on { background: #e8dcb8; color: #3a2616; border-color: var(--pc, #8fd1a8); }
-.povicon { color: var(--pc, inherit); font-size: .95rem; line-height: 1; }
-.povbtn.on .povicon { text-shadow: 0 0 1px #000; }
-@media (max-width: 800px) { .povname { max-width: 5.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .povbtn { padding: .25rem .5rem; } }
+/* the back of a hidden card */
 .card.back { background: repeating-linear-gradient(45deg, #5b3a24 0 8px, #6b4630 8px 16px); border: 3px solid #e8dcb8; display: grid; place-items: center; box-sizing: border-box; }
 .card.back .backmark { font: 800 2.6rem system-ui, sans-serif; color: rgba(232, 220, 184, .55); }
 
@@ -727,7 +740,7 @@ body.viewer { padding-bottom: 5rem; }
 
 /* fork: the button in the replay, the fork page (seed line, legal moves) */
 .forkbtn { white-space: nowrap; font-weight: 700; }
-.forkpage #pov, .forkpage #timeline, .forkpage .speed, .forkpage #play { display: none; }
+.forkpage #timeline, .forkpage .speed, .forkpage #play { display: none; }
 .forkinfo { padding: .5rem 1rem; background: rgba(40, 25, 14, .88); color: #f3e9d2; border-bottom: 2px solid #1b110a; font-size: .95rem; line-height: 1.9; }
 .forkinfo a { color: #f1d9a0; }
 .forkinfo button { margin-left: .4rem; padding: .2rem .6rem; border-radius: 6px; border: 1px solid #1b110a; background: #e8dcb8; color: #3a2616; font: 600 .85rem system-ui, sans-serif; cursor: pointer; }
@@ -835,12 +848,12 @@ body.viewer { padding-bottom: 5rem; }
 .sbcenter { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: .6rem; z-index: 2; background: rgba(236, 227, 180, .55); border-radius: 8px; }
 .sbslot { position: absolute; top: 76%; transform: translate(-50%, -50%); display: flex; gap: .25rem; z-index: 2; }
 .sbslot.rep16 { top: auto; bottom: calc(100% - .5rem); }
-.sbmodal { min-width: 22rem; max-width: 52rem; max-height: 85vh; overflow: auto; }
+.sbmodal { min-width: 22rem; max-width: 52rem; max-height: calc(var(--vh, 1vh) * 85); overflow: auto; }
 .sbmodalhead { display: flex; justify-content: space-between; align-items: center; }
 .sbmodalhead h3 { margin: 0; }
 .sbclose { border: 0; background: transparent; font-size: 1.8rem; cursor: pointer; line-height: 1; color: #2b1d12; }
 .sbfilter { width: 100%; padding: .4rem; margin: .6rem 0; box-sizing: border-box; }
-.sblist { max-height: 55vh; overflow: auto; display: flex; flex-direction: column; gap: .15rem; }
+.sblist { max-height: calc(var(--vh, 1vh) * 55); overflow: auto; display: flex; flex-direction: column; gap: .15rem; }
 .sbgroup { font-weight: 800; margin-top: .5rem; }
 .sbrow { text-align: left; padding: .25rem .5rem; background: #fff8e3; border: 1px solid #c9b88a; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; color: #2b1d12; }
 .sbrow:hover { background: #fde7a3; }
@@ -855,17 +868,6 @@ body.viewer { padding-bottom: 5rem; }
 .lobby button[type=submit]:disabled { opacity: .6; }
 .lobby input[type=checkbox] { width: 1.1rem; height: 1.1rem; }
 .sbmaps { display: flex; flex-wrap: wrap; gap: .3rem; flex-basis: 100%; justify-content: center; }
-.encpick { fill: rgba(47, 128, 232, .22); stroke: #2f80e8; stroke-width: 4; pointer-events: all; cursor: pointer; }
-.encpick:hover { fill: rgba(47, 128, 232, .4); }
-.encpick.on { fill: rgba(46, 190, 84, .4); stroke: #2ebe54; }
-.pphead .clock { margin-left: .6rem; margin-right: auto; font-size: 1rem; }
-.clock { margin-left: auto; font: 700 1.15rem ui-monospace, Consolas, monospace; padding: .05rem .5rem; border-radius: 6px; background: rgba(0, 0, 0, .12); color: #2b1d12; }
-.clock.running { background: #2f6b4f; color: #fff; }
-.clock.negative { background: #b3261e; color: #fff; }
-.clock.running.low, .clock.low { background: #b3261e; color: #fff; }
-.mappreview { flex-basis: 100%; width: min(100%, 62rem); margin: .4rem auto 0; padding: .4rem; box-sizing: border-box; }
-.mappreview .zooRow { margin-bottom: 0; }
-.mappreview > img { display: block; max-width: 100%; max-height: 62vh; margin: 0 auto; border-radius: 8px; }
 .sbmapbtn.on { background: #4a76b8; color: #fff; outline: 3px solid #f5c542; }
 
 /* selections that are confirmed afterwards (fork / sandbox) are blue; the plain highlight of the replay stays yellow */
@@ -886,6 +888,64 @@ body.viewer { padding-bottom: 5rem; }
 .sbbonuses .sbtile { width: 5.4rem; height: 5.4rem; padding: .3rem; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
 .sbbonuses .sbtile svg, .sbbonuses .sbtile img { width: 100%; height: 100%; object-fit: contain; position: static; transform: none; display: block; }
 
+/* the page is always as tall as it needs to be: keep the scrollbar so its appearance never changes the width the scale is computed from */
+html { overflow-y: scroll; }
+
+/* a hand / endgame / display card the viewer selected with a click, as on BGA: a thin green frame and a big green check mark in a translucent light rounded square in the
+   middle of the card (blue in the fork, where the choice is confirmed afterwards) */
+.card.marked, .folder .card.marked { outline: 3px solid #4cae4f; outline-offset: -1px; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.card.marked::after, .draftcard.marked::after { content: ''; position: absolute; left: 50%; top: 35%; z-index: 3; width: 46%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 12%; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M18 54 L40 76 L84 26' fill='none' stroke='%232fa843' stroke-width='17' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 78% no-repeat, rgba(238, 238, 238, .82); }
+.forkpage .card.marked, .forkpage .folder .card.marked { outline-color: #2f80e8; }
+.forkpage .card.marked::after, .forkpage .draftcard.marked::after { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M18 54 L40 76 L84 26' fill='none' stroke='%232f80e8' stroke-width='17' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+
+/* the same for the cards of the action card draft that the viewer highlights with a click (the picked ones keep their green frame and the check mark on the corner) */
+.draftcard.marked::after { top: 30%; }       /* (the draft card is taller than a hand card: keep the square on the artwork) */
+.draftcard.marked { outline: 3px solid #4cae4f; outline-offset: -1px; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.draftcard.picked.marked { outline: 4px solid #2ebe54; outline-offset: 1px; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.forkpage .draftcard.marked { outline: 3px solid #2f80e8; outline-offset: -1px; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.forkpage .draftcard.picked.marked { outline: 4px solid #2ebe54; outline-offset: 1px; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+
+/* draft: the offered cards keep their own height (the row stretches them to the height of the green zone of the first pick, which left an empty strip below the shorter ones) */
+.draftcards > .draftcard { align-self: flex-start; }
+
+/* second round: the card picked in the first round is as large as the cards on offer (no padded green zone around it, which made it look bigger): the same green frame as
+   any picked card, left of the dashed line */
+.draftkept { padding: 0; background: none; border: 0; }
+.draftkept .draftcard.picked { outline: 4px solid #2ebe54; outline-offset: 1px; }
+
+/* dragging a hand / endgame card to a new place in its row */
+.dockpanel .card[draggable="true"] { cursor: grab; }
+.dockpanel .card.dragging { opacity: .35; cursor: grabbing; }
+
+/* the action cards of the info boxes before they are drawn (action card draft) */
+.ppactions.unseen { visibility: hidden; }
+
+/* the player name in the info box: a link that looks like plain bold text; light colours (yellow, white) get a very thin black outline */
+a.ppname { font-weight: 700; text-decoration: none; }
+a.ppname.light { -webkit-text-stroke: 4px #000; paint-order: stroke fill; }          /* (the stroke is drawn first and the letters over it: only its outer half shows, a thin black outline) */
+
+/* the eye next to a player's name in the info box: open = this player's cards are shown (point of view) */
+.poveye { display: inline-flex; align-items: center; justify-content: center; width: 1.9rem; height: 1.6rem; margin-left: .35rem; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #3a2616; cursor: pointer; vertical-align: middle; }
+.poveye:hover { background: rgba(58, 38, 22, .14); }
+.poveye.closed { color: rgba(58, 38, 22, .55); }
+.poveye.only { cursor: default; }
+.poveye.only:hover { background: transparent; }
+.poveye svg { width: 1.45rem; height: 1.45rem; }
+.pphead .who { display: inline-flex; align-items: center; }
+
+/* ---- live play (play.html) ---- */
+.encpick { fill: rgba(47, 128, 232, .22); stroke: #2f80e8; stroke-width: 4; pointer-events: all; cursor: pointer; }
+.encpick:hover { fill: rgba(47, 128, 232, .4); }
+.encpick.on { fill: rgba(46, 190, 84, .4); stroke: #2ebe54; }
+.pphead .clock { margin-left: .6rem; margin-right: auto; font-size: 1rem; }
+.clock { margin-left: auto; font: 700 1.15rem ui-monospace, Consolas, monospace; padding: .05rem .5rem; border-radius: 6px; background: rgba(0, 0, 0, .12); color: #2b1d12; }
+.clock.running { background: #2f6b4f; color: #fff; }
+.clock.negative { background: #b3261e; color: #fff; }
+.clock.running.low, .clock.low { background: #b3261e; color: #fff; }
+.mappreview { flex-basis: 100%; width: min(100%, 62rem); margin: .4rem auto 0; padding: .4rem; box-sizing: border-box; }
+.mappreview .zooRow { margin-bottom: 0; }
+.mappreview > img { display: block; max-width: 100%; max-height: calc(var(--vh, 1vh) * 62); margin: 0 auto; border-radius: 8px; }
 /* phones: the project panels are columns (the card strip of a project fills the width, readable) and the card preview is a thumbnail in a corner */
 @media (max-width: 800px) {
   .projpanel { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; padding: .35rem; }
@@ -958,12 +1018,3 @@ body.viewer .lobby a { color: #7a3b00; font-weight: 600; }
 
 /* a step of a live game can have several lines of log (BGA words, one line per event) */
 .current, .moves li { white-space: pre-line; }
-
-/* the tracker on the right is part of the page and scrolls with it, whatever the height of the window (below 1100 px wide it stays a drawer) */
-@media (min-width: 1101px) {
-  .layout { grid-template-columns: minmax(0, 1fr) 19rem; }
-  aside { position: static !important; transform: none !important; top: auto; width: auto; height: auto !important; max-height: none !important; overflow: visible !important; z-index: auto;
-          display: block !important; padding: 0; background: none; border: 0; box-shadow: none; }
-  aside .moves { max-height: none; }
-  .asidetoggle { display: none !important; }
-}
