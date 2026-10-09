@@ -21,6 +21,25 @@ import { initPlay } from './play.js';
 import { frameKind, frameState, frameText } from './frames.js';
 
 
+// Redrawing keeps what did not change: the parts of a freshly drawn zone whose markup equals the one on show are put back as they were (the old elements, their pictures already
+// loaded), so only the changed zones are replaced (and flash). Used in the replay; a fork / sandbox / live game still replaces everything, because the handlers of its elements
+// close over the legal actions of the moment.
+const markup = (n) => (n.nodeType === 1 ? n.outerHTML.replace(/mt\d+/g, 'mt') : n.textContent);          // (the ids of the clip paths count up with every drawing)
+function reconcile(old, fresh) {
+  if (old.nodeType !== fresh.nodeType) return fresh;
+  if (markup(old) === markup(fresh)) return old;
+  if (old.nodeType === 1 && old.tagName === fresh.tagName && old.childNodes.length && fresh.childNodes.length) {
+    const a = [...old.childNodes], b = [...fresh.childNodes];
+    b.forEach((n, i) => { if (a[i]) { const keep = reconcile(a[i], n); if (keep !== n) n.replaceWith(keep); } });
+  }
+  return fresh;
+}
+function redraw(root, draw) {
+  const old = FORK || SANDBOX ? [] : [...root.childNodes];
+  draw();
+  if (old.length) [...root.childNodes].forEach((n, i) => { if (old[i]) { const keep = reconcile(old[i], n); if (keep !== n) n.replaceWith(keep); } });
+}
+
 export function render() {
   const scrollY = window.scrollY, scrollX = window.scrollX;       // rebuilding the boards must not move the page
   const s = S.replay.steps[S.step], st = povState(frameState());
@@ -43,11 +62,11 @@ export function render() {
   // made the whole page flicker with every frame. A fork / sandbox / live game draws every time (what is selected or clicked changes the boards).
   const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov;
   if (!same) {
-    renderShared(st);
-    sidePanel(st);
+    redraw($('shared'), () => renderShared(st));
+    redraw($('side'), () => sidePanel(st));
     const zoos = $('zoos');
-    zoos.replaceChildren(renderZoo(st, 0), renderZoo(st, 1));
-    renderDock(st);
+    redraw(zoos, () => zoos.replaceChildren(renderZoo(st, 0), renderZoo(st, 1)));
+    if ($('dock')) redraw($('dock'), () => renderDock(st)); else renderDock(st);
     S.lastBoard = { st, pov: S.pov };
   }
   if (FORK) {
