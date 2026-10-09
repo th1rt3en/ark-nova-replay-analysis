@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live game planning</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  body.planning { max-width: 78rem; margin: 1.5rem auto; }
+  .tabs { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 .5rem; align-items: center; }
+  .tabs button, .tools button { background: transparent; color: var(--fg); border-color: var(--border); }
+  .tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .tools { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .5rem 0 1rem; }
+  .progress { margin-left: auto; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th { text-align: left; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); padding: .35rem .5rem; position: sticky; top: 0; background: var(--bg); }
+  td { padding: .45rem .5rem; border-top: 1px solid var(--border); vertical-align: top; }
+  tr.group td { background: color-mix(in srgb, var(--fg) 6%, transparent); font-weight: 700; border-top: 2px solid var(--border); }
+  td.what b { display: block; }
+  td.what span { color: var(--muted); font-size: .85rem; }
+  td.sugg { white-space: nowrap; }
+  .chip { display: inline-block; padding: .05rem .5rem; border-radius: 999px; border: 1px solid var(--border); font-size: .8rem; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); }
+  .why { display: block; color: var(--muted); font-size: .8rem; max-width: 17rem; white-space: normal; margin-top: .15rem; }
+  select, input.note { font: inherit; padding: .35rem .4rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: inherit; }
+  input.note { width: 100%; min-width: 9rem; }
+  tr.done td.dec select { border-color: var(--accent); }
+  tr.todo td.dec select { border-color: var(--err); }
+  #status { color: var(--muted); font-size: .85rem; }
+  .legend { color: var(--muted); font-size: .85rem; margin: .25rem 0 1rem; }
+  .legend b { color: var(--fg); }
+</style>
+</head>
+<body class="planning">
+<h1>Live game planning</h1>
+<p class="muted">Two sheets for <code>docs/live_game_plan.md</code>. Each row has a <b>suggestion</b> (click it to take it) and your <b>decision</b>. Changes are saved as you go
+  (to <code>data_manual/planning/*.json</code> when this page is served by <code>scripts/dev_server.py</code>, else in this browser, with a download button).</p>
+<div class="tabs" role="tablist">
+  <button id="tab-visibility" role="tab" class="on">What each player may see</button>
+  <button id="tab-reversibility" role="tab">What undo may take back</button>
+  <span id="status" role="status"></span>
+</div>
+<div class="legend" id="legend"></div>
+<div class="tools">
+  <button id="onlyTodo" type="button">Show only undecided</button>
+  <button id="acceptAll" type="button" title="Take the suggestion for every row that has no decision yet">Accept all suggestions</button>
+  <button id="download" type="button">Download JSON</button>
+  <span class="progress" id="progress"></span>
+</div>
+<table>
+  <thead><tr><th style="width:30%">Item</th><th style="width:22%">Suggestion</th><th style="width:20%">Decision</th><th>Note</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<script>
+const SHEETS = ['visibility', 'reversibility'];
+const data = {};
+let current = 'visibility', onlyTodo = false, saveTimers = {}, serverSave = true;
+const $ = (id) => document.getElementById(id);
+const make = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+
+async function load(name) {
+  let res = await fetch('/api/dev/planning/' + name).catch(() => null);
+  if (!res || !res.ok) { serverSave = false; res = await fetch('/planning/' + name + '.json').catch(() => null); }
+  const sheet = res && res.ok ? await res.json() : null;
+  if (!sheet) throw new Error('could not load the ' + name + ' sheet (open this page through scripts/dev_server.py)');
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem('planning:' + name) || '{}'); } catch (e) { /* no storage */ }
+  if (!serverSave) for (const it of sheet.items) if (local[it.id]) { it.decision = local[it.id].decision; it.note = local[it.id].note; }
+  data[name] = sheet;
+}
+
+function persist(name) {
+  const sheet = data[name];
+  if (serverSave) {
+    clearTimeout(saveTimers[name]);
+    $('status').textContent = 'saving...';
+    saveTimers[name] = setTimeout(async () => {
+      try {
+        const r = await fetch('/api/dev/planning/' + name, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sheet) });
+        $('status').textContent = r.ok ? 'saved to data_manual/planning/' + name + '.json' : 'could not save (' + r.status + ')';
+      } catch (e) { $('status').textContent = 'could not save'; }
+    }, 400);
+  } else {
+    const map = {};
+    for (const it of sheet.items) map[it.id] = { decision: it.decision, note: it.note };
+    try { localStorage.setItem('planning:' + name, JSON.stringify(map)); $('status').textContent = 'saved in this browser'; } catch (e) { $('status').textContent = 'not saved'; }
+  }
+}
+
+function render() {
+  const sheet = data[current];
+  for (const n of SHEETS) $('tab-' + n).classList.toggle('on', n === current);
+  $('legend').replaceChildren();
+  for (const [k, v] of Object.entries(sheet.choices)) {
+    const line = make('div');
+    line.append(make('b', '', k), document.createTextNode(' - ' + v));
+    $('legend').append(line);
+  }
+  const rows = $('rows');
+  rows.replaceChildren();
+  let group = null;
+  const todo = sheet.items.filter((i) => !i.decision).length;
+  $('progress').textContent = (sheet.items.length - todo) + ' / ' + sheet.items.length + ' decided';
+  $('onlyTodo').textContent = onlyTodo ? 'Show all rows' : 'Show only undecided';
+  for (const it of sheet.items) {
+    if (onlyTodo && it.decision) continue;
+    if (it.group !== group) {
+      group = it.group;
+      const g = make('tr', 'group'), td = make('td', '', group);
+      td.colSpan = 4; g.append(td); rows.append(g);
+    }
+    const tr = make('tr', it.decision ? 'done' : 'todo');
+    const what = make('td', 'what');
+    what.append(make('b', '', it.label), make('span', '', it.description || ''));
+    const sug = make('td', 'sugg');
+    const chip = make('span', 'chip', it.suggested);
+    chip.title = sheet.choices[it.suggested] || '';
+    chip.onclick = () => { it.decision = it.suggested; persist(current); render(); };
+    sug.append(chip);
+    if (it.why) sug.append(make('span', 'why', it.why));
+    const dec = make('td', 'dec');
+    const sel = make('select');
+    sel.append(new Option('- choose -', ''));
+    for (const [k, v] of Object.entries(sheet.choices)) { const o = new Option(k, k); o.title = v; sel.append(o); }
+    sel.value = it.decision || '';
+    sel.onchange = () => { it.decision = sel.value || null; persist(current); const keep = window.scrollY; render(); window.scrollTo(0, keep); };
+    dec.append(sel);
+    const noteTd = make('td');
+    const inp = make('input', 'note');
+    inp.type = 'text'; inp.value = it.note || ''; inp.placeholder = 'note';
+    inp.oninput = () => { it.note = inp.value; persist(current); };
+    noteTd.append(inp);
+    tr.append(what, sug, dec, noteTd);
+    rows.append(tr);
+  }
+}
+
+for (const n of SHEETS) $('tab-' + n).onclick = () => { current = n; render(); };
+$('onlyTodo').onclick = () => { onlyTodo = !onlyTodo; render(); };
+$('acceptAll').onclick = () => {
+  if (!confirm('Take the suggestion for every undecided row of this sheet?')) return;
+  for (const it of data[current].items) if (!it.decision) it.decision = it.suggested;
+  persist(current); render();
+};
+$('download').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data[current], null, 4) + '\n'], { type: 'application/json' }));
+  a.download = current + '.json'; a.click();
+};
+Promise.all(SHEETS.map(load)).then(render).catch((e) => { $('status').textContent = e.message; });
+</script>
+</body>
+</html>
