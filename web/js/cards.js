@@ -99,13 +99,18 @@ function dragRow(row, zone, shown, nodes) {
         const dx = (cx - startX) / k - (node.offsetLeft - home.left), dy = (cy - startY) / k - (node.offsetTop - home.top);
         node.style.setProperty('--dx', dx.toFixed(1) + 'px'); node.style.setProperty('--dy', dy.toFixed(1) + 'px');
       };
-      let cx = startX, cy = startY;
+      let cx = startX, cy = startY, area = null;
       const move = (ev) => {
         cx = ev.clientX; cy = ev.clientY;
         if (!moved) {
           if (Math.hypot(cx - startX, cy - startY) < 6) return;       // (a click, not a drag)
           moved = true; node.classList.add('dragging'); hidePreview();
-          try { node.setPointerCapture(e.pointerId); } catch (x) { /* already released */ }
+          document.body.classList.add('card-dragging');               // (keeps the raised hand up while the pointer is outside its hit box)
+          area = row.getBoundingClientRect();
+        }
+        if (area) {                                                   // (the card cannot leave the neighbourhood of the hand: the pointer is held inside it)
+          cx = Math.min(Math.max(cx, area.left - 60 * k), area.right + 60 * k);
+          cy = Math.min(Math.max(cy, area.top - 90 * k), area.bottom + 40 * k);
         }
         for (const other of [...row.children]) {                      // (the neighbour whose middle the pointer has passed swaps places with the card)
           if (other === node || !other.dataset || !other.dataset.key) continue;
@@ -119,9 +124,12 @@ function dragRow(row, zone, shown, nodes) {
         }
         place();
       };
+      let done = false;
       const up = () => {
-        node.removeEventListener('pointermove', move); node.removeEventListener('pointerup', up); node.removeEventListener('pointercancel', up);
+        if (done) return; done = true;
+        window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('blur', up);
         if (!moved) return;
+        document.body.classList.remove('card-dragging');
         node.classList.remove('dragging'); node.style.removeProperty('--dx'); node.style.removeProperty('--dy');
         node.addEventListener('click', (ev) => ev.stopImmediatePropagation(), { capture: true, once: true });          // (the click that ends a drag does not mark the card)
         const live = [...row.children].filter((n) => n.dataset && n.dataset.key);
@@ -134,7 +142,7 @@ function dragRow(row, zone, shown, nodes) {
         userOrder[zone] = keys;
         document.dispatchEvent(new Event('cardorder'));
       };
-      node.addEventListener('pointermove', move); node.addEventListener('pointerup', up); node.addEventListener('pointercancel', up);
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up); window.addEventListener('blur', up);       // (on the window, not the card: a fast move leaves the card behind and pointer capture is not reliable)
     });
   });
 }

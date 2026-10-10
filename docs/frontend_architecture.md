@@ -29,7 +29,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `icons.js` | icon/sprite lookup, action icons, worker icons, `pic`, `moneyTile` |
 | `pov.js` | point of view (both players / seat 0 / seat 1), what is hidden, the eye toggles (`toggleEye`, remembered per table in localStorage; the sandbox, which counts as FORK, only reads the `pov` URL parameter), see changelog.md section 8.8 |
 | `load.js` | `fetchReplay` |
-| `cards.js` | card faces (images from `web/cards`, made by `scripts/build_cards.py`, see changelog 14), preview popup (the 745 x 1040 `web/cards_large` image, chosen by `largeOf`), changed-card flash, ghost cards (`zoneNew`), session-only drag-to-reorder of hand / endgame cards (`orderedKeys`, `dragRow`) |
+| `cards.js` | card faces (images from `web/cards`, made by `scripts/build_cards.py`, see changelog 14), preview popup (the 745 x 1040 `web/cards_large` image, chosen by `largeOf`), changed-card flash, ghost cards (`zoneNew`), session-only drag-to-reorder of hand / endgame cards (`orderedKeys`, `dragRow`) Hand drag (`dragRow()`): pointer events with move / up listeners on `window` (not the card: capture is unreliable), pointer clamped near the hand, `body.card-dragging` keeps the hand raised. |
 | `board.js` | hex maths, map cells, building sprites, `legalPlacement`, `zooBoard` |
 | `association.js` | association board / strip, conservation bonus panel |
 | `projects.js` | conservation project panel (BGA-like green strips from `web/project_strips`, see changelog 15) and markers |

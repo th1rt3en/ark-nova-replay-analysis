@@ -235,7 +235,7 @@ body.viewer .dockbtn.on .dockn { color: var(--paper); }
 body.viewer .dockfold { position: absolute; left: 0; bottom: 100%; width: 30px; height: 30px; margin: 0 0 8px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); color: var(--ink); font-size: 12px; cursor: pointer; pointer-events: auto; display: none; }
 body.viewer .dockpanel { position: absolute; left: 150px; top: calc(18px * var(--hk)); z-index: 2; width: calc(560px * var(--hk)); max-width: none; max-height: none; overflow: visible; padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; pointer-events: auto;
   transition: transform .35s cubic-bezier(.2, .9, .2, 1) .08s; }
-body.viewer .dock:hover .dockpanel { transform: translateY(calc(-82px * var(--hk))); transition-delay: 0s; }
+body.viewer .dock:hover .dockpanel, body.viewer.card-dragging .dockpanel { transform: translateY(calc(-82px * var(--hk))); transition-delay: 0s; }
 body.viewer .dockhead { display: none; }
 /* The fan: --amax = the angle between two neighbouring cards, --atot = the most the whole fan may turn (so a big hand gets smaller steps), --sp = the distance of two neighbouring cards (the rotation about the common
    pivot adds 321px * sin(angle) of it, the overlap supplies the rest). The cards lie on a circle: every card turns about one pivot far below the cards, the ends drop by themselves. */
