@@ -1308,5 +1308,5 @@ In the `handmode` listener: switching to the fan from an **unfolded** tray makes
 
 ## 33. Timeline: dotted line without a circle, filled progress, draggable head
 - The dotted line that stands in for a switched-off timeline (`.tldeco`) has no circle any more.
-- The timeline fills up: `.tlfill` (first child of `#timeline`, under the round marks) is as wide as the head's position (`updateTimeline()`), colour `var(--tlfill, var(--sun))` (parkposter.css; the default is sun orange until a colour is chosen).
+- The timeline fills up: `.tlfill` (first child of `#timeline`, under the round marks) is as wide as the head's position (`updateTimeline()`), a gradient from sun orange to gold that stretches with the fill, so it is gold at the head (`var(--tlfill, ...)` in parkposter.css).
 - The head can be dragged: `buildTimeline()` (playback.js) uses pointer events on the whole bar (pointer capture, `touch-action: none`): a press goes to the step under the pointer, moving goes on to the steps under the pointer and the board follows while dragging (at most one `go()` per animation frame); a running autoplay is paused when the bar is pressed. The head has a wider invisible grab area (`.tlhead::before`) and a grab cursor. The old `onclick` is replaced by the press.

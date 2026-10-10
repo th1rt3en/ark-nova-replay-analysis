@@ -134,7 +134,7 @@ body.viewer .timeline::before { display: none; }
 body.viewer .tlseg { border-left: 3px solid var(--ink); }
 body.viewer .tlseg:first-child { border-left: 0; }
 body.viewer .tlseg:hover { background: rgba(238, 108, 43, .25); }
-body.viewer .tlfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: var(--tlfill, var(--sun)); pointer-events: none; }
+body.viewer .tlfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: var(--tlfill, linear-gradient(90deg, var(--sun), var(--gold))); pointer-events: none; }
 body.viewer .tlhead { top: -6px; bottom: -6px; width: 8px; margin-left: -4px; border-radius: 3px; background: var(--ink); border: 2px solid var(--paper); box-shadow: none; pointer-events: auto; cursor: grab; }
 body.viewer .timeline.dragging, body.viewer .timeline.dragging .tlhead { cursor: grabbing; }
 
