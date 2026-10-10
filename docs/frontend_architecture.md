@@ -44,7 +44,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `layout.js` | `fitScale` (page zoom), `fitDisplay`; registers the resize listener |
 | `frames.js` | the frames of a replay step (step text, turn-end gate, decision), see changelog.md section 9 |
 | `notips.js` | one rule that removes tooltips from pictures (images, SVG, project panel, image-only elements), see changelog.md section 7 |
-| `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (now only resets the zoom of `#side`) |
+| `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (sets `--sbz`, the scale of the sidebar content: 1 at most, 0.91 at least, see changelog 42) |
 | `playback.js` | autoplay, speed, timeline (shown or hidden by the settings pop-up, changelog.md 8.10), `go(step, frame)`, `stepBy`, move list |
 | `settings.js` | settings pop-up (autoplay speed, timeline row on/off; localStorage `settings`), changelog.md 8.10 |
 | `sandbox.js` | sandbox lobby/setup tools |

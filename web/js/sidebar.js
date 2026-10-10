@@ -22,6 +22,7 @@ export function setupSidebar() {
   let saved = 'control';
   try { saved = localStorage.getItem(TAB_KEY) || 'control'; } catch (e) { /* private window */ }
   setTab(saved);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSidebar);
 }
 // Keep the line of the step on show inside the visible part of the log (the list only, never the page). `center`: put it in the middle (after switching to the log).
 export function followLog(center) {
@@ -31,9 +32,18 @@ export function followLog(center) {
   else if (li.offsetTop < list.scrollTop) list.scrollTop = li.offsetTop;
   else if (li.offsetTop + li.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = li.offsetTop + li.offsetHeight - list.clientHeight;
 }
-// The sidebar needs no fitting: the control panel and the info boxes keep their natural size (320 px wide); a window that is too low for them makes the control pane scroll
-// (thin scrollbar). Kept as a function because layout.js, main.js and settings.js call it.
+// Scale of the sidebar's content (the switch's width, the control panel and the info boxes): 1 = 320 px wide, natural size. When the window is too low for the control pane the
+// content is scaled down uniformly (CSS zoom through --sbz, set on the aside) so that at 1920 x 1080 (about 0.91) everything fits without a scrollbar; it is never scaled below
+// MIN_ZOOM, so a lower window keeps the proportions and widths of that full-screen look and the pane just scrolls. A higher window shows the natural size (1).
+// Called after every render, resize, tab switch and when the fonts are loaded (layout.js, main.js, settings.js).
+const MIN_ZOOM = 0.91, PANE_PAD_BOTTOM = 10;
 export function fitSidebar() {
-  const side = $('side');
+  const aside = document.querySelector('aside.sidebar'), pane = $('paneControl'), side = $('side');
   if (side) side.style.zoom = '';
+  if (!aside || !pane) return;
+  aside.style.setProperty('--sbz', '1');
+  if (pane.hidden) return;
+  const natural = pane.scrollHeight - PANE_PAD_BOTTOM, room = pane.clientHeight - PANE_PAD_BOTTOM;
+  const z = natural > room && room > 0 ? Math.max(MIN_ZOOM, room / natural) : 1;
+  aside.style.setProperty('--sbz', String(Math.floor(z * 1000) / 1000));
 }

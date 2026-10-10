@@ -125,6 +125,10 @@ body.viewer .sbtab:focus-visible { outline: 3px solid var(--paper); outline-offs
 body.viewer .sbpane { gap: 10px; }
 body.viewer #paneControl { overflow-x: hidden; overflow-y: auto; padding: 0 8px 10px 0; margin-right: -8px; scrollbar-width: thin; scrollbar-color: rgba(248, 237, 203, .5) transparent; }
 body.viewer .sidebar .side { width: auto; margin: 0; display: grid; gap: 10px; flex: 0 0 auto; }
+@media (min-width: 900px) {          /* fitSidebar(): the switch, the control panel and the info boxes are scaled by --sbz together and all end up the same width, right-aligned */
+  body.viewer .sbtabs { width: calc(var(--sidebar-w) * var(--sbz, 1)); margin-left: auto; }
+  body.viewer #paneControl > .bar, body.viewer #paneControl > .side { zoom: var(--sbz, 1); width: var(--sidebar-w); margin-left: auto; box-sizing: border-box; }
+}
 
 /* control panel: the buttons, the line (a decoration that becomes the timeline), then move number | settings | fork */
 body.viewer .sidebar .bar { position: static; flex: 0 0 auto; display: grid; gap: 8px; padding: 10px 12px 12px; background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); color: var(--ink); }
