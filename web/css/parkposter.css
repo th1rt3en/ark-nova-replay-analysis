@@ -154,7 +154,13 @@ body.viewer .sidebar .controls .jump { order: 1; flex: 1 1 0; min-width: 0; disp
   font: 600 17px 'Barlow Condensed', system-ui, sans-serif; white-space: nowrap; }
 body.viewer .sidebar .controls .jump input { flex: 1 1 0; min-width: 0; width: 3rem; padding: 0; border: 0; background: transparent; color: var(--ink); font: 700 22px 'Barlow Condensed', system-ui, sans-serif; box-shadow: none; -moz-appearance: textfield; }
 body.viewer .sidebar .controls .jump input:focus { outline: 0; }
-body.viewer .sidebar .controls .forkbtn { order: 3; width: auto; height: auto; border-radius: 999px; padding: 9px 16px; background: var(--teal); color: var(--paper); border: 3px solid var(--ink); box-shadow: none; font: 400 15px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .sidebar .controls .jump input::-webkit-inner-spin-button, body.viewer .sidebar .controls .jump input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* replay: Move | settings | ? | Fork, Move as wide as Fork (92 px), 8 px gaps fill the row exactly */
+body.viewer .sidebar .controls .jump { height: 40px; box-sizing: border-box; }
+body.viewer .sidebar .controls:has(.forkbtn) .jump { flex: none; width: 92px; justify-content: center; }
+body.viewer .sidebar .controls:has(.forkbtn) .jump input { flex: none; width: 3ch; text-align: left; }
+body.viewer .sidebar .controls .extrabtn { font: 400 21px 'Bowlby One', system-ui, sans-serif; padding-top: 2px; }
+body.viewer .sidebar .controls .forkbtn { order: 3; width: 92px; height: 40px; box-sizing: border-box; display: grid; place-items: center; border-radius: 999px; padding: 0; background: var(--teal); color: var(--paper); border: 3px solid var(--ink); box-shadow: none; font: 400 15px 'Bowlby One', system-ui, sans-serif; }
 body.viewer .sidebar .controls .forkbtn:hover:not(:disabled) { background: var(--teal2); transform: none; }
 body.viewer .sidebar .controls .forkbtn:disabled { opacity: .45; }
 body.viewer .sidebar .controls2 { gap: 8px; }
@@ -167,8 +173,8 @@ body.viewer .sidebar .timeline { flex: none; width: auto; max-width: none; heigh
 body.viewer .timeline::before { display: none; }
 body.viewer .tlseg { border-left: 3px solid var(--ink); }
 body.viewer .tlseg:first-child { border-left: 0; }
-body.viewer .tlseg:hover { background: rgba(238, 108, 43, .25); }
-body.viewer .tlfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: var(--tlfill, linear-gradient(90deg, var(--sun), var(--gold))); pointer-events: none; }
+body.viewer .tlseg:hover { background: rgba(224, 123, 176, .25); }
+body.viewer .tlfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: var(--tlfill, linear-gradient(90deg, #6B3FA0, #E07BB0)); pointer-events: none; }
 body.viewer .tlhead { top: -6px; bottom: -6px; width: 8px; margin-left: -4px; border-radius: 3px; background: var(--ink); border: 2px solid var(--paper); box-shadow: none; pointer-events: auto; cursor: grab; }
 body.viewer .timeline.dragging, body.viewer .timeline.dragging .tlhead { cursor: grabbing; }
 
