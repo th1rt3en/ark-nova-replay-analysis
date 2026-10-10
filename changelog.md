@@ -1281,5 +1281,8 @@ When the hand is shown as a fan, it no longer blinks in. `fanIntro(row, handCoun
 - Only once per appearance (`fanDone`, reset by the `handmode` event). `renderDock` rebuilds the fan on every redraw, so a running intro continues with a negative `delay` (elapsed time) instead of restarting; earlier intro animations on the same card are cancelled first (only plain `Animation`s, CSS transitions are left alone).
 - Not gated by `prefers-reduced-motion` (like the tray slide-up; Windows with animation effects off reports it, and the intro would never show).
 
-## 27. No green flash for arriving cards
-`.card.card-new { animation: none; }` (end of `parkposter.css`): cards that arrive in a zone (hand, zoo, display) no longer get the green border flash of `replay.css`. The red fade of a card that leaves (`card-gone`), the project strips and the tokens are unchanged.
+## 27. No arrival / departure animations (for now)
+All the arrival and departure effects of the zones are off until new ones are designed:
+- `.card.card-new`, `.projline.card-new`, `.btoken.card-new` have `animation: none` and the green frame of new partner zoos / universities / buildings (`.tok-new .frame`) is hidden (end of `parkposter.css`).
+- Departed cards, bonus tokens, buildings and association tokens no longer fade away in red: `zoneNew` (cards.js) does not fill `.gone` any more, so no ghost (`card-gone`, `tok-gone`) is drawn anywhere. To bring them back, restore the `test.gone.push(...)` in `zoneNew`.
+- The number flashes of the player tracker (`flash-up` / `flash-down`) are not touched.

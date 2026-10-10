@@ -61,7 +61,7 @@ export function zoneNew(zone, keys) {
   test.isNew = (k) => { seen[k] = (seen[k] || 0) + 1; return !!prev && seen[k] > (count[k] || 0); };
   (prev || []).forEach((k, index) => {
     if (!k) return;
-    if (left[k] > 0) left[k]--; else test.gone.push({ key: k, index });
+    if (left[k] > 0) left[k]--; /* else: a card that left stays gone (no ghost / fade for now) */
   });
   return test;
 }
