@@ -66,3 +66,18 @@ dialog.acctdlg::backdrop { background: rgba(0, 0, 0, .55); }
 .acctwarn { margin: .3rem 0 0; padding: .6rem .8rem; border-radius: 6px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); font-size: .9rem; }
 .acctcode { font: 700 1.25rem ui-monospace, Consolas, monospace; letter-spacing: .05em; padding: .8rem; text-align: center; border: 1px dashed var(--accent); border-radius: 8px; word-break: break-all; user-select: all; }
 .acctlinks { margin: .9rem 0 0; }
+
+/* the leaderboards of the mini games hub (js/minigames/hub.js): one tab per game */
+.lb { margin-top: 2rem; }
+.lb h2 { margin: 0 0 .2rem; font-size: 1.15rem; }
+.lbtabs { display: flex; gap: .3rem; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-top: .8rem; }
+.lbtab { background: transparent; color: var(--muted); border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; padding: .45rem .9rem; cursor: pointer; font: inherit; font-weight: 600; }
+.lbtab:hover { color: var(--fg); }
+.lbtab.on { color: var(--fg); border-color: var(--border); background: color-mix(in srgb, var(--fg) 5%, var(--bg)); margin-bottom: -1px; border-bottom: 1px solid color-mix(in srgb, var(--fg) 5%, var(--bg)); }
+.lbpanel { padding: 1rem 0; }
+.lbgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.5rem; }
+.lbgrid h3 { margin: 0 0 .4rem; font-size: 1rem; }
+.lbgrid table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.lbgrid th, .lbgrid td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--border); }
+.lbgrid th:last-child, .lbgrid td:last-child { text-align: right; }
+.lbgrid th { color: var(--muted); font-weight: 600; }

@@ -27,12 +27,13 @@ export async function api(path, body) {
 const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
 
 /** The monthly and all-time leaderboards of a game, as two boxes in `into` (a `.pz-board` grid). */
-export function renderBoards(into, key, unitLabel = 'Points') {
+export function renderBoards(into, key, unitLabel = null) {
   for (const [period, title] of [['month', 'This month'], ['all', 'All time']]) {
     const box = mk('div'); box.append(mk('h3', null, 'Leaderboard: ' + title)); into.append(box);
     api(`/${key}/leaderboard?period=${period}`).then((b) => {
       if (!b.rows.length) { box.append(mk('p', 'muted', b.min_plays > 1 ? `Nobody is listed yet (a player needs ${b.min_plays} plays). Log in and play to appear here.` : 'Nobody is listed yet. Log in and play to appear here.')); return; }
-      const t = mk('table'); t.innerHTML = `<tr><th>#</th><th>Player</th><th>Plays</th><th>${unitLabel}</th></tr>`;
+      const unit = unitLabel || (b.unit ? b.unit[0].toUpperCase() + b.unit.slice(1) : 'Score');
+      const t = mk('table'); t.innerHTML = `<tr><th>#</th><th>Player</th><th>Plays</th><th>${unit}</th></tr>`;
       for (const r of b.rows.slice(0, 10)) { const tr = mk('tr'); for (const v of [r.rank, r.name, r.plays, r.value]) tr.append(mk('td', null, String(v))); t.append(tr); }
       box.append(t);
     }).catch(() => box.append(mk('p', 'muted', 'The leaderboard could not be loaded.')));
