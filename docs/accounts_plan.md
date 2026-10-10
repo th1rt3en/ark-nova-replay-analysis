@@ -107,7 +107,7 @@ Two daily mini games to start, more later: **Daily starting hand** and **Who's a
 
 - **One folder per game.** Server code in `src/ark_nova/minigames/<key>/`, page code in `web/minigames/<key>/`, tests in `tests/minigames/<key>/`. A game never imports another game. A test fails if it does.
 - **A small platform in between** (`src/ark_nova/minigames/platform/`): the registry, the daily rollover, the puzzle and submission stores, the leaderboard queries, the shared redaction checks and the shared page shell (login prompt, anonymous choice, leaderboard widget). The platform only knows games through the contract below.
-- **A manifest decides what exists:** `data_manual/minigames.json`, a list of `{key, enabled, title, blurb}`. Disabled or missing means: no routes (404), no tile on the hub, no rollover. Removing a game is deleting its three folders and its manifest line. `scripts/minigames_purge.py <key>` deletes its stored puzzles, submissions and aggregates (every stored row carries `game_key`).
+- **A manifest decides what exists:** `data_manual/minigames.json`, a list of `{key, enabled, title, blurb, allow_past}`. `allow_past` is false by default; Who's ahead sets it to true (see the calendar below). Disabled or missing means: no routes (404), no tile on the hub, no rollover. Removing a game is deleting its three folders and its manifest line. `scripts/minigames_purge.py <key>` deletes its stored puzzles, submissions and aggregates (every stored row carries `game_key`).
 - **The contract** (a Python `Protocol`; every game implements all of it):
 
 | Method | What it does |
@@ -121,10 +121,10 @@ Two daily mini games to start, more later: **Daily starting hand** and **Who's a
 | `day_stats(submissions)` | The community numbers of the day (pick rates, average prediction). |
 
 - **Shared stores, game-private contents.** They live in the same D1 database as the accounts, reached through the same signed Worker routes. Tables are keyed by `game_key` and keep the game's own data in JSON columns, so a new game needs no migration:
-  - `minigame_puzzles(game_key, day, source_ref, public, answer, created_at)`, unique on (game_key, day). `source_ref` is the BGA table id and is never sent to a browser.
+  - `minigame_puzzles(game_key, day, source_ref, public, answer, created_at)`, unique on (game_key, day). `source_ref` is the BGA table id. It is not sent to a browser until the player has submitted: it is part of the reveal.
   - `minigame_used_sources(game_key, source_ref)`, unique. This is the "never picked before" memory, kept per game.
   - `minigame_submissions(id, game_key, day, account_id, anon_id, payload, score, detail, submitted_at)`, unique on (game_key, day, account_id) and on (game_key, day, anon_id).
-- **Tested alone.** The platform ships fakes: `FakeClock`, `FakeSourceIndex` (a list of candidate tables), `FakeLogs`, in-memory stores. `tests/minigames/test_contract.py` runs one contract suite against every registered game. It checks that `public` never holds a name, player id, table id or timestamp, that the answer is absent before submission, that a second submission is refused, that scoring is deterministic, and that a game with a failing rollover does not stop the others. A "remove one game" test checks the other games still work.
+- **Tested alone.** The platform ships fakes: `FakeClock`, `FakeSourceIndex` (a list of candidate tables), `FakeLogs`, in-memory stores. `tests/minigames/test_contract.py` runs one contract suite against every registered game. It checks that `public` never holds a name, player id, table id or timestamp, that the answer and the table id are absent before submission and present in the reveal, that a second submission is refused, that a past day is refused unless the game has `allow_past`, and accepted once when it has, that scoring is deterministic, and that a game with a failing rollover does not stop the others. A "remove one game" test checks the other games still work.
 - **One viewer mode, no copies.** Both games use the replay viewer through a `window.MINIGAME_MODE` flag (like `PLAY`, `FORK`, `SANDBOX`). The per-game page passes a small config (`redactNames`, `showElo`, `hidePovSwitch`, `noStepping`, `hideLog`) and one state object. The viewer code is not forked.
 
 ### Daily rollover and picking the table
@@ -138,7 +138,7 @@ Two daily mini games to start, more later: **Daily starting hand** and **Who's a
 
 - One state object for one moment of the game. Not the replay, no step list, no later steps.
 - No player names, ids, table id, date or log lines. The Log tab is hidden or replaced by the puzzle instructions. Players are shown as "Player 1" and "Player 2" with their Elo.
-- The original player's choices and the final result only come back in the reply to a valid submission.
+- The original player's choices, the final result and the **BGA table id** only come back in the reply to a valid submission. Showing the table id earlier would let a player look the game up.
 - Card images are served by card key, so image URLs do not leak the table.
 
 ### Game 1: Daily starting hand (`daily_hand`)
@@ -146,7 +146,7 @@ Two daily mini games to start, more later: **Daily starting hand** and **Who's a
 - **Puzzle:** a random seat of the table. The state is the moment just before that player's initial selection: their dealt hand (8 cards, 9 on map 14 where the person sponsor is found right after the deal), their two endgame cards, their map and everything public. The opponent's hand is not shown.
 - **Task:** choose the cards to keep: 4 (5 on map 14). The count comes from the log (hand size minus the 4 discards), not from a constant. The player confirms once.
 - **Not logged in:** show "You can create an account to save your results and compete in a monthly leaderboard, or submit your prediction anonymously." Anonymous submission is allowed.
-- **Reveal:** the original player's selection, with each match marked. **Score = the number of matching cards** (0 to 4, or 0 to 5).
+- **Reveal:** the original player's selection, with each match marked, and the **BGA table id** the puzzle came from (see "The table id in the reveal"). **Score = the number of matching cards** (0 to 4, or 0 to 5).
 - **Pick rates:** for every card in the hand, the share of everyone who played that day so far (anonymous players included) who kept it. Shown after submitting, with the count of players.
 - **Leaderboard metric:** the sum of points, higher is better.
 
@@ -163,16 +163,17 @@ brier = (p1 - o1)^2 + (p2 - o2)^2 + (pt - ot)^2        # 0 is perfect, 2 is the 
 ```
 
   A 50/50 guess with no tie scores 0.5 when someone wins. Lower is better.
-- **Reveal:** the real result and final scores, the player's Brier score, and the average prediction of that day.
+- **Reveal:** the real result and final scores, the player's Brier score, the average prediction of that puzzle, and the **BGA table id** (see "The table id in the reveal").
+- **Past issues:** every earlier puzzle can be played from a calendar (see "Past issues of Who's ahead"). Daily starting hand does not have this: it stays today only.
 - **Leaderboard metric:** the mean Brier score over the games played, lower is better, with a minimum number of plays to be listed (3 for the month, 10 for all time).
 
 ### Leaderboards
 
 - Each game has its own scores and its own two boards: **all time** and **current month**. Nothing is shared between games.
-- **The month is the UTC month of the puzzle's day** (`YYYY-MM`). The monthly board "resets" at exactly 00:00 UTC on the 1st because the month key changes. No reset job exists. Older months stay stored, so a "past months" page can be added.
+- **The month is the UTC month in which the submission is made** (`YYYY-MM`). For today's puzzle this is the puzzle's own month. A past issue played later counts in the month it is played, so a closed month never changes. The monthly board "resets" at exactly 00:00 UTC on the 1st because the month key changes. No reset job exists. Older months stay stored, so a "past months" page can be added.
 - Only logged-in accounts are ranked. Anonymous submissions are scored and shown to the player, and count in the day's community numbers, but are not on a leaderboard.
 - One submission per game per day for an account, and one per anonymous browser (an anonymous id cookie, so it can be bypassed; it is a convenience limit).
-- A submission is accepted only for the puzzle of the current UTC day, until 00:00 UTC.
+- A submission is accepted only for the puzzle of the current UTC day, until 00:00 UTC. The one exception is a game with `allow_past`, which also accepts any earlier day that has a puzzle.
 
 ### Routes and pages
 
@@ -180,11 +181,28 @@ brier = (p1 - o1)^2 + (p2 - o2)^2 + (pt - ot)^2        # 0 is perfect, 2 is the 
 |---|---|
 | `GET /api/minigames` | The enabled games and, for the caller, whether today's puzzle is played. |
 | `GET /api/minigames/{key}/today` | Today's `public` payload, or the player's own result if already played. |
-| `POST /api/minigames/{key}/submit` | One submission (account, or anonymous with `anon_id`). Returns the reveal. |
+| `GET /api/minigames/{key}/puzzle/{day}` | The same for one day (`YYYY-MM-DD`). Only for games with `allow_past`; for the others only today's day answers. |
+| `GET /api/minigames/{key}/days?month=YYYY-MM` | For the calendar: each day of the month that has a puzzle, with `played` and the caller's score. Only for games with `allow_past`. |
+| `POST /api/minigames/{key}/submit` | One submission for a `day` (account, or anonymous with `anon_id`). Returns the reveal. |
 | `GET /api/minigames/{key}/leaderboard?period=all\|month` | The board of that game. |
 | `POST /internal/minigames/rollover` | Signed, called by the cron trigger. |
 
 Pages: one **Mini games hub** (`web/minigames/index.html`), one page per game (`web/minigames/<key>.html`), and the shared shell (login prompt, anonymous choice, leaderboard). See "Finding the games" below.
+
+### The table id in the reveal
+
+- After a valid submission, both games show **the BGA table id** of the puzzle with two links: the table on BGA, and our own replay page for that table (`/replay.html?table=<id>`, which works because the picker only chooses tables we have a log for).
+- It is shown only in the reveal, never before, so nobody can look the game up first. For Who's ahead past issues, a player sees the table id only after submitting that issue too.
+- The table id is stored in `source_ref` and read by the reveal; no other part of the puzzle payload carries it.
+
+### Past issues of Who's ahead (calendar)
+
+- The game page has a **calendar**. Each day that has a puzzle is a selectable cell: played days show the player's Brier score, unplayed days are marked, days without a puzzle (before the game started, or a missed day) and future days are disabled. Today is selected by default.
+- It is generic, not special to this game: the platform's shell draws the calendar for any game whose manifest line has `allow_past: true`, from `GET /api/minigames/{key}/days`. Daily starting hand does not set the flag and shows no calendar.
+- A past issue is played exactly like today's. Same rules: one submission per player per day, anonymous play allowed, answer and table id revealed after the submission.
+- A past issue counts on the leaderboards like any other play (all time, and the month in which it is played).
+- Community numbers (the average prediction) are per puzzle and include every submission to it, whenever it was made.
+- Optional: `scripts/minigames_backfill.py whos_ahead --days 30` creates puzzles for earlier days, so a new game starts with a library instead of an empty calendar. It uses the same picker and the same "never picked before" memory.
 
 ### Finding the games: start page and hub
 
@@ -253,6 +271,7 @@ Pages: a login and signup dialog and a user menu in the site header (every page 
 
 - The `MiniGame` contract, the registry and manifest, the three shared tables, the rollover route and cron trigger with the lazy fallback, the shared redaction checks, the leaderboard queries, `scripts/minigames_purge.py`.
 - The shared shell (login prompt, anonymous choice, leaderboard widget) and the `MINIGAME_MODE` of the viewer.
+- The generic calendar widget and the `days` and `puzzle/{day}` routes for games with `allow_past`.
 - The "Mini games" card on the start page, the hub page built from `GET /api/minigames` (with the "More mini games coming soon" tile) and its test.
 - The fakes and the contract test suite, run against a tiny example game inside the tests.
 
@@ -260,13 +279,13 @@ Pages: a login and signup dialog and a user menu in the site header (every page 
 
 *Needs: M0. Touches only `minigames/daily_hand/` (server, page, tests, picker SQL).*
 
-- Build the puzzle from the replay builder's state before the initial selection of a random seat; pick-rate stats; scoring; the page.
+- Build the puzzle from the replay builder's state before the initial selection of a random seat; pick-rate stats; scoring; the page; the table id in the reveal.
 
 ### M2. Who's ahead (Medium)
 
 *Needs: M0. Touches only `minigames/whos_ahead/`.*
 
-- Build the two-player full-information state at the chosen moment; the percentage form; Brier scoring; the page.
+- Build the two-player full-information state at the chosen moment; the percentage form; Brier scoring; the page; `allow_past: true` and its calendar; the table id in the reveal.
 - M1 and M2 do not depend on each other and can be built and shipped in either order.
 
 ## Still open
@@ -282,5 +301,7 @@ Pages: a login and signup dialog and a user menu in the site header (every page 
 | Daily starting hand: does the original player's two endgame cards show too | Yes, they are part of what the original player saw. |
 | Can the same table be used by both games | Yes. "Never picked before" is kept per game. |
 | An anonymous result after the player logs in: attach it to the account or not | Not attached. Keep it simple; revisit if players ask. |
-| Past days: can players play an earlier day's puzzle | No, only the current UTC day. |
+| Past days: can players play an earlier day's puzzle | Who's ahead: yes, through the calendar. Daily starting hand: no, only the current UTC day. |
+| Past issues on the leaderboards | They count, in the month in which they are played. Alternative: keep past plays off the monthly board. |
+| Backfill past days of Who's ahead at launch | Yes, about 30 days, so the calendar is not empty. |
 | Custom domain | `engine.emufriends.pet` is attached to the Pages project; cookies are per host, so choose the final host before launch. |
