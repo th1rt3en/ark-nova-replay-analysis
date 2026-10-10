@@ -90,6 +90,7 @@ export function render() {
   list.querySelector('.on')?.classList.remove('on');
   const li = list.children[S.step];
   li.classList.add('on');
+  for (let i = 0; i < list.children.length; i++) list.children[i].hidden = i > S.step;       // (spoiler protection: the log only lists the moves up to the one on show)
   followLog();
   history.replaceState(null, '', '#' + S.step + (S.phase ? '.' + S.phase : ''));       // (#13 = step 13, #13.1 = its second frame)
   fitSidebar();
