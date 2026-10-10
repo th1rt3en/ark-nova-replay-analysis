@@ -218,17 +218,12 @@ export function associationStrip(p, map, seat) {
   const bonuses = map.association_bonuses || {};            // conservation points of the 4th partner zoo and the 3rd university, shown on their (empty) slots
   conservationBonus(s, 175, STRIP.partner[4] + 22, 92, bonuses.partner4, '4th partner zoo: ' + bonuses.partner4 + ' conservation');
   conservationBonus(s, 175, STRIP.university[3] + 22, 92, bonuses.university3, '3rd university: ' + bonuses.university3 + ' conservation');
-  // the 3rd partner zoo hires a worker on every map: the worker of the player's colour with a plus, on the (empty) 3rd slot
+  // the 3rd partner zoo hires a worker on every map: the icon of the worker bonus (the one of the 8 reputation space), on the (empty) 3rd slot
   {
-    const h = 74, w = h * 282 / 277, cy = STRIP.partner[3] + 22;
-    const g = svg('g', { class: 'hirebonus' });
-    g.append(svg('image', { href: workerUrl(seat), x: 175 - w / 2, y: cy - h / 2, width: w, height: h }));
-    g.append(svg('circle', { cx: 175 + w / 2 - 6, cy: cy - h / 2 + 12, r: 17, fill: '#2f9e5f', stroke: '#fff', 'stroke-width': 3 }));
-    const plus = svg('text', { x: 175 + w / 2 - 6, y: cy - h / 2 + 20, 'text-anchor': 'middle', fill: '#fff', style: 'font:900 26px Georgia, serif' });
-    plus.textContent = '+';
-    g.append(plus);
-    const tt = svg('title'); tt.textContent = '3rd partner zoo: hire a worker'; g.append(tt);
-    s.append(g);
+    const id = ICON_IDS['bonus:Worker'] || 'r5c13', h = 84, [w0, h0] = S.iconSizes[id] || [h, h], w = w0 * h / h0, cy = STRIP.partner[3] + 22;
+    const img = svg('image', { href: iconUrl(id), x: 175 - w / 2, y: cy - h / 2, width: w, height: h, class: 'hirebonus' });
+    const tt = svg('title'); tt.textContent = '3rd partner zoo: hire a worker'; img.append(tt);
+    s.append(img);
   }
   // where the zoo map awards an action card upgrade: most maps on the 2nd partner zoo and the 2nd university; maps 12 and T1 on the first and the second *set*
   // (a partner zoo and a university), map 11 on the first set: a curved line joins the two slots of a set with the upgrade icon in its middle and an arrow from
