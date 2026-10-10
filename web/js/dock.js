@@ -1,5 +1,5 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
-import { $, el, seatColor } from './util.js';
+import { $, el, seatColor, seatText } from './util.js';
 import { FORK, S, SANDBOX } from './state.js';
 import { curState, hides } from './pov.js';
 import { cardRow, quietly } from './cards.js';
@@ -128,7 +128,7 @@ export function renderDock(st) {
   if (!S.dockHidden && shownSel && rows[shownSel.seat + ':' + shownSel.kind]) {
     const head = el('div', 'dockhead');
     const who = el('b', '', S.replay.players[shownSel.seat].name);
-    who.style.color = seatColor(shownSel.seat);
+    who.style.color = seatText(shownSel.seat);
     head.append(who, document.createTextNode(shownSel.kind === 'hand' ? ' - hand' : ' - endgame cards'));
     const shown = rows[shownSel.seat + ':' + shownSel.kind];
     shown.querySelectorAll('.card-gone').forEach((g) => g.remove());      // (the fading "departed" cards would take a slot of the fan and vanish later: the fan would stay lopsided)
