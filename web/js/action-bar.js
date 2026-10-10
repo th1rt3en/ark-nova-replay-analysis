@@ -1,7 +1,7 @@
 // [module] The action bar at the top (replay: current action; fork / sandbox: the playable controls), prompts and draft marks.
 import { $, el, seatColor } from './util.js';
 import { FORK, PLAY, S } from './state.js';
-import { curState } from './pov.js';
+import { curState, seatOrder } from './pov.js';
 import { cardMarks, cardName, hidePreview, orderedKeys, showPreview } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { renderDock } from './dock.js';
@@ -98,7 +98,7 @@ function draftPopup() {
 export const draftMarks = new Set();                                          // the cards the viewer highlighted with a click: cleared at every step
 function draftBar(bar, d) {
   const groups = [], choosers = [];
-  for (const seat of [0, 1]) {
+  for (const seat of seatOrder()) {
     const offers = d.offers[seat] || [];
     if (!offers.length) continue;
     const keeping = d.stage === 'keep' || d.stage === 'done';

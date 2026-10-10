@@ -3,7 +3,7 @@ import { $, el, seatColor } from './util.js';
 import { PLAY, S, SANDBOX } from './state.js';
 import { legalPlacement, spriteOf, zooBoard } from './board.js';
 import { associationStrip, bonusPanel } from './association.js';
-import { curState, povParam } from './pov.js';
+import { curState, orientParam, povParam } from './pov.js';
 import { cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
@@ -38,7 +38,7 @@ export function initFork() {
   copy.type = 'button';
   copy.title = 'The link of this fork position with its seed: opening it gives the same position and deck order';
   copy.onclick = async () => {
-    const q = new URLSearchParams({ table: String(S.replay.table_id), step: String(S.forkInfo.step), seed: String(S.forkInfo.seed), pov: povParam() });
+    const q = new URLSearchParams({ table: String(S.replay.table_id), step: String(S.forkInfo.step), seed: String(S.forkInfo.seed), pov: povParam(), orient: orientParam() });
     const link = location.origin + '/fork.html?' + q.toString();
     try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; } catch (e) { window.prompt('Link of this fork', link); }
     setTimeout(() => { copy.textContent = 'Copy link'; }, 1500);

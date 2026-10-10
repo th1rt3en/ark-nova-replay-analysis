@@ -2,7 +2,7 @@
 import { FORK, PLAY, S, SANDBOX, table } from './state.js';
 import { $, el } from './util.js';
 import { setupNoTips } from './notips.js';
-import { povParam, povState } from './pov.js';
+import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, seatOrder } from './pov.js';
 import { fetchReplay } from './load.js';
 import { applyIconNames } from './icons.js';
 import { renderShared } from './shared.js';
@@ -61,14 +61,14 @@ export function render() {
   }
   // The boards are drawn again only when the position changed: the next frame of the same step (the step text, then the decision) has the same boards, and drawing ~100 pictures again
   // made the whole page flicker with every frame. A fork / sandbox / live game draws every time (what is selected or clicked changes the boards).
-  const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov;
+  const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov && S.lastBoard.orient === S.orient;
   if (!same) {
     redraw($('shared'), () => renderShared(st));
     redraw($('side'), () => sidePanel(st));
     const zoos = $('zoos');
-    redraw(zoos, () => zoos.replaceChildren(renderZoo(st, 0), renderZoo(st, 1)));
+    redraw(zoos, () => zoos.replaceChildren(...seatOrder().map((seat) => renderZoo(st, seat))));
     if ($('dock')) redraw($('dock'), () => renderDock(st)); else renderDock(st);
-    S.lastBoard = { st, pov: S.pov };
+    S.lastBoard = { st, pov: S.pov, orient: S.orient };
   } else actionBar(st);                                           // (renderShared draws the bar too: the next frame of the same step shows another bar on the same boards)
   if (FORK) {
     const prev = S.step > 0 ? S.replay.steps[S.step - 1].state : null;          // the hand that just changed (a card found by a search...) is the one the dock shows
@@ -119,7 +119,7 @@ function init() {
     if (e.key === 'Escape' && S.openedPile) { closePile(); return; }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
     if ((e.key === 's' || e.key === 'S') && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
-    if (settingsOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (settingsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
     const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), End: () => go(S.replay.steps.length - 1, 99) };
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
@@ -129,13 +129,14 @@ function init() {
   else if (FORK) initFork();
   else {
     const fb = $('fork');
-    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&pov=' + povParam(), '_blank'); };
+    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&pov=' + povParam() + '&orient=' + orientParam(), '_blank'); };
   }
   const [h1, h2] = PLAY ? [S.replay.steps.length - 1, 0] : FORK ? [0, 0] : location.hash.slice(1).split('.').map((x) => parseInt(x, 10));
   if (loadProgress) loadProgress.done();
   $('loading').hidden = true;
   $('app').hidden = false;
   go(Number.isFinite(h1) ? h1 : 0, Number.isFinite(h2) ? h2 : 0);
+  if (needsChoice()) askSpectated();                                        // (a replay opened for the first time: whom to spectate)
 }
 // start: the old file ended with these two statements inside its function
 let loadProgress = null;                                                 // (the progress circle of the loading box, progress.js)

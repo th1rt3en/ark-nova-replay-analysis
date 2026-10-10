@@ -1,7 +1,7 @@
 // [module] Right column per player: tracker (score, appeal, income, reputation...), break track, deck / discard icons, bonus tokens.
 import { $, el, seatColor, svg } from './util.js';
 import { PLAY, S } from './state.js';
-import { eyeLocked, eyeOpen, toggleEye } from './pov.js';
+import { eyeLocked, eyeOpen, seatOrder, toggleEye } from './pov.js';
 import { hidePreview, showPreview, zoneNew } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, pic, workerUrl } from './icons.js';
 import { clockBadge, gameMenu } from './play.js';
@@ -83,7 +83,8 @@ export function sidePanel(st) {
     return node;
   };
   headerStats(st, flash);
-  st.players.forEach((p, seat) => {
+  seatOrder().forEach((seat) => {                                   // (the spectated player's box first: above)
+    const p = st.players[seat];
     const box = el('div', 'pp' + (st.active_player === seat && st.phase !== 'over' ? ' active' : ''));
     box.style.setProperty('--pc', seatColor(seat));
     if (isLight(seatColor(seat))) box.classList.add('light');
