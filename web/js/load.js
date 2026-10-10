@@ -1,11 +1,12 @@
 // [module] Loads the game to show: a replay from the API, an uploaded log (IndexedDB LogStore), a fork start state or the sandbox game from sessionStorage.
-import { FORK, PLAY, S, SANDBOX, params, table } from './state.js';
+import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
 import { playLoad } from './play.js';
 
 
 // ---- loading --------------------------------------------------------------------------------------------------
 export async function fetchReplay() {
   if (PLAY) return playLoad();
+  if (MINIGAME) return window.MINIGAME_REPLAY;                             // the puzzle page loaded the redacted position before it started the viewer
   const url = '/api/tables/' + encodeURIComponent(table) + '/replay';
   let res;
   if (SANDBOX) {                                                           // the game the lobby started

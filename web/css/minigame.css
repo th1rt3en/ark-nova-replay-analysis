@@ -1,0 +1,30 @@
+/* the mini game pages (minigames/<key>.html): the replay viewer showing one redacted position, plus the puzzle panel above it */
+body.minigame .bar, body.minigame #tabLog, body.minigame #paneLog, body.minigame #fork { display: none !important; }
+body.minigame .sbtabs { display: none; }
+#puzzle { margin: 0 0 1rem; padding: 1rem 1.2rem; border-radius: 10px; background: #ece3b4; color: #2b1d12; border: 3px solid #1b110a; max-width: 100%; box-sizing: border-box; }
+#puzzle h1 { margin: 0 0 .2rem; font-size: 1.35rem; }
+#puzzle p { margin: .3rem 0; }
+#puzzle .muted { color: #6f5749; }
+.pz-hand { display: flex; flex-wrap: wrap; gap: .6rem; margin: .8rem 0; }
+.pz-card { position: relative; width: 7.2rem; cursor: pointer; border-radius: 8px; border: 3px solid transparent; padding: 2px; background: transparent; }
+.pz-card img { width: 100%; display: block; border-radius: 6px; }
+.pz-card .pz-name { font-size: .72rem; line-height: 1.15; text-align: center; margin-top: .15rem; }
+.pz-card.on { border-color: #2f80e8; background: rgba(47, 128, 232, .18); }
+.pz-card.on::after { content: "\2713"; position: absolute; top: 4px; right: 6px; color: #fff; background: #2f80e8; width: 1.3rem; height: 1.3rem; border-radius: 50%; font-size: .9rem; text-align: center; line-height: 1.3rem; }
+.pz-hand.done .pz-card { cursor: default; }
+.pz-card.orig { border-color: #2e8b4a; background: rgba(46, 139, 74, .2); }
+.pz-card.orig.on { border-color: #2e8b4a; }
+.pz-card .pz-tag { font-size: .68rem; text-align: center; font-weight: 700; min-height: 1em; }
+.pz-card .pz-bar { height: .45rem; border-radius: 3px; background: rgba(0, 0, 0, .15); overflow: hidden; margin-top: .15rem; }
+.pz-card .pz-bar i { display: block; height: 100%; background: #6b5a8e; }
+.pz-actions { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.pz-actions button { padding: .5rem 1.2rem; border: 2px solid #1b110a; border-radius: 6px; background: #2f80e8; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.pz-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.pz-login { padding: .5rem .8rem; border-radius: 6px; background: rgba(47, 128, 232, .14); border: 1px solid #2f80e8; font-size: .92rem; }
+.pz-result { font-size: 1.1rem; font-weight: 700; }
+.pz-board { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }
+.pz-board h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.pz-board table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.pz-board td, .pz-board th { text-align: left; padding: .2rem .4rem; border-bottom: 1px solid rgba(0, 0, 0, .15); }
+.pz-board td:last-child, .pz-board th:last-child { text-align: right; }
+#puzzle a { color: #1f5fb8; }

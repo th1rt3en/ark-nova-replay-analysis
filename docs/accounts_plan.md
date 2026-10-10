@@ -2,7 +2,7 @@
 
 Players create an account with a username and a password. A username that exists on BGA copies that player's last Elo once. Live games can be rated or friendly, and a tracker keeps the results of the mini games and puzzles to come.
 
-Status: plan, nothing implemented. Copy of the published page https://claude.ai/artifact/8SfrhQPiL73cpkVdNm8oM3 (this file is the one to keep up to date). Written 2026-10-10 for the engineers who will build it.
+Status: built so far: accounts (D1), the mini game platform with its hub, the daily cron, and Daily starting hand (M0, M1). Not built: Who's ahead (M2), rated games and ratings. Copy of the published page https://claude.ai/artifact/8SfrhQPiL73cpkVdNm8oM3 (this file is the one to keep up to date). Written 2026-10-10 for the engineers who will build it.
 
 ## Decisions
 
@@ -107,7 +107,7 @@ Two daily mini games to start, more later: **Daily starting hand** and **Who's a
 
 - **One folder per game.** Server code in `src/ark_nova/minigames/<key>/`, page code in `web/minigames/<key>/`, tests in `tests/minigames/<key>/`. A game never imports another game. A test fails if it does.
 - **A small platform in between** (`src/ark_nova/minigames/platform/`): the registry, the daily rollover, the puzzle and submission stores, the leaderboard queries, the shared redaction checks and the shared page shell (login prompt, anonymous choice, leaderboard widget). The platform only knows games through the contract below.
-- **A manifest decides what exists:** `data_manual/minigames.json`, a list of `{key, enabled, title, blurb, allow_past}`. `allow_past` is false by default; Who's ahead sets it to true (see the calendar below). Disabled or missing means: no routes (404), no tile on the hub, no rollover. Removing a game is deleting its three folders and its manifest line. `scripts/minigames_purge.py <key>` deletes its stored puzzles, submissions and aggregates (every stored row carries `game_key`).
+- **A manifest decides what exists:** `src/ark_nova/minigames/manifest.json`, a list of `{key, enabled, title, blurb, allow_past}`. `allow_past` is false by default; Who's ahead sets it to true (see the calendar below). Disabled or missing means: no routes (404), no tile on the hub, no rollover. Removing a game is deleting its three folders and its manifest line. `scripts/minigames_purge.py <key>` deletes its stored puzzles, submissions and aggregates (every stored row carries `game_key`).
 - **The contract** (a Python `Protocol`; every game implements all of it):
 
 | Method | What it does |
@@ -132,7 +132,7 @@ Two daily mini games to start, more later: **Daily starting hand** and **Who's a
 
 - **The day is the UTC date.** A Cloudflare Cron Trigger at 00:00 UTC calls a signed internal route on Cloud Run (`POST /internal/minigames/rollover`). For each enabled game, in its own try/except, it creates that day's puzzle. The insert is unique on (game_key, day), so a repeat is harmless.
 - **Lazy fallback.** If a request finds no puzzle for today, it creates it then. A missed cron never breaks a game.
-- **The picker query is the game's own file:** `data_manual/minigames/<key>.sql`, which you will edit. For now both use: a table with a log in `logs_archive_mapping`, two players, not in `minigame_used_sources` for that game. Pick one at random. The query also returns both players' `pre_match_elo` for that table.
+- **The picker query is the game's own file:** `src/ark_nova/minigames/sql/<key>.sql`, which you will edit. For now both use: a table with a log in `logs_archive_mapping`, two players, not in `minigame_used_sources` for that game. Pick one at random. The query also returns both players' `pre_match_elo` for that table.
 - **Elo shown is the BGA Elo before that table** (`pre_match_elo`), rounded.
 
 ### What the browser may receive (both games)
@@ -268,7 +268,7 @@ Pages: a login and signup dialog and a user menu in the site header (every page 
 
 ### M0. Mini game platform (Medium)
 
-*Needs: nothing for anonymous play; A for ranked play. Touches: `src/ark_nova/minigames/platform/`, `data_manual/minigames.json`, D1 migration, the Worker cron trigger, `web/js/minigames/shell.js`, `tests/minigames/`.*
+*Needs: nothing for anonymous play; A for ranked play. Touches: `src/ark_nova/minigames/platform/`, `src/ark_nova/minigames/manifest.json`, D1 migration, the Worker cron trigger, `web/js/minigames/shell.js`, `tests/minigames/`.*
 
 - The `MiniGame` contract, the registry and manifest, the three shared tables, the rollover route and cron trigger with the lazy fallback, the shared redaction checks, the leaderboard queries, `scripts/minigames_purge.py`.
 - The shared shell (login prompt, anonymous choice, leaderboard widget) and the `MINIGAME_MODE` of the viewer.

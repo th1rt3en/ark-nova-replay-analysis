@@ -1,0 +1,10 @@
+[
+    {
+        "key": "daily_hand",
+        "enabled": true,
+        "module": "ark_nova.minigames.daily_hand",
+        "title": "Daily starting hand",
+        "blurb": "Which cards would you keep? Pick them from a real player's dealt hand and see what they kept.",
+        "allow_past": false
+    }
+]

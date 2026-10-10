@@ -99,13 +99,15 @@ def _default_accounts(st: Settings):
 
 
 def _default_minigames(app: FastAPI):
-    """The mini game platform with the games of `data_manual/minigames.json`: puzzles from BigQuery when it is reachable, logs from the app's own log store."""
+    """The mini game platform with the games of `src/ark_nova/minigames/manifest.json`: puzzles from BigQuery when it is reachable, logs from the app's own log store."""
     from ark_nova.minigames.platform.contract import GameLog
     from ark_nova.minigames.platform.manifest import load_games, load_manifest
     from ark_nova.minigames.platform.service import MiniGameService
     from ark_nova.minigames.platform.sources import BigQuerySourceIndex, ListSourceIndex
     from ark_nova.minigames.platform.store import MemoryStore, SqliteStore
+    from ark_nova.storage.elos import BigQueryElos, NoElos
     st = app.state.settings
+    elos = BigQueryElos(st.bq_table) if st.bq_table else NoElos()
     entries = load_manifest()
     games = load_games(entries)
 
@@ -113,7 +115,7 @@ def _default_minigames(app: FastAPI):
         rec = app.state.index.find(table_id)
         if rec is None or not rec.logged:
             raise LookupError(f"no log for table {table_id}")
-        return GameLog(json.loads(app.state.logs.read(rec.gcs_path, table_id)), table_id)
+        return GameLog(json.loads(app.state.logs.read(rec.gcs_path, table_id)), table_id, record=rec, elos=elos.get(table_id))
 
     sources = BigQuerySourceIndex() if st.bq_table and games else ListSourceIndex([])
     if st.store_backend == "d1":

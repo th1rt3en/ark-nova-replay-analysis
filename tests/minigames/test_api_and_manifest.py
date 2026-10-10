@@ -59,9 +59,11 @@ def test_rollover_needs_a_valid_signature():
     assert not valid_signature("", "POST", "/x", b"", {"x-timestamp": str(int(time.time())), "x-signature": "00"})        # no secret configured: nothing is valid
 
 
-def test_the_default_app_has_an_empty_hub():
+def test_the_default_app_lists_the_games_of_the_manifest():
     c = TestClient(create_app(Settings()))
-    assert c.get("/api/minigames").json()["games"] == []
+    keys = [g["key"] for g in c.get("/api/minigames").json()["games"]]
+    assert keys == [e.key for e in load_manifest()]
+    assert all(g["available"] for g in c.get("/api/minigames").json()["games"])
 
 
 def test_the_manifest_skips_disabled_games_and_loads_by_module(tmp_path):

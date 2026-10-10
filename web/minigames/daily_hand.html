@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily starting hand - Ark Nova</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/replay.css">
+<link rel="stylesheet" href="/css/table.css">
+<link rel="stylesheet" href="/css/minigame.css">
+<script>window.MINIGAME_MODE = true;</script>
+</head>
+<body class="viewer minigame">
+<div id="loading" class="status loading" role="status">Loading today's puzzle…</div>
+<div id="app" hidden>
+  <div class="layout">
+    <main>
+      <section id="puzzle"></section>
+      <div class="movebar">
+        <div id="actionbar" class="actionbar" hidden></div>
+        <div id="current" class="current" aria-live="polite"></div>
+        <span id="enginemark" class="enginemark"></span>
+      </div>
+      <section id="shared" class="shared"></section>
+      <section id="zoos" class="zoos"></section>
+    </main>
+    <aside class="sidebar">
+      <div class="sbtabs" role="tablist">
+        <button id="tabControl" class="sbtab on" type="button" role="tab" aria-selected="true">Control</button>
+        <button id="tabLog" class="sbtab" type="button" role="tab" aria-selected="false">Log</button>
+      </div>
+      <div id="paneControl" class="sbpane">
+      <header class="bar">
+        <div class="controls"><button id="first"></button><button id="prev"></button><button id="play"></button><button id="next"></button><button id="last"></button></div>
+        <div id="timeline" class="timeline" hidden></div>
+        <div class="controls controls2"><button id="settings" class="settingsbtn" aria-label="Settings"></button><label class="jump">Move <input id="jump" type="number" min="0"></label><button id="fork" class="forkbtn"></button></div>
+      </header>
+        <section id="side" class="side"></section>
+      </div>
+      <div id="paneLog" class="sbpane" hidden>
+        <ol id="moves" class="moves"></ol>
+      </div>
+    </aside>
+  </div>
+</div>
+<img id="preview" class="preview" alt="" hidden>
+<script src="/js/logstore.js"></script>
+<script src="/js/progress.js"></script>
+<script type="module" src="/js/minigames/daily_hand.js"></script>
+<script type="module" src="/js/account.js"></script>
+</body>
+</html>

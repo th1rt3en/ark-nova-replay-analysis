@@ -1,7 +1,7 @@
 """Where the tables of the puzzles come from (docs/accounts_plan.md, "Daily rollover and picking the table").
 
 A `SourceIndex` answers one question for a game: give me up to `k` random candidate table ids that the game has not used yet. The production one runs the game's own SQL
-file (`data_manual/minigames/<key>.sql`) on BigQuery; `ListSourceIndex` (tests, dev server) takes a plain list.
+file (`minigames/sql/<key>.sql`) on BigQuery; `ListSourceIndex` (tests, dev server) takes a plain list.
 """
 from pathlib import Path
 from typing import Iterable, Protocol
@@ -24,11 +24,11 @@ class ListSourceIndex:
         return pool[:k]
 
 
-SQL_DIR = Path(__file__).resolve().parents[4] / "data_manual" / "minigames"
+SQL_DIR = Path(__file__).resolve().parents[1] / "sql"
 
 
 class BigQuerySourceIndex:
-    """Runs the game's own SQL file `data_manual/minigames/<key>.sql` (edited by hand: it holds the filters). The query gets the parameters `@exclude` (an array of
+    """Runs the game's own SQL file `minigames/sql/<key>.sql` (edited by hand: it holds the filters). The query gets the parameters `@exclude` (an array of
     table ids already used by that game) and `@k` and must return `table_id` rows in random order, at most `@k`."""
 
     def __init__(self, sql_dir: Path = SQL_DIR):

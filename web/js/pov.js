@@ -1,5 +1,5 @@
 // [module] Point of view (both players / seat 0 / seat 1): what is hidden from the other player, the eyes that switch it.
-import { FORK, PLAY, S, params, table } from './state.js';
+import { FORK, MINIGAME, PLAY, S, params, table } from './state.js';
 import { labelNode } from './log-labels.js';
 import { render } from './main.js';
 
@@ -8,7 +8,7 @@ import { render } from './main.js';
 const POV_KEY = 'pov:' + (table || 'local');
 const readPov = (v) => (v === 'all' ? null : v === '0' ? 0 : v === '1' ? 1 : undefined);
 export const povParam = () => (S.pov === null ? 'all' : String(S.pov));
-{ let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = PLAY ? null : v === undefined ? 0 : v; }       // (a live game: the server already left out what this seat may not see, nothing is hidden by the page)
+{ let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = PLAY ? null : MINIGAME ? window.MINIGAME_POV : v === undefined ? 0 : v; }       // (a live game: the server already left out what this seat may not see, nothing is hidden by the page)
 export const hides = (seat) => S.pov !== null && seat !== S.pov;
 const povCache = new Map();
 export function povState(st) {

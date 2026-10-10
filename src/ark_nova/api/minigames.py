@@ -61,8 +61,15 @@ def add_routes(app: FastAPI, service: MiniGameService, internal_secret: str = ""
         return service.days(key, month, caller_of(request))
 
     @app.get("/api/minigames/{key}/leaderboard")
-    def leaderboard(key: str, period: str = "all"):
-        return service.leaderboard(key, period)
+    def leaderboard(key: str, request: Request, period: str = "all"):
+        board = service.leaderboard(key, period)
+        board["rows"] = board["rows"][:50]
+        accounts = getattr(request.app.state, "accounts", None)
+        if accounts is not None:                                       # the names of the listed accounts (the board itself only knows ids)
+            for r in board["rows"]:
+                acc = accounts.store.by_id(r["account_id"])
+                r["name"] = acc.username if acc else r["account_id"]
+        return board
 
     @app.post("/api/minigames/{key}/submit")
     async def submit(key: str, request: Request):

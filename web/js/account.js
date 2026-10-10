@@ -22,7 +22,7 @@ function renderBar() {
   if (account) {
     bar.append(el('span', { className: 'acctname' }, account.username), el('span', { className: 'muted small' }, ` rating ${account.rating}`));
     const out = el('button', { type: 'button', className: 'linkbtn' }, 'Log out');
-    out.onclick = async () => { await call('logout', {}).catch(() => {}); account = null; renderBar(); document.dispatchEvent(new CustomEvent('account-changed', { detail: null })); };
+    out.onclick = async () => { await call('logout', {}).catch(() => {}); account = null; window.arkAccount = null; renderBar(); document.dispatchEvent(new CustomEvent('account-changed', { detail: null })); };
     bar.append(out);
   } else {
     const b = el('button', { type: 'button' }, 'Log in / Sign up');
@@ -55,6 +55,7 @@ async function run(button, say, fn) {
 }
 
 function done() {
+  window.arkAccount = account;
   renderBar();
   document.dispatchEvent(new CustomEvent('account-changed', { detail: account }));
 }
@@ -148,6 +149,7 @@ async function init() {
     const me = await call('me');
     account = me.account;
   } catch (e) { return; }                                // the accounts are off on this server: no widget
+  window.arkAccountsEnabled = true; window.arkAccount = account;
   document.body.append(bar, dlg);
   renderBar();
   document.dispatchEvent(new CustomEvent('account-changed', { detail: account }));

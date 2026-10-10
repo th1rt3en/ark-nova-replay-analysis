@@ -91,7 +91,7 @@ def _planning_routes(app) -> None:
 
 
 def _minigames(index, logs):
-    """The mini games of data_manual/minigames.json on the local logs: puzzles come from the tables in log_examples, results are kept in build/minigames_dev.sqlite."""
+    """The mini games of src/ark_nova/minigames/manifest.json on the local logs: puzzles come from the tables in log_examples, results are kept in build/minigames_dev.sqlite."""
     import json
 
     from ark_nova.minigames.platform.contract import GameLog
@@ -99,12 +99,14 @@ def _minigames(index, logs):
     from ark_nova.minigames.platform.service import MiniGameService
     from ark_nova.minigames.platform.sources import ListSourceIndex
     from ark_nova.minigames.platform.store import SqliteStore
+    from ark_nova.storage.elos import BigQueryElos
+    elos = BigQueryElos(Settings().bq_table)                  # (the Elo of the players: BigQuery when it can be reached, else none)
 
     def read_log(table_id):
         rec = index.find(table_id)
         if rec is None or not rec.logged:
             raise LookupError(f"no log for table {table_id}")
-        return GameLog(json.loads(logs.read(rec.gcs_path, table_id)), table_id)
+        return GameLog(json.loads(logs.read(rec.gcs_path, table_id)), table_id, record=rec, elos=elos.get(table_id))
 
     db = Path(__file__).resolve().parents[1] / "build" / "minigames_dev.sqlite"
     db.parent.mkdir(exist_ok=True)

@@ -48,8 +48,10 @@ class Caller:
 class GameLog:
     """A raw BGA log with what the games and the leak guard need from it: parsed lazily; the players' names and ids and the table id."""
 
-    def __init__(self, raw: dict, table_id: int, players: Optional[list[tuple[str, str]]] = None):
+    def __init__(self, raw: dict, table_id: int, players: Optional[list[tuple[str, str]]] = None, record=None, elos: Optional[dict] = None):
         self.raw, self.table_id = raw, table_id
+        self.record = record                      # the index's TableRecord of the table (maps, Marine Worlds), when there is one
+        self.elos = elos or {}                    # BGA player id -> the player's Elo before this table (BigQuery), {} when unknown
         self._players = players
         self._parsed = None
 
