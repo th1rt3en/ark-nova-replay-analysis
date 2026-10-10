@@ -1270,5 +1270,5 @@ Draft lightbox spacing: the title has equal space (about 44 px) above it (popup 
 ## 24. Draft phase details
 While the action card draft lightbox is open (`#draftbox` not hidden) `showPreview()` (cards.js) shows nothing: the cards neither enlarge in the lightbox nor in the dimmed background. During the draft (`st.phase === 'setup'`, `st.draft.stage !== 'done'`) the tray is not drawn at all (`drawTray`, dock.js; the fan mode is unchanged). A newly created tray slides up (`.handtray.enter`, `tray-in` 0.35 s, removed on `animationend`): after the draft, and when the hand display setting is changed to the tray.
 
-## 25. Fan: golden glow
-The fan (`.dockpanel .cards`) has a golden glow around the silhouette of the whole fan (`filter: drop-shadow(0 0 10px gold .95) drop-shadow(0 0 26px gold .6)`), so it stands out from the maps and boards behind it. The tray is unchanged.
+## 25. Fan: dark glow
+The fan (`.dockpanel .cards`) has a dark glow around the silhouette of the whole fan (`filter: drop-shadow(0 0 10px black .9) drop-shadow(0 0 26px black .6)`), so it stands out from the maps and boards behind it. The tray is unchanged.
