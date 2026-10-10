@@ -50,3 +50,13 @@ cloudflare/.env*
 *.rar
 _backup_before_FE001/
 log_examples/_stage.tgz
+
+# scripts/build_cards.py (card renderer): installed packages and intermediate files
+scripts/cardgen/node_modules/
+scripts/cardgen/out/
+scripts/cardgen/harness/out.cjs
+scripts/cardgen/site/tw.css
+scripts/cardgen/site/arknova.css
+scripts/cardgen/site/cards.html
+scripts/cardgen/keys.json
+scripts/cardgen/rendered_keys.json

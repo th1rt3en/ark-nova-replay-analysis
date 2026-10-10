@@ -1,0 +1,4 @@
+/* The strip of a conservation project in the project area (web/project_strips): only the icon(s) of the card and its three slots on a transparent background; the dark / light green base is drawn by the page's CSS. Applied by shoot.mjs (body.bare). */
+body.bare .ark-card-wrapper, body.bare .ark-card-top, body.bare .ark-card-top-left, body.bare .ark-card-top-right, body.bare .ark-card-middle, body.bare .ark-card-bottom, body.bare .project-card-slots-container { background: none !important; box-shadow: none !important; }
+body.bare .ark-card-top-right, body.bare .ark-card-middle, body.bare .project-card-description, body.bare .zoo-card-bonuses, body.bare .ark-card-number { visibility: hidden !important; }
+body.bare .project-card-top-left-icon { background: none !important; box-shadow: none !important; }

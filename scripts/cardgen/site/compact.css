@@ -1,0 +1,4 @@
+/* The small card (hands, zoos, display) like on BGA: animals show only the names of their abilities, sponsors and projects no text at all; the full card is the hover preview. Applied by shoot.mjs (body.compact) for the web/cards images only. */
+body.compact .animal-ability-desc,
+body.compact .ark-card-bottom .dijitTooltipContainer,
+body.compact .project-card .project-card-description { display: none !important; }

@@ -2,7 +2,7 @@
 import { $, el, seatColor } from './util.js';
 import { S } from './state.js';
 import { curState } from './pov.js';
-import { card, cardName, hidePreview, info, showPreview } from './cards.js';
+import { card, cardName, hidePreview, info, largeOf, showPreview } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { bonusTile } from './shared.js';
 import { render } from './main.js';
@@ -90,7 +90,7 @@ function sbPickCard(title, groups) {            // groups: [[label, [card keys]]
           b.type = 'button';
           b.append(el('span', 'sbkey', k));
           b.onclick = () => done(k);
-          b.onmouseenter = () => showPreview(info(k).large || info(k).image);
+          b.onmouseenter = () => showPreview(largeOf(info(k)));
           b.onmouseleave = hidePreview;
           list.append(b);
           shown++;
