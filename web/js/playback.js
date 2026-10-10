@@ -9,12 +9,13 @@ import { render } from './main.js';
 import { keepSel } from './fork.js';
 import { framesOf } from './frames.js';
 
+const PLAY_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2l13 8-13 8z"/></svg>', PAUSE_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h4v14H4zM12 3h4v14h-4z"/></svg>';
 export function setPlaying(on) {
   if (S.timer) { clearInterval(S.timer); S.timer = null; }
   if (on && atEnd()) go(0);                                              // started at the end: play again from the start
   if (on) S.timer = setInterval(() => { if (atEnd()) setPlaying(false); else stepBy(1); }, 1000 / S.speed);
   const b = $('play');
-  b.textContent = on ? '⏸︎' : '▶︎';
+  b.innerHTML = on ? PAUSE_SVG : PLAY_SVG;
   b.title = on ? 'Stop autoplay (Space)' : 'Start autoplay (Space)';
   b.setAttribute('aria-label', on ? 'Stop autoplay' : 'Start autoplay');
   b.classList.toggle('on', on);

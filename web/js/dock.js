@@ -76,7 +76,11 @@ export function renderDock(st) {
     const who = el('b', '', S.replay.players[shownSel.seat].name);
     who.style.color = seatColor(shownSel.seat);
     head.append(who, document.createTextNode(shownSel.kind === 'hand' ? ' - hand' : ' - endgame cards'));
-    panel.append(head, rows[shownSel.seat + ':' + shownSel.kind]);
+    const shown = rows[shownSel.seat + ':' + shownSel.kind];
+    const fan = [...shown.children].filter((c) => c.classList.contains('card'));         // the cards lie in a fan: --i = the place of a card counted from the middle, --n = how many (the CSS rotates and overlaps them)
+    shown.style.setProperty('--n', String(Math.max(1, fan.length)));
+    fan.forEach((c, i) => c.style.setProperty('--i', (i - (fan.length - 1) / 2).toFixed(1)));
+    panel.append(head, shown);
     panel.style.setProperty('--pc', seatColor(shownSel.seat));
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
   } else dock.replaceChildren(bar);

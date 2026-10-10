@@ -1,0 +1,266 @@
+/* ==== Park Poster: the default look of the replay / fork / sandbox / live play pages ================================================================
+   Loaded last (after replay.css and table.css), so it overrides their wood-and-parchment look. A poster: teal sky with sun and rays, cream paper panels with a thick ink
+   border and a hard shadow, orange and gold accents. Fonts: Bowlby One (headings, numbers), Barlow Condensed (texts), Barlow. Everything is in design px (1920 wide, zoomed by
+   layout.js). The structure (what is where) is described in docs/frontend_architecture.md; the art of the boards (maps, tracks, cards, icons) is not touched.
+   Colours are tokens on body.viewer, so that another theme can later replace this file by redefining them. */
+
+@font-face { font-family: 'Bowlby One'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/bowlby-one-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/barlow-condensed-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/barlow-condensed-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/barlow-condensed-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/barlow-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/barlow-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/barlow-latin-700-normal.woff2) format('woff2'); }
+
+body.viewer {
+  --teal: #0E4B5A; --teal2: #146577; --sun: #EE6C2B; --gold: #F4B63F; --rust: #A8321E; --paper: #F8EDCB; --ink: #17262B;
+  --blue: #2F7FC1; --red: #D9402B; --act1: #009fe2; --act2: #d02a52;
+  --sidebar-w: 320px;
+  --fg: var(--ink); --muted: #52666B; --border: var(--ink); --accent: var(--sun);
+  font: 500 15px 'Barlow', system-ui, sans-serif; color: var(--ink);
+  background: radial-gradient(1200px 700px at 62% -8%, #1B7D8C 0%, var(--teal2) 40%, var(--teal) 100%) fixed var(--teal);
+  padding-bottom: 150px;
+}
+body.viewer a { color: inherit; }
+
+/* ---- the poster behind everything: spinning rays, the sun, two hills (fixed, drawn behind the page) ------------------------------------------------------------------ */
+body.viewer::before { content: ""; position: fixed; left: 480px; top: -1250px; width: 2400px; height: 2400px; border-radius: 50%; z-index: -1; pointer-events: none; will-change: transform;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .06) 0 6deg, transparent 6deg 15deg); animation: pp-spin 240s linear infinite; }
+body.viewer::after { content: ""; position: fixed; left: 900px; top: -330px; width: 520px; height: 520px; border-radius: 50%; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle at 50% 60%, var(--gold) 0 46%, var(--sun) 47% 72%, #D2541F 73% 100%); box-shadow: 0 0 0 18px rgba(244, 182, 63, .18), 0 0 0 44px rgba(244, 182, 63, .1);
+  animation: pp-pulse 7s ease-in-out infinite; }
+#app::before { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 150px; z-index: -1; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 150' preserveAspectRatio='none'%3E%3Cpath d='M0 70C220 20 420 110 700 70S1200 10 1500 60 1800 90 1920 50V150H0z' fill='%230A3A47'/%3E%3Cpath d='M0 110C300 70 560 140 900 108S1500 70 1920 112V150H0z' fill='%23072C37'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat; }
+@keyframes pp-spin { to { transform: rotate(360deg); } }
+@keyframes pp-pulse { 50% { transform: scale(1.035); } }
+@media (prefers-reduced-motion: reduce) { body.viewer::before, body.viewer::after, .pp .live { animation: none !important; } }
+
+/* ---- layout: the main column left, the sidebar fixed at the right; the top bar sticks to the top of the window ------------------------------------------------------------- */
+body.viewer .layout { --sidebar-w: 320px; padding: 0 calc(var(--sidebar-w) + 28px) 0 14px; }
+body.viewer main { padding-bottom: 8px; }
+body.viewer .movebar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; margin: 0 -14px 14px; padding: 8px 14px 12px; min-height: 0; box-sizing: border-box;
+  background: rgba(14, 75, 90, .8); border: 0; border-radius: 0; box-shadow: none; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); font-size: 1rem; }
+body.viewer .movepill { position: relative; flex: 1 1 0; min-width: 0; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; min-height: 58px; padding: 3px 44px 3px 22px;
+  background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 29px; box-shadow: 0 4px 0 var(--ink); }
+body.viewer .movepill .actionbar { flex: 1 1 auto; margin: 0; min-height: 0; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
+body.viewer .movepill .actionbar.draftbar { padding: 4px 0; }
+body.viewer .movepill .actionbar[hidden] { display: none; }
+body.viewer .movepill .current { order: -1; flex: 1 1 auto; box-sizing: border-box; align-self: stretch; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; padding: 2px 0; background: none; border: 0;
+  font: 700 25px/1.05 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .01em; color: var(--ink); }
+body.viewer .movepill .actionbar:not([hidden]) ~ .current { flex: 0 1 auto; max-width: 42%; margin-right: 16px; padding-right: 16px; border-right: 3px dashed rgba(23, 38, 43, .35); font-size: 21px; color: #36484d; }
+body.viewer .movepill .current[hidden] { display: none; }
+body.viewer .movepill .engine-detail { font: 600 15px 'Barlow Condensed'; opacity: .7; }
+body.viewer .movepill .enginemark { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); z-index: 2; }
+body.viewer .hdrstats { flex: none; display: flex; align-items: center; gap: 12px; }
+body.viewer .pill { height: 50px; box-sizing: border-box; display: flex; align-items: center; background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); color: var(--ink); }
+body.viewer .pill.rnd { gap: 10px; padding: 0 20px 0 4px; }
+body.viewer .pill.rnd .burst { margin: -8px 0; width: 60px; height: 60px; }
+body.viewer .pill.rnd .burst b { font-size: 26px; }
+body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
+body.viewer .pill.brk { gap: 12px; padding: 0 18px 0 22px; background: var(--sun); box-shadow: 0 4px 0 var(--ink), 0 0 0 4px rgba(244, 182, 63, .55); }
+body.viewer .pill.brk .lab { font-size: 20px; }
+body.viewer .pill.brk .bn { font: 400 34px/1 'Bowlby One'; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+body.viewer .pill.brk .bn small { font-size: 22px; margin-left: 1px; }
+body.viewer .pips { display: flex; gap: 5px; }
+body.viewer .pips i { width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--ink); background: rgba(23, 38, 43, .25); }
+body.viewer .pips i.done { background: var(--gold); }
+body.viewer .pips i.cur { background: var(--paper); box-shadow: 0 0 0 3px var(--gold); transform: scale(1.15); }
+body.viewer .hdrstats .gamemenu { position: relative; font-size: 1rem; }
+body.viewer .gamemenubtn { height: 50px; padding: 0 16px; border: 4px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); font: 700 19px 'Barlow Condensed'; cursor: pointer; box-shadow: 0 4px 0 var(--ink); }
+body.viewer .hdrstats .gamemenulist { right: 0; top: calc(100% + 8px); background: var(--paper); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink); overflow: hidden; }
+body.viewer .gamemenuitem { color: var(--ink); font: 600 18px 'Barlow Condensed'; border-bottom: 2px dashed rgba(23, 38, 43, .25); }
+body.viewer .gamemenuitem:hover:not(:disabled) { background: var(--gold); }
+body.viewer .hdrstats .flash-up, body.viewer .hdrstats .flash-down { animation: flash-up var(--flash-duration, .8s) ease-out; }
+
+/* ---- panels: the display, the association element and the zoos are cream paper with an ink border ------------------------------------------------------------------------ */
+body.viewer .shared { gap: 16px; margin-bottom: 18px; }
+body.viewer .shared > .displaycol, body.viewer .shared > .tablecol { box-sizing: border-box; padding: 6px; background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
+body.viewer .shared > .tablecol { gap: 5px; }
+body.viewer .shared .projpanel { background: none; border: 0; box-shadow: none; padding: 0; border-radius: 9px; }
+body.viewer .shared .projslot { border-radius: 9px; box-shadow: none; }
+body.viewer .zoos { gap: 16px; padding-top: 40px; }
+body.viewer .zoo { position: relative; box-sizing: border-box; padding: 8px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
+body.viewer .zoo.active { border-color: var(--ink); box-shadow: 0 6px 0 var(--ink), 0 0 0 8px var(--gold); }
+body.viewer .zoo h2 { position: absolute; left: 22px; top: -38px; margin: 0; height: 34px; box-sizing: border-box; display: flex; align-items: center; gap: 9px; flex-wrap: nowrap; padding: 0 20px 0 11px; background: var(--ink); color: var(--paper);
+  border: 0; border-radius: 14px 14px 0 0; white-space: nowrap; font: 400 17px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .zoo h2::before { content: ""; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--paper); background: var(--pc, #888); flex: none; }
+body.viewer .zoo h2 .map { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; color: var(--paper); opacity: .8; }
+body.viewer .zoo .played { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 20px; margin-top: 8px; padding-top: 7px; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .zoo .played .sect { margin: 0; }
+body.viewer .zoo .played h3 { margin: 0 0 4px; padding: 0; border: 0; font: 700 15px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .zoo .played .cards { gap: 6px; flex-wrap: wrap; }
+body.viewer .zoo .played .cards .card, body.viewer .zoo .played .cards.small .card { width: 92px; border-radius: 7px; border: 0; box-shadow: 0 0 0 2px var(--ink); }
+body.viewer .zoo .played .empty { display: none; }
+body.viewer .card { border-radius: 7px; border-color: var(--ink); }
+
+/* ---- sidebar: tabs, control panel, info boxes (every one a panel of its own), the log ---------------------------------------------------------------------------------- */
+body.viewer aside.sidebar { top: 12px; right: 12px; width: var(--sidebar-w); height: calc(var(--vh, 1vh) * 100 - 24px); gap: 10px; }
+body.viewer .sbtabs { flex: 0 0 auto; gap: 8px; }
+body.viewer .sbtab { flex: 1 1 0; height: auto; padding: 9px 0 8px; border: 4px solid var(--ink); border-radius: 14px; background: var(--paper); color: var(--ink); font: 400 17px 'Bowlby One', system-ui, sans-serif;
+  box-shadow: 0 4px 0 var(--ink); }
+body.viewer .sbtab:hover { background: #fff7dc; }
+body.viewer .sbtab.on { background: var(--sun); color: var(--paper); text-shadow: 0 2px 0 rgba(0, 0, 0, .25); }
+body.viewer .sbpane { gap: 10px; }
+body.viewer #paneControl { overflow-x: hidden; overflow-y: auto; padding: 0 8px 10px 0; margin-right: -8px; scrollbar-width: thin; scrollbar-color: rgba(248, 237, 203, .5) transparent; }
+body.viewer .sidebar .side { width: auto; margin: 0; display: grid; gap: 10px; flex: 0 0 auto; }
+
+/* control panel: the buttons, the line (a decoration that becomes the timeline), then move number | settings | fork */
+body.viewer .sidebar .bar { position: static; flex: 0 0 auto; display: grid; gap: 8px; padding: 10px 12px 12px; background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); color: var(--ink); }
+body.viewer .sidebar .controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; flex-wrap: nowrap; }
+body.viewer .sidebar .controls button { flex: none; width: 40px; height: 40px; min-width: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; background: var(--sun); color: var(--ink); border: 4px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink); cursor: pointer; transition: transform .08s, box-shadow .08s; }
+body.viewer .sidebar .controls button:hover:not(:disabled) { background: var(--sun); transform: translateY(-2px); }
+body.viewer .sidebar .controls button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+body.viewer .sidebar .controls button:disabled { opacity: .35; box-shadow: none; }
+body.viewer .sidebar .controls #play { width: 50px; height: 50px; margin: -3px 0; background: var(--gold); }
+body.viewer .sidebar .controls #play.on { background: var(--paper); }
+body.viewer .sidebar .controls button svg { width: 19px; height: 19px; fill: var(--ink); }
+body.viewer .sidebar .controls button svg.gearicon { width: 22px; height: 22px; }
+body.viewer .sidebar .controls .settingsbtn { order: 2; background: var(--paper); box-shadow: 0 3px 0 var(--ink); }
+body.viewer .sidebar .controls .settingsbtn:hover:not(:disabled) { background: var(--gold); }
+body.viewer .sidebar .controls .jump { order: 1; flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 12px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink);
+  font: 600 17px 'Barlow Condensed', system-ui, sans-serif; white-space: nowrap; }
+body.viewer .sidebar .controls .jump input { flex: 1 1 0; min-width: 0; width: 3rem; padding: 0; border: 0; background: transparent; color: var(--ink); font: 700 22px 'Barlow Condensed', system-ui, sans-serif; box-shadow: none; -moz-appearance: textfield; }
+body.viewer .sidebar .controls .jump input:focus { outline: 0; }
+body.viewer .jumpof { font: 600 15px 'Barlow Condensed'; opacity: .55; margin-left: auto; }
+body.viewer .sidebar .controls .forkbtn { order: 3; width: auto; height: auto; border-radius: 999px; padding: 9px 16px; background: var(--teal); color: var(--paper); border: 3px solid var(--ink); box-shadow: none; font: 400 15px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .sidebar .controls .forkbtn:hover:not(:disabled) { background: var(--teal2); transform: none; }
+body.viewer .sidebar .controls .forkbtn:disabled { opacity: .45; }
+body.viewer .sidebar .controls2 { gap: 8px; }
+body.viewer .tldeco { position: relative; height: 22px; margin: 0 4px; }
+body.viewer .tldeco[hidden] { display: none; }
+body.viewer .tldeco i { position: absolute; left: 0; right: 0; top: 50%; border-top: 3px dashed rgba(23, 38, 43, .38); }
+body.viewer .tldeco i::after { content: ""; position: absolute; left: 50%; top: -9px; width: 14px; height: 14px; margin-left: -7px; box-sizing: border-box; border-radius: 50%; background: var(--gold); border: 3px solid var(--ink); }
+body.viewer .sidebar .timeline { flex: none; width: auto; max-width: none; height: 22px; margin: 0 4px; border: 3px solid var(--ink); border-radius: 9px; background: #fff; box-sizing: border-box; cursor: pointer; }
+body.viewer .timeline::before { display: none; }
+body.viewer .tlseg { border-left: 3px solid var(--ink); }
+body.viewer .tlseg:first-child { border-left: 0; }
+body.viewer .tlseg:hover { background: rgba(238, 108, 43, .25); }
+body.viewer .tlhead { top: -6px; bottom: -6px; width: 8px; margin-left: -4px; border-radius: 3px; background: var(--ink); border: 2px solid var(--paper); box-shadow: none; }
+
+/* info boxes */
+body.viewer .pp { --pc: #888; padding: 0; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); overflow: hidden; }
+body.viewer .pp:last-child { border-radius: 20px; }
+body.viewer .pp.active { box-shadow: 0 6px 0 var(--ink), 0 0 0 5px var(--gold); }
+body.viewer .pphead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; padding: 4px 8px 4px 14px; background: var(--pc); color: #fff; border-bottom: 4px solid var(--ink); }
+body.viewer .pp.light .pphead { color: var(--ink); }
+body.viewer .pphead .who { min-width: 0; display: flex; align-items: center; gap: 9px; }
+body.viewer .ppname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 18px 'Bowlby One', system-ui, sans-serif; color: inherit; text-decoration: none; text-shadow: 0 2px 0 rgba(0, 0, 0, .28); -webkit-text-stroke: 0; }
+body.viewer .pp.light .ppname { text-shadow: none; }
+body.viewer .ppname.light { -webkit-text-stroke: 0; }
+body.viewer .pp .live { width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; background: var(--gold); border: 3px solid var(--ink); flex: none; animation: pp-blink 2.4s ease-in-out infinite; }
+@keyframes pp-blink { 50% { background: #fff; } }
+body.viewer .pphead .clock { margin: 0 4px 0 auto; font-size: 17px; background: rgba(255, 255, 255, .85); color: var(--ink); }
+body.viewer .poveye { color: inherit; }
+body.viewer .burst { position: relative; width: 52px; height: 52px; margin: -4px 0; flex: none; display: grid; place-items: center; }
+body.viewer .burst svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+body.viewer .burst b { position: relative; font: 400 23px 'Bowlby One', system-ui, sans-serif; color: var(--ink); text-shadow: none; }
+body.viewer .ppscore { display: inline-flex; flex: none; }
+body.viewer .pp .ppres { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; align-items: start; text-align: center; margin: 0; padding: 8px 10px 4px; border: 0; }
+body.viewer .rt { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+body.viewer .rt img { display: block; width: auto; }
+body.viewer .rt b { font: 400 20px/1 'Bowlby One', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; }
+body.viewer .rt.ov { display: grid; place-items: center; height: 50px; }
+body.viewer .rt.ov img { grid-area: 1 / 1; height: 48px; }
+body.viewer .rt.ov b { grid-area: 1 / 1; color: #fff; font-size: 25px; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+body.viewer .rt.ov.dk b { color: #000; text-shadow: none; }
+body.viewer .rt.ov small { position: absolute; right: -3px; top: -3px; font: 700 14px 'Barlow Condensed', system-ui, sans-serif; background: var(--gold); border: 2px solid var(--ink); border-radius: 9px; padding: 0 5px; }
+body.viewer .rt.ov.money img { border: 0; border-radius: 0; background: none; box-sizing: border-box; }
+body.viewer .rt.xt { flex-direction: column; justify-content: flex-start; gap: 0; height: 50px; }
+body.viewer .rt.xt img { height: 33px; }
+body.viewer .rt.xt b { font-size: 24px; margin-top: -1px; }
+body.viewer .pp .ppres2 { display: flex; align-items: center; gap: 14px; margin: 0 10px; padding: 5px 0; min-height: 38px; border: 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .ppres2 .rt { gap: 7px; }
+body.viewer .ppres2 .rt img { height: 32px; }
+body.viewer .ppres2 .rt b { font-size: 24px; }
+body.viewer .ppres2 .rt b small { font: 700 17px 'Barlow Condensed', system-ui, sans-serif; opacity: .6; }
+body.viewer .ppres2 .rt b.over { color: var(--rust); }
+body.viewer .ppres2 .egx b { font-size: 20px; }
+body.viewer .ppres2 .bons { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; justify-content: flex-end; }
+body.viewer .ppres2 .btoken { display: inline-flex; margin: 0; }
+body.viewer .ppres2 .btoken img { height: 36px; width: auto; display: block; }
+body.viewer .pp .ppactions { display: flex; justify-content: space-between; margin: 0 10px; padding: 9px 0 0; border: 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .ppactions .ac { position: relative; display: inline-flex; box-sizing: content-box; border: 4px solid var(--act1); border-radius: 9px; background: #fff; }
+body.viewer .ppactions .ac.lvl2 { border-color: var(--act2); }
+body.viewer .ppactions .ac img.icon { width: 38px; height: 38px; display: block; }
+body.viewer .ppactions .ac .variant { left: -11px; top: -11px; width: 25px; height: 25px; }
+body.viewer .ppactions .ac.chosen { border-color: var(--ink); box-shadow: 0 0 0 3px var(--gold), 0 5px 0 var(--ink); transform: translateY(-5px); }
+body.viewer .pp .ppicons { display: grid; grid-template-columns: 1fr; gap: 2px; margin: 6px 10px 10px; padding-top: 7px; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .ppicons .icrow { display: flex; justify-content: space-around; }
+body.viewer .ppicons .ic { position: relative; display: inline-block; width: 44px; height: 44px; margin: 0 4px 4px 0; font-size: 0; }
+body.viewer .ppicons .ic .badge { width: 42px; height: 42px; border-radius: 50%; display: block; }
+body.viewer .ppicons .ic b { position: absolute; right: -4px; bottom: -4px; min-width: 28px; height: 28px; padding: 0 3px; box-sizing: border-box; display: grid; place-items: center; font: 400 19px/1 'Bowlby One', system-ui, sans-serif;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; color: var(--ink); }
+body.viewer .ppicons .ic.zero { opacity: 1; }
+body.viewer .ppicons .ic.zero .badge { opacity: .3; }
+body.viewer .ppicons .ic.zero b { opacity: .55; }
+
+/* log */
+body.viewer .sidebar .moves { flex: 1 1 0; min-height: 0; padding: 8px 10px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 600 17px/1.15 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .moves li { padding: 5px 0 5px 6px; border-bottom: 2px dashed rgba(23, 38, 43, .25); border-left-width: 5px; }
+body.viewer .moves li:hover { background: rgba(244, 182, 63, .3); }
+body.viewer .moves li.on { background: rgba(238, 108, 43, .3); font-weight: 700; }
+body.viewer .moves .n { color: var(--ink); opacity: .5; min-width: 34px; font-weight: 700; }
+
+/* ---- settings pop-up ------------------------------------------------------------------------------------------------------------------------------------------------------- */
+body.viewer .modal { background: rgba(7, 44, 55, .62); }
+body.viewer .modalbox { width: 440px; box-sizing: border-box; padding: 16px 20px 20px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink); }
+body.viewer .modalhead { margin-bottom: 14px; font: 400 24px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .modalx { width: 38px; height: 38px; margin: 0; border: 4px solid var(--ink); border-radius: 50%; background: var(--sun); color: var(--paper); }
+body.viewer .modalx:hover { color: var(--paper); background: #ff7f3e; }
+body.viewer .setrow { padding: 14px 0 0; margin-top: 14px; border-top: 3px dashed rgba(23, 38, 43, .4); font: 700 21px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .setspeed { gap: 6px; }
+body.viewer .setspeed button { min-width: 0; padding: 6px 14px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font: 400 16px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .setspeed button:hover { background: #fff7dc; }
+body.viewer .setspeed button.on { background: var(--gold); }
+body.viewer .setswitch { width: 64px; height: 34px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; box-sizing: border-box; }
+body.viewer .setswitch::after { top: 3px; left: 3px; width: 22px; height: 22px; border: 0; background: var(--ink); }
+body.viewer .setswitch:checked { background: var(--sun); }
+body.viewer .setswitch:checked::after { left: 33px; background: var(--paper); }
+
+/* ---- the hand: the cards of the hand / of the endgame cards lie in a fan at the bottom left and rise on hover. The dock is a fixed box (and its ::after covers the strip where the cards lie at rest), so the
+   cards that move up under the pointer do not take the hover away: the fan never flickers ------------------------------------------------------------------------------------- */
+body.viewer .dock { left: 14px; bottom: 0; z-index: 35; width: 700px; height: 150px; max-width: none; display: block; pointer-events: none; }
+body.viewer .dock::after { content: ""; position: absolute; left: 150px; bottom: 0; width: 560px; height: 124px; pointer-events: auto; }
+body.viewer .dockbar { position: absolute; left: 0; bottom: 6px; z-index: 3; display: grid; gap: 6px; padding: 0; background: none; box-shadow: none; border-radius: 0; pointer-events: auto; }
+body.viewer .dockgroup { display: grid; grid-template-columns: auto auto; gap: 3px 6px; align-items: center; padding: 6px 8px 7px; background: var(--paper); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink); }
+body.viewer .dockwho { grid-column: 1 / -1; display: flex; align-items: center; gap: 7px; max-width: 126px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 16px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .dockwho::before { content: ""; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: var(--pc); border: 3px solid var(--ink); flex: none; }
+body.viewer .dockpair { display: contents; }
+body.viewer .dockbtn { position: relative; width: 52px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; gap: 4px; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: none; opacity: 1; cursor: pointer; }
+body.viewer .dockbtn:hover { background: #fff7dc; transform: none; }
+body.viewer .dockbtn.on { background: var(--sun); box-shadow: none; }
+body.viewer .dockbtn img { width: 22px; height: 22px; }
+body.viewer .dockn { position: static; min-width: 0; height: auto; padding: 0; border: 0; border-radius: 0; background: none; -webkit-text-stroke: 0; paint-order: normal; text-shadow: none; color: var(--ink); font: 400 17px/1 'Bowlby One', system-ui, sans-serif; }
+body.viewer .dockbtn.on .dockn { color: var(--paper); }
+body.viewer .dockfold { position: absolute; left: 0; bottom: 100%; width: 30px; height: 30px; margin: 0 0 8px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); color: var(--ink); font-size: 12px; cursor: pointer; pointer-events: auto; display: none; }
+body.viewer .dockpanel { position: absolute; left: 150px; top: 18px; z-index: 2; width: 560px; max-width: none; max-height: none; overflow: visible; padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; pointer-events: auto;
+  transition: transform .35s cubic-bezier(.2, .9, .2, 1) .08s; }
+body.viewer .dock:hover .dockpanel { transform: translateY(-82px); transition-delay: 0s; }
+body.viewer .dockhead { display: none; }
+body.viewer .dockpanel .cards { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 0; padding: 14px 0 0 12px; }
+body.viewer .dockpanel .cards .card, body.viewer .dockpanel .cards.small .card { flex: none; width: 128px; height: auto; border: 0; border-radius: 9px; box-shadow: 0 4px 0 var(--ink), 0 0 0 3px var(--ink);
+  margin-right: calc(-1 * (128px - min(106px, 520px / var(--n, 5)))); transform: rotate(calc(var(--i, 0) * 3deg)); transform-origin: 50% 120%; }
+body.viewer .dockpanel .cards .card:hover { z-index: 6; }
+body.viewer .dockpanel .cards .empty { display: none; }
+body.viewer .dockpanel .cards .card.markable.marked { box-shadow: 0 4px 0 var(--ink), 0 0 0 5px var(--gold); }
+
+/* ---- loading box and other small things ------------------------------------------------------------------------------------------------------------------------------------ */
+body.viewer .status { background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
+body.viewer .status .peta { color: #36484d; }
+body.viewer .status .progresscircle .ptrack { stroke: #d8cba0; }
+body.viewer .status .progresscircle .parc { stroke: var(--sun); }
+body.viewer .status .progresscircle .ppct { fill: var(--ink); }
+
+/* ---- fork / sandbox / live play: the extra boxes and buttons wear the same paper ------------------------------------------------------------------------------------------ */
+body.viewer .sidebar .forkinfo { padding: 10px 12px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 600 16px/1.4 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkinfo a { color: var(--teal); }
+body.viewer .forkinfo .muted { color: #52666B; }
+body.viewer .forkinfo button { margin: 2px 4px 2px 0; padding: 3px 12px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font: 700 15px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkinfo button:hover { background: var(--gold); }
+body.viewer .forkinfo .seedinput { width: 100%; box-sizing: border-box; border: 3px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); font: 700 16px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkpanel, body.viewer .sbtools { padding: 8px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font-family: 'Barlow', system-ui, sans-serif; }
+body.viewer .forkpanel .muted { color: #52666B; }
+body.viewer .abtn { background: var(--act1); border-color: var(--ink); border-width: 3px; }
+body.viewer .abtn.lvl2 { background: var(--act2); border-color: var(--ink); }
+body.viewer .abtn.xbtn, body.viewer .abtn.gen, body.viewer .abtn.gainx { background: #5a5856; border-color: var(--ink); }
+body.viewer .forkmove { border-width: 3px; border-radius: 999px; font: 700 15px 'Barlow Condensed', system-ui, sans-serif; }

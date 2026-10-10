@@ -82,6 +82,7 @@ export function render() {
   }
   if (!same) { S.prevZones = S.curZones; S.curZones = {}; S.prevZoneData = S.curZoneData; S.curZoneData = {}; }
   $('jump').value = S.step;
+  const jo = $('jumpof'); if (jo) jo.textContent = '/ ' + (S.replay.steps.length - 1);
   for (const id of ['first', 'prev']) $(id).disabled = atStart();
   const fb = $('fork');
   if (fb) fb.disabled = !s.fork;

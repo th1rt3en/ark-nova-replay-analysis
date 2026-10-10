@@ -4,17 +4,17 @@ Scope: `web/` of the replay / fork / sandbox / live play viewer (`replay.html`, 
 
 ## Hard constraints
 - Static files served by FastAPI `StaticFiles` from `web/`. **No build step, no bundler, no npm.** JS is native ES modules (`<script type="module" src="/js/main.js">`).
-- Visual output must stay pixel-identical unless `changelog.md` (the change documentation) says otherwise. Prefer behaviour-preserving moves.
+- Visual output must stay as `changelog.md` (the change documentation) describes it; the default look is the Park Poster theme (section 19). Prefer behaviour-preserving moves.
 - Backend (`src/`) is owned by someone else. If a frontend change needs a new API field, write "BACKEND NEEDED" in the matching section of `changelog.md`; do not edit `src/`.
 
 ## Page -> script wiring
-`replay.html`, `fork.html`, `sandbox.html` load `/js/main.js` as a module; `replay.html` sets no mode flag, `fork.html` sets `window.FORK_MODE = true` (inline script), `sandbox.html` sets `FORK_MODE` and `SANDBOX_MODE` only when started with `?play=1` and a stored game; `play.html` sets `FORK_MODE` and `PLAY_MODE` once a game id is in the URL (`state.js` exports `PLAY`; PLAY implies FORK). `main.js` does not boot when `window.MAP_EDITOR` is set. `state.js` reads those flags once and exports them as `FORK` / `SANDBOX`. CSS: `/style.css` (site-wide) + `/css/replay.css` (viewer; ~930 lines, deliberately left as one file with later rules overriding earlier "round N" blocks - **do not reorder or merge rules**: an automated merge changed computed layout by 1-4 px).
+`replay.html`, `fork.html`, `sandbox.html` load `/js/main.js` as a module; `replay.html` sets no mode flag, `fork.html` sets `window.FORK_MODE = true` (inline script), `sandbox.html` sets `FORK_MODE` and `SANDBOX_MODE` only when started with `?play=1` and a stored game; `play.html` sets `FORK_MODE` and `PLAY_MODE` once a game id is in the URL (`state.js` exports `PLAY`; PLAY implies FORK). `main.js` does not boot when `window.MAP_EDITOR` is set. `state.js` reads those flags once and exports them as `FORK` / `SANDBOX`. CSS: `/style.css` (site-wide) + `/css/replay.css` (viewer; ~930 lines, deliberately left as one file with later rules overriding earlier "round N" blocks - **do not reorder or merge rules**: an automated merge changed computed layout by 1-4 px) + `/css/table.css` (structure) + `/css/parkposter.css` (the default theme, loaded last; it restyles everything with `body.viewer ...` selectors, see changelog.md section 19; another theme replaces this one file).
 
 ## Scaling (changelog.md section 2)
 Desktop (window >= 900 px) is laid out at a fixed design viewport of 1920x1080 and zoomed (`body.style.zoom`, `fitScale` in `layout.js`) to the window width. Consequences for every future edit: do not add width / height `@media` queries or raw `vh` / `vw` for desktop styles (use `--vh` / `--vw`); when JS mixes `getBoundingClientRect` / mouse coordinates (zoomed px) with `offsetWidth` / `clientWidth` / CSS px (layout px), divide by `S.scale`. Below 900 px the old responsive rules (`@media (max-width: 899px) and ...`) apply unscaled.
 
 ## Page structure (changelog.md sections 3-4)
-`.layout` > `main` (move bar, shared area as a grid with equally high display and association elements (fitDisplay), zoos) + `aside.sidebar` (fixed on the right; tabs Control | Log). Structure CSS lives in `css/table.css` (loaded after `replay.css`; replay.css still holds the older component rules and some superseded structure rules that table.css overrides). `sidebar.js` owns the tabs and the fitting of the info panel; `layout.js` owns scaling and the display fit.
+`.layout` > `main` (move bar, shared area as a grid with equally high display and association elements (fitDisplay), zoos) + `aside.sidebar` (fixed on the right; tabs Control | Log above the panes). The move bar is sticky at the top of `main`: `.movepill` (step text / action bar) + `#hdrstats` (round and break pills). Structure CSS lives in `css/table.css`, the look in `css/parkposter.css` (loaded after `replay.css`; replay.css still holds the older component rules that the later files override). `sidebar.js` owns the tabs; `layout.js` owns scaling and the display fit (it accounts for the panels' border and padding).
 
 Interfaces (API calls, URL parameters, browser storage keys): changelog.md section 0.1.
 
@@ -37,14 +37,14 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `fork.js` | fork mode: `initFork`, placement controls, `commitSteps`, `playFork`, `forkBar` |
 | `shared.js` | table centre: card folders (zoo place names + numbers like BGA), display, reputation track, thresholds, conservation track |
 | `pile.js` | discard / endgame deck popup |
-| `side-panel.js` | per-player tracker column, break track, deck/discard icons |
-| `dock.js` | floating hand / endgame-card dock |
+| `side-panel.js` | the two player info boxes (`sidePanel`) and the round / break pills of the top bar (`headerStats`, into `#hdrstats`); no deck / discard counters |
+| `dock.js` | hand / endgame-card dock: a fan of cards at the bottom left that rises on hover (CSS), per-player buttons |
 | `zoo.js` | one player's zoo |
 | `log-labels.js` | move-list label icons and engine badge |
 | `layout.js` | `fitScale` (page zoom), `fitDisplay`; registers the resize listener |
 | `frames.js` | the frames of a replay step (step text, turn-end gate, decision), see changelog.md section 9 |
 | `notips.js` | one rule that removes tooltips from pictures (images, SVG, project panel, image-only elements), see changelog.md section 7 |
-| `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (info panel zoom) (spreadInfo: the player boxes fill the pane) |
+| `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (now only resets the zoom of `#side`) |
 | `playback.js` | autoplay, speed, timeline (shown or hidden by the settings pop-up, changelog.md 8.10), `go(step, frame)`, `stepBy`, move list |
 | `settings.js` | settings pop-up (autoplay speed, timeline row on/off; localStorage `settings`), changelog.md 8.10 |
 | `sandbox.js` | sandbox lobby/setup tools |

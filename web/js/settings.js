@@ -14,10 +14,12 @@ export function toggleSettings() {
   if (m.hidden) { m.hidden = false; m.querySelector('.modalx').focus(); } else close();
 }
 function close() { const m = $('settingsModal'); if (m) m.hidden = true; }
-// the timeline is a row of its own between the two button rows of the control panel; without it the control panel is as high as the upper project area (sidebar.js)
+// the timeline is a row of its own between the two button rows of the control panel; while it is off, a decorative line (#tldeco) holds its place
 export function applyTimeline() {
   const t = $('timeline');
   if (t) t.hidden = !S.showTimeline;
+  const d = $('tldeco');                                                   // the decorative line that the timeline replaces
+  if (d) d.hidden = S.showTimeline;
   fitSidebar();
 }
 export function setupSettings() {
