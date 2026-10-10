@@ -46,7 +46,7 @@ export function render() {
   const s = S.replay.steps[S.step], st = povState(frameState());
   const cur = $('current'), kind = frameKind();
   cur.replaceChildren();
-  cur.hidden = kind !== 'text' && kind !== 'both';                 // replay: the step text and the bar are never shown together (frames.js)
+  cur.hidden = kind !== 'text' && kind !== 'both' && (FORK || kind !== 'draft');       // (the replay's draft frame shows the step text in the bar: the cards are in a lightbox)                 // replay: the step text and the bar are never shown together (frames.js)
   if (!cur.hidden) {
     let text = frameText();
     if (FORK && typeof text === 'string') text = text.replace(/^Fork of table #\d+ after step \d+: /, '');       // (the first step of a fork: the server prefixes the label; the fork box above says where it comes from)

@@ -273,3 +273,19 @@ body.viewer .setval { font: 400 18px 'Bowlby One', system-ui, sans-serif; color:
 body.viewer .setrange { width: 100%; margin: 0; accent-color: var(--rust); cursor: pointer; }
 body.viewer .setticks { display: flex; justify-content: space-between; font: 600 14px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); opacity: .7; padding: 0 2px; }
 body.viewer .moves li[hidden] { display: none; }
+
+/* ---- the action card draft of the replay: a lightbox over the boards (not over the sidebar, which keeps the playback buttons), the cards in full size, one row per player ----------- */
+body.viewer .draftbox { position: fixed; left: 0; top: 0; z-index: 25; width: calc(100% - var(--sidebar-w) - 24px); height: calc(var(--vh, 1vh) * 100); display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 40, 50, .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+body.viewer .draftbox[hidden] { display: none; }
+body.viewer .draftpop { box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
+body.viewer .draftpop .draftgroup { flex: none; width: 100%; padding: 0; border: 0; }
+body.viewer .draftpop .draftgroup + .draftgroup { padding: 14px 0 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .draftpop .drafthead { font: 700 24px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .draftpop .draftcards { flex-wrap: nowrap; gap: 14px; }
+body.viewer .draftpop .draftcard { flex: none; width: clamp(120px, calc(1230px / var(--cn, 5)), 250px); border-radius: 12px; box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 4px 10px rgba(0, 0, 0, .35); }
+body.viewer .draftpop .draftcard img { border-radius: 12px; }
+body.viewer .draftpop .draftcard.picked { outline: 5px solid #3F9A4E; outline-offset: 2px; }
+body.viewer .draftpop .draftcard.marked { outline-color: var(--gold); }
+body.viewer .draftpop .draftkept { padding: 0; margin-right: 22px; }
+body.viewer .draftpop .draftkept::after { right: -14px; border-right: 3px dashed rgba(23, 38, 43, .4); }

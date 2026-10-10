@@ -89,6 +89,12 @@ export function turnButtons(bar, turn, active, confirm) {
     bar.append(b);
   }
 }
+// the lightbox of the action card draft in the replay (a layer of its own under the sidebar's side of the page: the sidebar with the playback buttons stays usable)
+function draftPopup() {
+  let box = $('draftbox');
+  if (!box) { box = el('div', 'draftbox'); box.id = 'draftbox'; box.hidden = true; document.body.append(box); }
+  return box;
+}
 export const draftMarks = new Set();                                          // the cards the viewer highlighted with a click: cleared at every step
 function draftBar(bar, d) {
   const groups = [], choosers = [];
@@ -187,10 +193,20 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   S.forkGate = false;
   bar.replaceChildren();
   bar.classList.remove('draftbar');
+  const popup = bar === $('actionbar') && !FORK ? draftPopup() : null;       // replay: the action card draft is not drawn into the move bar (the cards are far too high for it) but into a lightbox over the boards
+  if (popup) { popup.hidden = true; popup.replaceChildren(); }
   const cur = S.replay.steps[S.step], o = cur.options;
   if (kind === 'text') { bar.hidden = true; return; }
   // The action card draft (a Marine Worlds mechanism) has its own frame in the replay, 'draft': the bar alone, without step text, with the cards on offer and what each
   // player picked / kept so far (point of view: only the viewer's own offers). The fork shows it together with the step text, like every bar.
+  if (popup && kind === 'draft' && st.phase === 'setup' && st.draft && st.draft.stage !== 'done') {
+    const pop = el('div', 'draftpop');
+    if (draftBar(pop, st.draft)) {
+      pop.style.setProperty('--cn', String(Math.max(3, ...[0, 1].map((i) => (st.draft.offers[i] || []).length + (st.draft.stage === 'pick2' ? 1 : 0)))));
+      popup.append(pop); popup.hidden = false; bar.hidden = true;
+      return;
+    }
+  }
   if (st.phase === 'setup' && st.draft && st.draft.stage !== 'done' && (FORK || kind === 'draft') && draftBar(bar, st.draft)) return;
   if (!FORK && st.phase === 'setup') {                                          // the starting hand: 8 cards drawn, 4 to discard (initial selection)
     const seat = prioritySeat([0, 1].filter((i) => S.replay.steps[S.step].state.players[i].hand.length > 4));
