@@ -39,7 +39,7 @@ body.viewer .layout { --sidebar-w: 320px; padding: 0 calc(var(--sidebar-w) + 28p
 body.viewer main { padding-bottom: 8px; }
 /* the band behind the top row (move bar pills, Round, Break and the sidebar's tabs): fixed, the full width, under them (z 15 < sidebar 20 < move bar 30) and over the scrolling boards */
 @media (min-width: 900px) { #app::after { content: ""; position: fixed; left: 0; right: 0; top: 0; height: 80px; box-sizing: border-box; z-index: 15; pointer-events: none; background: #08303b; border-bottom: 4px solid var(--gold); } }
-body.viewer .movebar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; margin: 0 -14px 14px; padding: 8px 14px 12px; min-height: 0; box-sizing: border-box;
+body.viewer .movebar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; margin: 0 -14px 6px; padding: 8px 14px 12px; min-height: 0; box-sizing: border-box;
   background: none; border: 0; border-radius: 0; box-shadow: none; font-size: 1rem; }
 body.viewer .movepill { position: relative; flex: 1 1 0; min-width: 0; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; min-height: 60px; padding: 3px 44px 3px 22px;
   background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 29px; box-shadow: 0 4px 0 var(--ink);
@@ -99,7 +99,7 @@ body.viewer .card { border-radius: 7px; border-color: var(--ink); }
 
 /* ---- sidebar: tabs, control panel, info boxes (every one a panel of its own), the log ---------------------------------------------------------------------------------- */
 body.viewer aside.sidebar { top: 8px; right: 12px; width: var(--sidebar-w); height: calc(var(--vh, 1vh) * 100 - 20px); gap: 10px; }
-body.viewer .sbtabs { flex: 0 0 auto; gap: 8px; height: 60px; }
+body.viewer .sbtabs { flex: 0 0 auto; gap: 8px; height: 60px; margin-bottom: 8px; }
 body.viewer .sbtab { flex: 1 1 0; height: 60px; box-sizing: border-box; padding: 0; border: 4px solid var(--ink); border-radius: 14px; background: var(--paper); color: var(--ink); font: 400 17px 'Bowlby One', system-ui, sans-serif;
   box-shadow: 0 4px 0 var(--ink); }
 body.viewer .sbtab:hover { background: #fff7dc; }
