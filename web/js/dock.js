@@ -35,7 +35,14 @@ const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.
 const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110, DROP_MS = 560, DROP_GAP = 100, TRAY_SLIDE_MS = 350;       // (the drop: the starting hand falls into the floating tray once it has slid up)
 let fanIntroState = null, fanDone = false;
 const lastCount = {};                                                                                        // (per seat: the cards in the hand at the last drawing and whether the game was still in its setup; only setup with an empty hand -> cards = the starting hand is dealt)
-document.addEventListener('handmode', () => { fanDone = false; fanIntroState = null; });       // (the setting changed: the next fan rises and spreads)
+let fanRaised = false;                                                                                      // (the fan stands up like on hover until the settings close: after the switch from an unfolded tray)
+document.addEventListener('handmode', () => {                                                                // (the setting changed: the next fan rises and spreads)
+  fanDone = false; fanIntroState = null;
+  if (S.handMode !== 'fan') { fanRaised = false; return; }
+  fanRaised = !S.dockHidden;                                                                                 // (an unfolded tray -> an unfolded fan that sinks to rest when the settings close; a folded tray -> the fan appears at rest)
+  if (S.dockHidden) { S.dockHidden = false; saveDock(); }                                                    // (the fan has no folded state but "not drawn": it would never appear)
+});
+document.addEventListener('settingsclosed', () => { if (!fanRaised) return; fanRaised = false; const d = $('dock'); if (d) d.classList.remove('raised'); });
 function fanIntro(row, handCount, seat, setup, tray) {
   const prev = lastCount[seat]; lastCount[seat] = { count: handCount, setup };
   const cards = [...row.children].filter((c) => c.classList.contains('card') && !c.classList.contains('card-gone'));
@@ -68,7 +75,7 @@ function fanIntro(row, handCount, seat, setup, tray) {
 export function renderDock(st) {
   let dock = $('dock');
   if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
-  dock.className = 'dock' + (S.handMode === 'tray' ? ' traymode' : '');                 // (the hand is shown in a fan at the screen edge, or in a floating tray)
+  dock.className = 'dock' + (S.handMode === 'tray' ? ' traymode' : '') + (S.handMode === 'fan' && fanRaised ? ' raised' : '');                 // (the hand is shown in a fan at the screen edge, or in a floating tray)
   if (SANDBOX && S.replay.setup) { dock.replaceChildren(); return; }                // (nothing to show before the game: the seat and the maps are chosen first)
   const panel = el('div', 'dockpanel');
   const bar = el('div', 'dockbar');
