@@ -546,8 +546,9 @@ def space_bonuses(state, p, kind: str, k: int) -> None:
 
     Most maps: an upgrade for the 2nd partner zoo and for the 2nd university. Map 11 (Caves): one upgrade for the first set (partner zoo +
     university) and one for the third worker (see `bonuses.hire_worker`); maps 12 (AI) and T1: one upgrade for the first set and one for
-    the second; map 11 also gives 1 conservation for the third set. 3rd partner zoo: hire a worker. 4th partner zoo / 3rd university:
-    conservation points that depend on the map."""
+    the second; map 11 also gives 1 conservation for the third set and an Extra Shift for the second set (the pair is complete: 40 of 44 second partner
+    zoos and 11 of 21 second universities that completed it were followed by workers taken back, 0 of 98 that did not). 3rd partner zoo: hire a worker.
+    4th partner zoo / 3rd university: conservation points that depend on the map."""
     g = _g()
     n_p, n_u = len(partners(p)), len(universities(p))
     old_p, old_u = n_p - (kind == "partner"), n_u - (kind == "university")
@@ -561,7 +562,7 @@ def space_bonuses(state, p, kind: str, k: int) -> None:
             bonuses.defer(state, dict(upgrade, source=f"set {new_min}"))
         if p.map_id == "11" and new_min > old_min and new_min == 3:
             g._gain(state, p.seat, conservation=1)
-    if p.map_id == "11" and k == 2:                           # map 11 (Caves): the 2nd partner zoo / 2nd university recalls a worker from the association board (Extra Shift; logs)
+    if p.map_id == "11" and min(n_p, n_u) > min(old_p, old_u) and min(n_p, n_u) == 2:       # map 11 (Caves): the second partner zoo + university pair recalls a worker from the association board (Extra Shift; logs)
         bonuses.defer(state, {"kind": "extra_shift", "source": "map11", "optional": True, "player": p.seat})
     if kind == "partner":
         if k == 3:

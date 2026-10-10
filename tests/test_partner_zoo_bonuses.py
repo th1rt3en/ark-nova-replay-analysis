@@ -87,3 +87,31 @@ def test_on_map_11_the_third_partner_zoo_university_pair_gives_one_conservation(
 def test_no_other_map_gives_a_conservation_for_the_third_pair(map_id):
     got = _pairs(map_id, "pppuuu")
     assert got == [0, 0, 0, 0, 0, association.map_bonus(map_id, "university3")]                 # (only the 3rd university's own bonus of the map)
+
+
+def _extra_shifts(map_id, order):
+    """After each placement of `order` (p / u), how many Extra Shift effects are pending."""
+    s = in_action()
+    p = s.players[0]
+    p.map_id = map_id
+    seen, out = {"p": 0, "u": 0}, []
+    for what in order:
+        seen[what] += 1
+        if what == "p":
+            association.place_partner(s, p, partner(seen["p"], ("Africa", "Asia", "Europe", "Americas")[seen["p"] - 1]))
+        else:
+            association.place_university(s, p, Token(800 + seen["u"], ("fac-science-rep", "fac-science-money", "fac-science-xtoken")[seen["u"] - 1], "association_4"))
+        out.append(len([e for e in s.current_action.get("threshold", []) if e["kind"] == "extra_shift"]))
+    return out
+
+
+@pytest.mark.parametrize("order,at", [("ppuuu", 4), ("uuppp", 4), ("pupu", 4), ("puup", 4), ("ppp", None), ("uuu", None), ("pppuu", 5), ("uupp", 4)])
+def test_on_map_11_the_second_pair_gives_one_extra_shift_when_it_is_complete(order, at):
+    got = _extra_shifts("11", order)
+    want = [0] * len(order) if at is None else [0] * (at - 1) + [1] * (len(order) - at + 1)         # (pending effects stay in the list: it is 1 from the placement that completes the pair on)
+    assert got == want
+
+
+@pytest.mark.parametrize("map_id", [m for m in MAPS if m != "11"])
+def test_no_other_map_gives_an_extra_shift_for_the_partner_zoo_university_pairs(map_id):
+    assert set(_extra_shifts(map_id, "ppuuu")) == {0}

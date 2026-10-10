@@ -218,18 +218,19 @@ export function associationStrip(p, map, seat) {
   const bonuses = map.association_bonuses || {};            // conservation points of the 4th partner zoo and the 3rd university, shown on their (empty) slots
   conservationBonus(s, 175, STRIP.partner[4] + 22, 92, bonuses.partner4, '4th partner zoo: ' + bonuses.partner4 + ' conservation');
   conservationBonus(s, 175, STRIP.university[3] + 22, 92, bonuses.university3, '3rd university: ' + bonuses.university3 + ' conservation');
-  // the 3rd partner zoo hires a worker on every map: the worker bonus on its yellow pentagon, like the bonus of the 8 reputation space, on the (empty) 3rd slot
-  {
-    const H = 84, cy = STRIP.partner[3] + 22, g = svg('g', { class: 'hirebonus' });
+  // the worker bonus on its yellow pentagon, like the bonus of the 8 reputation space and the Worker hexes of the zoo map (the proportions of a placement bonus: pentagon 80, icon 48 three units lower)
+  const workerBonus = (cx, cy, H, tip, cls) => {
+    const g = svg('g', { class: cls });
     const picture = (id, y, h) => {
       const [w0, h0] = S.iconSizes[id] || [h, h], w = w0 * h / h0;
-      g.append(svg('image', { href: iconUrl(id), x: 175 - w / 2, y: y - h / 2, width: w, height: h }));
+      g.append(svg('image', { href: iconUrl(id), x: cx - w / 2, y: y - h / 2, width: w, height: h }));
     };
-    picture(ICON_IDS.pentagon, cy, H);                                                // (the proportions of a placement bonus: pentagon 80, icon 48 three units lower)
+    picture(ICON_IDS.pentagon, cy, H);
     picture(ICON_IDS['bonus:Worker'] || 'r5c13', cy + H * 3 / 80, H * 48 / 80);
-    const tt = svg('title'); tt.textContent = '3rd partner zoo: hire a worker'; g.append(tt);
+    const tt = svg('title'); tt.textContent = tip; g.append(tt);
     s.append(g);
-  }
+  };
+  workerBonus(175, STRIP.partner[3] + 22, 84, '3rd partner zoo: hire a worker', 'hirebonus');           // the 3rd partner zoo hires a worker on every map
   // where the zoo map awards an action card upgrade: most maps on the 2nd partner zoo and the 2nd university; maps 12 and T1 on the first and the second *set*
   // (a partner zoo and a university), map 11 on the first set: a curved line joins the two slots of a set with the upgrade icon in its middle and an arrow from
   // each end pointing at it
@@ -246,10 +247,12 @@ export function associationStrip(p, map, seat) {
     putUpgrade(175, STRIP.partner[2] + 22, 84, 'Upgrade an action card (2nd partner zoo)');
     putUpgrade(175, STRIP.university[2] + 22, 84, 'Upgrade an action card (2nd university)');
   } else {
-    const items = sets.map((n) => ({ n, kind: 'upgrade' }));
-    if (map.id === '11') items.push({ n: 3, kind: 'conservation' });                  // map 11 (Caves): the third set (3 partner zoos + 3 universities) gives 1 conservation
-    items.forEach(({ n, kind }, i) => {
-      const side = i % 2 === 0 ? 1 : -1, ex = side === 1 ? 34 : 351 - 34, cx = side === 1 ? -34 : 351 + 34;        // the first set on the left margin, the second on the right
+    const items = sets.map((n, i) => ({ n, kind: 'upgrade', side: i % 2 === 0 ? 1 : -1 }));                      // the first set on the left margin, the second on the right
+    // map 11 (Caves): the second set (2 partner zoos + 2 universities) gives an Extra Shift (the worker bonus of the map), the third one 1 conservation. The sets overlap, so the lines cross once: the
+    // third one bulges further out on the left
+    if (map.id === '11') items.push({ n: 2, kind: 'extra-shift', side: -1 }, { n: 3, kind: 'conservation', side: 1, outer: true });
+    items.forEach(({ n, kind, side, outer }) => {
+      const ex = side === 1 ? 34 : 351 - 34, cx = side === 1 ? (outer ? -58 : -34) : 351 + 34;
       const y1 = STRIP.partner[n], y2 = STRIP.university[n];
       const pt = (t) => [(1 - t) * (1 - t) * ex + 2 * (1 - t) * t * cx + t * t * ex, (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * ((y1 + y2) / 2) + t * t * y2];
       s.append(svg('path', { d: 'M' + ex + ' ' + y1 + ' Q' + cx + ' ' + (y1 + y2) / 2 + ' ' + ex + ' ' + y2, fill: 'none', stroke: '#3a2616', 'stroke-width': 7, 'stroke-linecap': 'round' }));
@@ -262,6 +265,7 @@ export function associationStrip(p, map, seat) {
       }
       const [mx, my] = pt(0.5);
       if (kind === 'conservation') conservationBonus(s, mx, my, 84, 1, '1 conservation for the third set: a 3rd partner zoo and a 3rd university');
+      else if (kind === 'extra-shift') workerBonus(mx, my, 84, 'Extra Shift for the second set: a 2nd partner zoo and a 2nd university', 'extrashiftbonus');
       else putUpgrade(mx, my, 84, 'Upgrade an action card (set ' + n + ': a partner zoo and a university)');
     });
   }
