@@ -36,6 +36,7 @@ export function buildTimeline() {
   const tl = $('timeline'), n = S.replay.steps.length, starts = roundStarts();
   if (!tl) return;                                                       // (no timeline element on the page)
   tl.replaceChildren();
+  tl.append(el('div', 'tlfill'));                                        // (the part of the game that is over, left of the head; under the round marks)
   starts.forEach((a, k) => {
     const b = k + 1 < starts.length ? starts[k + 1] : n;
     const seg = el('div', 'tlseg');
@@ -44,14 +45,25 @@ export function buildTimeline() {
     tl.append(seg);
   });
   tl.append(el('div', 'tlhead'));
-  tl.onclick = (e) => {
-    const r = tl.getBoundingClientRect();
-    go(Math.round((e.clientX - r.left) / r.width * (n - 1)));
+  // a click goes to the step under the pointer; the head (or the whole bar) can be dragged: the board follows while the pointer moves (at most one redraw per frame)
+  const stepAt = (e) => { const r = tl.getBoundingClientRect(); return Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (n - 1)); };
+  let dragging = false, want = -1, frame = 0;
+  const flush = () => { frame = 0; if (want >= 0 && want !== S.step) go(want); want = -1; };
+  tl.onpointerdown = (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    dragging = true; tl.setPointerCapture(e.pointerId); tl.classList.add('dragging');
+    if (S.timer) setPlaying(false);                                       // (autoplay would fight the hand that holds the head)
+    want = stepAt(e); flush(); e.preventDefault();
   };
+  tl.onpointermove = (e) => { if (!dragging) return; want = stepAt(e); if (!frame) frame = requestAnimationFrame(flush); };
+  const end = (e) => { if (!dragging) return; dragging = false; tl.classList.remove('dragging'); if (tl.hasPointerCapture(e.pointerId)) tl.releasePointerCapture(e.pointerId); if (frame) { cancelAnimationFrame(frame); flush(); } };
+  tl.onpointerup = end; tl.onpointercancel = end;
 }
 export function updateTimeline() {
-  const head = document.querySelector('#timeline .tlhead');
-  if (head) head.style.left = (S.replay.steps.length > 1 ? S.step / (S.replay.steps.length - 1) * 100 : 0) + '%';
+  const head = document.querySelector('#timeline .tlhead'), fill = document.querySelector('#timeline .tlfill');
+  const pct = (S.replay.steps.length > 1 ? S.step / (S.replay.steps.length - 1) * 100 : 0) + '%';
+  if (head) head.style.left = pct;
+  if (fill) fill.style.width = pct;
 }
 
 // ---- frames: a step is shown in consecutive frames (frames.js); the keys, buttons and autoplay go frame by frame, the timeline, log and jump box step by step ----

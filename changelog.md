@@ -1305,3 +1305,8 @@ In the `handmode` listener: switching to the fan from an **unfolded** tray makes
 - parkposter.css: the selected-card rules no longer set a z-index first and override it later (`.draftcard.marked` keeps 4 / 2 / 3, cards of every other zone have none for the tint and 10 for the tag); the tray comment describes the real layout.
 - Docs: `docs/frontend_architecture.md` (cards.js / dock.js rows), the `zoneNew` comment in state.js and the outdated sentences in sections 20, 21 and 26 of this file were corrected.
 - Left as it is on purpose: the code of the departure ghosts and arrival flashes (`ghost()`, `card-gone`, `tok-gone`, `card-new` / `tok-new` and their rules in replay.css) is now unused but kept for the new animations.
+
+## 33. Timeline: dotted line without a circle, filled progress, draggable head
+- The dotted line that stands in for a switched-off timeline (`.tldeco`) has no circle any more.
+- The timeline fills up: `.tlfill` (first child of `#timeline`, under the round marks) is as wide as the head's position (`updateTimeline()`), colour `var(--tlfill, var(--sun))` (parkposter.css; the default is sun orange until a colour is chosen).
+- The head can be dragged: `buildTimeline()` (playback.js) uses pointer events on the whole bar (pointer capture, `touch-action: none`): a press goes to the step under the pointer, moving goes on to the steps under the pointer and the board follows while dragging (at most one `go()` per animation frame); a running autoplay is paused when the bar is pressed. The head has a wider invisible grab area (`.tlhead::before`) and a grab cursor. The old `onclick` is replaced by the press.
