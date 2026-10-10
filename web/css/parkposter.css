@@ -77,7 +77,7 @@ body.viewer .gamemenuitem:hover:not(:disabled) { background: var(--gold); }
 body.viewer .hdrstats .flash-up, body.viewer .hdrstats .flash-down { animation: flash-up var(--flash-duration, .8s) ease-out; }
 
 /* ---- panels: the display, the association element and the zoos are cream paper with an ink border ------------------------------------------------------------------------ */
-body.viewer .shared { gap: 16px; margin-bottom: 18px; }
+body.viewer .shared { gap: 16px; margin-bottom: 8px; }
 body.viewer .shared > .displaycol, body.viewer .shared > .tablecol { box-sizing: border-box; padding: 6px; background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
 body.viewer .shared > .tablecol { gap: 5px; }
 body.viewer .shared .projpanel { background: none; border: 0; box-shadow: none; padding: 0; border-radius: 9px; }
