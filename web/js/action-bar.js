@@ -95,6 +95,15 @@ function draftPopup() {
   if (!box) { box = el('div', 'draftbox'); box.id = 'draftbox'; box.hidden = true; document.body.append(box); }
   return box;
 }
+// Does the action card draft have a frame on step `i`? While it runs (pick1 | pick2 | keep) and on the step in which the last keep is made: the stage turns 'done' there, but the
+// cards that player kept have to be shown first (the keep and the deal of the starting hands are one step in the data; the draft frame comes first, the deal after it).
+export function draftOpen(st, i = S.step) {
+  const d = st && st.phase === 'setup' && st.draft;
+  if (!d) return false;
+  if (d.stage !== 'done') return true;
+  const prev = i > 0 ? S.replay.steps[i - 1].state : null;
+  return !!prev && !!prev.draft && prev.draft.stage !== 'done';
+}
 export const draftMarks = new Set();                                          // the cards the viewer highlighted with a click: cleared at every step
 function draftBar(bar, d) {
   const groups = [], choosers = [];
@@ -197,7 +206,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   if (kind === 'text') { bar.hidden = true; return; }
   // The action card draft (a Marine Worlds mechanism) has its own frame in the replay, 'draft': the bar alone, without step text, with the cards on offer and what each
   // player picked / kept so far (point of view: only the viewer's own offers). The fork shows it together with the step text, like every bar.
-  if (popup && kind === 'draft' && st.phase === 'setup' && st.draft && st.draft.stage !== 'done') {
+  if (popup && kind === 'draft' && draftOpen(st)) {
     const pop = el('div', 'draftpop');
     if (draftBar(pop, st.draft)) {
       pop.style.setProperty('--cn', String(Math.max(3, ...[0, 1].map((i) => (st.draft.offers[i] || []).length + (st.draft.stage === 'pick2' ? 1 : 0)))));
@@ -205,7 +214,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       return;
     }
   }
-  if (st.phase === 'setup' && st.draft && st.draft.stage !== 'done' && (FORK || kind === 'draft') && draftBar(bar, st.draft)) return;
+  if ((FORK ? st.phase === 'setup' && st.draft && st.draft.stage !== 'done' : kind === 'draft' && draftOpen(st)) && draftBar(bar, st.draft)) return;
   if (!FORK && st.phase === 'setup') {                                          // the starting hand: 8 cards drawn, 4 to discard (initial selection)
     const seat = prioritySeat([0, 1].filter((i) => S.replay.steps[S.step].state.players[i].hand.length > 4));
     if (seat !== null) {

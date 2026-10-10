@@ -11,7 +11,7 @@
 // (the engine keeps a pending decision attached to every line of a move: a break, a run of effects).
 import { FORK, SANDBOX, S } from './state.js';
 import { labelOf, povState } from './pov.js';
-import { actionBar, prioritySeat, turnEnds } from './action-bar.js';
+import { actionBar, draftOpen, prioritySeat, turnEnds } from './action-bar.js';
 
 let cache = new Map(), cachePov = null;
 const virt = new Map();
@@ -55,7 +55,7 @@ export function framesOf(i) {
   const steps = S.replay.steps;
   f = textParts(i).map((_, k) => 'text' + (k || ''));
   const st = steps[i].state;
-  if (st.phase === 'setup' && st.draft && ['pick1', 'pick2', 'keep'].includes(st.draft.stage) && probe(i, 'draft')) f[0] = 'draft';       // (the first group of lines of a merged step is the draft's keep)
+  if (draftOpen(st, i) && probe(i, 'draft')) f[0] = 'draft';       // (the first group of lines of a merged step is the draft's keep)
   if (turnEnds(i)) f.push('gate');
   const sig = probe(i, 'decision');
   if (sig && !(i > 0 && steps[i - 1].move_id === steps[i].move_id && probe(i - 1, 'decision') === sig)) f.push('decision');
@@ -75,7 +75,7 @@ export function frameState() {
   }
   // Marine Worlds: the order of the action cards is only drawn at random once the action cards are chosen, together with the starting hand (as on BGA). Until then the players' info boxes
   // show nothing (`actions_hidden`: the boxes keep their size, the cards are invisible); from the frame that deals the starting hand on, the real order (the one of the first turn state) is shown.
-  if (base.phase === 'setup' && base.draft && ['pick1', 'pick2', 'keep'].includes(base.draft.stage)) {
+  if (draftOpen(base, S.step)) {
     const dealt = textParts(S.step).length > 1 && S.phase >= 1;        // (every frame after the keep: the draw lines, then the discard decision)
     const key = S.step + (dealt ? 'd' : 'h') + (base === s.state ? '' : 'v');
     let v = virt.get(key);
