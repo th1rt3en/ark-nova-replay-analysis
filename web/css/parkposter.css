@@ -40,13 +40,17 @@ body.viewer main { padding-bottom: 8px; }
 body.viewer .movebar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; margin: 0 -14px 14px; padding: 8px 14px 12px; min-height: 0; box-sizing: border-box;
   background: rgba(14, 75, 90, .8); border: 0; border-radius: 0; box-shadow: none; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); font-size: 1rem; }
 body.viewer .movepill { position: relative; flex: 1 1 0; min-width: 0; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; min-height: 58px; padding: 3px 44px 3px 22px;
-  background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 29px; box-shadow: 0 4px 0 var(--ink); }
+  background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 29px; box-shadow: 0 4px 0 var(--ink);
+  font: 700 18px/1.15 'Barlow', system-ui, sans-serif; }          /* the ONE font of the move bar: the step text, the choices and every text in the bar inherit it */
 body.viewer .movepill .actionbar { flex: 1 1 auto; margin: 0; min-height: 0; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
+body.viewer .movepill .actionbar, body.viewer .movepill .actionbar b, body.viewer .movepill .actionbar .who { font: inherit; }       /* (the old rules gave the bar 0.95rem and its bold text weight 900) */
+body.viewer .movepill .actionbar b { color: var(--ink); }
+body.viewer .movepill .abtn b { color: inherit; }
 body.viewer .movepill .actionbar.draftbar { padding: 4px 0; }
 body.viewer .movepill .actionbar[hidden] { display: none; }
 body.viewer .movepill .current { order: -1; flex: 1 1 auto; box-sizing: border-box; align-self: stretch; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2px 0; background: none; border: 0;
-  font: 700 18px/1.15 'Barlow', system-ui, sans-serif; color: var(--ink); }
-body.viewer .movepill .actionbar:not([hidden]) ~ .current { flex: 0 1 auto; max-width: 42%; margin-right: 16px; padding-right: 16px; border-right: 3px dashed rgba(23, 38, 43, .35); }
+  font: inherit; color: var(--ink); }
+body.viewer .movepill .actionbar:not([hidden]) ~ .current { font: inherit; color: var(--ink); align-items: center; text-align: center; flex: 0 1 auto; max-width: 42%; margin-right: 16px; padding-right: 16px; border-right: 3px dashed rgba(23, 38, 43, .35); }
 body.viewer .movepill .current[hidden] { display: none; }
 body.viewer .movepill .engine-detail { font: 600 15px 'Barlow Condensed'; opacity: .7; }
 body.viewer .movepill .enginemark { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); z-index: 2; }
@@ -260,7 +264,7 @@ body.viewer .forkinfo button:hover { background: var(--gold); }
 body.viewer .forkinfo .seedinput { width: 100%; box-sizing: border-box; border: 3px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); font: 700 16px 'Barlow Condensed', system-ui, sans-serif; }
 body.viewer .forkpanel, body.viewer .sbtools { padding: 8px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font-family: 'Barlow', system-ui, sans-serif; }
 body.viewer .forkpanel .muted { color: #52666B; }
-body.viewer .movepill .abtn { font: 700 18px/1.15 'Barlow', system-ui, sans-serif; justify-content: center; }
+body.viewer .movepill .abtn { font: inherit; justify-content: center; }
 body.viewer .abtn { background: var(--act1); border-color: var(--ink); border-width: 3px; }
 body.viewer .abtn.lvl2 { background: var(--act2); border-color: var(--ink); }
 body.viewer .abtn.xbtn, body.viewer .abtn.gen, body.viewer .abtn.gainx { background: #5a5856; border-color: var(--ink); }
