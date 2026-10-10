@@ -336,7 +336,8 @@ body.viewer .draftpop .draftkept::after { right: -14px; border-right: 3px dashed
 
 /* ---- a card selected with a click ("Leaf tag"): an ink outline, a soft green tint over the card and a green rounded tag with a cream check on its top right corner (blue in the fork, where the
    choice is confirmed afterwards). Replaces BGA's translucent square + yellow ring; used by every clickable card (hand, tray, fan, display, endgame cards, the action card draft). -- */
-body.viewer .card.marked, body.viewer .folder .card.marked, body.viewer .draftcard.marked, body.viewer .draftpop .draftcard.marked { --mk: #3F9A4E; --mkt: rgba(63, 154, 78, .14); outline: 0; z-index: 4; }
+body.viewer .card.marked, body.viewer .folder .card.marked, body.viewer .draftcard.marked, body.viewer .draftpop .draftcard.marked { --mk: #3F9A4E; --mkt: rgba(63, 154, 78, .14); outline: 0; z-index: 4; overflow: visible; }
+body.viewer .card.marked > img, body.viewer .draftcard.marked > img { border-radius: inherit; }
 body.viewer .card.marked, body.viewer .draftcard.marked { box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 3px 8px rgba(0, 0, 0, .4); }
 body.viewer .draftcard.picked.marked { outline: 5px solid #3F9A4E; outline-offset: 2px; }
 .forkpage .card.marked, .forkpage .draftcard.marked, .forkpage .folder .card.marked { --mk: #2f80e8; --mkt: rgba(47, 128, 232, .13); }
