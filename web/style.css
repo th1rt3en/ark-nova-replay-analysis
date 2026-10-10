@@ -46,3 +46,23 @@ body.landing { max-width: 64rem; }
 .progresstext .pstage { margin-top: .15rem; }
 .progresstext .peta { margin-top: .15rem; color: var(--muted); font-size: .9rem; }
 #msg.loading::before, .status.loading::before { display: none; }
+
+/* the account widget (js/account.js) */
+#acctbar { position: fixed; top: .6rem; right: .8rem; z-index: 20; display: flex; gap: .5rem; align-items: center; padding: .3rem .6rem; border-radius: 8px; background: color-mix(in srgb, var(--bg) 88%, var(--fg)); border: 1px solid var(--border); }
+#acctbar button { padding: .3rem .7rem; }
+.acctname { font-weight: 600; }
+button.linkbtn { background: none; border: 0; color: var(--accent); padding: 0; text-decoration: underline; cursor: pointer; font: inherit; }
+dialog.acctdlg { width: min(30rem, calc(100vw - 2rem)); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--fg); padding: 1rem 1.2rem 1.2rem; }
+dialog.acctdlg::backdrop { background: rgba(0, 0, 0, .55); }
+.accthead { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.accthead h2 { margin: 0; font-size: 1.15rem; }
+.acctform { display: flex; flex-direction: column; gap: .7rem; margin: .8rem 0 0; }
+.acctfield { display: flex; flex-direction: column; gap: .2rem; font-size: .9rem; }
+.acctinput { font: inherit; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: inherit; }
+.acctmsg { margin: .8rem 0 0; padding: .6rem .8rem; border: 1px solid var(--err); border-radius: 6px; color: var(--err); }
+.acctchoice { display: flex; flex-direction: column; gap: .4rem; }
+.acctopt { display: flex; gap: .5rem; align-items: flex-start; padding: .4rem .5rem; border: 1px solid var(--border); border-radius: 6px; }
+.acctopt.off { opacity: .55; }
+.acctwarn { margin: .3rem 0 0; padding: .6rem .8rem; border-radius: 6px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); font-size: .9rem; }
+.acctcode { font: 700 1.25rem ui-monospace, Consolas, monospace; letter-spacing: .05em; padding: .8rem; text-align: center; border: 1px dashed var(--accent); border-radius: 8px; word-break: break-all; user-select: all; }
+.acctlinks { margin: .9rem 0 0; }

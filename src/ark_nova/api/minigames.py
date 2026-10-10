@@ -32,9 +32,11 @@ def valid_signature(secret: str, method: str, path: str, body: bytes, headers, n
 
 
 def caller_of(request: Request) -> Caller:
-    """Anonymous for now (the browser keeps a random id and sends it in `X-Anon-Id`); the accounts will add `account_id` from the session."""
+    """The logged-in account (the session cookie), if the accounts are on; always also the anonymous id (the browser keeps a random one and sends it in `X-Anon-Id`)."""
     anon = request.headers.get("x-anon-id", "")
-    return Caller(anon_id=anon if ANON_ID.match(anon) else None)
+    accounts = getattr(request.app.state, "accounts", None)
+    acc = accounts.account_for(request.cookies.get("ark_session")) if accounts is not None else None
+    return Caller(account_id=acc.id if acc else None, anon_id=anon if ANON_ID.match(anon) else None)
 
 
 def add_routes(app: FastAPI, service: MiniGameService, internal_secret: str = "") -> None:

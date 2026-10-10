@@ -76,6 +76,16 @@ def _config(rec: TableRecord) -> dict:
     return {"table_id": rec.table_id, "logged": rec.logged, "player_maps": rec.player_maps, "marine_worlds": rec.marine_worlds}
 
 
+def _default_accounts(st: Settings):
+    """The accounts, only when a store is configured (`ACCOUNTS_DB`): an account kept in memory would be lost on the next restart."""
+    if not st.accounts_db:
+        return None
+    from ark_nova.accounts.seeds import BigQuerySeedIndex, NoSeeds
+    from ark_nova.accounts.service import AccountService
+    from ark_nova.accounts.store import SqliteStore
+    return AccountService(SqliteStore(st.accounts_db), BigQuerySeedIndex(st.bga_seed_table) if st.bga_seed_table else NoSeeds())
+
+
 def _default_minigames(app: FastAPI):
     """The mini game platform with the games of `data_manual/minigames.json`: puzzles from BigQuery when it is reachable, logs from the app's own log store."""
     from ark_nova.minigames.platform.contract import GameLog
@@ -101,7 +111,7 @@ def _error(status: int, code: str, message: str, **extra) -> JSONResponse:
     return JSONResponse(status_code=status, content={"status": code, "message": message, **extra})
 
 
-def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None, minigames=None) -> FastAPI:
+def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None, minigames=None, accounts=None) -> FastAPI:
     app = FastAPI(title="Ark Nova replay")
     app.state.settings = settings or Settings.from_env()
     app.state.index = index or _default_index(app.state.settings)
@@ -132,6 +142,12 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         from ark_nova.api.live import add_routes
         add_routes(app, live, st.live_keeper_url.replace("https://", "wss://").replace("http://", "ws://") if st.live_keeper_url else "")
     app.state.live = live
+    if accounts is None:
+        accounts = _default_accounts(st)
+    app.state.accounts = accounts
+    if accounts is not None:
+        from ark_nova.api.accounts import add_routes as add_account_routes
+        add_account_routes(app, accounts, [o.strip().rstrip("/") for o in st.allowed_origins.split(",") if o.strip()])
     if minigames is None:
         minigames = _default_minigames(app)
     app.state.minigames = minigames
@@ -375,6 +391,8 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     if pages_url:                                                                   # the site lives on Cloudflare Pages: old links to this service go there
         @app.get("/{path:path}", include_in_schema=False)
         def to_pages(path: str, request: Request):
+            if path.startswith(("api/", "internal/")):                                  # an API path that does not exist: an answer, never a redirect (the Pages proxy would loop)
+                return _error(404, "not_found", "No such API route.")
             return RedirectResponse(pages_url + "/" + path + (("?" + request.url.query) if request.url.query else ""), status_code=307)
     elif WEB_DIR.is_dir():
         app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

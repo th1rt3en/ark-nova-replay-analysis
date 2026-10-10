@@ -113,6 +113,21 @@ def _minigames(index, logs):
     return MiniGameService(SqliteStore(str(db)), ListSourceIndex(tables), read_log, load_games(entries), entries)
 
 
+def _accounts():
+    """Accounts on a local SQLite file (build/accounts_dev.sqlite). BGA names to try the signup with: Xiao93 (one BGA player), Eagles Gaming (three), and every
+    player name of the logs in log_examples is not looked up: the real BGA data is only read in production."""
+    from ark_nova.accounts.seeds import BgaPlayer, ListSeedIndex
+    from ark_nova.accounts.service import AccountService
+    from ark_nova.accounts.store import SqliteStore
+
+    db = Path(__file__).resolve().parents[1] / "build" / "accounts_dev.sqlite"
+    db.parent.mkdir(exist_ok=True)
+    seeds = ListSeedIndex([BgaPlayer("89107474", "Xiao93", 447.53, 1683, 410, "2026-10-08T17:54:00+00:00"),
+                           BgaPlayer("111", "Eagles Gaming", 300.2, 1500, 20, "2025-01-01T00:00:00+00:00"), BgaPlayer("222", "Eagles Gaming", 512.9, 1600, 90, "2026-09-01T00:00:00+00:00"),
+                           BgaPlayer("333", "Eagles Gaming", 150.0, 1400, 3, "2024-01-01T00:00:00+00:00")])
+    return AccountService(SqliteStore(str(db)), seeds)
+
+
 def build_app():
     settings = Settings()
     index, logs = _remote_index(settings)
@@ -123,7 +138,7 @@ def build_app():
         from ark_nova.live.service import LiveService
         live = LiveService(FakeKeeper(), engine_version="dev", registry=reg.FakeRegistry(), archive=arch.FakeArchive())
     local_index, local_logs = LocalIndex(index), LocalLogs(logs)
-    app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs))
+    app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs), accounts=_accounts())
     _planning_routes(app)
     return app
 
