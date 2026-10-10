@@ -70,7 +70,7 @@ export const S = {
   timer: null,
   speed: 1,
   handScale: 1,                                          // size of the cards in the hand, 0.5 ... 2 (settings pop-up, settings.js; --hs on body)
-  handMode: 'fan',                                       // how the hand is shown: 'fan' (at the screen edge) or 'tray' (floating container), see settings.js
+  handMode: 'tray',                                      // how the hand is shown: 'fan' (at the screen edge) or 'tray' (floating container), see settings.js
   showTimeline: false,         // the timeline row in the control panel (settings pop-up, settings.js)
   sbSeat: null,        // sandbox: the seat whose tools are shown
   sbUnlocked: false,   // sandbox: the action card list can be reordered by dragging

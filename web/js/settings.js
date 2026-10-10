@@ -29,7 +29,7 @@ export function setupSettings() {
   S.showTimeline = st.timeline === true;                                   // default: off
   S.speed = [1, 2, 4].includes(st.speed) ? st.speed : 1;                  // default: 1x
   S.handScale = HAND_SCALES.includes(st.hand) ? st.hand : 1;               // default: 1x
-  S.handMode = st.handMode === 'tray' ? 'tray' : 'fan';                   // default: the fan
+  S.handMode = st.handMode === 'fan' ? 'fan' : 'tray';                   // default: the floating tray
   applyHandScale();
   const modal = el('div', 'modal'); modal.id = 'settingsModal'; modal.hidden = true;
   const box = el('div', 'modalbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Settings');
@@ -59,9 +59,9 @@ export function setupSettings() {
   handRow.append(handTop, slider, ticks);
   const modeRow = el('div', 'setrow');                                    // how the hand is shown: a fan at the screen edge, or a floating tray (dock.js)
   const sel = el('select', 'setselect'); sel.setAttribute('aria-label', 'Hand display');
-  for (const [v, t] of [['fan', 'Fan at the screen edge'], ['tray', 'Floating container']]) { const o = el('option', '', t); o.value = v; sel.append(o); }
+  for (const [v, t] of [['tray', 'Floating container'], ['fan', 'Fan at the screen edge']]) { const o = el('option', '', t); o.value = v; sel.append(o); }
   sel.value = S.handMode;
-  sel.onchange = () => { S.handMode = sel.value === 'tray' ? 'tray' : 'fan'; save(); document.dispatchEvent(new Event('handmode')); };
+  sel.onchange = () => { S.handMode = sel.value === 'fan' ? 'fan' : 'tray'; save(); document.dispatchEvent(new Event('handmode')); };
   modeRow.append(el('span', 'setlabel', 'Hand display'), sel);
   box.append(head, speedRow, tlRow, modeRow, handRow);
   modal.append(box);

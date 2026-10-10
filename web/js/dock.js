@@ -123,15 +123,10 @@ function drawTray(dock, rows, shownSel) {
     b.onclick = () => { S.dockSel = { seat, kind }; S.dockHidden = false; saveDock(); renderDock(curState()); };
     btns.append(b);
   }
-  const arrow = el('button', 'trayarrow'); arrow.type = 'button';
-  arrow.title = folded ? 'Show the cards (H)' : 'Hide the cards (H)'; arrow.setAttribute('aria-label', arrow.title); arrow.setAttribute('aria-expanded', String(!folded));
-  arrow.append(el('span', '', '\u25BC'));
-  arrow.onclick = toggleDock;
-  wrap.append(frame, btns, arrow);
+  wrap.append(frame, btns);
   if (!settingsOpen() && (hintPending || (!hintSeen() && !hintStart))) startHint();
   const age = Date.now() - hintStart;
-  if (hintStart && age < HINT_MS) {                                  // (the pulse and the label go on where they were after a re-draw)
-    arrow.classList.add('pulse'); arrow.style.animationDelay = -age + 'ms';
+  if (hintStart && age < HINT_MS) {                                  // (the label goes on where they were after a re-draw)
     const hint = el('div', 'trayhint', 'Click the tray to fold or unfold it'); hint.style.animationDelay = -age + 'ms';
     wrap.append(hint);
   }
