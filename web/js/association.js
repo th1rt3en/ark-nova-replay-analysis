@@ -246,7 +246,9 @@ export function associationStrip(p, map, seat) {
     putUpgrade(175, STRIP.partner[2] + 22, 84, 'Upgrade an action card (2nd partner zoo)');
     putUpgrade(175, STRIP.university[2] + 22, 84, 'Upgrade an action card (2nd university)');
   } else {
-    sets.forEach((n, i) => {
+    const items = sets.map((n) => ({ n, kind: 'upgrade' }));
+    if (map.id === '11') items.push({ n: 3, kind: 'conservation' });                  // map 11 (Caves): the third set (3 partner zoos + 3 universities) gives 1 conservation
+    items.forEach(({ n, kind }, i) => {
       const side = i % 2 === 0 ? 1 : -1, ex = side === 1 ? 34 : 351 - 34, cx = side === 1 ? -34 : 351 + 34;        // the first set on the left margin, the second on the right
       const y1 = STRIP.partner[n], y2 = STRIP.university[n];
       const pt = (t) => [(1 - t) * (1 - t) * ex + 2 * (1 - t) * t * cx + t * t * ex, (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * ((y1 + y2) / 2) + t * t * y2];
@@ -259,7 +261,8 @@ export function associationStrip(p, map, seat) {
         s.append(svg('polygon', { points: [tip, [base[0] + nx, base[1] + ny], [base[0] - nx, base[1] - ny]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '), fill: '#3a2616' }));
       }
       const [mx, my] = pt(0.5);
-      putUpgrade(mx, my, 84, 'Upgrade an action card (set ' + n + ': a partner zoo and a university)');
+      if (kind === 'conservation') conservationBonus(s, mx, my, 84, 1, '1 conservation for the third set: a 3rd partner zoo and a 3rd university');
+      else putUpgrade(mx, my, 84, 'Upgrade an action card (set ' + n + ': a partner zoo and a university)');
     });
   }
   // the partner zoos and universities of the player; one that arrived gets a green frame, one that left stays as a ghost with a red frame

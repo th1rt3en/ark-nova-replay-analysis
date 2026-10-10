@@ -52,3 +52,38 @@ def test_a_third_partner_zoo_with_no_worker_left_to_hire_still_places():
     for n, continent in enumerate(("Africa", "Asia", "Europe"), 1):
         association.place_partner(s, p, partner(n, continent))
     assert len([t for t in p.tokens if t.location.startswith("partner_")]) == 3
+
+
+def _pairs(map_id, order):
+    """The conservation each placement gives on `map_id`, placing partner zoos / universities in `order` (a string of p and u)."""
+    s = in_action()
+    p = s.players[0]
+    p.map_id = map_id
+    seen, out = {"p": 0, "u": 0}, []
+    for what in order:
+        before = p.conservation
+        seen[what] += 1
+        if what == "p":
+            association.place_partner(s, p, partner(seen["p"], ("Africa", "Asia", "Europe", "Americas")[seen["p"] - 1]))
+        else:
+            association.place_university(s, p, Token(800 + seen["u"], ("fac-science-rep", "fac-science-money", "fac-science-xtoken")[seen["u"] - 1], "association_4"))
+        out.append(p.conservation - before)
+    return out
+
+
+@pytest.mark.parametrize("order", ["pppuuu", "uuuppp", "pupupu", "ppuupu"])
+def test_on_map_11_the_third_partner_zoo_university_pair_gives_one_conservation(order):
+    got = _pairs("11", order)
+    uni3 = association.map_bonus("11", "university3")
+    # the third pair completes with the last placement of the two kinds that reaches 3 of both; the 3rd university also pays its own conservation of the map
+    completing = max(i for i, ch in enumerate(order) if ch in "pu" and order[: i + 1].count("p") >= 3 and order[: i + 1].count("u") >= 3 and (order[: i].count("p") < 3 or order[: i].count("u") < 3))
+    expected = [0] * len(order)
+    expected[completing] += 1
+    expected[[i for i, ch in enumerate(order) if ch == "u"][2]] += uni3
+    assert got == expected
+
+
+@pytest.mark.parametrize("map_id", [m for m in MAPS if m != "11"])
+def test_no_other_map_gives_a_conservation_for_the_third_pair(map_id):
+    got = _pairs(map_id, "pppuuu")
+    assert got == [0, 0, 0, 0, 0, association.map_bonus(map_id, "university3")]                 # (only the 3rd university's own bonus of the map)
