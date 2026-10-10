@@ -30,32 +30,40 @@ try { S.dockSel = JSON.parse(localStorage.getItem('dockSel') || 'null'); } catch
 if (!S.dockSel) S.dockSel = { seat: 0, kind: 'hand' };
 try { S.dockHidden = localStorage.getItem('dockHidden') === '1'; } catch (e) { /* no storage */ }
 const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
-// ---- the fan appears: "Deal" when the hand is dealt for the first time (the hand was empty before: start of the game), "Rise and spread" otherwise (page load, the setting changed). The cards of a fan
-// that is drawn again while the intro runs go on where they were (negative delay), as every redraw replaces the card elements.
+// ---- how the hand appears. Fan: "Deal" when the starting hand is dealt (setup phase, the hand was empty before), "Rise and spread" otherwise (page load, the setting changed). Tray: "Drop" for the starting hand
+// (the tray itself slides up, CSS). The cards of a hand that is drawn again while the intro runs go on where they were (negative delay), as every redraw replaces the card elements.
 const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110, DROP_MS = 560, DROP_GAP = 100, TRAY_SLIDE_MS = 350;       // (the drop: the starting hand falls into the floating tray once it has slid up)
-let fanIntroState = null, fanDone = false;
+let introState = null, introDone = false;
 const lastCount = {};                                                                                        // (per seat: the cards in the hand at the last drawing and whether the game was still in its setup; only setup with an empty hand -> cards = the starting hand is dealt)
+let hintPending = false, hintStart = 0;
 let fanRaised = false;                                                                                      // (the fan stands up like on hover until the settings close: after the switch from an unfolded tray)
-document.addEventListener('handmode', () => {                                                                // (the setting changed: the next fan rises and spreads)
-  fanDone = false; fanIntroState = null;
-  if (S.handMode !== 'fan') { fanRaised = false; return; }
-  fanRaised = !S.dockHidden;                                                                                 // (an unfolded tray -> an unfolded fan that sinks to rest when the settings close; a folded tray -> the fan appears at rest)
-  if (S.dockHidden) { S.dockHidden = false; saveDock(); }                                                    // (the fan has no folded state but "not drawn": it would never appear)
+const HINT_KEY = 'handTrayHint', HINT_MS = 4600;                      // (the one-time hint: remembered in localStorage; picking the setting shows it again)
+const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return true; } };
+// the setting "Hand display" was changed (settings.js): the next fan rises and spreads, the next tray shows its hint once the settings close
+document.addEventListener('handmode', () => {
+  introDone = false; introState = null; hintPending = S.handMode === 'tray';
+  if (S.handMode === 'fan') {
+    fanRaised = !S.dockHidden;                                                                               // (an unfolded tray -> an unfolded fan that sinks to rest when the settings close; a folded tray -> the fan appears at rest)
+    if (S.dockHidden) { S.dockHidden = false; saveDock(); }                                                  // (the fan has no folded state but "not drawn": it would never appear)
+  } else fanRaised = false;
+  renderDock(curState());
 });
-document.addEventListener('settingsclosed', () => { if (!fanRaised) return; fanRaised = false; const d = $('dock'); if (d) d.classList.remove('raised'); });
-function fanIntro(row, handCount, seat, setup, tray) {
+document.addEventListener('settingsclosed', () => {
+  if (fanRaised) { fanRaised = false; const d = $('dock'); if (d) d.classList.remove('raised'); return; }   // (the CSS transition sinks the fan)
+  if (hintPending && S.handMode === 'tray') renderDock(curState());
+});
+function dockIntro(row, handCount, seat, setup, tray) {
   const prev = lastCount[seat]; lastCount[seat] = { count: handCount, setup };
   const cards = [...row.children].filter((c) => c.classList.contains('card') && !c.classList.contains('card-gone'));
   if (!cards.length || !cards[0].animate) return;
   const now = Date.now();
-  if (prev && prev.setup && prev.count === 0 && handCount > 0 && (!fanIntroState || fanIntroState.kind === 'rise')) { fanIntroState = { kind: tray ? 'drop' : 'deal', start: now }; fanDone = true; }
-  else if (!tray && !fanIntroState && !fanDone) { fanIntroState = { kind: 'rise', start: now }; fanDone = true; }
-  const s = fanIntroState; if (!s || (s.kind === 'drop') !== !!tray) return;                   // (the fan and the tray each play their own intro)
+  if (prev && prev.setup && prev.count === 0 && handCount > 0 && (!introState || introState.kind === 'rise')) { introState = { kind: tray ? 'drop' : 'deal', start: now }; introDone = true; }
+  else if (!tray && !introState && !introDone) { introState = { kind: 'rise', start: now }; introDone = true; }
+  const s = introState; if (!s || (s.kind === 'drop') !== !!tray) return;                   // (the fan and the tray each play their own intro)
   const total = s.kind === 'rise' ? FAN_RISE_MS : s.kind === 'drop' ? TRAY_SLIDE_MS + DROP_MS + (cards.length - 1) * DROP_GAP : FAN_DEAL_MS + (cards.length - 1) * FAN_DEAL_GAP, elapsed = now - s.start;
-  if (elapsed >= total) { fanIntroState = null; return; }
+  if (elapsed >= total) { introState = null; return; }
   const n = cards.length, step = n > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 0, hk = parseFloat(getComputedStyle(document.body).getPropertyValue('--hk')) || 1.5, rise = 240 * hk;
   cards.forEach((c, i) => {
-    if (s.kind === 'deal') c.classList.remove('card-new');                                          // (the green "new card" flash would play on top of the deal)
     c.getAnimations().forEach((a) => { if (a.constructor === Animation) a.cancel(); });          // (only our own earlier intro, not CSS transitions)
     if (s.kind === 'drop') {                                         // the tray is empty until each card falls in (hidden while it waits: fill backwards)
       c.animate([{ transform: 'translateY(-260px) rotate(' + (i % 2 ? -9 : 9) + 'deg)', opacity: 0 }, { opacity: 1, offset: .2 }, { transform: 'translateY(6px) rotate(0deg)', opacity: 1, offset: .75 }, { transform: 'none', opacity: 1 }],
@@ -75,6 +83,7 @@ function fanIntro(row, handCount, seat, setup, tray) {
 export function renderDock(st) {
   let dock = $('dock');
   if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
+  if (S.handMode !== 'tray') dock.style.left = '';                                       // (the tray sets `left` on the dock: the fan must go back to the stylesheet's)
   dock.className = 'dock' + (S.handMode === 'tray' ? ' traymode' : '') + (S.handMode === 'fan' && fanRaised ? ' raised' : '');                 // (the hand is shown in a fan at the screen edge, or in a floating tray)
   if (SANDBOX && S.replay.setup) { dock.replaceChildren(); return; }                // (nothing to show before the game: the seat and the maps are chosen first)
   const panel = el('div', 'dockpanel');
@@ -129,20 +138,15 @@ export function renderDock(st) {
     panel.append(head, shown);
     panel.style.setProperty('--pc', seatColor(shownSel.seat));
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
-    fanIntro(shown, st && st.players[shownSel.seat] ? st.players[shownSel.seat].hand.length : 1, shownSel.seat, !!(st && st.phase === 'setup'));
+    dockIntro(shown, st && st.players[shownSel.seat] ? st.players[shownSel.seat].hand.length : 1, shownSel.seat, !!(st && st.phase === 'setup'));
   } else dock.replaceChildren(bar);
 }
 
 
-// ---- the floating tray (setting "Hand display" = Floating container): the cards of the shown row lie flat in a cream tray at the bottom left; the card / endgame card buttons are round discs on its top edge, the
-// arrow disc at its right end folds it. A folded tray still shows the top of the cards. A click on the header strip of the tray (the empty band above the cards) or on the arrow folds / unfolds it, and so does the H key.
+// ---- the floating tray (setting "Hand display" = Floating container): the cards of the shown row lie flat in a sand-coloured tray at the bottom left; the card / endgame card buttons are round discs on its top edge.
+// A folded tray still shows the top of the cards. A click on the header strip of the tray (the empty band above the cards) folds / unfolds it, and so does the H key (also folds the fan away).
 export function toggleDock() { S.dockHidden = !S.dockHidden; saveDock(); renderDock(curState()); }
-const HINT_KEY = 'handTrayHint', HINT_MS = 4600;                      // (the one-time hint: remembered in localStorage; picking the setting shows it again)
-let hintPending = false, hintStart = 0;
-const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return true; } };
 function startHint() { hintStart = Date.now(); hintPending = false; try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* no storage */ } }
-document.addEventListener('handmode', () => { if (S.handMode === 'tray') hintPending = true; renderDock(curState()); });        // (the setting was changed)
-document.addEventListener('settingsclosed', () => { if (hintPending && S.handMode === 'tray') renderDock(curState()); });
 const TRAY_ROW = 20;                                                    // cards per row: more than that start a second row
 function trayBox() {                                                   // left edge = the left edge of the boards (display, map, move bar); right edge = the right edge of the display / association boards, so the tray never reaches the side bar
   const sh = document.querySelector('.shared'), sc = S.scaled ? S.scale : 1, r = sh && sh.getBoundingClientRect();
@@ -155,8 +159,8 @@ function drawTray(dock, rows, shownSel, st) {
   const row = shownSel && rows[shownSel.seat + ':' + shownSel.kind];
   if (!row || (st && st.phase === 'setup' && st.draft && st.draft.stage !== 'done')) {
     const sx = shownSel ? shownSel.seat : S.dockSel.seat; if (st && st.players[sx]) lastCount[sx] = { count: st.players[sx].hand.length, setup: st.phase === 'setup' };       // (so the deal after the draft is recognised)
-    dock.replaceChildren(); return;
-  }       // (no tray at all during the action card draft: nothing to show yet)
+    dock.replaceChildren(); return;                                      // (no tray at all during the action card draft: nothing to show yet)
+  }
   const seat = shownSel.seat, folded = S.dockHidden;
   row.querySelectorAll('.card-gone').forEach((g) => g.remove());
   const n = [...row.children].filter((c) => c.classList.contains('card')).length, cols = Math.max(1, Math.min(n, TRAY_ROW));
@@ -175,10 +179,10 @@ function drawTray(dock, rows, shownSel, st) {
   const head = el('div', 'trayhead');
   head.onclick = toggleDock;
   frame.replaceChildren(head, row);
-  if (shownSel.kind === 'hand') fanIntro(row, st.players[seat].hand.length, seat, st.phase === 'setup', true);
+  if (shownSel.kind === 'hand') dockIntro(row, st.players[seat].hand.length, seat, st.phase === 'setup', true);
   const kids = [];
   for (const kind of ['hand', 'endgame']) {
-    const cnt = (kind === 'hand' ? S.replay.steps[S.step].state.players[seat].hand : S.replay.steps[S.step].state.players[seat].endgame_hand || []).length;
+    const cnt = (kind === 'hand' ? st.players[seat].hand : st.players[seat].endgame_hand || []).length;
     const b = el('button', 'traydisc' + (shownSel.kind === kind ? ' on' : '')); b.type = 'button';
     const label = S.replay.players[seat].name + ': ' + (kind === 'hand' ? 'hand' : 'endgame cards') + ' (' + cnt + ')';
     b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(shownSel.kind === kind));

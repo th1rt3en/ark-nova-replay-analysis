@@ -27,10 +27,9 @@ export const S = {
   // Only the information of the other player is hidden: the cards of the hand and the endgame cards (shown as card backs), what was pouched or stored face down, the draw
   // pile and the endgame deck (counts only), the action card draft choices of the other player, and the words of the move list that name such cards.
   pov: null,
-  // A card that was not in its zone (hand, endgame cards, animals, sponsors, display, projects...) at the previous render gets a green border that
-  // fades like the changed numbers of the player tracker (--flash-duration). A card that left the zone stays where it was as a "ghost" with a red
-  // border; card and border fade away in the same time and the ghost is removed. `zoneNew(zone, keys)` returns the test for each card of the zone,
-  // with `.gone` = [{key, index}] of the cards that left (index = their place in the zone before).
+  // A card that was not in its zone (hand, endgame cards, animals, sponsors, display, projects...) at the previous render is `isNew` (class `card-new`: a green border
+  // that fades like the changed numbers of the player tracker, --flash-duration; switched off in parkposter.css for now, changelog 27). `zoneNew(zone, keys)` returns the test for each card of the zone;
+  // its `.gone` (the cards that left, drawn as red fading "ghosts") is not filled at the moment.
   prevZones: {},
   curZones: {},
   prevZoneData: {},

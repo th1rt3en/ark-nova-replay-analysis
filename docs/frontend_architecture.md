@@ -29,7 +29,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `icons.js` | icon/sprite lookup, action icons, worker icons, `pic`, `moneyTile` |
 | `pov.js` | point of view (seat 0 / seat 1, never both at once; null only in live play), the board orientation (`S.orient`, `seatOrder()`: the spectated player left / above, chosen in the first-visit dialog `askSpectated()`), what is hidden, the eye toggles (`toggleEye`: opening one eye closes the other, remembered per table in localStorage; the sandbox, which counts as FORK, only reads the `pov` URL parameter), see changelog.md section 8.8 |
 | `load.js` | `fetchReplay` |
-| `cards.js` | card faces (images from `web/cards`, made by `scripts/build_cards.py`, see changelog 14), preview popup (the 745 x 1040 `web/cards_large` image, chosen by `largeOf`), changed-card flash, ghost cards (`zoneNew`), session-only drag-to-reorder of hand / endgame cards (`orderedKeys`, `dragRow`) Hand drag (`dragRow()`): pointer events with move / up listeners on `window` (not the card: capture is unreliable), pointer clamped near the hand, `body.card-dragging` keeps the hand raised. |
+| `cards.js` | card faces (images from `web/cards`, made by `scripts/build_cards.py`, see changelog 14), preview popup (the 745 x 1040 `web/cards_large` image, chosen by `largeOf`), `zoneNew` (which cards are new in a zone; the arrival flash and the departure ghosts are switched off, see changelog 27, `.gone` stays empty and `ghost()` is unused), session-only drag-to-reorder of hand / endgame cards (`orderedKeys`, `dragRow`) Hand drag (`dragRow()`): pointer events with move / up listeners on `window` (not the card: capture is unreliable), pointer clamped near the hand, `body.card-dragging` keeps the hand raised. |
 | `board.js` | hex maths, map cells, building sprites, `legalPlacement`, `zooBoard` |
 | `association.js` | association board / strip, conservation bonus panel |
 | `projects.js` | conservation project panel (BGA-like green strips from `web/project_strips`, see changelog 15) and markers |
@@ -38,7 +38,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `shared.js` | table centre: card folders (zoo place names + numbers like BGA), display, reputation track, thresholds, conservation track |
 | `pile.js` | discard / endgame deck popup |
 | `side-panel.js` | the two player info boxes (`sidePanel`) and the round / break pills of the top bar (`headerStats`, into `#hdrstats`); no deck / discard counters |
-| `dock.js` | hand / endgame-card dock: a fan of cards at the bottom left that rises on hover (CSS), per-player buttons; `S.handMode === 'tray'` draws the floating tray instead (`drawTray`, fold with `toggleDock` / key H, hint state in localStorage) |
+| `dock.js` | hand / endgame-card dock: a fan of cards at the bottom left that rises on hover (CSS), per-player buttons; `S.handMode === 'tray'` draws the floating tray instead (`drawTray`, fold with `toggleDock` / key H, hint state in localStorage); `dockIntro` plays how the hand appears (fan: deal at the start of the game, rise and spread otherwise; tray: the starting hand drops in), the `handmode` / `settingsclosed` listeners handle the switch between the two (a raised fan while the settings are open); changelog 20-31 |
 | `zoo.js` | one player's zoo |
 | `log-labels.js` | move-list label icons and engine badge |
 | `layout.js` | `fitScale` (page zoom), `fitDisplay`; registers the resize listener |

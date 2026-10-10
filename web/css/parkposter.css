@@ -262,8 +262,9 @@ body.viewer .dockpanel .cards .card.dragging, body.viewer .dockpanel .cards .car
 body.viewer .dockpanel .cards .card:hover { z-index: 6; }
 body.viewer .dockpanel .cards .empty { display: none; }
 
-/* ---- the floating tray (settings: Hand display = Floating container; dock.js drawTray): a cream tray at the bottom left, the cards flat in one row (width 170 px x --hs, they overlap more as the hand grows, 1000 px at most),
-   round BGA-style discs (hand, endgame cards) on its top edge. Folded, only the top of the cards shows. The tray sits at the bottom of the window, so what hangs below its frame is off screen. -- */
+/* ---- the floating tray (settings: Hand display = Floating container; dock.js drawTray): a sand-coloured tray at the bottom left, the cards flat in one row (width 170 px x --hs, 8 px apart; they only overlap when the
+   row would be wider than the boards above, `--maxw`), no outline but the dark glow of the fan, round BGA-style discs (hand, endgame cards) on its top edge. Folded, only the top of the cards shows. The tray sits at
+   the bottom of the window, so what hangs below its frame is off screen. -- */
 body.viewer .dock.traymode { left: 14px; bottom: 0; width: auto; height: auto; max-width: none; }
 body.viewer .dock.traymode::after { display: none; }
 body.viewer .handtray { --W: calc(170px * var(--hs, 1)); --gap: 8px; --avail: calc(var(--maxw, 1200px) - 50px); --step: calc(var(--W) + var(--gap) + min(0px, (var(--avail) - var(--cols, 5) * var(--W) - (var(--cols, 5) - 1) * var(--gap)) / max(var(--cols, 5) - 1, 1))); position: relative; pointer-events: none; color: var(--ink); }
@@ -337,12 +338,13 @@ body.viewer .draftpop .draftkept::after { right: -28.5px; top: -9px; bottom: -9p
 
 /* ---- a card selected with a click ("Leaf tag"): an ink outline, a soft green tint over the card and a green rounded tag with a cream check on its top right corner (blue in the fork, where the
    choice is confirmed afterwards). Replaces BGA's translucent square + yellow ring; used by every clickable card (hand, tray, fan, display, endgame cards, the action card draft). -- */
-body.viewer .card.marked, body.viewer .folder .card.marked, body.viewer .draftcard.marked, body.viewer .draftpop .draftcard.marked { --mk: #3F9A4E; --mkt: rgba(63, 154, 78, .14); outline: 0; z-index: 4; overflow: visible; }
+body.viewer .card.marked, body.viewer .folder .card.marked, body.viewer .draftcard.marked, body.viewer .draftpop .draftcard.marked { --mk: #3F9A4E; --mkt: rgba(63, 154, 78, .14); outline: 0; overflow: visible; }
+body.viewer .draftcard.marked { z-index: 4; }
 body.viewer .card.marked > img, body.viewer .draftcard.marked > img { border-radius: inherit; }
 body.viewer .card.marked, body.viewer .draftcard.marked { box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 3px 8px rgba(0, 0, 0, .4); }
 .forkpage .card.marked, .forkpage .draftcard.marked, .forkpage .folder .card.marked { --mk: #2f80e8; --mkt: rgba(47, 128, 232, .13); }
-body.viewer .card.marked::before, body.viewer .draftcard.marked::before { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; background: var(--mkt); pointer-events: none; }
-body.viewer .card.marked::after, body.viewer .draftcard.marked::after, .forkpage .card.marked::after, .forkpage .draftcard.marked::after { content: ""; position: absolute; z-index: 3; left: auto; top: -9px; right: -7px; width: clamp(24px, 28%, 46px); height: auto; aspect-ratio: 1; transform: none; border-radius: 28%; box-sizing: border-box; border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink); pointer-events: none;
+body.viewer .card.marked::before, body.viewer .draftcard.marked::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--mkt); pointer-events: none; }
+body.viewer .card.marked::after, body.viewer .draftcard.marked::after, .forkpage .card.marked::after, .forkpage .draftcard.marked::after { content: ""; position: absolute; z-index: 10; left: auto; top: -9px; right: -7px; width: clamp(24px, 28%, 46px); height: auto; aspect-ratio: 1; transform: none; border-radius: 28%; box-sizing: border-box; border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink); pointer-events: none;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 54 L41 74 L82 28' fill='none' stroke='%23F8EDCB' stroke-width='17' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 66% no-repeat, var(--mk); }
 
 /* ---- the action card kept in the draft ("Ticket frame" + "Sun seal"): an orange frame inside an ink frame with a hard ink shadow, and an orange seal with a cream star on the top edge (the span `.draftcheck`
@@ -359,9 +361,9 @@ body.viewer .dockpanel .cards { filter: drop-shadow(0 0 10px rgba(0, 0, 0, .9)) 
 .card.card-new, .projline.card-new, .btoken.card-new { animation: none; }
 .strip .tok-new .frame, .board .tok-new .frame { animation: none; stroke: none; }
 
-/* the check tag of a selected card is in front of every card, also of a neighbour that is selected too: the selected card builds no stacking context of its own (no z-index, no transform unless dragged),
-   so its tint stays at its own level (tree order) and its tag (z-index 10) is sorted among all the cards of the row; draft cards keep their own rules */
-body.viewer .card.marked:not(.draftcard) { z-index: auto; }
+/* the check tag of a selected card is in front of every card, also of a neighbour that is selected too: a selected card builds no stacking context of its own (no z-index; in the tray no transform unless
+   it is dragged), so its tint (`::before`, no z-index) stays at its own level in the tree order and its tag (`::after`, z-index 10) is sorted among all the cards of the row. The cards of the fan are rotated
+   (each one a stacking context), so there the tag can still be under a later card. The tag of a draft card is inside the lightbox's own order (`.draftcard.marked` has z-index 4). */
 body.viewer .handtray .cards .card.marked:not(.dragging) { transform: none; }
-body.viewer .card.marked:not(.draftcard)::before { z-index: auto; }
-body.viewer .card.marked:not(.draftcard)::after, .forkpage .card.marked:not(.draftcard)::after { z-index: 10; }
+body.viewer .draftcard.marked::after { z-index: 3; }
+body.viewer .draftcard.marked::before { z-index: 2; }
