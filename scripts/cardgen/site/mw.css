@@ -1,0 +1,27 @@
+/* Marine Worlds projects P133-P139 (missing upstream): photo cut from our own card image, plan layout added to the upstream project template */
+.ark-card.zoo-card.project-card[data-id^="P133_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P133.jpg);background-size:100% 100%;background-position:0 0}
+.ark-card.zoo-card.project-card[data-id^="P134_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P134.jpg);background-size:100% 100%;background-position:0 0}
+.ark-card.zoo-card.project-card[data-id^="P135_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P135.jpg);background-size:100% 100%;background-position:0 0}
+.ark-card.zoo-card.project-card[data-id^="P136_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P136.jpg);background-size:100% 100%;background-position:0 0}
+.ark-card.zoo-card.project-card[data-id^="P137_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P137.jpg);background-size:100% 100%;background-position:0 0}
+.ark-card.zoo-card.project-card[data-id^="P138_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P138.jpg);background-size:100% 100%;background-position:0 0}
+.ark-card.zoo-card.project-card[data-id^="P139_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P139.jpg);background-size:100% 100%;background-position:0 0}
+
+.mw-plan .project-card-top-left-icon.mw-two{gap:0}
+.mw-plan .project-card-description{text-align:center;font-size:19px;margin:2px 0 8px}
+.mw-plan .ark-card-title{font-size:19px;line-height:1.05}
+.mw-plan .project-card-slots-container.mw{display:flex;justify-content:flex-start;gap:6px;padding:0 4px;width:300px}
+.mw-plan .project-card-slots-container.mw .project-card-slot{flex:1;display:flex;flex-direction:column;align-items:center}
+.mw-plan .mw-reward{display:flex;flex-direction:column;align-items:center;gap:4px}
+.mw-plan .mw-b{display:flex;align-items:center;justify-content:center;min-height:44px}
+.mw-plan .mw-reef{width:56px;height:40px}
+.mw-plan .mw-rep{display:flex;align-items:center;gap:3px}
+.mw-plan .mw-sci{display:flex;flex-direction:column;gap:2px}
+.mw-plan .mw-sci .badge-icon{width:22px;height:22px;border-width:1px}
+.mw-plan .mw-colon{font-family:MyriadPro-Bold;font-size:22px}
+.mw-plan .mw-tutor{position:relative}
+.mw-plan .mw-tutor .badge-icon{width:40px;height:40px;box-shadow:0 0 0 3px #4a1313;border-radius:50%}
+.mw-plan .mw-tutor i{position:absolute;right:-9px;bottom:-12px;width:7px;height:20px;background:#1a1a1a;border-radius:3px;transform:rotate(-45deg)}
+.mw-plan .zoo-card-bonuses.mw-place{position:absolute!important;right:12px!important;bottom:6px!important;top:auto!important;left:auto!important;width:54px!important;height:76px!important;float:none!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#b9b9b4;border-radius:8px 8px 0 0;box-shadow:inset 0 0 4px #777;shape-outside:none}
+.mw-plan .mw-place-in{transform:scale(1.15);display:flex;align-items:center;justify-content:center}
+.ark-card.zoo-card.project-card.mw-plan .ark-card-wrapper .ark-card-middle .ark-card-title-wrapper .ark-card-title{font-size:17px;line-height:1}

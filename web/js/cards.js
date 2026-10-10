@@ -4,6 +4,9 @@ import { FORK, S } from './state.js';
 import { afterMark, forkSingleSelect } from './action-bar.js';
 
 export const info = (key) => S.replay.cards[key] || { name: key, type: 'unknown' };
+// The image of the hover preview: the full size card (745 x 1040; every card has one since build_cards.py). Taken from `large` of the card catalog, else from the path of the small card
+// (/cards/X.webp -> /cards_large/X.webp), so a replay cached by the server before the large cards existed still shows them; else the small card itself.
+export const largeOf = (c) => c.large || (c.image && c.image.startsWith('/cards/') ? c.image.replace('/cards/', '/cards_large/') : c.image);
 export const cardName = (key) => title(info(key).name);
 
 export function card(key, extraClass) {
@@ -21,7 +24,7 @@ export function card(key, extraClass) {
     img.src = c.image; img.alt = cardName(key);                // (not lazy: a card drawn again with the page's next render would show an empty frame first)
     img.onerror = () => { img.remove(); d.append(textFace(key, c)); };
     d.append(img);
-    d.addEventListener('mouseenter', () => showPreview(c.large || c.image, !!d.closest('#dock')));           // the full size card where there is one (sponsors), else the 240 px card; a card of the hand in the middle of the screen
+    d.addEventListener('mouseenter', () => showPreview(largeOf(c), !!d.closest('#dock')));           // (a card of the hand is shown in the middle of the screen)
     d.addEventListener('mouseleave', hidePreview);
   } else {
     d.append(textFace(key, c));

@@ -1,7 +1,7 @@
 // [module] Conservation project panel: project cards, worker / owner markers, blocked cubes.
 import { el, mix, seatColor, svg } from './util.js';
 import { S } from './state.js';
-import { card, hidePreview, info, showPreview, zoneNew } from './cards.js';
+import { hidePreview, info, largeOf, showPreview, zoneNew } from './cards.js';
 import { iconUrl } from './icons.js';
 import { unusedColor } from './association.js';
 
@@ -18,12 +18,15 @@ function projectTokens(st, key) {
 }
 // a beige panel with a shield icon and `count` slots, like BGA's project holders; the cards in `keys` go left to right
 // a cube (colour nobody plays) over one of the three slots of a base project card; in a 2 player game card k has its slot k covered: left, middle, right
-const SLOT_X = [0.18, 0.51, 0.83];
-export function blockedCube(i, colour, title) {            // colour / title: a cube of a player who supports the project at slot i
+const SLOT_X = [0.375, 0.625, 0.875];       // (a cube on a card of the track areas / when a strip has no entry in cubes.json: the middle of the three slots of a strip)
+const STRIP_CUBES = await fetch('/project_strips/cubes.json').then((r) => r.json()).catch(() => ({}));       // {key: [[x, y, width], ...]}: where the cube of each slot of a project strip goes (fractions of the strip; made by scripts/build_cards.py, the slots are centred and enlarged)
+const stripOf = (c) => (c.image && c.image.startsWith('/cards/') ? c.image.replace('/cards/', '/project_strips/') : '');
+export function blockedCube(i, colour, title, spot) {            // colour / title: a cube of a player who supports the project at slot i; spot: [x, y, width] on a project strip
   const c = colour || unusedColor();
   const e = mix(c, '#000000', .6);
   const g = svg('svg', { class: 'blockcube', viewBox: '-24 -24 48 48' });
-  g.style.left = (SLOT_X[i] * 100) + '%';
+  g.style.left = ((spot ? spot[0] : SLOT_X[i]) * 100) + '%';
+  if (spot) { g.style.top = (spot[1] * 100) + '%'; g.style.width = (spot[2] * 100) + '%'; }
   for (const [pts, fill] of [['0,-19 19,-9 0,2 -19,-9', mix(c, '#ffffff', .45)], ['-19,-9 0,2 0,21 -19,10', c], ['19,-9 0,2 0,21 19,10', mix(c, '#000000', .3)]]) {
     g.append(svg('polygon', { points: pts, fill, stroke: e, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
   }
@@ -41,25 +44,22 @@ export function projectPanel(st, keys, count, iconName, title, blocked) {
   panel.append(icon);
   const zn = zoneNew('projects:' + iconName, keys), isNew = zn.isNew;
   for (let i = 0; i < count; i++) {
-    const slot = el('div', 'projslot');
+    const slot = el('div', 'projslot' + (keys[i] ? '' : ' projempty'));
     if (keys[i]) {
       const wrap = el('div', 'withtokens');
-      const bar = el('div', 'projbar');                  // dark green bar with the project's icon(s): the top left corner of the card art
       const pc = info(keys[i]);
-      if (pc.image) {
-        bar.style.backgroundImage = 'url(' + pc.image + ')';
-        bar.addEventListener('mouseenter', () => showPreview(pc.large || pc.image));
-        bar.addEventListener('mouseleave', hidePreview);
+      const line = el('div', 'projline projstrip' + (isNew(keys[i]) ? ' card-new' : ''));       // like BGA: the dark green part with the icon(s) of the project left, the light green part with its three slots right; the green base is CSS, the icons and slots are the picture
+      if (stripOf(pc)) {
+        const art = el('img', 'projstripart'); art.src = stripOf(pc); art.alt = pc.name;
+        line.append(art);
+        line.addEventListener('mouseenter', () => showPreview(largeOf(pc)));         // (the whole card)
+        line.addEventListener('mouseleave', hidePreview);
       }
-      const holder = el('div', 'cardwrap projcrop');       // only the bottom of the card (cubes and slots) shows; hovering still previews the whole card
-      holder.append(card(keys[i]));
-      if (blocked) holder.append(blockedCube(i));
+      const spots = STRIP_CUBES[keys[i]] || [];
+      if (blocked) line.append(blockedCube(i, undefined, undefined, spots[i]));
       for (const t of projectTokens(st, keys[i])) {         // a supporter's cube blocks its slot
-        holder.append(blockedCube(0, seatColor(t.seat), S.replay.players[t.seat].name + ': slot ' + (t.slot + 1)));
-        holder.lastChild.style.left = (SLOT_X[t.slot] * 100) + '%';
+        line.append(blockedCube(t.slot, seatColor(t.seat), S.replay.players[t.seat].name + ': slot ' + (t.slot + 1), spots[t.slot]));
       }
-      const line = el('div', 'projline' + (isNew(keys[i]) ? ' card-new' : ''));
-      line.append(bar, holder);
       wrap.append(line);
       slot.append(wrap);
     }

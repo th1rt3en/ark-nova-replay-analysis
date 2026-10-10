@@ -16,8 +16,8 @@ DISC = (13, 11, 91, 89)                                      # the blue disc wit
 
 
 def build(folder: str) -> None:
-    base = Image.open(WEB / folder / "S250.webp").convert("RGB")
-    donor = Image.open(WEB / folder / "S245.webp").convert("RGB")
+    base = Image.open(WEB / folder / "S250.webp").convert("RGBA")
+    donor = Image.open(WEB / folder / "S245.webp").convert("RGBA")
     k = base.width / W
     sc = lambda v: round(v * k)
     box = tuple(sc(v) for v in FLAG)

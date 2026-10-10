@@ -29,13 +29,13 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `icons.js` | icon/sprite lookup, action icons, worker icons, `pic`, `moneyTile` |
 | `pov.js` | point of view (both players / seat 0 / seat 1), what is hidden, the eye toggles (`toggleEye`, remembered per table in localStorage; the sandbox, which counts as FORK, only reads the `pov` URL parameter), see changelog.md section 8.8 |
 | `load.js` | `fetchReplay` |
-| `cards.js` | card faces, preview popup, changed-card flash, ghost cards (`zoneNew`), session-only drag-to-reorder of hand / endgame cards (`orderedKeys`, `dragRow`) |
+| `cards.js` | card faces (images from `web/cards`, made by `scripts/build_cards.py`, see changelog 14), preview popup (the 745 x 1040 `web/cards_large` image, chosen by `largeOf`), changed-card flash, ghost cards (`zoneNew`), session-only drag-to-reorder of hand / endgame cards (`orderedKeys`, `dragRow`) |
 | `board.js` | hex maths, map cells, building sprites, `legalPlacement`, `zooBoard` |
 | `association.js` | association board / strip, conservation bonus panel |
-| `projects.js` | conservation project panel and markers |
+| `projects.js` | conservation project panel (BGA-like green strips from `web/project_strips`, see changelog 15) and markers |
 | `action-bar.js` | the bar of a frame (replay: text / gate / decision; fork/sandbox: playable controls) |
 | `fork.js` | fork mode: `initFork`, placement controls, `commitSteps`, `playFork`, `forkBar` |
-| `shared.js` | table centre: card folders, display, reputation track, thresholds, conservation track |
+| `shared.js` | table centre: card folders (zoo place names + numbers like BGA), display, reputation track, thresholds, conservation track |
 | `pile.js` | discard / endgame deck popup |
 | `side-panel.js` | per-player tracker column, break track, deck/discard icons |
 | `dock.js` | floating hand / endgame-card dock |
@@ -44,7 +44,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `layout.js` | `fitScale` (page zoom), `fitDisplay`; registers the resize listener |
 | `frames.js` | the frames of a replay step (step text, turn-end gate, decision), see changelog.md section 9 |
 | `notips.js` | one rule that removes tooltips from pictures (images, SVG, project panel, image-only elements), see changelog.md section 7 |
-| `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (info panel zoom) |
+| `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (info panel zoom) (spreadInfo: the player boxes fill the pane) |
 | `playback.js` | autoplay, speed, timeline (shown or hidden by the settings pop-up, changelog.md 8.10), `go(step, frame)`, `stepBy`, move list |
 | `settings.js` | settings pop-up (autoplay speed, timeline row on/off; localStorage `settings`), changelog.md 8.10 |
 | `sandbox.js` | sandbox lobby/setup tools |

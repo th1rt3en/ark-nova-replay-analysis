@@ -1020,3 +1020,15 @@ body.viewer .lobby a { color: #7a3b00; font-weight: 600; }
 .current, .moves li { white-space: pre-line; }
 
 .abandonbox[hidden] { display: none; }
+
+/* display folders like BGA (.folder-number / .folder-name): MyriadPro-Bold number, white, centred in the brown square of the picture (folder 150px -> 17px font; 19px = 1.47rem, a deliberate step above BGA); zoo place in the tab, italic 8px #624c0a */
+.folnum { left: 82.2%; top: 7.9%; font: 400 1.47rem/1 MyriadPro-Bold, system-ui, sans-serif; letter-spacing: -.05em; text-indent: -.05em; text-shadow: none; }
+.folname { position: absolute; left: 6%; top: 0; width: 54%; height: 1.93rem; line-height: 2rem; font: italic .55rem/2rem system-ui, "Segoe UI", sans-serif; color: #624c0a; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+
+/* player boxes: the extra height of the side bar (set by spreadInfo() in sidebar.js) goes to the icon rows: larger badges, more space between the rows, empty space at the bottom */
+.ppicons { row-gap: calc(.35rem + var(--ppx-gap, 0px)); padding-bottom: var(--ppx-pad, 0px); }
+aside .ppicons { row-gap: calc(.15rem + var(--ppx-gap, 0px)); }
+.ppicons .badge { width: calc(30px + var(--ppx-badge, 0px)); height: calc(30px + var(--ppx-badge, 0px)); }
+.ppicons .ic { font-size: calc(.95rem + var(--ppx-badge, 0px) * .4); }
+/* number below the badge (chosen by spreadInfo() when the badge can then grow more) */
+.ppbelow .ppicons .ic { flex-direction: column-reverse; gap: 0; line-height: 1.05; }

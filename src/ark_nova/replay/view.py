@@ -26,8 +26,8 @@ from ark_nova.storage.index import TableRecord
 _PLACEHOLDER = re.compile(r"\$\{(\w+)\}")
 IMAGE_DIR = {"animal": "animals", "sponsor": "sponsors"}       # fallback art from the vendored upstream repo (/img)
 WEB_DIR = Path(os.environ.get("WEB_DIR") or Path(__file__).resolve().parents[3] / "web")      # the Docker image sets WEB_DIR (the package lives in site-packages there)
-LARGE_DIR = WEB_DIR / "cards_large"      # full size sponsor cards for the hover preview (scripts/build_large_art.py)
-CARD_DIR = WEB_DIR / "cards"    # full card images cut by scripts/build_card_images.py
+LARGE_DIR = WEB_DIR / "cards_large"      # full size cards (745 x 1040) for the hover preview (scripts/build_cards.py)
+CARD_DIR = WEB_DIR / "cards"    # card images (360 x 503) made by scripts/build_cards.py
 TIMED_BY_LOG = ("break_position", "round", "display", "main_deck_size", "main_deck", "main_discard_size", "main_discard", "endgame_deck", "endgame_deck_size", "current_action", "active_player", "turn")      # shown as the log has them at each step (the refill comes later than the engine's); likewise the order of the action cards
 GAIN_FIELDS = ("reputation", "appeal", "conservation")
 LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "hand_limit")      # per player, same reason
