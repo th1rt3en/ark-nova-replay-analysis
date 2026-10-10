@@ -42,7 +42,6 @@ export function renderDock(st) {
     const cards = { hand: p.hand, endgame: p.endgame_hand || [] };
     const group = el('div', 'dockgroup');                               // the two buttons of a player (hand | endgame cards) switch between that player's cards
     group.style.setProperty('--pc', seatColor(seat));
-    group.append(el('span', 'dockwho', S.replay.players[seat].name));
     const pair = el('div', 'dockpair');
     for (const kind of ['hand', 'endgame']) {
       const row = cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, true);
