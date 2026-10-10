@@ -262,6 +262,50 @@ def map_view(map_id: str) -> dict:
             "association_bonuses": association.map_bonuses(base)}
 
 
+# What the viewer does not draw: the order of the piles (their sizes are `*_size`), the prompt of the engine, the pending effects, the statistics, the number of completed turns.
+INVISIBLE = ("main_deck", "endgame_deck", "main_deck_known", "prompt", "pending", "stats", "turn")
+
+
+def _visible(state: dict) -> dict:
+    return {k: v for k, v in state.items() if k not in INVISIBLE}
+
+
+def _must_choose(step: dict) -> bool:
+    """The step where the player has to choose an action card: it is always shown."""
+    prompt = step["state"].get("prompt")
+    return isinstance(prompt, dict) and prompt.get("kind") == "choose_action_card"
+
+
+def _join_labels(step: dict, folded: list) -> None:
+    """The texts of the folded steps go in front of the text of the step that stays (for every point of view)."""
+    group = folded + [step]
+    step["label"] = " · ".join(x["label"] for x in group)
+    texts = [[(x["label_pov"] or [None, None])[seat] or x["label"] for x in group] for seat in (0, 1)]
+    joined = [" · ".join(t) for t in texts]
+    step["label_pov"] = [j if j != step["label"] else None for j in joined] if any(j != step["label"] for j in joined) else None
+
+
+def _fold_unchanged(steps: list, keep: list) -> list:
+    """A step that changes nothing the viewer shows is joined to the next one: its text goes in front of the text of the next step (which keeps its state), so every step forward
+    changes something. Always shown: the first step, the last step and the steps where a player must choose an action card. `keep` (the steps with a text) comes in and goes out."""
+    out = list(keep)
+    shown = None                                                # the last step that is shown
+    folded: list = []                                           # the steps joined to the next one that is shown
+    last = len(steps) - 1
+    for i, st in enumerate(steps):
+        if not keep[i]:
+            continue
+        if shown is not None and i != last and not _must_choose(st) and _visible(st["state"]) == _visible(shown["state"]):
+            folded.append(st)
+            out[i] = False
+            continue
+        if folded:
+            _join_labels(st, folded)
+            folded = []
+        shown = st
+    return out
+
+
 def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False, first_moves: int | None = None):
     """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking.
     With `first_moves` only that many moves are replayed and the engine does not play them (the mini games need the first steps only; the table's setup is read from the whole log)."""
@@ -349,6 +393,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                   for i, (lb, v, src, o, ac) in enumerate(zip(labels, views, source, options, actors))]
     # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step. The first step stays.
     keep = [i == 0 or bool(st["label"].strip()) for i, st in enumerate(steps)]
+    keep = _fold_unchanged(steps, keep)
     setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])
     steps = [st for st, k in zip(steps, keep) if k]
     for st in steps:
