@@ -2,7 +2,6 @@
 (docs/accounts_plan.md, "Mini games and puzzles")."""
 import logging
 import random
-import threading
 from datetime import date, datetime, timezone
 from typing import Callable, Optional
 
@@ -25,8 +24,6 @@ class MiniGameService:
         self.store, self.sources, self.read_log, self.games = store, sources, read_log, games
         self.entries = {e.key: e for e in entries}
         self.clock, self.rng, self.tries = clock, rng or random.Random(), tries
-        self._answers: dict[tuple, dict] = {}                           # in memory only: the answer is derived from the log, never stored
-        self._lock = threading.Lock()
 
     # ---- days
     def today(self) -> str:
@@ -78,11 +75,11 @@ class MiniGameService:
                 moment = game.pick_moment(source, glog, self.rng)
                 public = game.build_public(moment, glog)
                 guard.check_public(public, glog)
-                game.answer(moment, glog)                                           # the table must also be able to answer: else try another
+                answer = game.answer(moment, glog)                                  # the table must also be able to answer: else try another
             except Exception as e:                                                  # noqa: BLE001
                 log.warning("mini game %s: table %s does not make a puzzle (%s: %s)", game.key, source, type(e).__name__, e)
                 continue
-            row = PuzzleRow(game.key, day, source, moment, game.builder_version, public, self.clock().isoformat())
+            row = PuzzleRow(game.key, day, source, moment, game.builder_version, public, self.clock().isoformat(), answer)
             if self.store.create_puzzle(row):
                 return row
             return self.store.get_puzzle(game.key, day)                             # another request created it first
@@ -100,15 +97,12 @@ class MiniGameService:
         return public
 
     def _answer(self, game: MiniGame, puzzle: PuzzleRow) -> dict:
-        k = (game.key, puzzle.day, game.builder_version)
-        with self._lock:
-            if k in self._answers:
-                return self._answers[k]
+        """The answer: stored with the puzzle at rollover (a cache, server side only, so a submission needs no log, GCS or BigQuery); read from the log when it is missing."""
+        if puzzle.answer_cache is not None and puzzle.builder_version == game.builder_version:
+            return puzzle.answer_cache
         ans = game.answer(puzzle.moment, self.read_log(puzzle.source_ref))
-        with self._lock:
-            if len(self._answers) > 64:
-                self._answers.clear()
-            self._answers[k] = ans
+        if puzzle.builder_version == game.builder_version:
+            self.store.set_answer_cache(game.key, puzzle.day, ans)
         return ans
 
     def _reveal(self, game: MiniGame, puzzle: PuzzleRow, public: dict, sub: SubmissionRow) -> dict:

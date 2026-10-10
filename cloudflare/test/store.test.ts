@@ -67,7 +67,7 @@ describe("accounts", () => {
     });
 });
 
-const puzzle = (game: string, day: string, source: number) => ({ game_key: game, day, source_ref: source, moment: '{"seat":1}', builder_version: "1", public_cache: '{"cards":[]}', created_at: "t" });
+const puzzle = (game: string, day: string, source: number) => ({ game_key: game, day, source_ref: source, moment: '{"seat":1}', builder_version: "1", public_cache: '{"cards":[]}', created_at: "t", answer_cache: '{"keep":["a"]}' });
 const sub = (game: string, day: string, account: string | null, anon: string | null, score: number, at = "2026-10-10T10:00:00+00:00") => ({ game_key: game, day, account_id: account, anon_id: anon, payload: '{"picks":[]}', score, detail: "{}", submitted_at: at });
 
 describe("mini games", () => {
@@ -76,10 +76,12 @@ describe("mini games", () => {
         expect((await op("mg.create_puzzle", { puzzle: puzzle("g", "2026-10-10", 222) })).body.result).toBe(false);
         expect((await op("mg.used_sources", { game_key: "g" })).body.result).toEqual([111]);                       // the refused one was not remembered
         expect((await op("mg.create_puzzle", { puzzle: puzzle("h", "2026-10-10", 111) })).body.result).toBe(true);   // another game may use the same table
-        expect((await op("mg.get_puzzle", { game_key: "g", day: "2026-10-10" })).body.result).toMatchObject({ source_ref: 111, moment: '{"seat":1}' });
+        expect((await op("mg.get_puzzle", { game_key: "g", day: "2026-10-10" })).body.result).toMatchObject({ source_ref: 111, moment: '{"seat":1}', answer_cache: '{"keep":["a"]}' });
         expect((await op("mg.get_puzzle", { game_key: "g", day: "2026-10-11" })).body.result).toBeNull();
         await op("mg.set_public_cache", { game_key: "g", day: "2026-10-10", public_cache: '{"v":2}', builder_version: "2" });
-        expect((await op("mg.get_puzzle", { game_key: "g", day: "2026-10-10" })).body.result).toMatchObject({ public_cache: '{"v":2}', builder_version: "2" });
+        expect((await op("mg.get_puzzle", { game_key: "g", day: "2026-10-10" })).body.result).toMatchObject({ public_cache: '{"v":2}', builder_version: "2", answer_cache: null });      // a new payload clears the answer
+        await op("mg.set_answer_cache", { game_key: "g", day: "2026-10-10", answer_cache: '{"keep":["b"]}' });
+        expect((await op("mg.get_puzzle", { game_key: "g", day: "2026-10-10" })).body.result.answer_cache).toBe('{"keep":["b"]}');
         await op("mg.create_puzzle", { puzzle: puzzle("g", "2026-10-12", 333) });
         expect((await op("mg.puzzle_days", { game_key: "g", month: "2026-10" })).body.result).toEqual(["2026-10-10", "2026-10-12"]);
         expect((await op("mg.puzzle_days", { game_key: "g", month: "2026-09" })).body.result).toEqual([]);

@@ -19,6 +19,7 @@ class PuzzleRow:
     builder_version: str = ""
     public_cache: Optional[dict] = None   # a cache of the built payload: the pointer is the truth
     created_at: str = ""
+    answer_cache: Optional[dict] = None   # a cache of the answer read from the log (server side only, never sent to a browser): rebuilt from the log when missing or out of date
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,10 @@ class MiniGameStore(Protocol):
 
     def used_sources(self, game_key: str) -> set[int]: ...
 
-    def set_public_cache(self, game_key: str, day: str, public: dict, builder_version: str) -> None: ...
+    def set_public_cache(self, game_key: str, day: str, public: dict, builder_version: str) -> None:
+        """Also clears the answer cache: a new builder version means both are rebuilt."""
+
+    def set_answer_cache(self, game_key: str, day: str, answer: dict) -> None: ...
 
     def puzzle_days(self, game_key: str, month: str) -> list[str]: ...
 
@@ -80,7 +84,13 @@ class MemoryStore:
         with self._lock:
             row = self._puzzles.get((game_key, day))
             if row is not None:
-                self._puzzles[(game_key, day)] = replace(row, public_cache=public, builder_version=builder_version)
+                self._puzzles[(game_key, day)] = replace(row, public_cache=public, builder_version=builder_version, answer_cache=None)
+
+    def set_answer_cache(self, game_key, day, answer):
+        with self._lock:
+            row = self._puzzles.get((game_key, day))
+            if row is not None:
+                self._puzzles[(game_key, day)] = replace(row, answer_cache=answer)
 
     def puzzle_days(self, game_key, month):
         return sorted(d for (k, d) in self._puzzles if k == game_key and d.startswith(month))
@@ -114,7 +124,7 @@ class MemoryStore:
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS minigame_puzzles (game_key TEXT NOT NULL, day TEXT NOT NULL, source_ref INTEGER NOT NULL, moment TEXT NOT NULL,
-    builder_version TEXT NOT NULL DEFAULT '', public_cache TEXT, created_at TEXT NOT NULL DEFAULT '', PRIMARY KEY (game_key, day));
+    builder_version TEXT NOT NULL DEFAULT '', public_cache TEXT, created_at TEXT NOT NULL DEFAULT '', answer_cache TEXT, PRIMARY KEY (game_key, day));
 CREATE TABLE IF NOT EXISTS minigame_used_sources (game_key TEXT NOT NULL, source_ref INTEGER NOT NULL, PRIMARY KEY (game_key, source_ref));
 CREATE TABLE IF NOT EXISTS minigame_submissions (id INTEGER PRIMARY KEY AUTOINCREMENT, game_key TEXT NOT NULL, day TEXT NOT NULL, account_id TEXT, anon_id TEXT,
     payload TEXT NOT NULL, score REAL NOT NULL, detail TEXT NOT NULL DEFAULT '{}', submitted_at TEXT NOT NULL);
@@ -130,10 +140,14 @@ class SqliteStore:
         self._lock = threading.Lock()
         with self._lock:
             self._db.executescript(SCHEMA)
+            try:                                                  # a file made before the answer cache existed
+                self._db.execute("ALTER TABLE minigame_puzzles ADD COLUMN answer_cache TEXT")
+            except sqlite3.OperationalError:
+                pass
 
     @staticmethod
     def _puzzle(r) -> PuzzleRow:
-        return PuzzleRow(r["game_key"], r["day"], r["source_ref"], json.loads(r["moment"]), r["builder_version"], json.loads(r["public_cache"]) if r["public_cache"] else None, r["created_at"])
+        return PuzzleRow(r["game_key"], r["day"], r["source_ref"], json.loads(r["moment"]), r["builder_version"], json.loads(r["public_cache"]) if r["public_cache"] else None, r["created_at"], json.loads(r["answer_cache"]) if r["answer_cache"] else None)
 
     def get_puzzle(self, game_key, day):
         with self._lock:
@@ -142,8 +156,9 @@ class SqliteStore:
 
     def create_puzzle(self, row):
         with self._lock, self._db:
-            cur = self._db.execute("INSERT OR IGNORE INTO minigame_puzzles (game_key, day, source_ref, moment, builder_version, public_cache, created_at) VALUES (?,?,?,?,?,?,?)",
-                                   (row.game_key, row.day, row.source_ref, json.dumps(row.moment), row.builder_version, json.dumps(row.public_cache) if row.public_cache is not None else None, row.created_at))
+            cur = self._db.execute("INSERT OR IGNORE INTO minigame_puzzles (game_key, day, source_ref, moment, builder_version, public_cache, created_at, answer_cache) VALUES (?,?,?,?,?,?,?,?)",
+                                   (row.game_key, row.day, row.source_ref, json.dumps(row.moment), row.builder_version, json.dumps(row.public_cache) if row.public_cache is not None else None, row.created_at,
+                                    json.dumps(row.answer_cache) if row.answer_cache is not None else None))
             if cur.rowcount == 0:
                 return False
             self._db.execute("INSERT OR IGNORE INTO minigame_used_sources (game_key, source_ref) VALUES (?,?)", (row.game_key, row.source_ref))
@@ -155,7 +170,11 @@ class SqliteStore:
 
     def set_public_cache(self, game_key, day, public, builder_version):
         with self._lock, self._db:
-            self._db.execute("UPDATE minigame_puzzles SET public_cache = ?, builder_version = ? WHERE game_key = ? AND day = ?", (json.dumps(public), builder_version, game_key, day))
+            self._db.execute("UPDATE minigame_puzzles SET public_cache = ?, builder_version = ?, answer_cache = NULL WHERE game_key = ? AND day = ?", (json.dumps(public), builder_version, game_key, day))
+
+    def set_answer_cache(self, game_key, day, answer):
+        with self._lock, self._db:
+            self._db.execute("UPDATE minigame_puzzles SET answer_cache = ? WHERE game_key = ? AND day = ?", (json.dumps(answer), game_key, day))
 
     def puzzle_days(self, game_key, month):
         with self._lock:

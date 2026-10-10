@@ -236,3 +236,41 @@ def test_anonymous_ids_and_accounts_are_separate_players(store):
     svc.submit("example", svc.today(), good(svc), Caller(account_id="P7", anon_id="anon-anna-0001"))
     assert not svc.puzzle("example", svc.today(), ANNA)["played"]
     assert svc.puzzle("example", svc.today(), Caller(account_id="P7"))["played"]
+
+
+def test_the_answer_is_stored_at_rollover_and_a_submission_needs_no_log(store):
+    svc = make_service(store)
+    svc.rollover()
+    row = store.get_puzzle("example", svc.today())
+    assert row.answer_cache == {"keep": ex.fake_log().raw["keep"][row.moment["seat"]]}
+    svc.read_log = FakeLogs({})                                              # from now on no log can be read at all
+    out = svc.submit("example", svc.today(), {"picks": row.answer_cache["keep"]}, ANNA)
+    assert out["score"] == 2 and out["original"] == row.answer_cache["keep"]
+    assert svc.puzzle("example", svc.today(), ANNA)["result"]["score"] == 2                    # and the reveal of a played puzzle neither
+    assert "answer_cache" not in json.dumps(svc.puzzle("example", svc.today(), BEN)) and "keep" not in json.dumps(svc.puzzle("example", svc.today(), BEN)["public"].get("answer", ""))
+
+
+def test_a_puzzle_without_a_stored_answer_reads_the_log_once_and_keeps_it(store):
+    svc = make_service(store)
+    svc.rollover()
+    row = store.get_puzzle("example", svc.today())
+    store.set_public_cache("example", svc.today(), row.public_cache, row.builder_version)         # (clears the answer: how a puzzle made before the cache looks)
+    assert store.get_puzzle("example", svc.today()).answer_cache is None
+    svc.submit("example", svc.today(), good(svc), ANNA)
+    assert store.get_puzzle("example", svc.today()).answer_cache == {"keep": ex.fake_log().raw["keep"][row.moment["seat"]]}
+    svc.read_log = FakeLogs({})
+    svc.submit("example", svc.today(), good(svc), BEN)                                           # the stored answer is enough now
+
+
+def test_a_new_builder_version_rebuilds_the_answer_too(store):
+    svc = make_service(store)
+    svc.rollover()
+    svc.games["example"].builder_version = "2"
+    try:
+        svc.puzzle("example", svc.today(), ANNA)                                                 # the payload is rebuilt: the old answer is dropped with it
+        row = store.get_puzzle("example", svc.today())
+        assert row.builder_version == "2" and row.answer_cache is None
+        svc.submit("example", svc.today(), good(svc), ANNA)
+        assert store.get_puzzle("example", svc.today()).answer_cache is not None
+    finally:
+        svc.games["example"].builder_version = "1"

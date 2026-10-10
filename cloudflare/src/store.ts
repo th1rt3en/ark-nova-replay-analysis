@@ -71,14 +71,15 @@ const OPS: Record<string, Op> = {
     "mg.create_puzzle": async (db, a) => {
         const p = a.puzzle;
         const out = await db.batch([
-            db.prepare("INSERT OR IGNORE INTO minigame_puzzles (game_key, day, source_ref, moment, builder_version, public_cache, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
-                .bind(str(p.game_key), str(p.day), num(p.source_ref), str(p.moment), str(p.builder_version ?? ""), optStr(p.public_cache), str(p.created_at ?? "")),
+            db.prepare("INSERT OR IGNORE INTO minigame_puzzles (game_key, day, source_ref, moment, builder_version, public_cache, created_at, answer_cache) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+                .bind(str(p.game_key), str(p.day), num(p.source_ref), str(p.moment), str(p.builder_version ?? ""), optStr(p.public_cache), str(p.created_at ?? ""), optStr(p.answer_cache)),
             db.prepare("INSERT OR IGNORE INTO minigame_used_sources (game_key, source_ref) SELECT ?, ? WHERE changes() > 0").bind(str(p.game_key), num(p.source_ref)),
         ]);
         return out[0].meta.changes > 0;
     },
     "mg.used_sources": async (db, a) => (await db.prepare("SELECT source_ref FROM minigame_used_sources WHERE game_key = ?").bind(str(a.game_key)).all<{ source_ref: number }>()).results.map((r) => r.source_ref),
-    "mg.set_public_cache": async (db, a) => { await db.prepare("UPDATE minigame_puzzles SET public_cache = ?, builder_version = ? WHERE game_key = ? AND day = ?").bind(str(a.public_cache), str(a.builder_version), str(a.game_key), str(a.day)).run(); return null; },
+    "mg.set_public_cache": async (db, a) => { await db.prepare("UPDATE minigame_puzzles SET public_cache = ?, builder_version = ?, answer_cache = NULL WHERE game_key = ? AND day = ?").bind(str(a.public_cache), str(a.builder_version), str(a.game_key), str(a.day)).run(); return null; },
+    "mg.set_answer_cache": async (db, a) => { await db.prepare("UPDATE minigame_puzzles SET answer_cache = ? WHERE game_key = ? AND day = ?").bind(str(a.answer_cache), str(a.game_key), str(a.day)).run(); return null; },
     "mg.puzzle_days": async (db, a) => (await db.prepare("SELECT day FROM minigame_puzzles WHERE game_key = ? AND day LIKE ? ORDER BY day").bind(str(a.game_key), str(a.month) + "-%").all<{ day: string }>()).results.map((r) => r.day),
     "mg.get_submission": (db, a) => {
         const account = optStr(a.account_id), anon = optStr(a.anon_id);

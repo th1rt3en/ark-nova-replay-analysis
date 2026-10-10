@@ -96,7 +96,7 @@ def test_the_account_service_runs_on_the_d1_store(client):
 def test_mini_games_through_the_worker(client):
     store = D1MiniGameStore(client)
     g, h = "g" + uuid.uuid4().hex[:8], "h" + uuid.uuid4().hex[:8]
-    row = PuzzleRow(g, "2026-10-10", 111, {"seat": 1}, "1", {"cards": ["a"]}, "t")
+    row = PuzzleRow(g, "2026-10-10", 111, {"seat": 1}, "1", {"cards": ["a"]}, "t", {"keep": ["a"]})
     assert store.create_puzzle(row) is True
     assert store.create_puzzle(PuzzleRow(g, "2026-10-10", 222, {"seat": 0}, "1", None, "t")) is False
     assert store.used_sources(g) == {111}
@@ -104,6 +104,9 @@ def test_mini_games_through_the_worker(client):
     assert store.get_puzzle(g, "2026-10-10") == row and store.get_puzzle(g, "2026-10-11") is None
     store.set_public_cache(g, "2026-10-10", {"v": 2}, "2")
     assert store.get_puzzle(g, "2026-10-10").public_cache == {"v": 2} and store.get_puzzle(g, "2026-10-10").builder_version == "2"
+    assert store.get_puzzle(g, "2026-10-10").answer_cache is None                                  # a new payload clears the answer
+    store.set_answer_cache(g, "2026-10-10", {"keep": ["b"]})
+    assert store.get_puzzle(g, "2026-10-10").answer_cache == {"keep": ["b"]}
     store.create_puzzle(PuzzleRow(g, "2026-10-12", 333, {}, "1", None, "t"))
     assert store.puzzle_days(g, "2026-10") == ["2026-10-10", "2026-10-12"]
 
