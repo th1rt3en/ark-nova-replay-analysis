@@ -54,6 +54,7 @@ function tile(cls, title, img, value, sub) {
 }
 const plainIcon = (id, h) => { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = h; return i; };
 // The number is centred by its ink, not by its advance width: the digits of Bowlby One have uneven side bearings (a 1 sat 1.6 px left of the middle, a 10 1.2 px right).
+const TURN_PLACEHOLDER = 67;          // (the Turn number of the Round | Turn element: a fixed placeholder until its calculation is defined)
 function centreInk(node) {
   const shift = () => {
     const cs = getComputedStyle(node), ctx = (centreInk.ctx = centreInk.ctx || document.createElement('canvas').getContext('2d'));
@@ -71,10 +72,13 @@ function headerStats(st, flash) {
   if (!root) return;
   root.replaceChildren();
   const rnd = flash('round', st.round, el('div', 'pill rnd'));
-  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends';
-  const rn = el('b', 'rn', st.round);
-  rnd.append(el('span', 'lab', 'Round'), rn);
-  centreInk(rn);          // (stacked: the word small above the number, a slim pill: the room goes to the logo)
+  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends. Turn: placeholder for now (how it is counted is still to be defined)';
+  const rn = el('b', 'rn', st.round), tn = el('b', 'tn', TURN_PLACEHOLDER);
+  const rh = el('div', 'half'), th = el('div', 'half');          // (two equal halves, the word small above the number, a dashed divider between them)
+  rh.append(el('span', 'lab', 'Round'), rn);
+  th.append(el('span', 'lab', 'Turn'), tn);
+  rnd.append(rh, el('i', 'dv'), th);
+  centreInk(rn); centreInk(tn);
   const brk = flash('break', st.break_position, el('div', 'pill brk'));
   brk.title = 'Break track: the break ends the round when the token reaches 9';
   const pips = el('div', 'pips');
