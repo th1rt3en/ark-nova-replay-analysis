@@ -12,9 +12,9 @@ export const povParam = () => (S.pov === null ? 'all' : String(S.pov));
 { let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = PLAY ? null : v === undefined ? 0 : v; }       // (a live game: the server already left out what this seat may not see, nothing is hidden by the page)
 export const hides = (seat) => S.pov !== null && seat !== S.pov;
 // The orientation of the boards: the spectated player chosen in the dialog at the start (`chooseSpectated`) has the left map and the upper player box, whichever eye is open later (the eyes
-// change only what is shown of the cards). Kept per table ('orient:<table>': '0' | '1'); a fork takes it from the URL (`&orient=`, else the eye's seat); a live game and the sandbox keep seat 0 left.
+// change only what is shown of the cards). Kept per table and per tab ('orient:<table>' in sessionStorage: '0' | '1'), so F5 keeps it but a new visit (window closed, ID entered again) asks again; a fork takes it from the URL (`&orient=`, else the eye's seat); a live game and the sandbox keep seat 0 left.
 const ORIENT_KEY = 'orient:' + (table || 'local');
-const orientStored = () => { try { const v = localStorage.getItem(ORIENT_KEY); return v === '0' ? 0 : v === '1' ? 1 : undefined; } catch (e) { return undefined; } };
+const orientStored = () => { try { const v = sessionStorage.getItem(ORIENT_KEY); return v === '0' ? 0 : v === '1' ? 1 : undefined; } catch (e) { return undefined; } };
 { const v = FORK ? readPov(params.get('orient')) : PLAY ? 0 : orientStored(); S.orient = v !== undefined ? v : FORK && S.pov !== null ? S.pov : 0; }
 export const orientParam = () => String(S.orient);
 export const seatOrder = () => (S.orient === 1 ? [1, 0] : [0, 1]);       // (the seats in the order they are drawn: left map / upper box first)
@@ -76,7 +76,7 @@ export function askSpectated() {
 }
 function chooseSpectated(seat) {
   S.orient = seat; S.pov = seat;
-  try { localStorage.setItem(ORIENT_KEY, String(seat)); } catch (e) { /* no storage */ }
+  try { sessionStorage.setItem(ORIENT_KEY, String(seat)); } catch (e) { /* no storage */ }
   S.lastBoard = null;
   applyPov();
 }
