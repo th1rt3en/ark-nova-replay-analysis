@@ -1280,3 +1280,6 @@ When the hand is shown as a fan, it no longer blinks in. `fanIntro(row, handCoun
 - **Rise and spread** (page load, switching the hand display setting): the closed stack rises from below, then spreads from the centre to both sides into the fan (`FAN_RISE_MS` 900 ms).
 - Only once per appearance (`fanDone`, reset by the `handmode` event). `renderDock` rebuilds the fan on every redraw, so a running intro continues with a negative `delay` (elapsed time) instead of restarting; earlier intro animations on the same card are cancelled first (only plain `Animation`s, CSS transitions are left alone).
 - Not gated by `prefers-reduced-motion` (like the tray slide-up; Windows with animation effects off reports it, and the intro would never show).
+
+## 27. No green flash for arriving cards
+`.card.card-new { animation: none; }` (end of `parkposter.css`): cards that arrive in a zone (hand, zoo, display) no longer get the green border flash of `replay.css`. The red fade of a card that leaves (`card-gone`), the project strips and the tokens are unchanged.
