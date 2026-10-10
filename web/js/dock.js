@@ -81,6 +81,12 @@ export function renderDock(st) {
     panel.style.setProperty('--pc', seatColor(shownSel.seat));
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
   } else dock.replaceChildren(bar);
+  fitDockSpace(dock);
 }
+// The dock floats over the bottom of the page: the page gets as much room under its last row (the zoos, with the played sponsors) as the dock is high, so it can be scrolled clear of the hand.
+function fitDockSpace(dock) {
+  document.body.style.paddingBottom = dock.childNodes.length ? Math.ceil(dock.offsetHeight + 16) + 'px' : '';
+}
+window.addEventListener('resize', () => { const d = $('dock'); if (d) fitDockSpace(d); });
 
 document.addEventListener('cardorder', () => quietly(() => renderDock(curState())));       // a card was dragged to a new place: draw the cards again in the new order

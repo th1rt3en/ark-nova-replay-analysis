@@ -2,10 +2,11 @@
 from dataclasses import asdict
 from typing import Optional
 
+from ark_nova.accounts.rating import K, RatingChange
 from ark_nova.accounts.store import Account, IdTaken, Session, UsernameTaken
 from ark_nova.storeclient import StoreClient, StoreConflict
 
-FIELDS = ("id", "id_source", "username", "username_lower", "password_hash", "recovery_hash", "created_at", "last_login_at", "bga_elo_seed", "rating", "rated_games", "rated_wins")
+FIELDS = ("id", "id_source", "username", "username_lower", "password_hash", "recovery_hash", "created_at", "last_login_at", "bga_elo_seed", "rating", "rated_games", "rated_wins", "deleted_at")
 
 
 def _account(row: Optional[dict]) -> Optional[Account]:
@@ -55,3 +56,26 @@ class D1AccountStore:
 
     def delete_sessions_of(self, account_id):
         self.c.call("acct.delete_sessions_of", {"account_id": account_id}, retry=True)
+
+    def ratings_of(self, ids):
+        return {r["id"]: (r["rating"], r["rated_games"], r["rated_wins"]) for r in self.c.call("rating.of", {"ids": list(ids)}, retry=True)} if ids else {}
+
+    def commit_ratings(self, game_id, changes):
+        payload = [{"account_id": c.account_id, "seat": c.seat, "opponent_id": c.opponent_id, "result": c.result, "before": c.before, "after": c.after, "at": c.at} for c in changes]
+        return self.c.call("rating.commit", {"game_id": game_id, "changes": payload, "k": K})
+
+    @staticmethod
+    def _change(r) -> RatingChange:
+        return RatingChange(r["game_id"], r["account_id"], r["seat"], r["opponent_id"], r["result"], r["rating_before"], r["rating_after"], r["at"])
+
+    def rating_changes(self, game_id):
+        return [self._change(r) for r in self.c.call("rating.changes", {"game_id": game_id}, retry=True)]
+
+    def rating_history(self, account_id, limit=20):
+        return [self._change(r) for r in self.c.call("rating.history", {"account_id": account_id, "limit": limit}, retry=True)]
+
+    def ratings_board(self, min_games, limit=100):
+        return list(self.c.call("rating.board", {"min_games": min_games, "limit": limit}, retry=True))
+
+    def delete_account(self, account_id, at):
+        self.c.call("acct.delete", {"id": account_id, "at": at}, retry=True)

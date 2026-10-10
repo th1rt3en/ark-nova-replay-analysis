@@ -121,6 +121,7 @@ def test_mini_games_through_the_worker(client):
     assert store.add_submission(sub("2026-10-11", "P1", None, 1, "2026-11-01T00:00:00+00:00")) is True
     assert store.get_submission(g, "2026-10-10", "P1", None).score == 3 and store.get_submission(g, "2026-10-10", None, "anon-1").detail == {"k": 1}
     assert store.get_submission(g, "2026-10-10", None, "anon-2") is None and store.get_submission(g, "2026-10-10", None, None) is None
+    assert store.player_scores(g, "2026-10", "P1", None) == {"2026-10-10": 3, "2026-10-11": 1} and store.player_scores(g, "2026-10", None, "anon-1") == {"2026-10-10": 2} and store.player_scores(g, "2026-10", None, None) == {}
     assert len(store.submissions(g)) == 3 and len(store.submissions(g, day="2026-10-10")) == 2 and len(store.submissions(g, month="2026-11")) == 1
     assert all(s.account_id for s in store.submissions(g, ranked_only=True))
     store.purge(g)

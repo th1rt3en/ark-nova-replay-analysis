@@ -274,3 +274,31 @@ def test_a_new_builder_version_rebuilds_the_answer_too(store):
         assert store.get_puzzle("example", svc.today()).answer_cache is not None
     finally:
         svc.games["example"].builder_version = "1"
+
+
+def test_the_calendar_asks_the_store_twice_not_once_per_day(store):
+    svc = make_service(store)
+    calls = {"submission": 0, "days": 0, "scores": 0}
+    real = (store.get_submission, store.puzzle_days, store.player_scores)
+    store.get_submission = lambda *a, **k: (calls.__setitem__("submission", calls["submission"] + 1), real[0](*a, **k))[1]
+    store.puzzle_days = lambda *a, **k: (calls.__setitem__("days", calls["days"] + 1), real[1](*a, **k))[1]
+    store.player_scores = lambda *a, **k: (calls.__setitem__("scores", calls["scores"] + 1), real[2](*a, **k))[1]
+    svc.rollover()
+    svc.submit("brier", svc.today(), good(svc, "brier"), ANNA)
+    calls.update(submission=0, days=0, scores=0)
+    month = svc.today()[:7]
+    first = svc.days("brier", month, ANNA)
+    svc.days("brier", month, ANNA)
+    assert [(d["day"], d["played"]) for d in first["days"]] == [(svc.today(), True)] and first["days"][0]["score"] is not None
+    assert calls == {"submission": 0, "days": 1, "scores": 2}                                    # the list of days is kept a minute, the scores are the player's own
+    assert svc.days("brier", month, BEN)["days"][0]["played"] is False
+
+
+def test_a_new_puzzle_shows_in_the_calendar_at_once(store, clock):
+    svc = make_service(store, clock=clock)
+    clock.set("2026-10-08T10:00:00+00:00")
+    svc.rollover()
+    assert len(svc.days("brier", "2026-10", ANNA)["days"]) == 1
+    clock.set("2026-10-10T10:00:00+00:00")
+    svc.rollover()
+    assert len(svc.days("brier", "2026-10", ANNA)["days"]) == 2                                  # (the kept list is dropped when a puzzle is made)

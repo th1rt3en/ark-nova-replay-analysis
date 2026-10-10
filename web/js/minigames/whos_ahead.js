@@ -1,6 +1,7 @@
 // Who's ahead (minigames/whos_ahead.html): the viewer shows a position with everything of both players visible (MINIGAME_MODE, no point of view), this panel takes the chances
 // of the three outcomes, scores them (Brier), and shows the real result. Past days are played from the calendar (?day=YYYY-MM-DD). Nothing here knows another mini game.
-import { api, mountCalendar, renderBoards } from './shell.js';
+import { api, renderBoards } from './shell.js';
+import { forgetCalendar, mountCalendar } from './calendar.js';
 
 const KEY = 'whos_ahead';
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
@@ -57,7 +58,7 @@ function mount(puzzle) {
     }
     async function send() {
       go.disabled = true; prompt.hidden = true;
-      try { result = await api(`/${KEY}/submit`, { day: puzzle.day, payload: values() }); draw(); }
+      try { result = await api(`/${KEY}/submit`, { day: puzzle.day, payload: values() }); forgetCalendar(KEY); draw(); }
       catch (e) {
         if (e.code === 'already_played') { const again = await api(`/${KEY}/puzzle/${puzzle.day}`); result = again.result; draw(); return; }
         err.textContent = e.message; go.disabled = false;

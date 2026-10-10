@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Optional, Protocol
 
+from ark_nova.accounts import rating as elo
 from ark_nova.accounts.seeds import BgaPlayer, BgaSeedIndex, NoSeeds
 from ark_nova.accounts.store import Account, AccountStore, IdTaken, Session, UsernameTaken
 
@@ -219,6 +220,29 @@ class AccountService:
         self.store.delete_sessions_of(acc.id)
         self.limiter.reset(lower)
         return Registered(acc, self._new_session(acc.id, user_agent), new_code)
+
+    # ---- profiles, the ratings board, deleting an account
+    def profile(self, account_id: str) -> Optional[dict]:
+        """What anybody may see of a player: the rating, the numbers of rated games and the last rated games with the opponent's name. None for an id nobody has (or a deleted account)."""
+        acc = self.store.by_id(account_id)
+        if acc is None or acc.deleted_at:
+            return None
+        history = self.store.rating_history(acc.id, 20)
+        names = self.store.usernames(sorted({h.opponent_id for h in history}))
+        return {**self.public(acc), "rated_wins": acc.rated_wins, "member_since": acc.created_at[:10], "listed": acc.rated_games >= elo.MIN_LISTED_GAMES,
+                "history": [{"game_id": h.game_id, "opponent_id": h.opponent_id, "opponent": names.get(h.opponent_id, h.opponent_id), "result": h.result, "before": round(h.before), "after": round(h.after),
+                             "delta": round(h.after - h.before, 1), "at": h.at} for h in history]}
+
+    def ratings_board(self, limit: int = 100) -> list[dict]:
+        """The best ratings, for players with at least MIN_LISTED_GAMES rated games (a seeded rating alone does not list anyone)."""
+        rows = self.store.ratings_board(elo.MIN_LISTED_GAMES, limit)
+        return [{"rank": i, "id": r["id"], "username": r["username"], "rating": round(r["rating"]), "rated_games": r["rated_games"], "rated_wins": r["rated_wins"]} for i, r in enumerate(rows, 1)]
+
+    def delete(self, acc: Account, password) -> None:
+        """Anonymizes the account after the password was typed again: the name becomes "Deleted player", the passwords and sessions go; the ratings and the games stay."""
+        if not isinstance(password, str) or not self.hasher.verify(acc.password_hash, password):
+            raise AccountError(401, "bad_password", "The password is wrong.")
+        self.store.delete_account(acc.id, self.clock().isoformat())
 
     @staticmethod
     def public(acc: Account) -> dict:

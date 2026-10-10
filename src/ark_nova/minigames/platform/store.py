@@ -51,6 +51,9 @@ class MiniGameStore(Protocol):
 
     def get_submission(self, game_key: str, day: str, account_id: Optional[str], anon_id: Optional[str]) -> Optional[SubmissionRow]: ...
 
+    def player_scores(self, game_key: str, month: str, account_id: Optional[str], anon_id: Optional[str]) -> dict[str, float]:
+        """The score of every puzzle of the month (by the puzzle's day) that this player has played, in one call: the calendar."""
+
     def add_submission(self, row: SubmissionRow) -> bool:
         """False when that player has already played that puzzle."""
 
@@ -103,6 +106,9 @@ class MemoryStore:
 
     def get_submission(self, game_key, day, account_id, anon_id):
         return next((s for s in self._subs if s.game_key == game_key and s.day == day and self._same_player(s, account_id, anon_id)), None)
+
+    def player_scores(self, game_key, month, account_id, anon_id):
+        return {s.day: s.score for s in self._subs if s.game_key == game_key and s.day.startswith(month) and self._same_player(s, account_id, anon_id)}
 
     def add_submission(self, row):
         with self._lock:
@@ -193,6 +199,16 @@ class SqliteStore:
             else:
                 r = None
         return self._sub(r) if r else None
+
+    def player_scores(self, game_key, month, account_id, anon_id):
+        with self._lock:
+            if account_id is not None:
+                rows = self._db.execute("SELECT day, score FROM minigame_submissions WHERE game_key = ? AND day LIKE ? AND account_id = ?", (game_key, month + "-%", account_id))
+            elif anon_id is not None:
+                rows = self._db.execute("SELECT day, score FROM minigame_submissions WHERE game_key = ? AND day LIKE ? AND account_id IS NULL AND anon_id = ?", (game_key, month + "-%", anon_id))
+            else:
+                return {}
+            return {r[0]: r[1] for r in rows}
 
     def add_submission(self, row):
         try:

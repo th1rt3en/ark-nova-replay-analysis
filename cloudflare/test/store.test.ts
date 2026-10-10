@@ -105,6 +105,13 @@ describe("mini games", () => {
         expect((await op("mg.get_submission", { game_key: "g", day: "2026-10-10", account_id: null, anon_id: null })).body.result).toBeNull();
     });
 
+    it("gives the scores of a player for a month of puzzles in one call", async () => {
+        expect((await op("mg.player_scores", { game_key: "g", month: "2026-10", account_id: "P1", anon_id: null })).body.result.map((r: any) => [r.day, r.score]).sort()).toEqual([["2026-10-10", 3], ["2026-10-11", 1]]);
+        expect((await op("mg.player_scores", { game_key: "g", month: "2026-10", account_id: null, anon_id: "anon-1" })).body.result.map((r: any) => [r.day, r.score])).toEqual([["2026-10-10", 2]]);
+        expect((await op("mg.player_scores", { game_key: "g", month: "2026-09", account_id: "P1", anon_id: null })).body.result).toEqual([]);
+        expect((await op("mg.player_scores", { game_key: "g", month: "2026-10", account_id: null, anon_id: null })).body.result).toEqual([]);
+    });
+
     it("lists submissions by day, by the month of the submission and by ranked only", async () => {
         const all = (await op("mg.submissions", { game_key: "g" })).body.result;
         expect(all.length).toBe(3);
@@ -118,5 +125,39 @@ describe("mini games", () => {
         expect((await op("mg.submissions", { game_key: "g" })).body.result).toEqual([]);
         expect((await op("mg.used_sources", { game_key: "g" })).body.result).toEqual([]);
         expect((await op("mg.get_puzzle", { game_key: "h", day: "2026-10-10" })).body.result).toMatchObject({ source_ref: 111 });
+    });
+});
+
+describe("ratings", () => {
+    const acct = async (name: string, rating = 0) => (await op("acct.create", { account: account(name, { rating }), bga_id: null })).body.result.id as string;
+    const ch = (game: string, a: string, b: string, seat: number, result: number, before: number, after: number) => ({ account_id: a, seat, opponent_id: b, result, before, after, at: "2026-10-11T10:00:00+00:00" });
+    const pair = (game: string, a: string, b: string, ra: number, rb: number, na: number, nb: number) => ({ game_id: game, k: 20, changes: [ch(game, a, b, 0, 1, ra, na), ch(game, b, a, 1, 0, rb, nb)] });
+
+    it("applies a game once, moves both ratings and refuses what is stale", async () => {
+        const a = await acct("RateA"), b = await acct("RateB"), c = await acct("RateC");
+        expect((await op("rating.commit", pair("G1", a, b, 0, 0, 10, -10))).body.result).toBe("applied");
+        expect((await op("rating.of", { ids: [a, b, "nope"] })).body.result.sort((x: any, y: any) => x.id.localeCompare(y.id))).toEqual([{ id: a, rating: 10, rated_games: 1, rated_wins: 1 }, { id: b, rating: -10, rated_games: 1, rated_wins: 0 }].sort((x, y) => x.id.localeCompare(y.id)));
+        expect((await op("rating.commit", pair("G1", a, b, 10, -10, 20, -20))).body.result).toBe("exists");           // the same game again
+        expect((await op("rating.of", { ids: [a] })).body.result[0].rating).toBe(10);
+        expect((await op("rating.commit", pair("G2", a, c, 0, 0, 10, -10))).body.result).toBe("changed");               // a's rating is 10 now, not 0
+        expect((await op("rating.changes", { game_id: "G2" })).body.result).toEqual([]);
+        expect((await op("rating.of", { ids: [c] })).body.result[0]).toEqual({ id: c, rating: 0, rated_games: 0, rated_wins: 0 });
+        const rows = (await op("rating.changes", { game_id: "G1" })).body.result;
+        expect(rows.map((r: any) => [r.account_id, r.result, r.rating_before, r.rating_after, r.delta])).toEqual([[a, 1, 0, 10, 10], [b, 0, 0, -10, -10]]);
+        expect((await op("rating.history", { account_id: a, limit: 5 })).body.result.map((r: any) => r.game_id)).toEqual(["G1"]);
+    });
+
+    it("lists the board and anonymizes a deleted account", async () => {
+        const a = await acct("BoardA", 300), b = await acct("BoardB", 200);
+        for (let i = 0; i < 5; i++) await op("rating.commit", pair("B" + i, a, b, i === 0 ? 300 : 300 + i * 10 - 10, i === 0 ? 200 : 200 - i * 10 + 10, 300 + i * 10, 200 - i * 10));
+        const board = (await op("rating.board", { min_games: 5, limit: 10 })).body.result;
+        expect(board.map((r: any) => r.username)).toEqual(["BoardA", "BoardB"]);
+        await op("acct.delete", { id: a, at: "2026-10-12T00:00:00+00:00" });
+        expect((await op("rating.board", { min_games: 5, limit: 10 })).body.result.map((r: any) => r.username)).toEqual(["BoardB"]);
+        const gone = (await op("acct.by_id", { id: a })).body.result;
+        expect(gone).toMatchObject({ username: "Deleted player", username_lower: "deleted:" + a, password_hash: "", recovery_hash: "" });
+        expect(gone.deleted_at).toBeTruthy();
+        expect((await op("acct.by_username", { username_lower: "boarda" })).body.result).toBeNull();
+        expect((await op("rating.changes", { game_id: "B0" })).body.result.length).toBe(2);
     });
 });

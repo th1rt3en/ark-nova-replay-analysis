@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 from ark_nova.live.keeper import AlreadyExists, Forbidden, LiveError, NoSuchTable, StaleVersion, TableEnded
-from ark_nova.live.service import AbandonRefused, EngineStopped, IllegalMove, LiveService, NotReplayable, NotStarted
+from ark_nova.live.service import AbandonRefused, EngineStopped, IllegalMove, LiveService, NotReplayable, NotStarted, RatedRefused
 
 MAX_BODY = 20_000
 GAME_ID = r"^E\d{1,9}$"
@@ -30,6 +30,8 @@ def _map(e: Exception) -> JSONResponse:
         return _error(404, "no_game", "No such game.")
     if isinstance(e, Forbidden):
         return _error(403, "forbidden", str(e))
+    if isinstance(e, RatedRefused):
+        return _error(e.status, "rated", str(e))
     if isinstance(e, IllegalMove):
         return _error(422, "illegal", str(e))
     if isinstance(e, AbandonRefused):
@@ -66,6 +68,10 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
         except (LiveError, ValueError) as e:
             return _map(e)
 
+    def account_of(request: Request):
+        accounts = getattr(request.app.state, "accounts", None)
+        return accounts.account_for(request.cookies.get("ark_session")) if accounts is not None else None
+
     def game_or_404(game_id: str):
         return None if valid.match(game_id) else _error(404, "no_game", "No such game.")
 
@@ -85,7 +91,7 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
             body = await body_of(request)
         except LiveError as e:
             return _map(e)
-        return await run(service.create, bool(body.get("marine_worlds")), None, body.get("game_mode"), body.get("time_control"))
+        return await run(service.create, bool(body.get("marine_worlds")), None, body.get("game_mode"), body.get("time_control"), bool(body.get("rated")), account_of(request))
 
     @app.get("/api/games/{game_id}")
     async def lobby(game_id: str):
@@ -99,7 +105,7 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
             body = await body_of(request)
         except LiveError as e:
             return _map(e)
-        return await run(service.join, game_id, token_of(request, body) or "", str(body.get("name") or ""))
+        return await run(service.join, game_id, token_of(request, body) or "", str(body.get("name") or ""), account_of(request))
 
     @app.get("/api/live/config")
     async def live_config():

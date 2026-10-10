@@ -81,3 +81,33 @@ dialog.acctdlg::backdrop { background: rgba(0, 0, 0, .55); }
 .lbgrid th, .lbgrid td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--border); }
 .lbgrid th:last-child, .lbgrid td:last-child { text-align: right; }
 .lbgrid th { color: var(--muted); font-weight: 600; }
+
+/* the calendar of the mini games (js/minigames/calendar.js): a month of rounded days; the ones with a puzzle can be clicked, the ones played show the score */
+.cal { --c-fg: var(--fg); --c-muted: var(--muted); --c-line: var(--border); --c-bg: color-mix(in srgb, var(--fg) 4%, var(--bg)); --c-accent: var(--accent); --c-ok: #3f9e66; --c-ok-bg: color-mix(in srgb, #3f9e66 20%, var(--bg)); --c-on-accent: #fff;
+  width: 100%; max-width: 22rem; color: var(--c-fg); transition: opacity .15s; }
+.cal.loading { opacity: .5; min-height: 16rem; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .6rem; }
+.cal-title { font-size: 1.05rem; font-weight: 700; letter-spacing: .01em; }
+.cal-nav { width: 2.1rem; height: 2.1rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--c-line); background: transparent; color: var(--c-fg); font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.cal-nav:hover:not(:disabled) { background: var(--c-bg); border-color: var(--c-accent); }
+.cal-nav:disabled { opacity: .3; cursor: default; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
+.cal-dow { padding-bottom: .15rem; text-align: center; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--c-muted); }
+.cal-day { position: relative; aspect-ratio: 1; min-width: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid transparent; background: transparent;
+  color: color-mix(in srgb, var(--c-muted) 65%, transparent); font: inherit; font-size: .92rem; line-height: 1.05; }
+.cal-day i { font-size: .6rem; font-style: normal; font-weight: 600; opacity: .85; }
+.cal-day.has { background: var(--c-bg); border-color: var(--c-line); color: var(--c-fg); font-weight: 600; cursor: pointer; transition: transform .1s, border-color .1s, box-shadow .1s; }
+.cal-day.has:hover { transform: translateY(-1px); border-color: var(--c-accent); box-shadow: 0 2px 6px rgba(0, 0, 0, .18); }
+.cal-day.played { background: var(--c-ok-bg); border-color: var(--c-ok); }
+.cal-day.played::after { content: "\2713"; position: absolute; top: 2px; right: 5px; font-size: .62rem; color: var(--c-ok); }
+.cal-day.today { box-shadow: inset 0 0 0 2px var(--c-accent); }
+.cal-day.sel { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-on-accent); }
+.cal-day.sel::after { color: var(--c-on-accent); }
+.cal-day:focus-visible, .cal-nav:focus-visible { outline: 3px solid var(--c-accent); outline-offset: 2px; }
+.cal-legend { display: flex; gap: .9rem; flex-wrap: wrap; margin-top: .7rem; font-size: .72rem; color: var(--c-muted); }
+.cal-key::before { content: ""; display: inline-block; width: .75rem; height: .75rem; margin-right: .3rem; vertical-align: -.1rem; border-radius: 4px; border: 1px solid var(--c-line); background: var(--c-bg); }
+.cal-key.played::before { background: var(--c-ok-bg); border-color: var(--c-ok); }
+.cal-key.today::before { background: transparent; border: 2px solid var(--c-accent); }
+.pastlist { display: flex; gap: 2rem; flex-wrap: wrap; margin-top: .8rem; }
+.pastgame { flex: 0 1 22rem; min-width: 0; }
+.pastgame h3 { margin: 0 0 .5rem; font-size: 1rem; }

@@ -144,6 +144,8 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     app.state.forks_lock = threading.Lock()
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.middleware("http")(rate_limit_middleware)
+    if accounts is None:
+        accounts = _default_accounts(st)                                      # (first: the rated games keep their ratings in the account store)
     if live is None and st.live_keeper_url and st.internal_secret:                 # the live games: only when the keeper (the Cloudflare Worker) is configured
         from ark_nova.live.keeper import HttpKeeper
         from ark_nova.live.service import LiveService
@@ -156,17 +158,16 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
                 archive = GcsArchive(st.live_gcs_bucket)
         except Exception:                                                           # noqa: BLE001
             log.exception("the live registry / archive are not available")
-        live = LiveService(HttpKeeper(st.live_keeper_url, st.internal_secret), registry=registry, archive=archive)
+        live = LiveService(HttpKeeper(st.live_keeper_url, st.internal_secret), registry=registry, archive=archive, ratings=accounts.store if accounts is not None else None)
     if live is not None:
         from ark_nova.api.live import add_routes
         add_routes(app, live, st.live_keeper_url.replace("https://", "wss://").replace("http://", "ws://") if st.live_keeper_url else "")
     app.state.live = live
-    if accounts is None:
-        accounts = _default_accounts(st)
     app.state.accounts = accounts
     if accounts is not None:
         from ark_nova.api.accounts import add_routes as add_account_routes
-        add_account_routes(app, accounts, [o.strip().rstrip("/") for o in st.allowed_origins.split(",") if o.strip()])
+        from ark_nova.api.accounts import turnstile_verifier
+        add_account_routes(app, accounts, [o.strip().rstrip("/") for o in st.allowed_origins.split(",") if o.strip()], st.turnstile_site_key, turnstile_verifier(st.turnstile_secret) if st.turnstile_secret and st.turnstile_site_key else None)
     if minigames is None:
         minigames = _default_minigames(app)
     app.state.minigames = minigames

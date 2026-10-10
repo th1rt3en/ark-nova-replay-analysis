@@ -43,6 +43,12 @@ class D1MiniGameStore:
         r = self.c.call("mg.get_submission", {"game_key": game_key, "day": day, "account_id": account_id, "anon_id": anon_id}, retry=True)
         return _sub(r) if r else None
 
+    def player_scores(self, game_key, month, account_id, anon_id):
+        if account_id is None and anon_id is None:
+            return {}
+        rows = self.c.call("mg.player_scores", {"game_key": game_key, "month": month, "account_id": account_id, "anon_id": anon_id}, retry=True)
+        return {r["day"]: r["score"] for r in rows}
+
     def add_submission(self, row):
         return bool(self.c.call("mg.add_submission", {"submission": {"game_key": row.game_key, "day": row.day, "account_id": row.account_id, "anon_id": row.anon_id, "payload": json.dumps(row.payload),
                                                                     "score": row.score, "detail": json.dumps(row.detail), "submitted_at": row.submitted_at}}))

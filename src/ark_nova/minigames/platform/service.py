@@ -2,6 +2,7 @@
 (docs/accounts_plan.md, "Mini games and puzzles")."""
 import logging
 import random
+import time
 from datetime import date, datetime, timezone
 from typing import Callable, Optional
 
@@ -23,6 +24,7 @@ class MiniGameService:
                  clock: Callable[[], datetime] = _utc_now, rng: Optional[random.Random] = None, tries: int = 5):
         self.store, self.sources, self.read_log, self.games = store, sources, read_log, games
         self.entries = {e.key: e for e in entries}
+        self._days: dict[tuple, tuple] = {}                              # (game, month) -> (until, the days that have a puzzle): the same for everybody, changes once a day
         self.clock, self.rng, self.tries = clock, rng or random.Random(), tries
 
     # ---- days
@@ -81,6 +83,7 @@ class MiniGameService:
                 continue
             row = PuzzleRow(game.key, day, source, moment, game.builder_version, public, self.clock().isoformat(), answer)
             if self.store.create_puzzle(row):
+                self._days.pop((game.key, day[:7]), None)
                 return row
             return self.store.get_puzzle(game.key, day)                             # another request created it first
         log.error("mini game %s: no table made a puzzle for %s", game.key, day)
@@ -156,13 +159,14 @@ class MiniGameService:
             raise MiniGameError(404, "no_calendar", "This game has no calendar.")
         if not MONTH.match(month or ""):
             raise MiniGameError(422, "bad_month", "The month must look like 2026-10.")
-        out = []
-        for d in self.store.puzzle_days(key, month):
-            if d > self.today():
-                continue
-            sub = self.store.get_submission(key, d, caller.account_id, caller.anon_id) if caller.identity else None
-            out.append({"day": d, "played": sub is not None, "score": sub.score if sub else None})
-        return {"game": key, "month": month, "today": self.today(), "days": out}
+        now = time.time()
+        hit = self._days.get((key, month))
+        if hit is None or hit[0] < now:                                   # (one store call per minute and month, not one per request)
+            hit = (now + 60, self.store.puzzle_days(key, month))
+            self._days[(key, month)] = hit
+        scores = self.store.player_scores(key, month, caller.account_id, caller.anon_id) if caller.identity else {}
+        today = self.today()
+        return {"game": key, "month": month, "today": today, "days": [{"day": d, "played": d in scores, "score": scores.get(d)} for d in hit[1] if d <= today]}
 
     def leaderboard(self, key: str, period: str = "all", names: Optional[Callable[[str], str]] = None) -> dict:
         """`period`: "all", "month" (the current UTC month) or YYYY-MM. Only accounts are ranked; the month is the one of the submission."""

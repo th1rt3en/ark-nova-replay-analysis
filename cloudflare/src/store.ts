@@ -71,6 +71,42 @@ const OPS: Record<string, Op> = {
     "acct.delete_session": async (db, a) => { await db.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(str(a.token_hash)).run(); return null; },
     "acct.delete_sessions_of": async (db, a) => { await db.prepare("DELETE FROM sessions WHERE account_id = ?").bind(str(a.account_id)).run(); return null; },
 
+    // ---- ratings, the ratings board, deleting an account
+    "rating.of": async (db, a) => {
+        const ids = strs(a.ids);
+        if (!ids.length) return [];
+        return (await db.prepare(`SELECT id, rating, rated_games, rated_wins FROM accounts WHERE id IN (${ids.map(() => "?").join(", ")})`).bind(...ids).all()).results;
+    },
+    // The two changes of one game, all or nothing. Every statement is guarded: the first only when the game has no rating yet and both ratings are still the `before` ones, the others only when
+    // the one before changed a row (`changes()`), so nothing is written twice and nothing is written half. Answers "applied", "exists" or "changed".
+    "rating.commit": async (db, a) => {
+        const game = str(a.game_id), ch = a.changes as any[];
+        if (!Array.isArray(ch) || ch.length !== 2) throw new Error("two changes were expected");
+        const k = num(a.k);
+        const ratingsStill = ch.map((c) => `(SELECT rating FROM accounts WHERE id = ?) = ?`).join(" AND ");
+        const guardArgs = ch.flatMap((c) => [str(c.account_id), num(c.before)]);
+        const insert = (c: any, first: boolean) => db.prepare(
+            `INSERT INTO rating_history (game_id, account_id, seat, opponent_id, result, rating_before, rating_after, delta, k, at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${first ? "NOT EXISTS (SELECT 1 FROM rating_history WHERE game_id = ?)" : "changes() > 0"} AND ${ratingsStill}`)
+            .bind(game, str(c.account_id), num(c.seat), str(c.opponent_id), num(c.result), num(c.before), num(c.after), num(c.after) - num(c.before), k, str(c.at), ...(first ? [game] : []), ...guardArgs);
+        const update = (c: any) => db.prepare("UPDATE accounts SET rating = ?, rated_games = rated_games + 1, rated_wins = rated_wins + ? WHERE id = ? AND changes() > 0 AND rating = ?")
+            .bind(num(c.after), num(c.result) === 1 ? 1 : 0, str(c.account_id), num(c.before));
+        const out = await db.batch([insert(ch[0], true), insert(ch[1], false), update(ch[0]), update(ch[1])]);
+        if (out[0].meta.changes > 0 && out[1].meta.changes > 0 && out[2].meta.changes > 0 && out[3].meta.changes > 0) return "applied";
+        return (await first(db, "SELECT 1 AS x FROM rating_history WHERE game_id = ?", game)) ? "exists" : "changed";
+    },
+    "rating.changes": async (db, a) => (await db.prepare("SELECT * FROM rating_history WHERE game_id = ? ORDER BY seat").bind(str(a.game_id)).all()).results,
+    "rating.history": async (db, a) => (await db.prepare("SELECT * FROM rating_history WHERE account_id = ? ORDER BY at DESC LIMIT ?").bind(str(a.account_id), Math.min(100, num(a.limit))).all()).results,
+    "rating.board": async (db, a) => (await db.prepare("SELECT id, username, rating, rated_games, rated_wins FROM accounts WHERE rated_games >= ? AND deleted_at = '' ORDER BY rating DESC, rated_games DESC, id LIMIT ?")
+        .bind(num(a.min_games), Math.min(200, num(a.limit))).all()).results,
+    "acct.delete": async (db, a) => {
+        const id = str(a.id);
+        await db.batch([
+            db.prepare("UPDATE accounts SET username = 'Deleted player', username_lower = ?, password_hash = '', recovery_hash = '', deleted_at = ? WHERE id = ?").bind("deleted:" + id, str(a.at), id),
+            db.prepare("DELETE FROM sessions WHERE account_id = ?").bind(id),
+        ]);
+        return null;
+    },
+
     // ---- mini games
     "mg.get_puzzle": (db, a) => first(db, "SELECT * FROM minigame_puzzles WHERE game_key = ? AND day = ?", str(a.game_key), str(a.day)),
     "mg.create_puzzle": async (db, a) => {
@@ -91,6 +127,12 @@ const OPS: Record<string, Op> = {
         if (account !== null) return first(db, "SELECT * FROM minigame_submissions WHERE game_key = ? AND day = ? AND account_id = ?", str(a.game_key), str(a.day), account);
         if (anon !== null) return first(db, "SELECT * FROM minigame_submissions WHERE game_key = ? AND day = ? AND account_id IS NULL AND anon_id = ?", str(a.game_key), str(a.day), anon);
         return Promise.resolve(null);
+    },
+    "mg.player_scores": async (db, a) => {
+        const account = optStr(a.account_id), anon = optStr(a.anon_id), month = str(a.month) + "-%";
+        if (account !== null) return (await db.prepare("SELECT day, score FROM minigame_submissions WHERE game_key = ? AND day LIKE ? AND account_id = ?").bind(str(a.game_key), month, account).all()).results;
+        if (anon !== null) return (await db.prepare("SELECT day, score FROM minigame_submissions WHERE game_key = ? AND day LIKE ? AND account_id IS NULL AND anon_id = ?").bind(str(a.game_key), month, anon).all()).results;
+        return [];
     },
     "mg.add_submission": async (db, a) => {
         const s = a.submission;

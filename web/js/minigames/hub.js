@@ -1,5 +1,6 @@
 // The mini games hub: one tile per enabled game (from GET /api/minigames), then the fixed "more coming soon" tile.
 import { api, renderBoards } from './shell.js';
+import { mountCalendar } from './calendar.js';
 
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 
@@ -15,6 +16,19 @@ function tile(g) {
     sec.append(a);
   }
   return sec;
+}
+
+// The calendar of every game whose earlier puzzles can be played: a day opens that game's page on that day.
+function pastPuzzles(games) {
+  if (!games.length) return;
+  const wrap = document.getElementById('past'), list = document.getElementById('pastlist');
+  wrap.hidden = false;
+  for (const g of games) {
+    const box = el('div', { className: 'pastgame' });
+    box.append(el('h3', {}, g.title || g.key));
+    const cal = el('div'); box.append(cal); list.append(box);
+    mountCalendar(cal, g.key, null, (day) => { location.href = `/minigames/${encodeURIComponent(g.key)}.html?day=${day}`; });
+  }
 }
 
 // The leaderboards of every game, one tab per game; each tab shows the month and the all time table side by side (loaded when the tab is opened).
@@ -50,6 +64,7 @@ async function main() {
   try {
     const { games } = await api('');
     for (const g of games) soon.before(tile(g));
+    pastPuzzles(games.filter((g) => g.available && g.allow_past));
     leaderboards(games.filter((g) => g.available));
   } catch (e) {
     const err = document.getElementById('err');
