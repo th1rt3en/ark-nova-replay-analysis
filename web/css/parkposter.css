@@ -134,8 +134,10 @@ body.viewer .sidebar .controls .forkbtn:hover:not(:disabled) { background: var(-
 body.viewer .sidebar .controls .forkbtn:disabled { opacity: .45; }
 body.viewer .sidebar .controls2 { gap: 8px; }
 body.viewer .tldeco { position: relative; height: 22px; margin: 0 4px; }
+/* the row between the two button rows (the timeline or the line that holds its place) is centred between the INK of the rows above and below: in the replay the autoplay button is 50 px tall with a 3 px shadow and sticks out of its row by 3 px above and 6 px below, so the row moves down 3 px (margin pair: the bar keeps its height); the fork pages hide that button and need no shift */
+body.viewer:not(.forkpage) .sidebar .timeline, body.viewer:not(.forkpage) .tldeco { margin-top: 3px; margin-bottom: -3px; }
 body.viewer .tldeco[hidden] { display: none; }
-body.viewer .tldeco i { position: absolute; left: 0; right: 0; top: 50%; border-top: 3px dashed rgba(23, 38, 43, .38); }
+body.viewer .tldeco i { position: absolute; left: 0; right: 0; top: calc(50% - 1.5px); border-top: 3px dashed rgba(23, 38, 43, .38); }
 body.viewer .sidebar .timeline { flex: none; width: auto; max-width: none; height: 22px; margin: 0 4px; border: 3px solid var(--ink); border-radius: 9px; background: #fff; box-sizing: border-box; cursor: pointer; touch-action: none; user-select: none; }
 body.viewer .timeline::before { display: none; }
 body.viewer .tlseg { border-left: 3px solid var(--ink); }
