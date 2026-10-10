@@ -31,7 +31,7 @@ body.viewer::before { content: ""; position: fixed; left: -400px; top: -2500px; 
 @media (prefers-reduced-motion: reduce) { body.viewer::before, body.viewer::after, .pp .live { animation: none !important; } }
 
 /* ---- layout: the main column left, the sidebar fixed at the right; the top bar sticks to the top of the window ------------------------------------------------------------- */
-body.viewer .layout { --sidebar-w: 320px; padding: 0 calc(var(--sidebar-w) + 28px) 0 14px; }
+body.viewer .layout { --sidebar-w: 320px; padding: 0 calc(var(--sidebar-w) + 38px) 0 14px; }
 body.viewer main { padding-bottom: 8px; }
 /* the band behind the top row (move bar pills, Round and Break): fixed, the full width, under them (z 15 < sidebar 20 < move bar 30) and over the scrolling boards */
 @media (min-width: 900px) { #app::after { content: ""; position: fixed; left: 0; right: 0; top: 0; height: 80px; box-sizing: border-box; z-index: 15; pointer-events: none; background: #08303b; border-bottom: 4px solid var(--gold); } }
@@ -116,7 +116,7 @@ body.viewer .sbtab:focus-visible { outline: 3px solid var(--paper); outline-offs
   body.viewer .layout::after { content: ""; position: fixed; top: 92px; bottom: 8px; right: calc(var(--sidebar-w) + 16px); width: 8px; z-index: 17; pointer-events: none;
     background: radial-gradient(circle, var(--gold) 3px, transparent 3.5px) 0 0 / 8px 16px repeat-y; -webkit-mask: linear-gradient(transparent, #000 6%, #000 94%, transparent); mask: linear-gradient(transparent, #000 6%, #000 94%, transparent); }
   /* the top row now spans the whole width: the move text takes the room that Control | Log used to have, Round and Break end where the sidebar ends */
-  body.viewer .movebar { margin-right: calc(-1 * (var(--sidebar-w) + 28px)); padding-right: 12px; }
+  body.viewer .movebar { margin-right: calc(-1 * (var(--sidebar-w) + 38px)); padding-right: 12px; }
   /* the bar grows in the fork / sandbox / live pages (choices, buttons) and now reaches over the sidebar: it lets clicks through except on its own pieces, and Round / Break stay in the top line so they never cover the Control | Log switch */
   body.viewer .movebar { pointer-events: none; }
   body.viewer .movebar > * { pointer-events: auto; }
