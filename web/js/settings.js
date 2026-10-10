@@ -4,17 +4,17 @@ import { S } from './state.js';
 import { setSpeed } from './playback.js';
 import { fitSidebar } from './sidebar.js';
 
-const KEY = 'settings';                                                    // localStorage: { speed: 1 | 2 | 4, timeline: boolean, hand: 0.5 ... 2 }
+const KEY = 'settings';                                                    // localStorage: { speed: 1 | 2 | 4, timeline: boolean, hand: 0.5 ... 2, handMode: 'fan' | 'tray' }
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } };
 export const HAND_SCALES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];            // the sizes of the cards in the hand (1 = the default size)
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, timeline: S.showTimeline, hand: S.handScale })); } catch (e) { /* no storage */ } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, timeline: S.showTimeline, hand: S.handScale, handMode: S.handMode })); } catch (e) { /* no storage */ } };
 export const settingsOpen = () => { const m = $('settingsModal'); return !!m && !m.hidden; };
 export function toggleSettings() {
   const m = $('settingsModal'), g = $('settings');
   if (!m || !g || g.offsetParent === null) return;                 // (no gear on the page, e.g. the fork page: no settings)
   if (m.hidden) { m.hidden = false; m.querySelector('.modalx').focus(); } else close();
 }
-function close() { const m = $('settingsModal'); if (m) m.hidden = true; }
+function close() { const m = $('settingsModal'); if (m) m.hidden = true; document.dispatchEvent(new Event('settingsclosed')); }
 // the timeline is a row of its own between the two button rows of the control panel; while it is off, a decorative line (#tldeco) holds its place
 export function applyTimeline() {
   const t = $('timeline');
@@ -29,6 +29,7 @@ export function setupSettings() {
   S.showTimeline = st.timeline === true;                                   // default: off
   S.speed = [1, 2, 4].includes(st.speed) ? st.speed : 1;                  // default: 1x
   S.handScale = HAND_SCALES.includes(st.hand) ? st.hand : 1;               // default: 1x
+  S.handMode = st.handMode === 'tray' ? 'tray' : 'fan';                   // default: the fan
   applyHandScale();
   const modal = el('div', 'modal'); modal.id = 'settingsModal'; modal.hidden = true;
   const box = el('div', 'modalbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Settings');
@@ -56,7 +57,13 @@ export function setupSettings() {
   for (const v of HAND_SCALES) ticks.append(el('span', '', v === 1 ? '1' : String(v).replace(/^0/, '')));
   const handTop = el('div', 'settop'); handTop.append(el('span', 'setlabel', 'Cards in hand'), handVal);
   handRow.append(handTop, slider, ticks);
-  box.append(head, speedRow, tlRow, handRow);
+  const modeRow = el('div', 'setrow');                                    // how the hand is shown: a fan at the screen edge, or a floating tray (dock.js)
+  const sel = el('select', 'setselect'); sel.setAttribute('aria-label', 'Hand display');
+  for (const [v, t] of [['fan', 'Fan at the screen edge'], ['tray', 'Floating container']]) { const o = el('option', '', t); o.value = v; sel.append(o); }
+  sel.value = S.handMode;
+  sel.onchange = () => { S.handMode = sel.value === 'tray' ? 'tray' : 'fan'; save(); document.dispatchEvent(new Event('handmode')); };
+  modeRow.append(el('span', 'setlabel', 'Hand display'), sel);
+  box.append(head, speedRow, tlRow, modeRow, handRow);
   modal.append(box);
   modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });         // a click on the dimmed background closes it
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen()) { e.stopPropagation(); close(); } }, true);

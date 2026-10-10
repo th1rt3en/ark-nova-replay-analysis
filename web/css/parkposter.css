@@ -263,6 +263,41 @@ body.viewer .dockpanel .cards .card:hover { z-index: 6; }
 body.viewer .dockpanel .cards .empty { display: none; }
 body.viewer .dockpanel .cards .card.markable.marked { box-shadow: 0 0 0 3px var(--gold), 0 3px 7px rgba(0, 0, 0, .38); }
 
+/* ---- the floating tray (settings: Hand display = Floating container; dock.js drawTray): a cream tray at the bottom left, the cards flat in one row (width 170 px x --hs, they overlap more as the hand grows, 1000 px at most),
+   round BGA-style discs (hand, endgame cards) on its top edge, an arrow disc at its right end. Folded, only the top of the cards shows. The tray sits at the bottom of the window, so what hangs below its frame is off screen. -- */
+body.viewer .dock.traymode { left: 22px; bottom: 0; width: auto; height: auto; max-width: none; }
+body.viewer .dock.traymode::after { display: none; }
+body.viewer .handtray { --W: calc(170px * var(--hs, 1)); position: relative; pointer-events: none; color: var(--ink); }
+body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: var(--paper); border: 5px solid var(--ink); border-bottom: 0; border-radius: 26px 26px 0 0; box-shadow: 0 -4px 0 rgba(23, 38, 43, .0), 0 0 18px rgba(0, 0, 0, .35); transition: max-height .35s cubic-bezier(.2, .9, .2, 1); }
+body.viewer .handtray.unf .trayframe { max-height: calc(80px + 250px * var(--hs, 1)); }
+body.viewer .handtray.fol .trayframe { max-height: calc(56px + 74px * var(--hs, 1)); }
+body.viewer .trayhead { height: 50px; cursor: pointer; }
+body.viewer .handtray .cards { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 0; padding: 4px 26px 0 20px; }
+body.viewer .handtray .cards .card, body.viewer .handtray .cards.small .card { flex: none; width: var(--W); height: auto; border: 0; border-radius: calc(10px * var(--hs, 1)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 3px 8px rgba(0, 0, 0, .4);
+  margin-right: calc(min(0.694 * var(--W), (1000px - var(--W)) / max(var(--n, 5) - 1, 1)) - var(--W)); transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+body.viewer .handtray .cards .card:last-child { margin-right: 0; }
+body.viewer .handtray .cards .card:hover { z-index: 6; }
+body.viewer .handtray .cards .card.dragging, body.viewer .handtray .cards .card.dragging:hover { z-index: 20; cursor: grabbing; transition: none; box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 10px 18px rgba(0, 0, 0, .45); }
+body.viewer .handtray .cards .card.markable.marked { box-shadow: 0 0 0 4px var(--gold), 0 3px 8px rgba(0, 0, 0, .4); }
+body.viewer .handtray .cards .empty { display: block; padding: 6px 4px 14px; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; opacity: .55; }
+body.viewer .traybtns { position: absolute; left: 22px; top: -30px; z-index: 5; display: flex; gap: 14px; pointer-events: auto; }
+body.viewer .traydisc, body.viewer .trayarrow { position: relative; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: rgba(98, 98, 98, .92); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); cursor: pointer; }
+body.viewer .traydisc { width: 60px; height: 60px; }
+body.viewer .traydisc:hover, body.viewer .trayarrow:hover { background: rgba(120, 120, 120, .95); }
+body.viewer .traydisc.on, body.viewer .traydisc.on:hover { background: var(--sun); box-shadow: 0 0 0 3px var(--ink), 0 4px 0 3px var(--ink); }
+body.viewer .traydisc img { display: block; width: 38px; height: 38px; filter: brightness(1.6); }
+body.viewer .traycount { position: absolute; right: -6px; bottom: -6px; box-sizing: border-box; min-width: 26px; height: 26px; padding: 0 4px; border: 3px solid var(--ink); border-radius: 13px; background: var(--paper); color: var(--ink); font: 400 13px/20px 'Bowlby One', system-ui, sans-serif; text-align: center; }
+body.viewer .trayarrow { position: absolute; z-index: 5; right: 20px; top: -22px; width: 44px; height: 44px; pointer-events: auto; color: #fff; font: 700 18px/1 system-ui, sans-serif; }
+body.viewer .trayarrow span { display: block; transition: transform .35s; }
+body.viewer .handtray.fol .trayarrow span { transform: rotate(180deg); }
+@keyframes tray-pulse { 0%, 100% { box-shadow: 0 2px 6px rgba(0, 0, 0, .45), 0 0 0 0 rgba(244, 182, 63, 0); } 50% { box-shadow: 0 2px 6px rgba(0, 0, 0, .45), 0 0 0 10px rgba(244, 182, 63, .8); } }
+@keyframes tray-hint { 0%, 6% { opacity: 0; } 14%, 86% { opacity: 1; } 100% { opacity: 0; } }
+body.viewer .trayarrow.pulse { animation: tray-pulse 1s ease-in-out 4; }
+body.viewer .trayhint { position: absolute; z-index: 6; right: 78px; top: -40px; padding: 7px 12px; border-radius: 10px; background: var(--gold); color: var(--ink); font: 700 15px 'Barlow', system-ui, sans-serif; white-space: nowrap; pointer-events: none; opacity: 0; animation: tray-hint 4.6s linear forwards; }
+body.viewer .trayhint::after { content: ""; position: absolute; right: -6px; top: 12px; border: 7px solid transparent; border-left-color: var(--gold); border-right: 0; }
+body.viewer .setselect { font: 700 19px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+body.viewer .setselect:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
 /* ---- loading box and other small things ------------------------------------------------------------------------------------------------------------------------------------ */
 body.viewer .status { background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
 body.viewer .status .peta { color: #36484d; }

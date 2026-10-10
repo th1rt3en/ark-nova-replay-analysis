@@ -9,7 +9,7 @@ import { renderShared } from './shared.js';
 import { actionBar } from './action-bar.js';
 import { closePile, renderPile } from './pile.js';
 import { sidePanel } from './side-panel.js';
-import { renderDock } from './dock.js';
+import { renderDock, toggleDock } from './dock.js';
 import { renderZoo } from './zoo.js';
 import { engineBadge, labelNode } from './log-labels.js';
 import { fitDisplay, fitScale } from './layout.js';
@@ -120,7 +120,7 @@ function init() {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
     if ((e.key === 's' || e.key === 'S') && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
     if (settingsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
-    const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), End: () => go(S.replay.steps.length - 1, 99) };
+    const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   });

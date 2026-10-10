@@ -5,6 +5,7 @@ import { curState, hides } from './pov.js';
 import { cardRow, quietly } from './cards.js';
 import { iconUrl } from './icons.js';
 import { cardPickAct, forkActs, pickCardOf } from './action-bar.js';
+import { settingsOpen } from './settings.js';
 
 
 // while a sponsor is to be played, everything in the hand of that player that is not a playable sponsor is greyed out
@@ -32,6 +33,7 @@ const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.
 export function renderDock(st) {
   let dock = $('dock');
   if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
+  dock.className = 'dock' + (S.handMode === 'tray' ? ' traymode' : '');                 // (the hand is shown in a fan at the screen edge, or in a floating tray)
   if (SANDBOX && S.replay.setup) { dock.replaceChildren(); return; }                // (nothing to show before the game: the seat and the maps are chosen first)
   const panel = el('div', 'dockpanel');
   const bar = el('div', 'dockbar');
@@ -64,6 +66,7 @@ export function renderDock(st) {
     group.append(pair);
     bar.append(group);
   });
+  if (S.handMode === 'tray') { drawTray(dock, rows, shownSel); return; }
   const fold = el('button', 'dockfold');                               // collapse / expand the cards, at the right end of the buttons
   fold.type = 'button';
   fold.textContent = S.dockHidden ? '▲' : '▼';
@@ -85,6 +88,54 @@ export function renderDock(st) {
     panel.style.setProperty('--pc', seatColor(shownSel.seat));
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
   } else dock.replaceChildren(bar);
+}
+
+
+// ---- the floating tray (setting "Hand display" = Floating container): the cards of the shown row lie flat in a cream tray at the bottom left; the card / endgame card buttons are round discs on its top edge, the
+// arrow disc at its right end folds it. A folded tray still shows the top of the cards. A click on the header strip of the tray (the empty band above the cards) or on the arrow folds / unfolds it, and so does the H key.
+export function toggleDock() { S.dockHidden = !S.dockHidden; saveDock(); renderDock(curState()); }
+const HINT_KEY = 'handTrayHint', HINT_MS = 4600;                      // (the one-time hint: remembered in localStorage; picking the setting shows it again)
+let hintPending = false, hintStart = 0;
+const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return true; } };
+function startHint() { hintStart = Date.now(); hintPending = false; try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* no storage */ } }
+document.addEventListener('handmode', () => { if (S.handMode === 'tray') hintPending = true; renderDock(curState()); });        // (the setting was changed)
+document.addEventListener('settingsclosed', () => { if (hintPending && S.handMode === 'tray') renderDock(curState()); });
+function drawTray(dock, rows, shownSel) {
+  const row = shownSel && rows[shownSel.seat + ':' + shownSel.kind];
+  if (!row) { dock.replaceChildren(); return; }
+  const seat = shownSel.seat, folded = S.dockHidden;
+  row.querySelectorAll('.card-gone').forEach((g) => g.remove());
+  const fan = [...row.children].filter((c) => c.classList.contains('card'));
+  row.style.setProperty('--n', String(Math.max(1, fan.length)));
+  const wrap = el('div', 'handtray ' + (folded ? 'fol' : 'unf'));
+  wrap.style.setProperty('--pc', seatColor(seat));
+  const frame = el('div', 'trayframe'), head = el('div', 'trayhead');
+  head.onclick = toggleDock;
+  frame.append(head, row);
+  const btns = el('div', 'traybtns');
+  for (const kind of ['hand', 'endgame']) {
+    const n = (kind === 'hand' ? S.replay.steps[S.step].state.players[seat].hand : S.replay.steps[S.step].state.players[seat].endgame_hand || []).length;
+    const b = el('button', 'traydisc' + (shownSel.kind === kind ? ' on' : '')); b.type = 'button';
+    const label = S.replay.players[seat].name + ': ' + (kind === 'hand' ? 'hand' : 'endgame cards') + ' (' + n + ')';
+    b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(shownSel.kind === kind));
+    const img = el('img'); img.src = iconUrl(kind === 'hand' ? 'r4c7' : 'r4c11'); img.alt = '';
+    b.append(img, el('span', 'traycount', n));
+    b.onclick = () => { S.dockSel = { seat, kind }; S.dockHidden = false; saveDock(); renderDock(curState()); };
+    btns.append(b);
+  }
+  const arrow = el('button', 'trayarrow'); arrow.type = 'button';
+  arrow.title = folded ? 'Show the cards (H)' : 'Hide the cards (H)'; arrow.setAttribute('aria-label', arrow.title); arrow.setAttribute('aria-expanded', String(!folded));
+  arrow.append(el('span', '', '\u25BC'));
+  arrow.onclick = toggleDock;
+  wrap.append(frame, btns, arrow);
+  if (!settingsOpen() && (hintPending || (!hintSeen() && !hintStart))) startHint();
+  const age = Date.now() - hintStart;
+  if (hintStart && age < HINT_MS) {                                  // (the pulse and the label go on where they were after a re-draw)
+    arrow.classList.add('pulse'); arrow.style.animationDelay = -age + 'ms';
+    const hint = el('div', 'trayhint', 'Click the tray to fold or unfold it'); hint.style.animationDelay = -age + 'ms';
+    wrap.append(hint);
+  }
+  dock.replaceChildren(wrap);
 }
 
 document.addEventListener('cardorder', () => quietly(() => renderDock(curState())));       // a card was dragged to a new place: draw the cards again in the new order
