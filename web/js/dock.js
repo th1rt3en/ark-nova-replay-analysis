@@ -22,7 +22,8 @@ function handDim(seat) {
     if (ok.length) return (k) => !ok.includes(k);
   }
   const o = S.replay.steps[S.step].options;
-  return o && o.sponsors && o.seat === seat && !hides(seat) ? (k) => !o.sponsors.hand.includes(k) : null;
+  // (a Sponsors action that has nothing left to play, e.g. while the effects of the sponsor just played resolve: the lists are empty, so the hand is not greyed out)
+  return o && o.sponsors && o.seat === seat && !hides(seat) && (o.sponsors.hand.length || (o.sponsors.display || []).length) ? (k) => !o.sponsors.hand.includes(k) : null;
 }
 try { S.dockSel = JSON.parse(localStorage.getItem('dockSel') || 'null'); } catch (e) { /* no storage */ }
 if (!S.dockSel) S.dockSel = { seat: 0, kind: 'hand' };
