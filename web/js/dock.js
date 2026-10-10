@@ -100,37 +100,52 @@ const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } 
 function startHint() { hintStart = Date.now(); hintPending = false; try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* no storage */ } }
 document.addEventListener('handmode', () => { if (S.handMode === 'tray') hintPending = true; renderDock(curState()); });        // (the setting was changed)
 document.addEventListener('settingsclosed', () => { if (hintPending && S.handMode === 'tray') renderDock(curState()); });
+const TRAY_LEFT = 22, TRAY_ROW = 20;                                   // (the tray's distance from the window edge; cards per row: more than that start a second row)
+function trayMaxWidth() {                                              // the tray never reaches the side bar: its right edge stops at the right edge of the display / association boards
+  const sh = document.querySelector('.shared'), sc = S.scaled ? S.scale : 1;
+  return Math.max(300, Math.round((sh ? sh.getBoundingClientRect().right / sc : 1200) - TRAY_LEFT));
+}
+window.addEventListener('resize', () => { const w = document.querySelector('.handtray'); if (w) w.style.setProperty('--maxw', trayMaxWidth() + 'px'); });
 function drawTray(dock, rows, shownSel) {
   const row = shownSel && rows[shownSel.seat + ':' + shownSel.kind];
   if (!row) { dock.replaceChildren(); return; }
   const seat = shownSel.seat, folded = S.dockHidden;
   row.querySelectorAll('.card-gone').forEach((g) => g.remove());
-  const fan = [...row.children].filter((c) => c.classList.contains('card'));
-  row.style.setProperty('--n', String(Math.max(1, fan.length)));
-  const wrap = el('div', 'handtray ' + (folded ? 'fol' : 'unf'));
+  const n = [...row.children].filter((c) => c.classList.contains('card')).length, cols = Math.max(1, Math.min(n, TRAY_ROW));
+  row.style.setProperty('--n', String(Math.max(1, n)));
+  row.style.gridTemplateColumns = cols > 1 ? 'repeat(' + (cols - 1) + ', var(--step)) var(--W)' : 'var(--W)';
+  row.classList.toggle('multi', n > TRAY_ROW);                          // (more than 20 cards: further rows, the tray scrolls)
+  let wrap = dock.querySelector(':scope > .handtray'), frame, btns;      // (the same elements are kept from one draw to the next, so that the CSS can animate the fold and the width)
+  if (!wrap) {
+    wrap = el('div', 'handtray'); frame = el('div', 'trayframe'); btns = el('div', 'traybtns');
+    wrap.append(frame, btns);
+  } else { frame = wrap.querySelector('.trayframe'); btns = wrap.querySelector('.traybtns'); wrap.querySelector('.trayhint')?.remove(); }
+  wrap.classList.toggle('fol', folded); wrap.classList.toggle('unf', !folded);
   wrap.style.setProperty('--pc', seatColor(seat));
-  const frame = el('div', 'trayframe'), head = el('div', 'trayhead');
+  wrap.style.setProperty('--cols', String(cols));
+  wrap.style.setProperty('--maxw', trayMaxWidth() + 'px');
+  const head = el('div', 'trayhead');
   head.onclick = toggleDock;
-  frame.append(head, row);
-  const btns = el('div', 'traybtns');
+  frame.replaceChildren(head, row);
+  const kids = [];
   for (const kind of ['hand', 'endgame']) {
-    const n = (kind === 'hand' ? S.replay.steps[S.step].state.players[seat].hand : S.replay.steps[S.step].state.players[seat].endgame_hand || []).length;
+    const cnt = (kind === 'hand' ? S.replay.steps[S.step].state.players[seat].hand : S.replay.steps[S.step].state.players[seat].endgame_hand || []).length;
     const b = el('button', 'traydisc' + (shownSel.kind === kind ? ' on' : '')); b.type = 'button';
-    const label = S.replay.players[seat].name + ': ' + (kind === 'hand' ? 'hand' : 'endgame cards') + ' (' + n + ')';
+    const label = S.replay.players[seat].name + ': ' + (kind === 'hand' ? 'hand' : 'endgame cards') + ' (' + cnt + ')';
     b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(shownSel.kind === kind));
     const img = el('img'); img.src = iconUrl(kind === 'hand' ? 'r4c7' : 'r4c11'); img.alt = '';
-    b.append(img, el('span', 'traycount', n));
+    b.append(img, el('span', 'traycount', cnt));
     b.onclick = () => { S.dockSel = { seat, kind }; S.dockHidden = false; saveDock(); renderDock(curState()); };
-    btns.append(b);
+    kids.push(b);
   }
-  wrap.append(frame, btns);
+  btns.replaceChildren(...kids);
   if (!settingsOpen() && (hintPending || (!hintSeen() && !hintStart))) startHint();
   const age = Date.now() - hintStart;
-  if (hintStart && age < HINT_MS) {                                  // (the label goes on where they were after a re-draw)
+  if (hintStart && age < HINT_MS) {                                  // (the label goes on where it was after a re-draw)
     const hint = el('div', 'trayhint', 'Click the tray to fold or unfold it'); hint.style.animationDelay = -age + 'ms';
     wrap.append(hint);
   }
-  dock.replaceChildren(wrap);
+  if (wrap.parentNode !== dock) dock.replaceChildren(wrap);
 }
 
 document.addEventListener('cardorder', () => quietly(() => renderDock(curState())));       // a card was dragged to a new place: draw the cards again in the new order

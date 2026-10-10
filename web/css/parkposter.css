@@ -267,15 +267,15 @@ body.viewer .dockpanel .cards .card.markable.marked { box-shadow: 0 0 0 3px var(
    round BGA-style discs (hand, endgame cards) on its top edge. Folded, only the top of the cards shows. The tray sits at the bottom of the window, so what hangs below its frame is off screen. -- */
 body.viewer .dock.traymode { left: 22px; bottom: 0; width: auto; height: auto; max-width: none; }
 body.viewer .dock.traymode::after { display: none; }
-body.viewer .handtray { --W: calc(170px * var(--hs, 1)); position: relative; pointer-events: none; color: var(--ink); }
-body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: var(--paper); border: 5px solid var(--ink); border-bottom: 0; border-radius: 26px 26px 0 0; box-shadow: 0 -4px 0 rgba(23, 38, 43, .0), 0 0 18px rgba(0, 0, 0, .35); transition: max-height .35s cubic-bezier(.2, .9, .2, 1); }
-body.viewer .handtray.unf .trayframe { max-height: calc(80px + 250px * var(--hs, 1)); }
-body.viewer .handtray.fol .trayframe { max-height: calc(56px + 74px * var(--hs, 1)); }
+body.viewer .handtray { --W: calc(170px * var(--hs, 1)); --avail: calc(var(--maxw, 1200px) - 50px); --step: calc(var(--W) + min(0px, (var(--avail) - var(--cols, 5) * var(--W)) / max(var(--cols, 5) - 1, 1))); position: relative; pointer-events: none; color: var(--ink); }
+body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: var(--paper); border: 5px solid var(--ink); border-bottom: 0; border-radius: 26px 26px 0 0; box-shadow: 0 -4px 0 rgba(23, 38, 43, .0), 0 0 18px rgba(0, 0, 0, .35); width: min(var(--maxw, 1200px), calc(var(--cols, 5) * var(--W) + 50px)); transition: height .4s cubic-bezier(.3, .8, .25, 1), width .25s ease; }
+body.viewer .handtray.unf .trayframe { height: calc(59px + var(--W) * 1.3972); }
+body.viewer .handtray.fol .trayframe { height: calc(56px + 74px * var(--hs, 1)); }
 body.viewer .trayhead { height: 50px; cursor: pointer; }
-body.viewer .handtray .cards { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 0; padding: 4px 26px 0 20px; }
-body.viewer .handtray .cards .card, body.viewer .handtray .cards.small .card { flex: none; width: var(--W); height: auto; border: 0; border-radius: calc(10px * var(--hs, 1)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 3px 8px rgba(0, 0, 0, .4);
-  margin-right: calc(min(0.694 * var(--W), (1000px - var(--W)) / max(var(--n, 5) - 1, 1)) - var(--W)); transform: translate(var(--dx, 0px), var(--dy, 0px)); }
-body.viewer .handtray .cards .card:last-child { margin-right: 0; }
+body.viewer .handtray .cards { display: grid; justify-content: start; align-items: start; gap: 0; padding: 4px 20px 0; }
+body.viewer .handtray .cards.multi { max-height: calc(var(--W) * 1.3972 + 4px); overflow-x: hidden; overflow-y: auto; }
+body.viewer .handtray .cards .card, body.viewer .handtray .cards.small .card { width: var(--W); height: auto; border: 0; border-radius: calc(10px * var(--hs, 1)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 3px 8px rgba(0, 0, 0, .4);
+  transform: translate(var(--dx, 0px), var(--dy, 0px)); }
 body.viewer .handtray .cards .card:hover { z-index: 6; }
 body.viewer .handtray .cards .card.dragging, body.viewer .handtray .cards .card.dragging:hover { z-index: 20; cursor: grabbing; transition: none; box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 10px 18px rgba(0, 0, 0, .45); }
 body.viewer .handtray .cards .card.markable.marked { box-shadow: 0 0 0 4px var(--gold), 0 3px 8px rgba(0, 0, 0, .4); }
