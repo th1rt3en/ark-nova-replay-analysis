@@ -323,15 +323,15 @@ body.viewer .moves li[hidden] { display: none; }
 body.viewer .draftbox { position: fixed; left: 0; top: 0; z-index: 90; box-sizing: border-box; width: 100%; height: calc(var(--vh, 1vh) * 100); padding-right: calc(var(--sidebar-w) + 24px); display: flex; align-items: center; justify-content: center; pointer-events: none;
   background: rgba(8, 40, 50, .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }       /* the dim covers the whole window (move bar, sidebar, hand included) but lets clicks through, so the playback buttons keep working; the panel sits in the area left of the sidebar */
 body.viewer .draftbox[hidden] { display: none; }
-body.viewer .draftpop { pointer-events: auto; box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
+body.viewer .draftpop { pointer-events: auto; box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 0; padding: 40px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
 body.viewer .draftpop .draftgroup { flex: none; width: 100%; padding: 0; border: 0; }
 body.viewer .draftpop .draftgroup + .draftgroup { padding: 14px 0 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
-body.viewer .draftpop .drafthead { font: 700 24px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
-body.viewer .draftpop .draftcards { flex-wrap: nowrap; gap: 22px; padding: 40px 14px 24px; }
+body.viewer .draftpop .drafthead { line-height: 1.2; font: 700 24px/1.2 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .draftpop .draftcards { flex-wrap: nowrap; gap: 22px; padding: 38px 14px 24px; }
 body.viewer .draftpop .draftcard { flex: none; width: clamp(120px, calc(1230px / var(--cn, 5)), 250px); border-radius: 12px; box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 4px 10px rgba(0, 0, 0, .35); }
 body.viewer .draftpop .draftcard img { border-radius: 12px; }
 body.viewer .draftpop .draftkept { padding: 0; margin-right: 22px; }
-body.viewer .draftpop .draftkept::after { right: -14px; border-right: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .draftpop .draftkept::after { right: -28.5px; top: -9px; bottom: -9px; border-right: 4px dashed rgba(23, 38, 43, .55); }      /* (halfway between the kept card's frame, 9 px outside it, and the next card, 44 px away: margin 22 + gap 22) */
 
 /* ---- a card selected with a click ("Leaf tag"): an ink outline, a soft green tint over the card and a green rounded tag with a cream check on its top right corner (blue in the fork, where the
    choice is confirmed afterwards). Replaces BGA's translucent square + yellow ring; used by every clickable card (hand, tray, fan, display, endgame cards, the action card draft). -- */
