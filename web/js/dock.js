@@ -100,12 +100,14 @@ const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } 
 function startHint() { hintStart = Date.now(); hintPending = false; try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* no storage */ } }
 document.addEventListener('handmode', () => { if (S.handMode === 'tray') hintPending = true; renderDock(curState()); });        // (the setting was changed)
 document.addEventListener('settingsclosed', () => { if (hintPending && S.handMode === 'tray') renderDock(curState()); });
-const TRAY_LEFT = 22, TRAY_ROW = 20;                                   // (the tray's distance from the window edge; cards per row: more than that start a second row)
-function trayMaxWidth() {                                              // the tray never reaches the side bar: its right edge stops at the right edge of the display / association boards
-  const sh = document.querySelector('.shared'), sc = S.scaled ? S.scale : 1;
-  return Math.max(300, Math.round((sh ? sh.getBoundingClientRect().right / sc : 1200) - TRAY_LEFT));
+const TRAY_ROW = 20;                                                    // cards per row: more than that start a second row
+function trayBox() {                                                   // left edge = the left edge of the boards (display, map, move bar); right edge = the right edge of the display / association boards, so the tray never reaches the side bar
+  const sh = document.querySelector('.shared'), sc = S.scaled ? S.scale : 1, r = sh && sh.getBoundingClientRect();
+  const left = r ? Math.round(r.left / sc) : 14;
+  return { left, width: Math.max(300, Math.round((r ? r.right / sc : 1200) - left)) };
 }
-window.addEventListener('resize', () => { const w = document.querySelector('.handtray'); if (w) w.style.setProperty('--maxw', trayMaxWidth() + 'px'); });
+function placeTray(wrap) { const b = trayBox(); wrap.style.setProperty('--maxw', b.width + 'px'); wrap.parentNode.style.left = b.left + 'px'; }
+window.addEventListener('resize', () => { const w = document.querySelector('.handtray'); if (w) placeTray(w); });
 function drawTray(dock, rows, shownSel) {
   const row = shownSel && rows[shownSel.seat + ':' + shownSel.kind];
   if (!row) { dock.replaceChildren(); return; }
@@ -123,7 +125,6 @@ function drawTray(dock, rows, shownSel) {
   wrap.classList.toggle('fol', folded); wrap.classList.toggle('unf', !folded);
   wrap.style.setProperty('--pc', seatColor(seat));
   wrap.style.setProperty('--cols', String(cols));
-  wrap.style.setProperty('--maxw', trayMaxWidth() + 'px');
   const head = el('div', 'trayhead');
   head.onclick = toggleDock;
   frame.replaceChildren(head, row);
@@ -146,6 +147,7 @@ function drawTray(dock, rows, shownSel) {
     wrap.append(hint);
   }
   if (wrap.parentNode !== dock) dock.replaceChildren(wrap);
+  placeTray(wrap);
 }
 
 document.addEventListener('cardorder', () => quietly(() => renderDock(curState())));       // a card was dragged to a new place: draw the cards again in the new order
