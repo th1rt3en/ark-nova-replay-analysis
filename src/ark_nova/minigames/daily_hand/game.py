@@ -50,7 +50,7 @@ def _redact(state: dict, pov: int) -> dict:
 
 class DailyHand:
     key = "daily_hand"
-    builder_version = "1"
+    builder_version = "2"
     allow_past = False
     leaderboard = LeaderboardSpec(metric="sum", higher_is_better=True, unit="points")
 
@@ -62,6 +62,9 @@ class DailyHand:
         hit = _early_view(log)
         view, step = hit["view"], hit["dealt"]
         state = _redact(step["state"], seat)
+        # the order of the log (the order the cards were drawn in) is not shown: the hand is sorted, so its order tells nothing about what was kept
+        for k in ("hand", "initial_offer"):
+            state["players"][seat][k] = sorted(state["players"][seat][k])
         hand = list(state["players"][seat]["hand"])
         keep = len(hand) - step["state"]["prompt"]["args"]["count"]
         if keep < 1:

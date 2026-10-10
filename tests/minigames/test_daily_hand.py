@@ -31,6 +31,7 @@ def test_the_public_payload_shows_the_pov_hand_and_hides_the_rest(seat):
     guard.check_public(pub, log)                                              # no table id, no player id, no name
     st = pub["replay"]["steps"][0]["state"]
     me, other = st["players"][seat], st["players"][1 - seat]
+    assert pub["hand"] == sorted(pub["hand"]) and me["initial_offer"] == me["hand"]               # (sorted: the draw order of the log says nothing)
     assert len(me["hand"]) == 8 and pub["hand"] == me["hand"] and pub["keep"] == 4 and len(me["endgame_hand"]) == 2
     assert set(other["hand"]) == {"?"} and set(other["endgame_hand"]) == {"?"} and len(other["hand"]) == 8
     assert st["main_deck"] == [] and st["endgame_deck"] == [] and st["main_discard"] == [] and st["prompt"] is None and st["stats"] == {}

@@ -12,6 +12,7 @@ export const SANDBOX = !!window.SANDBOX_MODE;                                   
 // bits. Everything here used to be a `let` inside the one big function of the old replay.js.
 export const S = {
   forkInfo: null,
+  minigame: null,    // a mini game page sets {decorate(row, 'seat:kind')}: dock.js calls it for every row of cards it draws (js/minigames/daily_hand.js)
   lastBoard: null,   // replay: {st, pov} the boards on show were drawn from (render() skips redrawing identical boards)
   animalEnc: null,   // {card, x, y}: the enclosure clicked for the animal that is selected (not yet confirmed)
   // live play (play.js): the game id, the seat token and seat, the last version pushed, the socket / poll, the status, the abandon proposal, the clocks and the map picked but not confirmed

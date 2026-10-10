@@ -16,26 +16,45 @@ async function start() {
   window.MINIGAME_POV = puzzle.public.pov;
   await import('/js/main.js');                                           // boots the viewer on the puzzle's one step
   for (let i = 0; i < 200 && $('app').hidden; i++) await new Promise((r) => setTimeout(r, 50));
-  mount(puzzle, await import('/js/cards.js'), await import('/js/state.js'));
+  await mount(puzzle);
 }
 
-function mount(puzzle, cards, state) {
-  const { info, cardName, largeOf, showPreview, hidePreview } = cards;
+async function mount(puzzle) {
+  const { cardName } = await import('/js/cards.js');
+  const { quietly } = await import('/js/cards.js');
+  const { renderDock } = await import('/js/dock.js');
+  const { curState } = await import('/js/pov.js');
+  const { S } = await import('/js/state.js');
   const root = $('puzzle');
   const pub = puzzle.public;
   const picked = new Set();
   let result = puzzle.result;
   const seatLabel = pub.replay.players[pub.pov].name;
+  const redock = () => quietly(() => renderDock(curState()));
 
-  function cardNode(key, extra) {
-    const c = info(key);
-    const node = el('div', 'pz-card' + (extra || ''));
-    const img = el('img'); img.src = c.image; img.alt = cardName(key); img.loading = 'eager';
-    node.append(img, el('div', 'pz-name', cardName(key)));
-    node.onmouseenter = () => showPreview(largeOf(c));
-    node.onmouseleave = hidePreview;
-    return node;
-  }
+  // The cards are the ones of the player's hand in the dock at the bottom of the screen (the viewer's own hand view): dock.js asks this hook to decorate that row.
+  S.minigame = {
+    decorate(row, where) {
+      if (where !== `${pub.pov}:hand`) return;
+      for (const node of row.querySelectorAll('.card[data-key]')) {
+        const key = node.dataset.key;
+        node.classList.add('pz-dock-card');
+        if (result) {
+          const orig = result.original.includes(key), mine = result.picks.includes(key), rate = (result.stats.pick_rates || {})[key] || 0;
+          node.classList.toggle('pz-orig', orig); node.classList.toggle('pz-mine', mine);
+          const tag = el('div', 'pz-dtag');
+          tag.append(el('b', null, orig ? (mine ? 'Kept by both' : 'Original kept') : mine ? 'Your pick' : ''), el('span', null, Math.round(rate * 100) + '% of players'));
+          const bar = el('i', 'pz-dbar'); const fill = el('u'); fill.style.width = Math.round(rate * 100) + '%'; bar.append(fill); tag.append(bar);
+          node.append(tag);
+        } else {
+          node.classList.toggle('pz-mine', picked.has(key));
+          node.onclick = () => { if (picked.has(key)) picked.delete(key); else if (picked.size < pub.keep) picked.add(key); draw(); redock(); };
+        }
+      }
+    },
+  };
+  S.dockSel = { seat: pub.pov, kind: 'hand' };                         // the hand is open from the start
+  S.dockHidden = false;
 
   function loginNote() {
     if (!window.arkAccountsEnabled || window.arkAccount) return null;
@@ -45,37 +64,20 @@ function mount(puzzle, cards, state) {
   function draw() {
     root.replaceChildren();
     root.append(el('h1', null, 'Daily starting hand'), el('p', 'muted', `${puzzle.day} (UTC). Both players' names are hidden; their Elo before this game is shown.`));
-    root.append(el('p', null, `You are ${seatLabel}, looking at your dealt hand before the initial selection. Pick the ${pub.keep} cards you would keep. You score 1 point for every card the original player kept too.`));
-    const hand = el('div', 'pz-hand' + (result ? ' done' : ''));
-    for (const key of pub.hand) {
-      let extra = '';
-      if (result) extra = (result.original.includes(key) ? ' orig' : '') + (result.picks.includes(key) ? ' on' : '');
-      else if (picked.has(key)) extra = ' on';
-      const node = cardNode(key, extra);
-      if (result) {
-        const rate = (result.stats.pick_rates || {})[key] || 0;
-        const tag = result.original.includes(key) ? (result.picks.includes(key) ? 'Kept by both' : 'Original kept') : result.picks.includes(key) ? 'Your pick' : '';
-        node.append(el('div', 'pz-tag', tag));
-        const bar = el('div', 'pz-bar'); const fill = el('i'); fill.style.width = Math.round(rate * 100) + '%'; bar.append(fill);
-        node.append(bar, el('div', 'pz-tag', Math.round(rate * 100) + '% of players'));
-      } else {
-        node.onclick = () => { if (picked.has(key)) picked.delete(key); else if (picked.size < pub.keep) picked.add(key); draw(); };
-      }
-      hand.append(node);
-    }
-    root.append(hand);
+    root.append(el('p', null, `You are ${seatLabel}, looking at your dealt hand before the initial selection. Click the ${pub.keep} cards you would keep in your hand at the bottom of the screen. You score 1 point for every card the original player kept too.`));
     if (result) { drawResult(); return; }
     const note = loginNote();
     if (note) root.append(note);
     const actions = el('div', 'pz-actions');
     const go = el('button', null, 'Confirm'); go.disabled = picked.size !== pub.keep;
-    actions.append(go, el('span', 'muted', `${picked.size} / ${pub.keep} cards picked`));
+    const list = [...picked].map((k) => cardName(k));
+    actions.append(go, el('span', 'muted', `${picked.size} / ${pub.keep} cards picked${list.length ? ': ' + list.join(', ') : ''}`));
     const err = el('p', 'muted'); err.style.color = '#a12f2f';
     go.onclick = async () => {
       go.disabled = true; err.textContent = '';
-      try { result = await api(`/${KEY}/submit`, { day: puzzle.day, payload: { picks: [...picked] } }); draw(); }
+      try { result = await api(`/${KEY}/submit`, { day: puzzle.day, payload: { picks: [...picked] } }); draw(); redock(); }
       catch (e) {
-        if (e.code === 'already_played') { const again = await api(`/${KEY}/today`); result = again.result; draw(); return; }
+        if (e.code === 'already_played') { const again = await api(`/${KEY}/today`); result = again.result; draw(); redock(); return; }
         err.textContent = e.message; go.disabled = false;
       }
     };
@@ -85,7 +87,7 @@ function mount(puzzle, cards, state) {
   function drawResult() {
     root.append(el('p', 'pz-result', `You scored ${result.score} out of ${result.of}.`));
     const stats = result.stats;
-    root.append(el('p', 'muted', `${stats.players} player${stats.players === 1 ? '' : 's'} played this puzzle today so far. The green cards are what the original player kept.`));
+    root.append(el('p', 'muted', `${stats.players} player${stats.players === 1 ? '' : 's'} played this puzzle today so far. In your hand at the bottom of the screen, green cards are what the original player kept, blue ones are your picks, and each card shows how many players kept it.`));
     const p = el('p');
     p.append('This was ');
     const a = el('a', null, `table #${result.table_id}`); a.href = result.links.bga; a.target = '_blank'; a.rel = 'noopener';
@@ -99,8 +101,9 @@ function mount(puzzle, cards, state) {
     renderBoards(boards, KEY, 'Points');
   }
 
-  document.addEventListener('account-changed', () => { if (!result) draw(); });
+  document.addEventListener('account-changed', () => { draw(); });
   draw();
+  redock();
 }
 
 start();

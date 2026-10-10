@@ -1,6 +1,6 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
 import { $, el, seatColor } from './util.js';
-import { FORK, S, SANDBOX } from './state.js';
+import { FORK, MINIGAME, S, SANDBOX } from './state.js';
 import { curState, hides } from './pov.js';
 import { cardRow, quietly } from './cards.js';
 import { iconUrl } from './icons.js';
@@ -27,7 +27,7 @@ function handDim(seat) {
 try { S.dockSel = JSON.parse(localStorage.getItem('dockSel') || 'null'); } catch (e) { /* no storage */ }
 if (!S.dockSel) S.dockSel = { seat: 0, kind: 'hand' };
 try { S.dockHidden = localStorage.getItem('dockHidden') === '1'; } catch (e) { /* no storage */ }
-const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
+const saveDock = () => { if (MINIGAME) return; try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
 export function renderDock(st) {
   let dock = $('dock');
   if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
@@ -44,7 +44,7 @@ export function renderDock(st) {
     group.append(el('span', 'dockwho', S.replay.players[seat].name));
     const pair = el('div', 'dockpair');
     for (const kind of ['hand', 'endgame']) {
-      const row = cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, true);
+      const row = cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, !MINIGAME);                  // (a mini game: no highlighting, no dragging; the page's own hook makes the cards the thing to click)
       rows[seat + ':' + kind] = row;                                   // (built for both players every time, so the arrivals and departures of the cards are tracked)
       const on = !S.dockHidden && shownSel && shownSel.seat === seat && shownSel.kind === kind;
       const b = el('button', 'dockbtn' + (on ? ' on' : ''));
@@ -64,6 +64,7 @@ export function renderDock(st) {
     group.append(pair);
     bar.append(group);
   });
+  if (MINIGAME && S.minigame) for (const k of Object.keys(rows)) S.minigame.decorate(rows[k], k);       // (mini game pages: `S.minigame.decorate(row, 'seat:hand')` makes the cards of a row selectable)
   const fold = el('button', 'dockfold');                               // collapse / expand the cards, at the right end of the buttons
   fold.type = 'button';
   fold.textContent = S.dockHidden ? '▲' : '▼';

@@ -1,6 +1,6 @@
 // [module] Sidebar: the Control | Log tabs, the log's scroll-follow, and fitting the info panel (player trackers) into the height left under the control panel.
 import { $ } from './util.js';
-import { S } from './state.js';
+import { S, MINIGAME } from './state.js';
 
 const TAB_KEY = 'sidebarTab';
 function setTab(tab) {
@@ -49,8 +49,9 @@ export function fitSidebar() {
   const pane = $('paneControl'), side = $('side');
   if (!pane || !side || pane.hidden) return;
   if (!S.scaled) { side.style.zoom = ''; side.parentElement.style.marginTop = ''; const b = pane.querySelector('.bar'); if (b) b.style.height = ''; side.style.removeProperty('--ppx-gap'); side.style.removeProperty('--ppx-badge'); side.style.removeProperty('--ppx-pad'); return; }       // phones: not handled yet
-  alignControl(pane);
   const fitWidth = () => { side.style.zoom = 1; side.style.zoom = pane.clientWidth / side.offsetWidth; };
+  if (MINIGAME) { pane.style.marginTop = '0px'; fitWidth(); return; }                 // (a mini game has no control panel to line up with the project area: the tracker starts at the top of the sidebar)
+  alignControl(pane);
   fitWidth();
   spreadInfo(pane, side);
   if (pane.scrollHeight > pane.clientHeight) { fitWidth(); spreadInfo(pane, side); }       // (a scrollbar appeared and took some width: fit to what is left)
