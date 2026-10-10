@@ -66,7 +66,7 @@ export function renderDock(st) {
     group.append(pair);
     bar.append(group);
   });
-  if (S.handMode === 'tray') { drawTray(dock, rows, shownSel); return; }
+  if (S.handMode === 'tray') { drawTray(dock, rows, shownSel, st); return; }
   const fold = el('button', 'dockfold');                               // collapse / expand the cards, at the right end of the buttons
   fold.type = 'button';
   fold.textContent = S.dockHidden ? '▲' : '▼';
@@ -108,9 +108,9 @@ function trayBox() {                                                   // left e
 }
 function placeTray(wrap) { const b = trayBox(); wrap.style.setProperty('--maxw', b.width + 'px'); wrap.parentNode.style.left = b.left + 'px'; }
 window.addEventListener('resize', () => { const w = document.querySelector('.handtray'); if (w) placeTray(w); });
-function drawTray(dock, rows, shownSel) {
+function drawTray(dock, rows, shownSel, st) {
   const row = shownSel && rows[shownSel.seat + ':' + shownSel.kind];
-  if (!row) { dock.replaceChildren(); return; }
+  if (!row || (st && st.phase === 'setup' && st.draft && st.draft.stage !== 'done')) { dock.replaceChildren(); return; }       // (no tray at all during the action card draft: nothing to show yet)
   const seat = shownSel.seat, folded = S.dockHidden;
   row.querySelectorAll('.card-gone').forEach((g) => g.remove());
   const n = [...row.children].filter((c) => c.classList.contains('card')).length, cols = Math.max(1, Math.min(n, TRAY_ROW));
@@ -121,6 +121,7 @@ function drawTray(dock, rows, shownSel) {
   if (!wrap) {
     wrap = el('div', 'handtray'); frame = el('div', 'trayframe'); btns = el('div', 'traybtns');
     wrap.append(frame, btns);
+    wrap.classList.add('enter'); wrap.addEventListener('animationend', (e) => { if (e.target === wrap) wrap.classList.remove('enter'); });       // (a new tray slides up: after the draft, when the mode is changed)
   } else { frame = wrap.querySelector('.trayframe'); btns = wrap.querySelector('.traybtns'); wrap.querySelector('.trayhint')?.remove(); }
   wrap.classList.toggle('fol', folded); wrap.classList.toggle('unf', !folded);
   wrap.style.setProperty('--pc', seatColor(seat));

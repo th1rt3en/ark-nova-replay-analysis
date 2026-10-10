@@ -39,6 +39,7 @@ document.addEventListener('pointerdown', (e) => { lastTouch = e.pointerType === 
 document.addEventListener('pointermove', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
 export function showPreview(src, centered) {
   clearTimeout(previewTimer);
+  const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;                      // (the action card draft lightbox is open: no enlarged cards, neither in the lightbox nor in the dimmed background)
   const show = () => { const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false; };
   if (lastTouch) show(); else previewTimer = setTimeout(show, PREVIEW_DELAY);
 }

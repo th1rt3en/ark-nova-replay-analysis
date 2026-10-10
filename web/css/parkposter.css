@@ -270,6 +270,8 @@ body.viewer .handtray { --W: calc(170px * var(--hs, 1)); --avail: calc(var(--max
 body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: #E3CF9C; border: 5px solid var(--ink); border-bottom: 0; border-radius: 26px 26px 0 0; box-shadow: 0 -4px 0 rgba(23, 38, 43, .0), 0 0 18px rgba(0, 0, 0, .35); width: min(var(--maxw, 1200px), calc(var(--cols, 5) * var(--W) + 50px)); transition: height .4s cubic-bezier(.3, .8, .25, 1); }
 body.viewer .handtray.unf .trayframe { height: calc(30px + var(--W) * 1.3972); }
 body.viewer .handtray.fol .trayframe { height: calc(25px + 74px * var(--hs, 1)); }
+@keyframes tray-in { from { transform: translateY(105%); } to { transform: none; } }
+body.viewer .handtray.enter { animation: tray-in .35s cubic-bezier(.2, .9, .25, 1); }
 body.viewer .trayhead { height: 20px; cursor: pointer; }
 body.viewer .handtray .cards { display: grid; justify-content: start; align-items: start; gap: 0; padding: 0 20px 5px; }
 body.viewer .handtray .cards.multi { max-height: calc(var(--W) * 1.3972 + 5px); overflow-x: hidden; overflow-y: auto; }
