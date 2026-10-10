@@ -1289,3 +1289,6 @@ All the arrival and departure effects of the zones are off until new ones are de
 
 ## 28. Floating tray: the starting hand drops in
 Same trigger as the fan's deal (setup phase, empty hand -> the starting hand; `fanIntro(..., tray = true)` in `drawTray`, dock.js). The tray slides up empty (`tray-in`, 350 ms = `TRAY_SLIDE_MS`), then the cards fall into it from above one after another (`DROP_MS` 560, `DROP_GAP` 100: tilt of 9 degrees to alternating sides, a small bounce, `fill: 'backwards'` so they stay invisible until their turn). They may leave the tray's frame while falling (not clipped). A redraw while it runs goes on with a negative delay. While the action card draft is open `drawTray` records the (empty) hand, so the deal after the draft is recognised although no tray is drawn then. Refilled hands during the game do not animate.
+
+## 29. Floating tray: no outline, dark glow
+`.trayframe` (parkposter.css) has no ink outline any more: its 5px border is transparent (the sand background shows through, so sizes and the card layout are unchanged) and it has the same dark glow as the fan (`0 0 10px rgba(0,0,0,.9), 0 0 26px rgba(0,0,0,.6)`).
