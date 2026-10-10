@@ -66,7 +66,7 @@ body.viewer .pill.rnd .rn { font: 400 28px/1.05 'Bowlby One', system-ui, sans-se
 body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
 body.viewer .pill.brk { gap: 12px; padding: 0 20px 0 19.25px;          /* (the ink of the mug and of the last pip is 20 px from the rounded ends on both sides; the mug image starts 0.75 px inside its box) */
   background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
-body.viewer .pill.brk .brkicon { height: 36px; width: auto; display: block; flex: none; position: relative; top: -5.75px; }          /* (the bottom of the mug on the baseline of the digits and the pips; the faint steam stands out above) */
+body.viewer .pill.brk .brkicon { height: 30px; width: auto; display: block; flex: none; position: relative; top: -2.2px; }          /* (the bottom of the mug on the baseline of the digits and the pips; the faint steam stands out above) */
 body.viewer .pill.brk .bn { font: 400 34px/1 'Bowlby One'; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
 body.viewer .pill.brk .bn small { font-size: 22px; margin-left: 1px; }
 body.viewer .pips { display: flex; gap: 5px; }

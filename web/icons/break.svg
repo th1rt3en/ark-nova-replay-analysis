@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 108" width="96" height="108" role="img" aria-label="Break (a coffee mug)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 6 96 102" width="96" height="102" role="img" aria-label="Break (a coffee mug)">
   <!-- The Break symbol of Ark Nova (BGA's coffee mug, web/icons/r3c14.webp, redrawn as a vector with the same shape: ink mug, paper steam that fades upwards). Colours: Park Poster ink and paper. -->
   <defs><linearGradient id="steam" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#F8EDCB" stop-opacity="1"/><stop offset="1" stop-color="#F8EDCB" stop-opacity=".5"/></linearGradient></defs>
-  <path d="M15 25C21 12 36 14 46 8C52 4 58 0 65 2C70 5 66 14 62 19C60 22 62 25 62 25Z" fill="url(#steam)"/>
+  <path d="M18 25C24 17 36 18 46 14C52 11 57 8 63 9C67 12 64 18 61 21C59 23 60 25 60 25Z" fill="url(#steam)"/>
   <path d="M1 27H77V79C77 96 70 107 60 107H18C8 107 1 96 1 79Z" fill="#17262B"/>
   <path d="M77 38.5H83Q91 38.5 91 47V70Q91 81.5 72 81.5" fill="none" stroke="#17262B" stroke-width="9"/>
 </svg>
