@@ -2,7 +2,7 @@
 
 Players create an account with a username and a password. A username that exists on BGA copies that player's last Elo once. Live games can be rated or friendly, and a tracker keeps the results of the mini games and puzzles to come.
 
-Status: built so far: accounts (D1), the mini game platform with its hub, the daily cron, and Daily starting hand (M0, M1). Not built: Who's ahead (M2), rated games and ratings. Copy of the published page https://claude.ai/artifact/8SfrhQPiL73cpkVdNm8oM3 (this file is the one to keep up to date). Written 2026-10-10 for the engineers who will build it.
+Status: built so far: accounts (D1), the mini game platform with its hub, the daily cron, Daily starting hand and Who's ahead (M0, M1, M2). Not built: rated games and ratings. Copy of the published page https://claude.ai/artifact/8SfrhQPiL73cpkVdNm8oM3 (this file is the one to keep up to date). Written 2026-10-10 for the engineers who will build it.
 
 ## Decisions
 

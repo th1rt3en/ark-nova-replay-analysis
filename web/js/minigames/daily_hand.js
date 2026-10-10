@@ -1,6 +1,6 @@
 // Daily starting hand (minigames/daily_hand.html): the viewer shows one redacted position (MINIGAME_MODE), this panel lets the player pick the cards to keep, then
 // shows what the original player kept, the pick rates of the day, the table and the leaderboards. Nothing here knows another mini game.
-import { api } from './shell.js';
+import { api, renderBoards } from './shell.js';
 
 const KEY = 'daily_hand';
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
@@ -96,20 +96,7 @@ function mount(puzzle, cards, state) {
     if (note) root.append(note);
     const boards = el('div', 'pz-board');
     root.append(boards);
-    for (const [period, title] of [['month', 'This month'], ['all', 'All time']]) board(boards, period, title);
-  }
-
-  async function board(into, period, title) {
-    const box = el('div'); box.append(el('h3', null, 'Leaderboard: ' + title)); into.append(box);
-    try {
-      const b = await api(`/${KEY}/leaderboard?period=${period}`);
-      if (!b.rows.length) { box.append(el('p', 'muted', 'Nobody is listed yet. Log in and play to appear here.')); return; }
-      const t = el('table'); t.innerHTML = '<tr><th>#</th><th>Player</th><th>Plays</th><th>Points</th></tr>';
-      for (const r of b.rows.slice(0, 10)) {
-        const tr = el('tr'); for (const v of [r.rank, r.name, r.plays, r.value]) tr.append(el('td', null, String(v))); t.append(tr);
-      }
-      box.append(t);
-    } catch (e) { box.append(el('p', 'muted', 'The leaderboard could not be loaded.')); }
+    renderBoards(boards, KEY, 'Points');
   }
 
   document.addEventListener('account-changed', () => { if (!result) draw(); });
