@@ -1310,3 +1310,6 @@ In the `handmode` listener: switching to the fan from an **unfolded** tray makes
 - The dotted line that stands in for a switched-off timeline (`.tldeco`) has no circle any more.
 - The timeline fills up: `.tlfill` (first child of `#timeline`, under the round marks) is as wide as the head's position (`updateTimeline()`), a gradient from sun orange to gold that stretches with the fill, so it is gold at the head (`var(--tlfill, ...)` in parkposter.css).
 - The head can be dragged: `buildTimeline()` (playback.js) uses pointer events on the whole bar (pointer capture, `touch-action: none`): a press goes to the step under the pointer, moving goes on to the steps under the pointer and the board follows while dragging (at most one `go()` per animation frame); a running autoplay is paused when the bar is pressed. The head has a wider invisible grab area (`.tlhead::before`) and a grab cursor. The old `onclick` is replaced by the press.
+
+## 34. Draft lightbox centred on the whole window
+`.draftbox` (parkposter.css) had `padding-right: sidebar width + 24px`, so the action card draft panel sat in the middle of the area left of the sidebar (set in the commit "draft lightbox dims the whole window"). The padding is gone: the panel is centred on the window (measured: centre = half the window width at 1920 and 1366 px wide).
