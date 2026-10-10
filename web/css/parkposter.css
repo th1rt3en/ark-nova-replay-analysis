@@ -53,7 +53,7 @@ body.viewer .movepill .enginemark { position: absolute; top: 50%; right: 12px; t
 body.viewer .hdrstats { flex: none; display: flex; align-items: center; gap: 12px; }
 body.viewer .pill { height: 50px; box-sizing: border-box; display: flex; align-items: center; background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); color: var(--ink); }
 body.viewer .pill.rnd { gap: 10px; padding: 0 5px 0 20px; }
-body.viewer .pill.rnd .rcircle { width: 36px; height: 36px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--teal); color: var(--paper); border: 3px solid var(--ink); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; }
+body.viewer .pill.rnd .rcircle { width: 36px; height: 36px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--rust); color: var(--paper); border: 3px solid var(--ink); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; }
 body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
 body.viewer .pill.brk { gap: 12px; padding: 0 18px 0 22px; background: var(--sun); box-shadow: 0 4px 0 var(--ink), 0 0 0 4px rgba(244, 182, 63, .55); }
 body.viewer .pill.brk .lab { font-size: 20px; }
