@@ -37,7 +37,7 @@ let fanIntroState = null, fanDone = false, fanSawEmpty = false;
 document.addEventListener('handmode', () => { fanDone = false; fanSawEmpty = false; fanIntroState = null; });       // (the setting changed: the next fan rises and spreads)
 function fanIntro(row, handCount) {
   const cards = [...row.children].filter((c) => c.classList.contains('card') && !c.classList.contains('card-gone'));
-  if (!cards.length || !cards[0].animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { if (!fanDone && handCount === 0) fanSawEmpty = true; return; }
+  if (!cards.length || !cards[0].animate) { if (!fanDone && handCount === 0) fanSawEmpty = true; return; }
   const now = Date.now();
   if (!fanIntroState && !fanDone) { fanIntroState = { kind: fanSawEmpty ? 'deal' : 'rise', start: now }; fanDone = true; }
   const s = fanIntroState; if (!s) return;

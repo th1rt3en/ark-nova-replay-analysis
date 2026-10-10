@@ -1279,4 +1279,4 @@ When the hand is shown as a fan, it no longer blinks in. `fanIntro(row, handCoun
 - **Deal** (the hand was empty before, i.e. the starting hand is dealt): cards fly up from below one after another (`FAN_DEAL_MS` 520 ms, `FAN_DEAL_GAP` 110 ms apart), fading in.
 - **Rise and spread** (page load, switching the hand display setting): the closed stack rises from below, then spreads from the centre to both sides into the fan (`FAN_RISE_MS` 900 ms).
 - Only once per appearance (`fanDone`, reset by the `handmode` event). `renderDock` rebuilds the fan on every redraw, so a running intro continues with a negative `delay` (elapsed time) instead of restarting; earlier intro animations on the same card are cancelled first (only plain `Animation`s, CSS transitions are left alone).
-- Skipped with `prefers-reduced-motion`.
+- Not gated by `prefers-reduced-motion` (like the tray slide-up; Windows with animation effects off reports it, and the intro would never show).
