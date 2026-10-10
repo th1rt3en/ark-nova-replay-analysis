@@ -30,6 +30,32 @@ try { S.dockSel = JSON.parse(localStorage.getItem('dockSel') || 'null'); } catch
 if (!S.dockSel) S.dockSel = { seat: 0, kind: 'hand' };
 try { S.dockHidden = localStorage.getItem('dockHidden') === '1'; } catch (e) { /* no storage */ }
 const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
+// ---- the fan appears: "Deal" when the hand is dealt for the first time (the hand was empty before: start of the game), "Rise and spread" otherwise (page load, the setting changed). The cards of a fan
+// that is drawn again while the intro runs go on where they were (negative delay), as every redraw replaces the card elements.
+const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110;
+let fanIntroState = null, fanDone = false, fanSawEmpty = false;
+document.addEventListener('handmode', () => { fanDone = false; fanSawEmpty = false; fanIntroState = null; });       // (the setting changed: the next fan rises and spreads)
+function fanIntro(row, handCount) {
+  const cards = [...row.children].filter((c) => c.classList.contains('card') && !c.classList.contains('card-gone'));
+  if (!cards.length || !cards[0].animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { if (!fanDone && handCount === 0) fanSawEmpty = true; return; }
+  const now = Date.now();
+  if (!fanIntroState && !fanDone) { fanIntroState = { kind: fanSawEmpty ? 'deal' : 'rise', start: now }; fanDone = true; }
+  const s = fanIntroState; if (!s) return;
+  const total = s.kind === 'rise' ? FAN_RISE_MS : FAN_DEAL_MS + (cards.length - 1) * FAN_DEAL_GAP, elapsed = now - s.start;
+  if (elapsed >= total) { fanIntroState = null; return; }
+  const n = cards.length, step = n > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 0, hk = parseFloat(getComputedStyle(document.body).getPropertyValue('--hk')) || 1.5, rise = 240 * hk;
+  cards.forEach((c, i) => {
+    c.getAnimations().forEach((a) => { if (a.constructor === Animation) a.cancel(); });          // (only our own earlier intro, not CSS transitions)
+    const fin = getComputedStyle(c).transform, sx = ((n - 1) / 2 - i) * step;
+    if (s.kind === 'rise') {
+      c.animate([{ transform: 'translateY(' + rise + 'px) translateX(' + sx + 'px) rotate(0deg)' }, { transform: 'translateY(0px) translateX(' + sx + 'px) rotate(0deg)', offset: .38 }, { transform: fin }],
+        { duration: FAN_RISE_MS, delay: -elapsed, easing: 'cubic-bezier(.25,.9,.3,1.05)', fill: 'backwards' });
+    } else {
+      c.animate([{ transform: 'translateY(' + (rise * 1.2) + 'px) rotate(0deg)', opacity: 0 }, { opacity: 1, offset: .25 }, { transform: fin, opacity: 1 }],
+        { duration: FAN_DEAL_MS, delay: i * FAN_DEAL_GAP - elapsed, easing: 'cubic-bezier(.2,.9,.3,1.08)', fill: 'backwards' });
+    }
+  });
+}
 export function renderDock(st) {
   let dock = $('dock');
   if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
@@ -87,6 +113,7 @@ export function renderDock(st) {
     panel.append(head, shown);
     panel.style.setProperty('--pc', seatColor(shownSel.seat));
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
+    fanIntro(shown, st && st.players[shownSel.seat] ? st.players[shownSel.seat].hand.length : 1);
   } else dock.replaceChildren(bar);
 }
 
