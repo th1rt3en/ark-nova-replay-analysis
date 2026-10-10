@@ -5,6 +5,16 @@ SELECT s.table_id
 FROM `freestyle-190711.ark_nova.all_games_stat` AS s
 WHERE CAST(s.table_id AS STRING) IN (SELECT table_id FROM `freestyle-190711.ark_nova_processing.logs_archive_mapping`)
   AND s.table_id NOT IN UNNEST(@exclude)
+  AND table_id IN (
+    SELECT table_id
+    FROM `freestyle-190711.ark_nova.all_games_stat`
+    WHERE player_id IN (
+      SELECT player_id
+      FROM `freestyle-190711.ark_nova.players_master_peak`
+    )
+    GROUP BY table_id
+    HAVING COUNT(DISTINCT player_id) >= 2
+  )
 GROUP BY s.table_id
 HAVING COUNT(*) = 2
 ORDER BY RAND()
