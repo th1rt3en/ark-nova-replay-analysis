@@ -33,7 +33,7 @@ body.viewer::before { content: ""; position: fixed; left: -400px; top: -2500px; 
 /* ---- layout: the main column left, the sidebar fixed at the right; the top bar sticks to the top of the window ------------------------------------------------------------- */
 body.viewer .layout { --sidebar-w: 320px; padding: 0 calc(var(--sidebar-w) + 28px) 0 14px; }
 body.viewer main { padding-bottom: 8px; }
-/* the band behind the top row (move bar pills, Round, Break and the sidebar's tabs): fixed, the full width, under them (z 15 < sidebar 20 < move bar 30) and over the scrolling boards */
+/* the band behind the top row (move bar pills, Round and Break): fixed, the full width, under them (z 15 < sidebar 20 < move bar 30) and over the scrolling boards */
 @media (min-width: 900px) { #app::after { content: ""; position: fixed; left: 0; right: 0; top: 0; height: 80px; box-sizing: border-box; z-index: 15; pointer-events: none; background: #08303b; border-bottom: 4px solid var(--gold); } }
 body.viewer .movebar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; margin: 0 -14px 6px; padding: 8px 14px 12px; min-height: 0; box-sizing: border-box;
   background: none; border: 0; border-radius: 0; box-shadow: none; font-size: 1rem; }
@@ -102,15 +102,30 @@ body.viewer .zoo .played .empty { display: none; }
 body.viewer .card { border-radius: 7px; border-color: var(--ink); }
 
 /* ---- sidebar: tabs, control panel, info boxes (every one a panel of its own), the log ---------------------------------------------------------------------------------- */
-body.viewer aside.sidebar { top: 8px; right: 12px; width: var(--sidebar-w); height: calc(var(--vh, 1vh) * 100 - 20px); gap: 10px; }
-body.viewer .sbtabs { flex: 0 0 auto; gap: 8px; height: 60px; margin-bottom: 8px; }
-body.viewer .sbtab { flex: 1 1 0; height: 60px; box-sizing: border-box; padding: 0; border: 4px solid var(--ink); border-radius: 14px; background: var(--paper); color: var(--ink); font: 400 17px 'Bowlby One', system-ui, sans-serif;
-  box-shadow: 0 4px 0 var(--ink); }
-body.viewer .sbtab:hover { background: #fff7dc; }
-body.viewer .sbtab.on { background: #3F9A4E; color: var(--paper); }
+body.viewer aside.sidebar { top: 90px; right: 12px; width: var(--sidebar-w); height: calc(var(--vh, 1vh) * 100 - 102px); gap: 10px; }          /* below the top row: the head row spans the full width, the sidebar starts under it */
+/* Control | Log: a segmented switch at the top of the sidebar (a dark track with a gold outline, the active half gold) */
+body.viewer .sbtabs { flex: 0 0 auto; gap: 3px; height: 46px; box-sizing: border-box; margin-bottom: 0; padding: 3px; border: 3px solid rgba(244, 182, 63, .5); border-radius: 999px; background: rgba(4, 26, 33, .7); }
+body.viewer .sbtab { flex: 1 1 0; height: auto; box-sizing: border-box; padding: 0; border: 0; border-radius: 999px; background: transparent; color: #A9CBD1; font: 400 17px 'Bowlby One', system-ui, sans-serif; box-shadow: none; }
+body.viewer .sbtab:hover { color: var(--paper); }
+body.viewer .sbtab.on { background: var(--gold); color: var(--ink); }
+body.viewer .sbtab:focus-visible { outline: 3px solid var(--paper); outline-offset: 1px; }
+/* the sidebar's own ground (desktop): the poster background turns deeper toward the right edge (the wall) and a fading dotted gold rail marks the boundary to the arena; both fixed, under the sidebar and the top row, over the band */
+@media (min-width: 900px) {
+  body.viewer .layout::before { content: ""; position: fixed; top: 0; right: 0; bottom: 0; width: calc(var(--sidebar-w) + 40px); z-index: 16; pointer-events: none;
+    background: linear-gradient(90deg, rgba(4, 26, 33, 0) 0, rgba(4, 26, 33, 0) 4%, rgba(4, 26, 33, .5) 30%, rgba(3, 20, 26, .88)); }
+  body.viewer .layout::after { content: ""; position: fixed; top: 92px; bottom: 8px; right: calc(var(--sidebar-w) + 16px); width: 8px; z-index: 17; pointer-events: none;
+    background: radial-gradient(circle, var(--gold) 3px, transparent 3.5px) 0 0 / 8px 16px repeat-y; -webkit-mask: linear-gradient(transparent, #000 6%, #000 94%, transparent); mask: linear-gradient(transparent, #000 6%, #000 94%, transparent); }
+  /* the top row now spans the whole width: the move text takes the room that Control | Log used to have, Round and Break end where the sidebar ends */
+  body.viewer .movebar { margin-right: calc(-1 * (var(--sidebar-w) + 28px)); padding-right: 12px; }
+  /* the bar grows in the fork / sandbox / live pages (choices, buttons) and now reaches over the sidebar: it lets clicks through except on its own pieces, and Round / Break stay in the top line so they never cover the Control | Log switch */
+  body.viewer .movebar { pointer-events: none; }
+  body.viewer .movebar > * { pointer-events: auto; }
+  body.viewer .hdrstats { align-self: flex-start; }
+}
 body.viewer .sbpane { gap: 10px; }
 body.viewer #paneControl { overflow-x: hidden; overflow-y: auto; padding: 0 8px 10px 0; margin-right: -8px; scrollbar-width: thin; scrollbar-color: rgba(248, 237, 203, .5) transparent; }
 body.viewer .sidebar .side { width: auto; margin: 0; display: grid; gap: 10px; flex: 0 0 auto; }
+@media (min-width: 900px) { body.viewer #paneControl > .bar, body.viewer #paneControl > .side { zoom: var(--sbz, 1); width: var(--sidebar-w); margin-left: auto; box-sizing: border-box; } }          /* fitSidebar(): scaled down together in a low window */
 
 /* control panel: the buttons, the line (a decoration that becomes the timeline), then move number | settings | fork */
 body.viewer .sidebar .bar { position: static; flex: 0 0 auto; display: grid; gap: 8px; padding: 10px 12px 12px; background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); color: var(--ink); }

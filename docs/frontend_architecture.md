@@ -14,7 +14,7 @@ Scope: `web/` of the replay / fork / sandbox / live play viewer (`replay.html`, 
 Desktop (window >= 900 px) is laid out at a fixed design viewport of 1920x1080 and zoomed (`body.style.zoom`, `fitScale` in `layout.js`) to the window width. Consequences for every future edit: do not add width / height `@media` queries or raw `vh` / `vw` for desktop styles (use `--vh` / `--vw`); when JS mixes `getBoundingClientRect` / mouse coordinates (zoomed px) with `offsetWidth` / `clientWidth` / CSS px (layout px), divide by `S.scale`. Below 900 px the old responsive rules (`@media (max-width: 899px) and ...`) apply unscaled.
 
 ## Page structure (changelog.md sections 3-4)
-`.layout` > `main` (move bar with the logo link `a.brand` (`web/brand/`, `scripts/build_logo.py`) at its left, shared area as a grid with equally high display and association elements (fitDisplay), zoos) + `aside.sidebar` (fixed on the right; tabs Control | Log above the panes). The move bar is sticky at the top of `main`: `.movepill` (step text / action bar) + `#hdrstats` (round and break pills). Structure CSS lives in `css/table.css`, the look in `css/parkposter.css` (loaded after `replay.css`; replay.css still holds the older component rules that the later files override). `sidebar.js` owns the tabs; `layout.js` owns scaling and the display fit (it accounts for the panels' border and padding).
+`.layout` > `main` (move bar with the logo link `a.brand` (`web/brand/`, `scripts/build_logo.py`) at its left, shared area as a grid with equally high display and association elements (fitDisplay), zoos) + `aside.sidebar` (fixed on the right, starting under the top row; the Control | Log switch above the panes; a shaded wall and a dotted rail behind / beside it, changelog.md section 42). The move bar is sticky at the top of `main`: `.movepill` (step text / action bar) + `#hdrstats` (round and break pills); the row spans the full window width, over the sidebar (section 42). Structure CSS lives in `css/table.css`, the look in `css/parkposter.css` (loaded after `replay.css`; replay.css still holds the older component rules that the later files override). `sidebar.js` owns the tabs; `layout.js` owns scaling and the display fit (it accounts for the panels' border and padding).
 
 Interfaces (API calls, URL parameters, browser storage keys): changelog.md section 0.1.
 
@@ -44,7 +44,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `layout.js` | `fitScale` (page zoom), `fitDisplay`; registers the resize listener |
 | `frames.js` | the frames of a replay step (step text, turn-end gate, decision), see changelog.md section 9 |
 | `notips.js` | one rule that removes tooltips from pictures (images, SVG, project panel, image-only elements), see changelog.md section 7 |
-| `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (now only resets the zoom of `#side`) |
+| `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (scales the control pane down in a low window via `--sbz`, min 0.8) |
 | `playback.js` | autoplay, speed, timeline (shown or hidden by the settings pop-up, changelog.md 8.10), `go(step, frame)`, `stepBy`, move list |
 | `settings.js` | settings pop-up (autoplay speed, timeline row on/off; localStorage `settings`), changelog.md 8.10 |
 | `sandbox.js` | sandbox lobby/setup tools |
