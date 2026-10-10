@@ -248,7 +248,7 @@ export function associationStrip(p, map, seat) {
     putUpgrade(175, STRIP.university[2] + 22, 84, 'Upgrade an action card (2nd university)');
   } else {
     const items = sets.map((n, i) => ({ n, kind: 'upgrade', side: i % 2 === 0 ? 1 : -1 }));                      // the first set on the left margin, the second on the right
-    // map 11 (Caves): the second set (2 partner zoos + 2 universities) gives an Extra Shift (the worker bonus of the map), the third one 1 conservation. The sets overlap, so the lines cross once: the
+    // map 11 (Caves): the second set (2 partner zoos + 2 universities) gives an Extra Shift (the Extra Shift tile), the third one 1 conservation. The sets overlap, so the lines cross once: the
     // third one bulges further out on the left
     if (map.id === '11') items.push({ n: 2, kind: 'extra-shift', side: -1 }, { n: 3, kind: 'conservation', side: 1, outer: true });
     items.forEach(({ n, kind, side, outer }) => {
@@ -265,7 +265,12 @@ export function associationStrip(p, map, seat) {
       }
       const [mx, my] = pt(0.5);
       if (kind === 'conservation') conservationBonus(s, mx, my, 84, 1, '1 conservation for the third set: a 3rd partner zoo and a 3rd university');
-      else if (kind === 'extra-shift') workerBonus(mx, my, 84, 'Extra Shift for the second set: a 2nd partner zoo and a 2nd university', 'extrashiftbonus');
+      else if (kind === 'extra-shift') {                                                  // the Extra Shift tile of the icon sheet (its own pentagon), the one of the Worker hex of map 11
+        const id = S.iconNames['bonus-extra-shift'] || 'r5c15', [w0, h0] = S.iconSizes[id] || [84, 84], w = w0 * 84 / h0;
+        const img = svg('image', { href: iconUrl(id), x: mx - w / 2, y: my - 42, width: w, height: 84, class: 'extrashiftbonus' });
+        const tt = svg('title'); tt.textContent = 'Extra Shift for the second set: a 2nd partner zoo and a 2nd university'; img.append(tt);
+        s.append(img);
+      }
       else putUpgrade(mx, my, 84, 'Upgrade an action card (set ' + n + ': a partner zoo and a university)');
     });
   }
