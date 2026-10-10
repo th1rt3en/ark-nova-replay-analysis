@@ -118,9 +118,9 @@ function dragRow(row, zone, shown, nodes) {
           if (other === node || !other.dataset || !other.dataset.key) continue;
           const r = other.getBoundingClientRect();
           if (cy < r.top - 40 || cy > r.bottom + 40) continue;
-          const mid = r.left + r.width / 2, before = other.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING;       // (node comes before other)
-          if (before && cx > mid) other.after(node);
-          else if (!before && cx < mid) other.before(node);
+          const mid = r.left + r.width / 2, after = other.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING;       // (the dragged card lies after the neighbour)
+          if (after && cx < mid) other.before(node);
+          else if (!after && cx > mid) other.after(node);
           else continue;
           refan(row);
         }
