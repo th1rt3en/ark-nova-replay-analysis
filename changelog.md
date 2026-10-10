@@ -1335,3 +1335,6 @@ Measured on the rendered pixels (4x zoom) as the gap between the ink of the butt
 - `.tldeco i` is centred on its box (`top: calc(50% - 1.5px)`).
 - In the replay (`body.viewer:not(.forkpage)`) the timeline / dotted line row moves down 3 px with a margin pair (`margin-top: 3px; margin-bottom: -3px`, so the bar keeps its height). The fork pages hide the autoplay button and need no shift.
 - Result: timeline 4 px above and below (head included); dotted line 15 / 14 px (replay) and 18 / 17 px (fork pages), the half pixel left is the 3 px line in an odd gap.
+
+## 40. Break pill: a coffee mug instead of the word
+The word "Break" in the orange pill is Ark Nova's own symbol now, the coffee mug: BGA's icon sheet has it (`break` = `r3c14`, `strbreak` = `r5c4` with stripes; `web/icons/names.json`), but only as a 96 x 108 px raster with pixelated edges, so `web/icons/break.svg` is the same shape redrawn as a vector (ink mug, paper steam that fades upwards; tracing the raster gave jagged edges). `headerStats()` (side-panel.js) puts `<img class="brkicon" src="/icons/break.svg" alt="Break">` (36 px high) in place of the label; the pill's tooltip still says "Break track: ...". The pill is about 14 px narrower.

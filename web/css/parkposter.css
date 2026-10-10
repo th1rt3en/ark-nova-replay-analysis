@@ -65,7 +65,7 @@ body.viewer .pill.rnd .lab { font: 700 13px/1 'Barlow Condensed'; letter-spacing
 body.viewer .pill.rnd .rn { font: 400 28px/1.05 'Bowlby One', system-ui, sans-serif; color: var(--rust); margin-top: 2px; }
 body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
 body.viewer .pill.brk { gap: 12px; padding: 0 18px 0 22px; background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
-body.viewer .pill.brk .lab { font-size: 20px; }
+body.viewer .pill.brk .brkicon { height: 36px; width: auto; display: block; flex: none; }
 body.viewer .pill.brk .bn { font: 400 34px/1 'Bowlby One'; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
 body.viewer .pill.brk .bn small { font-size: 22px; margin-left: 1px; }
 body.viewer .pips { display: flex; gap: 5px; }

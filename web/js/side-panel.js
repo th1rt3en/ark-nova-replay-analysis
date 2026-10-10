@@ -81,7 +81,8 @@ function headerStats(st, flash) {
   for (let k = 0; k < 9; k++) pips.append(el('i', k < st.break_position - 1 ? 'done' : k === st.break_position - 1 ? 'cur' : ''));
   const num = el('b', 'bn', st.break_position);
   num.append(el('small', '', '/9'));
-  brk.append(el('span', 'lab', 'Break'), num, pips);
+  const mug = el('img', 'brkicon'); mug.src = '/icons/break.svg'; mug.alt = 'Break'; mug.draggable = false;            // (Ark Nova's symbol for the break: a coffee mug)
+  brk.append(mug, num, pips);
   root.append(rnd, brk);
   const menu = PLAY ? gameMenu() : null;                                 // concede / propose to abandon / end on overtime
   if (menu) root.append(menu);
