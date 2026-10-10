@@ -33,18 +33,22 @@ const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.
 // ---- the fan appears: "Deal" when the hand is dealt for the first time (the hand was empty before: start of the game), "Rise and spread" otherwise (page load, the setting changed). The cards of a fan
 // that is drawn again while the intro runs go on where they were (negative delay), as every redraw replaces the card elements.
 const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110;
-let fanIntroState = null, fanDone = false, fanSawEmpty = false;
-document.addEventListener('handmode', () => { fanDone = false; fanSawEmpty = false; fanIntroState = null; });       // (the setting changed: the next fan rises and spreads)
-function fanIntro(row, handCount) {
+let fanIntroState = null, fanDone = false;
+const lastCount = {};                                                                                        // (cards in the hand at the last drawing, per seat: 0 -> more = dealt)
+document.addEventListener('handmode', () => { fanDone = false; fanIntroState = null; });       // (the setting changed: the next fan rises and spreads)
+function fanIntro(row, handCount, seat) {
+  const prev = lastCount[seat]; lastCount[seat] = handCount;
   const cards = [...row.children].filter((c) => c.classList.contains('card') && !c.classList.contains('card-gone'));
-  if (!cards.length || !cards[0].animate) { if (!fanDone && handCount === 0) fanSawEmpty = true; return; }
+  if (!cards.length || !cards[0].animate) return;
   const now = Date.now();
-  if (!fanIntroState && !fanDone) { fanIntroState = { kind: fanSawEmpty ? 'deal' : 'rise', start: now }; fanDone = true; }
+  if (prev === 0 && handCount > 0 && (!fanIntroState || fanIntroState.kind !== 'deal')) { fanIntroState = { kind: 'deal', start: now }; fanDone = true; }
+  else if (!fanIntroState && !fanDone) { fanIntroState = { kind: 'rise', start: now }; fanDone = true; }
   const s = fanIntroState; if (!s) return;
   const total = s.kind === 'rise' ? FAN_RISE_MS : FAN_DEAL_MS + (cards.length - 1) * FAN_DEAL_GAP, elapsed = now - s.start;
   if (elapsed >= total) { fanIntroState = null; return; }
   const n = cards.length, step = n > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 0, hk = parseFloat(getComputedStyle(document.body).getPropertyValue('--hk')) || 1.5, rise = 240 * hk;
   cards.forEach((c, i) => {
+    if (s.kind === 'deal') c.classList.remove('card-new');                                          // (the green "new card" flash would play on top of the deal)
     c.getAnimations().forEach((a) => { if (a.constructor === Animation) a.cancel(); });          // (only our own earlier intro, not CSS transitions)
     const fin = getComputedStyle(c).transform, sx = ((n - 1) / 2 - i) * step;
     if (s.kind === 'rise') {
@@ -113,7 +117,7 @@ export function renderDock(st) {
     panel.append(head, shown);
     panel.style.setProperty('--pc', seatColor(shownSel.seat));
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
-    fanIntro(shown, st && st.players[shownSel.seat] ? st.players[shownSel.seat].hand.length : 1);
+    fanIntro(shown, st && st.players[shownSel.seat] ? st.players[shownSel.seat].hand.length : 1, shownSel.seat);
   } else dock.replaceChildren(bar);
 }
 
