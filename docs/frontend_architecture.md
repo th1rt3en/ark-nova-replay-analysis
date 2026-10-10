@@ -63,3 +63,6 @@ Import graph is cyclic on purpose (e.g. `shared.js` <-> `sandbox.js`). That is s
 3. Only export what another module imports.
 4. Never introduce a bundler, TypeScript, or a framework.
 5. After any change, verify: load `/replay.html?table=<id>#<step>`, `/fork.html?table=<id>&step=<n>&seed=1` and `/sandbox.html`; zero console errors; compare against the previous version visually at 1600x900 and 700x900.
+
+
+**Hand size:** `settings.js` owns `S.handScale` (0.5-2, default 1, saved in `localStorage.settings.hand`) and writes it as `--hs` on `body` (`applyHandScale()`); `parkposter.css` derives `--hk = 1.5 * --hs` and sizes the whole dock from it. Do not hard-code pixel sizes in the dock rules.
