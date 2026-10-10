@@ -121,7 +121,6 @@ body.viewer .sidebar .controls .jump { order: 1; flex: 1 1 0; min-width: 0; disp
   font: 600 17px 'Barlow Condensed', system-ui, sans-serif; white-space: nowrap; }
 body.viewer .sidebar .controls .jump input { flex: 1 1 0; min-width: 0; width: 3rem; padding: 0; border: 0; background: transparent; color: var(--ink); font: 700 22px 'Barlow Condensed', system-ui, sans-serif; box-shadow: none; -moz-appearance: textfield; }
 body.viewer .sidebar .controls .jump input:focus { outline: 0; }
-body.viewer .jumpof { font: 600 15px 'Barlow Condensed'; opacity: .55; margin-left: auto; }
 body.viewer .sidebar .controls .forkbtn { order: 3; width: auto; height: auto; border-radius: 999px; padding: 9px 16px; background: var(--teal); color: var(--paper); border: 3px solid var(--ink); box-shadow: none; font: 400 15px 'Bowlby One', system-ui, sans-serif; }
 body.viewer .sidebar .controls .forkbtn:hover:not(:disabled) { background: var(--teal2); transform: none; }
 body.viewer .sidebar .controls .forkbtn:disabled { opacity: .45; }
@@ -140,7 +139,6 @@ body.viewer .tlhead { top: -6px; bottom: -6px; width: 8px; margin-left: -4px; bo
 /* info boxes */
 body.viewer .pp { --pc: #888; padding: 0; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); overflow: hidden; }
 body.viewer .pp:last-child { border-radius: 20px; }
-body.viewer .pp.active { box-shadow: 0 6px 0 var(--ink), 0 0 0 5px var(--gold); }
 body.viewer .pphead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; padding: 4px 8px 4px 14px; background: var(--pc); color: #fff; border-bottom: 4px solid var(--ink); }
 body.viewer .pp.light .pphead { color: var(--ink); }
 body.viewer .pphead .who { min-width: 0; display: flex; align-items: center; gap: 9px; }
