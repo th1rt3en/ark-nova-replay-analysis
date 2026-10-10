@@ -28,6 +28,8 @@ try { S.dockSel = JSON.parse(localStorage.getItem('dockSel') || 'null'); } catch
 if (!S.dockSel) S.dockSel = { seat: 0, kind: 'hand' };
 try { S.dockHidden = localStorage.getItem('dockHidden') === '1'; } catch (e) { /* no storage */ }
 const saveDock = () => { if (MINIGAME) return; try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
+const KIND_NAME = { hand: 'hand', endgame: 'endgame cards', stored: 'storage (Caves)' };
+const KIND_ICON = { hand: 'r4c7', endgame: 'r4c11', stored: 'r5c2' };       // (the store icon of the sheet for the cards under the notepad of map 11)
 export function renderDock(st) {
   let dock = $('dock');
   if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
@@ -38,21 +40,22 @@ export function renderDock(st) {
   const shownSel = S.pov !== null && S.dockSel && S.dockSel.seat !== S.pov ? { seat: S.pov, kind: S.dockSel.kind } : S.dockSel;      // (a player's point of view has no way to the other player's cards)
   st.players.forEach((p, seat) => {
     if (hides(seat)) return;
-    const cards = { hand: p.hand, endgame: p.endgame_hand || [] };
+    const cards = { hand: p.hand, endgame: p.endgame_hand || [], stored: p.stored || [] };
+    const kinds = p.map_id === '11' ? ['hand', 'endgame', 'stored'] : ['hand', 'endgame'];        // (map 11, Caves: the cards stored under the notepad are a third zone, apart from the hand)
     const group = el('div', 'dockgroup');                               // the two buttons of a player (hand | endgame cards) switch between that player's cards
     group.style.setProperty('--pc', seatColor(seat));
     group.append(el('span', 'dockwho', S.replay.players[seat].name));
     const pair = el('div', 'dockpair');
-    for (const kind of ['hand', 'endgame']) {
+    for (const kind of kinds) {
       const row = cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, !MINIGAME);                  // (a mini game: no highlighting, no dragging; the page's own hook makes the cards the thing to click)
       rows[seat + ':' + kind] = row;                                   // (built for both players every time, so the arrivals and departures of the cards are tracked)
       const on = !S.dockHidden && shownSel && shownSel.seat === seat && shownSel.kind === kind;
       const b = el('button', 'dockbtn' + (on ? ' on' : ''));
       b.type = 'button';
-      const label = S.replay.players[seat].name + ': ' + (kind === 'hand' ? 'hand' : 'endgame cards') + ' (' + cards[kind].length + ')';
+      const label = S.replay.players[seat].name + ': ' + KIND_NAME[kind] + ' (' + cards[kind].length + ')';
       b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
       b.style.setProperty('--pc', seatColor(seat));
-      const img = el('img'); img.src = iconUrl(kind === 'hand' ? 'r4c7' : 'r4c11'); img.alt = ''; b.append(img, el('span', 'dockn', cards[kind].length));
+      const img = el('img'); img.src = iconUrl(KIND_ICON[kind]); img.alt = ''; b.append(img, el('span', 'dockn', cards[kind].length));
       b.onclick = () => {
         S.dockSel = { seat, kind };                                      // (the button of the open cards folds them away: the arrow at the end does that too)
         S.dockHidden = on;
@@ -76,7 +79,7 @@ export function renderDock(st) {
     const head = el('div', 'dockhead');
     const who = el('b', '', S.replay.players[shownSel.seat].name);
     who.style.color = seatColor(shownSel.seat);
-    head.append(who, document.createTextNode(shownSel.kind === 'hand' ? ' - hand' : ' - endgame cards'));
+    head.append(who, document.createTextNode(' - ' + KIND_NAME[shownSel.kind]));
     panel.append(head, rows[shownSel.seat + ':' + shownSel.kind]);
     panel.style.setProperty('--pc', seatColor(shownSel.seat));
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
