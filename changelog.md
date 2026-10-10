@@ -1313,3 +1313,6 @@ In the `handmode` listener: switching to the fan from an **unfolded** tray makes
 
 ## 34. Draft lightbox centred on the whole window
 `.draftbox` (parkposter.css) had `padding-right: sidebar width + 24px`, so the action card draft panel sat in the middle of the area left of the sidebar (set in the commit "draft lightbox dims the whole window"). The padding is gone: the panel is centred on the window (measured: centre = half the window width at 1920 and 1366 px wide).
+
+## 35. Spectator dialog: smaller, warm gold chips
+The first-visit dialog (`#povChoice`, pov.js) was sized for a poster (1100 px wide, 36 px title, 96 px chips) and looked big next to the action card window. Now it is 880 px wide like that window (882), the title is Bowlby One 24 px, the chips 60 px high (20 px names, 4 px border, 17 px colour dot) and Confirm 52 px (20 px), spacing 22 px. Before a choice both chips are warm gold (`#F7DD9B`, hover `#F4D07A`); the chosen chip is sun orange as before. The two duplicate `.povdot` rules were merged.
