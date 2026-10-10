@@ -7,7 +7,7 @@ import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { renderDock } from './dock.js';
 import { forkBar, keepSel, playFork } from './fork.js';
 import { render } from './main.js';
-import { go } from './playback.js';
+import { atEnd, atStart, go, stepBy } from './playback.js';
 import { frameKind } from './frames.js';
 
 
@@ -103,6 +103,19 @@ export function draftOpen(st, i = S.step) {
   if (d.stage !== 'done') return true;
   const prev = i > 0 ? S.replay.steps[i - 1].state : null;
   return !!prev && !!prev.draft && prev.draft.stage !== 'done';
+}
+// The Back / Next buttons at the sides of the draft lightbox (the real control panel lies under the dim and looks out of use): a round button and under it the word with a keycap
+// of the arrow key that does the same (ArrowLeft / ArrowRight step through the frames, main.js).
+const NAV_ARROW = { '-1': '<path d="M15 4 7 12l8 8"/>', '1': '<path d="M9 4l8 8-8 8"/>' };
+const NAV_KEY = { '-1': '<path d="M19 12H6m5-6-6 6 6 6"/>', '1': '<path d="M5 12h13m-5-6 6 6-6 6"/>' };
+function draftNav(d) {
+  const b = el('button', 'draftnav ' + (d < 0 ? 'back' : 'next'));
+  b.type = 'button'; b.title = (d < 0 ? 'Back' : 'Next') + ' (arrow key ' + (d < 0 ? 'left' : 'right') + ')';
+  b.disabled = d < 0 ? atStart() : atEnd();
+  b.innerHTML = '<span class="dnbtn"><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_ARROW[d] + '</svg></span>'
+    + '<span class="dnlab">' + (d < 0 ? 'Back' : 'Next') + '<kbd><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_KEY[d] + '</svg></kbd></span>';
+  b.onclick = () => { stepBy(d); };
+  return b;
 }
 export const draftMarks = new Set();                                          // the cards the viewer highlighted with a click: cleared at every step
 function draftBar(bar, d) {
@@ -210,7 +223,9 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     const pop = el('div', 'draftpop');
     if (draftBar(pop, st.draft)) {
       pop.style.setProperty('--cn', String(Math.max(3, ...[0, 1].map((i) => (st.draft.offers[i] || []).length + (st.draft.stage === 'pick2' ? 1 : 0)))));
-      popup.append(pop); popup.hidden = false; bar.hidden = true;
+      const wrap = el('div', 'draftwrap');
+      wrap.append(draftNav(-1), pop, draftNav(1));
+      popup.append(wrap); popup.hidden = false; bar.hidden = true;
       return;
     }
   }

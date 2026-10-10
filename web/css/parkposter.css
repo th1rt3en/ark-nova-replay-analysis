@@ -361,6 +361,18 @@ body.viewer .draftbox { position: fixed; left: 0; top: 0; z-index: 90; box-sizin
   background: rgba(8, 40, 50, .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }       /* the dim covers the whole window (move bar, sidebar, hand included) but lets clicks through, so the playback buttons keep working; the panel is centred on the whole window (sidebar included) */
 body.viewer .draftbox[hidden] { display: none; }
 body.viewer .draftpop { pointer-events: auto; box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 0; padding: 40px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
+body.viewer .draftwrap { display: flex; align-items: center; justify-content: center; gap: 26px; max-width: 100%; }          /* Back | panel | Next */
+body.viewer .draftwrap .draftpop { min-width: 0; max-width: calc(100vw - 2 * 118px - 52px); max-width: calc(var(--vw, 1vw) * 100 - 2 * 118px - 52px); }
+body.viewer .draftnav { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: var(--paper); font: 700 18px 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+body.viewer .draftnav .dnbtn { width: 68px; height: 68px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); transition: background .12s, transform .12s; }
+body.viewer .draftnav .dnbtn svg { width: 40px; height: 40px; fill: none; stroke: var(--ink); stroke-width: 4.2; stroke-linecap: round; stroke-linejoin: round; }
+body.viewer .draftnav:hover:not(:disabled) .dnbtn { background: var(--gold); transform: translateY(-2px); }
+body.viewer .draftnav:active:not(:disabled) .dnbtn { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+body.viewer .draftnav:focus-visible .dnbtn { outline: 3px solid var(--paper); outline-offset: 3px; }
+body.viewer .draftnav:disabled { opacity: .35; cursor: default; }
+body.viewer .draftnav .dnlab { display: flex; align-items: center; gap: 8px; }
+body.viewer .draftnav kbd { display: grid; place-items: center; width: 30px; height: 30px; box-sizing: border-box; border-radius: 8px; background: var(--paper); border: 2px solid var(--ink); box-shadow: 0 3px 0 var(--ink); }          /* (the keycap of the arrow key on the keyboard) */
+body.viewer .draftnav kbd svg { width: 16px; height: 16px; fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 body.viewer .draftpop .draftgroup { flex: none; width: 100%; padding: 0; border: 0; }
 body.viewer .draftpop .draftgroup + .draftgroup { padding: 14px 0 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
 body.viewer .draftpop .drafthead { line-height: 1.2; font: 700 24px/1.2 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
