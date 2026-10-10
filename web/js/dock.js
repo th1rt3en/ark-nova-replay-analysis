@@ -32,24 +32,29 @@ try { S.dockHidden = localStorage.getItem('dockHidden') === '1'; } catch (e) { /
 const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
 // ---- the fan appears: "Deal" when the hand is dealt for the first time (the hand was empty before: start of the game), "Rise and spread" otherwise (page load, the setting changed). The cards of a fan
 // that is drawn again while the intro runs go on where they were (negative delay), as every redraw replaces the card elements.
-const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110;
+const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110, DROP_MS = 560, DROP_GAP = 100, TRAY_SLIDE_MS = 350;       // (the drop: the starting hand falls into the floating tray once it has slid up)
 let fanIntroState = null, fanDone = false;
 const lastCount = {};                                                                                        // (per seat: the cards in the hand at the last drawing and whether the game was still in its setup; only setup with an empty hand -> cards = the starting hand is dealt)
 document.addEventListener('handmode', () => { fanDone = false; fanIntroState = null; });       // (the setting changed: the next fan rises and spreads)
-function fanIntro(row, handCount, seat, setup) {
+function fanIntro(row, handCount, seat, setup, tray) {
   const prev = lastCount[seat]; lastCount[seat] = { count: handCount, setup };
   const cards = [...row.children].filter((c) => c.classList.contains('card') && !c.classList.contains('card-gone'));
   if (!cards.length || !cards[0].animate) return;
   const now = Date.now();
-  if (prev && prev.setup && prev.count === 0 && handCount > 0 && (!fanIntroState || fanIntroState.kind !== 'deal')) { fanIntroState = { kind: 'deal', start: now }; fanDone = true; }
-  else if (!fanIntroState && !fanDone) { fanIntroState = { kind: 'rise', start: now }; fanDone = true; }
-  const s = fanIntroState; if (!s) return;
-  const total = s.kind === 'rise' ? FAN_RISE_MS : FAN_DEAL_MS + (cards.length - 1) * FAN_DEAL_GAP, elapsed = now - s.start;
+  if (prev && prev.setup && prev.count === 0 && handCount > 0 && (!fanIntroState || fanIntroState.kind === 'rise')) { fanIntroState = { kind: tray ? 'drop' : 'deal', start: now }; fanDone = true; }
+  else if (!tray && !fanIntroState && !fanDone) { fanIntroState = { kind: 'rise', start: now }; fanDone = true; }
+  const s = fanIntroState; if (!s || (s.kind === 'drop') !== !!tray) return;                   // (the fan and the tray each play their own intro)
+  const total = s.kind === 'rise' ? FAN_RISE_MS : s.kind === 'drop' ? TRAY_SLIDE_MS + DROP_MS + (cards.length - 1) * DROP_GAP : FAN_DEAL_MS + (cards.length - 1) * FAN_DEAL_GAP, elapsed = now - s.start;
   if (elapsed >= total) { fanIntroState = null; return; }
   const n = cards.length, step = n > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 0, hk = parseFloat(getComputedStyle(document.body).getPropertyValue('--hk')) || 1.5, rise = 240 * hk;
   cards.forEach((c, i) => {
     if (s.kind === 'deal') c.classList.remove('card-new');                                          // (the green "new card" flash would play on top of the deal)
     c.getAnimations().forEach((a) => { if (a.constructor === Animation) a.cancel(); });          // (only our own earlier intro, not CSS transitions)
+    if (s.kind === 'drop') {                                         // the tray is empty until each card falls in (hidden while it waits: fill backwards)
+      c.animate([{ transform: 'translateY(-260px) rotate(' + (i % 2 ? -9 : 9) + 'deg)', opacity: 0 }, { opacity: 1, offset: .2 }, { transform: 'translateY(6px) rotate(0deg)', opacity: 1, offset: .75 }, { transform: 'none', opacity: 1 }],
+        { duration: DROP_MS, delay: TRAY_SLIDE_MS + i * DROP_GAP - elapsed, easing: 'ease-out', fill: 'backwards' });
+      return;
+    }
     const fin = getComputedStyle(c).transform, sx = ((n - 1) / 2 - i) * step;
     if (s.kind === 'rise') {
       c.animate([{ transform: 'translateY(' + rise + 'px) translateX(' + sx + 'px) rotate(0deg)' }, { transform: 'translateY(0px) translateX(' + sx + 'px) rotate(0deg)', offset: .38 }, { transform: fin }],
@@ -141,7 +146,10 @@ function placeTray(wrap) { const b = trayBox(); wrap.style.setProperty('--maxw',
 window.addEventListener('resize', () => { const w = document.querySelector('.handtray'); if (w) placeTray(w); });
 function drawTray(dock, rows, shownSel, st) {
   const row = shownSel && rows[shownSel.seat + ':' + shownSel.kind];
-  if (!row || (st && st.phase === 'setup' && st.draft && st.draft.stage !== 'done')) { dock.replaceChildren(); return; }       // (no tray at all during the action card draft: nothing to show yet)
+  if (!row || (st && st.phase === 'setup' && st.draft && st.draft.stage !== 'done')) {
+    const sx = shownSel ? shownSel.seat : S.dockSel.seat; if (st && st.players[sx]) lastCount[sx] = { count: st.players[sx].hand.length, setup: st.phase === 'setup' };       // (so the deal after the draft is recognised)
+    dock.replaceChildren(); return;
+  }       // (no tray at all during the action card draft: nothing to show yet)
   const seat = shownSel.seat, folded = S.dockHidden;
   row.querySelectorAll('.card-gone').forEach((g) => g.remove());
   const n = [...row.children].filter((c) => c.classList.contains('card')).length, cols = Math.max(1, Math.min(n, TRAY_ROW));
@@ -160,6 +168,7 @@ function drawTray(dock, rows, shownSel, st) {
   const head = el('div', 'trayhead');
   head.onclick = toggleDock;
   frame.replaceChildren(head, row);
+  if (shownSel.kind === 'hand') fanIntro(row, st.players[seat].hand.length, seat, st.phase === 'setup', true);
   const kids = [];
   for (const kind of ['hand', 'endgame']) {
     const cnt = (kind === 'hand' ? S.replay.steps[S.step].state.players[seat].hand : S.replay.steps[S.step].state.players[seat].endgame_hand || []).length;
