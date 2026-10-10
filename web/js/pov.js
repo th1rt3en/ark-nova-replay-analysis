@@ -61,14 +61,18 @@ export function askSpectated() {
   const box = el('div', 'modalbox povbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Choose which player to spectate');
   box.append(el('div', 'modalhead', 'Choose which player to spectate'));
   const row = el('div', 'povchips');
-  S.replay.players.forEach((pl, seat) => {
-    const b = el('button', 'povchip'); b.type = 'button';
+  let picked = null;
+  const ok = el('button', 'povok', 'Confirm'); ok.type = 'button'; ok.disabled = true;
+  const chips = S.replay.players.map((pl, seat) => {
+    const b = el('button', 'povchip'); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
     b.style.setProperty('--pc', seatColor(seat));
     b.append(el('i', 'povdot'), el('span', 'povname', pl.name));
-    b.onclick = () => { modal.remove(); chooseSpectated(seat); };
+    b.onclick = () => { picked = seat; ok.disabled = false; chips.forEach((c, i) => { c.classList.toggle('on', i === seat); c.setAttribute('aria-pressed', String(i === seat)); }); };   // (a chip only selects: Confirm applies the choice, so it can be changed first)
     row.append(b);
+    return b;
   });
-  box.append(row); modal.append(box); document.body.append(modal);
+  ok.onclick = () => { if (picked === null) return; modal.remove(); chooseSpectated(picked); };
+  box.append(row, ok); modal.append(box); document.body.append(modal);
 }
 function chooseSpectated(seat) {
   S.orient = seat; S.pov = seat;
