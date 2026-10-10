@@ -107,7 +107,7 @@ Two daily mini games to start, more later: **Daily starting hand** and **Who's a
 
 - **One folder per game.** Server code in `src/ark_nova/minigames/<key>/`, page code in `web/minigames/<key>/`, tests in `tests/minigames/<key>/`. A game never imports another game. A test fails if it does.
 - **A small platform in between** (`src/ark_nova/minigames/platform/`): the registry, the daily rollover, the puzzle and submission stores, the leaderboard queries, the shared redaction checks and the shared page shell (login prompt, anonymous choice, leaderboard widget). The platform only knows games through the contract below.
-- **A manifest decides what exists:** `data_manual/minigames.json`, a list of `{key, enabled}`. Disabled or missing means: no routes (404), no card on the start page, no rollover. Removing a game is deleting its three folders and its manifest line. `scripts/minigames_purge.py <key>` deletes its stored puzzles, submissions and aggregates (every stored row carries `game_key`).
+- **A manifest decides what exists:** `data_manual/minigames.json`, a list of `{key, enabled, title, blurb}`. Disabled or missing means: no routes (404), no tile on the hub, no rollover. Removing a game is deleting its three folders and its manifest line. `scripts/minigames_purge.py <key>` deletes its stored puzzles, submissions and aggregates (every stored row carries `game_key`).
 - **The contract** (a Python `Protocol`; every game implements all of it):
 
 | Method | What it does |
@@ -184,7 +184,16 @@ brier = (p1 - o1)^2 + (p2 - o2)^2 + (pt - ot)^2        # 0 is perfect, 2 is the 
 | `GET /api/minigames/{key}/leaderboard?period=all\|month` | The board of that game. |
 | `POST /internal/minigames/rollover` | Signed, called by the cron trigger. |
 
-Pages: `web/minigames/<key>.html` for each game, a "Mini games" card on the start page for each enabled game, and the shared shell (login prompt, anonymous choice, leaderboard).
+Pages: one **Mini games hub** (`web/minigames/index.html`), one page per game (`web/minigames/<key>.html`), and the shared shell (login prompt, anonymous choice, leaderboard). See "Finding the games" below.
+
+### Finding the games: start page and hub
+
+- **The start page** (`web/index.html`) gets one card, "Mini games", next to the existing cards (replay, sandbox, live, map editor). It always shows, even when only one game is enabled.
+- **The card links to the hub** (`web/minigames/index.html`). The hub lists every enabled game as a tile: its title, a one-line description, and for the logged-in or anonymous visitor whether today's puzzle is played (and the score if so). Each tile links to that game's page. After the last tile there is a quiet tile that says **"More mini games coming soon"**.
+- **The hub is built from the data, not edited by hand.** It reads `GET /api/minigames`, which returns the enabled games from the manifest with their `title`, `blurb` and today's status. Adding a game adds its tile, removing a game removes it, and neither touches the hub or the start page. The manifest line carries `title` and `blurb`, so the hub can list a game without loading its code.
+- **Coming-soon tile** is fixed text in the hub page, not a game. It is the same whether zero, one or many games exist.
+- **Navigation:** each game page has a "Mini games" link back to the hub, and the hub links back to the start page.
+- **Tests:** the platform test renders the hub against a fake manifest with zero, one and two games and checks the tiles and the coming-soon tile.
 
 ## API and pages
 
@@ -244,6 +253,7 @@ Pages: a login and signup dialog and a user menu in the site header (every page 
 
 - The `MiniGame` contract, the registry and manifest, the three shared tables, the rollover route and cron trigger with the lazy fallback, the shared redaction checks, the leaderboard queries, `scripts/minigames_purge.py`.
 - The shared shell (login prompt, anonymous choice, leaderboard widget) and the `MINIGAME_MODE` of the viewer.
+- The "Mini games" card on the start page, the hub page built from `GET /api/minigames` (with the "More mini games coming soon" tile) and its test.
 - The fakes and the contract test suite, run against a tiny example game inside the tests.
 
 ### M1. Daily starting hand (Small to medium)
