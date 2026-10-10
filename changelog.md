@@ -1276,7 +1276,7 @@ The fan (`.dockpanel .cards`) has a dark glow around the silhouette of the whole
 ## 26. Fan intro animation (`dock.js`)
 
 When the hand is shown as a fan, it no longer blinks in. `fanIntro(row, handCount)` runs after the fan is built in `renderDock`:
-- **Deal** (the hand of that seat had 0 cards at the previous drawing and now has some, i.e. the starting hand is dealt; works every time, also after jumping back in the replay; the green `card-new` flash is removed from the cards while they are dealt): cards fly up from below one after another (`FAN_DEAL_MS` 520 ms, `FAN_DEAL_GAP` 110 ms apart), fading in.
+- **Deal** (only while the game is still in its setup: the hand of that seat was empty at the previous drawing in the setup phase and now has cards, i.e. the starting hand is dealt, also after jumping back in the replay). A hand that falls to 0 cards during the game and is refilled does not animate. The `card-new` flash is not used any more (section 27).
 - **Rise and spread** (page load, switching the hand display setting): the closed stack rises from below, then spreads from the centre to both sides into the fan (`FAN_RISE_MS` 900 ms).
 - Only once per appearance (`fanDone`, reset by the `handmode` event). `renderDock` rebuilds the fan on every redraw, so a running intro continues with a negative `delay` (elapsed time) instead of restarting; earlier intro animations on the same card are cancelled first (only plain `Animation`s, CSS transitions are left alone).
 - Not gated by `prefers-reduced-motion` (like the tray slide-up; Windows with animation effects off reports it, and the intro would never show).

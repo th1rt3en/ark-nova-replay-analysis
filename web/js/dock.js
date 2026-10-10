@@ -34,14 +34,14 @@ const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.
 // that is drawn again while the intro runs go on where they were (negative delay), as every redraw replaces the card elements.
 const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110;
 let fanIntroState = null, fanDone = false;
-const lastCount = {};                                                                                        // (cards in the hand at the last drawing, per seat: 0 -> more = dealt)
+const lastCount = {};                                                                                        // (per seat: the cards in the hand at the last drawing and whether the game was still in its setup; only setup with an empty hand -> cards = the starting hand is dealt)
 document.addEventListener('handmode', () => { fanDone = false; fanIntroState = null; });       // (the setting changed: the next fan rises and spreads)
-function fanIntro(row, handCount, seat) {
-  const prev = lastCount[seat]; lastCount[seat] = handCount;
+function fanIntro(row, handCount, seat, setup) {
+  const prev = lastCount[seat]; lastCount[seat] = { count: handCount, setup };
   const cards = [...row.children].filter((c) => c.classList.contains('card') && !c.classList.contains('card-gone'));
   if (!cards.length || !cards[0].animate) return;
   const now = Date.now();
-  if (prev === 0 && handCount > 0 && (!fanIntroState || fanIntroState.kind !== 'deal')) { fanIntroState = { kind: 'deal', start: now }; fanDone = true; }
+  if (prev && prev.setup && prev.count === 0 && handCount > 0 && (!fanIntroState || fanIntroState.kind !== 'deal')) { fanIntroState = { kind: 'deal', start: now }; fanDone = true; }
   else if (!fanIntroState && !fanDone) { fanIntroState = { kind: 'rise', start: now }; fanDone = true; }
   const s = fanIntroState; if (!s) return;
   const total = s.kind === 'rise' ? FAN_RISE_MS : FAN_DEAL_MS + (cards.length - 1) * FAN_DEAL_GAP, elapsed = now - s.start;
@@ -117,7 +117,7 @@ export function renderDock(st) {
     panel.append(head, shown);
     panel.style.setProperty('--pc', seatColor(shownSel.seat));
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
-    fanIntro(shown, st && st.players[shownSel.seat] ? st.players[shownSel.seat].hand.length : 1, shownSel.seat);
+    fanIntro(shown, st && st.players[shownSel.seat] ? st.players[shownSel.seat].hand.length : 1, shownSel.seat, !!(st && st.phase === 'setup'));
   } else dock.replaceChildren(bar);
 }
 
