@@ -262,6 +262,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     }
     bar.append(b);
   });
+  if (!FORK) return;                                                    // the replay shows no X token controls (the log already tells what was spent); fork / sandbox / live keep them
   // spending X tokens raises the strength of the chosen card: - (nothing spent yet, so greyed out) | X tokens | + (greyed out without tokens)
   const xs = (sign, label, off) => {
     const btn = el('button', 'xstep', sign);
