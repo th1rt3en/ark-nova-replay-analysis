@@ -99,18 +99,20 @@ function dragRow(row, zone, shown, nodes) {
         const dx = (cx - startX) / k - (node.offsetLeft - home.left), dy = (cy - startY) / k - (node.offsetTop - home.top);
         node.style.setProperty('--dx', dx.toFixed(1) + 'px'); node.style.setProperty('--dy', dy.toFixed(1) + 'px');
       };
-      let cx = startX, cy = startY, area = null;
+      let cx = startX, cy = startY, area = null, grab = null;
       const move = (ev) => {
         cx = ev.clientX; cy = ev.clientY;
         if (!moved) {
           if (Math.hypot(cx - startX, cy - startY) < 6) return;       // (a click, not a drag)
           moved = true; node.classList.add('dragging'); hidePreview();
           document.body.classList.add('card-dragging');               // (keeps the raised hand up while the pointer is outside its hit box)
-          area = row.getBoundingClientRect();
+          area = row.getBoundingClientRect(); grab = node.getBoundingClientRect();       // (grab: where the card lies, to keep all of it in the window)
         }
         if (area) {                                                   // (the card cannot leave the neighbourhood of the hand: the pointer is held inside it)
-          cx = Math.min(Math.max(cx, area.left - 60 * k), area.right + 60 * k);
-          cy = Math.min(Math.max(cy, area.top - 90 * k), area.bottom + 40 * k);
+          const m = k * (S.handScale || 1);                          // (the margins grow with the size of the cards in the hand; 60 / 90 / 40 px at the default size)
+          const gl = startX - grab.left, gr = grab.right - startX, gt = startY - grab.top, gb = grab.bottom - startY;
+          cx = Math.min(Math.max(cx, area.left - 60 * m, gl + 4), area.right + 60 * m, innerWidth - gr - 4);
+          cy = Math.min(Math.max(cy, area.top - 90 * m, gt + 4), area.bottom + 40 * m, innerHeight - gb + 40);       // (and never leave the window)
         }
         for (const other of [...row.children]) {                      // (the neighbour whose middle the pointer has passed swaps places with the card)
           if (other === node || !other.dataset || !other.dataset.key) continue;
