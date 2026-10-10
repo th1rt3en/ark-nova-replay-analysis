@@ -53,6 +53,18 @@ function tile(cls, title, img, value, sub) {
   return t;
 }
 const plainIcon = (id, h) => { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = h; return i; };
+// The number is centred by its ink, not by its advance width: the digits of Bowlby One have uneven side bearings (a 1 sat 1.6 px left of the middle, a 10 1.2 px right).
+function centreInk(node) {
+  const shift = () => {
+    const cs = getComputedStyle(node), ctx = (centreInk.ctx = centreInk.ctx || document.createElement('canvas').getContext('2d'));
+    ctx.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    const m = ctx.measureText(node.textContent);
+    const off = (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2 - m.width / 2;
+    node.style.transform = 'translateX(' + (-off).toFixed(2) + 'px)';
+  };
+  shift();
+  if (document.fonts && !document.fonts.check('28px "Bowlby One"')) document.fonts.ready.then(shift);          // (the font may still be loading on the first draw)
+}
 // round and break counter: the two pills at the right of the top bar (#hdrstats)
 function headerStats(st, flash) {
   const root = $('hdrstats');
@@ -60,7 +72,9 @@ function headerStats(st, flash) {
   root.replaceChildren();
   const rnd = flash('round', st.round, el('div', 'pill rnd'));
   rnd.title = 'Round ' + st.round + ': a new round starts when a break ends';
-  rnd.append(el('span', 'lab', 'Round'), el('b', 'rn', st.round));          // (stacked: the word small above the number, a slim pill: the room goes to the logo)
+  const rn = el('b', 'rn', st.round);
+  rnd.append(el('span', 'lab', 'Round'), rn);
+  centreInk(rn);          // (stacked: the word small above the number, a slim pill: the room goes to the logo)
   const brk = flash('break', st.break_position, el('div', 'pill brk'));
   brk.title = 'Break track: the break ends the round when the token reaches 9';
   const pips = el('div', 'pips');

@@ -60,9 +60,9 @@ body.viewer .brand:active { transform: translateY(2px); filter: drop-shadow(0 2p
 body.viewer .brand:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 body.viewer .hdrstats { flex: none; display: flex; align-items: center; gap: 12px; }
 body.viewer .pill { height: 60px; box-sizing: border-box; display: flex; align-items: center; background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); color: var(--ink); }
-body.viewer .pill.rnd { width: 84px; flex-direction: column; justify-content: center; gap: 0; padding: 0; }
-body.viewer .pill.rnd .lab { font: 700 13px/1 'Barlow Condensed'; letter-spacing: .14em; text-transform: uppercase; margin-top: 2px; }
-body.viewer .pill.rnd .rn { font: 400 28px/1.05 'Bowlby One', system-ui, sans-serif; color: var(--rust); }
+body.viewer .pill.rnd { width: 84px; flex-direction: column; justify-content: center; gap: 0; padding: 1.5px 0 0; }          /* (1.5px: with the 2px gap below the label the ink block sits in the middle, 8 / 7.5 px above and below) */
+body.viewer .pill.rnd .lab { font: 700 13px/1 'Barlow Condensed'; letter-spacing: .14em; text-indent: .14em; text-transform: uppercase; margin-top: 2px; }          /* (text-indent: the letter spacing after the last letter would push the word 0.9 px left of the middle) */
+body.viewer .pill.rnd .rn { font: 400 28px/1.05 'Bowlby One', system-ui, sans-serif; color: var(--rust); margin-top: 2px; }
 body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
 body.viewer .pill.brk { gap: 12px; padding: 0 18px 0 22px; background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
 body.viewer .pill.brk .lab { font-size: 20px; }
