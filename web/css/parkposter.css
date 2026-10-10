@@ -97,7 +97,7 @@ body.viewer .sbtabs { flex: 0 0 auto; gap: 8px; }
 body.viewer .sbtab { flex: 1 1 0; height: auto; padding: 9px 0 8px; border: 4px solid var(--ink); border-radius: 14px; background: var(--paper); color: var(--ink); font: 400 17px 'Bowlby One', system-ui, sans-serif;
   box-shadow: 0 4px 0 var(--ink); }
 body.viewer .sbtab:hover { background: #fff7dc; }
-body.viewer .sbtab.on { background: var(--ink); color: var(--paper); }
+body.viewer .sbtab.on { background: #3F9A4E; color: var(--paper); }
 body.viewer .sbpane { gap: 10px; }
 body.viewer #paneControl { overflow-x: hidden; overflow-y: auto; padding: 0 8px 10px 0; margin-right: -8px; scrollbar-width: thin; scrollbar-color: rgba(248, 237, 203, .5) transparent; }
 body.viewer .sidebar .side { width: auto; margin: 0; display: grid; gap: 10px; flex: 0 0 auto; }
