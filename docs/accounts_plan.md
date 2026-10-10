@@ -17,7 +17,7 @@ Status: plan, nothing implemented. Copy of the published page https://claude.ai/
 | Rated and friendly | The table creation step offers Rated or Friendly. Anonymous users can only play Friendly. | Decided |
 | Rating formula | Elo with K=20, the same K that BGA uses. | Decided |
 | Password recovery | No email, so a one-time recovery code is shown at signup. | Decided |
-| Mini games | A generic result tracker. Game details come later. | Details pending |
+| Mini games | Two daily games, each isolated in its own folder behind one contract: Daily starting hand and Who's ahead. Separate scores and leaderboards (all time and monthly). | Decided, a few details open |
 
 ## What the existing data gives us
 
@@ -56,7 +56,6 @@ flowchart LR
 | `counters` | name (pk), value | One row, `account_p`, the last `P` number. It is incremented in the same D1 batch that inserts the account, so two signups never get the same id. |
 | `sessions` | token\_hash (pk), account\_id (text), created\_at, expires\_at, user\_agent | Logging out or changing the password deletes rows. |
 | `rating_history` | game\_id, account\_id, seat, opponent\_id, result (1, 0.5, 0), rating\_before, rating\_after, delta, k, at | Unique on (game\_id, account\_id): this makes the update idempotent. |
-| `minigame_results` | id, game\_key, account\_id (text, nullable), puzzle\_id, score, duration\_ms, details (JSON), verified, client\_version, played\_at | See the mini games section. |
 
 ### Live game records
 
@@ -102,12 +101,90 @@ score: win 1, draw 0.5, loss 0
 
 ## Mini games and puzzles
 
-The details come later, so the tracker is generic. Anything a game needs beyond these fields goes in `details`.
+Two daily mini games to start, more later: **Daily starting hand** and **Who's ahead**. They are built so a game can be added, tested alone and removed without touching the others. Both play on real finished tables from the BGA index, with the replay viewer's look, but with everything that would give the answer away removed.
 
-- **Games registry:** a small file listing each `game_key`, its name, whether a higher or lower score is better, and whether the server can verify a result.
-- **Submission:** `POST /api/minigames/{key}/results` with puzzle id or seed, score, duration and details. The session decides the account. Guests may submit; the result is stored with a guest id and can be attached to an account after login.
-- **Verification:** where the puzzle is generated from a seed, the server replays or checks the submitted solution and sets `verified = true`. Unverified results stay private to the player and out of public leaderboards.
-- **Views:** a player's history, best score, streak, and a leaderboard per game and per puzzle.
+### Isolation rules
+
+- **One folder per game.** Server code in `src/ark_nova/minigames/<key>/`, page code in `web/minigames/<key>/`, tests in `tests/minigames/<key>/`. A game never imports another game. A test fails if it does.
+- **A small platform in between** (`src/ark_nova/minigames/platform/`): the registry, the daily rollover, the puzzle and submission stores, the leaderboard queries, the shared redaction checks and the shared page shell (login prompt, anonymous choice, leaderboard widget). The platform only knows games through the contract below.
+- **A manifest decides what exists:** `data_manual/minigames.json`, a list of `{key, enabled}`. Disabled or missing means: no routes (404), no card on the start page, no rollover. Removing a game is deleting its three folders and its manifest line. `scripts/minigames_purge.py <key>` deletes its stored puzzles, submissions and aggregates (every stored row carries `game_key`).
+- **The contract** (a Python `Protocol`; every game implements all of it):
+
+| Method | What it does |
+|---|---|
+| `key`, `title`, `leaderboard` | Identity and the leaderboard definition: the metric, whether higher or lower is better, the minimum plays to be listed. |
+| `pick_source(ctx)` | Chooses the source table id of the day (see the picker). |
+| `build_puzzle(source)` | Returns `(public, answer)`. `public` is what the browser may see. `answer` stays on the server until the player has submitted. |
+| `validate(public, payload)` | Checks a submission (shape, counts, sums) and returns clean data or errors. |
+| `score(answer, payload)` | Returns the score value and a detail object. |
+| `reveal(public, answer, payload, day_stats)` | What the player sees after submitting. |
+| `day_stats(submissions)` | The community numbers of the day (pick rates, average prediction). |
+
+- **Shared stores, game-private contents.** They live in the same D1 database as the accounts, reached through the same signed Worker routes. Tables are keyed by `game_key` and keep the game's own data in JSON columns, so a new game needs no migration:
+  - `minigame_puzzles(game_key, day, source_ref, public, answer, created_at)`, unique on (game_key, day). `source_ref` is the BGA table id and is never sent to a browser.
+  - `minigame_used_sources(game_key, source_ref)`, unique. This is the "never picked before" memory, kept per game.
+  - `minigame_submissions(id, game_key, day, account_id, anon_id, payload, score, detail, submitted_at)`, unique on (game_key, day, account_id) and on (game_key, day, anon_id).
+- **Tested alone.** The platform ships fakes: `FakeClock`, `FakeSourceIndex` (a list of candidate tables), `FakeLogs`, in-memory stores. `tests/minigames/test_contract.py` runs one contract suite against every registered game. It checks that `public` never holds a name, player id, table id or timestamp, that the answer is absent before submission, that a second submission is refused, that scoring is deterministic, and that a game with a failing rollover does not stop the others. A "remove one game" test checks the other games still work.
+- **One viewer mode, no copies.** Both games use the replay viewer through a `window.MINIGAME_MODE` flag (like `PLAY`, `FORK`, `SANDBOX`). The per-game page passes a small config (`redactNames`, `showElo`, `hidePovSwitch`, `noStepping`, `hideLog`) and one state object. The viewer code is not forked.
+
+### Daily rollover and picking the table
+
+- **The day is the UTC date.** A Cloudflare Cron Trigger at 00:00 UTC calls a signed internal route on Cloud Run (`POST /internal/minigames/rollover`). For each enabled game, in its own try/except, it creates that day's puzzle. The insert is unique on (game_key, day), so a repeat is harmless.
+- **Lazy fallback.** If a request finds no puzzle for today, it creates it then. A missed cron never breaks a game.
+- **The picker query is the game's own file:** `data_manual/minigames/<key>.sql`, which you will edit. For now both use: a table with a log in `logs_archive_mapping`, two players, not in `minigame_used_sources` for that game. Pick one at random. The query also returns both players' `pre_match_elo` for that table.
+- **Elo shown is the BGA Elo before that table** (`pre_match_elo`), rounded.
+
+### What the browser may receive (both games)
+
+- One state object for one moment of the game. Not the replay, no step list, no later steps.
+- No player names, ids, table id, date or log lines. The Log tab is hidden or replaced by the puzzle instructions. Players are shown as "Player 1" and "Player 2" with their Elo.
+- The original player's choices and the final result only come back in the reply to a valid submission.
+- Card images are served by card key, so image URLs do not leak the table.
+
+### Game 1: Daily starting hand (`daily_hand`)
+
+- **Puzzle:** a random seat of the table. The state is the moment just before that player's initial selection: their dealt hand (8 cards, 9 on map 14 where the person sponsor is found right after the deal), their two endgame cards, their map and everything public. The opponent's hand is not shown.
+- **Task:** choose the cards to keep: 4 (5 on map 14). The count comes from the log (hand size minus the 4 discards), not from a constant. The player confirms once.
+- **Not logged in:** show "You can create an account to save your results and compete in a monthly leaderboard, or submit your prediction anonymously." Anonymous submission is allowed.
+- **Reveal:** the original player's selection, with each match marked. **Score = the number of matching cards** (0 to 4, or 0 to 5).
+- **Pick rates:** for every card in the hand, the share of everyone who played that day so far (anonymous players included) who kept it. Shown after submitting, with the count of players.
+- **Leaderboard metric:** the sum of points, higher is better.
+
+### Game 2: Who's ahead (`whos_ahead`)
+
+- **Puzzle:** a moment in the middle of the table, with both players fully visible: boards, hands, endgame cards, tracks and everything public. The deck and discard pile are not shown (only their sizes). Names hidden, Elo shown.
+- **Which moment is open** (see the questions). Proposal: a random turn between the second break and the end-of-game trigger, chosen when the puzzle is built and stored.
+- **Task:** enter a win percentage for each player and, optionally, a tie percentage. They must add up to 100 (whole numbers). The form shows the running total, disables Submit until it is 100, and the server checks again.
+- **Not logged in:** the login prompt appears when they submit, with the choice to submit anonymously.
+- **Score: Brier score** of the three outcomes (player 1 wins, player 2 wins, tie), with `p` the entered probabilities as fractions and `o` the real outcome as 1 for the real result and 0 for the others:
+
+```
+brier = (p1 - o1)^2 + (p2 - o2)^2 + (pt - ot)^2        # 0 is perfect, 2 is the worst
+```
+
+  A 50/50 guess with no tie scores 0.5 when someone wins. Lower is better.
+- **Reveal:** the real result and final scores, the player's Brier score, and the average prediction of that day.
+- **Leaderboard metric:** the mean Brier score over the games played, lower is better, with a minimum number of plays to be listed (3 for the month, 10 for all time).
+
+### Leaderboards
+
+- Each game has its own scores and its own two boards: **all time** and **current month**. Nothing is shared between games.
+- **The month is the UTC month of the puzzle's day** (`YYYY-MM`). The monthly board "resets" at exactly 00:00 UTC on the 1st because the month key changes. No reset job exists. Older months stay stored, so a "past months" page can be added.
+- Only logged-in accounts are ranked. Anonymous submissions are scored and shown to the player, and count in the day's community numbers, but are not on a leaderboard.
+- One submission per game per day for an account, and one per anonymous browser (an anonymous id cookie, so it can be bypassed; it is a convenience limit).
+- A submission is accepted only for the puzzle of the current UTC day, until 00:00 UTC.
+
+### Routes and pages
+
+| Route | Purpose |
+|---|---|
+| `GET /api/minigames` | The enabled games and, for the caller, whether today's puzzle is played. |
+| `GET /api/minigames/{key}/today` | Today's `public` payload, or the player's own result if already played. |
+| `POST /api/minigames/{key}/submit` | One submission (account, or anonymous with `anon_id`). Returns the reveal. |
+| `GET /api/minigames/{key}/leaderboard?period=all\|month` | The board of that game. |
+| `POST /internal/minigames/rollover` | Signed, called by the cron trigger. |
+
+Pages: `web/minigames/<key>.html` for each game, a "Mini games" card on the start page for each enabled game, and the shared shell (login prompt, anonymous choice, leaderboard).
 
 ## API and pages
 
@@ -121,7 +198,6 @@ The details come later, so the tracker is generic. Anything a game needs beyond 
 | `GET /api/leaderboard` | Top ratings (accounts with at least a few rated games). |
 | `POST /api/games` (extended) | Gets `rated`; refused for guests when true. |
 | `POST /api/games/{id}/join` (extended) | Links the logged-in account to the seat. |
-| `POST /api/minigames/{key}/results`, `GET /api/minigames/{key}/leaderboard` | Mini game tracker. |
 
 Pages: a login and signup dialog and a user menu in the site header (every page that shares the layout), a profile page, a leaderboard page, the Rated / Friendly choice in the live lobby (`web/play.html`), the rating change on the end page (`web/end.html`), and later the mini game pages.
 
@@ -162,12 +238,26 @@ Pages: a login and signup dialog and a user menu in the site header (every page 
 - Leaderboard and profile pages; rating change on the end page.
 - Tests: two logged-in clients play a rated game against `FakeKeeper`, concession and timeout cases, a repeated end event changes nothing.
 
-### D. Mini game tracker (After details)
+### M0. Mini game platform (Medium)
 
-*Needs: A. Touches: D1 migration, `api/`, new pages.*
+*Needs: nothing for anonymous play; A for ranked play. Touches: `src/ark_nova/minigames/platform/`, `data_manual/minigames.json`, D1 migration, the Worker cron trigger, `web/js/minigames/shell.js`, `tests/minigames/`.*
 
-- Results table, games registry file, submit and leaderboard routes.
-- Per game verification once the games are defined.
+- The `MiniGame` contract, the registry and manifest, the three shared tables, the rollover route and cron trigger with the lazy fallback, the shared redaction checks, the leaderboard queries, `scripts/minigames_purge.py`.
+- The shared shell (login prompt, anonymous choice, leaderboard widget) and the `MINIGAME_MODE` of the viewer.
+- The fakes and the contract test suite, run against a tiny example game inside the tests.
+
+### M1. Daily starting hand (Small to medium)
+
+*Needs: M0. Touches only `minigames/daily_hand/` (server, page, tests, picker SQL).*
+
+- Build the puzzle from the replay builder's state before the initial selection of a random seat; pick-rate stats; scoring; the page.
+
+### M2. Who's ahead (Medium)
+
+*Needs: M0. Touches only `minigames/whos_ahead/`.*
+
+- Build the two-player full-information state at the chosen moment; the percentage form; Brier scoring; the page.
+- M1 and M2 do not depend on each other and can be built and shipped in either order.
 
 ## Still open
 
@@ -177,5 +267,10 @@ Pages: a login and signup dialog and a user menu in the site header (every page 
 | Who may see the leaderboard, and how many rated games before listing | Everyone, after 5 rated games. |
 | A user who picks "None of these" while a matching BGA id exists: allowed, or require a pick | Allowed (they may be a different person with the same name); they start at 0. |
 | Rating shown as an integer or with decimals | Stored as a real number, shown as an integer. |
-| Mini games: kinds, scoring, verification, anonymous play | Waiting for the details. |
+| Who's ahead: at which moment of the table is the state taken | A random turn between the second break and the end-of-game trigger, stored with the puzzle. |
+| Who's ahead: how the leaderboard turns Brier scores into a rank | Mean Brier (lower is better), at least 3 plays for the month and 10 for all time. |
+| Daily starting hand: does the original player's two endgame cards show too | Yes, they are part of what the original player saw. |
+| Can the same table be used by both games | Yes. "Never picked before" is kept per game. |
+| An anonymous result after the player logs in: attach it to the account or not | Not attached. Keep it simple; revisit if players ask. |
+| Past days: can players play an earlier day's puzzle | No, only the current UTC day. |
 | Custom domain | `engine.emufriends.pet` is attached to the Pages project; cookies are per host, so choose the final host before launch. |
