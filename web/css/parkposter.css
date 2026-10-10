@@ -104,7 +104,7 @@ body.viewer .card { border-radius: 7px; border-color: var(--ink); }
 /* ---- sidebar: tabs, control panel, info boxes (every one a panel of its own), the log ---------------------------------------------------------------------------------- */
 body.viewer aside.sidebar { top: 90px; right: 12px; width: var(--sidebar-w); height: calc(var(--vh, 1vh) * 100 - 102px); gap: 10px; }          /* below the top row: the head row spans the full width, the sidebar starts under it */
 /* Control | Log: a segmented switch at the top of the sidebar (a dark track with a gold outline, the active half gold) */
-body.viewer .sbtabs { flex: 0 0 auto; gap: 3px; height: 46px; box-sizing: border-box; margin-bottom: 0; padding: 3px; border: 3px solid rgba(244, 182, 63, .5); border-radius: 999px; background: rgba(4, 26, 33, .7); }
+body.viewer .sbtabs { flex: 0 0 auto; gap: 3px; height: 44px; box-sizing: border-box; margin-bottom: 0; padding: 3px; border: 3px solid rgba(244, 182, 63, .5); border-radius: 999px; background: rgba(4, 26, 33, .7); }
 body.viewer .sbtab { flex: 1 1 0; height: auto; box-sizing: border-box; padding: 0; border: 0; border-radius: 999px; background: transparent; color: #A9CBD1; font: 400 17px 'Bowlby One', system-ui, sans-serif; box-shadow: none; }
 body.viewer .sbtab:hover { color: var(--paper); }
 body.viewer .sbtab.on { background: var(--gold); color: var(--ink); }
