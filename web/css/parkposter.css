@@ -206,15 +206,15 @@ body.viewer .modalbox { width: 440px; box-sizing: border-box; padding: 16px 20px
 body.viewer .modalhead { margin-bottom: 14px; font: 400 24px 'Bowlby One', system-ui, sans-serif; }
 /* the first-visit dialog: whom to spectate (pov.js askSpectated): two chips with the player names */
 body.viewer .povbox { width: 960px; max-width: 94vw; padding: 24px 30px 30px; border-width: 6px; border-radius: 33px; box-shadow: 0 12px 0 var(--ink); text-align: center; }
-body.viewer .povbox .modalhead { display: block; text-align: center; margin-bottom: 30px; font-size: 39px; line-height: 1.15; white-space: nowrap; }
+body.viewer .povbox .modalhead { display: block; text-align: center; margin-bottom: 30px; font-size: 26px; line-height: 1.15; white-space: nowrap; }
 body.viewer .povchips { display: flex; gap: 24px; justify-content: center; }
-body.viewer .povchip { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 15px; height: 93px; padding: 0 27px; border: 5px solid var(--ink); border-radius: 999px; background: var(--paper); box-shadow: 0 6px 0 var(--ink); color: var(--ink); font: 700 33px/1 'Barlow Condensed', system-ui, sans-serif; cursor: pointer; }
+body.viewer .povchip { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 15px; height: 93px; padding: 0 27px; border: 5px solid var(--ink); border-radius: 999px; background: var(--paper); box-shadow: 0 6px 0 var(--ink); color: var(--ink); font: 700 22px/1 'Barlow Condensed', system-ui, sans-serif; cursor: pointer; }
 body.viewer .povchip:hover { background: #fff7dc; }
 body.viewer .povchip.on, body.viewer .povchip.on:hover { background: var(--sun); color: var(--paper); }
 body.viewer .povchip:focus-visible, body.viewer .povok:focus-visible { outline: 5px solid var(--gold); outline-offset: 4px; }
 body.viewer .povdot { flex: none; width: 27px; height: 27px; box-sizing: border-box; border-radius: 50%; background: var(--pc); border: 5px solid var(--ink); }
 body.viewer .povname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-body.viewer .povok { display: block; margin: 30px auto 0; min-width: 270px; height: 78px; padding: 0 45px; border: 5px solid var(--ink); border-radius: 999px; background: #3F9A4E; box-shadow: 0 6px 0 var(--ink); color: var(--paper); font: 400 30px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }
+body.viewer .povok { display: block; margin: 30px auto 0; min-width: 270px; height: 78px; padding: 0 45px; border: 5px solid var(--ink); border-radius: 999px; background: #3F9A4E; box-shadow: 0 6px 0 var(--ink); color: var(--paper); font: 400 24px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }
 body.viewer .povok:hover:not(:disabled) { background: #48ad59; }
 body.viewer .povok:disabled { background: #b9b58f; color: rgba(248, 237, 203, .85); box-shadow: 0 6px 0 rgba(23, 38, 43, .45); border-color: rgba(23, 38, 43, .45); cursor: default; }
 body:has(#povChoice) .draftbox { visibility: hidden; }       /* (the action card draft of the first step waits behind the dialog) */
