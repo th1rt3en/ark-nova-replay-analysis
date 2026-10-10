@@ -64,9 +64,9 @@ body.viewer .pill.rnd { width: 84px; flex-direction: column; justify-content: ce
 body.viewer .pill.rnd .lab { font: 700 13px/1 'Barlow Condensed'; letter-spacing: .14em; text-indent: .14em; text-transform: uppercase; margin-top: 2px; }          /* (text-indent: the letter spacing after the last letter would push the word 0.9 px left of the middle) */
 body.viewer .pill.rnd .rn { font: 400 28px/1.05 'Bowlby One', system-ui, sans-serif; color: var(--rust); margin-top: 2px; }
 body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
-body.viewer .pill.brk { gap: 12px; padding: 0 20px 0 19.25px;          /* (the ink of the mug and of the last pip is 20 px from the rounded ends on both sides; the mug image starts 0.75 px inside its box) */
+body.viewer .pill.brk { gap: 12px; padding: 0 20px 0 19.7px;          /* (the ink of the mug and of the last pip is 20 px from the rounded ends on both sides; the mug picture starts 0.3 px inside its box) */
   background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
-body.viewer .pill.brk .brkicon { height: 30px; width: auto; display: block; flex: none; position: relative; top: -2.2px; }          /* (the bottom of the mug on the baseline of the digits and the pips; the faint steam stands out above) */
+body.viewer .pill.brk .brkicon { height: 32px; width: auto; display: block; flex: none; position: relative; top: -4px; }          /* (BGA's own mug picture, 96 x 108 px: the body (rows 27 to 107 of 108) is 24 px high, as high as the dots, and its bottom is on the baseline of the digits and the bottom of the dots, y 50) */
 body.viewer .pill.brk .bn { font: 400 34px/1 'Bowlby One'; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
 body.viewer .pill.brk .bn small { font-size: 22px; margin-left: 1px; }
 body.viewer .pips { display: flex; gap: 5px; }
