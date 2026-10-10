@@ -14,7 +14,7 @@ Scope: `web/` of the replay / fork / sandbox / live play viewer (`replay.html`, 
 Desktop (window >= 900 px) is laid out at a fixed design viewport of 1920x1080 and zoomed (`body.style.zoom`, `fitScale` in `layout.js`) to the window width. Consequences for every future edit: do not add width / height `@media` queries or raw `vh` / `vw` for desktop styles (use `--vh` / `--vw`); when JS mixes `getBoundingClientRect` / mouse coordinates (zoomed px) with `offsetWidth` / `clientWidth` / CSS px (layout px), divide by `S.scale`. Below 900 px the old responsive rules (`@media (max-width: 899px) and ...`) apply unscaled.
 
 ## Page structure (changelog.md sections 3-4)
-`.layout` > `main` (move bar, shared area as a grid with equally high display and association elements (fitDisplay), zoos) + `aside.sidebar` (fixed on the right; tabs Control | Log above the panes). The move bar is sticky at the top of `main`: `.movepill` (step text / action bar) + `#hdrstats` (round and break pills). Structure CSS lives in `css/table.css`, the look in `css/parkposter.css` (loaded after `replay.css`; replay.css still holds the older component rules that the later files override). `sidebar.js` owns the tabs; `layout.js` owns scaling and the display fit (it accounts for the panels' border and padding).
+`.layout` > `main` (move bar with the logo link `a.brand` (`web/brand/`, `scripts/build_logo.py`) at its left, shared area as a grid with equally high display and association elements (fitDisplay), zoos) + `aside.sidebar` (fixed on the right; tabs Control | Log above the panes). The move bar is sticky at the top of `main`: `.movepill` (step text / action bar) + `#hdrstats` (round and break pills). Structure CSS lives in `css/table.css`, the look in `css/parkposter.css` (loaded after `replay.css`; replay.css still holds the older component rules that the later files override). `sidebar.js` owns the tabs; `layout.js` owns scaling and the display fit (it accounts for the panels' border and padding).
 
 Interfaces (API calls, URL parameters, browser storage keys): changelog.md section 0.1.
 
@@ -37,7 +37,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `fork.js` | fork mode: `initFork`, placement controls, `commitSteps`, `playFork`, `forkBar` |
 | `shared.js` | table centre: card folders (zoo place names + numbers like BGA), display, reputation track, thresholds, conservation track |
 | `pile.js` | discard / endgame deck popup |
-| `side-panel.js` | the two player info boxes (`sidePanel`) and the round / break pills of the top bar (`headerStats`, into `#hdrstats`); no deck / discard counters |
+| `side-panel.js` | the two player info boxes (`sidePanel`) and the round (number only) / break pills of the top bar (`headerStats`, into `#hdrstats`); no deck / discard counters |
 | `dock.js` | hand / endgame-card dock: a fan of cards at the bottom left that rises on hover (CSS), per-player buttons; `S.handMode === 'tray'` draws the floating tray instead (`drawTray`, fold with `toggleDock` / key H, hint state in localStorage); `dockIntro` plays how the hand appears (fan: deal at the start of the game, rise and spread otherwise; tray: the starting hand drops in), the `handmode` / `settingsclosed` listeners handle the switch between the two (a raised fan while the settings are open); changelog 20-31 |
 | `zoo.js` | one player's zoo |
 | `log-labels.js` | move-list label icons and engine badge |

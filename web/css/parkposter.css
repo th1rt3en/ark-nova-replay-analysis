@@ -52,10 +52,16 @@ body.viewer .movepill .actionbar:not([hidden]) ~ .current { font: inherit; color
 body.viewer .movepill .current[hidden] { display: none; }
 body.viewer .movepill .engine-detail { font: 600 15px 'Barlow Condensed'; opacity: .7; }
 body.viewer .movepill .enginemark { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); z-index: 2; }
+/* the logo (top left of the move bar): the emu on its hill, a link to the start page; square like the pills are tall, with their hard shadow */
+body.viewer .brand { flex: none; align-self: flex-start; width: 60px; height: 60px; display: block; border-radius: 50%; filter: drop-shadow(0 4px 0 var(--ink)); transition: transform .12s, filter .12s; }
+body.viewer .brand img { width: 100%; height: 100%; display: block; }
+body.viewer .brand:hover { transform: translateY(-2px); filter: drop-shadow(0 6px 0 var(--ink)); }
+body.viewer .brand:active { transform: translateY(2px); filter: drop-shadow(0 2px 0 var(--ink)); }
+body.viewer .brand:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 body.viewer .hdrstats { flex: none; display: flex; align-items: center; gap: 12px; }
 body.viewer .pill { height: 60px; box-sizing: border-box; display: flex; align-items: center; background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); color: var(--ink); }
-body.viewer .pill.rnd { gap: 10px; padding: 0 5px 0 20px; }
-body.viewer .pill.rnd .rcircle { width: 36px; height: 36px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--rust); color: var(--paper); border: 3px solid var(--ink); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; }
+body.viewer .pill.rnd { width: 60px; justify-content: center; padding: 0; }
+body.viewer .pill.rnd .rcircle { width: 40px; height: 40px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--rust); color: var(--paper); border: 3px solid var(--ink); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; }
 body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
 body.viewer .pill.brk { gap: 12px; padding: 0 18px 0 22px; background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
 body.viewer .pill.brk .lab { font-size: 20px; }
