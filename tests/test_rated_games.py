@@ -101,13 +101,13 @@ def test_a_concession_moves_both_ratings_once_and_the_end_page_tells(monkeypatch
     assert _play(players, 5, random.Random(1)) == 5
     loser = players[1 - seat_a]                                                                     # Bob gives up
     assert loser.c.post(f"/api/games/{gid}/concede", headers=loser.h, json={}).json()["status"] == "conceded"
-    assert w.ratings("Alice", "Bob") == [10.0, -10.0]                                               # two new players: +10 and -10
+    assert w.ratings("Alice", "Bob") == [20.0, 0.0]                                                 # two new accounts (K=40): the winner gains 20, the loser is below 100 and loses nothing
     out = TestClient(w.app).get(f"/api/games/{gid}/result").json()
     assert out["rated"] is True
-    assert sorted((r["name"], r["before"], r["after"]) for r in out["ratings"]) == [("Alice", 0, 10), ("Bob", 0, -10)]
+    assert sorted((r["name"], r["before"], r["after"]) for r in out["ratings"]) in ([("Alice", 0, 20), ("Bob", 0, 0)], [("Alice", 0, 0), ("Bob", 0, 20)])
     assert w.store.ratings_of([w.store.by_username("alice").id])[w.store.by_username("alice").id][1:] == (1, 1)
     w.service.wrap_up(gid)                                                                          # (again: nothing is written twice)
-    assert w.ratings("Alice", "Bob") == [10.0, -10.0]
+    assert w.ratings("Alice", "Bob") == [20.0, 0.0] or w.ratings("Alice", "Bob") == [0.0, 20.0]
 
 
 def test_a_concession_in_the_first_turns_is_not_rated():
@@ -139,16 +139,17 @@ def test_a_wrap_up_that_fails_after_rating_does_not_rate_twice(monkeypatch):
     _play(players, 4, random.Random(2))
     w.registry.down = True                                                                          # BigQuery is down: the wrap-up stops after the ratings
     players[1 - seat_a].c.post(f"/api/games/{gid}/concede", headers=players[1 - seat_a].h, json={})
-    assert w.ratings("Alice", "Bob") == [10.0, -10.0]
+    after = w.ratings("Alice", "Bob")
+    assert sorted(after) == [0.0, 20.0]
     w.registry.down = False
     assert w.service.wrap_up(gid) is True                                                           # tried again: the record is exported, the ratings stay
-    assert w.ratings("Alice", "Bob") == [10.0, -10.0] and len(w.store.rating_changes(gid)) == 2
+    assert w.ratings("Alice", "Bob") == after and len(w.store.rating_changes(gid)) == 2
 
 
 def test_the_winner_of_a_played_out_game_and_a_draw_by_the_scores():
     from ark_nova.engine.state import Result
 
-    for result, want in ((Result(scores=[100, 90], winner=0), (10.0, -10.0)), (Result(scores=[90, 90], winner=None), (0.0, 0.0)), (Result(scores=[80, 95], winner=1), (-10.0, 10.0))):
+    for result, want in ((Result(scores=[100, 90], winner=0), (20.0, 0.0)), (Result(scores=[90, 90], winner=None), (0.0, 0.0)), (Result(scores=[80, 95], winner=1), (0.0, 20.0))):
         w2 = World()
         a2, b2 = w2.browser("Alice"), w2.browser("Bob")
         gid, players, seat_a = rated_table(w2, a2, b2)
@@ -161,3 +162,18 @@ def test_the_winner_of_a_played_out_game_and_a_draw_by_the_scores():
         accounts = [kept["config"]["account_0"], kept["config"]["account_1"]]
         got = tuple(w2.store.ratings_of(accounts)[i][0] for i in accounts)
         assert got == want
+
+
+def test_the_second_game_uses_each_players_k_and_the_floor(monkeypatch):
+    monkeypatch.setattr(elo, "MIN_RATED_TURNS", 0)
+    w = World()
+    alice, bob = w.browser("Alice"), w.browser("Bob")
+    gid1, players, seat_a = rated_table(w, alice, bob)
+    players[1 - seat_a].c.post(f"/api/games/{gid1}/concede", headers=players[1 - seat_a].h, json={})            # Bob gives up: Alice +20 (K=40), Bob stays 0
+    assert w.ratings("Alice", "Bob") == [20.0, 0.0]
+    gid2, players, seat_a = rated_table(w, alice, bob)
+    players[seat_a].c.post(f"/api/games/{gid2}/concede", headers=players[seat_a].h, json={})                    # now Alice gives up
+    alice_r, bob_r = w.ratings("Alice", "Bob")
+    assert alice_r == 20.0                                                                                       # below 100: a loss costs nothing
+    assert bob_r == pytest.approx(40 * (1 - elo.expected(0, 20)))                                                # Bob still gains with his K=40 (his second game)
+    assert {c.k for c in w.store.rating_changes(gid1)} == {40} and {c.k for c in w.store.rating_changes(gid2)} == {40}

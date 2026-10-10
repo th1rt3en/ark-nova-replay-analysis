@@ -2,7 +2,7 @@
 from dataclasses import asdict
 from typing import Optional
 
-from ark_nova.accounts.rating import K, RatingChange
+from ark_nova.accounts.rating import RatingChange
 from ark_nova.accounts.store import Account, IdTaken, Session, UsernameTaken
 from ark_nova.storeclient import StoreClient, StoreConflict
 
@@ -61,12 +61,12 @@ class D1AccountStore:
         return {r["id"]: (r["rating"], r["rated_games"], r["rated_wins"]) for r in self.c.call("rating.of", {"ids": list(ids)}, retry=True)} if ids else {}
 
     def commit_ratings(self, game_id, changes):
-        payload = [{"account_id": c.account_id, "seat": c.seat, "opponent_id": c.opponent_id, "result": c.result, "before": c.before, "after": c.after, "at": c.at} for c in changes]
-        return self.c.call("rating.commit", {"game_id": game_id, "changes": payload, "k": K})
+        payload = [{"account_id": c.account_id, "seat": c.seat, "opponent_id": c.opponent_id, "result": c.result, "before": c.before, "after": c.after, "at": c.at, "k": c.k} for c in changes]
+        return self.c.call("rating.commit", {"game_id": game_id, "changes": payload})
 
     @staticmethod
     def _change(r) -> RatingChange:
-        return RatingChange(r["game_id"], r["account_id"], r["seat"], r["opponent_id"], r["result"], r["rating_before"], r["rating_after"], r["at"])
+        return RatingChange(r["game_id"], r["account_id"], r["seat"], r["opponent_id"], r["result"], r["rating_before"], r["rating_after"], r["at"], r["k"])
 
     def rating_changes(self, game_id):
         return [self._change(r) for r in self.c.call("rating.changes", {"game_id": game_id}, retry=True)]

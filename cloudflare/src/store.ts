@@ -82,12 +82,11 @@ const OPS: Record<string, Op> = {
     "rating.commit": async (db, a) => {
         const game = str(a.game_id), ch = a.changes as any[];
         if (!Array.isArray(ch) || ch.length !== 2) throw new Error("two changes were expected");
-        const k = num(a.k);
         const ratingsStill = ch.map((c) => `(SELECT rating FROM accounts WHERE id = ?) = ?`).join(" AND ");
         const guardArgs = ch.flatMap((c) => [str(c.account_id), num(c.before)]);
         const insert = (c: any, first: boolean) => db.prepare(
             `INSERT INTO rating_history (game_id, account_id, seat, opponent_id, result, rating_before, rating_after, delta, k, at) SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${first ? "NOT EXISTS (SELECT 1 FROM rating_history WHERE game_id = ?)" : "changes() > 0"} AND ${ratingsStill}`)
-            .bind(game, str(c.account_id), num(c.seat), str(c.opponent_id), num(c.result), num(c.before), num(c.after), num(c.after) - num(c.before), k, str(c.at), ...(first ? [game] : []), ...guardArgs);
+            .bind(game, str(c.account_id), num(c.seat), str(c.opponent_id), num(c.result), num(c.before), num(c.after), num(c.after) - num(c.before), num(c.k), str(c.at), ...(first ? [game] : []), ...guardArgs);
         const update = (c: any) => db.prepare("UPDATE accounts SET rating = ?, rated_games = rated_games + 1, rated_wins = rated_wins + ? WHERE id = ? AND changes() > 0 AND rating = ?")
             .bind(num(c.after), num(c.result) === 1 ? 1 : 0, str(c.account_id), num(c.before));
         const out = await db.batch([insert(ch[0], true), insert(ch[1], false), update(ch[0]), update(ch[1])]);

@@ -43,7 +43,7 @@ def test_the_ratings_board_lists_players_with_enough_rated_games():
     rated(svc.store, "E9", ids[2], ids[1])                                                          # Cid has played once: not listed
     r = c.get("/api/leaderboard/ratings")
     rows = r.json()["rows"]
-    assert [(x["rank"], x["username"]) for x in rows] == [(1, "Ann"), (2, "Ben")] and rows[0]["rated_games"] == 5 and rows[0]["rating"] > 0 > rows[1]["rating"]
+    assert [(x["rank"], x["username"]) for x in rows] == [(1, "Ann"), (2, "Ben")] and rows[0]["rated_games"] == 5 and rows[0]["rating"] > 0 == rows[1]["rating"]
     assert r.json()["min_games"] == elo.MIN_LISTED_GAMES and r.headers["cache-control"] == "public, max-age=60"
     assert c.get("/api/leaderboard/ratings?_=1").headers["cache-control"] == "no-store"
 

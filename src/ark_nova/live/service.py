@@ -626,8 +626,9 @@ class LiveService:
             if len(now) < 2:
                 return
             ra, rb = now[ids[0]][0], now[ids[1]][0]
-            na, nb = elo.updated(ra, rb, score_a)
-            out = self.ratings.commit_ratings(game_id, [elo.RatingChange(game_id, ids[0], 0, ids[1], score_a, ra, na, at), elo.RatingChange(game_id, ids[1], 1, ids[0], 1.0 - score_a, rb, nb, at)])
+            ga, gb = now[ids[0]][1], now[ids[1]][1]
+            na, nb = elo.updated(ra, rb, score_a, ga, gb)
+            out = self.ratings.commit_ratings(game_id, [elo.RatingChange(game_id, ids[0], 0, ids[1], score_a, ra, na, at, elo.k_for(ga)), elo.RatingChange(game_id, ids[1], 1, ids[0], 1.0 - score_a, rb, nb, at, elo.k_for(gb))])
             if out != "changed":
                 return
         raise RuntimeError(f"the ratings of {game_id} kept changing while it was rated")

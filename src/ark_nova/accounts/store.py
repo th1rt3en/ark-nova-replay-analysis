@@ -297,7 +297,6 @@ class SqliteStore:
             return {r[0]: (r[1], r[2], r[3]) for r in self._db.execute(f"SELECT id, rating, rated_games, rated_wins FROM accounts WHERE id IN ({', '.join('?' * len(ids))})", list(ids))}
 
     def commit_ratings(self, game_id, changes):
-        from ark_nova.accounts.rating import K
         with self._lock, self._db:
             if self._db.execute("SELECT 1 FROM rating_history WHERE game_id = ?", (game_id,)).fetchone():
                 return "exists"
@@ -307,13 +306,13 @@ class SqliteStore:
                     return "changed"
             for c in changes:
                 self._db.execute("INSERT INTO rating_history (game_id, account_id, seat, opponent_id, result, rating_before, rating_after, delta, k, at) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                                 (game_id, c.account_id, c.seat, c.opponent_id, c.result, c.before, c.after, c.after - c.before, K, c.at))
+                                 (game_id, c.account_id, c.seat, c.opponent_id, c.result, c.before, c.after, c.after - c.before, c.k, c.at))
                 self._db.execute("UPDATE accounts SET rating = ?, rated_games = rated_games + 1, rated_wins = rated_wins + ? WHERE id = ?", (c.after, 1 if c.result == 1 else 0, c.account_id))
             return "applied"
 
     @staticmethod
     def _change(r) -> RatingChange:
-        return RatingChange(r["game_id"], r["account_id"], r["seat"], r["opponent_id"], r["result"], r["rating_before"], r["rating_after"], r["at"])
+        return RatingChange(r["game_id"], r["account_id"], r["seat"], r["opponent_id"], r["result"], r["rating_before"], r["rating_after"], r["at"], r["k"])
 
     def rating_changes(self, game_id):
         with self._lock:

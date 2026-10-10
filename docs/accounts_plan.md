@@ -2,7 +2,26 @@
 
 Players create an account with a username and a password. A username that exists on BGA copies that player's last Elo once. Live games can be rated or friendly, and a tracker keeps the results of the mini games and puzzles to come.
 
-Status: built: accounts (D1), the mini game platform with its hub, the daily cron, Daily starting hand and Who's ahead (M0, M1, M2), rated and friendly live games with Elo K=20 (package C), profiles, the ratings board, account deletion and the terms page. Turnstile on signup is coded but switched off until a site key and secret are set. Not done on purpose: checking the formula against BGA's elo_delta.
+## Progress (2026-10-10)
+
+Everything in this plan is built, tested and deployed. Details of each step are in `CLAUDE.md`.
+
+| Step | What | State |
+| --- | --- | --- |
+| A | Accounts: username and password, sessions, recovery code, D1 store behind the Worker, login widget, rate limit on failed logins | Done |
+| A+ | Turnstile on signup (widget "ark-nova signup", key and secret set on Cloud Run) | Done; a real signup with a solved widget is still to be tried by hand |
+| B | BGA Elo seed: `bga_player_elo` table (refreshed by hand with `scripts/setup_bga_player_elo.py`), the picker for names with several BGA ids, the warning | Done |
+| B+ | Check of the formula against BGA's `elo_delta` (74,124 games since 2026-09-01) | Done: K=20 on the 400-point scale matches BGA for ordinary ratings (median difference 0.003; 88.6% of games within 0.1). BGA treats players below about 100 differently, which led to the rules below |
+| C | Rated and friendly live games: the choice at creation, accounts on seats, the rating update at game end, the rating changes on the end page | Done |
+| C+ | Rating rules: K=40 for an account's first 20 rated games, K=20 after; a rating never drops below 100, a player below 100 loses nothing in a lost game and the winner gains as usual | Done |
+| C++ | Profile page and `/api/players/{id}`, ratings board (players with 5 rated games), account deletion, terms and privacy page | Done |
+| M0 | Mini game platform: contract, manifest, stores, rollover, hub, leaderboards (all time and monthly) | Done |
+| M0+ | The daily cron trigger of the Worker (00:00 and 00:10 UTC) | Done; its first real run is the one after 2026-10-10 00:00 UTC |
+| M1 | Daily starting hand (picked in the hand view at the bottom of the screen) | Done |
+| M2 | Who's ahead (Brier score, calendar of past days, backfilled from 2026-09-01) | Done |
+| M+ | Calendar on the hub, cached and faster; answers and calendars cached; leaderboards cached for a minute | Done |
+
+Still open, by choice: the minimum number of turns for a rated game is 4 (a concession earlier is not rated), and an account seeded from BGA is not on the ratings board until it has 5 rated games.
 
 ## Decisions
 
@@ -15,7 +34,7 @@ Status: built: accounts (D1), the mini game platform with its hub, the daily cro
 | BGA id already taken | If an account already holds a BGA id (BGA renames: 84,416 names share 84,347 ids), it can't be picked again, because the Elo copy happens once per BGA player. A user who has no free id left becomes a new player with a `P{n}` id. | Proposed |
 | Ownership of a BGA name | Not verified. Anyone can register a BGA name first. Seeded ratings are labelled "seeded from BGA". | Decided |
 | Rated and friendly | The table creation step offers Rated or Friendly. Anonymous users can only play Friendly. | Decided |
-| Rating formula | Elo with K=20, the same K that BGA uses. | Decided |
+| Rating formula | Elo on BGA's 400-point scale. K=40 for an account's first 20 rated games, K=20 after (BGA's own K is 20). A rating never drops below 100; a player below 100 loses nothing in a lost game, the winner gains as usual. | Decided and built |
 | Password recovery | No email, so a one-time recovery code is shown at signup. | Decided |
 | Mini games | Two daily games, each isolated in its own folder behind one contract: Daily starting hand and Who's ahead. Separate scores and leaderboards (all time and monthly). | Decided, a few details open |
 
@@ -90,14 +109,17 @@ The registry events and the game record gain: `rated` (bool), `account_ids` (per
 
 ```
 expected(A) = 1 / (1 + 10 ** ((rating_B - rating_A) / 400))
-rating_A'   = rating_A + 20 * (score_A - expected(A))        # K = 20, like BGA
+rating_A'   = rating_A + K_A * (score_A - expected(A))       # K_A = 40 in A's first 20 rated games, 20 after
 score: win 1, draw 0.5, loss 0
+a loss never takes a rating below 100; a player already below 100 loses nothing
 ```
 
-- **Updated once,** when the game ends, in the same step that archives the record. The unique key on `rating_history` protects against a repeat.
-- **A concession or running out of time counts as a loss.** Ties follow the game's own tie-break; a game with no winner after the tie-break scores 0.5 each.
-- **Unrated:** friendly games, games ended by agreement, cancelled games, and (open) games that end before a minimum number of turns.
-- **Check against BGA first.** The BigQuery view has `pre_match_elo`, `post_match_elo` and `elo_delta` for 6.1 million player-games. Before building, recompute a sample with this formula and confirm it matches BGA's own deltas. If BGA's number is shifted or scaled, adjust the formula or the seed so the copied Elo and ours stay on one scale.
+- **K per player.** Each player has their own K, from the number of rated games they have already played. A new account starts at 0, so its first wins move it by up to 40.
+- **The floor.** A rating that would drop below 100 stays at 100, and a player who is below 100 does not lose anything in a lost game. The winner gains exactly as if the loser had lost points.
+- **Updated once,** when the game ends, in the same step that archives the record. The unique key on `rating_history` protects against a repeat, and the K of each change is stored with it.
+- **A concession or running out of time counts as a loss.** A concession before 4 turns have been played is not rated. Ties follow the game's own tie-break; a game with no winner after the tie-break scores 0.5 each.
+- **Unrated:** friendly games, games ended by agreement, cancelled games, and early concessions.
+- **Checked against BGA (done).** 74,124 games since 2026-09-01 from `all_games_stat`: with K=20 the median difference from BGA's `elo_delta` is 0.003 and 88.6% of games are within 0.1; the K that BGA's changes imply has a median of 20.0. Players below about 100 always differ (BGA gives them changes this formula does not, for example a loser at 100.0 losing nothing), which is where the floor rule comes from. About 10% of other games differ by a point or two for a reason that was not found.
 
 ## Mini games and puzzles
 

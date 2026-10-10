@@ -130,8 +130,8 @@ describe("mini games", () => {
 
 describe("ratings", () => {
     const acct = async (name: string, rating = 0) => (await op("acct.create", { account: account(name, { rating }), bga_id: null })).body.result.id as string;
-    const ch = (game: string, a: string, b: string, seat: number, result: number, before: number, after: number) => ({ account_id: a, seat, opponent_id: b, result, before, after, at: "2026-10-11T10:00:00+00:00" });
-    const pair = (game: string, a: string, b: string, ra: number, rb: number, na: number, nb: number) => ({ game_id: game, k: 20, changes: [ch(game, a, b, 0, 1, ra, na), ch(game, b, a, 1, 0, rb, nb)] });
+    const ch = (game: string, a: string, b: string, seat: number, result: number, before: number, after: number) => ({ account_id: a, seat, opponent_id: b, result, before, after, at: "2026-10-11T10:00:00+00:00", k: 40 });
+    const pair = (game: string, a: string, b: string, ra: number, rb: number, na: number, nb: number) => ({ game_id: game, changes: [ch(game, a, b, 0, 1, ra, na), ch(game, b, a, 1, 0, rb, nb)] });
 
     it("applies a game once, moves both ratings and refuses what is stale", async () => {
         const a = await acct("RateA"), b = await acct("RateB"), c = await acct("RateC");
@@ -143,7 +143,7 @@ describe("ratings", () => {
         expect((await op("rating.changes", { game_id: "G2" })).body.result).toEqual([]);
         expect((await op("rating.of", { ids: [c] })).body.result[0]).toEqual({ id: c, rating: 0, rated_games: 0, rated_wins: 0 });
         const rows = (await op("rating.changes", { game_id: "G1" })).body.result;
-        expect(rows.map((r: any) => [r.account_id, r.result, r.rating_before, r.rating_after, r.delta])).toEqual([[a, 1, 0, 10, 10], [b, 0, 0, -10, -10]]);
+        expect(rows.map((r: any) => [r.account_id, r.result, r.rating_before, r.rating_after, r.delta, r.k])).toEqual([[a, 1, 0, 10, 10, 40], [b, 0, 0, -10, -10, 40]]);
         expect((await op("rating.history", { account_id: a, limit: 5 })).body.result.map((r: any) => r.game_id)).toEqual(["G1"]);
     });
 
