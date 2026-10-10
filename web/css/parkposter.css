@@ -238,11 +238,13 @@ body.viewer .dockpanel { position: absolute; left: 150px; top: 18px; z-index: 2;
 body.viewer .dock:hover .dockpanel { transform: translateY(-82px); transition-delay: 0s; }
 body.viewer .dockhead { display: none; }
 body.viewer .dockpanel .cards { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 0; padding: 14px 0 0 12px; }
-body.viewer .dockpanel .cards .card, body.viewer .dockpanel .cards.small .card { flex: none; width: 128px; height: auto; border: 0; border-radius: 9px; box-shadow: 0 4px 0 var(--ink), 0 0 0 3px var(--ink);
-  margin-right: calc(-1 * (128px - min(106px, 520px / var(--n, 5)))); transform: rotate(calc(var(--i, 0) * 3deg)); transform-origin: 50% 120%; }
+body.viewer .dockpanel .cards .card, body.viewer .dockpanel .cards.small .card { flex: none; width: 128px; height: auto; border: 0; border-radius: 8px; box-shadow: 0 0 0 1px rgba(26, 31, 36, .55), 0 3px 7px rgba(0, 0, 0, .38);
+  /* a real fan: every card turns about one common pivot far below the cards, so the cards spread along a circle (the ends drop by themselves); the angle shrinks with the number of cards */
+  --a: min(4.5deg, calc(40deg / var(--n, 5)));
+  margin-right: calc(-1 * (128px - min(46px, 330px / var(--n, 5)))); transform: rotate(calc(var(--i, 0) * var(--a))); transform-origin: 50% 230%; }
 body.viewer .dockpanel .cards .card:hover { z-index: 6; }
 body.viewer .dockpanel .cards .empty { display: none; }
-body.viewer .dockpanel .cards .card.markable.marked { box-shadow: 0 4px 0 var(--ink), 0 0 0 5px var(--gold); }
+body.viewer .dockpanel .cards .card.markable.marked { box-shadow: 0 0 0 3px var(--gold), 0 3px 7px rgba(0, 0, 0, .38); }
 
 /* ---- loading box and other small things ------------------------------------------------------------------------------------------------------------------------------------ */
 body.viewer .status { background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
