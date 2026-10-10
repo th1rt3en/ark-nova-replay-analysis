@@ -77,6 +77,7 @@ export function renderDock(st) {
     who.style.color = seatColor(shownSel.seat);
     head.append(who, document.createTextNode(shownSel.kind === 'hand' ? ' - hand' : ' - endgame cards'));
     const shown = rows[shownSel.seat + ':' + shownSel.kind];
+    shown.querySelectorAll('.card-gone').forEach((g) => g.remove());      // (the fading "departed" cards would take a slot of the fan and vanish later: the fan would stay lopsided)
     const fan = [...shown.children].filter((c) => c.classList.contains('card'));         // the cards lie in a fan: --i = the place of a card counted from the middle, --n = how many (the CSS rotates and overlaps them)
     shown.style.setProperty('--n', String(Math.max(1, fan.length)));
     fan.forEach((c, i) => c.style.setProperty('--i', (i - (fan.length - 1) / 2).toFixed(1)));
