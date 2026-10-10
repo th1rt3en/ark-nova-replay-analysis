@@ -1,7 +1,7 @@
 // [module] Conservation project panel: project cards, worker / owner markers, blocked cubes.
 import { el, mix, seatColor, svg } from './util.js';
 import { S } from './state.js';
-import { hidePreview, info, largeOf, showPreview, zoneNew } from './cards.js';
+import { bindPreview, info, largeOf, zoneNew } from './cards.js';
 import { iconUrl } from './icons.js';
 import { unusedColor } from './association.js';
 
@@ -52,8 +52,7 @@ export function projectPanel(st, keys, count, iconName, title, blocked) {
       if (stripOf(pc)) {
         const art = el('img', 'projstripart'); art.src = stripOf(pc); art.alt = pc.name;
         line.append(art);
-        line.addEventListener('mouseenter', () => showPreview(largeOf(pc)));         // (the whole card)
-        line.addEventListener('mouseleave', hidePreview);
+        bindPreview(line, () => largeOf(pc));         // (the whole card)
       }
       const spots = STRIP_CUBES[keys[i]] || [];
       if (blocked) line.append(blockedCube(i, undefined, undefined, spots[i]));

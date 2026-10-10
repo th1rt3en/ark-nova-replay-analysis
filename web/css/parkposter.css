@@ -368,3 +368,6 @@ body.viewer .handtray .cards .card.marked:not(.dragging) { transform: none; }
 body.viewer .draftcard.marked::after { z-index: 3; }
 body.viewer .draftcard.marked::before { z-index: 2; }
 body.viewer .tlhead::before { content: ""; position: absolute; inset: -4px -9px; }       /* (a wider hit area for grabbing the head) */
+
+/* a long press on a card opens the enlarged view (cards.js bindPreview): no iOS callout, no text selection */
+.card, .draftcard { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }

@@ -2,7 +2,7 @@
 import { $, el, seatColor, svg } from './util.js';
 import { PLAY, S } from './state.js';
 import { eyeLocked, eyeOpen, seatOrder, toggleEye } from './pov.js';
-import { hidePreview, showPreview, zoneNew } from './cards.js';
+import { bindPreview, zoneNew } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, pic, workerUrl } from './icons.js';
 import { clockBadge, gameMenu } from './play.js';
 
@@ -154,8 +154,7 @@ export function sidePanel(st) {
       c.title = 'Slot ' + (i + 1) + ': ' + ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + (a.variant ? ' (variant ' + a.variant + ')' : '');
       c.append(pic(ACTION_ICON[a.type], 40));
       const art = '/action_cards/' + a.type + '_' + (S.replay.marine_worlds ? a.variant : 0) + '_' + (a.level === 2 ? 2 : 1) + '.webp';     // the whole action card
-      c.addEventListener('mouseenter', () => showPreview(art));
-      c.addEventListener('mouseleave', hidePreview);
+      bindPreview(c, art);
       if (S.replay.marine_worlds && a.variant) {         // the variant's silver effect badge (side I or II of the card) on the top left of the action card
         const b = el('img', 'variant');
         b.src = '/action_icons/' + a.type + '_' + a.variant + '_' + (a.level === 2 ? 2 : 1) + '.webp'; b.alt = 'Variant ' + a.variant;

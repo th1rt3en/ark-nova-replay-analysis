@@ -2,7 +2,7 @@
 import { $, el, seatColor } from './util.js';
 import { FORK, PLAY, S } from './state.js';
 import { curState, seatOrder } from './pov.js';
-import { cardMarks, cardName, hidePreview, orderedKeys, showPreview } from './cards.js';
+import { bindPreview, cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { renderDock } from './dock.js';
 import { forkBar, keepSel, playFork } from './fork.js';
@@ -122,8 +122,7 @@ function draftBar(bar, d) {
       const card = el('div', 'draftcard picked');
       const img = el('img'); img.src = draftCardUrl(v); img.alt = v;
       card.append(img, el('span', 'draftcheck', '✓'));
-      card.addEventListener('mouseenter', () => showPreview(draftCardUrl(v)));
-      card.addEventListener('mouseleave', hidePreview);
+      bindPreview(card, () => draftCardUrl(v));
       zone.append(card);
       row.append(zone);
     }
@@ -142,8 +141,7 @@ function draftBar(bar, d) {
       card.append(img);
       if (chosen.includes(v)) card.append(el('span', 'draftcheck', '✓'));
       if (d.auto && d.auto[seat] === v) card.title = 'Added at random: the three variants were of one action card';
-      card.addEventListener('mouseenter', () => showPreview(draftCardUrl(v)));
-      card.addEventListener('mouseleave', hidePreview);
+      bindPreview(card, () => draftCardUrl(v));
       row.append(card);
     }
     group.append(head, row);

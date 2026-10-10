@@ -24,8 +24,7 @@ export function card(key, extraClass) {
     img.src = c.image; img.alt = cardName(key);                // (not lazy: a card drawn again with the page's next render would show an empty frame first)
     img.onerror = () => { img.remove(); d.append(textFace(key, c)); };
     d.append(img);
-    d.addEventListener('mouseenter', () => showPreview(largeOf(c), !!d.closest('#dock')));           // (a card of the hand is shown in the middle of the screen)
-    d.addEventListener('mouseleave', hidePreview);
+    bindPreview(d, () => largeOf(c), () => !!d.closest('#dock'));                                    // (a card of the hand is shown in the middle of the screen)
     d.addEventListener('click', () => { if (d.closest('#dock')) holdPreview(largeOf(c)); });         // (a click on a card of the hand: its enlarged view stays away until the pointer has left the card)
   } else {
     d.append(textFace(key, c));
@@ -39,14 +38,40 @@ let previewTimer = 0, lastTouch = false;
 document.addEventListener('pointerdown', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
 document.addEventListener('pointermove', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
 let heldSrc = null;                                                          // the enlarged card that a click on a card of the hand switched off; the card is drawn again after the click (new element under the pointer), so this is not tied to an element
-function holdPreview(src) { if (lastTouch) return; heldSrc = src; hidePreview(); }       // (on a touch screen a tap is what opens the enlarged card: never held there)
+function holdPreview(src) { if (lastTouch) return; heldSrc = src; hidePreview(); }       // (touch: the enlarged card opens by a long press, not by hovering: nothing to hold)
 export function showPreview(src, centered) {
   clearTimeout(previewTimer);
   if (heldSrc === src) return;                                               // (still on the clicked card: no enlarged card, not even after the delay)
   heldSrc = null;                                                            // (another card: the usual rule again)
   const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;                      // (the action card draft lightbox is open: no enlarged cards, neither in the lightbox nor in the dimmed background)
-  const show = () => { const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false; };
-  if (lastTouch) show(); else previewTimer = setTimeout(show, PREVIEW_DELAY);
+  if (lastTouch) return;                                                     // (the mouse events that a tap makes up: on a touch screen only a long press opens it, see bindPreview)
+  previewTimer = setTimeout(() => showNow(src, centered), PREVIEW_DELAY);
+}
+function showNow(src, centered) {
+  const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;
+  const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false;
+}
+// Puts the enlarged view on an element. Mouse: after the pointer has rested on it for PREVIEW_DELAY. Touch: a tap keeps its normal job (selecting, ...); the view opens when a finger stays on the element for TOUCH_HOLD ms
+// without moving (more than TOUCH_SLOP px cancels it, so dragging a card of the hand still works) and stays while it is down: lifting the finger closes it, and the click that may follow is swallowed.
+// `src` and `centered` are values or functions (the card may change between the binding and the hover).
+const TOUCH_HOLD = 1000, TOUCH_SLOP = 10;
+export function bindPreview(elm, src, centered) {
+  const get = (v) => (typeof v === 'function' ? v() : v);
+  elm.addEventListener('mouseenter', () => showPreview(get(src), !!get(centered)));
+  elm.addEventListener('mouseleave', hidePreview);
+  let timer = 0, x0 = 0, y0 = 0, held = false;
+  const stop = () => { clearTimeout(timer); timer = 0; };
+  elm.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    held = false; x0 = e.clientX; y0 = e.clientY; stop();
+    timer = setTimeout(() => { held = true; showNow(get(src), !!get(centered)); }, TOUCH_HOLD);
+  });
+  elm.addEventListener('pointermove', (e) => { if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > TOUCH_SLOP) stop(); });
+  const lift = () => { stop(); if (held) { hidePreview(); setTimeout(() => { held = false; }, 400); } };            // (lifting the finger closes the enlarged view; the click that may follow is still swallowed)
+  elm.addEventListener('pointerup', lift);
+  elm.addEventListener('pointercancel', lift);
+  elm.addEventListener('click', (e) => { if (held) { held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);       // (the end of a long press is not a click)
+  elm.addEventListener('contextmenu', (e) => { if (lastTouch) e.preventDefault(); });                                                   // (no browser menu on a long press)
 }
 export function hidePreview() { clearTimeout(previewTimer); $('preview').hidden = true; }
 document.addEventListener('mouseout', (e) => { if (heldSrc && e.target.closest && e.target.closest('.card') && !(e.relatedTarget && e.target.closest('.card').contains(e.relatedTarget))) heldSrc = null; }, true);       // (the pointer left the card: the next hover on it counts again)
