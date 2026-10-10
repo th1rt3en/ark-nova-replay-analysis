@@ -915,8 +915,8 @@ html { overflow-y: scroll; }
 .draftkept .draftcard.picked { outline: 4px solid #2ebe54; outline-offset: 1px; }
 
 /* dragging a hand / endgame card to a new place in its row */
-.dockpanel .card[draggable="true"] { cursor: grab; }
-.dockpanel .card.dragging { opacity: .35; cursor: grabbing; }
+.dockpanel .card.markable { cursor: grab; }
+.dockpanel .card.dragging { cursor: grabbing; }       /* (full opacity: the card itself follows the pointer, see dragRow in cards.js) */
 
 /* the action cards of the info boxes before they are drawn (action card draft) */
 .ppactions.unseen { visibility: hidden; }

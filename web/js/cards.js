@@ -84,36 +84,64 @@ export function orderedKeys(zone, keys) {
   return out.concat(left);
 }
 export function quietly(fn) { quiet = true; try { fn(); } finally { quiet = false; } }           // (re-drawing without the arrival / departure flashes)
-function dragRow(row, zone, shown, nodes) {                              // cards of this row can be dragged to another position within the row
-  let dragged = null;
+// Cards of this row can be dragged to another position within the row. The drag is done with pointer events (not the browser's drag and drop, whose drag image is always see-through):
+// the card itself follows the pointer at full opacity (--dx / --dy move it, parkposter.css), and the others make room when the pointer passes the middle of a neighbour.
+function dragRow(row, zone, shown, nodes) {
   nodes.forEach((node) => {
     if (!node.classList || node.classList.contains('card-gone')) return;
-    node.draggable = true;
     node.querySelectorAll('img').forEach((im) => { im.draggable = false; });
-    node.addEventListener('dragstart', (e) => { dragged = node; node.classList.add('dragging'); hidePreview(); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); });
-    node.addEventListener('dragover', (e) => {
-      if (!dragged || dragged === node) return;
-      e.preventDefault();
-      const r = node.getBoundingClientRect();
-      const after = e.clientX > r.left + r.width / 2;
-      const ref = after ? node.nextSibling : node;
-      if (ref !== dragged && dragged.nextSibling !== ref) row.insertBefore(dragged, ref);
-    });
-    node.addEventListener('dragend', () => {
-      node.classList.remove('dragging');
-      if (dragged !== node) return;
-      dragged = null;
-      const live = [...row.children].filter((n) => n.dataset && n.dataset.key);
-      const keys = live.map((n) => n.dataset.key);
-      if (keys.join('|') === shown.join('|')) return;
-      const marked = shown.filter((k, i) => cardMarks.has(zone + '#' + i));                     // the highlighted cards stay highlighted
-      for (const m of [...cardMarks]) if (m.startsWith(zone + '#')) cardMarks.delete(m);
-      const left = keys.slice();
-      for (const k of marked) { const i = left.indexOf(k); if (i >= 0) { cardMarks.add(zone + '#' + i); left[i] = null; } }
-      userOrder[zone] = keys;
-      document.dispatchEvent(new Event('cardorder'));
+    node.style.touchAction = 'none';
+    node.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      const k = S.scale || 1, startX = e.clientX, startY = e.clientY, home = { left: node.offsetLeft, top: node.offsetTop };
+      let moved = false;
+      const place = () => {                                            // the card keeps its distance to the pointer, however the row was rearranged meanwhile
+        const dx = (cx - startX) / k - (node.offsetLeft - home.left), dy = (cy - startY) / k - (node.offsetTop - home.top);
+        node.style.setProperty('--dx', dx.toFixed(1) + 'px'); node.style.setProperty('--dy', dy.toFixed(1) + 'px');
+      };
+      let cx = startX, cy = startY;
+      const move = (ev) => {
+        cx = ev.clientX; cy = ev.clientY;
+        if (!moved) {
+          if (Math.hypot(cx - startX, cy - startY) < 6) return;       // (a click, not a drag)
+          moved = true; node.classList.add('dragging'); hidePreview();
+          try { node.setPointerCapture(e.pointerId); } catch (x) { /* already released */ }
+        }
+        for (const other of [...row.children]) {                      // (the neighbour whose middle the pointer has passed swaps places with the card)
+          if (other === node || !other.dataset || !other.dataset.key) continue;
+          const r = other.getBoundingClientRect();
+          if (cy < r.top - 40 || cy > r.bottom + 40) continue;
+          const mid = r.left + r.width / 2, before = other.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING;       // (node comes before other)
+          if (before && cx > mid) other.after(node);
+          else if (!before && cx < mid) other.before(node);
+          else continue;
+          refan(row);
+        }
+        place();
+      };
+      const up = () => {
+        node.removeEventListener('pointermove', move); node.removeEventListener('pointerup', up); node.removeEventListener('pointercancel', up);
+        if (!moved) return;
+        node.classList.remove('dragging'); node.style.removeProperty('--dx'); node.style.removeProperty('--dy');
+        node.addEventListener('click', (ev) => ev.stopImmediatePropagation(), { capture: true, once: true });          // (the click that ends a drag does not mark the card)
+        const live = [...row.children].filter((n) => n.dataset && n.dataset.key);
+        const keys = live.map((n) => n.dataset.key);
+        if (keys.join('|') === shown.join('|')) return;
+        const marked = shown.filter((kk, i) => cardMarks.has(zone + '#' + i));                     // the highlighted cards stay highlighted
+        for (const m of [...cardMarks]) if (m.startsWith(zone + '#')) cardMarks.delete(m);
+        const left = keys.slice();
+        for (const kk of marked) { const i = left.indexOf(kk); if (i >= 0) { cardMarks.add(zone + '#' + i); left[i] = null; } }
+        userOrder[zone] = keys;
+        document.dispatchEvent(new Event('cardorder'));
+      };
+      node.addEventListener('pointermove', move); node.addEventListener('pointerup', up); node.addEventListener('pointercancel', up);
     });
   });
+}
+function refan(row) {                                                // the cards of a fan carry their place in --i: set again after the order changed
+  const cards = [...row.children].filter((n) => n.classList && n.classList.contains('card') && !n.classList.contains('card-gone'));
+  if (!row.style.getPropertyValue('--n')) return;
+  cards.forEach((c, i) => c.style.setProperty('--i', (i - (cards.length - 1) / 2).toFixed(1)));
 }
 export function cardRow(rawKeys, cls, emptyText, zone, dimmed, markable) {
   const row = el('div', 'cards' + (cls ? ' ' + cls : ''));

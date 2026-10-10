@@ -237,11 +237,13 @@ body.viewer .dockpanel { position: absolute; left: 150px; top: calc(18px * var(-
   transition: transform .35s cubic-bezier(.2, .9, .2, 1) .08s; }
 body.viewer .dock:hover .dockpanel { transform: translateY(calc(-82px * var(--hk))); transition-delay: 0s; }
 body.viewer .dockhead { display: none; }
-body.viewer .dockpanel .cards { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 0; padding: calc(14px * var(--hk)) 0 0 calc(12px * var(--hk) + 321px * var(--hk) * sin(calc((var(--n, 5) - 1) / 2 * min(4.5deg, calc(40deg / var(--n, 5)))))); }      /* (the left padding makes room for the outermost card, which swings out to the left) */
+/* The fan: --amax = the angle between two neighbouring cards, --atot = the most the whole fan may turn (so a big hand gets smaller steps), --sp = the distance of two neighbouring cards (the rotation about the common
+   pivot adds 321px * sin(angle) of it, the overlap supplies the rest). The cards lie on a circle: every card turns about one pivot far below the cards, the ends drop by themselves. */
+body.viewer .dockpanel .cards { --amax: 4.5deg; --atot: 40deg; --sp: min(71px, calc(530px / var(--n, 5))); --a: min(var(--amax), calc(var(--atot) / var(--n, 5)));
+  display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 0; padding: calc(14px * var(--hk)) 0 0 calc(12px * var(--hk) + 400px * var(--hk) * sin(calc((var(--n, 5) - 1) / 2 * var(--a)))); }      /* (the left padding makes room for the outermost card, which swings out to the left) */
 body.viewer .dockpanel .cards .card, body.viewer .dockpanel .cards.small .card { flex: none; width: calc(128px * var(--hk)); height: auto; border: 0; border-radius: calc(8px * var(--hk)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .55), 0 3px 7px rgba(0, 0, 0, .38);
-  /* a real fan: every card turns about one common pivot far below the cards, so the cards spread along a circle (the ends drop by themselves); the angle shrinks with the number of cards */
-  --a: min(4.5deg, calc(40deg / var(--n, 5)));
-  margin-right: calc(-1 * (128px * var(--hk) - min(46px * var(--hk), 330px * var(--hk) / var(--n, 5)))); transform: rotate(calc(var(--i, 0) * var(--a))); transform-origin: 50% 230%; }
+  margin-right: calc(-1 * (128px - (var(--sp) - 321px * sin(var(--a)))) * var(--hk)); transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--i, 0) * var(--a))); transform-origin: 50% 230%; }
+body.viewer .dockpanel .cards .card.dragging, body.viewer .dockpanel .cards .card.dragging:hover { z-index: 20; cursor: grabbing; transition: none; box-shadow: 0 0 0 1px rgba(26, 31, 36, .55), 0 10px 18px rgba(0, 0, 0, .45); }
 body.viewer .dockpanel .cards .card:hover { z-index: 6; }
 body.viewer .dockpanel .cards .empty { display: none; }
 body.viewer .dockpanel .cards .card.markable.marked { box-shadow: 0 0 0 3px var(--gold), 0 3px 7px rgba(0, 0, 0, .38); }
