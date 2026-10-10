@@ -2,10 +2,12 @@
 //   /ws/E12?s=<seat token>            -> the Table Durable Object of E12 (WebSocket)
 //   /internal/table/E12/<route>       -> the same object's internal routes, only with a valid signature of Cloud Run
 //   /internal/counter/<next|ensure>   -> the id counter, same rule
+//   /internal/store/<op>              -> the accounts and mini game tables in D1 (src/store.ts), same signature rule
 //   /api/*                            -> Cloud Run
 import { verify } from "./auth";
 export { Table } from "./table";
 export { Counter } from "./counter";
+import { runStoreOp } from "./store";
 
 const TABLE_ID = /^E\d{1,9}$/;
 const json = (data: unknown, status = 200): Response => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
@@ -42,6 +44,15 @@ export default {
                 return json({ n: await counter.ensureAtLeast(n) });
             }
             return json({ status: "error", message: "wrong method" }, 405);
+        }
+
+        m = /^\/internal\/store\/([a-z_.]+)$/.exec(path);
+        if (m) {
+            if (request.method !== "POST") return json({ status: "error", message: "wrong method" }, 405);
+            if (!(await verify(env.INTERNAL_SECRET, request, path))) return json({ status: "error", message: "forbidden" }, 403);
+            const args = await request.json<Record<string, unknown>>().catch(() => null);
+            if (args === null || typeof args !== "object") return json({ status: "error", message: "send a JSON object" }, 422);
+            return runStoreOp(env.DB, m[1], args);
         }
 
         if (path.startsWith("/api/")) {

@@ -76,14 +76,26 @@ def _config(rec: TableRecord) -> dict:
     return {"table_id": rec.table_id, "logged": rec.logged, "player_maps": rec.player_maps, "marine_worlds": rec.marine_worlds}
 
 
+def _d1_client(st: Settings):
+    from ark_nova.storeclient import StoreClient
+    if not (st.live_keeper_url and st.internal_secret):
+        raise RuntimeError("STORE_BACKEND=d1 needs LIVE_KEEPER_URL and INTERNAL_SECRET (the Worker holds the D1 database)")
+    return StoreClient(st.live_keeper_url, st.internal_secret)
+
+
 def _default_accounts(st: Settings):
-    """The accounts, only when a store is configured (`ACCOUNTS_DB`): an account kept in memory would be lost on the next restart."""
-    if not st.accounts_db:
+    """The accounts, only when a persistent store is configured (`STORE_BACKEND=d1`, or a SQLite file in `ACCOUNTS_DB`): an account kept in memory would be lost on the next restart."""
+    if not (st.store_backend == "d1" or st.accounts_db):
         return None
     from ark_nova.accounts.seeds import BigQuerySeedIndex, NoSeeds
     from ark_nova.accounts.service import AccountService
-    from ark_nova.accounts.store import SqliteStore
-    return AccountService(SqliteStore(st.accounts_db), BigQuerySeedIndex(st.bga_seed_table) if st.bga_seed_table else NoSeeds())
+    if st.store_backend == "d1":
+        from ark_nova.accounts.d1 import D1AccountStore
+        store = D1AccountStore(_d1_client(st))
+    else:
+        from ark_nova.accounts.store import SqliteStore
+        store = SqliteStore(st.accounts_db)
+    return AccountService(store, BigQuerySeedIndex(st.bga_seed_table) if st.bga_seed_table else NoSeeds())
 
 
 def _default_minigames(app: FastAPI):
@@ -104,7 +116,12 @@ def _default_minigames(app: FastAPI):
         return GameLog(json.loads(app.state.logs.read(rec.gcs_path, table_id)), table_id)
 
     sources = BigQuerySourceIndex() if st.bq_table and games else ListSourceIndex([])
-    return MiniGameService(SqliteStore(st.minigames_db) if st.minigames_db else MemoryStore(), sources, read_log, games, entries)
+    if st.store_backend == "d1":
+        from ark_nova.minigames.platform.d1 import D1MiniGameStore
+        store = D1MiniGameStore(_d1_client(st))
+    else:
+        store = SqliteStore(st.minigames_db) if st.minigames_db else MemoryStore()
+    return MiniGameService(store, sources, read_log, games, entries)
 
 
 def _error(status: int, code: str, message: str, **extra) -> JSONResponse:
