@@ -8,6 +8,7 @@ import { verify } from "./auth";
 export { Table } from "./table";
 export { Counter } from "./counter";
 import { runStoreOp } from "./store";
+import { rollover } from "./cron";
 
 const TABLE_ID = /^E\d{1,9}$/;
 const json = (data: unknown, status = 200): Response => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
@@ -61,6 +62,10 @@ export default {
         }
 
         return json({ status: "error", message: "not found" }, 404);
+    },
+    // 00:00 UTC (and a backstop at 00:10): the daily puzzles of the mini games, created by Cloud Run
+    async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+        ctx.waitUntil(rollover(env));
     },
 } satisfies ExportedHandler<Env>;
 
