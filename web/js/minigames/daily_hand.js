@@ -98,7 +98,7 @@ async function mount(puzzle) {
     if (note) root.append(note);
     const boards = el('div', 'pz-board');
     root.append(boards);
-    renderBoards(boards, KEY, 'Points');
+    renderBoards(boards, KEY, 'Points', true);          // (fresh: the player's own score must be in it)
   }
 
   document.addEventListener('account-changed', () => { draw(); });

@@ -92,7 +92,7 @@ function mount(puzzle) {
     root.append(p);
     if (accountsOn() && !window.arkAccount) root.append(el('p', 'pz-login', 'Log in or create an account to save your results and compete on the leaderboards.'));
     const boards = el('div', 'pz-board'); root.append(boards);
-    renderBoards(boards, KEY, 'Mean Brier');
+    renderBoards(boards, KEY, 'Mean Brier', true);          // (fresh: the player's own score must be in it)
   }
 
   document.addEventListener('account-changed', () => { if (result) draw(); });

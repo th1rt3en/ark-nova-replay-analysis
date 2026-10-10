@@ -46,6 +46,12 @@ describe("accounts", () => {
         expect((await op("acct.held_ids", { ids: [] })).body.result).toEqual([]);
     });
 
+    it("gives the usernames of a list of ids in one call", async () => {
+        const r = (await op("acct.usernames", { ids: ["P1", "89107474", "nope"] })).body.result;
+        expect(r.sort((a: any, b: any) => a.id.localeCompare(b.id))).toEqual([{ id: "89107474", username: "Xiao93" }, { id: "P1", username: "Alice" }]);
+        expect((await op("acct.usernames", { ids: [] })).body.result).toEqual([]);
+    });
+
     it("finds, updates and keeps sessions", async () => {
         const got = (await op("acct.by_username", { username_lower: "alice" })).body.result;
         expect(got).toMatchObject({ id: "P1", username: "Alice" });

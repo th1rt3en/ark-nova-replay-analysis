@@ -6,7 +6,7 @@ import re
 import time
 from typing import Optional
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -61,15 +61,16 @@ def add_routes(app: FastAPI, service: MiniGameService, internal_secret: str = ""
         return service.days(key, month, caller_of(request))
 
     @app.get("/api/minigames/{key}/leaderboard")
-    def leaderboard(key: str, request: Request, period: str = "all"):
+    def leaderboard(key: str, request: Request, period: str = "all", fresh: Optional[str] = Query(None, alias="_")):
+        """Cached for a minute by the browser and the edge (the Pages Function); a page that has just made a submission asks with `_=<anything>` to see its own score at once."""
         board = service.leaderboard(key, period)
         board["rows"] = board["rows"][:50]
         accounts = getattr(request.app.state, "accounts", None)
-        if accounts is not None:                                       # the names of the listed accounts (the board itself only knows ids)
+        if accounts is not None and board["rows"]:                     # the names of the listed accounts (the board itself only knows ids): one call
+            names = accounts.store.usernames([r["account_id"] for r in board["rows"]])
             for r in board["rows"]:
-                acc = accounts.store.by_id(r["account_id"])
-                r["name"] = acc.username if acc else r["account_id"]
-        return board
+                r["name"] = names.get(r["account_id"], r["account_id"])
+        return JSONResponse(board, headers={"Cache-Control": "no-store" if fresh is not None else "public, max-age=60"})
 
     @app.post("/api/minigames/{key}/submit")
     async def submit(key: str, request: Request):

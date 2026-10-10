@@ -53,6 +53,9 @@ class AccountStore(Protocol):
     def held_ids(self, ids: list[str]) -> set[str]:
         """Which of these ids already belong to an account."""
 
+    def usernames(self, ids: list[str]) -> dict[str, str]:
+        """The username of each of these ids that has an account (one call, for the leaderboards)."""
+
     def set_passwords(self, account_id: str, password_hash: str, recovery_hash: str) -> None: ...
 
     def touch_login(self, account_id: str, at: str) -> None: ...
@@ -101,6 +104,9 @@ class MemoryStore:
 
     def held_ids(self, ids):
         return {i for i in ids if i in self._accounts}
+
+    def usernames(self, ids):
+        return {i: self._accounts[i].username for i in ids if i in self._accounts}
 
     def set_passwords(self, account_id, password_hash, recovery_hash):
         with self._lock:
@@ -183,6 +189,12 @@ class SqliteStore:
             return set()
         with self._lock:
             return {r[0] for r in self._db.execute(f"SELECT id FROM accounts WHERE id IN ({', '.join('?' * len(ids))})", list(ids))}
+
+    def usernames(self, ids):
+        if not ids:
+            return {}
+        with self._lock:
+            return {r[0]: r[1] for r in self._db.execute(f"SELECT id, username FROM accounts WHERE id IN ({', '.join('?' * len(ids))})", list(ids))}
 
     def set_passwords(self, account_id, password_hash, recovery_hash):
         with self._lock, self._db:

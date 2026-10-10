@@ -54,6 +54,7 @@ def test_accounts_through_the_worker(client):
     with pytest.raises(IdTaken):
         store.create_account(draft(name + "y"), bga)
     assert store.held_ids([bga, a.id, "nope"]) == {bga, a.id} and store.held_ids([]) == set()
+    assert store.usernames([bga, a.id, "nope"]) == {bga: name + "x", a.id: name} and store.usernames([]) == {}
 
     store.set_passwords(a.id, "h2", "r2")
     store.touch_login(a.id, "2026-10-11T00:00:00+00:00")

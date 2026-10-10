@@ -54,6 +54,11 @@ const OPS: Record<string, Op> = {
         const rows = await db.prepare(`SELECT id FROM accounts WHERE id IN (${ids.map(() => "?").join(", ")})`).bind(...ids).all<{ id: string }>();
         return rows.results.map((r) => r.id);
     },
+    "acct.usernames": async (db, a) => {
+        const ids = strs(a.ids);
+        if (!ids.length) return [];
+        return (await db.prepare(`SELECT id, username FROM accounts WHERE id IN (${ids.map(() => "?").join(", ")})`).bind(...ids).all<{ id: string; username: string }>()).results;
+    },
     "acct.set_passwords": async (db, a) => { await db.prepare("UPDATE accounts SET password_hash = ?, recovery_hash = ? WHERE id = ?").bind(str(a.password_hash), str(a.recovery_hash), str(a.id)).run(); return null; },
     "acct.touch_login": async (db, a) => { await db.prepare("UPDATE accounts SET last_login_at = ? WHERE id = ?").bind(str(a.at), str(a.id)).run(); return null; },
     "acct.add_session": async (db, a) => {

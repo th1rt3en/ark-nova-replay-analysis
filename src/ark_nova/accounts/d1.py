@@ -31,6 +31,9 @@ class D1AccountStore:
     def held_ids(self, ids):
         return set(self.c.call("acct.held_ids", {"ids": list(ids)}, retry=True)) if ids else set()
 
+    def usernames(self, ids):
+        return {r["id"]: r["username"] for r in self.c.call("acct.usernames", {"ids": list(ids)}, retry=True)} if ids else {}
+
     def set_passwords(self, account_id, password_hash, recovery_hash):
         self.c.call("acct.set_passwords", {"id": account_id, "password_hash": password_hash, "recovery_hash": recovery_hash}, retry=True)
 

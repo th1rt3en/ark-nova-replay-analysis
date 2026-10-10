@@ -5,5 +5,7 @@ export async function onRequest({ request, env }) {
         return new Response(JSON.stringify({ status: "error", message: "the API is not configured" }), { status: 502, headers: { "Content-Type": "application/json" } });
     }
     const url = new URL(request.url);
-    return fetch(new Request(env.CLOUD_RUN_URL.replace(/\/$/, "") + url.pathname + url.search, request));
+    const init = {};
+    if (request.method === "GET" && /^\/api\/minigames\/[a-z_]+\/leaderboard$/.test(url.pathname) && !url.searchParams.has("_")) init.cf = { cacheEverything: true, cacheTtl: 60 };       // a leaderboard is the same for everybody: the edge keeps it a minute
+    return fetch(new Request(env.CLOUD_RUN_URL.replace(/\/$/, "") + url.pathname + url.search, request), init);
 }
