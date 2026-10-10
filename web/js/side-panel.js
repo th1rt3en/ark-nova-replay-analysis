@@ -60,7 +60,7 @@ function headerStats(st, flash) {
   root.replaceChildren();
   const rnd = flash('round', st.round, el('div', 'pill rnd'));
   rnd.title = 'Round ' + st.round + ': a new round starts when a break ends';
-  rnd.append(el('b', 'rcircle', st.round));                              // (just the number: the tooltip says what it is, the room goes to the logo)
+  rnd.append(el('span', 'lab', 'Round'), el('b', 'rn', st.round));          // (stacked: the word small above the number, a slim pill: the room goes to the logo)
   const brk = flash('break', st.break_position, el('div', 'pill brk'));
   brk.title = 'Break track: the break ends the round when the token reaches 9';
   const pips = el('div', 'pips');

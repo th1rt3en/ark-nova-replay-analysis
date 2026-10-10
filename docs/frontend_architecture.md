@@ -37,7 +37,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `fork.js` | fork mode: `initFork`, placement controls, `commitSteps`, `playFork`, `forkBar` |
 | `shared.js` | table centre: card folders (zoo place names + numbers like BGA), display, reputation track, thresholds, conservation track |
 | `pile.js` | discard / endgame deck popup |
-| `side-panel.js` | the two player info boxes (`sidePanel`) and the round (number only) / break pills of the top bar (`headerStats`, into `#hdrstats`); no deck / discard counters |
+| `side-panel.js` | the two player info boxes (`sidePanel`) and the round (stacked label + number) / break pills of the top bar (`headerStats`, into `#hdrstats`); no deck / discard counters |
 | `dock.js` | hand / endgame-card dock: a fan of cards at the bottom left that rises on hover (CSS), per-player buttons; `S.handMode === 'tray'` draws the floating tray instead (`drawTray`, fold with `toggleDock` / key H, hint state in localStorage); `dockIntro` plays how the hand appears (fan: deal at the start of the game, rise and spread otherwise; tray: the starting hand drops in), the `handmode` / `settingsclosed` listeners handle the switch between the two (a raised fan while the settings are open); changelog 20-31 |
 | `zoo.js` | one player's zoo |
 | `log-labels.js` | move-list label icons and engine badge |
