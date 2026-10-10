@@ -16,6 +16,7 @@ import { fitDisplay, fitScale } from './layout.js';
 import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
 import { atEnd, atStart, buildMoveList, buildTimeline, go, setPlaying, stepBy, updateTimeline } from './playback.js';
 import { settingsOpen, setupSettings, toggleSettings } from './settings.js';
+import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
 import { forkBar, initFork, renderForkMoves } from './fork.js';
 import { initPlay } from './play.js';
@@ -110,6 +111,7 @@ function init() {
   $('next').onclick = () => { stepBy(1); };
   $('play').onclick = () => { setPlaying(!S.timer); };
   setupSettings();
+  setupShortcuts();
   $('last').onclick = () => { go(S.replay.steps.length - 1, 99); };
   $('jump').onchange = (e) => {                                          // a move number past the end jumps to the end (its last frame)
     const n = parseInt(e.target.value, 10) || 0;
@@ -118,8 +120,8 @@ function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && S.openedPile) { closePile(); return; }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
-    if ((e.key === 's' || e.key === 'S') && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
-    if (settingsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
+    if ((e.key === 's' || e.key === 'S') && !shortcutsOpen() && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
+    if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
     const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }

@@ -1392,3 +1392,9 @@ Scope: `web/css/parkposter.css`, `web/replay.html`.
 - The timeline fill (`.tlfill`, fallback of `--tlfill`) is a deep teal to mint gradient, `#0E6F78 -> #6FD3A8` (it was sun -> gold, too close to the buttons above); the segment hover tint is the mint.
 - Replay only: a placeholder button `#extra` (class `settingsbtn extrabtn`, a "?" in Bowlby One 21 px, same paper fill / ink ring / shadow as the settings wheel) between the wheel and Fork. It does nothing yet.
 - The spinner arrows of the Move box are gone (`::-webkit-inner-spin-button`). In the replay row (`.controls:has(.forkbtn)`) Move and Fork are both 92 px wide, 40 px high; with the 8 px gaps Move | wheel | ? | Fork fill the 288 px row exactly, so the outer edges line up with the first and last button above and with the timeline. The other pages (fork, sandbox, play) have no Fork button and keep their flexible Move box (without the arrows).
+
+## 49. Keyboard shortcuts pop-up (the ? button)
+Scope: `web/js/shortcuts.js` (new), `web/js/main.js`, `web/replay.html`, `web/css/parkposter.css` (`--mint` token, `.kb*` rules at the end).
+- The ? button (`#extra`, replay page only) and the ? key open a pop-up with a full keyboard (main block + navigation cluster, 42 px unit). Only keys with a function are drawn as buttons in mint: Esc, S, H, Space, Home, End, the left / right arrows and `/` (= the ? key). Selecting one (click, or pressing it on the real keyboard) turns it gold and fills the strip below with its name and an explanation.
+- While the pop-up is open the keys only explain themselves: a capture-phase handler in `shortcuts.js` stops them (`S` does not open the settings, the arrows do not step), and `main.js` ignores the other keys (`shortcutsOpen()`). Esc, the X and a click on the dimmed background close it.
+- The `D` table of `shortcuts.js` lists the keys and their texts; add a key there when `main.js` gets a new one.
