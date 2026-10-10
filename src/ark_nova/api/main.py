@@ -76,11 +76,32 @@ def _config(rec: TableRecord) -> dict:
     return {"table_id": rec.table_id, "logged": rec.logged, "player_maps": rec.player_maps, "marine_worlds": rec.marine_worlds}
 
 
+def _default_minigames(app: FastAPI):
+    """The mini game platform with the games of `data_manual/minigames.json`: puzzles from BigQuery when it is reachable, logs from the app's own log store."""
+    from ark_nova.minigames.platform.contract import GameLog
+    from ark_nova.minigames.platform.manifest import load_games, load_manifest
+    from ark_nova.minigames.platform.service import MiniGameService
+    from ark_nova.minigames.platform.sources import BigQuerySourceIndex, ListSourceIndex
+    from ark_nova.minigames.platform.store import MemoryStore, SqliteStore
+    st = app.state.settings
+    entries = load_manifest()
+    games = load_games(entries)
+
+    def read_log(table_id: int) -> GameLog:
+        rec = app.state.index.find(table_id)
+        if rec is None or not rec.logged:
+            raise LookupError(f"no log for table {table_id}")
+        return GameLog(json.loads(app.state.logs.read(rec.gcs_path, table_id)), table_id)
+
+    sources = BigQuerySourceIndex() if st.bq_table and games else ListSourceIndex([])
+    return MiniGameService(SqliteStore(st.minigames_db) if st.minigames_db else MemoryStore(), sources, read_log, games, entries)
+
+
 def _error(status: int, code: str, message: str, **extra) -> JSONResponse:
     return JSONResponse(status_code=status, content={"status": code, "message": message, **extra})
 
 
-def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None) -> FastAPI:
+def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None, minigames=None) -> FastAPI:
     app = FastAPI(title="Ark Nova replay")
     app.state.settings = settings or Settings.from_env()
     app.state.index = index or _default_index(app.state.settings)
@@ -111,6 +132,11 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         from ark_nova.api.live import add_routes
         add_routes(app, live, st.live_keeper_url.replace("https://", "wss://").replace("http://", "ws://") if st.live_keeper_url else "")
     app.state.live = live
+    if minigames is None:
+        minigames = _default_minigames(app)
+    app.state.minigames = minigames
+    from ark_nova.api.minigames import add_routes as add_minigame_routes
+    add_minigame_routes(app, minigames, st.internal_secret)
 
     @app.get("/healthz")
     def healthz():

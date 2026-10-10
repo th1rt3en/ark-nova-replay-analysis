@@ -80,9 +80,37 @@ def _planning_routes(app) -> None:
         (PLANNING_DIR / f"{name}.json").write_text(json.dumps(sheet, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
         return {"ok": True}
 
+    @app.post("/api/dev/minigames/rollover")
+    def dev_rollover(day: str | None = None):
+        """Development only: create today's (or `day`'s) puzzles now instead of waiting for the cron trigger."""
+        return {"day": day or app.state.minigames.today(), "games": app.state.minigames.rollover(day)}
+
     routes = app.router.routes                       # the static files are mounted at "/": these routes must come first
     mine = [r for r in routes if getattr(r, "path", "").startswith("/api/dev/")]
     app.router.routes[:] = mine + [r for r in routes if r not in mine]
+
+
+def _minigames(index, logs):
+    """The mini games of data_manual/minigames.json on the local logs: puzzles come from the tables in log_examples, results are kept in build/minigames_dev.sqlite."""
+    import json
+
+    from ark_nova.minigames.platform.contract import GameLog
+    from ark_nova.minigames.platform.manifest import load_games, load_manifest
+    from ark_nova.minigames.platform.service import MiniGameService
+    from ark_nova.minigames.platform.sources import ListSourceIndex
+    from ark_nova.minigames.platform.store import SqliteStore
+
+    def read_log(table_id):
+        rec = index.find(table_id)
+        if rec is None or not rec.logged:
+            raise LookupError(f"no log for table {table_id}")
+        return GameLog(json.loads(logs.read(rec.gcs_path, table_id)), table_id)
+
+    db = Path(__file__).resolve().parents[1] / "build" / "minigames_dev.sqlite"
+    db.parent.mkdir(exist_ok=True)
+    entries = load_manifest()
+    tables = [int(p.stem) for p in LOG_DIR.glob("*.json") if p.stem.isdigit()]
+    return MiniGameService(SqliteStore(str(db)), ListSourceIndex(tables), read_log, load_games(entries), entries)
 
 
 def build_app():
@@ -94,7 +122,8 @@ def build_app():
         from ark_nova.live.fake import FakeKeeper
         from ark_nova.live.service import LiveService
         live = LiveService(FakeKeeper(), engine_version="dev", registry=reg.FakeRegistry(), archive=arch.FakeArchive())
-    app = create_app(settings, LocalIndex(index), LocalLogs(logs), live=live)
+    local_index, local_logs = LocalIndex(index), LocalLogs(logs)
+    app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs))
     _planning_routes(app)
     return app
 

@@ -26,6 +26,7 @@ class Settings:
     internal_secret: str = ""  # signs the calls to it (the Worker's INTERNAL_SECRET)
     live_bq_project: str = "freestyle-190711"  # the registry of the live tables (docs/live_game_plan.md 9.2): dataset ark_nova_engine, table live_table_events, view live_tables
     live_bq_dataset: str = "ark_nova_engine"
+    minigames_db: str = ""  # a SQLite file for the mini games' puzzles and submissions; empty = in memory (lost on restart: the production store is D1, written with the accounts)
     live_gcs_bucket: str = "temp-common-storage"  # where the records of finished / conceded games go (live/<yyyy>/<mm>/E12.json.gz); empty = nothing is exported and the keeper keeps the tables
 
     @classmethod
@@ -44,4 +45,5 @@ class Settings:
             live_bq_project=os.environ.get("LIVE_BQ_PROJECT", "freestyle-190711"),
             live_bq_dataset=os.environ.get("LIVE_BQ_DATASET", "ark_nova_engine"),
             live_gcs_bucket=os.environ.get("LIVE_GCS_BUCKET", "temp-common-storage"),
+            minigames_db=os.environ.get("MINIGAMES_DB", ""),
         )
