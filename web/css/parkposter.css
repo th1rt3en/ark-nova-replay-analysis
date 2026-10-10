@@ -57,7 +57,7 @@ body.viewer .pill { height: 60px; box-sizing: border-box; display: flex; align-i
 body.viewer .pill.rnd { gap: 10px; padding: 0 5px 0 20px; }
 body.viewer .pill.rnd .rcircle { width: 36px; height: 36px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--rust); color: var(--paper); border: 3px solid var(--ink); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; }
 body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
-body.viewer .pill.brk { gap: 12px; padding: 0 18px 0 22px; background: var(--sun); box-shadow: 0 4px 0 var(--ink), 0 0 0 4px rgba(244, 182, 63, .55); }
+body.viewer .pill.brk { gap: 12px; padding: 0 18px 0 22px; background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
 body.viewer .pill.brk .lab { font-size: 20px; }
 body.viewer .pill.brk .bn { font: 400 34px/1 'Bowlby One'; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
 body.viewer .pill.brk .bn small { font-size: 22px; margin-left: 1px; }
@@ -336,10 +336,10 @@ body.viewer .draftpop .draftkept::after { right: -14px; border-right: 3px dashed
 
 /* ---- a card selected with a click ("Leaf tag"): an ink outline, a soft green tint over the card and a green rounded tag with a cream check on its top right corner (blue in the fork, where the
    choice is confirmed afterwards). Replaces BGA's translucent square + yellow ring; used by every clickable card (hand, tray, fan, display, endgame cards, the action card draft). -- */
-body.viewer .card.marked, body.viewer .folder .card.marked, body.viewer .draftcard.marked, body.viewer .draftpop .draftcard.marked { --mk: #3F9A4E; --mkt: rgba(63, 154, 78, .28); outline: 4px solid var(--ink); outline-offset: -1px; }
+body.viewer .card.marked, body.viewer .folder .card.marked, body.viewer .draftcard.marked, body.viewer .draftpop .draftcard.marked { --mk: #3F9A4E; --mkt: rgba(63, 154, 78, .14); outline: 0; z-index: 4; }
 body.viewer .card.marked, body.viewer .draftcard.marked { box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 3px 8px rgba(0, 0, 0, .4); }
 body.viewer .draftcard.picked.marked { outline: 5px solid #3F9A4E; outline-offset: 2px; }
-.forkpage .card.marked, .forkpage .draftcard.marked, .forkpage .folder .card.marked { --mk: #2f80e8; --mkt: rgba(47, 128, 232, .26); outline-color: var(--ink); }
+.forkpage .card.marked, .forkpage .draftcard.marked, .forkpage .folder .card.marked { --mk: #2f80e8; --mkt: rgba(47, 128, 232, .13); }
 body.viewer .card.marked::before, body.viewer .draftcard.marked::before { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; background: var(--mkt); pointer-events: none; }
 body.viewer .card.marked::after, body.viewer .draftcard.marked::after, .forkpage .card.marked::after, .forkpage .draftcard.marked::after { content: ""; position: absolute; z-index: 3; left: auto; top: -9px; right: -7px; width: clamp(24px, 28%, 46px); height: auto; aspect-ratio: 1; transform: none; border-radius: 28%; box-sizing: border-box; border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink); pointer-events: none;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 54 L41 74 L82 28' fill='none' stroke='%23F8EDCB' stroke-width='17' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 66% no-repeat, var(--mk); }
