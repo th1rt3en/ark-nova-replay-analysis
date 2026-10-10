@@ -1,5 +1,5 @@
 /* ==== Park Poster: the default look of the replay / fork / sandbox / live play pages ================================================================
-   Loaded last (after replay.css and table.css), so it overrides their wood-and-parchment look. A poster: teal sky with sun and rays, cream paper panels with a thick ink
+   Loaded last (after replay.css and table.css), so it overrides their wood-and-parchment look. A poster: teal sky with slowly turning rays, cream paper panels with a thick ink
    border and a hard shadow, orange and gold accents. Fonts: Bowlby One (headings, numbers), Barlow Condensed (texts), Barlow. Everything is in design px (1920 wide, zoomed by
    layout.js). The structure (what is where) is described in docs/frontend_architecture.md; the art of the boards (maps, tracks, cards, icons) is not touched.
    Colours are tokens on body.viewer, so that another theme can later replace this file by redefining them. */
@@ -23,15 +23,11 @@ body.viewer {
 }
 body.viewer a { color: inherit; }
 
-/* ---- the poster behind everything: spinning rays, the sun, two hills (fixed, drawn behind the page) ------------------------------------------------------------------ */
-body.viewer::before { content: ""; position: fixed; left: 480px; top: -1250px; width: 2400px; height: 2400px; border-radius: 50%; z-index: -1; pointer-events: none; will-change: transform;
-  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .06) 0 6deg, transparent 6deg 15deg); animation: pp-spin 240s linear infinite; }
-body.viewer::after { content: ""; position: fixed; left: 900px; top: -330px; width: 520px; height: 520px; border-radius: 50%; z-index: -1; pointer-events: none;
-  background: radial-gradient(circle at 50% 60%, var(--gold) 0 46%, var(--sun) 47% 72%, #D2541F 73% 100%); box-shadow: 0 0 0 18px rgba(244, 182, 63, .18), 0 0 0 44px rgba(244, 182, 63, .1);
-  animation: pp-pulse 7s ease-in-out infinite; }
+/* ---- the poster behind everything: spinning rays, two hills (fixed, drawn behind the page) ------------------------------------------------------------------ */
+body.viewer::before { content: ""; position: fixed; left: -400px; top: -2500px; width: 4800px; height: 4800px; border-radius: 50%; z-index: -1; pointer-events: none; will-change: transform;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .06) 0 6deg, transparent 6deg 15deg); animation: pp-spin 240s linear infinite; }       /* the rays turn slowly about a point beyond the top right corner (2000, -100); no sun */
 #app::before { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 150px; z-index: -1; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 150' preserveAspectRatio='none'%3E%3Cpath d='M0 70C220 20 420 110 700 70S1200 10 1500 60 1800 90 1920 50V150H0z' fill='%230A3A47'/%3E%3Cpath d='M0 110C300 70 560 140 900 108S1500 70 1920 112V150H0z' fill='%23072C37'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat; }
 @keyframes pp-spin { to { transform: rotate(360deg); } }
-@keyframes pp-pulse { 50% { transform: scale(1.035); } }
 @media (prefers-reduced-motion: reduce) { body.viewer::before, body.viewer::after, .pp .live { animation: none !important; } }
 
 /* ---- layout: the main column left, the sidebar fixed at the right; the top bar sticks to the top of the window ------------------------------------------------------------- */
