@@ -71,7 +71,10 @@ export function askSpectated() {
     row.append(b);
     return b;
   });
-  ok.onclick = () => { if (picked === null) return; modal.remove(); chooseSpectated(picked); };
+  const done = () => { if (picked === null) return; document.removeEventListener('keydown', onKey, true); modal.remove(); chooseSpectated(picked); };
+  const onKey = (e) => { if (e.key === 'Enter' && picked !== null && !e.isComposing) { e.preventDefault(); e.stopPropagation(); done(); } };       // (Enter confirms once a player is selected, whichever button has the focus)
+  ok.onclick = done;
+  document.addEventListener('keydown', onKey, true);
   box.append(row, ok); modal.append(box); document.body.append(modal);
 }
 function chooseSpectated(seat) {

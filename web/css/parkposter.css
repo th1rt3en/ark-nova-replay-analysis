@@ -205,16 +205,16 @@ body.viewer .modal { background: rgba(7, 44, 55, .62); }
 body.viewer .modalbox { width: 440px; box-sizing: border-box; padding: 16px 20px 20px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink); }
 body.viewer .modalhead { margin-bottom: 14px; font: 400 24px 'Bowlby One', system-ui, sans-serif; }
 /* the first-visit dialog: whom to spectate (pov.js askSpectated): two chips with the player names */
-body.viewer .povbox { width: 960px; max-width: 94vw; padding: 24px 30px 30px; border-width: 6px; border-radius: 33px; box-shadow: 0 12px 0 var(--ink); text-align: center; }
-body.viewer .povbox .modalhead { display: block; text-align: center; margin-bottom: 30px; font-size: 26px; line-height: 1.15; white-space: nowrap; }
+body.viewer .povbox { width: 1100px; max-width: 94vw; padding: 26px 30px 32px; border-width: 6px; border-radius: 33px; box-shadow: 0 12px 0 var(--ink); text-align: center; }
+body.viewer .povbox .modalhead { display: block; text-align: center; margin-bottom: 30px; font-size: 36px; line-height: 1.15; white-space: nowrap; }
 body.viewer .povchips { display: flex; gap: 24px; justify-content: center; }
-body.viewer .povchip { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 15px; height: 93px; padding: 0 27px; border: 5px solid var(--ink); border-radius: 999px; background: var(--paper); box-shadow: 0 6px 0 var(--ink); color: var(--ink); font: 700 22px/1 'Barlow Condensed', system-ui, sans-serif; cursor: pointer; }
+body.viewer .povchip { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 15px; height: 96px; padding: 0 22px; border: 5px solid var(--ink); border-radius: 999px; background: var(--paper); box-shadow: 0 6px 0 var(--ink); color: var(--ink); font: 400 27px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }       /* (about 20 characters of a name fit: "Propaganda Panda" does, longer ones end in ...) */
 body.viewer .povchip:hover { background: #fff7dc; }
 body.viewer .povchip.on, body.viewer .povchip.on:hover { background: var(--sun); color: var(--paper); }
 body.viewer .povchip:focus-visible, body.viewer .povok:focus-visible { outline: 5px solid var(--gold); outline-offset: 4px; }
-body.viewer .povdot { flex: none; width: 27px; height: 27px; box-sizing: border-box; border-radius: 50%; background: var(--pc); border: 5px solid var(--ink); }
+body.viewer .povdot { flex: none; width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; background: var(--pc); border: 5px solid var(--ink); }
 body.viewer .povname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-body.viewer .povok { display: block; margin: 30px auto 0; min-width: 270px; height: 78px; padding: 0 45px; border: 5px solid var(--ink); border-radius: 999px; background: #3F9A4E; box-shadow: 0 6px 0 var(--ink); color: var(--paper); font: 400 24px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }
+body.viewer .povok { display: block; margin: 30px auto 0; min-width: 270px; height: 76px; padding: 0 45px; border: 5px solid var(--ink); border-radius: 999px; background: #3F9A4E; box-shadow: 0 6px 0 var(--ink); color: var(--paper); font: 400 28px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }
 body.viewer .povok:hover:not(:disabled) { background: #48ad59; }
 body.viewer .povok:disabled { background: #b9b58f; color: rgba(248, 237, 203, .85); box-shadow: 0 6px 0 rgba(23, 38, 43, .45); border-color: rgba(23, 38, 43, .45); cursor: default; }
 body:has(#povChoice) .draftbox { visibility: hidden; }       /* (the action card draft of the first step waits behind the dialog) */
@@ -293,11 +293,11 @@ body.viewer .setrange { width: 100%; margin: 0; accent-color: var(--rust); curso
 body.viewer .setticks { display: flex; justify-content: space-between; font: 600 14px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); opacity: .7; padding: 0 2px; }
 body.viewer .moves li[hidden] { display: none; }
 
-/* ---- the action card draft of the replay: a lightbox over the boards (not over the sidebar, which keeps the playback buttons), the cards in full size, one row per player ----------- */
-body.viewer .draftbox { position: fixed; left: 0; top: 0; z-index: 25; width: calc(100% - var(--sidebar-w) - 24px); height: calc(var(--vh, 1vh) * 100); display: flex; align-items: center; justify-content: center;
-  background: rgba(8, 40, 50, .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+/* ---- the action card draft of the replay: a lightbox over the whole window (the sidebar is dimmed too but stays clickable), the cards in full size, one row per player ----------- */
+body.viewer .draftbox { position: fixed; left: 0; top: 0; z-index: 90; box-sizing: border-box; width: 100%; height: calc(var(--vh, 1vh) * 100); padding-right: calc(var(--sidebar-w) + 24px); display: flex; align-items: center; justify-content: center; pointer-events: none;
+  background: rgba(8, 40, 50, .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }       /* the dim covers the whole window (move bar, sidebar, hand included) but lets clicks through, so the playback buttons keep working; the panel sits in the area left of the sidebar */
 body.viewer .draftbox[hidden] { display: none; }
-body.viewer .draftpop { box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
+body.viewer .draftpop { pointer-events: auto; box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 18px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
 body.viewer .draftpop .draftgroup { flex: none; width: 100%; padding: 0; border: 0; }
 body.viewer .draftpop .draftgroup + .draftgroup { padding: 14px 0 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
 body.viewer .draftpop .drafthead { font: 700 24px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
