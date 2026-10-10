@@ -113,18 +113,19 @@ Two daily mini games to start, more later: **Daily starting hand** and **Who's a
 | Method | What it does |
 |---|---|
 | `key`, `title`, `leaderboard` | Identity and the leaderboard definition: the metric, whether higher or lower is better, the minimum plays to be listed. |
-| `pick_source(ctx)` | Chooses the source table id of the day (see the picker). |
-| `build_puzzle(source)` | Returns `(public, answer)`. `public` is what the browser may see. `answer` stays on the server until the player has submitted. |
+| `pick_moment(ctx, source)` | Given the table the picker chose, returns the **moment** of the puzzle: a small JSON pointer such as `{seat, move_id}`. Nothing else is stored. |
+| `build_public(moment, log)` | Builds from the log what the browser may see (the redacted state at that moment). Deterministic: the same moment and builder version give the same result. |
+| `answer(moment, log)` | Derives the answer from the log (the original player's picks, the real winner). It is never stored and never sent before the player submits. |
 | `validate(public, payload)` | Checks a submission (shape, counts, sums) and returns clean data or errors. |
 | `score(answer, payload)` | Returns the score value and a detail object. |
 | `reveal(public, answer, payload, day_stats)` | What the player sees after submitting. |
 | `day_stats(submissions)` | The community numbers of the day (pick rates, average prediction). |
 
 - **Shared stores, game-private contents.** They live in the same D1 database as the accounts, reached through the same signed Worker routes. Tables are keyed by `game_key` and keep the game's own data in JSON columns, so a new game needs no migration:
-  - `minigame_puzzles(game_key, day, source_ref, public, answer, created_at)`, unique on (game_key, day). `source_ref` is the BGA table id. It is not sent to a browser until the player has submitted: it is part of the reveal.
+  - `minigame_puzzles(game_key, day, source_ref, moment, builder_version, public_cache, created_at)`, unique on (game_key, day). `source_ref` is the BGA table id and `moment` the pointer (for example `{seat, move_id}`, using BGA's `move_id`, which does not change when our replay builder does). **The pointer is the truth; `public_cache` is only a cache** of the built payload, filled at rollover so the first player of the day does not wait for a replay build, and rebuilt whenever `builder_version` differs from the current one. Nothing derived from the log, such as the answer, is stored. `source_ref` is not sent to a browser until the player has submitted: it is part of the reveal.
   - `minigame_used_sources(game_key, source_ref)`, unique. This is the "never picked before" memory, kept per game.
   - `minigame_submissions(id, game_key, day, account_id, anon_id, payload, score, detail, submitted_at)`, unique on (game_key, day, account_id) and on (game_key, day, anon_id).
-- **Tested alone.** The platform ships fakes: `FakeClock`, `FakeSourceIndex` (a list of candidate tables), `FakeLogs`, in-memory stores. `tests/minigames/test_contract.py` runs one contract suite against every registered game. It checks that `public` never holds a name, player id, table id or timestamp, that the answer and the table id are absent before submission and present in the reveal, that a second submission is refused, that a past day is refused unless the game has `allow_past`, and accepted once when it has, that scoring is deterministic, and that a game with a failing rollover does not stop the others. A "remove one game" test checks the other games still work.
+- **Tested alone.** The platform ships fakes: `FakeClock`, `FakeSourceIndex` (a list of candidate tables), `FakeLogs`, in-memory stores. `tests/minigames/test_contract.py` runs one contract suite against every registered game. It checks that the same moment always rebuilds the same payload, that `public` never holds a name, player id, table id or timestamp, that the answer and the table id are absent before submission and present in the reveal, that a second submission is refused, that a past day is refused unless the game has `allow_past`, and accepted once when it has, that scoring is deterministic, and that a game with a failing rollover does not stop the others. A "remove one game" test checks the other games still work.
 - **One viewer mode, no copies.** Both games use the replay viewer through a `window.MINIGAME_MODE` flag (like `PLAY`, `FORK`, `SANDBOX`). The per-game page passes a small config (`redactNames`, `showElo`, `hidePovSwitch`, `noStepping`, `hideLog`) and one state object. The viewer code is not forked.
 
 ### Daily rollover and picking the table
