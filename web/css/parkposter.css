@@ -222,14 +222,14 @@ body.viewer { --hk: calc(1.5 * var(--hs, 1)); }                    /* hand scale
 body.viewer .dock { left: 14px; bottom: 0; z-index: 35; width: calc(150px + 560px * var(--hk)); height: calc(150px * var(--hk)); max-width: none; display: block; pointer-events: none; }
 body.viewer .dock::after { content: ""; position: absolute; left: 150px; bottom: 0; width: calc(560px * var(--hk)); height: calc(124px * var(--hk)); pointer-events: auto; }
 body.viewer .dockbar { position: absolute; left: 0; bottom: 6px; z-index: 3; display: grid; gap: 6px; padding: 0; background: none; box-shadow: none; border-radius: 0; pointer-events: auto; }
-body.viewer .dockgroup { display: grid; grid-template-columns: auto; gap: 6px; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }       /* no frame, no name: the open eye says whose cards these are; the two pills (hand, endgame cards) are stacked and together as high as the resting fan at 1.00x (124 * 1.5 = 186 px) */
+body.viewer .dockgroup { display: grid; grid-template-columns: auto; gap: 6px; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }       /* no frame, no name: the open eye says whose cards these are; the two pills (hand, endgame cards) are stacked and small: 62 px each, 130 px together, about as high as the part of the fan that shows at rest */
 
 body.viewer .dockpair { display: contents; }
-body.viewer .dockbtn { position: relative; width: 132px; height: 90px; padding: 0; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 0 4px 0 var(--ink); opacity: 1; cursor: pointer; }
+body.viewer .dockbtn { position: relative; width: 100px; height: 62px; padding: 0; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 0 4px 0 var(--ink); opacity: 1; cursor: pointer; }
 body.viewer .dockbtn:hover { background: #fff7dc; transform: none; }
 body.viewer .dockbtn.on { background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
-body.viewer .dockbtn img { width: 52px; height: 52px; }
-body.viewer .dockn { position: static; min-width: 0; height: auto; padding: 0; border: 0; border-radius: 0; background: none; -webkit-text-stroke: 0; paint-order: normal; text-shadow: none; color: var(--ink); font: 400 38px/1 'Bowlby One', system-ui, sans-serif; }
+body.viewer .dockbtn img { width: 40px; height: 40px; }
+body.viewer .dockn { position: static; min-width: 0; height: auto; padding: 0; border: 0; border-radius: 0; background: none; -webkit-text-stroke: 0; paint-order: normal; text-shadow: none; color: var(--ink); font: 400 28px/1 'Bowlby One', system-ui, sans-serif; }
 body.viewer .dockbtn.on .dockn { color: var(--paper); }
 body.viewer .dockfold { position: absolute; left: 0; bottom: 100%; width: 30px; height: 30px; margin: 0 0 8px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); color: var(--ink); font-size: 12px; cursor: pointer; pointer-events: auto; display: none; }
 body.viewer .dockpanel { position: absolute; left: 150px; top: calc(18px * var(--hk)); z-index: 2; width: calc(560px * var(--hk)); max-width: none; max-height: none; overflow: visible; padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; pointer-events: auto;
