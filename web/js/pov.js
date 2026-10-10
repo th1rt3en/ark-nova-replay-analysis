@@ -1,12 +1,12 @@
-// [module] Point of view (both players / seat 0 / seat 1): what is hidden from the other player, the eyes that switch it.
+// [module] Point of view (seat 0 / seat 1; both at once is no longer possible, a live game has none): what is hidden from the other player, the eyes that switch it.
 import { FORK, PLAY, S, params, table } from './state.js';
 import { labelNode } from './log-labels.js';
 import { render } from './main.js';
 
-// The eyes are remembered per table in localStorage ('pov:<table>': 'all' | '0' | '1'), also over F5; the first time only the first player's eye is open (his zoo is the left one).
+// The eyes are remembered per table in localStorage ('pov:<table>': '0' | '1' (an old 'all' counts as unset)), also over F5; the first time only the first player's eye is open (his zoo is the left one).
 // A fork (opened in a new tab from a replay) does not use the storage: it takes the eyes of the replay from the URL (`&pov=`, see `povParam`) and changes them only in its own tab.
 const POV_KEY = 'pov:' + (table || 'local');
-const readPov = (v) => (v === 'all' ? null : v === '0' ? 0 : v === '1' ? 1 : undefined);
+const readPov = (v) => (v === '0' ? 0 : v === '1' ? 1 : undefined);       // (the former 'both eyes open' value 'all' is read as unset -> the first player)
 export const povParam = () => (S.pov === null ? 'all' : String(S.pov));
 { let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = PLAY ? null : v === undefined ? 0 : v; }       // (a live game: the server already left out what this seat may not see, nothing is hidden by the page)
 export const hides = (seat) => S.pov !== null && seat !== S.pov;
@@ -34,13 +34,13 @@ export function povState(st) {
 export const curState = () => povState(S.replay.steps[S.step].state);
 export const labelOf = (s) => (S.pov !== null && s.label_pov && s.label_pov[S.pov]) || s.label;
 
-// The point of view is set by the eye next to each player's name in the info box (side-panel.js): an open eye shows that player's cards. S.pov = null: both eyes open (god mode,
-// everything visible), S.pov = 0 / 1: only that seat's eye is open (the game as that player saw it). Both eyes cannot be closed: the only open eye cannot be closed.
-export const eyeOpen = (seat) => S.pov === null || S.pov === seat;
-export const eyeLocked = (seat) => S.pov === seat;                    // (the only open eye)
+// The point of view is set by the eye next to each player's name in the info box (side-panel.js): exactly one eye is open, S.pov = 0 / 1 = the game as that player saw it. Opening the closed eye
+// closes the other one (there is no way to see both hands at once); the open eye cannot be closed. (S.pov = null only in a live game, where the server decides what a seat sees.)
+export const eyeOpen = (seat) => S.pov === seat;
+export const eyeLocked = (seat) => S.pov === seat;                    // (the open eye: clicking it does nothing)
 export function toggleEye(seat) {
-  if (eyeLocked(seat)) return;
-  S.pov = eyeOpen(seat) ? S.replay.players.findIndex((_, i) => i !== seat) : null;
+  if (S.pov === seat) return;
+  S.pov = seat;
   applyPov();
 }
 function applyPov() {

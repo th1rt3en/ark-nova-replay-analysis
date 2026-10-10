@@ -19,12 +19,12 @@ function trackIncome(appeal) {
   }
   return income;
 }
-function eyeButton(seat) {                                          // open eye = this player's cards are shown; the only open eye cannot be closed
+function eyeButton(seat) {                                          // open eye = this player's cards are shown; exactly one eye is open, opening the other closes it
   if (PLAY) return document.createTextNode('');                     // (a live game: no eyes, the server decides what a seat sees)
   const open = eyeOpen(seat), locked = eyeLocked(seat), nm = S.replay.players[seat].name;
   const b = el('button', 'poveye' + (open ? '' : ' closed') + (locked ? ' only' : ''));
   b.type = 'button';
-  b.title = locked ? nm + "'s cards are shown (at least one player's cards must stay visible)" : open ? 'Hide ' + nm + "'s cards" : 'Show ' + nm + "'s cards";
+  b.title = locked ? nm + "'s cards are shown" : 'Show ' + nm + "'s cards (and hide the other player's)";
   b.setAttribute('aria-label', b.title); b.setAttribute('aria-pressed', String(open));
   const g = svg('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
   g.append(svg('path', { d: 'M2 12C5 6.5 8.5 4.5 12 4.5S19 6.5 22 12C19 17.5 15.5 19.5 12 19.5S5 17.5 2 12Z' }), svg('circle', { cx: 12, cy: 12, r: 3.2, fill: 'currentColor' }));
