@@ -1,7 +1,7 @@
 // [module] Step navigation: timeline, autoplay, speed, keyboard, move list.
 import { $, el, seatColor } from './util.js';
 import { S } from './state.js';
-import { labelOf } from './pov.js';
+import { labelOf, povState } from './pov.js';
 import { cardMarks } from './cards.js';
 import { draftMarks } from './action-bar.js';
 import { engineBadge, labelNode } from './log-labels.js';
@@ -69,10 +69,26 @@ export function updateTimeline() {
 // ---- frames: a step is shown in consecutive frames (frames.js); the keys, buttons and autoplay go frame by frame, the timeline, log and jump box step by step ----
 export const atEnd = () => S.step >= S.replay.steps.length - 1 && S.phase >= framesOf(S.step).length - 1;
 export const atStart = () => S.step === 0 && S.phase === 0;
+// The action card draft, seen from a player's point of view, shows nothing of what the opponent chooses (pov.js hides it): the opponent's steps ("X chooses action cards
+// (action card draft)") would be frames that look exactly like the one before, and Next would seem to do nothing. The keys, buttons and autoplay skip them: a draft frame
+// whose lightbox (the draft as the point of view sees it) is the same as the step before. They stay in the log, and the log, the timeline and the jump box still go there.
+function draftSeen(i) {
+  const st = S.replay.steps[i].state;
+  return st && st.phase === 'setup' && st.draft ? JSON.stringify(povState(st).draft) : null;
+}
+function skipFrame(n, ph) {
+  if (S.pov === null || ph !== 0 || n < 1 || framesOf(n)[0] !== 'draft') return false;
+  const seen = draftSeen(n);
+  return seen !== null && seen === draftSeen(n - 1);
+}
+function frameAfter(n, ph, d) {
+  if (d > 0) return ph < framesOf(n).length - 1 ? [n, ph + 1] : n < S.replay.steps.length - 1 ? [n + 1, 0] : null;
+  return ph > 0 ? [n, ph - 1] : n > 0 ? [n - 1, framesOf(n - 1).length - 1] : null;
+}
 export function stepBy(d) {
-  if (d > 0) { if (S.phase < framesOf(S.step).length - 1) go(S.step, S.phase + 1); else go(S.step + 1); }
-  else if (S.phase > 0) go(S.step, S.phase - 1);
-  else if (S.step > 0) go(S.step - 1, framesOf(S.step - 1).length - 1);
+  let f = frameAfter(S.step, S.phase, d);
+  while (f && skipFrame(f[0], f[1])) { const g = frameAfter(f[0], f[1], d); if (!g) break; f = g; }
+  if (f) go(f[0], f[1]);
 }
 export function go(n, phase = 0) {
   const before = S.step;
