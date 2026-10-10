@@ -12,6 +12,13 @@
   .actions { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin: 1.2rem 0; }
   .actions a { padding: .55rem .9rem; border: 1px solid var(--accent); border-radius: 6px; text-decoration: none; }
   .actions a.primary { background: var(--accent); color: #fff; }
+  .ratings { margin: 1.2rem auto; max-width: 28rem; border: 1px solid var(--border); border-radius: 10px; padding: .8rem 1rem; }
+  .ratings h2 { margin: 0 0 .5rem; font-size: 1rem; }
+  .ratings table { width: 100%; border-collapse: collapse; }
+  .ratings td { padding: .3rem .4rem; border-bottom: 1px solid var(--border); }
+  .ratings td:last-child { text-align: right; font-weight: 700; }
+  .ratings .up { color: #2f9e5f; } .ratings .down { color: #c0392b; }
+  .ratings p { margin: .4rem 0 0; }
 </style>
 </head>
 <body>
@@ -19,6 +26,7 @@
 <main id="end" hidden>
   <div id="endstats" class="endstats" style="display:block"></div>
   <div class="facts" id="facts"></div>
+  <section class="ratings" id="ratings" hidden></section>
   <div class="actions" id="actions"></div>
 </main>
 <script src="/js/endstats.js"></script>
@@ -59,6 +67,24 @@
   if (data.marine_worlds) bits.push('Marine Worlds');
   if (data.n_actions) bits.push(data.n_actions + ' moves');
   $('facts').textContent = bits.join(' · ');
+  if (data.rated) {                                                                     // a rated game: what it did to the ratings
+    const box = $('ratings');
+    box.hidden = false;
+    const h = document.createElement('h2'); h.textContent = 'Rated game'; box.append(h);
+    if (data.ratings && data.ratings.length) {
+      const t = document.createElement('table');
+      for (const r of data.ratings) {
+        const tr = document.createElement('tr');
+        const who = document.createElement('td'); const a = document.createElement('a'); a.href = '/profile.html?id=' + encodeURIComponent(r.account_id); a.textContent = r.name; who.append(a);
+        const change = document.createElement('td'); change.textContent = r.before + ' \u2192 ' + r.after;
+        const d = document.createElement('td'); d.textContent = (r.delta > 0 ? '+' : '') + r.delta; d.className = r.delta > 0 ? 'up' : r.delta < 0 ? 'down' : '';
+        tr.append(who, change, d); t.append(tr);
+      }
+      box.append(t);
+    } else {
+      const p = document.createElement('p'); p.textContent = 'This game did not change any rating: it ended before enough turns were played, or the ratings are still being written (reload in a moment).'; box.append(p);
+    }
+  }
   const link = (text, href, cls) => { const a = document.createElement('a'); a.href = href; a.textContent = text; if (cls) a.className = cls; $('actions').append(a); };
   if (data.replayable) link('Watch the replay', '/replay.html?table=' + game, 'primary');
   link('New game', '/play.html', data.replayable ? '' : 'primary');

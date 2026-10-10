@@ -133,14 +133,15 @@ def _accounts():
 def build_app():
     settings = Settings()
     index, logs = _remote_index(settings)
+    accounts = _accounts()
     live = None
     if os.environ.get("DEV_LIVE") == "1":
         from ark_nova.live import archive as arch, registry as reg
         from ark_nova.live.fake import FakeKeeper
         from ark_nova.live.service import LiveService
-        live = LiveService(FakeKeeper(), engine_version="dev", registry=reg.FakeRegistry(), archive=arch.FakeArchive())
+        live = LiveService(FakeKeeper(), engine_version="dev", registry=reg.FakeRegistry(), archive=arch.FakeArchive(), ratings=accounts.store)
     local_index, local_logs = LocalIndex(index), LocalLogs(logs)
-    app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs), accounts=_accounts())
+    app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs), accounts=accounts)
     _planning_routes(app)
     return app
 

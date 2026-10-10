@@ -20,7 +20,8 @@ let account = null;
 function renderBar() {
   bar.replaceChildren();
   if (account) {
-    bar.append(el('span', { className: 'acctname' }, account.username), el('span', { className: 'muted small' }, ` rating ${account.rating}`));
+    const me = el('a', { className: 'acctname', href: '/profile.html?id=' + encodeURIComponent(account.id), title: 'Your profile' }, account.username);
+    bar.append(me, el('span', { className: 'muted small' }, ` rating ${account.rating}`));
     const out = el('button', { type: 'button', className: 'linkbtn' }, 'Log out');
     out.onclick = async () => { await call('logout', {}).catch(() => {}); account = null; window.arkAccount = null; renderBar(); document.dispatchEvent(new CustomEvent('account-changed', { detail: null })); };
     bar.append(out);
@@ -88,11 +89,21 @@ function showSignup() {
   const go = el('button', { type: 'submit' }, 'Continue');
   const form = el('form', { className: 'acctform' }, u.row, go);
   const say = frame('Create an account', el('p', { className: 'muted small' }, 'A username and a password. No email. If you play on Board Game Arena under the same username, your starting Elo can be copied from there.'), form, links(['I already have an account', 'login']));
-  form.onsubmit = (e) => { e.preventDefault(); run(go, say, async () => { const c = await call('check', { username: u.input.value }); if (!c.available) throw new Error('That username is taken.'); showChoice(c); }); };
+  form.onsubmit = (e) => { e.preventDefault(); run(go, say, async () => { const c = await call('check', { username: u.input.value }); if (!c.available) throw new Error('That username is taken.'); await showChoice(c); }); };
   u.input.focus();
 }
 
-function showChoice(c) {
+// The Turnstile check of the signup (only when the server has a site key): the script is loaded when the form needs it.
+function loadTurnstile() {
+  if (window.turnstile) return Promise.resolve();
+  return new Promise((ok, fail) => {
+    const s = document.createElement('script'); s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; s.async = true; s.onload = ok; s.onerror = fail; document.head.append(s);
+  });
+}
+
+async function showChoice(c) {
+  const cfg = await call('config').catch(() => ({ turnstile_site_key: '' }));
+  let tsToken = null;
   const box = el('div', { className: 'acctchoice' });
   let pick;                                              // undefined until the player chooses: nothing is pre-selected, the seed is a one-time choice
   const radio = (value, label, disabled) => {
@@ -113,14 +124,18 @@ function showChoice(c) {
   const p1 = field('Password (at least 10 characters)', { type: 'password', autocomplete: 'new-password', required: true, minLength: 10 });
   const p2 = field('Repeat the password', { type: 'password', autocomplete: 'new-password', required: true });
   const go = el('button', { type: 'submit' }, 'Create the account');
-  const form = el('form', { className: 'acctform' }, box, p1.row, p2.row, go);
+  const terms = el('p', { className: 'muted small' }, 'By creating an account you accept the ', el('a', { href: '/terms.html', target: '_blank', rel: 'noopener' }, 'terms and privacy notes'), '.');
+  const ts = el('div', { className: 'acctts' });
+  const form = el('form', { className: 'acctform' }, box, p1.row, p2.row, ts, terms, go);
   const say = frame(`Create an account: ${c.username}`, form, links(['Back', 'signup']));
+  if (cfg.turnstile_site_key) loadTurnstile().then(() => window.turnstile.render(ts, { sitekey: cfg.turnstile_site_key, callback: (t) => { tsToken = t; }, 'expired-callback': () => { tsToken = null; } })).catch(() => say('The check that you are not a robot could not be loaded.'));
   form.onsubmit = (e) => {
     e.preventDefault();
     if (c.matches.length && pick === undefined) return say('Choose which BGA player you are, or "None of these".');
     if (p1.input.value !== p2.input.value) return say('The two passwords differ.');
+    if (cfg.turnstile_site_key && !tsToken) return say('Please complete the check that you are not a robot.');
     run(go, say, async () => {
-      const r = await call('register', { username: c.username, password: p1.input.value, bga_player_id: pick ?? null });
+      const r = await call('register', { username: c.username, password: p1.input.value, bga_player_id: pick ?? null, turnstile_token: tsToken });
       account = r.account; done(); showRecoveryCode(r.recovery_code, 'Your account is ready');
     });
   };

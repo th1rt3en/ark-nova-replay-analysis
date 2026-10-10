@@ -80,6 +80,7 @@
   };
   const show = () => { $('lobby').hidden = false; };
   const start = () => {
+    for (const id of ['acctbar', 'acctdlg']) { const n = $(id); if (n) n.remove(); }                // (the account widget belongs to the lobby, not to the board)
     $('lobby').hidden = true; $('loading').hidden = false;
     window.FORK_MODE = true; window.PLAY_MODE = true;
     const s = document.createElement('script'); s.type = 'module'; s.src = '/js/main.js'; document.body.append(s);
@@ -103,6 +104,27 @@
   const field = (label, input) => { const l = document.createElement('label'); l.className = 'lobbyrow'; l.append(label + ' ', input); return l; };
   const button = (text) => { const b = document.createElement('button'); b.type = 'submit'; b.textContent = text; return b; };
   const link = (text, href) => { const a = document.createElement('a'); a.href = href; a.textContent = text; return a; };
+  // Rated or friendly: only offered when the accounts are on. A rated game needs a logged-in creator; anonymous players can only play friendly games.
+  const whoAmI = async () => { try { const r = await fetch('/api/auth/me'); return r.ok ? await r.json() : null; } catch (e) { return null; } };
+  async function ratedChoice() {
+    const me = await whoAmI();
+    if (!me) return null;                                               // no accounts on this server: every game is friendly
+    const radio = (checked) => { const i = document.createElement('input'); i.type = 'radio'; i.name = 'kind'; i.checked = checked; return i; };
+    const friendly = radio(true), rated = radio(false);
+    const note = document.createElement('small'); note.className = 'lobbyhelp';
+    const refresh = () => {
+      const acc = window.arkAccount !== undefined ? window.arkAccount : me.account;
+      rated.disabled = !acc;
+      if (!acc) friendly.checked = true;
+      note.textContent = acc ? 'A rated game moves the Elo of both players (K=20). Both players must be logged in, and you cannot play against yourself.'
+                             : 'Rated games need an account: log in with the button at the top right. Without one you can play friendly games.';
+    };
+    document.addEventListener('account-changed', refresh);
+    refresh();
+    const box = document.createElement('div');
+    box.append(check('Friendly', friendly, 'Anyone can play, no account needed, no rating changes.'), check('Rated', rated, 'Counts for the ratings.'), note);
+    return { node: stack('Kind of game', box), isRated: () => rated.checked && !rated.disabled };
+  }
 
   if (!game && store('liveUnlocked') !== '1') {                      // no game yet and the live mode is not open for this browser (seat links of a running game still work)
     $('lobbytitle').textContent = 'Live games are coming soon';
@@ -142,12 +164,13 @@
     const tcBox = document.createElement('div'); tcBox.append(simple, fine);
     const tcField = stack('Time control', tcBox, hintTc);
     const tcHead = tcField.firstChild; tcHead.className = 'lobbyhead'; tcHead.append(sw);                // (the switch sits on the line of the label)
-    $('lobbyform').append(stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), button('Create the game'));
+    const kind = await ratedChoice();
+    $('lobbyform').append(...(kind ? [kind.node] : []), stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), button('Create the game'));
     $('lobbyform').onsubmit = async (e) => {
       e.preventDefault();
       const submit = e.submitter; if (submit) submit.disabled = true;                      // (one click, one game)
       const time_control = custom ? { start: Math.round(+startIn.value * 60), increment: Math.round(+incIn.value) } : { speed: speed.value };
-      const r = await api('', { marine_worlds: mw.checked, game_mode: mode.value, time_control });
+      const r = await api('', { marine_worlds: mw.checked, game_mode: mode.value, time_control, rated: kind ? kind.isRated() : false });
       if (!r.ok) { $('lobbytext').textContent = r.body.message || 'The game could not be created.'; if (submit) submit.disabled = false; return; }
       const g = r.body, base = location.origin + '/play.html?game=' + g.game_id;
       $('lobbyform').hidden = true;
@@ -181,16 +204,32 @@
   const info = setup.body;
   if (['finished', 'conceded'].includes(info.status)) { location.replace('/end.html?game=' + game); return; }
   if (token && info.seat !== null && !info.named[info.seat]) {          // a seat that has not given its name yet
-    $('lobbytitle').textContent = 'Join game ' + game;
-    $('lobbytext').textContent = 'Type your name to take the seat; the game starts when both players have one.';
+    $('lobbytitle').textContent = 'Join game ' + game + (info.rated ? ' (rated)' : '');
     const name = document.createElement('input'); name.type = 'text'; name.maxLength = 40; name.required = true; name.value = store('playerName') || '';
-    $('lobbyform').append(field('Your name', name), button('Join'));
+    if (info.rated) {                                                  // a rated game: the seat belongs to an account, its name is the account's
+      const me = await whoAmI();
+      const draw = () => {
+        const acc = window.arkAccount !== undefined ? window.arkAccount : me && me.account;
+        $('lobbyform').replaceChildren();
+        if (acc) {
+          $('lobbytext').textContent = 'This is a rated game: you play as ' + acc.username + ' (rating ' + acc.rating + ') and the result changes both ratings. The game starts when both players have joined.';
+          $('lobbyform').append(button('Join the rated game'));
+        } else {
+          $('lobbytext').textContent = 'This is a rated game: log in (or sign up) with the button at the top right to take the seat.';
+        }
+      };
+      document.addEventListener('account-changed', draw);
+      draw();
+    } else {
+      $('lobbytext').textContent = 'Type your name to take the seat; the game starts when both players have one.';
+      $('lobbyform').append(field('Your name', name), button('Join'));
+    }
     $('lobbyform').onsubmit = async (e) => {
       e.preventDefault();
       const submit = e.submitter; if (submit) submit.disabled = true;
       const r = await api('/' + game + '/join', { name: name.value }, token);
       if (!r.ok) { $('lobbytext').textContent = r.body.message || 'Could not join.'; if (submit) submit.disabled = false; return; }
-      store('playerName', name.value);
+      if (!info.rated) store('playerName', name.value);
       start();
     };
     show();
@@ -199,5 +238,6 @@
   start();
 })();
 </script>
+<script type="module" src="/js/account.js"></script>
 </body>
 </html>

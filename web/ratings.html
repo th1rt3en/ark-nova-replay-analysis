@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ratings - Ark Nova</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  body.landing { max-width: 42rem; }
+  table.board { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  table.board th, table.board td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--border); }
+  table.board th:nth-child(n+3), table.board td:nth-child(n+3) { text-align: right; }
+  table.board td:nth-child(3) { font-weight: 700; }
+</style>
+</head>
+<body class="landing">
+<p class="small"><a href="/">&larr; Ark Nova Replay</a> &middot; <a href="/minigames/">Mini games</a></p>
+<h1>Ratings</h1>
+<p class="muted">The best ratings of rated live games. A player is listed after 5 rated games; a rating that was copied from Board Game Arena at signup is not verified.</p>
+<div id="board" aria-live="polite">Loading…</div>
+<script type="module">
+const box = document.getElementById('board');
+fetch('/api/leaderboard/ratings').then((r) => r.json()).then((d) => {
+  if (!d.rows.length) { box.textContent = 'Nobody is listed yet. Play rated games (log in first) to appear here.'; return; }
+  const t = document.createElement('table'); t.className = 'board'; t.innerHTML = '<tr><th>#</th><th>Player</th><th>Rating</th><th>Games</th><th>Wins</th></tr>';
+  for (const r of d.rows) {
+    const tr = document.createElement('tr');
+    const n = document.createElement('td'); n.textContent = r.rank;
+    const who = document.createElement('td'); const a = document.createElement('a'); a.href = '/profile.html?id=' + encodeURIComponent(r.id); a.textContent = r.username; who.append(a);
+    tr.append(n, who, ...[r.rating, r.rated_games, r.rated_wins].map((v) => { const c = document.createElement('td'); c.textContent = v; return c; }));
+    t.append(tr);
+  }
+  box.replaceChildren(t);
+}).catch(() => { box.textContent = 'The ratings could not be loaded.'; });
+</script>
+<script type="module" src="/js/account.js"></script>
+</body>
+</html>

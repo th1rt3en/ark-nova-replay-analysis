@@ -6,6 +6,6 @@ export async function onRequest({ request, env }) {
     }
     const url = new URL(request.url);
     const init = {};
-    if (request.method === "GET" && /^\/api\/minigames\/[a-z_]+\/leaderboard$/.test(url.pathname) && !url.searchParams.has("_")) init.cf = { cacheEverything: true, cacheTtl: 60 };       // a leaderboard is the same for everybody: the edge keeps it a minute
+    if (request.method === "GET" && /^\/api\/(minigames\/[a-z_]+\/leaderboard|leaderboard\/ratings)$/.test(url.pathname) && !url.searchParams.has("_")) init.cf = { cacheEverything: true, cacheTtl: 60 };       // a leaderboard is the same for everybody: the edge keeps it a minute
     return fetch(new Request(env.CLOUD_RUN_URL.replace(/\/$/, "") + url.pathname + url.search, request), init);
 }
