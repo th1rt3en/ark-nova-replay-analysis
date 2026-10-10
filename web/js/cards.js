@@ -26,6 +26,7 @@ export function card(key, extraClass) {
     d.append(img);
     d.addEventListener('mouseenter', () => showPreview(largeOf(c), !!d.closest('#dock')));           // (a card of the hand is shown in the middle of the screen)
     d.addEventListener('mouseleave', hidePreview);
+    d.addEventListener('click', () => { if (d.closest('#dock')) holdPreview(largeOf(c)); });         // (a click on a card of the hand: its enlarged view stays away until the pointer has left the card)
   } else {
     d.append(textFace(key, c));
   }
@@ -37,13 +38,18 @@ const PREVIEW_DELAY = 1000;
 let previewTimer = 0, lastTouch = false;
 document.addEventListener('pointerdown', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
 document.addEventListener('pointermove', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
+let heldSrc = null;                                                          // the enlarged card that a click on a card of the hand switched off; the card is drawn again after the click (new element under the pointer), so this is not tied to an element
+function holdPreview(src) { if (lastTouch) return; heldSrc = src; hidePreview(); }       // (on a touch screen a tap is what opens the enlarged card: never held there)
 export function showPreview(src, centered) {
   clearTimeout(previewTimer);
+  if (heldSrc === src) return;                                               // (still on the clicked card: no enlarged card, not even after the delay)
+  heldSrc = null;                                                            // (another card: the usual rule again)
   const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;                      // (the action card draft lightbox is open: no enlarged cards, neither in the lightbox nor in the dimmed background)
   const show = () => { const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false; };
   if (lastTouch) show(); else previewTimer = setTimeout(show, PREVIEW_DELAY);
 }
 export function hidePreview() { clearTimeout(previewTimer); $('preview').hidden = true; }
+document.addEventListener('mouseout', (e) => { if (heldSrc && e.target.closest && e.target.closest('.card') && !(e.relatedTarget && e.target.closest('.card').contains(e.relatedTarget))) heldSrc = null; }, true);       // (the pointer left the card: the next hover on it counts again)
 document.addEventListener('DOMContentLoaded', () => { const pv = $('preview'); if (pv) pv.addEventListener('click', hidePreview); });       // (on touch screens a tap closes the preview)
 function textFace(key, c) {
   const t = el('div', 'txt');

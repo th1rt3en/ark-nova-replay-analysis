@@ -1316,3 +1316,6 @@ In the `handmode` listener: switching to the fan from an **unfolded** tray makes
 
 ## 35. Spectator dialog: smaller, warm gold chips
 The first-visit dialog (`#povChoice`, pov.js) was sized for a poster (1100 px wide, 36 px title, 96 px chips) and looked big next to the action card window. Now it is 880 px wide like that window (882), the title is Bowlby One 24 px, the chips 60 px high (20 px names, 4 px border, 17 px colour dot) and Confirm 52 px (20 px), spacing 22 px. Before a choice both chips are warm gold (`#F7DD9B`, hover `#F4D07A`); the chosen chip is sun orange as before. The two duplicate `.povdot` rules were merged.
+
+## 36. No enlarged card after a click on a card of the hand
+`cards.js`: a click on a card in `#dock` (hand and endgame cards; tray and fan) hides the enlarged card and holds it back (`holdPreview`, `heldSrc`): while the pointer stays on that card, also when the card is drawn again under it by the click, the enlarged view does not come back, not even after the 1 s delay. When the pointer leaves the card (`mouseout` on a `.card` towards outside it), or hovers a different card first, the usual 1 s rule applies again. Not held on touch screens (a tap is what opens the enlarged card there).
