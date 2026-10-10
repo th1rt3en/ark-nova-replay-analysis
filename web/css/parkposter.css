@@ -266,8 +266,8 @@ body.viewer .dockpanel .cards .empty { display: none; }
    round BGA-style discs (hand, endgame cards) on its top edge. Folded, only the top of the cards shows. The tray sits at the bottom of the window, so what hangs below its frame is off screen. -- */
 body.viewer .dock.traymode { left: 14px; bottom: 0; width: auto; height: auto; max-width: none; }
 body.viewer .dock.traymode::after { display: none; }
-body.viewer .handtray { --W: calc(170px * var(--hs, 1)); --avail: calc(var(--maxw, 1200px) - 50px); --step: calc(var(--W) + min(0px, (var(--avail) - var(--cols, 5) * var(--W)) / max(var(--cols, 5) - 1, 1))); position: relative; pointer-events: none; color: var(--ink); }
-body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: #E3CF9C; border: 5px solid transparent; border-bottom: 0; border-radius: 26px 26px 0 0; box-shadow: 0 0 10px rgba(0, 0, 0, .9), 0 0 26px rgba(0, 0, 0, .6);       /* (no outline: the same dark glow as the fan; the border stays, transparent, so the layout does not change) */ width: min(var(--maxw, 1200px), calc(var(--cols, 5) * var(--W) + 50px)); transition: height .4s cubic-bezier(.3, .8, .25, 1); }
+body.viewer .handtray { --W: calc(170px * var(--hs, 1)); --gap: 4px; --avail: calc(var(--maxw, 1200px) - 50px); --step: calc(var(--W) + var(--gap) + min(0px, (var(--avail) - var(--cols, 5) * var(--W) - (var(--cols, 5) - 1) * var(--gap)) / max(var(--cols, 5) - 1, 1))); position: relative; pointer-events: none; color: var(--ink); }
+body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: #E3CF9C; border: 5px solid transparent; border-bottom: 0; border-radius: 26px 26px 0 0; box-shadow: 0 0 10px rgba(0, 0, 0, .9), 0 0 26px rgba(0, 0, 0, .6);       /* (no outline: the same dark glow as the fan; the border stays, transparent, so the layout does not change) */ width: min(var(--maxw, 1200px), calc(var(--cols, 5) * var(--W) + (var(--cols, 5) - 1) * var(--gap) + 50px)); transition: height .4s cubic-bezier(.3, .8, .25, 1); }
 body.viewer .handtray.unf .trayframe { height: calc(30px + var(--W) * 1.3972); }
 body.viewer .handtray.fol .trayframe { height: calc(25px + 74px * var(--hs, 1)); }
 @keyframes tray-in { from { transform: translateY(105%); } to { transform: none; } }
@@ -358,3 +358,10 @@ body.viewer .dockpanel .cards { filter: drop-shadow(0 0 10px rgba(0, 0, 0, .9)) 
    departed cards and tokens leave without a red fade (no ghosts: `zoneNew` in cards.js no longer lists them in `.gone`) */
 .card.card-new, .projline.card-new, .btoken.card-new { animation: none; }
 .strip .tok-new .frame, .board .tok-new .frame { animation: none; stroke: none; }
+
+/* the check tag of a selected card is in front of every card, also of a neighbour that is selected too: the selected card builds no stacking context of its own (no z-index, no transform unless dragged),
+   so its tint stays at its own level (tree order) and its tag (z-index 10) is sorted among all the cards of the row; draft cards keep their own rules */
+body.viewer .card.marked:not(.draftcard) { z-index: auto; }
+body.viewer .handtray .cards .card.marked:not(.dragging) { transform: none; }
+body.viewer .card.marked:not(.draftcard)::before { z-index: auto; }
+body.viewer .card.marked:not(.draftcard)::after, .forkpage .card.marked:not(.draftcard)::after { z-index: 10; }
