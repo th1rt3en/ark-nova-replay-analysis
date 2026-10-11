@@ -55,6 +55,6 @@ export function fitDisplay() {
     const k = S.scale || 1, ir = icon.getBoundingClientRect(), pr = pn.getBoundingClientRect(), first = slots[0].getBoundingClientRect(), last = slots[slots.length - 1].getBoundingClientRect();
     pn.style.setProperty('--shift', (((ir.right + pr.right) / 2 - (first.left + last.right) / 2) / k) + 'px');       // (equal space between the icon and the pair and between the pair and the right edge)
   }
-  fitSidebar();       // (the control panel is aligned with the project area, whose place is final only now)
+  fitSidebar();       // (the width of the control pane's scrollbar, once the layout is final)
 }
 window.addEventListener('resize', () => { fitScale(); fitSidebar(); fitDisplay(); });

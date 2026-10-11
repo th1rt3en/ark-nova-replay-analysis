@@ -1,4 +1,4 @@
-// [module] Sidebar: the Control | Log tabs, the log's scroll-follow, and fitting the info panel (player trackers) into the height left under the control panel.
+// [module] Sidebar: the Control | Log tabs, the log's scroll-follow, and the width of the control pane's scrollbar (the sidebar's size itself is CSS, see parkposter.css).
 import { $ } from './util.js';
 import { S } from './state.js';
 
@@ -36,8 +36,7 @@ export function followLog(center) {
 // The only thing measured here is the width of the pane's scrollbar (the pane always reserves it, scrollbar-gutter: stable), so that the switch ends where the boxes end (--sbgutter on the aside).
 // Called after every render, resize, tab switch and when the fonts are loaded (layout.js, main.js, settings.js).
 export function fitSidebar() {
-  const aside = document.querySelector('aside.sidebar'), pane = $('paneControl'), side = $('side');
-  if (side) side.style.zoom = '';
+  const aside = document.querySelector('aside.sidebar'), pane = $('paneControl');
   if (!aside || !pane || pane.hidden || !pane.offsetWidth) return;
   const gutter = Math.max(0, pane.offsetWidth - pane.clientWidth);
   aside.style.setProperty('--sbgutter', gutter + 'px');

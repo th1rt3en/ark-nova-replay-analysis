@@ -14,8 +14,8 @@
 
 body.viewer {
   --teal: #0E4B5A; --teal2: #146577; --sun: #EE6C2B; --gold: #F4B63F; --rust: #A8321E; --paper: #F8EDCB; --ink: #17262B;
-  --blue: #2F7FC1; --ocean: #1F67B0;
-  --mint: #6FD3A8; --red: #D9402B; --act1: #009fe2; --act2: #d02a52;
+  --ocean: #1F67B0;
+  --mint: #6FD3A8; --act1: #229DD7; --act2: #A72070;   /* the unupgraded / upgraded action cards: player info box, action buttons in the move bar */
   --sidebar-w: 320px;
   --fg: var(--ink); --muted: #52666B; --border: var(--ink); --accent: var(--sun);
   font: 500 15px 'Barlow', system-ui, sans-serif; color: var(--ink);
