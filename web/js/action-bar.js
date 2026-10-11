@@ -1,13 +1,13 @@
 // [module] The action bar at the top (replay: current action; fork / sandbox: the playable controls), prompts and draft marks.
-import { $, el, seatColor } from './util.js';
+import { $, el, seatColor, seatText } from './util.js';
 import { FORK, PLAY, S } from './state.js';
-import { curState } from './pov.js';
-import { cardMarks, cardName, hidePreview, orderedKeys, showPreview } from './cards.js';
+import { curState, seatOrder } from './pov.js';
+import { bindPreview, cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { renderDock } from './dock.js';
 import { forkBar, keepSel, playFork } from './fork.js';
 import { render } from './main.js';
-import { go } from './playback.js';
+import { atEnd, atStart, go, stepBy } from './playback.js';
 import { frameKind } from './frames.js';
 
 
@@ -89,10 +89,38 @@ export function turnButtons(bar, turn, active, confirm) {
     bar.append(b);
   }
 }
+// the lightbox of the action card draft in the replay (a layer of its own under the sidebar's side of the page: the sidebar with the playback buttons stays usable)
+function draftPopup() {
+  let box = $('draftbox');
+  if (!box) { box = el('div', 'draftbox'); box.id = 'draftbox'; box.hidden = true; document.body.append(box); }
+  return box;
+}
+// Does the action card draft have a frame on step `i`? While it runs (pick1 | pick2 | keep) and on the step in which the last keep is made: the stage turns 'done' there, but the
+// cards that player kept have to be shown first (the keep and the deal of the starting hands are one step in the data; the draft frame comes first, the deal after it).
+export function draftOpen(st, i = S.step) {
+  const d = st && st.phase === 'setup' && st.draft;
+  if (!d) return false;
+  if (d.stage !== 'done') return true;
+  const prev = i > 0 ? S.replay.steps[i - 1].state : null;
+  return !!prev && !!prev.draft && prev.draft.stage !== 'done';
+}
+// The Back / Next buttons at the sides of the draft lightbox (the real control panel lies under the dim and looks out of use): a round button and under it the word with a keycap
+// of the arrow key that does the same (ArrowLeft / ArrowRight step through the frames, main.js).
+const NAV_ARROW = { '-1': '<path d="M15 4 7 12l8 8"/>', '1': '<path d="M9 4l8 8-8 8"/>' };
+const NAV_KEY = { '-1': '<path d="M19 12H6m5-6-6 6 6 6"/>', '1': '<path d="M5 12h13m-5-6 6 6-6 6"/>' };
+function draftNav(d) {
+  const b = el('button', 'draftnav ' + (d < 0 ? 'back' : 'next'));
+  b.type = 'button'; b.title = (d < 0 ? 'Back' : 'Next') + ' (arrow key ' + (d < 0 ? 'left' : 'right') + ')';
+  b.disabled = d < 0 ? atStart() : atEnd();
+  b.innerHTML = '<span class="dnbtn"><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_ARROW[d] + '</svg></span>'
+    + '<span class="dnlab">' + (d < 0 ? 'Back' : 'Next') + '<kbd><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_KEY[d] + '</svg></kbd></span>';
+  b.onclick = () => { stepBy(d); };
+  return b;
+}
 export const draftMarks = new Set();                                          // the cards the viewer highlighted with a click: cleared at every step
 function draftBar(bar, d) {
   const groups = [], choosers = [];
-  for (const seat of [0, 1]) {
+  for (const seat of seatOrder()) {
     const offers = d.offers[seat] || [];
     if (!offers.length) continue;
     const keeping = d.stage === 'keep' || d.stage === 'done';
@@ -103,7 +131,7 @@ function draftBar(bar, d) {
     const sel = mine.length ? (keepSel.get('d' + seat) || []) : [];
     if (mine.length) keepSel.set('d' + seat, sel);
     const who = el('span', 'who', S.replay.players[seat].name);
-    who.style.color = seatColor(seat);
+    who.style.color = seatText(seat);
     const head = el('div', 'drafthead');
     const done = !FORK && chosen.length >= need;                              // (the replay shows the draft as it goes: a player who has chosen no longer "must" choose)
     head.append(who, el('b', '', done ? (need === 1 ? ' selected this action card' : ' selected these 2 action cards')
@@ -116,8 +144,7 @@ function draftBar(bar, d) {
       const card = el('div', 'draftcard picked');
       const img = el('img'); img.src = draftCardUrl(v); img.alt = v;
       card.append(img, el('span', 'draftcheck', '✓'));
-      card.addEventListener('mouseenter', () => showPreview(draftCardUrl(v)));
-      card.addEventListener('mouseleave', hidePreview);
+      bindPreview(card, () => draftCardUrl(v));
       zone.append(card);
       row.append(zone);
     }
@@ -136,8 +163,7 @@ function draftBar(bar, d) {
       card.append(img);
       if (chosen.includes(v)) card.append(el('span', 'draftcheck', '✓'));
       if (d.auto && d.auto[seat] === v) card.title = 'Added at random: the three variants were of one action card';
-      card.addEventListener('mouseenter', () => showPreview(draftCardUrl(v)));
-      card.addEventListener('mouseleave', hidePreview);
+      bindPreview(card, () => draftCardUrl(v));
       row.append(card);
     }
     group.append(head, row);
@@ -187,16 +213,28 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   S.forkGate = false;
   bar.replaceChildren();
   bar.classList.remove('draftbar');
+  const popup = bar === $('actionbar') && !FORK ? draftPopup() : null;       // replay: the action card draft is not drawn into the move bar (the cards are far too high for it) but into a lightbox over the boards
+  if (popup) { popup.hidden = true; popup.replaceChildren(); }
   const cur = S.replay.steps[S.step], o = cur.options;
   if (kind === 'text') { bar.hidden = true; return; }
   // The action card draft (a Marine Worlds mechanism) has its own frame in the replay, 'draft': the bar alone, without step text, with the cards on offer and what each
   // player picked / kept so far (point of view: only the viewer's own offers). The fork shows it together with the step text, like every bar.
-  if (st.phase === 'setup' && st.draft && st.draft.stage !== 'done' && (FORK || kind === 'draft') && draftBar(bar, st.draft)) return;
+  if (popup && kind === 'draft' && draftOpen(st)) {
+    const pop = el('div', 'draftpop');
+    if (draftBar(pop, st.draft)) {
+      pop.style.setProperty('--cn', String(Math.max(3, ...[0, 1].map((i) => (st.draft.offers[i] || []).length + (st.draft.stage === 'pick2' ? 1 : 0)))));
+      const wrap = el('div', 'draftwrap');
+      wrap.append(draftNav(-1), pop, draftNav(1));
+      popup.append(wrap); popup.hidden = false; bar.hidden = true;
+      return;
+    }
+  }
+  if ((FORK ? st.phase === 'setup' && st.draft && st.draft.stage !== 'done' : kind === 'draft' && draftOpen(st)) && draftBar(bar, st.draft)) return;
   if (!FORK && st.phase === 'setup') {                                          // the starting hand: 8 cards drawn, 4 to discard (initial selection)
     const seat = prioritySeat([0, 1].filter((i) => S.replay.steps[S.step].state.players[i].hand.length > 4));
     if (seat !== null) {
       const who = el('span', 'who', S.replay.players[seat].name);
-      who.style.color = seatColor(seat);
+      who.style.color = seatText(seat);
       bar.hidden = false;
       bar.append(who, el('b', '', ' must discard ' + (S.replay.steps[S.step].state.players[seat].hand.length - 4) + ' cards (initial selection)'));
       return;
@@ -209,7 +247,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     bar.hidden = false;
     S.forkGate = FORK;
     const who = el('span', 'who', S.replay.players[before.active_player].name);
-    who.style.color = seatColor(before.active_player);
+    who.style.color = seatText(before.active_player);
     bar.append(who, el('b', '', ' must confirm or restart your turn'));
     if (FORK) turnButtons(bar, before.turn, before.active_player, true);
     else for (const [cls, label, tip] of [['confirm', 'Confirm', 'Confirm the turn and pass to the next player'],
@@ -240,7 +278,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   const maySkip = (type) => fa.some((x) => x.kind === 'skip_action' && x.args.type === type);
   if (FORK) spent += S.forkSpend;
   const who = el('span', 'who', S.replay.players[seat].name);
-  who.style.color = seatColor(seat);
+  who.style.color = seatText(seat);
   bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : ' must choose an action card'));
   p.action_cards.forEach((a, i) => {
     const b = el('span', 'abtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
@@ -262,6 +300,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     }
     bar.append(b);
   });
+  if (!FORK) return;                                                    // the replay shows no X token controls (the log already tells what was spent); fork / sandbox / live keep them
   // spending X tokens raises the strength of the chosen card: - (nothing spent yet, so greyed out) | X tokens | + (greyed out without tokens)
   const xs = (sign, label, off) => {
     const btn = el('button', 'xstep', sign);
@@ -459,7 +498,7 @@ function effectButton(e) {
 // any other decision of the engine: who must do what, and the kinds of action it offers (with how many options each)
 function genericBar(bar, st, o, seat) {
   const who = el('span', 'who', S.replay.players[seat].name);
-  who.style.color = seatColor(seat);
+  who.style.color = seatText(seat);
   // The building pieces are not shown in the replay (they take a lot of space and say little): only the prompt, with the largest size that can be built, like BGA.
   if (!FORK && o.pieces && o.pieces.length) {
     const max = Math.max(0, ...o.pieces.map((p) => +((/^size-(\d)$/.exec(p.type) || [])[1] || 0)));
@@ -480,7 +519,7 @@ function genericBar(bar, st, o, seat) {
       const over = st.players.map((q, i) => ({ i, n: q.hand.length - q.hand_limit })).filter((q) => q.n > 0);
       if (!inBreak || !over.length) { bar.hidden = true; return; }
       who2 = el('span', 'who', S.replay.players[over[0].i].name);
-      who2.style.color = seatColor(over[0].i);
+      who2.style.color = seatText(over[0].i);
       count = over[0].n;
     }
     bar.append(who2, el('b', '', ' must discard ' + count + ' ' + o.discard.what + '(s)'));

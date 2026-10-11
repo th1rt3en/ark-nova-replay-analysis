@@ -1,5 +1,5 @@
 // [module] Icon sprite lookup (icons.json / names.json), icon <img> builders, action icon and worker icon tables.
-import { el, seatColor, svg } from './util.js';
+import { el, seatRawColor, svg } from './util.js';
 import { S } from './state.js';
 
 
@@ -45,7 +45,7 @@ export function moneyTile(root, cx, cy, size) {
 // BGA's player colours with a worker picture (web/workers); a colour that is not one of them gets the closest
 const WORKER_COLORS = ['30a638', '1863a5', '7f4e30', '000000', '5a5856', 'ffffff', 'd1c81c', 'b91b1b', 'c028d3', 'cb7b19'];
 export function workerUrl(seat) {
-  const c = seatColor(seat).replace('#', '').toLowerCase();
+  const c = seatRawColor(seat).replace('#', '').toLowerCase();          // (the colour as BGA has it: a white player keeps BGA's white meeple)
   const rgb = (h) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
   const dist = (h) => rgb(h).reduce((d, v, i) => d + Math.abs(v - rgb(c)[i]), 0);
   return '/workers/' + WORKER_COLORS.reduce((best, h) => (dist(h) < dist(best) ? h : best)) + '.webp';

@@ -1,0 +1,457 @@
+/* ==== Park Poster: the default look of the replay / fork / sandbox / live play pages ================================================================
+   Loaded last (after replay.css and table.css), so it overrides their wood-and-parchment look. A poster: teal sky with slowly turning rays, cream paper panels with a thick ink
+   border and a hard shadow, orange and gold accents. Fonts: Bowlby One (headings, numbers), Barlow Condensed (texts), Barlow. Everything is in design px (1920 wide, zoomed by
+   layout.js). The structure (what is where) is described in docs/frontend_architecture.md; the art of the boards (maps, tracks, cards, icons) is not touched.
+   Colours are tokens on body.viewer, so that another theme can later replace this file by redefining them. */
+
+@font-face { font-family: 'Bowlby One'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/bowlby-one-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/barlow-condensed-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/barlow-condensed-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/barlow-condensed-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/barlow-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/barlow-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/barlow-latin-700-normal.woff2) format('woff2'); }
+
+body.viewer {
+  --teal: #0E4B5A; --teal2: #146577; --sun: #EE6C2B; --gold: #F4B63F; --rust: #A8321E; --paper: #F8EDCB; --ink: #17262B;
+  --ocean: #1F67B0;
+  --mint: #6FD3A8; --act1: #229DD7; --act2: #A72070;   /* the unupgraded / upgraded action cards: player info box, action buttons in the move bar */
+  --sidebar-w: 320px;
+  --fg: var(--ink); --muted: #52666B; --border: var(--ink); --accent: var(--sun);
+  font: 500 15px 'Barlow', system-ui, sans-serif; color: var(--ink);
+  background: radial-gradient(1200px 700px at 62% -8%, #1B7D8C 0%, var(--teal2) 40%, var(--teal) 100%) fixed var(--teal);
+  padding-bottom: calc(118px * var(--hk, 1.5));
+}
+body.viewer a { color: inherit; }
+
+/* ---- the poster behind everything: spinning rays, two hills (fixed, drawn behind the page) ------------------------------------------------------------------ */
+body.viewer::before { content: ""; position: fixed; left: -400px; top: -2500px; width: 4800px; height: 4800px; border-radius: 50%; z-index: -1; pointer-events: none; will-change: transform;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .06) 0 6deg, transparent 6deg 15deg); animation: pp-spin 240s linear infinite; }       /* the rays turn slowly about a point beyond the top right corner (2000, -100); no sun */
+#app::before { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 150px; z-index: -1; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 150' preserveAspectRatio='none'%3E%3Cpath d='M0 70C220 20 420 110 700 70S1200 10 1500 60 1800 90 1920 50V150H0z' fill='%230A3A47'/%3E%3Cpath d='M0 110C300 70 560 140 900 108S1500 70 1920 112V150H0z' fill='%23072C37'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat; }
+@keyframes pp-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { body.viewer::before, body.viewer::after, .pp .live { animation: none !important; } }
+
+/* ---- layout: the main column left, the sidebar fixed at the right; the top bar sticks to the top of the window ------------------------------------------------------------- */
+body.viewer .layout { --sidebar-w: 320px; padding: 0 calc(var(--sidebar-w) + 38px) 0 14px; }
+body.viewer main { padding-bottom: 8px; }
+/* the band behind the top row (move bar pills, Round and Break): fixed, the full width, under them (z 15 < sidebar 20 < move bar 30) and over the scrolling boards */
+@media (min-width: 900px) { #app::after { content: ""; position: fixed; left: 0; right: 0; top: 0; height: 80px; box-sizing: border-box; z-index: 15; pointer-events: none; background: #08303b; border-bottom: 4px solid var(--gold); } }
+body.viewer .movebar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 12px; margin: 0 -14px 6px; padding: 8px 14px 12px; min-height: 0; box-sizing: border-box;
+  background: none; border: 0; border-radius: 0; box-shadow: none; font-size: 1rem; }
+body.viewer .movepill { position: relative; flex: 1 1 0; min-width: 0; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; min-height: 60px; padding: 3px 44px 3px 22px;
+  background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 29px; box-shadow: 0 4px 0 var(--ink);
+  font: 700 18px/1.15 'Barlow', system-ui, sans-serif; }          /* the ONE font of the move bar: the step text, the choices and every text in the bar inherit it */
+body.viewer .movepill .actionbar { flex: 1 1 auto; margin: 0; min-height: 0; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
+body.viewer .movepill .actionbar, body.viewer .movepill .actionbar b, body.viewer .movepill .actionbar .who { font: inherit; }       /* (the old rules gave the bar 0.95rem and its bold text weight 900) */
+body.viewer .movepill .actionbar b { color: var(--ink); }
+body.viewer .movepill .abtn b { color: inherit; }
+body.viewer .movepill .actionbar.draftbar { padding: 4px 0; }
+body.viewer .movepill .actionbar[hidden] { display: none; }
+body.viewer .movepill .current { order: -1; flex: 1 1 auto; box-sizing: border-box; align-self: stretch; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 2px 0; background: none; border: 0;
+  font: inherit; color: var(--ink); }
+body.viewer .movepill .actionbar:not([hidden]) ~ .current { font: inherit; color: var(--ink); align-items: center; text-align: center; flex: 0 1 auto; max-width: 42%; margin-right: 16px; padding-right: 16px; border-right: 3px dashed rgba(23, 38, 43, .35); }
+body.viewer .movepill .current[hidden] { display: none; }
+body.viewer .movepill .engine-detail { font: 600 15px 'Barlow Condensed'; opacity: .7; }
+body.viewer .movepill .enginemark { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); z-index: 2; }
+/* the logo (top left of the move bar): the emu on its hill, a link to the start page; square like the pills are tall, with their hard shadow */
+body.viewer .brand { flex: none; align-self: flex-start; width: 60px; height: 60px; display: block; border-radius: 50%; box-sizing: border-box; border: 3px solid #6E9AA3; filter: drop-shadow(0 4px 0 var(--ink)); transition: transform .12s, filter .12s; }
+body.viewer .brand img { width: 100%; height: 100%; display: block; }
+body.viewer .brand:hover { transform: translateY(-2px); filter: drop-shadow(0 6px 0 var(--ink)); }
+body.viewer .brand:active { transform: translateY(2px); filter: drop-shadow(0 2px 0 var(--ink)); }
+body.viewer .brand:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+body.viewer .hdrstats { flex: none; display: flex; align-items: center; gap: 12px; }
+body.viewer .pill { height: 60px; box-sizing: border-box; display: flex; align-items: center; background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); color: var(--ink); }
+body.viewer .pill.rnd { flex: none; gap: 0; padding: 0; }          /* Round | Turn: two equal 78 px halves and a dashed divider (the pill is 167 px wide); the word small above the number in each */
+body.viewer .pill.rnd .half { width: 78px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5px 0 0; }          /* (1.5px: with the 2px gap below the label the ink block sits in the middle, 8 / 7.5 px above and below) */
+body.viewer .pill.rnd .lab { font: 700 13px/1 'Barlow Condensed'; letter-spacing: .14em; text-indent: .14em; text-transform: uppercase; margin-top: 2px; }          /* (text-indent: the letter spacing after the last letter would push the word 0.9 px left of the middle) */
+body.viewer .pill.rnd .rn, body.viewer .pill.rnd .tn { font: 400 28px/1.05 'Bowlby One', system-ui, sans-serif; margin-top: 2px; }
+body.viewer .pill.rnd .rn { color: var(--rust); }
+body.viewer .pill.rnd .tn { color: var(--ocean); }
+body.viewer .pill.rnd .dv { flex: none; align-self: stretch; width: 0; border-left: 3px dashed rgba(23, 38, 43, .45); margin: 9px 0; }
+body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
+body.viewer .pill.brk { gap: 12px; padding: 0 20px 0 19.7px;          /* (the ink of the mug and of the last pip is 20 px from the rounded ends on both sides; the mug picture starts 0.3 px inside its box) */
+  background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
+body.viewer .pill.brk .brkicon { height: 32px; width: auto; display: block; flex: none; position: relative; top: -2px; }          /* (BGA's own mug picture, 96 x 108 px, 32 px high: the body is as high as the dots; it sits 2 px lower than the exact middle (body bottom y 52, the dots end at 50), because the steam above makes the exact middle look too high) */
+body.viewer .pill.brk .bn { font: 400 34px/1 'Bowlby One'; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
+body.viewer .pill.brk .bn small { font-size: 22px; margin-left: 1px; }
+body.viewer .pips { display: flex; gap: 5px; }
+body.viewer .pips i { width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--ink); background: rgba(23, 38, 43, .25); }
+body.viewer .pips i.done { background: var(--gold); }
+body.viewer .pips i.cur { background: var(--paper); box-shadow: 0 0 0 3px var(--gold); transform: scale(1.15); }
+body.viewer .hdrstats .gamemenu { position: relative; font-size: 1rem; }
+body.viewer .gamemenubtn { height: 50px; padding: 0 16px; border: 4px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); font: 700 19px 'Barlow Condensed'; cursor: pointer; box-shadow: 0 4px 0 var(--ink); }
+body.viewer .hdrstats .gamemenulist { right: 0; top: calc(100% + 8px); background: var(--paper); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink); overflow: hidden; }
+body.viewer .gamemenuitem { color: var(--ink); font: 600 18px 'Barlow Condensed'; border-bottom: 2px dashed rgba(23, 38, 43, .25); }
+body.viewer .gamemenuitem:hover:not(:disabled) { background: var(--gold); }
+body.viewer .hdrstats .flash-up, body.viewer .hdrstats .flash-down { animation: flash-up var(--flash-duration, .8s) ease-out; }
+
+/* ---- panels: the display, the association element and the zoos are cream paper with an ink border ------------------------------------------------------------------------ */
+body.viewer .shared { gap: 16px; margin-bottom: 8px; }
+body.viewer .shared > .displaycol, body.viewer .shared > .tablecol { box-sizing: border-box; padding: 6px; background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
+body.viewer .shared > .tablecol { gap: 5px; }
+body.viewer .shared .projpanel { background: none; border: 0; box-shadow: none; padding: 0; border-radius: 9px; }
+body.viewer .shared .projslot { border-radius: 9px; box-shadow: none; }
+body.viewer .shared .projslot.projempty { background: none; box-shadow: inset 0 0 0 2px rgba(23, 38, 43, .35); }       /* (an empty project place: a thin outline, so the area does not look like a blank gap) */
+body.viewer .zoos { gap: 16px; padding-top: 40px; }
+body.viewer .zoo { position: relative; box-sizing: border-box; padding: 8px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
+body.viewer .zoo.active { border-color: var(--ink); box-shadow: 0 6px 0 var(--ink), 0 0 0 8px var(--gold); }
+body.viewer .zoo h2 { position: absolute; left: 22px; top: -38px; margin: 0; height: 34px; box-sizing: border-box; display: flex; align-items: center; gap: 9px; flex-wrap: nowrap; padding: 0 20px 0 11px; background: var(--ink); color: var(--paper);
+  border: 0; border-radius: 14px 14px 0 0; white-space: nowrap; font: 400 17px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .zoo h2::before { content: ""; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--paper); background: var(--pc, #888); flex: none; }
+body.viewer .zoo h2 .map { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; color: var(--paper); opacity: .8; }
+body.viewer .zoo .played { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 20px; margin-top: 8px; padding-top: 7px; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .zoo .played .sect { margin: 0; }
+body.viewer .zoo .played h3 { margin: 0 0 4px; padding: 0; border: 0; font: 700 15px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .zoo .played .cards { gap: 6px; flex-wrap: wrap; }
+body.viewer .zoo .played .cards .card, body.viewer .zoo .played .cards.small .card { width: 92px; border-radius: 7px; border: 0; box-shadow: 0 0 0 2px var(--ink); }
+body.viewer .zoo .played .empty { display: none; }
+body.viewer .card { border-radius: 7px; border-color: var(--ink); }
+
+/* ---- sidebar: tabs, control panel, info boxes (every one a panel of its own), the log ---------------------------------------------------------------------------------- */
+body.viewer aside.sidebar { top: 90px; right: 12px; width: var(--sidebar-w); height: calc(var(--vh, 1vh) * 100 - 102px); gap: 10px; }          /* below the top row: the head row spans the full width, the sidebar starts under it */
+/* Control | Log: a segmented switch at the top of the sidebar (a dark track with a gold outline, the active half gold) */
+body.viewer .sbtabs { flex: 0 0 auto; gap: 3px; height: 44px; box-sizing: border-box; margin-bottom: 0; padding: 3px; border: 3px solid rgba(244, 182, 63, .5); border-radius: 999px; background: rgba(4, 26, 33, .7); }
+body.viewer .sbtab { flex: 1 1 0; height: auto; box-sizing: border-box; padding: 0; border: 0; border-radius: 999px; background: transparent; color: #A9CBD1; font: 400 17px 'Bowlby One', system-ui, sans-serif; box-shadow: none; }
+body.viewer .sbtab:hover { color: var(--paper); }
+body.viewer .sbtab.on { background: var(--gold); color: var(--ink); }
+body.viewer .sbtab:focus-visible { outline: 3px solid var(--paper); outline-offset: 1px; }
+/* the sidebar's own ground (desktop): the poster background turns deeper toward the right edge (the wall) and a fading dotted gold rail marks the boundary to the arena; both fixed, under the sidebar and the top row, over the band */
+@media (min-width: 900px) {
+  body.viewer .layout::before { content: ""; position: fixed; top: 0; right: 0; bottom: 0; width: calc(var(--sidebar-w) + 40px); z-index: 16; pointer-events: none;
+    background: linear-gradient(90deg, rgba(4, 26, 33, 0) 0, rgba(4, 26, 33, 0) 4%, rgba(4, 26, 33, .5) 30%, rgba(3, 20, 26, .88)); }
+  body.viewer .layout::after { content: ""; position: fixed; top: 92px; bottom: 8px; right: calc(var(--sidebar-w) + 16px); width: 8px; z-index: 17; pointer-events: none;
+    background: radial-gradient(circle, var(--gold) 3px, transparent 3.5px) 0 0 / 8px 16px repeat-y; -webkit-mask: linear-gradient(transparent, #000 6%, #000 94%, transparent); mask: linear-gradient(transparent, #000 6%, #000 94%, transparent); }
+  /* the top row now spans the whole width: the move text takes the room that Control | Log used to have, Round and Break end where the sidebar ends */
+  body.viewer .movebar { margin-right: calc(-1 * (var(--sidebar-w) + 38px)); padding-right: 12px; }
+  /* the bar grows in the fork / sandbox / live pages (choices, buttons) and now reaches over the sidebar: it lets clicks through except on its own pieces, and Round / Break stay in the top line so they never cover the Control | Log switch */
+  body.viewer .movebar { pointer-events: none; }
+  body.viewer .movebar > * { pointer-events: auto; }
+  body.viewer .hdrstats { align-self: flex-start; }
+}
+body.viewer .sbpane { gap: 10px; }
+body.viewer #paneControl { overflow-x: hidden; overflow-y: auto; padding: 0 8px 10px 0; margin-right: -8px; scrollbar-width: thin; scrollbar-color: rgba(248, 237, 203, .5) transparent; }
+body.viewer .sidebar .side { width: auto; margin: 0; display: grid; gap: 10px; flex: 0 0 auto; }
+@media (min-width: 900px) {          /* the switch, the control panel and the info boxes are all 300 px wide at every window height (the panel and the boxes are the 320 px design scaled by 300/320 with CSS zoom), right-aligned; the pane always keeps room for its scrollbar so nothing moves when the scrollbar appears */
+  body.viewer aside.sidebar { --sbz: 0.9375; --sbw: 300px; --sbgutter: 0px; }
+  body.viewer #paneControl { scrollbar-gutter: stable; }
+  body.viewer .sbtabs { width: var(--sbw); margin-left: auto; margin-right: var(--sbgutter); box-sizing: border-box; }
+  body.viewer #paneControl > .bar, body.viewer #paneControl > .side { zoom: var(--sbz); width: var(--sidebar-w); margin-left: auto; box-sizing: border-box; }
+}
+
+/* control panel: the buttons, the line (a decoration that becomes the timeline), then move number | settings | fork */
+body.viewer .sidebar .bar { position: static; flex: 0 0 auto; display: grid; gap: 8px; padding: 10px 12px 12px; background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); color: var(--ink); }
+body.viewer .sidebar .controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0; flex-wrap: nowrap; }
+body.viewer .sidebar .controls button { flex: none; width: 40px; height: 40px; min-width: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; background: var(--sun); color: var(--ink); border: 4px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink); cursor: pointer; transition: transform .08s, box-shadow .08s; }
+body.viewer .sidebar .controls button:hover:not(:disabled) { background: var(--sun); transform: translateY(-2px); }
+body.viewer .sidebar .controls button:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+body.viewer .sidebar .controls button:disabled { opacity: .35; box-shadow: none; }
+body.viewer .sidebar .controls #play { width: 50px; height: 50px; margin: -3px 0; background: var(--gold); }
+body.viewer .sidebar .controls #play.on { background: var(--paper); }
+body.viewer .sidebar .controls button svg { width: 19px; height: 19px; fill: var(--ink); }
+body.viewer .sidebar .controls button svg.gearicon { width: 22px; height: 22px; }
+body.viewer .sidebar .controls .settingsbtn { order: 2; background: var(--paper); box-shadow: 0 3px 0 var(--ink); }
+body.viewer .sidebar .controls .settingsbtn:hover:not(:disabled) { background: var(--gold); }
+body.viewer .sidebar .controls .jump { order: 1; flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 12px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink);
+  font: 600 17px 'Barlow Condensed', system-ui, sans-serif; white-space: nowrap; }
+body.viewer .sidebar .controls .jump input { flex: 1 1 0; min-width: 0; width: 3rem; padding: 0; border: 0; background: transparent; color: var(--ink); font: 700 22px 'Barlow Condensed', system-ui, sans-serif; box-shadow: none; -moz-appearance: textfield; }
+body.viewer .sidebar .controls .jump input:focus { outline: 0; }
+body.viewer .sidebar .controls .jump input::-webkit-inner-spin-button, body.viewer .sidebar .controls .jump input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* replay: Move | settings | ? | Fork, Move as wide as Fork (92 px), 8 px gaps fill the row exactly */
+body.viewer .sidebar .controls .jump { height: 40px; box-sizing: border-box; }
+body.viewer .sidebar .controls:has(.forkbtn) .jump { flex: none; width: 92px; justify-content: center; }
+body.viewer .sidebar .controls:has(.forkbtn) .jump input { flex: none; width: 3ch; text-align: left; }
+body.viewer .sidebar .controls .extrabtn { font: 400 21px 'Bowlby One', system-ui, sans-serif; padding-top: 2px; }
+body.viewer .sidebar .controls .forkbtn { order: 3; width: 92px; height: 40px; box-sizing: border-box; display: grid; place-items: center; border-radius: 999px; padding: 0; background: var(--teal); color: var(--paper); border: 3px solid var(--ink); box-shadow: none; font: 400 15px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .sidebar .controls .forkbtn:hover:not(:disabled) { background: var(--teal2); transform: none; }
+body.viewer .sidebar .controls .forkbtn:disabled { opacity: .45; }
+body.viewer .sidebar .controls2 { gap: 8px; }
+body.viewer .tldeco { position: relative; height: 22px; margin: 0 4px; }
+/* the row between the two button rows (the timeline or the line that holds its place) is centred between the INK of the rows above and below: in the replay the autoplay button is 50 px tall with a 3 px shadow and sticks out of its row by 3 px above and 6 px below, so the row moves down 3 px (margin pair: the bar keeps its height); the fork pages hide that button and need no shift */
+body.viewer:not(.forkpage) .sidebar .timeline, body.viewer:not(.forkpage) .tldeco { margin-top: 3px; margin-bottom: -3px; }
+body.viewer .tldeco[hidden] { display: none; }
+body.viewer .tldeco i { position: absolute; left: 0; right: 0; top: calc(50% - 1.5px); border-top: 3px dashed rgba(23, 38, 43, .38); }
+body.viewer .sidebar .timeline { flex: none; width: auto; max-width: none; height: 22px; margin: 0 4px; border: 3px solid var(--ink); border-radius: 9px; background: #fff; box-sizing: border-box; cursor: pointer; touch-action: none; user-select: none; }
+body.viewer .timeline::before { display: none; }
+body.viewer .tlseg { border-left: 3px solid var(--ink); }
+body.viewer .tlseg:first-child { border-left: 0; }
+body.viewer .tlseg:hover { background: rgba(111, 211, 168, .25); }
+body.viewer .tlfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 6px; background: var(--tlfill, linear-gradient(90deg, #0E6F78, #6FD3A8)); pointer-events: none; }
+body.viewer .tlhead { top: -6px; bottom: -6px; width: 8px; margin-left: -4px; border-radius: 3px; background: var(--ink); border: 2px solid var(--paper); box-shadow: none; pointer-events: auto; cursor: grab; }
+body.viewer .timeline.dragging, body.viewer .timeline.dragging .tlhead { cursor: grabbing; }
+
+/* info boxes */
+body.viewer .pp { --pc: #888; padding: 0; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); overflow: hidden; }
+body.viewer .pp:last-child { border-radius: 20px; }
+body.viewer .pphead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; padding: 4px 8px 4px 14px; background: var(--pc); color: #fff; border-bottom: 4px solid var(--ink); }
+body.viewer .pp.light .pphead { color: var(--ink); }
+body.viewer .pphead .who { min-width: 0; display: flex; align-items: center; gap: 9px; }
+body.viewer .ppname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 18px 'Bowlby One', system-ui, sans-serif; color: inherit; text-decoration: none; text-shadow: 0 2px 0 rgba(0, 0, 0, .28); -webkit-text-stroke: 0; }
+body.viewer .pp.light .ppname { text-shadow: none; }
+body.viewer .ppname.light { -webkit-text-stroke: 0; }
+body.viewer .pp .live { width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; background: var(--gold); border: 3px solid var(--ink); flex: none; animation: pp-blink 2.4s ease-in-out infinite; }
+@keyframes pp-blink { 50% { background: #fff; } }
+body.viewer .pphead .clock { margin: 0 4px 0 auto; font-size: 17px; background: rgba(255, 255, 255, .85); color: var(--ink); }
+body.viewer .poveye { color: inherit; }
+body.viewer .burst { position: relative; width: 52px; height: 52px; margin: -4px 0; flex: none; display: grid; place-items: center; }
+body.viewer .burst svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+body.viewer .burst b { position: relative; font: 400 23px 'Bowlby One', system-ui, sans-serif; color: var(--ink); text-shadow: none; }
+body.viewer .ppscore { display: inline-flex; flex: none; }
+body.viewer .pp .ppres { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; align-items: start; text-align: center; margin: 0; padding: 8px 10px 4px; border: 0; }
+body.viewer .rt { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+body.viewer .rt img { display: block; width: auto; }
+body.viewer .rt b { font: 400 20px/1 'Bowlby One', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; }
+body.viewer .rt.ov { display: grid; place-items: center; height: 50px; }
+body.viewer .rt.ov img { grid-area: 1 / 1; height: 48px; }
+body.viewer .rt.ov b { grid-area: 1 / 1; color: #fff; font-size: 25px; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+body.viewer .rt.ov.dk b { color: #000; text-shadow: none; }
+body.viewer .rt.ov small { position: absolute; right: -9px; bottom: -8px; z-index: 2; font: 700 17px 'Barlow Condensed', system-ui, sans-serif; background: var(--mint); color: var(--ink); border: 2px solid var(--ink); border-radius: 11px; padding: 0 6px; white-space: nowrap; }   /* the income pill at the lower right of the money tile */
+body.viewer .rt.ov.money img { border: 0; border-radius: 0; background: none; box-sizing: border-box; }
+body.viewer .rt.xo b { font-size: 25px; color: #fff; text-shadow: none; -webkit-text-stroke: 5px #000; paint-order: stroke fill; }   /* X tokens: the number on the X, white with a black outline */
+body.viewer .pp .ppres2 { display: flex; align-items: center; gap: 14px; margin: 0 10px; padding: 5px 0; min-height: 38px; border: 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .ppres2 .rt { gap: 7px; }
+body.viewer .ppres2 .rt img { height: 32px; }
+body.viewer .ppres2 .rt b { font-size: 24px; }
+body.viewer .ppres2 .rt b small { font: 700 17px 'Barlow Condensed', system-ui, sans-serif; opacity: .6; }
+body.viewer .ppres2 .rt b.over { color: var(--rust); }
+body.viewer .ppres2 .egx b { font-size: 20px; }
+body.viewer .ppres2 .bons { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; justify-content: flex-end; }
+body.viewer .ppres2 .btoken { display: inline-flex; margin: 0; }
+body.viewer .ppres2 .btoken img { height: 36px; width: auto; display: block; }
+body.viewer .pp .ppactions { display: flex; justify-content: space-between; margin: 0 10px; padding: 9px 0 0; border: 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .ppactions .ac { position: relative; display: inline-flex; box-sizing: content-box; border: 4px solid var(--act1); border-radius: 9px; background: #fff; }
+body.viewer .ppactions .ac.lvl2 { border-color: var(--act2); }
+body.viewer .ppactions .ac img.icon { width: 38px; height: 38px; display: block; }
+body.viewer .ppactions .ac .variant { left: -11px; top: -11px; width: 25px; height: 25px; }
+body.viewer .ppactions .ac.chosen { border-color: var(--ink); box-shadow: 0 0 0 3px var(--gold), 0 5px 0 var(--ink); transform: translateY(-5px); }
+body.viewer .pp .ppicons { display: grid; grid-template-columns: 1fr; gap: 2px; margin: 6px 10px 10px; padding-top: 7px; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .ppicons .icrow { display: flex; justify-content: space-around; }
+body.viewer .ppicons .ic { position: relative; display: inline-block; width: 44px; height: 44px; margin: 0 4px 4px 0; font-size: 0; }
+body.viewer .ppicons .ic .badge { width: 42px; height: 42px; border-radius: 50%; display: block; }
+body.viewer .ppicons .ic b { position: absolute; right: -4px; bottom: -4px; min-width: 28px; height: 28px; padding: 0 3px; box-sizing: border-box; display: grid; place-items: center; font: 400 19px/1 'Bowlby One', system-ui, sans-serif;
+  background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; color: var(--ink); }
+body.viewer .ppicons .ic.zero { opacity: 1; }
+body.viewer .ppicons .ic.zero .badge { opacity: .3; }
+body.viewer .ppicons .ic.zero b { opacity: .55; }
+
+/* log */
+body.viewer .sidebar .moves { flex: 1 1 0; min-height: 0; padding: 8px 10px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 600 18px/1.15 'Barlow', system-ui, sans-serif; }
+body.viewer .moves li { padding: 5px 0 5px 6px; border-bottom: 2px dashed rgba(23, 38, 43, .25); border-left-width: 5px; }
+body.viewer .moves li:hover { background: rgba(244, 182, 63, .3); }
+body.viewer .moves li.on { background: rgba(238, 108, 43, .3); font-weight: 700; }
+body.viewer .moves .n { color: var(--ink); opacity: .5; min-width: 34px; font-weight: 700; }
+
+/* the check mark of the engine badge (the engine agrees with the log): a drawn check, thick and big, in the log and in the move bar */
+body.viewer .engine-badge.engine { flex: none; padding: 0; min-width: 0; line-height: 0; color: #1c6b2a; }
+body.viewer .engine-badge.engine svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+body.viewer .movepill .enginemark .engine-badge.engine svg { width: 30px; height: 30px; }
+
+/* ---- settings pop-up ------------------------------------------------------------------------------------------------------------------------------------------------------- */
+body.viewer .modal { background: rgba(7, 44, 55, .62); }
+body.viewer .modalbox { width: 440px; box-sizing: border-box; padding: 16px 20px 20px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink); }
+body.viewer .modalhead { margin-bottom: 14px; font: 400 24px 'Bowlby One', system-ui, sans-serif; }
+/* the first-visit dialog: whom to spectate (pov.js askSpectated): two warm gold chips with the player names, as wide as the action card window that follows (880 px) */
+body.viewer .povbox { width: 880px; max-width: 94vw; padding: 24px 28px 30px; border-width: 4px; border-radius: 26px; box-shadow: 0 8px 0 var(--ink); text-align: center; }
+body.viewer .povbox .modalhead { display: block; text-align: center; margin-bottom: 22px; font-size: 24px; line-height: 1.15; white-space: nowrap; }
+body.viewer .povchips { display: flex; gap: 18px; justify-content: center; }
+body.viewer .povchip { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 10px; height: 60px; padding: 0 16px; border: 4px solid var(--ink); border-radius: 999px; background: #F7DD9B; box-shadow: 0 5px 0 var(--ink); color: var(--ink); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }       /* (about 20 characters of a name fit: "Propaganda Panda" does, longer ones end in ...) */
+body.viewer .povchip:hover { background: #F4D07A; }
+body.viewer .povchip.on, body.viewer .povchip.on:hover { background: var(--sun); color: var(--paper); }
+body.viewer .povchip:focus-visible, body.viewer .povok:focus-visible { outline: 4px solid var(--gold); outline-offset: 4px; }
+body.viewer .povdot { flex: none; width: 17px; height: 17px; box-sizing: border-box; border-radius: 50%; background: var(--pc); border: 3px solid var(--ink); }
+body.viewer .povname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.viewer .povok { display: block; margin: 22px auto 0; min-width: 210px; height: 52px; padding: 0 32px; border: 4px solid var(--ink); border-radius: 999px; background: #3F9A4E; box-shadow: 0 5px 0 var(--ink); color: var(--paper); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }
+body.viewer .povok:hover:not(:disabled) { background: #48ad59; }
+body.viewer .povok:disabled { background: #b9b58f; color: rgba(248, 237, 203, .85); box-shadow: 0 5px 0 rgba(23, 38, 43, .45); border-color: rgba(23, 38, 43, .45); cursor: default; }
+body:has(#povChoice) .draftbox { visibility: hidden; }       /* (the action card draft of the first step waits behind the dialog) */
+body.viewer .povname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.viewer .modalx { width: 38px; height: 38px; margin: 0; border: 4px solid var(--ink); border-radius: 50%; background: var(--sun); color: var(--paper); }
+body.viewer .modalx:hover { color: var(--paper); background: #ff7f3e; }
+body.viewer .setrow { padding: 14px 0 0; margin-top: 14px; border-top: 3px dashed rgba(23, 38, 43, .4); font: 700 21px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .setspeed { gap: 6px; }
+body.viewer .setspeed button { min-width: 0; padding: 6px 14px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font: 400 16px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .setspeed button:hover { background: #fff7dc; }
+body.viewer .setspeed button.on { background: var(--gold); }
+body.viewer .setswitch { width: 64px; height: 34px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; box-sizing: border-box; }
+body.viewer .setswitch::after { top: 3px; left: 3px; width: 22px; height: 22px; border: 0; background: var(--ink); }
+body.viewer .setswitch:checked { background: var(--sun); }
+body.viewer .setswitch:checked::after { left: 33px; background: var(--paper); }
+
+/* ---- the hand: the cards of the hand / of the endgame cards lie in a fan at the bottom left and rise on hover. The dock is a fixed box (and its ::after covers the strip where the cards lie at rest), so the
+   cards that move up under the pointer do not take the hover away: the fan never flickers ------------------------------------------------------------------------------------- */
+body.viewer { --hk: calc(1.5 * var(--hs, 1)); }                    /* hand scale: the default hand is 1.5 x the first design (--hs = 1), the setting changes --hs */
+body.viewer .dock { left: 14px; bottom: 0; z-index: 35; width: calc(150px + 560px * var(--hk)); height: calc(150px * var(--hk)); max-width: none; display: block; pointer-events: none; }
+body.viewer .dock::after { content: ""; position: absolute; left: 150px; bottom: 0; width: calc(560px * var(--hk)); height: calc(124px * var(--hk)); pointer-events: auto; }
+body.viewer .dockbar { position: absolute; left: 0; bottom: 6px; z-index: 3; display: grid; gap: 6px; padding: 0; background: none; box-shadow: none; border-radius: 0; pointer-events: auto; }
+body.viewer .dockgroup { display: grid; grid-template-columns: auto; gap: 6px; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }       /* no frame, no name: the open eye says whose cards these are; the two pills (hand, endgame cards) are stacked and small: 62 px each, 130 px together, about as high as the part of the fan that shows at rest */
+
+body.viewer .dockpair { display: contents; }
+body.viewer .dockbtn { position: relative; width: 100px; height: 62px; padding: 0; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 999px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 0 4px 0 var(--ink); opacity: 1; cursor: pointer; }
+body.viewer .dockbtn:hover { background: #fff7dc; transform: none; }
+body.viewer .dockbtn.on { background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
+body.viewer .dockbtn img { width: 40px; height: 40px; }
+body.viewer .dockn { position: static; min-width: 0; height: auto; padding: 0; border: 0; border-radius: 0; background: none; -webkit-text-stroke: 0; paint-order: normal; text-shadow: none; color: var(--ink); font: 400 28px/1 'Bowlby One', system-ui, sans-serif; }
+body.viewer .dockbtn.on .dockn { color: var(--paper); }
+body.viewer .dockfold { position: absolute; left: 0; bottom: 100%; width: 30px; height: 30px; margin: 0 0 8px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); color: var(--ink); font-size: 12px; cursor: pointer; pointer-events: auto; display: none; }
+body.viewer .dockpanel { position: absolute; left: 150px; top: calc(18px * var(--hk)); z-index: 2; width: calc(560px * var(--hk)); max-width: none; max-height: none; overflow: visible; padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; pointer-events: auto;
+  transition: transform .35s cubic-bezier(.2, .9, .2, 1) .08s; }
+body.viewer .dock:hover .dockpanel, body.viewer .dock.raised .dockpanel, body.viewer.card-dragging .dockpanel { transform: translateY(calc(-82px * var(--hk))); transition-delay: 0s; }
+body.viewer .dockhead { display: none; }
+/* The fan: --amax = the angle between two neighbouring cards, --atot = the most the whole fan may turn (so a big hand gets smaller steps), --sp = the distance of two neighbouring cards (the rotation about the common
+   pivot adds 321px * sin(angle) of it, the overlap supplies the rest). The cards lie on a circle: every card turns about one pivot far below the cards, the ends drop by themselves. */
+body.viewer .dockpanel .cards { --amax: 8deg; --atot: 64deg; --sp: min(71px, calc(530px / var(--n, 5))); --a: min(var(--amax), calc(var(--atot) / var(--n, 5)));
+  display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 0; padding: calc(14px * var(--hk)) 0 0 calc(12px * var(--hk) + 400px * var(--hk) * sin(calc((var(--n, 5) - 1) / 2 * var(--a)))); }      /* (the left padding makes room for the outermost card, which swings out to the left) */
+body.viewer .dockpanel .cards .card, body.viewer .dockpanel .cards.small .card { flex: none; width: calc(128px * var(--hk)); height: auto; border: 0; border-radius: calc(8px * var(--hk)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .55), 0 3px 7px rgba(0, 0, 0, .38);
+  margin-right: calc(-1 * (128px - (var(--sp) - 321px * sin(var(--a)))) * var(--hk)); transform: translate(var(--dx, 0px), var(--dy, 0px)) rotate(calc(var(--i, 0) * var(--a))); transform-origin: 50% 230%; }
+body.viewer .dockpanel .cards .card.dragging, body.viewer .dockpanel .cards .card.dragging:hover { z-index: 20; cursor: grabbing; transition: none; box-shadow: 0 0 0 1px rgba(26, 31, 36, .55), 0 10px 18px rgba(0, 0, 0, .45); }
+body.viewer .dockpanel .cards .card:hover { z-index: 6; }
+body.viewer .dockpanel .cards .empty { display: none; }
+
+/* ---- the floating tray (settings: Hand display = Floating container; dock.js drawTray): a sand-coloured tray at the bottom left, the cards flat in one row (width 170 px x --hs, 8 px apart; they only overlap when the
+   row would be wider than the boards above, `--maxw`), no outline but the dark glow of the fan, round BGA-style discs (hand, endgame cards) on its top edge. Folded, only the top of the cards shows. The tray sits at
+   the bottom of the window, so what hangs below its frame is off screen. -- */
+body.viewer .dock.traymode { left: 14px; bottom: 0; width: auto; height: auto; max-width: none; }
+body.viewer .dock.traymode::after { display: none; }
+body.viewer .handtray { --W: calc(170px * var(--hs, 1)); --gap: 8px; --avail: calc(var(--maxw, 1200px) - 50px); --step: calc(var(--W) + var(--gap) + min(0px, (var(--avail) - var(--cols, 5) * var(--W) - (var(--cols, 5) - 1) * var(--gap)) / max(var(--cols, 5) - 1, 1))); position: relative; pointer-events: none; color: var(--ink); }
+body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: #E3CF9C; border: 5px solid transparent; border-bottom: 0; border-radius: 26px 26px 0 0; box-shadow: 0 0 10px rgba(0, 0, 0, .9), 0 0 26px rgba(0, 0, 0, .6);       /* (no outline: the same dark glow as the fan; the border stays, transparent, so the layout does not change) */ width: min(var(--maxw, 1200px), calc(var(--cols, 5) * var(--W) + (var(--cols, 5) - 1) * var(--gap) + 50px)); transition: height .4s cubic-bezier(.3, .8, .25, 1); }
+body.viewer .handtray.unf .trayframe { height: calc(30px + var(--W) * 1.3972); }
+body.viewer .handtray.fol .trayframe { height: calc(25px + 74px * var(--hs, 1)); }
+@keyframes tray-in { from { transform: translateY(105%); } to { transform: none; } }
+body.viewer .handtray.enter { animation: tray-in .35s cubic-bezier(.2, .9, .25, 1); }
+body.viewer .trayhead { height: 20px; cursor: pointer; }
+body.viewer .handtray .cards { display: grid; justify-content: start; align-items: start; gap: 0; padding: 0 20px 5px; }
+body.viewer .handtray .cards.multi { max-height: calc(var(--W) * 1.3972 + 5px); overflow-x: hidden; overflow-y: auto; }
+body.viewer .handtray .cards .card, body.viewer .handtray .cards.small .card { width: var(--W); height: auto; border: 0; border-radius: calc(10px * var(--hs, 1)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 3px 8px rgba(0, 0, 0, .4);
+  transform: translate(var(--dx, 0px), var(--dy, 0px)); }
+body.viewer .handtray .cards .card:hover { z-index: 6; }
+body.viewer .handtray .cards .card.dragging, body.viewer .handtray .cards .card.dragging:hover { z-index: 20; cursor: grabbing; transition: none; box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 10px 18px rgba(0, 0, 0, .45); }
+body.viewer .handtray .cards .empty { display: block; padding: 6px 4px 14px; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; opacity: .55; }
+body.viewer .traybtns { position: absolute; left: 22px; top: -46px; z-index: 40; display: flex; gap: 14px; pointer-events: auto; }
+body.viewer .traydisc { position: relative; display: grid; place-items: center; width: 60px; height: 60px; padding: 0; border: 0; border-radius: 50%; background: rgba(98, 98, 98, .92); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); cursor: pointer; }
+body.viewer .traydisc:hover { background: rgba(120, 120, 120, .95); }
+body.viewer .traydisc.on, body.viewer .traydisc.on:hover { background: var(--sun); box-shadow: 0 0 0 3px var(--ink), 0 4px 0 3px var(--ink); }
+body.viewer .traydisc img { display: block; width: 38px; height: 38px; filter: brightness(1.6); }
+body.viewer .traycount { position: absolute; right: -6px; top: -6px; box-sizing: border-box; min-width: 26px; height: 26px; padding: 0 4px; border: 3px solid var(--ink); border-radius: 13px; background: var(--paper); color: var(--ink); font: 400 13px/20px 'Bowlby One', system-ui, sans-serif; text-align: center; }
+@keyframes tray-hint { 0%, 6% { opacity: 0; } 14%, 86% { opacity: 1; } 100% { opacity: 0; } }
+body.viewer .trayhint { position: absolute; z-index: 41; right: 24px; top: -44px; padding: 7px 12px; border-radius: 10px; background: var(--gold); color: var(--ink); font: 700 15px 'Barlow', system-ui, sans-serif; white-space: nowrap; pointer-events: none; opacity: 0; animation: tray-hint 4.6s linear forwards; }
+body.viewer .setselect { font: 700 19px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+body.viewer .setselect:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* ---- loading box and other small things ------------------------------------------------------------------------------------------------------------------------------------ */
+body.viewer .status { background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
+body.viewer .status .peta { color: #36484d; }
+body.viewer .status .progresscircle .ptrack { stroke: #d8cba0; }
+body.viewer .status .progresscircle .parc { stroke: var(--sun); }
+body.viewer .status .progresscircle .ppct { fill: var(--ink); }
+
+/* ---- fork / sandbox / live play: the extra boxes and buttons wear the same paper ------------------------------------------------------------------------------------------ */
+body.viewer .sidebar .forkinfo { padding: 10px 12px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 600 16px/1.4 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkinfo a { color: var(--teal); }
+body.viewer .forkinfo .muted { color: #52666B; }
+body.viewer .forkinfo button { margin: 2px 4px 2px 0; padding: 3px 12px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font: 700 15px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkinfo button:hover { background: var(--gold); }
+body.viewer .forkinfo .seedinput { width: 100%; box-sizing: border-box; border: 3px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); font: 700 16px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkpanel, body.viewer .sbtools { padding: 8px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font-family: 'Barlow', system-ui, sans-serif; }
+body.viewer .forkpanel .muted { color: #52666B; }
+body.viewer .movepill .abtn { font: inherit; justify-content: center; }
+body.viewer .abtn { background: var(--act1); border-color: var(--ink); border-width: 3px; }
+body.viewer .abtn.lvl2 { background: var(--act2); border-color: var(--ink); }
+body.viewer .abtn.xbtn, body.viewer .abtn.gen, body.viewer .abtn.gainx { background: #5a5856; border-color: var(--ink); }
+body.viewer .forkmove { border-width: 3px; border-radius: 999px; font: 700 15px 'Barlow Condensed', system-ui, sans-serif; }
+
+/* ---- settings: the slider of the hand size ------------------------------------------------------------------------------------------------------------------------------ */
+body.viewer .setslide { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 18px; align-items: center; }
+body.viewer .settrack { --knob: 56px; position: relative; display: flex; align-items: center; }
+body.viewer .settrack .setrange { -webkit-appearance: none; appearance: none; height: 30px; background: none; }
+body.viewer .setrange::-webkit-slider-runnable-track { height: 8px; border-radius: 4px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--ink); }
+body.viewer .setrange::-moz-range-track { height: 8px; border-radius: 4px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--ink); }
+body.viewer .setrange::-webkit-slider-thumb { -webkit-appearance: none; width: var(--knob); height: 30px; margin-top: -11px; border-radius: 15px; background: var(--rust); border: 2px solid var(--ink); box-sizing: border-box; }
+body.viewer .setrange::-moz-range-thumb { width: var(--knob); height: 30px; border-radius: 15px; background: var(--rust); border: 2px solid var(--ink); box-sizing: border-box; }
+body.viewer .setbubble { position: absolute; top: 50%; transform: translate(-50%, -50%); pointer-events: none; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; color: var(--paper); letter-spacing: .02em; }
+body.viewer .setrange { width: 100%; margin: 0; accent-color: var(--rust); cursor: pointer; }
+body.viewer .moves li[hidden] { display: none; }
+
+/* ---- the action card draft of the replay: a lightbox over the whole window (the sidebar is dimmed too but stays clickable), the cards in full size, one row per player ----------- */
+body.viewer .draftbox { position: fixed; left: 0; top: 0; z-index: 90; box-sizing: border-box; width: 100%; height: calc(var(--vh, 1vh) * 100); display: flex; align-items: center; justify-content: center; pointer-events: none;
+  background: rgba(8, 40, 50, .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }       /* the dim covers the whole window (move bar, sidebar, hand included) but lets clicks through, so the playback buttons keep working; the panel is centred on the whole window (sidebar included) */
+body.viewer .draftbox[hidden] { display: none; }
+body.viewer .draftpop { pointer-events: auto; box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 0; padding: 40px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
+body.viewer .draftwrap { display: flex; align-items: center; justify-content: center; gap: 26px; max-width: 100%; }          /* Back | panel | Next */
+body.viewer .draftwrap .draftpop { min-width: 0; max-width: calc(100vw - 2 * 118px - 52px); max-width: calc(var(--vw, 1vw) * 100 - 2 * 118px - 52px); }
+body.viewer .draftnav { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: var(--paper); font: 700 18px 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+body.viewer .draftnav .dnbtn { width: 68px; height: 68px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); transition: background .12s, transform .12s; }
+body.viewer .draftnav .dnbtn svg { width: 40px; height: 40px; fill: none; stroke: var(--ink); stroke-width: 4.2; stroke-linecap: round; stroke-linejoin: round; }
+body.viewer .draftnav:hover:not(:disabled) .dnbtn { background: var(--gold); transform: translateY(-2px); }
+body.viewer .draftnav:active:not(:disabled) .dnbtn { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+body.viewer .draftnav:focus-visible .dnbtn { outline: 3px solid var(--paper); outline-offset: 3px; }
+body.viewer .draftnav:disabled { opacity: .35; cursor: default; }
+body.viewer .draftnav .dnlab { display: flex; align-items: center; gap: 8px; }
+body.viewer .draftnav kbd { display: grid; place-items: center; width: 30px; height: 30px; box-sizing: border-box; border-radius: 8px; background: var(--paper); border: 2px solid var(--ink); box-shadow: 0 3px 0 var(--ink); }          /* (the keycap of the arrow key on the keyboard) */
+body.viewer .draftnav kbd svg { width: 16px; height: 16px; fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+body.viewer .draftpop .draftgroup { flex: none; width: 100%; padding: 0; border: 0; }
+body.viewer .draftpop .draftgroup + .draftgroup { padding: 14px 0 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .draftpop .drafthead { line-height: 1.2; font: 700 24px/1.2 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .draftpop .draftcards { flex-wrap: nowrap; gap: 22px; padding: 38px 14px 24px; }
+body.viewer .draftpop .draftcard { flex: none; width: clamp(120px, calc(1230px / var(--cn, 5)), 250px); border-radius: 12px; box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 4px 10px rgba(0, 0, 0, .35); }
+body.viewer .draftpop .draftcard img { border-radius: 12px; }
+body.viewer .draftpop .draftkept { padding: 0; margin-right: 22px; }
+body.viewer .draftpop .draftkept::after { right: -28.5px; top: -9px; bottom: -9px; border-right: 4px dashed rgba(23, 38, 43, .55); }      /* (halfway between the kept card's frame, 9 px outside it, and the next card, 44 px away: margin 22 + gap 22) */
+
+/* ---- a card selected with a click ("Leaf tag"): an ink outline, a soft green tint over the card and a green rounded tag with a cream check on its top right corner (blue in the fork, where the
+   choice is confirmed afterwards). Replaces BGA's translucent square + yellow ring; used by every clickable card (hand, tray, fan, display, endgame cards, the action card draft). -- */
+body.viewer .card.marked, body.viewer .folder .card.marked, body.viewer .draftcard.marked, body.viewer .draftpop .draftcard.marked { --mk: #3F9A4E; --mkt: rgba(63, 154, 78, .14); outline: 0; overflow: visible; }
+body.viewer .draftcard.marked { z-index: 4; }
+body.viewer .card.marked > img, body.viewer .draftcard.marked > img { border-radius: inherit; }
+body.viewer .card.marked, body.viewer .draftcard.marked { box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 3px 8px rgba(0, 0, 0, .4); }
+.forkpage .card.marked, .forkpage .draftcard.marked, .forkpage .folder .card.marked { --mk: #2f80e8; --mkt: rgba(47, 128, 232, .13); }
+body.viewer .card.marked::before, body.viewer .draftcard.marked::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--mkt); pointer-events: none; }
+body.viewer .card.marked::after, body.viewer .draftcard.marked::after, .forkpage .card.marked::after, .forkpage .draftcard.marked::after { content: ""; position: absolute; z-index: 10; left: auto; top: -9px; right: -7px; width: clamp(24px, 28%, 46px); height: auto; aspect-ratio: 1; transform: none; border-radius: 28%; box-sizing: border-box; border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink); pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 54 L41 74 L82 28' fill='none' stroke='%23F8EDCB' stroke-width='17' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 66% no-repeat, var(--mk); }
+
+/* ---- the action card kept in the draft ("Ticket frame" + "Sun seal"): an orange frame inside an ink frame with a hard ink shadow, and an orange seal with a cream star on the top edge (the span `.draftcheck`
+   that action-bar.js adds to a picked card; the check mark of BGA's look is gone). The cards that were not kept stay faded (`.passed`). A click-selected card keeps the leaf tag (`.marked`). -- */
+body.viewer .draftcard.picked, body.viewer .draftcard.picked.marked, body.viewer .draftkept .draftcard.picked, .forkpage .draftcard.picked.marked { outline: 6px solid var(--sun); outline-offset: -1px; box-shadow: 0 0 0 9px var(--ink), 0 12px 0 9px var(--ink); }
+body.viewer .draftcard .draftcheck { z-index: 5; left: 50%; right: auto; top: 0; width: clamp(36px, 20%, 54px); height: auto; aspect-ratio: 1; transform: translate(-50%, -58%); box-sizing: border-box; border: 4px solid var(--ink); border-radius: 50%; box-shadow: 0 3px 0 var(--ink); font-size: 0; color: transparent;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 12 L61 38 L89 40 L67 58 L74 86 L50 71 L26 86 L33 58 L11 40 L39 38 Z' fill='%23F8EDCB' stroke='%2317262B' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E") center / 66% no-repeat, var(--sun); }
+
+/* ---- the fan (Hand display = Fan at the screen edge): a dark glow around the silhouette of the whole fan (not each card), so it stands out from the boards. -- */
+body.viewer .dockpanel .cards { filter: drop-shadow(0 0 10px rgba(0, 0, 0, .9)) drop-shadow(0 0 26px rgba(0, 0, 0, .6)); }
+
+/* no arrival / departure animations for now (new ones later): no green flash for a card, project strip or bonus token that arrived, no green frame on a new partner zoo / university / building;
+   departed cards and tokens leave without a red fade (no ghosts: `zoneNew` in cards.js no longer lists them in `.gone`) */
+.card.card-new, .projline.card-new, .btoken.card-new { animation: none; }
+.strip .tok-new .frame, .board .tok-new .frame { animation: none; stroke: none; }
+
+/* the check tag of a selected card is in front of every card, also of a neighbour that is selected too: a selected card builds no stacking context of its own (no z-index; in the tray no transform unless
+   it is dragged), so its tint (`::before`, no z-index) stays at its own level in the tree order and its tag (`::after`, z-index 10) is sorted among all the cards of the row. The cards of the fan are rotated
+   (each one a stacking context), so there the tag can still be under a later card. The tag of a draft card is inside the lightbox's own order (`.draftcard.marked` has z-index 4). */
+body.viewer .handtray .cards .card.marked:not(.dragging) { transform: none; }
+body.viewer .draftcard.marked::after { z-index: 3; }
+body.viewer .draftcard.marked::before { z-index: 2; }
+body.viewer .tlhead::before { content: ""; position: absolute; inset: -4px -9px; }       /* (a wider hit area for grabbing the head) */
+
+/* a long press on a card opens the enlarged view (cards.js bindPreview): no iOS callout, no text selection */
+.card, .draftcard { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* keyboard shortcuts pop-up (shortcuts.js): the keys with a function are mint, the selected one gold */
+body.viewer .kbbox { width: auto; --u: 42px; zoom: 1.3; }   /* the whole window (border, text, keys) is 30 % bigger than its base size */
+body.viewer .kb { display: flex; gap: calc(var(--u) * .45); align-items: flex-start; }
+body.viewer .kb .kbblk:last-child { padding-top: calc(var(--u) * 1.1); }
+body.viewer .kbblk { display: grid; gap: calc(var(--u) * .1); }
+body.viewer .kbrow { display: flex; gap: calc(var(--u) * .1); }
+body.viewer .kbrow:empty { display: none; }
+body.viewer .kbgap { flex: none; width: calc(var(--u) * var(--w)); }
+body.viewer .kbkey { box-sizing: border-box; flex: none; height: var(--u); width: calc(var(--u) * var(--w) + var(--u) * .1 * var(--g, 0)); margin: 0; padding: 0; display: grid; place-items: center; border-radius: calc(var(--u) * .16); border: 2px solid rgba(23, 38, 43, .28); background: rgba(23, 38, 43, .07); color: rgba(23, 38, 43, .45); font: 700 calc(var(--u) * .34)/1 'Barlow Condensed', system-ui, sans-serif; user-select: none; }
+body.viewer .kbkey.long { font-size: calc(var(--u) * .27); }
+body.viewer .kbkey.on { border: 3px solid var(--ink); background: var(--mint); color: var(--ink); box-shadow: 0 3px 0 var(--ink); cursor: pointer; font-size: calc(var(--u) * .4); transition: transform .08s, box-shadow .08s; }
+body.viewer .kbkey.on.long { font-size: calc(var(--u) * .3); }
+body.viewer .kbkey.on:hover { transform: translateY(-2px); }
+body.viewer .kbkey.on.sel, body.viewer .kbkey.on.down { background: var(--gold); transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
+body.viewer .kbinfo { margin-top: 16px; min-height: 3.1em; padding: 10px 14px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; display: flex; gap: 14px; align-items: center; font: 600 19px/1.25 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .kbinfo kbd { flex: none; min-width: 34px; height: 34px; box-sizing: border-box; padding: 0 8px; border: 3px solid var(--ink); border-radius: 9px; background: var(--gold); box-shadow: 0 3px 0 var(--ink); display: grid; place-items: center; font: 700 17px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .kbinfo p { margin: 0; }
+body.viewer .kbinfo small { display: block; opacity: .7; font-size: 16px; font-weight: 600; }
+body.viewer .kbhint { margin-top: 10px; font: 600 16px 'Barlow Condensed', system-ui, sans-serif; opacity: .75; }
+body.viewer .setrange:focus-visible { outline: none; }
+body.viewer .setrange:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--sun); }
+body.viewer .setrange:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--sun); }

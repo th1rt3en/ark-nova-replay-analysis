@@ -16,6 +16,9 @@ from ark_nova.parser.model import ParsedLog
 from ark_nova.parser.setup import SetupInfo, extract_setup
 
 
+FIRST_BUILD_KINDS = {"victory": "size-1"}
+
+
 def infer_maps(parsed: ParsedLog, seats: list[str]) -> list[Optional[str]]:
     """The map of each player (BigQuery has it in production). Fingerprint: BGA's list of size-1 placements before a player's
     first building equals the border cells of exactly one map (or the centre cells of map 13). '1' when it cannot be told."""
@@ -34,7 +37,8 @@ def infer_maps(parsed: ParsedLog, seats: list[str]) -> list[Optional[str]]:
             pid = chk.get("player")
             if "build" not in chk or pid != chk["active"] or pid in maps or pid in built:
                 continue
-            opts = {t: sorted(map(tuple, v)) for t, v in chk["build"]["options"].items() if t in SIZES and v}
+            # (a first building that is a sponsor's free Victory Column lists the same border cells as a size-1 building: S274, e.g. table 920295323, where no other build list precedes the first building)
+            opts = {FIRST_BUILD_KINDS.get(t, t): sorted(map(tuple, v)) for t, v in chk["build"]["options"].items() if FIRST_BUILD_KINDS.get(t, t) in SIZES and v}
             if not opts:
                 continue
             lvl = chk["build"]["lvl"] or 1
