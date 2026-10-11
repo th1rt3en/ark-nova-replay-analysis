@@ -58,6 +58,8 @@ function showNow(src, centered) {
 }
 // What a sponsor with passive effects has given its owner so far (the replay only; the totals are in `state.sponsor_stats`, made by view.py from the log): a panel at the right of the enlarged card
 const STAT_ORDER = ['appeal', 'money', 'reputation', 'conservation', 'xtoken'];
+// what some sponsors are counted by instead of the resources of their instant gain (view.py `OWN_STATS`, `differential.observe_sponsors`)
+const STAT_TEXT = { clever: 'Clevers activated', pavilion: 'Pavilions built', pouch: 'Pouches', enlarge: 'Enclosures enlarged', snap_small: 'Small animals snapped', third_small: '3rd small animals played', saved: 'saved' };
 function showStats(src, p) {
   let box = $('previewstats');
   const key = (/\/(S\d{3})(?:_\w+)?\.webp/.exec(String(src)) || [])[1];
@@ -68,8 +70,13 @@ function showStats(src, p) {
   if (!box) { box = el('div', 'previewstats'); box.id = 'previewstats'; document.body.append(box); }
   const got = st.sponsor_stats[key] || {};
   box.replaceChildren(el('b', 'psttitle', 'Given by this card'));
-  const rows = STAT_ORDER.filter((r) => got[r]);
-  for (const r of rows) { const row = el('div', 'pstrow'); row.append(pic(r, 34), el('b', '', '+' + got[r])); box.append(row); }
+  const rows = [...STAT_ORDER, ...Object.keys(STAT_TEXT)].filter((r) => got[r]);
+  for (const r of rows) {
+    const row = el('div', 'pstrow');
+    if (STAT_TEXT[r]) row.append(el('b', '', r === 'saved' ? '+' + got[r] : got[r] + '×'), ...(r === 'saved' ? [pic('money', 34)] : []), el('span', 'pstlabel', STAT_TEXT[r]));       // (a count: "3x Clevers activated"; the money the experts saved: "+12 [money] saved")
+    else row.append(pic(r, 34), el('b', '', '+' + got[r]));
+    box.append(row);
+  }
   if (!rows.length) box.append(el('div', 'pstnone', 'nothing yet'));
   box.hidden = false;
 }

@@ -542,3 +542,4 @@ body.viewer .previewstats .pstrow { display: flex; align-items: center; gap: 10p
 body.viewer .previewstats .pstrow img { height: 34px; width: auto; display: block; }
 body.viewer .previewstats .pstrow b { font: 400 26px 'Bowlby One', system-ui, sans-serif; color: var(--ink); }
 body.viewer .previewstats .pstnone { font: 600 17px 'Barlow Condensed', system-ui, sans-serif; opacity: .7; }
+body.viewer .previewstats .pstrow .pstlabel { font: 600 17px/1.1 'Barlow Condensed', system-ui, sans-serif; }

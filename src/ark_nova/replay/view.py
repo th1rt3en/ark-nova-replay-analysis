@@ -12,7 +12,7 @@ from typing import Any
 
 from ark_nova import data
 from ark_nova.data import map_quirks
-from ark_nova.engine import association, tracks
+from ark_nova.engine import association, sponsor_extras, tracks
 from ark_nova.engine.breaks import hand_limit, map_ability_income
 from ark_nova.engine.board import footprint_cells
 from ark_nova.engine.build_action import knows_shape, shape_of
@@ -441,21 +441,39 @@ def _tracked_sponsors() -> dict:
             if c.get("card_type") == "sponsor" and any(e.get("effectType") == "passive" for e in c.get("effects") or [])}
 
 
-def _sponsor_gains(move: Move) -> list:
-    """[(order, sponsor key, resource, amount)] of the gains of one move that a tracked sponsor paid."""
+# The sponsors whose gains in the log are only the instant gain of playing them: what they do afterwards is counted from the engine's effects (`differential.observe_sponsors`:
+# Clever of Expert On Africa, pavilions of Asia, pouches of Australia, the enlargements of Conference On Australia, the snaps and the third animal of Waza Small Animal Program)
+# or from the animals played (the experts in small / large animals save 3 / 4 money per animal).
+OWN_STATS = {"S212", "S213", "S214", "S228", "S229", "S230", "S269"}
+SAVES = {"S229": ("small", 3), "S230": ("large", 4)}
+
+
+def _sponsor_gains(move: Move, in_play: dict) -> list:
+    """[(order, sponsor key, statistic, amount)] of one move: the gains that the log names after a tracked sponsor, and what the experts in small / large animals saved. `in_play`:
+    player id -> the keys of the experts in play (kept from move to move)."""
     out = []
     tracked = _tracked_sponsors()
+    cards = data.cards_by_key()
     for e in move.events:
         a = e.args if isinstance(e.args, dict) else {}
-        if e.type != "getBonuses":
-            continue
-        src = a.get("card_name") or a.get("source")
-        key = tracked.get(src.lower()) if isinstance(src, str) else None
-        bonuses = a.get("bonuses")
-        if key and isinstance(bonuses, dict):
-            for res, n in bonuses.items():
-                if isinstance(n, (int, float)) and n:
-                    out.append((e.order, key, res, int(n)))
+        if e.type == "playSponsor" and isinstance(a.get("card"), dict):
+            key = str(a["card"].get("id", ""))[:4]
+            if key in SAVES:
+                in_play.setdefault(str(a.get("player_id")), set()).add(key)
+        elif e.type == "buyAnimal" and isinstance(a.get("card"), dict):
+            card = cards.get(str(a["card"].get("id", ""))[:4])
+            kind = sponsor_extras.size_class(card) if card and "size" in card else None
+            for key in in_play.get(str(a.get("player_id")), ()):
+                if kind == SAVES[key][0]:
+                    out.append((e.order, key, "saved", SAVES[key][1]))
+        elif e.type == "getBonuses":
+            src = a.get("card_name") or a.get("source")
+            key = tracked.get(src.lower()) if isinstance(src, str) else None
+            bonuses = a.get("bonuses")
+            if key and key not in OWN_STATS and isinstance(bonuses, dict):
+                for res, n in bonuses.items():
+                    if isinstance(n, (int, float)) and n:
+                        out.append((e.order, key, res, int(n)))
     return sorted(out)
 
 
@@ -486,7 +504,8 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     known_prefix = len(seed.main_order)                                       # the cards of the draw pile whose order the log tells; the rest is a random guess
     full_deck = len(rep.states[0].main_deck) if rep.states else 0
     steps = []
-    sponsor_stats: dict = {}                                                  # sponsor key -> {resource: amount} so far
+    sponsor_stats: dict = {}                                                  # sponsor key -> {statistic: amount} so far
+    in_play: dict = {}                                                        # player id -> the experts in small / large animals that they have played
     first_discard = next((m.index for m in parsed.moves if any(e.type == "pDiscardCards" for e in m.events)), None)       # the move of the initial discards
     initial_discard = [list(setup.discarded.get(pid, [])) for pid in config.player_ids]
     for mv, final, g in zip(rep.moves, rep.states, groups):
@@ -545,7 +564,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                 options[i] = None                                          # the engine is a step ahead of the log here (it ends the turn inside the last action)
         actors = group_actors(mv, g, {pid: i for i, pid in enumerate(config.player_ids)}) if len(g) == len(views) else [None] * len(views)
         ends = [start for _, start in g[1:]] + [10 ** 12] if len(g) == len(views) else [10 ** 12] * len(views)
-        pending = _sponsor_gains(mv)
+        pending = sorted(_sponsor_gains(mv, in_play) + [(o, key, stat, n) for o, key, stat, n in me.obs])
         for i, v in enumerate(views):                                           # the totals after each step of the move
             while pending and pending[0][0] < ends[i]:
                 _, key, res, n = pending.pop(0)

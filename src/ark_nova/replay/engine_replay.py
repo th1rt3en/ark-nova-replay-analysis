@@ -6,7 +6,7 @@ a move and agreed with the log, the step shows the engine's state; where it coul
 different outcome) the step keeps the log-built state and says why, so every flag is a to-do for the rules.
 """
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ark_nova.engine.state import GameState
 from ark_nova.parser.model import ParsedLog
@@ -21,6 +21,7 @@ class MoveEngine:
     detail: str = ""
     end: GameState | None = None       # engine state after the move (status ok only)
     trace: list | None = None          # (event order, engine state after the action, added by the test) of the turn, for the sub-steps of the move
+    obs: list = field(default_factory=list)       # (event order, sponsor key, statistic, amount) counted by the engine actions of this move (`observe_sponsors`)
 
     def state_before(self, order: int) -> GameState | None:
         """The engine state just before the log event `order`: after the last engine action that comes from an earlier event."""
@@ -69,11 +70,12 @@ def build_engine_replay(parsed: ParsedLog, replay: Replay, seat_of: dict[str, in
         if res.status != "ok":
             out[m.index] = MoveEngine(res.status, res.detail)
             continue
-        trace = [(o, st, added) for _, o, st, added in res.trace]
+        trace = [(o, st, added) for _, o, st, added, _ in res.trace]
+        obs = [(o if o is not None else -1, key, stat, n) for mv, o, _, _, ob in res.trace if mv == m.index for key, stat, n in ob]
         if m.index == last_move[first]:
-            out[m.index] = MoveEngine("ok", end=res.trace[-1][2], trace=trace)
+            out[m.index] = MoveEngine("ok", end=res.trace[-1][2], trace=trace, obs=obs)
             continue
-        done = [s for mv, _, s, _ in res.trace if mv is not None and mv <= m.index]
-        out[m.index] = MoveEngine("ok", end=done[-1], trace=trace) if done else MoveEngine("log", "before the first engine action of the turn")
+        done = [s for mv, _, s, _, _ in res.trace if mv is not None and mv <= m.index]
+        out[m.index] = MoveEngine("ok", end=done[-1], trace=trace, obs=obs) if done else MoveEngine("log", "before the first engine action of the turn")
     return EngineReplay(out, diff)
 

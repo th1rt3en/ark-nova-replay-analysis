@@ -24,6 +24,33 @@ from ark_nova.replay.actions import parse_action_type, turn_actions, turn_events
 from ark_nova.replay.builder import Replay
 
 
+# What the sponsors with a trigger did, seen from the effects that the engine has pending (the log does not name the sponsor of a Clever, a pavilion, a pouch ...): (kind, source) of the
+# pending effect -> the statistic of the sponsor that is counted when the player resolves it (not when they skip it). `observe_sponsors` is called for every engine action of the replay.
+RESOLVED_STATS = {("slot1", "S214"): "clever", ("build", "S213"): "pavilion", ("pouch", "S212"): "pouch", ("enlarge", "S269"): "enlarge", ("take", "S228"): "snap_small"}
+
+
+def _pending_effects(state: GameState) -> Counter:
+    out: Counter = Counter()
+    pr = state.prompt
+    if pr is not None and pr.kind == "effects":
+        for e in pr.args.get("pending") or []:
+            out[(e.get("kind"), e.get("source"))] += 1
+    return out
+
+
+def observe_sponsors(before: GameState, act: Action, after: GameState) -> list:
+    """[(sponsor key, statistic, amount)] that this engine action counts: an effect of a sponsor resolved (it left the pending effects and was not skipped), or the extra small animal of
+    Waza Small Animal Program played (its snap appears among the pending effects of the animal)."""
+    out = []
+    was, now = _pending_effects(before), _pending_effects(after)
+    for (kind, src), stat in RESOLVED_STATS.items():
+        if act.kind != "skip_effect" and was[(kind, src)] > now[(kind, src)] and (kind, src) in was:
+            out.append((src, stat, was[(kind, src)] - now[(kind, src)]))
+    if now[("take", "S228")] > was[("take", "S228")]:
+        out.append(("S228", "third_small", 1))
+    return out
+
+
 @dataclass
 class TurnResult:
     """What the engine did with one turn: `ok` (replayed and equal to the log), `mismatch` (replayed, state differs), `illegal` (a logged
@@ -808,7 +835,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
 
     def ap(state: GameState, act: Action) -> GameState:
         new = apply(state, act)
-        trace.append((cur_move[0], cur_move[1], new, inserted[0]))
+        trace.append((cur_move[0], cur_move[1], new, inserted[0], observe_sponsors(state, act, new)))
         return new
 
     carry: tuple = (None, None)                  # (turn index, engine state at its start)
