@@ -1499,3 +1499,7 @@ Scope: `src/ark_nova/replay/view.py`, `web/js/pov.js`.
 
 ## 68. No "confirm or restart your turn" frame in the replay
 Scope: `web/js/frames.js`. The gate frame (greyed "must confirm or restart your turn") exists only in a live game (`PLAY`); the replay steps straight on to the next frame / step.
+
+## 69. Waves and animal gains are one step
+Scope: `src/ark_nova/replay/view.py` (`_combine_runs`).
+- A Wave (the "Removing n cards ... Wave icons reveal" line, a Mark that keeps a card, the refill of the display) is one step, and so is a run of gains that animals give without asking (appeal / reputation / conservation whose reason is an animal card, "Iconic animal" or "Petting Zoo Animal action"). The text of the run goes in front of the last step (state and prompt of the last step), in the order of the log; later `_fold_unchanged` still joins steps that change nothing visible.

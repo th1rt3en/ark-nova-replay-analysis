@@ -5,6 +5,7 @@ decks (only their sizes) and with the cells every building covers, so the browse
 """
 import os
 import dataclasses
+import functools
 import re
 from pathlib import Path
 from typing import Any
@@ -287,6 +288,69 @@ def _join_labels(step: dict, folded: list) -> None:
     step["label_pov"] = [j if j != step["label"] else None for j in joined] if any(j != step["label"] for j in joined) else None
 
 
+_GAIN = re.compile(r"^.+ gains \d+ (?:appeal|reputation|conservation(?: points?)?) \((.+)\)$")
+
+
+@functools.lru_cache(maxsize=1)
+def _animal_names() -> frozenset:
+    return frozenset(str(c.get("name", "")).lower() for c in data.cards_by_key().values() if c.get("card_type") == "animal")
+
+
+def _parts(step: dict) -> list:
+    return [p.strip() for p in step["label"].split(" · ") if p.strip()]
+
+
+def _animal_gain(step: dict) -> bool:
+    """A step that only says that an animal gave its player appeal / reputation / conservation (nothing to decide: the gain of the animal's own text, an iconic animal, the Petting Zoo)."""
+    parts = _parts(step)
+    if not parts:
+        return False
+    for part in parts:
+        m = _GAIN.match(part)
+        if not m or not (m.group(1).lower() in _animal_names() or m.group(1) in ("Iconic animal", "Petting Zoo Animal action")):
+            return False
+    return True
+
+
+def _combine_runs(steps: list, keep: list) -> list:
+    """Steps that belong together are one step: everything of a Wave (the cards removed from the display, a Mark that keeps one, the refill) and the gains that animals give without
+    asking. The text of the whole run goes in front of the last step (the state after it), in the order of the log. The last step of the run keeps its state and its prompt, so a "must choose an action card" frame at the end of a run still shows."""
+    out = list(keep)
+    order = [i for i, k in enumerate(keep) if k]
+
+    def merge(run: list) -> None:
+        if len(run) < 2 or run[0] == 0:
+            return
+        _join_labels(steps[run[-1]], [steps[i] for i in run[:-1]])
+        for i in run[:-1]:
+            out[i] = False
+
+    wave: list = []                                              # the steps of the Wave on its way
+    gains: list = []
+    for i in order:
+        parts = _parts(steps[i])
+        if wave:
+            wave.append(i)
+            if any(p.startswith("The display is replenished") for p in parts):
+                merge(wave)
+                wave = []
+            elif any("chooses action card" in p for p in parts):
+                wave = []                                        # (the Wave ended without a refill step: nothing to join)
+            continue
+        if any(p.startswith("Removing") and "Wave icons reveal" in p for p in parts):
+            merge(gains); gains = []
+            wave = [i]
+            if any(p.startswith("The display is replenished") for p in parts):
+                wave = []
+            continue
+        if _animal_gain(steps[i]):
+            gains.append(i)
+        else:
+            merge(gains); gains = []
+    merge(gains)
+    return out
+
+
 def _fold_unchanged(steps: list, keep: list) -> list:
     """A step that changes nothing the viewer shows is joined to the next one: its text goes in front of the text of the next step (which keeps its state), so every step forward
     changes something. Always shown: the first step, the last step and the steps where a player must choose an action card. `keep` (the steps with a text) comes in and goes out."""
@@ -401,6 +465,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                   for i, (lb, v, src, o, ac) in enumerate(zip(labels, views, source, options, actors))]
     # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step. The first step stays.
     keep = [i == 0 or bool(st["label"].strip()) for i, st in enumerate(steps)]
+    keep = _combine_runs(steps, keep)
     keep = _fold_unchanged(steps, keep)
     setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])
     steps = [st for st, k in zip(steps, keep) if k]
