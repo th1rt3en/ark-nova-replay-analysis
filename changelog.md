@@ -1492,3 +1492,7 @@ Scope: `web/js/zoo.js`, `web/js/dock.js`.
 Scope: `web/js/main.js` (`zooBoards`), `web/js/zoo.js`, `parkposter.css`.
 - The tab arrows worked once: the buttons have the same markup every time, so `redraw` put the old ones back, and their handlers still held the seat of the first drawing. They now read the current seat when clicked (and go round, so the same direction cycles).
 - Tabbed and top / bottom layouts: the played animals and sponsors are two columns at the right of the board (`.zoopiles`), overlapped so that the last card is whole and the others show their top 18 % (`--pw` 132 px); the preview opens after the usual second. Side by side keeps the rows under the board.
+
+## 67. The other player's initial discard is hidden
+Scope: `src/ark_nova/replay/view.py`, `web/js/pov.js`.
+- In a point of view the log line of the other player's initial discard (the first `pDiscardCards` move of the game) reads "X discard 4 cards"; the steps from that move on carry `state.initial_discard` (the keys each seat discarded) and `povState` shows the other seat's cards as `?` in the discard pile. Later discards stay public.

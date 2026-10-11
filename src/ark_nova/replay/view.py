@@ -99,15 +99,17 @@ def _hidden_text(e) -> str:
     return render_log(e.log, hidden)
 
 
-def _event_text_pov(e, names: dict[str, str], pov) -> str:
-    """The line of an event as the viewer at `pov` (a player id, None = sees everything) reads it."""
-    t = _hidden_text(e) if pov is not None and str(e.player) != str(pov) and _secret(e) else render_log(e.log, e.args)
+def _event_text_pov(e, names: dict[str, str], pov, initial_discard: bool = False) -> str:
+    """The line of an event as the viewer at `pov` (a player id, None = sees everything) reads it. `initial_discard`: the event is in the move of the initial discards,
+    which the other player does not see (the cards go to the pile face down)."""
+    secret = e.player is not None and (_secret(e) or (initial_discard and e.type == "pDiscardCards"))
+    t = _hidden_text(e) if pov is not None and str(e.player) != str(pov) and secret else render_log(e.log, e.args)
     if e.player and names.get(e.player):          # private events are written for the player: "You draw ..."
         t = re.sub(r"^You", names[e.player], t)
     return t
 
 
-def step_label(move: Move, names: dict[str, str], pov=None) -> str:
+def step_label(move: Move, names: dict[str, str], pov=None, initial_discard: bool = False) -> str:
     texts = []
     for e in move.events:
         if e.type in ("updateInitialActionCardSelection", "updateInitialActionCardsKeep"):
@@ -115,7 +117,7 @@ def step_label(move: Move, names: dict[str, str], pov=None) -> str:
             if pov is not None and e.player is not None and str(e.player) != str(pov):          # the other player's choices stay hidden
                 t = f"{names.get(str(e.player), 'A player')} chooses action cards (action card draft)" if t else ""
         else:
-            t = _event_text_pov(e, names, pov)
+            t = _event_text_pov(e, names, pov, initial_discard)
         if t and t not in texts:
             texts.append(t)
     return " · ".join(texts[:3])
@@ -128,7 +130,7 @@ def _event_text(e, names: dict[str, str]) -> str:
     return t
 
 
-def group_labels(move: Move, names: dict[str, str], pov) -> list[str]:
+def group_labels(move: Move, names: dict[str, str], pov, initial_discard: bool = False) -> list[str]:
     """`move_groups` labels as the viewer at `pov` reads them (the same groups: they are cut by the unredacted text)."""
     groups: list[list] = []
     for e in move.events:
@@ -136,7 +138,7 @@ def group_labels(move: Move, names: dict[str, str], pov) -> list[str]:
         if not t:
             continue
         if not groups or t != groups[-1][0]:
-            groups.append([t, _event_text_pov(e, names, pov)])
+            groups.append([t, _event_text_pov(e, names, pov, initial_discard)])
     return [g[1] for g in groups]
 
 
@@ -333,14 +335,17 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     known_prefix = len(seed.main_order)                                       # the cards of the draw pile whose order the log tells; the rest is a random guess
     full_deck = len(rep.states[0].main_deck) if rep.states else 0
     steps = []
+    first_discard = next((m.index for m in parsed.moves if any(e.type == "pDiscardCards" for e in m.events)), None)       # the move of the initial discards
+    initial_discard = [list(setup.discarded.get(pid, [])) for pid in config.player_ids]
     for mv, final, g in zip(rep.moves, rep.states, groups):
         me = eng.moves[mv.index]
+        hide_discard = mv.index == first_discard
         views = [state_view(s) for s in rep.substates.get(mv.index, [])] + [state_view(final)]
         labels = [label for label, _ in g]
-        labels_pov = [group_labels(mv, names, pid) for pid in config.player_ids]
+        labels_pov = [group_labels(mv, names, pid, hide_discard) for pid in config.player_ids]
         if len(labels) != len(views):                                       # setup moves, or a move without effects: one step
             views, labels = views[-1:], [step_label(mv, names)]
-            labels_pov = [[step_label(mv, names, pid)] for pid in config.player_ids]
+            labels_pov = [[step_label(mv, names, pid, hide_discard)] for pid in config.player_ids]
         source = ["log"] * len(views)
         objs: list = [None] * len(views)                                   # the engine state of each step (forking starts from it)
         if mv.index in rep.draft_engine:                                    # the action card draft, played by the engine with the choices of the log
@@ -387,6 +392,9 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
             if o is not None and o["prompt"] == "choose_action_card" and (v["current_action"] or v["active_player"] != o["seat"]):
                 options[i] = None                                          # the engine is a step ahead of the log here (it ends the turn inside the last action)
         actors = group_actors(mv, g, {pid: i for i, pid in enumerate(config.player_ids)}) if len(g) == len(views) else [None] * len(views)
+        if first_discard is not None and mv.index >= first_discard:
+            for v in views:
+                v["initial_discard"] = initial_discard                          # (the viewer hides the other player's cards in the discard pile, pov.js)
         steps += [{"move_id": mv.move_id, "label": lb, "state": v, "engine": {"source": src, "status": me.status, "detail": me.detail[:300]}, "options": o, "actor": ac,
                    "label_pov": [lp[i] if lp[i] != lb else None for lp in labels_pov] if any(lp[i] != lb for lp in labels_pov) else None,
                    "_obj": objs[i]}

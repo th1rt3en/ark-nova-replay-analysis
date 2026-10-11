@@ -33,6 +33,10 @@ export function povState(st) {
       under: Object.fromEntries(Object.entries(p.under || {}).map(([k, v]) => [k, back(v)])),
     })),
   };
+  if (st.initial_discard && st.main_discard) {                 // the initial discards of the other player lie face down in the pile
+    const secret = (st.initial_discard[1 - S.pov] || []).slice();
+    out.main_discard = st.main_discard.map((k) => { const i = secret.indexOf(k); if (i < 0) return k; secret.splice(i, 1); return '?'; });
+  }
   if (st.draft) {
     const hide = (arr) => (arr || []).map((v, i) => (i === S.pov ? v : []));
     out.draft = { ...st.draft, offers: hide(st.draft.offers), picked: hide(st.draft.picked), kept: hide(st.draft.kept), choice: [null, null] };
