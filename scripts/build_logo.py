@@ -1,7 +1,7 @@
 """Builds the Park Poster logo (the crowned emu on a hill, in a circle) as a vector file and its PNG / ICO exports.
 
 Input:  web/brand/emu_silhouette.png (the emu with the crown, alpha channel = shape).
-Output: web/brand/logo.svg (vector: the silhouette is traced), logo-1024.png, logo-512.png, logo-180.png, logo-64.png, logo-32.png, favicon.ico.
+Output: web/brand/logo.svg (vector: the silhouette is traced), logo-1024.png, logo-512.png, logo-180.png, logo-64.png, logo-32.png (the favicon is made by build_favicon.py).
 Needs numpy, opencv-python (cv2), Pillow and playwright with Chromium (for the PNGs). Run with the system python:  python scripts/build_logo.py
 Colours are the Park Poster tokens of web/css/parkposter.css (ink, paper, gold, teal)."""
 import math
@@ -94,8 +94,6 @@ def export_pngs():
             pg.screenshot(path=str(BRAND / f"logo-{size}.png"), omit_background=True)
             pg.close()
         b.close()
-    ico = [Image.open(BRAND / f"logo-{n}.png").convert("RGBA") for n in (64, 32)]
-    ico[0].save(BRAND / "favicon.ico", sizes=[(64, 64), (32, 32)])
 
 
 if __name__ == "__main__":

@@ -1442,3 +1442,8 @@ Scope: `web/js/settings.js`, `web/css/parkposter.css`.
 - Settings: "Cards in hand" now comes above "Hand display"; the value text ("1.25x", `.setval` / `.settop`, removed) is gone: the label and the slider sit side by side (`.setslide` is a two-column grid, the size labels under the slider in column 2).
 - An empty place of the project area (`.projslot.projempty` in `.shared`) has a thin ink outline (`inset 0 0 0 2px rgba(23, 38, 43, .35)`), so the area no longer looks like a blank gap.
 - Settings, later: the size of "Cards in hand" is written on the slider's knob (a wide rust pill, `.settrack` + `.setbubble`, 20 px number like "1.25x"); the size labels under the slider (`.setticks`) are gone.
+
+## 56. Favicon
+Scope: `scripts/build_favicon.py` (new), `web/brand/`, the `<head>` of every page in `web/`.
+- The favicon is now the emu silhouette alone (teal `#0E6F78` body, golden `#F7B529` crown, cream outline `#F8EDCB`, 28/512 stroke), because the logo (emu on a hill in a disc) does not read at 16 px. `scripts/build_favicon.py` traces `emu_silhouette.png` with the code of `build_logo.py` and writes `favicon.svg`, `favicon-32.png`, `favicon-48.png`, `apple-touch-icon.png` (180 px, on a cream square) and `favicon.ico` (16 / 32 / 48 px). `build_logo.py` no longer writes `favicon.ico`.
+- Every page links `favicon.ico`, `favicon.svg`, `favicon-32.png` and `apple-touch-icon.png` (was `logo.svg` and `logo-180.png`). `logo.svg` stays the logo of the move bar.
