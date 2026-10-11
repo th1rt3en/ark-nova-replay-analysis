@@ -1551,3 +1551,6 @@ Scope: `web/js/zoo.js` (`outline`), `parkposter.css`. The paper bump was a separ
 
 ## 81. Piles of five or more are two columns
 Scope: `web/js/zoo.js`, `parkposter.css`. Side by side: an animals or sponsors pile with 5 cards or more is split into two columns (the first one card longer if odd; `SPLIT`), under one name; the bump (`outline(box, tall, columns)`) is as wide as all the columns (120 px each, 8 px between) and as tall as the longest column of either player.
+
+## 82. Constricted action cards are replayed
+Scope: `src/ark_nova/replay/actions.py` (`turn_actions`), `tests/test_problem_fixes.py`. A card chosen under Constriction tokens (-2 strength each) took the wrong number of X tokens as paid strength (-2 gave +1 instead of 0), so the differential harness skipped the turn ("strength above the slot that the engine does not explain", 814290712 step 287) and the viewer showed the log state with a flag. The tokens are counted as 2 each now: -2 = one token, -1 = one token and 1 paid, -4 = two tokens.

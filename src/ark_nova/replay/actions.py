@@ -602,7 +602,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             assoc.variant, assoc.level = variant_of_chosen, int(a["actionCard"]["level"])
             spend = int(a["strength"]) - int(a["actionCard"]["strength"])
             if spend < 0:                                  # Constriction tokens: -2 strength each (the engine knows the tokens)
-                spend += 2 * (-spend + 1) // 2
+                spend += 2 * ((-spend + 1) // 2)               # (a token takes 2: -2 is one token and nothing paid, -1 one token and 1 paid, -4 two tokens ...)
             before = events[:events.index(e)]
             for i_prev in range(len(before) - 1, -1, -1):           # (only what was paid since the previous action card of this chain)
                 if before[i_prev].type == "chooseActionCard":

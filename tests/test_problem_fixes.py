@@ -59,3 +59,14 @@ def test_a_fixed_problem_stays_fixed(table):
     replay = build_replay(parsed, setup, cfg, seed)
     rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
     assert not rep.illegal and not rep.mismatches, (FIXED[table], rep.illegal + rep.mismatches)
+
+
+@pytest.mark.skipif(not (LOGS / "814290712.json").exists(), reason="log not available")
+def test_a_constricted_action_card_is_replayed_not_skipped():
+    """Faerch's Animals card in slot 5 under a Constriction token is chosen with strength 3 (814290712, step 287): nothing was paid, so the harness must not skip the turn."""
+    parsed = parse_log(str(LOGS / "814290712.json"))
+    setup, cfg, seed = game_from_log(parsed)
+    replay = build_replay(parsed, setup, cfg, seed)
+    rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
+    assert not rep.illegal and not rep.mismatches
+    assert "strength above the slot that the engine does not explain" not in rep.skipped
