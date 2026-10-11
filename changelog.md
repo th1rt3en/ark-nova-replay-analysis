@@ -1478,3 +1478,8 @@ Scope: `web/js/settings.js`, `main.js` (`zooBoards`), `state.js` (`zooLayout`, `
 Scope: `web/css/minigame.css`, `web/js/minigames/daily_hand.js`, `web/js/pov.js`.
 - The pick styles were written for the fan (`.dockpanel`) and never matched the floating tray. Picked cards now carry the theme's `.marked` (green tint, check tag); after the answer a blue ring is your pick and a green ring what the original player kept (selectors on `.dock .cards`, any hand display).
 - A mini game never asks whom to spectate (`needsChoice` is off) and starts with the puzzle's seat as the left map / upper box (`S.orient` from `MINIGAME_POV`).
+
+## 64. Account widget and puzzle panel in the Park Poster top row
+Scope: `web/js/account.js`, `web/css/parkposter.css`, `web/minigames/*.html`.
+- On a viewer page (`body.viewer .movebar`, the mini games) `account.js` puts `#acctbar` into the move bar as a 60 px pill after the Round / Break pills (name, rating, Log out; or the Log in / Sign up button) instead of a fixed box over them; the log in dialog is on paper. Other pages keep the fixed box.
+- The puzzle panel (`#puzzle`) now sits under the move bar in `main`, not above it: the sticky move bar and the top band covered its first 80 px.

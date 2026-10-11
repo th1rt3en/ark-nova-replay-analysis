@@ -16,12 +16,14 @@ async function call(path, body) {
 const bar = el('div', { id: 'acctbar' });
 const dlg = el('dialog', { id: 'acctdlg', className: 'acctdlg' });
 let account = null;
+const movebar = document.querySelector('body.viewer .movebar');                  // the viewer pages (mini games): the widget is a pill at the right end of the top row, not a box over it
+if (movebar) { bar.classList.add('inmovebar'); movebar.append(bar); }
 
 function renderBar() {
   bar.replaceChildren();
   if (account) {
     const me = el('a', { className: 'acctname', href: '/profile.html?id=' + encodeURIComponent(account.id), title: 'Your profile' }, account.username);
-    bar.append(me, el('span', { className: 'muted small' }, ` rating ${account.rating}`));
+    bar.append(me, el('span', { className: 'muted small acctrating' }, ` rating ${account.rating}`));
     const out = el('button', { type: 'button', className: 'linkbtn' }, 'Log out');
     out.onclick = async () => { await call('logout', {}).catch(() => {}); account = null; window.arkAccount = null; renderBar(); document.dispatchEvent(new CustomEvent('account-changed', { detail: null })); };
     bar.append(out);

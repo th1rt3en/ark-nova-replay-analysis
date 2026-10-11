@@ -465,3 +465,17 @@ body.viewer .zootab-arrow svg { width: 20px; height: 20px; fill: currentColor; }
 body.viewer .zootab-arrow:hover { background: var(--gold); }
 body.viewer .zootab-arrow:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 body.viewer .zootab-arrow:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* ---- the account widget (js/account.js) on the viewer pages (mini games): a pill at the right end of the move bar, like the Round and Break pills; its log in / sign up dialog on paper ---- */
+body.viewer #acctbar.inmovebar { position: static; flex: none; align-self: flex-start; height: 60px; box-sizing: border-box; gap: 12px; padding: 0 22px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); font: 700 20px 'Barlow Condensed', system-ui, sans-serif; white-space: nowrap; }
+body.viewer #acctbar .acctname { color: var(--ink); text-decoration: none; font-weight: 700; max-width: 14ch; overflow: hidden; text-overflow: ellipsis; }
+body.viewer #acctbar .acctname:hover { text-decoration: underline; }
+body.viewer #acctbar .acctrating { color: var(--rust); font: 400 22px 'Bowlby One', system-ui, sans-serif; opacity: 1; }
+body.viewer #acctbar button { font: 700 18px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 16px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+body.viewer #acctbar button.linkbtn { background: none; border: 0; box-shadow: none; padding: 0; text-decoration: underline; color: var(--ocean); }
+body.viewer #acctbar button:not(.linkbtn):active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+body.viewer #acctbar button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+body.viewer dialog.acctdlg { background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); font-family: 'Barlow', system-ui, sans-serif; }
+body.viewer .acctinput { background: #fff8e1; color: var(--ink); border: 3px solid var(--ink); border-radius: 10px; }
+body.viewer dialog.acctdlg button:not(.linkbtn) { font: 700 18px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 18px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+body.viewer dialog.acctdlg button.linkbtn { color: var(--ocean); }
