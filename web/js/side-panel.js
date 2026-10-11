@@ -41,7 +41,8 @@ function burst(value) {
   const pts = [];
   for (let i = 0; i < 24; i++) { const r = i % 2 ? 21 : 27, a = Math.PI * 2 * i / 24; pts.push((27 + r * Math.cos(a)).toFixed(1) + ',' + (27 + r * Math.sin(a)).toFixed(1)); }
   s.append(svg('polygon', { points: pts.join(' '), fill: '#F4B63F', stroke: '#17262B', 'stroke-width': 3, 'stroke-linejoin': 'round' }));
-  w.append(s, el('b', '', value));
+  const n = el('b', '', value); n.dataset.len = String(String(value).length);        // (3 and 4 characters: the number is wider than the sun, see .burst b in parkposter.css)
+  w.append(s, n);
   return w;
 }
 // the numbered resource tile of the info box: the number sits on the icon (`ov`) or under it (`xt`)
