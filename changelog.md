@@ -1397,4 +1397,5 @@ Scope: `web/css/parkposter.css`, `web/replay.html`.
 Scope: `web/js/shortcuts.js` (new), `web/js/main.js`, `web/replay.html`, `web/css/parkposter.css` (`--mint` token, `.kb*` rules at the end).
 - The ? button (`#extra`, replay page only) and the ? key open a pop-up with a full keyboard (main block + navigation cluster, 42 px unit). Only keys with a function are drawn as buttons in mint: Esc, S, H, Space, Home, End, the left / right arrows and `/` (= the ? key). Selecting one (click, or pressing it on the real keyboard) turns it gold and fills the strip below with its name and an explanation.
 - While the pop-up is open the keys only explain themselves: a capture-phase handler in `shortcuts.js` stops them (`S` does not open the settings, the arrows do not step), and `main.js` ignores the other keys (`shortcutsOpen()`). Esc, the X and a click on the dimmed background close it.
+- The whole window is `zoom: 1.3` on `.kbbox` (base: 42 px key unit, 894 x 500 px; shown 1162 x 648 at a 1920 px window).
 - The `D` table of `shortcuts.js` lists the keys and their texts; add a key there when `main.js` gets a new one.

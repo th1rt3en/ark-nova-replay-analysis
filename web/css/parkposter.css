@@ -426,7 +426,7 @@ body.viewer .tlhead::before { content: ""; position: absolute; inset: -4px -9px;
 .card, .draftcard { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
 /* keyboard shortcuts pop-up (shortcuts.js): the keys with a function are mint, the selected one gold */
-body.viewer .kbbox { width: auto; --u: 42px; }
+body.viewer .kbbox { width: auto; --u: 42px; zoom: 1.3; }   /* the whole window (border, text, keys) is 30 % bigger than its base size */
 body.viewer .kb { display: flex; gap: calc(var(--u) * .45); align-items: flex-start; }
 body.viewer .kb .kbblk:last-child { padding-top: calc(var(--u) * 1.1); }
 body.viewer .kbblk { display: grid; gap: calc(var(--u) * .1); }
