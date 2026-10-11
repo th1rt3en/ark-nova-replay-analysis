@@ -1450,4 +1450,4 @@ Scope: `scripts/build_favicon.py` (new), `web/brand/`, the `<head>` of every pag
 
 ## 57. Score in the sun: long numbers
 Scope: `web/js/side-panel.js` (`burst`), `web/css/parkposter.css` (`.burst b`).
-- The number in the score sun is 25 px (was 23), ink coloured like appeal and conservation points, with a 5 px gold outline (`-webkit-text-stroke` + `paint-order: stroke fill`), so a number of three or four characters (100, -14, -105) can be wider than the sun and still reads as part of it on any player colour. Four or five characters (`b[data-len]`, set by `burst`) use 22 px. The sun itself keeps its 52 px size.
+- The number in the score sun is 25 px (was 23), ink coloured like appeal and conservation points, with a 5 px white outline (`-webkit-text-stroke` + `paint-order: stroke fill`), so a number of three or four characters (100, -14, -105) can be wider than the sun and still reads as part of it on any player colour. Four or five characters (`b[data-len]`, set by `burst`) use 22 px. The sun itself keeps its 52 px size.
