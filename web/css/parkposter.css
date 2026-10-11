@@ -235,11 +235,16 @@ body.viewer .ppicons .ic.zero .badge { opacity: .3; }
 body.viewer .ppicons .ic.zero b { opacity: .55; }
 
 /* log */
-body.viewer .sidebar .moves { flex: 1 1 0; min-height: 0; padding: 8px 10px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 600 17px/1.15 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .sidebar .moves { flex: 1 1 0; min-height: 0; padding: 8px 10px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 700 18px/1.15 'Barlow', system-ui, sans-serif; }
 body.viewer .moves li { padding: 5px 0 5px 6px; border-bottom: 2px dashed rgba(23, 38, 43, .25); border-left-width: 5px; }
 body.viewer .moves li:hover { background: rgba(244, 182, 63, .3); }
 body.viewer .moves li.on { background: rgba(238, 108, 43, .3); font-weight: 700; }
 body.viewer .moves .n { color: var(--ink); opacity: .5; min-width: 34px; font-weight: 700; }
+
+/* the check mark of the engine badge (the engine agrees with the log): a drawn check, thick and big, in the log and in the move bar */
+body.viewer .engine-badge.engine { flex: none; padding: 0; min-width: 0; line-height: 0; color: #1c6b2a; }
+body.viewer .engine-badge.engine svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+body.viewer .movepill .enginemark .engine-badge.engine svg { width: 30px; height: 30px; }
 
 /* ---- settings pop-up ------------------------------------------------------------------------------------------------------------------------------------------------------- */
 body.viewer .modal { background: rgba(7, 44, 55, .62); }

@@ -46,7 +46,12 @@ export function engineBadge(eng) {
   if (!eng) return document.createTextNode('');
   const key = eng.source === 'engine' ? 'engine' : (eng.status in ENGINE_MARK ? eng.status : 'log');
   const [mark, tip] = ENGINE_MARK[key];
-  const b = el('span', 'engine-badge ' + key, mark);
+  const b = el('span', 'engine-badge ' + key, key === 'engine' ? '' : mark);
+  if (key === 'engine') {                                          // the check mark is drawn (a font glyph was thin and small)
+    const NS = 'http://www.w3.org/2000/svg', s = document.createElementNS(NS, 'svg'), pth = document.createElementNS(NS, 'path');
+    s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('aria-hidden', 'true');
+    pth.setAttribute('d', 'M4.5 12.8 L9.8 18 L19.5 6.2'); s.append(pth); b.append(s);
+  }
   b.title = tip + (eng.detail ? '\n' + eng.detail : '');
   return b;
 }

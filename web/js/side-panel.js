@@ -54,7 +54,20 @@ function tile(cls, title, img, value, sub) {
 }
 const plainIcon = (id, h) => { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = h; return i; };
 // The number is centred by its ink, not by its advance width: the digits of Bowlby One have uneven side bearings (a 1 sat 1.6 px left of the middle, a 10 1.2 px right).
-const TURN_PLACEHOLDER = 67;          // (the Turn number of the Round | Turn element: a fixed placeholder until its calculation is defined)
+// The Turn number of the Round | Turn element: the turn of the player who is acting, counted per player (both players' first turns are turn 1). The action card draft and the choice of the
+// starting hand are no turns (0 until the first player chooses an action card). `st.turn` counts the finished turns of both players (a second action of the same turn does not count, see
+// replay/builder.py), the players alternate, so the first player is `active_player` xor (turn odd). A turn begins with "chooses action card" (`current_action` is set); between two turns the
+// number of the player who has just finished stays.
+function turnNumber(st) {
+  const t = st.turn || 0, a = st.active_player || 0, first = a ^ (t & 1);
+  const done = (seat) => Math.floor((t + (seat === first ? 1 : 0)) / 2);        // (the finished turns of a seat)
+  if (st.current_action) return done(a) + 1;
+  const steps = S.replay && S.replay.steps, cur = steps && steps[S.step];
+  if (cur && cur.state === st) {                                    // (replay: after the first action of a turn with a second one to come, no card is chosen for a moment; the turn goes on)
+    for (let j = S.step - 1; j >= 0 && steps[j].state.turn === t; j--) if (steps[j].state.current_action) return done(a) + 1;
+  }
+  return done(1 - a);
+}
 function centreInk(node) {
   const shift = () => {
     const cs = getComputedStyle(node), ctx = (centreInk.ctx = centreInk.ctx || document.createElement('canvas').getContext('2d'));
@@ -72,8 +85,8 @@ function headerStats(st, flash) {
   if (!root) return;
   root.replaceChildren();
   const rnd = flash('round', st.round, el('div', 'pill rnd'));
-  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends. Turn: placeholder for now (how it is counted is still to be defined)';
-  const rn = el('b', 'rn', st.round), tn = el('b', 'tn', TURN_PLACEHOLDER);
+  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends. Turn: the number of turns the player who is acting has had in this game (the action card draft and the starting hand do not count)';
+  const rn = el('b', 'rn', st.round), tn = el('b', 'tn', turnNumber(st));
   const rh = el('div', 'half'), th = el('div', 'half');          // (two equal halves, the word small above the number, a dashed divider between them)
   rh.append(el('span', 'lab', 'Round'), rn);
   th.append(el('span', 'lab', 'Turn'), tn);
