@@ -41,6 +41,12 @@
     <p class="muted">Design a zoo map: place rock and water hexes, placement bonuses and upgrade requirements on a blank board, then copy or download it as JSON.</p>
     <a href="/map_editor.html"><button type="button">Open the map editor</button></a>
   </section>
+  <section class="mode" aria-labelledby="m-minigames">
+    <h2 id="m-minigames">Mini games</h2>
+    <p class="muted">Short daily puzzles played on real finished games: guess what a player kept, or who is ahead.</p>
+    <a href="/minigames/"><button type="button">See the mini games</button></a>
+    <p class="small muted"><a href="/ratings.html">Ratings of rated live games</a> &middot; <a href="/terms.html">Terms and privacy</a></p>
+  </section>
   <section class="mode unavailable" aria-labelledby="m-custom" aria-disabled="true">
     <h2 id="m-custom">Custom game mode <span class="badge">Coming soon</span></h2>
     <p class="muted">Start a new game with your own choice of map, expansions and options.</p>
@@ -85,5 +91,6 @@ document.getElementById('f').addEventListener('submit', async (e) => {
   finally { go.disabled = false; }
 });
 </script>
+<script type="module" src="/js/account.js"></script>
 </body>
 </html>

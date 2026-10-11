@@ -4,6 +4,7 @@ A step is one kept `move_id` of the log; its state is the replay builder's state
 decks (only their sizes) and with the cells every building covers, so the browser needs no board geometry code.
 """
 import os
+import dataclasses
 import re
 from pathlib import Path
 from typing import Any
@@ -261,8 +262,9 @@ def map_view(map_id: str) -> dict:
             "association_bonuses": association.map_bonuses(base)}
 
 
-def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False):
-    """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking."""
+def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False, first_moves: int | None = None):
+    """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking.
+    With `first_moves` only that many moves are replayed and the engine does not play them (the mini games need the first steps only; the table's setup is read from the whole log)."""
     parsed: ParsedLog = parse_log(raw_log)
     seats = [str(p.id) for p in parsed.players]
     maps = None
@@ -272,11 +274,18 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     if maps is None:
         maps = config.maps
     names = {str(p.id): p.name for p in parsed.players}
+    if first_moves is not None:
+        parsed = dataclasses.replace(parsed, moves=parsed.moves[:first_moves])
     groups = [move_groups(mv, names) for mv in parsed.moves]
     split = frozenset(order for g in groups for _, order in g[1:])         # every effect (log line) of a move is a step of its own
     rep: Replay = build_replay(parsed, setup, config, seed, split)
     colors = {str(p["id"]): p.get("color") for p in raw_log["data"].get("players") or [] if isinstance(p, dict)}
-    eng = build_engine_replay(parsed, rep, {pid: i for i, pid in enumerate(config.player_ids)})
+    if first_moves is not None:
+        from ark_nova.replay.differential import DiffReport
+        from ark_nova.replay.engine_replay import EngineReplay, MoveEngine
+        eng = EngineReplay({m.index: MoveEngine("log") for m in parsed.moves}, DiffReport())
+    else:
+        eng = build_engine_replay(parsed, rep, {pid: i for i, pid in enumerate(config.player_ids)})
     known_prefix = len(seed.main_order)                                       # the cards of the draw pile whose order the log tells; the rest is a random guess
     full_deck = len(rep.states[0].main_deck) if rep.states else 0
     steps = []

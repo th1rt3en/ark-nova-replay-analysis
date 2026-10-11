@@ -26,6 +26,13 @@ class Settings:
     internal_secret: str = ""  # signs the calls to it (the Worker's INTERNAL_SECRET)
     live_bq_project: str = "freestyle-190711"  # the registry of the live tables (docs/live_game_plan.md 9.2): dataset ark_nova_engine, table live_table_events, view live_tables
     live_bq_dataset: str = "ark_nova_engine"
+    turnstile_site_key: str = ""  # Cloudflare Turnstile on the signup form (empty = no check)
+    turnstile_secret: str = ""
+    store_backend: str = ""  # "d1": the accounts and the mini games live in Cloudflare D1 through the Worker (LIVE_KEEPER_URL + INTERNAL_SECRET); empty: see ACCOUNTS_DB / MINIGAMES_DB
+    accounts_db: str = ""  # a SQLite file for the accounts; empty = the accounts are off (an in-memory store would lose every account on a restart; the production store is D1)
+    bga_seed_table: str = "freestyle-190711.ark_nova.bga_player_elo"  # the BGA players and their latest Elo (scripts/setup_bga_player_elo.py)
+    allowed_origins: str = "https://ark-nova.pages.dev,https://engine.emufriends.pet"  # sites whose browsers may post to /api/auth (besides the request's own host)
+    minigames_db: str = ""  # a SQLite file for the mini games' puzzles and submissions; empty = in memory (lost on restart: the production store is D1, written with the accounts)
     live_gcs_bucket: str = "temp-common-storage"  # where the records of finished / conceded games go (live/<yyyy>/<mm>/E12.json.gz); empty = nothing is exported and the keeper keeps the tables
 
     @classmethod
@@ -44,4 +51,11 @@ class Settings:
             live_bq_project=os.environ.get("LIVE_BQ_PROJECT", "freestyle-190711"),
             live_bq_dataset=os.environ.get("LIVE_BQ_DATASET", "ark_nova_engine"),
             live_gcs_bucket=os.environ.get("LIVE_GCS_BUCKET", "temp-common-storage"),
+            turnstile_site_key=os.environ.get("TURNSTILE_SITE_KEY", ""),
+            turnstile_secret=os.environ.get("TURNSTILE_SECRET", ""),
+            store_backend=os.environ.get("STORE_BACKEND", "").strip().lower(),
+            accounts_db=os.environ.get("ACCOUNTS_DB", ""),
+            bga_seed_table=os.environ.get("BGA_SEED_TABLE", "freestyle-190711.ark_nova.bga_player_elo"),
+            allowed_origins=os.environ.get("ALLOWED_ORIGINS", "https://ark-nova.pages.dev,https://engine.emufriends.pet"),
+            minigames_db=os.environ.get("MINIGAMES_DB", ""),
         )

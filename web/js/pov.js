@@ -1,5 +1,5 @@
 // [module] Point of view (seat 0 / seat 1; both at once is no longer possible, a live game has none): what is hidden from the other player, the eyes that switch it.
-import { FORK, PLAY, S, params, table } from './state.js';
+import { FORK, MINIGAME, PLAY, S, params, table } from './state.js';
 import { $, el, seatColor } from './util.js';
 import { labelNode } from './log-labels.js';
 import { render } from './main.js';
@@ -9,7 +9,7 @@ import { render } from './main.js';
 const POV_KEY = 'pov:' + (table || 'local');
 const readPov = (v) => (v === '0' ? 0 : v === '1' ? 1 : undefined);       // (the former 'both eyes open' value 'all' is read as unset -> the first player)
 export const povParam = () => (S.pov === null ? 'all' : String(S.pov));
-{ let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = PLAY ? null : v === undefined ? 0 : v; }       // (a live game: the server already left out what this seat may not see, nothing is hidden by the page)
+{ let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = PLAY ? null : MINIGAME ? window.MINIGAME_POV : v === undefined ? 0 : v; }       // (a live game: the server already left out what this seat may not see, nothing is hidden by the page)
 export const hides = (seat) => S.pov !== null && seat !== S.pov;
 // The orientation of the boards: the spectated player chosen in the dialog at the start (`chooseSpectated`) has the left map and the upper player box, whichever eye is open later (the eyes
 // change only what is shown of the cards). Kept per table and per tab ('orient:<table>' in sessionStorage: '0' | '1'), so F5 keeps it but a new visit (window closed, ID entered again) asks again; a fork takes it from the URL (`&orient=`, else the eye's seat); a live game and the sandbox keep seat 0 left.

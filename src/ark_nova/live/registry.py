@@ -55,7 +55,7 @@ def build_row(table_id: str, seq: int, kept: dict, event: dict, now: float | Non
         "status": event.get("status") or kept.get("status"), "end_reason": event.get("end_reason") or kept.get("end_reason"),
         "created_at": _ts(kept.get("created_at")), "started_at": _ts(event.get("started_at")), "ended_at": _ts(event.get("ended_at") or (kept.get("ended_at") if (event.get("status") in FINAL) else None)),
         "player_names": [s["name"] for s in kept.get("seats", []) if s.get("name")], "maps": [str(m) for m in cfg.get("maps", [])],
-        "marine_worlds": bool(options.get("marine_worlds_flag")) if options else None, "config": json.dumps({"options": options}, sort_keys=True) if options else None,
+        "marine_worlds": bool(options.get("marine_worlds_flag")) if options else None, "config": json.dumps({"options": options, **({"rated": True, "accounts": [cfg.get("account_0"), cfg.get("account_1")]} if cfg.get("rated") else {})}, sort_keys=True) if options else None,
         "engine_version": kept.get("engine_version"), "code_hash": cfg.get("code_hash"), "data_hash": cfg.get("data_hash"),
         "n_actions": event.get("n_actions", kept.get("version")), "result": json.dumps(event["result"]) if event.get("result") is not None else None,
         "gcs_path": event.get("gcs_path"), "exported_at": _ts(event.get("exported_at")), "record_bytes": event.get("record_bytes"), "schema_version": cfg.get("schema_version", 1),

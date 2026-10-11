@@ -80,21 +80,68 @@ def _planning_routes(app) -> None:
         (PLANNING_DIR / f"{name}.json").write_text(json.dumps(sheet, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
         return {"ok": True}
 
+    @app.post("/api/dev/minigames/rollover")
+    def dev_rollover(day: str | None = None):
+        """Development only: create today's (or `day`'s) puzzles now instead of waiting for the cron trigger."""
+        return {"day": day or app.state.minigames.today(), "games": app.state.minigames.rollover(day)}
+
     routes = app.router.routes                       # the static files are mounted at "/": these routes must come first
     mine = [r for r in routes if getattr(r, "path", "").startswith("/api/dev/")]
     app.router.routes[:] = mine + [r for r in routes if r not in mine]
 
 
+def _minigames(index, logs):
+    """The mini games of src/ark_nova/minigames/manifest.json on the local logs: puzzles come from the tables in log_examples, results are kept in build/minigames_dev.sqlite."""
+    import json
+
+    from ark_nova.minigames.platform.contract import GameLog
+    from ark_nova.minigames.platform.manifest import load_games, load_manifest
+    from ark_nova.minigames.platform.service import MiniGameService
+    from ark_nova.minigames.platform.sources import ListSourceIndex
+    from ark_nova.minigames.platform.store import SqliteStore
+    from ark_nova.storage.elos import BigQueryElos
+    elos = BigQueryElos(Settings().bq_table)                  # (the Elo of the players: BigQuery when it can be reached, else none)
+
+    def read_log(table_id):
+        rec = index.find(table_id)
+        if rec is None or not rec.logged:
+            raise LookupError(f"no log for table {table_id}")
+        return GameLog(json.loads(logs.read(rec.gcs_path, table_id)), table_id, record=rec, elos=elos.get(table_id))
+
+    db = Path(__file__).resolve().parents[1] / "build" / "minigames_dev.sqlite"
+    db.parent.mkdir(exist_ok=True)
+    entries = load_manifest()
+    tables = [int(p.stem) for p in LOG_DIR.glob("*.json") if p.stem.isdigit()]
+    return MiniGameService(SqliteStore(str(db)), ListSourceIndex(tables), read_log, load_games(entries), entries)
+
+
+def _accounts():
+    """Accounts on a local SQLite file (build/accounts_dev.sqlite). BGA names to try the signup with: Xiao93 (one BGA player), Eagles Gaming (three), and every
+    player name of the logs in log_examples is not looked up: the real BGA data is only read in production."""
+    from ark_nova.accounts.seeds import BgaPlayer, ListSeedIndex
+    from ark_nova.accounts.service import AccountService
+    from ark_nova.accounts.store import SqliteStore
+
+    db = Path(__file__).resolve().parents[1] / "build" / "accounts_dev.sqlite"
+    db.parent.mkdir(exist_ok=True)
+    seeds = ListSeedIndex([BgaPlayer("89107474", "Xiao93", 447.53, 1683, 410, "2026-10-08T17:54:00+00:00"),
+                           BgaPlayer("111", "Eagles Gaming", 300.2, 1500, 20, "2025-01-01T00:00:00+00:00"), BgaPlayer("222", "Eagles Gaming", 512.9, 1600, 90, "2026-09-01T00:00:00+00:00"),
+                           BgaPlayer("333", "Eagles Gaming", 150.0, 1400, 3, "2024-01-01T00:00:00+00:00")])
+    return AccountService(SqliteStore(str(db)), seeds)
+
+
 def build_app():
     settings = Settings()
     index, logs = _remote_index(settings)
+    accounts = _accounts()
     live = None
     if os.environ.get("DEV_LIVE") == "1":
         from ark_nova.live import archive as arch, registry as reg
         from ark_nova.live.fake import FakeKeeper
         from ark_nova.live.service import LiveService
-        live = LiveService(FakeKeeper(), engine_version="dev", registry=reg.FakeRegistry(), archive=arch.FakeArchive())
-    app = create_app(settings, LocalIndex(index), LocalLogs(logs), live=live)
+        live = LiveService(FakeKeeper(), engine_version="dev", registry=reg.FakeRegistry(), archive=arch.FakeArchive(), ratings=accounts.store)
+    local_index, local_logs = LocalIndex(index), LocalLogs(logs)
+    app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs), accounts=accounts)
     _planning_routes(app)
     return app
 

@@ -9,6 +9,11 @@
             { "name": "COUNTER", "class_name": "Counter" }
         ]
     },
+    "triggers": { "crons": ["0 0 * * *", "10 0 * * *"] },       // the daily mini game rollover (src/cron.ts)
+    "d1_databases": [
+        // accounts, sessions and the mini games (migrations/). `npx wrangler d1 create ark-nova-accounts`, put its id here, then `npx wrangler d1 migrations apply ark-nova-accounts --remote`
+        { "binding": "DB", "database_name": "ark-nova-accounts", "database_id": "59488c33-2727-4dfd-8626-af769ac40730", "migrations_dir": "migrations" }
+    ],
     "migrations": [
         { "tag": "v1", "new_sqlite_classes": ["Table", "Counter"] }
     ],

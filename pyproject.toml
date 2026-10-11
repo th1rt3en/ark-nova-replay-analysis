@@ -10,6 +10,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.29",
+    "argon2-cffi>=23.1",
 ]
 
 [project.optional-dependencies]
@@ -20,7 +21,7 @@ dev = ["pytest>=8", "httpx>=0.27"]
 where = ["src"]
 
 [tool.setuptools.package-data]
-ark_nova = ["data/*.json"]
+ark_nova = ["data/*.json", "minigames/manifest.json", "minigames/sql/*.sql"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -46,3 +46,68 @@ body.landing { max-width: 64rem; }
 .progresstext .pstage { margin-top: .15rem; }
 .progresstext .peta { margin-top: .15rem; color: var(--muted); font-size: .9rem; }
 #msg.loading::before, .status.loading::before { display: none; }
+
+/* the account widget (js/account.js) */
+#acctbar { position: fixed; top: .6rem; right: .8rem; z-index: 20; display: flex; gap: .5rem; align-items: center; padding: .3rem .6rem; border-radius: 8px; background: color-mix(in srgb, var(--bg) 88%, var(--fg)); border: 1px solid var(--border); }
+#acctbar button { padding: .3rem .7rem; }
+.acctname { font-weight: 600; }
+button.linkbtn { background: none; border: 0; color: var(--accent); padding: 0; text-decoration: underline; cursor: pointer; font: inherit; }
+dialog.acctdlg { width: min(30rem, calc(100vw - 2rem)); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--fg); padding: 1rem 1.2rem 1.2rem; }
+dialog.acctdlg::backdrop { background: rgba(0, 0, 0, .55); }
+.accthead { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.accthead h2 { margin: 0; font-size: 1.15rem; }
+.acctform { display: flex; flex-direction: column; gap: .7rem; margin: .8rem 0 0; }
+.acctfield { display: flex; flex-direction: column; gap: .2rem; font-size: .9rem; }
+.acctinput { font: inherit; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: inherit; }
+.acctmsg { margin: .8rem 0 0; padding: .6rem .8rem; border: 1px solid var(--err); border-radius: 6px; color: var(--err); }
+.acctchoice { display: flex; flex-direction: column; gap: .4rem; }
+.acctopt { display: flex; gap: .5rem; align-items: flex-start; padding: .4rem .5rem; border: 1px solid var(--border); border-radius: 6px; }
+.acctopt.off { opacity: .55; }
+.acctwarn { margin: .3rem 0 0; padding: .6rem .8rem; border-radius: 6px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); font-size: .9rem; }
+.acctcode { font: 700 1.25rem ui-monospace, Consolas, monospace; letter-spacing: .05em; padding: .8rem; text-align: center; border: 1px dashed var(--accent); border-radius: 8px; word-break: break-all; user-select: all; }
+.acctlinks { margin: .9rem 0 0; }
+
+/* the leaderboards of the mini games hub (js/minigames/hub.js): one tab per game */
+.lb { margin-top: 2rem; }
+.lb h2 { margin: 0 0 .2rem; font-size: 1.15rem; }
+.lbtabs { display: flex; gap: .3rem; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-top: .8rem; }
+.lbtab { background: transparent; color: var(--muted); border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; padding: .45rem .9rem; cursor: pointer; font: inherit; font-weight: 600; }
+.lbtab:hover { color: var(--fg); }
+.lbtab.on { color: var(--fg); border-color: var(--border); background: color-mix(in srgb, var(--fg) 5%, var(--bg)); margin-bottom: -1px; border-bottom: 1px solid color-mix(in srgb, var(--fg) 5%, var(--bg)); }
+.lbpanel { padding: 1rem 0; }
+.lbgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1.5rem; }
+.lbgrid h3 { margin: 0 0 .4rem; font-size: 1rem; }
+.lbgrid table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.lbgrid th, .lbgrid td { text-align: left; padding: .3rem .5rem; border-bottom: 1px solid var(--border); }
+.lbgrid th:last-child, .lbgrid td:last-child { text-align: right; }
+.lbgrid th { color: var(--muted); font-weight: 600; }
+
+/* the calendar of the mini games (js/minigames/calendar.js): a month of rounded days; the ones with a puzzle can be clicked, the ones played show the score */
+.cal { --c-fg: var(--fg); --c-muted: var(--muted); --c-line: var(--border); --c-bg: color-mix(in srgb, var(--fg) 4%, var(--bg)); --c-accent: var(--accent); --c-ok: #3f9e66; --c-ok-bg: color-mix(in srgb, #3f9e66 20%, var(--bg)); --c-on-accent: #fff;
+  width: 100%; max-width: 22rem; color: var(--c-fg); transition: opacity .15s; }
+.cal.loading { opacity: .5; min-height: 16rem; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .6rem; }
+.cal-title { font-size: 1.05rem; font-weight: 700; letter-spacing: .01em; }
+.cal-nav { width: 2.1rem; height: 2.1rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--c-line); background: transparent; color: var(--c-fg); font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.cal-nav:hover:not(:disabled) { background: var(--c-bg); border-color: var(--c-accent); }
+.cal-nav:disabled { opacity: .3; cursor: default; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
+.cal-dow { padding-bottom: .15rem; text-align: center; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--c-muted); }
+.cal-day { position: relative; aspect-ratio: 1; min-width: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid transparent; background: transparent;
+  color: color-mix(in srgb, var(--c-muted) 65%, transparent); font: inherit; font-size: .92rem; line-height: 1.05; }
+.cal-day i { font-size: .6rem; font-style: normal; font-weight: 600; opacity: .85; }
+.cal-day.has { background: var(--c-bg); border-color: var(--c-line); color: var(--c-fg); font-weight: 600; cursor: pointer; transition: transform .1s, border-color .1s, box-shadow .1s; }
+.cal-day.has:hover { transform: translateY(-1px); border-color: var(--c-accent); box-shadow: 0 2px 6px rgba(0, 0, 0, .18); }
+.cal-day.played { background: var(--c-ok-bg); border-color: var(--c-ok); }
+.cal-day.played::after { content: "\2713"; position: absolute; top: 2px; right: 5px; font-size: .62rem; color: var(--c-ok); }
+.cal-day.today { box-shadow: inset 0 0 0 2px var(--c-accent); }
+.cal-day.sel { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-on-accent); }
+.cal-day.sel::after { color: var(--c-on-accent); }
+.cal-day:focus-visible, .cal-nav:focus-visible { outline: 3px solid var(--c-accent); outline-offset: 2px; }
+.cal-legend { display: flex; gap: .9rem; flex-wrap: wrap; margin-top: .7rem; font-size: .72rem; color: var(--c-muted); }
+.cal-key::before { content: ""; display: inline-block; width: .75rem; height: .75rem; margin-right: .3rem; vertical-align: -.1rem; border-radius: 4px; border: 1px solid var(--c-line); background: var(--c-bg); }
+.cal-key.played::before { background: var(--c-ok-bg); border-color: var(--c-ok); }
+.cal-key.today::before { background: transparent; border: 2px solid var(--c-accent); }
+.pastlist { display: flex; gap: 2rem; flex-wrap: wrap; margin-top: .8rem; }
+.pastgame { flex: 0 1 22rem; min-width: 0; }
+.pastgame h3 { margin: 0 0 .5rem; font-size: 1rem; }

@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ark_nova import data as card_data
+from ark_nova.accounts import rating as elo
 from ark_nova.engine import endgame, gamestats, map_select, turns
 from ark_nova.engine.actions import Action
 from ark_nova.engine.game import IllegalAction, apply, legal_actions, new_game
@@ -45,6 +46,10 @@ class NotStarted(LiveError):
 
 class IllegalMove(LiveError):
     pass
+
+
+class RatedRefused(IllegalMove):
+    """A rated game that cannot be created or joined (log in first, not against yourself, the seat is another player's, no ratings here): answered with its own status."""
 
 
 class NotYourSeat(Forbidden):
@@ -122,8 +127,9 @@ def token_hash(token: str) -> str:
 
 
 class LiveService:
-    def __init__(self, keeper: Keeper, engine_version: str = ENGINE_VERSION, registry=None, archive=None):
+    def __init__(self, keeper: Keeper, engine_version: str = ENGINE_VERSION, registry=None, archive=None, ratings=None):
         self.keeper, self.engine_version = keeper, engine_version
+        self.ratings = ratings                                      # the account store (accounts/store.py): the ratings of rated games; None = no rated games
         self.registry, self.archive = registry, archive            # (None: the registry rows stay in the table's keeper; nothing is exported or deleted)
         self._cache: OrderedDict[str, Cached] = OrderedDict()
         self._lock = threading.Lock()
@@ -133,8 +139,12 @@ class LiveService:
         self._wrapping: set = set()                                 # the games whose wrap-up is running
 
     # ---- creating and joining -----------------------------------------------------------------------------------------------------------
-    def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None) -> dict:
+    def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None, rated: bool = False, account=None) -> dict:
         """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`)."""
+        if rated and self.ratings is None:
+            raise RatedRefused("rated games are not available here", 503)
+        if rated and account is None:
+            raise RatedRefused("log in to create a rated game; a friendly game needs no account", 401)
         seed = secrets.randbits(52) if tail_seed is None else tail_seed         # (52 bits: the largest whole number a browser reads exactly; 31 bits could be tried out one by one to learn the deck order)
         mode = game_mode or map_select.DEFAULT_MODE
         if mode not in map_select.MODES:
@@ -148,17 +158,27 @@ class LiveService:
         table_id = f"E{self.keeper.next_number()}"
         tokens = [secrets.token_urlsafe(24), secrets.token_urlsafe(24)]
         config = {"game_id": table_id, "options": options, "tail_seed": seed, "player_ids": ["1", "2"], "maps": list(state.config.maps), **fingerprint(), "engine_version": self.engine_version,
-                  "viewer": stepdata.viewer_header(state), "clock": clock0}
+                  "viewer": stepdata.viewer_header(state), "clock": clock0, "rated": bool(rated)}
         self.keeper.init(table_id, config, self.engine_version, [token_hash(t) for t in tokens], views=projection.views(state, {r: "The game starts" for r in projection.ROLES}), snapshot={"engine": state.to_dict(), "eff": []},
                          registry_event={"status": "waiting", "n_actions": 0})
         self._remember(table_id, Cached(0, state, [token_hash(t) for t in tokens], "waiting", [None, None], clock=clock0))
         self.sync_registry(table_id)
         return {"game_id": table_id, "tokens": tokens, "creator_seat": secrets.randbelow(2)}
 
-    def join(self, game_id: str, token: str, name: str) -> dict:
-        """The holder of a seat link gives their name; the game starts when both seats have one."""
+    def join(self, game_id: str, token: str, name: str, account=None) -> dict:
+        """The holder of a seat link gives their name; the game starts when both seats have one. A rated game needs a logged-in account on each seat (two different ones): its name is the account's."""
         c = self._load(game_id)
         seat = self._seat_of(c, token)
+        cfg = self.keeper.state(game_id)["config"]
+        if cfg.get("rated"):
+            if account is None:
+                raise RatedRefused("log in to play this rated game", 401)
+            if cfg.get(f"account_{1 - seat}") == account.id:
+                raise RatedRefused("you cannot play a rated game against yourself", 409)
+            if cfg.get(f"account_{seat}") not in (None, account.id):
+                raise RatedRefused("this seat already belongs to another player", 409)
+            self.keeper.update_config(game_id, {f"account_{seat}": account.id})
+            name = account.username
         if not name or not name.strip():
             raise IllegalMove("type a name", 422)
         names = self.keeper.seat(game_id, seat, name)
@@ -174,7 +194,7 @@ class LiveService:
 
     def lobby(self, game_id: str) -> dict:
         s = self.keeper.state(game_id)
-        return {"game_id": game_id, "status": s["status"], "version": s["version"], "names": [x["name"] for x in s["seats"]]}
+        return {"game_id": game_id, "status": s["status"], "version": s["version"], "names": [x["name"] for x in s["seats"]], "rated": bool(s["config"].get("rated"))}
 
     def _complete_header(self, game_id: str, state: GameState) -> bool:
         try:
@@ -198,7 +218,7 @@ class LiveService:
         seat = None
         if token:
             seat = self._seat_of(Cached(s["version"], None, [x["token_hash"] for x in s["seats"]], s["status"], []), token)
-        return {"game_id": game_id, "clock": tc.view(s["config"]["clock"], int(time.time() * 1000)) if s["config"].get("clock") else None, "status": s["status"], "version": s["version"], "seat": seat, "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
+        return {"game_id": game_id, "clock": tc.view(s["config"]["clock"], int(time.time() * 1000)) if s["config"].get("clock") else None, "status": s["status"], "version": s["version"], "seat": seat, "rated": bool(s["config"].get("rated")), "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
                 "first_player": 0, "players": [{"seat": i, "id": str(i + 1), "name": x["name"] or f"Seat {i + 1}", "color": (v.get("colors") or [None, None])[i]} for i, x in enumerate(s["seats"])],
                 "maps": v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in card_data.maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") else {}, "cards": v.get("cards"), "base_projects": v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
                 "abandon": self.abandon_view(s["config"])}
@@ -481,9 +501,13 @@ class LiveService:
             except ValueError:
                 result = None
         stamp = lambda v: v.isoformat() if hasattr(v, "isoformat") else v        # noqa: E731 (BigQuery returns datetimes)
+        try:
+            rated = bool(json.loads(row.get("config") or "{}").get("rated"))
+        except ValueError:
+            rated = False
         return {"game_id": game_id, "status": row["status"], "end_reason": row.get("end_reason"), "names": list(row.get("player_names") or []), "maps": list(row.get("maps") or []),
                 "marine_worlds": row.get("marine_worlds"), "result": result, "n_actions": row.get("n_actions"), "started_at": stamp(row.get("started_at")), "ended_at": stamp(row.get("ended_at")),
-                "replayable": bool(row.get("gcs_path")), "engine_version": row.get("engine_version"), "stats": self._stats(row)}
+                "replayable": bool(row.get("gcs_path")), "engine_version": row.get("engine_version"), "stats": self._stats(row), "rated": rated, "ratings": self.rating_changes(game_id) if rated else []}
 
     def _stats(self, row: dict) -> dict | None:
         """The statistics stored in the record of the game (computed now for a record that has none)."""
@@ -564,6 +588,8 @@ class LiveService:
                 now = datetime_now()
                 path = self.archive.write(arch.path_for(game_id, now), data)
                 patch = {"gcs_path": path, "exported_at": int(now.timestamp() * 1000), "record_bytes": len(data), "ended_at": kept.get("ended_at")}
+            if status in ("finished", "conceded"):
+                self._rate(game_id, kept)                           # (before the keeper forgets the table; it is applied once, a failure here is tried again with the wrap-up)
             if not self.sync_registry(game_id, patch):
                 return False
             if status != "error":
@@ -574,6 +600,47 @@ class LiveService:
         except Exception:                                    # noqa: BLE001
             log.exception("wrap-up of %s failed; it can be run again", game_id)
             return False
+
+    def _rate(self, game_id: str, kept: dict) -> None:
+        """The ratings of a rated game that has ended: the winner (a draw counts half) by the scores, the loser of a concession or of overtime. A concession before MIN_RATED_TURNS turns were
+        played, a game without two different accounts, an abandoned or a friendly game: nothing changes. Written once (the store refuses a game that is already rated)."""
+        cfg = kept.get("config") or {}
+        if not cfg.get("rated") or self.ratings is None:
+            return
+        ids = [cfg.get("account_0"), cfg.get("account_1")]
+        if None in ids or ids[0] == ids[1]:
+            return
+        c = self._load(game_id, fresh=True)
+        res = c.state.result
+        if res is None:
+            return
+        if kept["status"] == "conceded":
+            if c.state.turn < elo.MIN_RATED_TURNS:
+                return
+            score_a = 0.0 if res.conceded == 0 else 1.0
+        else:
+            score_a = 0.5 if res.winner is None else (1.0 if res.winner == 0 else 0.0)
+        at = datetime_now().isoformat()
+        for _ in range(4):
+            now = self.ratings.ratings_of(ids)
+            if len(now) < 2:
+                return
+            ra, rb = now[ids[0]][0], now[ids[1]][0]
+            ga, gb = now[ids[0]][1], now[ids[1]][1]
+            na, nb = elo.updated(ra, rb, score_a, ga, gb)
+            out = self.ratings.commit_ratings(game_id, [elo.RatingChange(game_id, ids[0], 0, ids[1], score_a, ra, na, at, elo.k_for(ga)), elo.RatingChange(game_id, ids[1], 1, ids[0], 1.0 - score_a, rb, nb, at, elo.k_for(gb))])
+            if out != "changed":
+                return
+        raise RuntimeError(f"the ratings of {game_id} kept changing while it was rated")
+
+    def rating_changes(self, game_id: str) -> list:
+        """The rating changes of a rated game, for the end page: who, before, after, with the account names."""
+        if self.ratings is None:
+            return []
+        rows = self.ratings.rating_changes(game_id)
+        names = self.ratings.usernames([r.account_id for r in rows]) if rows else {}
+        return [{"seat": r.seat, "account_id": r.account_id, "name": names.get(r.account_id, r.account_id), "result": r.result, "before": round(r.before), "after": round(r.after), "delta": round(r.after - r.before, 1)}
+                for r in rows]
 
     # ---- the cache ------------------------------------------------------------------------------------------------------------------------
     def _remember(self, game_id: str, c: Cached) -> None:

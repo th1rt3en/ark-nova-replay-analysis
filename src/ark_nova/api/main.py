@@ -9,7 +9,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
@@ -76,11 +76,61 @@ def _config(rec: TableRecord) -> dict:
     return {"table_id": rec.table_id, "logged": rec.logged, "player_maps": rec.player_maps, "marine_worlds": rec.marine_worlds}
 
 
+def _d1_client(st: Settings):
+    from ark_nova.storeclient import StoreClient
+    if not (st.live_keeper_url and st.internal_secret):
+        raise RuntimeError("STORE_BACKEND=d1 needs LIVE_KEEPER_URL and INTERNAL_SECRET (the Worker holds the D1 database)")
+    return StoreClient(st.live_keeper_url, st.internal_secret)
+
+
+def _default_accounts(st: Settings):
+    """The accounts, only when a persistent store is configured (`STORE_BACKEND=d1`, or a SQLite file in `ACCOUNTS_DB`): an account kept in memory would be lost on the next restart."""
+    if not (st.store_backend == "d1" or st.accounts_db):
+        return None
+    from ark_nova.accounts.seeds import BigQuerySeedIndex, NoSeeds
+    from ark_nova.accounts.service import AccountService
+    if st.store_backend == "d1":
+        from ark_nova.accounts.d1 import D1AccountStore
+        store = D1AccountStore(_d1_client(st))
+    else:
+        from ark_nova.accounts.store import SqliteStore
+        store = SqliteStore(st.accounts_db)
+    return AccountService(store, BigQuerySeedIndex(st.bga_seed_table) if st.bga_seed_table else NoSeeds())
+
+
+def _default_minigames(app: FastAPI):
+    """The mini game platform with the games of `src/ark_nova/minigames/manifest.json`: puzzles from BigQuery when it is reachable, logs from the app's own log store."""
+    from ark_nova.minigames.platform.contract import GameLog
+    from ark_nova.minigames.platform.manifest import load_games, load_manifest
+    from ark_nova.minigames.platform.service import MiniGameService
+    from ark_nova.minigames.platform.sources import BigQuerySourceIndex, ListSourceIndex
+    from ark_nova.minigames.platform.store import MemoryStore, SqliteStore
+    from ark_nova.storage.elos import BigQueryElos, NoElos
+    st = app.state.settings
+    elos = BigQueryElos(st.bq_table) if st.bq_table else NoElos()
+    entries = load_manifest()
+    games = load_games(entries)
+
+    def read_log(table_id: int) -> GameLog:
+        rec = app.state.index.find(table_id)
+        if rec is None or not rec.logged:
+            raise LookupError(f"no log for table {table_id}")
+        return GameLog(json.loads(app.state.logs.read(rec.gcs_path, table_id)), table_id, record=rec, elos=elos.get(table_id))
+
+    sources = BigQuerySourceIndex() if st.bq_table and games else ListSourceIndex([])
+    if st.store_backend == "d1":
+        from ark_nova.minigames.platform.d1 import D1MiniGameStore
+        store = D1MiniGameStore(_d1_client(st))
+    else:
+        store = SqliteStore(st.minigames_db) if st.minigames_db else MemoryStore()
+    return MiniGameService(store, sources, read_log, games, entries)
+
+
 def _error(status: int, code: str, message: str, **extra) -> JSONResponse:
     return JSONResponse(status_code=status, content={"status": code, "message": message, **extra})
 
 
-def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None) -> FastAPI:
+def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None, minigames=None, accounts=None) -> FastAPI:
     app = FastAPI(title="Ark Nova replay")
     app.state.settings = settings or Settings.from_env()
     app.state.index = index or _default_index(app.state.settings)
@@ -94,6 +144,8 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     app.state.forks_lock = threading.Lock()
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.middleware("http")(rate_limit_middleware)
+    if accounts is None:
+        accounts = _default_accounts(st)                                      # (first: the rated games keep their ratings in the account store)
     if live is None and st.live_keeper_url and st.internal_secret:                 # the live games: only when the keeper (the Cloudflare Worker) is configured
         from ark_nova.live.keeper import HttpKeeper
         from ark_nova.live.service import LiveService
@@ -106,11 +158,21 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
                 archive = GcsArchive(st.live_gcs_bucket)
         except Exception:                                                           # noqa: BLE001
             log.exception("the live registry / archive are not available")
-        live = LiveService(HttpKeeper(st.live_keeper_url, st.internal_secret), registry=registry, archive=archive)
+        live = LiveService(HttpKeeper(st.live_keeper_url, st.internal_secret), registry=registry, archive=archive, ratings=accounts.store if accounts is not None else None)
     if live is not None:
         from ark_nova.api.live import add_routes
         add_routes(app, live, st.live_keeper_url.replace("https://", "wss://").replace("http://", "ws://") if st.live_keeper_url else "")
     app.state.live = live
+    app.state.accounts = accounts
+    if accounts is not None:
+        from ark_nova.api.accounts import add_routes as add_account_routes
+        from ark_nova.api.accounts import turnstile_verifier
+        add_account_routes(app, accounts, [o.strip().rstrip("/") for o in st.allowed_origins.split(",") if o.strip()], st.turnstile_site_key, turnstile_verifier(st.turnstile_secret) if st.turnstile_secret and st.turnstile_site_key else None)
+    if minigames is None:
+        minigames = _default_minigames(app)
+    app.state.minigames = minigames
+    from ark_nova.api.minigames import add_routes as add_minigame_routes
+    add_minigame_routes(app, minigames, st.internal_secret)
 
     @app.get("/healthz")
     def healthz():
@@ -345,7 +407,14 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
 
     if IMG_DIR.is_dir():
         app.mount("/img", StaticFiles(directory=IMG_DIR), name="img")
-    if WEB_DIR.is_dir():
+    pages_url = os.environ.get("PAGES_URL", "").rstrip("/")
+    if pages_url:                                                                   # the site lives on Cloudflare Pages: old links to this service go there
+        @app.get("/{path:path}", include_in_schema=False)
+        def to_pages(path: str, request: Request):
+            if path.startswith(("api/", "internal/")):                                  # an API path that does not exist: an answer, never a redirect (the Pages proxy would loop)
+                return _error(404, "not_found", "No such API route.")
+            return RedirectResponse(pages_url + "/" + path + (("?" + request.url.query) if request.url.query else ""), status_code=307)
+    elif WEB_DIR.is_dir():
         app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app
 

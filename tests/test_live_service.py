@@ -82,7 +82,7 @@ def test_a_game_cannot_be_played_before_both_players_joined():
     v = players[0].state()
     assert players[0].move(v["version"], {"player": 0, "kind": "initial_discard", "args": {"cards": []}}).status_code == 409
     _join_both(client, game_id, players)
-    assert client.get(f"/api/games/{game_id}").json() | {} == {"game_id": game_id, "status": "playing", "version": 0, "names": ["Player 0", "Player 1"]}
+    assert client.get(f"/api/games/{game_id}").json() | {} == {"game_id": game_id, "status": "playing", "version": 0, "names": ["Player 0", "Player 1"], "rated": False}
     assert client.get(f"/api/games/E99999/state").status_code == 404
     assert client.get("/api/games/nope").status_code == 404
 

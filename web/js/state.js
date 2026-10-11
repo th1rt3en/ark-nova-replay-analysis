@@ -6,11 +6,13 @@ export const table = params.get('table');
 // every move is posted with the state it applies to.
 export const FORK = !!window.FORK_MODE;
 export const PLAY = !!window.PLAY_MODE;                                         // play.html: a live game (fork mode: the bar is the way to play; the steps are the states the server pushes)
+export const MINIGAME = !!window.MINIGAME_MODE;                                 // minigames/<key>.html: one redacted position of a finished game, no stepping, no point of view switch (js/minigames/)
 export const SANDBOX = !!window.SANDBOX_MODE;                                   // sandbox.html: a game that is set up and edited freely against a bot that passes (fork mode, with the tools of the sandbox)
 // Mutable viewer state shared by the modules: `S.replay` (the loaded replay package), `S.step` (the index of the step on show), `S.pov` and the fork / sandbox
 // bits. Everything here used to be a `let` inside the one big function of the old replay.js.
 export const S = {
   forkInfo: null,
+  minigame: null,    // a mini game page sets {decorate(row, 'seat:kind')}: dock.js calls it for every row of cards it draws (js/minigames/daily_hand.js)
   lastBoard: null,   // replay: {st, pov} the boards on show were drawn from (render() skips redrawing identical boards)
   animalEnc: null,   // {card, x, y}: the enclosure clicked for the animal that is selected (not yet confirmed)
   // live play (play.js): the game id, the seat token and seat, the last version pushed, the socket / poll, the status, the abandon proposal, the clocks and the map picked but not confirmed

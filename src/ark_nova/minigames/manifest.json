@@ -1,0 +1,18 @@
+[
+    {
+        "key": "daily_hand",
+        "enabled": true,
+        "module": "ark_nova.minigames.daily_hand",
+        "title": "Daily starting hand",
+        "blurb": "Which cards would you keep? Pick them from a real player's dealt hand and see what they kept.",
+        "allow_past": false
+    },
+    {
+        "key": "whos_ahead",
+        "enabled": true,
+        "module": "ark_nova.minigames.whos_ahead",
+        "title": "Who's ahead",
+        "blurb": "See a game in progress with everything of both players visible and say who you think wins. Past puzzles can be played from a calendar.",
+        "allow_past": true
+    }
+]

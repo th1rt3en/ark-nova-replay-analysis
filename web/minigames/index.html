@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini games - Ark Nova</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="landing">
+<p class="small"><a href="/">&larr; Ark Nova Replay</a> &middot; <a href="/ratings.html">Ratings</a></p>
+<h1>Mini games</h1>
+<p class="muted">A new puzzle every day at 00:00 UTC, played on a real finished game.</p>
+<div class="modes" id="games" aria-live="polite">
+  <section class="mode unavailable" id="soon" aria-labelledby="m-soon" aria-disabled="true">
+    <h2 id="m-soon">More mini games <span class="badge">Coming soon</span></h2>
+    <p class="muted">More mini games and puzzles are on the way.</p>
+  </section>
+</div>
+<section id="past" class="lb" aria-labelledby="past-h" hidden>
+  <h2 id="past-h">Play a past puzzle</h2>
+  <p class="muted small">Pick a day to play that day's puzzle. Days you have played show your score.</p>
+  <div id="pastlist" class="pastlist"></div>
+</section>
+<section id="boards" class="lb" aria-labelledby="lb-h" hidden>
+  <h2 id="lb-h">Leaderboards</h2>
+  <p class="muted small">Each game has its own scores. Only players who are logged in are ranked.</p>
+  <div id="lbtabs" class="lbtabs" role="tablist" aria-label="Leaderboard of a game"></div>
+  <div id="lbpanel" class="lbpanel" role="tabpanel"></div>
+</section>
+<p id="err" class="muted" hidden></p>
+<script type="module" src="/js/minigames/hub.js"></script>
+<script type="module" src="/js/account.js"></script>
+</body>
+</html>

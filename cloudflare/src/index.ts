@@ -2,10 +2,13 @@
 //   /ws/E12?s=<seat token>            -> the Table Durable Object of E12 (WebSocket)
 //   /internal/table/E12/<route>       -> the same object's internal routes, only with a valid signature of Cloud Run
 //   /internal/counter/<next|ensure>   -> the id counter, same rule
+//   /internal/store/<op>              -> the accounts and mini game tables in D1 (src/store.ts), same signature rule
 //   /api/*                            -> Cloud Run
 import { verify } from "./auth";
 export { Table } from "./table";
 export { Counter } from "./counter";
+import { runStoreOp } from "./store";
+import { rollover } from "./cron";
 
 const TABLE_ID = /^E\d{1,9}$/;
 const json = (data: unknown, status = 200): Response => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
@@ -44,12 +47,25 @@ export default {
             return json({ status: "error", message: "wrong method" }, 405);
         }
 
+        m = /^\/internal\/store\/([a-z_.]+)$/.exec(path);
+        if (m) {
+            if (request.method !== "POST") return json({ status: "error", message: "wrong method" }, 405);
+            if (!(await verify(env.INTERNAL_SECRET, request, path))) return json({ status: "error", message: "forbidden" }, 403);
+            const args = await request.json<Record<string, unknown>>().catch(() => null);
+            if (args === null || typeof args !== "object") return json({ status: "error", message: "send a JSON object" }, 422);
+            return runStoreOp(env.DB, m[1], args);
+        }
+
         if (path.startsWith("/api/")) {
             if (!env.CLOUD_RUN_URL) return json({ status: "error", message: "the API is not configured" }, 502);
             return fetch(new Request(env.CLOUD_RUN_URL.replace(/\/$/, "") + path + url.search, request));
         }
 
         return json({ status: "error", message: "not found" }, 404);
+    },
+    // 00:00 UTC (and a backstop at 00:10): the daily puzzles of the mini games, created by Cloud Run
+    async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+        ctx.waitUntil(rollover(env));
     },
 } satisfies ExportedHandler<Env>;
 

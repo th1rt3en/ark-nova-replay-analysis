@@ -1,5 +1,5 @@
 // [module] Entry point of replay.html / fork.html / sandbox.html: `render()` draws one step, `boot()` loads and wires everything.
-import { FORK, PLAY, S, SANDBOX, table } from './state.js';
+import { FORK, MINIGAME, PLAY, S, SANDBOX, table } from './state.js';
 import { $, el } from './util.js';
 import { setupNoTips } from './notips.js';
 import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, seatOrder } from './pov.js';
@@ -130,11 +130,11 @@ function init() {
   if (SANDBOX) initSandbox();
   else if (PLAY) initPlay();
   else if (FORK) initFork();
-  else {
+  else if (!MINIGAME) {
     const fb = $('fork');
     if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&pov=' + povParam() + '&orient=' + orientParam(), '_blank'); };
   }
-  const [h1, h2] = PLAY ? [S.replay.steps.length - 1, 0] : FORK ? [0, 0] : location.hash.slice(1).split('.').map((x) => parseInt(x, 10));
+  const [h1, h2] = PLAY ? [S.replay.steps.length - 1, 0] : FORK || MINIGAME ? [0, 0] : location.hash.slice(1).split('.').map((x) => parseInt(x, 10));
   if (loadProgress) loadProgress.done();
   $('loading').hidden = true;
   $('app').hidden = false;
@@ -146,8 +146,8 @@ let loadProgress = null;                                                 // (the
 function boot() {
   fitScale();
 
-  if (!SANDBOX && !PLAY && !/^(E\d+|\d+)$/.test(table || '')) { location.replace('/'); return; }
-  loadProgress = !SANDBOX && !PLAY && window.Progress && $('loading')
+  if (!SANDBOX && !PLAY && !MINIGAME && !/^(E\d+|\d+)$/.test(table || '')) { location.replace('/'); return; }
+  loadProgress = !SANDBOX && !PLAY && !MINIGAME && window.Progress && $('loading')
     ? Progress.start($('loading'), { key: FORK ? 'fork' : 'replay', title: FORK ? 'Loading the fork' : 'Loading the table and its log', expected: FORK ? 5000 : 9000,
                                      stages: [[0, 'Looking up the table'], [0.08, 'Reading the log'], [0.25, 'Replaying the game with the engine'], [0.8, 'Building the steps']] })
     : null;

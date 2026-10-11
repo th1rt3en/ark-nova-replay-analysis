@@ -1,6 +1,6 @@
 // [module] Right column per player: tracker (score, appeal, income, reputation...), break track, deck / discard icons, bonus tokens.
 import { $, el, seatColor, svg } from './util.js';
-import { PLAY, S } from './state.js';
+import { MINIGAME, PLAY, S } from './state.js';
 import { eyeLocked, eyeOpen, seatOrder, toggleEye } from './pov.js';
 import { bindPreview, zoneNew } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, pic, workerUrl } from './icons.js';
@@ -20,7 +20,7 @@ function trackIncome(appeal) {
   return income;
 }
 function eyeButton(seat) {                                          // open eye = this player's cards are shown; exactly one eye is open, opening the other closes it
-  if (PLAY) return document.createTextNode('');                     // (a live game: no eyes, the server decides what a seat sees)
+  if (PLAY || MINIGAME) return document.createTextNode('');                     // (a live game: no eyes, the server decides what a seat sees)
   const open = eyeOpen(seat), locked = eyeLocked(seat), nm = S.replay.players[seat].name;
   const b = el('button', 'poveye' + (open ? '' : ' closed') + (locked ? ' only' : ''));
   b.type = 'button';

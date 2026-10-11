@@ -1,6 +1,6 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
 import { $, el, seatColor, seatText } from './util.js';
-import { FORK, S, SANDBOX } from './state.js';
+import { FORK, MINIGAME, S, SANDBOX } from './state.js';
 import { curState, hides } from './pov.js';
 import { cardRow, quietly } from './cards.js';
 import { iconUrl } from './icons.js';
@@ -29,7 +29,9 @@ function handDim(seat) {
 try { S.dockSel = JSON.parse(localStorage.getItem('dockSel') || 'null'); } catch (e) { /* no storage */ }
 if (!S.dockSel) S.dockSel = { seat: 0, kind: 'hand' };
 try { S.dockHidden = localStorage.getItem('dockHidden') === '1'; } catch (e) { /* no storage */ }
-const saveDock = () => { try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
+const KIND_NAME = { hand: 'hand', endgame: 'endgame cards', stored: 'storage (Caves)' };
+const KIND_ICON = { hand: 'r4c7', endgame: 'r4c11', stored: 'r5c2' };       // (the store icon of the sheet for the cards under the notepad of map 11)
+const saveDock = () => { if (MINIGAME) return; try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
 // ---- how the hand appears. Fan: "Deal" when the starting hand is dealt (setup phase, the hand was empty before), "Rise and spread" otherwise (page load, the setting changed). Tray: "Drop" for the starting hand
 // (the tray itself slides up, CSS). The cards of a hand that is drawn again while the intro runs go on where they were (negative delay), as every redraw replaces the card elements.
 const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110, DROP_MS = 560, DROP_GAP = 100, TRAY_SLIDE_MS = 350;       // (the drop: the starting hand falls into the floating tray once it has slid up)
@@ -92,20 +94,21 @@ export function renderDock(st) {
   const shownSel = S.pov !== null && S.dockSel && S.dockSel.seat !== S.pov ? { seat: S.pov, kind: S.dockSel.kind } : S.dockSel;      // (a player's point of view has no way to the other player's cards)
   st.players.forEach((p, seat) => {
     if (hides(seat)) return;
-    const cards = { hand: p.hand, endgame: p.endgame_hand || [] };
+    const cards = { hand: p.hand, endgame: p.endgame_hand || [], stored: p.stored || [] };
+    const kinds = p.map_id === '11' ? ['hand', 'endgame', 'stored'] : ['hand', 'endgame'];        // (map 11, Caves: the cards stored under the notepad are a third zone, apart from the hand)
     const group = el('div', 'dockgroup');                               // the two buttons of a player (hand | endgame cards) switch between that player's cards
     group.style.setProperty('--pc', seatColor(seat));
     const pair = el('div', 'dockpair');
-    for (const kind of ['hand', 'endgame']) {
-      const row = cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, true);
+    for (const kind of kinds) {
+      const row = cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, !MINIGAME);                  // (a mini game: no highlighting, no dragging; the page's own hook makes the cards the thing to click)
       rows[seat + ':' + kind] = row;                                   // (built for both players every time, so the arrivals and departures of the cards are tracked)
       const on = !S.dockHidden && shownSel && shownSel.seat === seat && shownSel.kind === kind;
       const b = el('button', 'dockbtn' + (on ? ' on' : ''));
       b.type = 'button';
-      const label = S.replay.players[seat].name + ': ' + (kind === 'hand' ? 'hand' : 'endgame cards') + ' (' + cards[kind].length + ')';
+      const label = S.replay.players[seat].name + ': ' + KIND_NAME[kind] + ' (' + cards[kind].length + ')';
       b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
       b.style.setProperty('--pc', seatColor(seat));
-      const img = el('img'); img.src = iconUrl(kind === 'hand' ? 'r4c7' : 'r4c11'); img.alt = ''; b.append(img, el('span', 'dockn', cards[kind].length));
+      const img = el('img'); img.src = iconUrl(KIND_ICON[kind]); img.alt = ''; b.append(img, el('span', 'dockn', cards[kind].length));
       b.onclick = () => {
         S.dockSel = { seat, kind };                                      // (the button of the open cards folds them away: the arrow at the end does that too)
         S.dockHidden = on;
@@ -117,6 +120,7 @@ export function renderDock(st) {
     group.append(pair);
     bar.append(group);
   });
+  if (MINIGAME && S.minigame) for (const k of Object.keys(rows)) S.minigame.decorate(rows[k], k);       // (mini game pages: `S.minigame.decorate(row, 'seat:hand')` makes the cards of a row selectable)
   if (S.handMode === 'tray') { drawTray(dock, rows, shownSel, st); return; }
   const fold = el('button', 'dockfold');                               // collapse / expand the cards, at the right end of the buttons
   fold.type = 'button';
@@ -129,7 +133,7 @@ export function renderDock(st) {
     const head = el('div', 'dockhead');
     const who = el('b', '', S.replay.players[shownSel.seat].name);
     who.style.color = seatText(shownSel.seat);
-    head.append(who, document.createTextNode(shownSel.kind === 'hand' ? ' - hand' : ' - endgame cards'));
+    head.append(who, document.createTextNode(' - ' + KIND_NAME[shownSel.kind]));
     const shown = rows[shownSel.seat + ':' + shownSel.kind];
     shown.querySelectorAll('.card-gone').forEach((g) => g.remove());      // (the fading "departed" cards would take a slot of the fan and vanish later: the fan would stay lopsided)
     const fan = [...shown.children].filter((c) => c.classList.contains('card'));         // the cards lie in a fan: --i = the place of a card counted from the middle, --n = how many (the CSS rotates and overlaps them)
@@ -140,7 +144,13 @@ export function renderDock(st) {
     dock.replaceChildren(bar, panel);                                // the buttons above the cards
     dockIntro(shown, st && st.players[shownSel.seat] ? st.players[shownSel.seat].hand.length : 1, shownSel.seat, !!(st && st.phase === 'setup'));
   } else dock.replaceChildren(bar);
+  fitDockSpace(dock);
 }
+// The dock floats over the bottom of the page: the page gets as much room under its last row (the zoos, with the played sponsors) as the dock is high, so it can be scrolled clear of the hand.
+function fitDockSpace(dock) {
+  document.body.style.paddingBottom = dock.childNodes.length ? Math.ceil(dock.offsetHeight + 16) + 'px' : '';
+}
+window.addEventListener('resize', () => { const d = $('dock'); if (d) fitDockSpace(d); });
 
 
 // ---- the floating tray (setting "Hand display" = Floating container): the cards of the shown row lie flat in a sand-coloured tray at the bottom left; the card / endgame card buttons are round discs on its top edge.
@@ -181,12 +191,13 @@ function drawTray(dock, rows, shownSel, st) {
   frame.replaceChildren(head, row);
   if (shownSel.kind === 'hand') dockIntro(row, st.players[seat].hand.length, seat, st.phase === 'setup', true);
   const kids = [];
-  for (const kind of ['hand', 'endgame']) {
-    const cnt = (kind === 'hand' ? st.players[seat].hand : st.players[seat].endgame_hand || []).length;
+  const pl = st.players[seat];
+  for (const kind of pl.map_id === '11' ? ['hand', 'endgame', 'stored'] : ['hand', 'endgame']) {          // (map 11, Caves: the cards stored under the notepad are a third zone)
+    const cnt = (kind === 'hand' ? pl.hand : kind === 'stored' ? pl.stored || [] : pl.endgame_hand || []).length;
     const b = el('button', 'traydisc' + (shownSel.kind === kind ? ' on' : '')); b.type = 'button';
-    const label = S.replay.players[seat].name + ': ' + (kind === 'hand' ? 'hand' : 'endgame cards') + ' (' + cnt + ')';
+    const label = S.replay.players[seat].name + ': ' + KIND_NAME[kind] + ' (' + cnt + ')';
     b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(shownSel.kind === kind));
-    const img = el('img'); img.src = iconUrl(kind === 'hand' ? 'r4c7' : 'r4c11'); img.alt = '';
+    const img = el('img'); img.src = iconUrl(KIND_ICON[kind]); img.alt = '';
     b.append(img, el('span', 'traycount', cnt));
     b.onclick = () => { S.dockSel = { seat, kind }; S.dockHidden = false; saveDock(); renderDock(curState()); };
     kids.push(b);

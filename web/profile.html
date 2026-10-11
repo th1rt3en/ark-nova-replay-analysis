@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player - Ark Nova</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  body.landing { max-width: 46rem; }
+  .stats { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; }
+  .stat { flex: 1 1 8rem; border: 1px solid var(--border); border-radius: 10px; padding: .7rem .9rem; }
+  .stat b { display: block; font-size: 1.6rem; }
+  .stat span { color: var(--muted); font-size: .85rem; }
+  table.hist { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  table.hist th, table.hist td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--border); }
+  table.hist td:last-child, table.hist th:last-child { text-align: right; }
+  .up { color: #2f9e5f; font-weight: 700; } .down { color: #c0392b; font-weight: 700; }
+  .danger { margin-top: 2.5rem; border: 1px solid var(--err); border-radius: 10px; padding: .9rem 1rem; }
+  .danger h2 { margin: 0 0 .3rem; font-size: 1rem; color: var(--err); }
+  .danger form { margin: .6rem 0 0; }
+  .danger button { background: var(--err); border-color: var(--err); }
+</style>
+</head>
+<body class="landing">
+<p class="small"><a href="/">&larr; Ark Nova Replay</a> &middot; <a href="/ratings.html">Ratings</a></p>
+<div id="msg" class="muted">Loading…</div>
+<main id="player" hidden>
+  <h1 id="name"></h1>
+  <p class="muted" id="sub"></p>
+  <div class="stats" id="stats"></div>
+  <h2>Last rated games</h2>
+  <div id="histbox"></div>
+  <section class="danger" id="danger" hidden>
+    <h2>Delete this account</h2>
+    <p class="muted small">Your name, password and sessions are removed and the account becomes "Deleted player". Your rated games and their rating changes stay. This cannot be undone.</p>
+    <form id="delform"><input type="password" id="delpw" placeholder="Your password" autocomplete="current-password" required aria-label="Your password"><button>Delete my account</button></form>
+    <p id="delmsg" class="muted small" role="alert"></p>
+  </section>
+</main>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const id = new URLSearchParams(location.search).get('id') || '';
+const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+async function main() {
+  const me = await fetch('/api/auth/me').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const wanted = id || (me && me.account && me.account.id) || '';
+  if (!wanted) { $('msg').textContent = me && me.enabled ? 'Log in to see your profile, or open a player from the ratings page.' : 'Profiles are not available here.'; return; }
+  const res = await fetch('/api/players/' + encodeURIComponent(wanted));
+  if (!res.ok) { $('msg').textContent = 'No such player.'; return; }
+  const p = await res.json();
+  $('msg').hidden = true; $('player').hidden = false;
+  document.title = p.username + ' - Ark Nova';
+  $('name').textContent = p.username;
+  $('sub').textContent = `Player ${p.id} · member since ${p.member_since}` + (p.seeded_from_bga ? ' · starting rating copied from Board Game Arena (not verified)' : '');
+  const stat = (v, l) => { const d = mk('div', 'stat'); d.append(mk('b', null, String(v)), mk('span', null, l)); return d; };
+  $('stats').append(stat(p.rating, 'Rating'), stat(p.rated_games, 'Rated games'), stat(p.rated_wins, 'Wins'), stat(p.listed ? 'Yes' : 'After 5 rated games', 'On the ratings board'));
+  if (!p.history.length) $('histbox').append(mk('p', 'muted', 'No rated games yet.'));
+  else {
+    const t = mk('table', 'hist'); t.innerHTML = '<tr><th>Game</th><th>Against</th><th>Result</th><th>Rating</th></tr>';
+    for (const h of p.history) {
+      const tr = mk('tr');
+      const g = mk('td'); const a = mk('a', null, h.game_id); a.href = '/replay.html?table=' + encodeURIComponent(h.game_id); g.append(a);
+      const o = mk('td'); const oa = mk('a', null, h.opponent); oa.href = '/profile.html?id=' + encodeURIComponent(h.opponent_id); o.append(oa);
+      const r = mk('td', null, h.result === 1 ? 'Win' : h.result === 0 ? 'Loss' : 'Draw');
+      const d = mk('td', h.delta > 0 ? 'up' : h.delta < 0 ? 'down' : '', `${h.before} → ${h.after} (${h.delta > 0 ? '+' : ''}${h.delta})`);
+      tr.append(g, o, r, d); t.append(tr);
+    }
+    $('histbox').append(t);
+  }
+  if (me && me.account && me.account.id === p.id) {                               // your own profile: the way to delete the account
+    $('danger').hidden = false;
+    $('delform').onsubmit = async (e) => {
+      e.preventDefault();
+      const r = await fetch('/api/auth/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('delpw').value }) });
+      if (r.ok) { location.href = '/'; return; }
+      $('delmsg').textContent = (await r.json().catch(() => ({}))).message || 'The account could not be deleted.';
+    };
+  }
+}
+main();
+</script>
+<script type="module" src="/js/account.js"></script>
+</body>
+</html>
