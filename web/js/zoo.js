@@ -9,8 +9,10 @@ import { associationStrip, bonusPanel } from './association.js';
 
 // The outline of a zoo with a bump (side by side): one shape for the paper, the ink border, the hard shadow and the gold ring of the active player, drawn as an svg behind the content (the
 // box itself has no background, border or shadow then, `.hasbump` in parkposter.css). The bump rises round the two piles at the top right and joins the top edge with rounded inner corners.
-function outline(box, tall) {
-  const ns = 'http://www.w3.org/2000/svg', R = 20, F = 16, C = 18, BW = 2 * 120 + 8 + 24;
+const SPLIT = 6;                                                          // a pile of this many cards or more is split into two columns
+
+function outline(box, tall, columns) {
+  const ns = 'http://www.w3.org/2000/svg', R = 20, F = 16, C = 18, BW = columns * 120 + (columns - 1) * 8 + 24;       // (the bump is as wide as the columns of the piles: 120 px each, 8 px between)
   const svgEl = document.createElementNS(ns, 'svg');
   svgEl.setAttribute('class', 'zoooutline'); svgEl.setAttribute('aria-hidden', 'true');
   box.prepend(svgEl);
@@ -58,11 +60,21 @@ export function renderZoo(st, seat) {
   if (piles) {
     const behind = S.zooLayout === 'side';                               // side by side: the piles stand behind the board, at its top right corner, and rise out of its top edge
     const cols = el('div', 'zoopiles' + (behind ? ' behind' : ''));
-    cols.append(section('Animals', cardRow(p.animals, 'small', 'none', seat + ':animals'), 'sect zoopile'), section('Sponsors', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), 'sect zoopile'));
+    const split = (keys) => (keys.length >= SPLIT ? [keys.slice(0, Math.ceil(keys.length / 2)), keys.slice(Math.ceil(keys.length / 2))] : [keys]);      // (6 cards or more: a second column, the first one longer by a card if odd)
+    let columns = 0;
+    const group = (name, keys, zone) => {
+      if (!behind) return section(name, cardRow(keys, 'small', 'none', zone), 'sect zoopile');
+      const parts = split(keys), wrap = el('div', 'pilecols');
+      parts.forEach((part, i) => wrap.append(cardRow(part, 'small', 'none', zone + (i ? ':2' : ''))));
+      columns += parts.length;
+      return section(name, wrap, 'sect zoopile');
+    };
+    cols.append(group('Animals', p.animals, seat + ':animals'), group('Sponsors', p.sponsors, seat + ':sponsors'));
     row.append(cols);
     if (behind) {                                                        // a bump of the zoo's paper rises round the piles and goes back down (a strip is 30 px: the top 18 % of a card 120 px wide; the names of the columns 26 px)
-      const most = Math.max(...st.players.map((q) => Math.max(q.animals.length, q.sponsors.length))), tall = 26 + most * 30;
-      box.classList.add('hasbump'); outline(box, tall);
+      const tallest = (n) => (n >= SPLIT ? Math.ceil(n / 2) : n);
+      const most = Math.max(...st.players.map((q) => Math.max(tallest(q.animals.length), tallest(q.sponsors.length)))), tall = 26 + most * 30;
+      box.classList.add('hasbump'); outline(box, tall, Math.max(2, columns));
       box.style.marginTop = Math.max(0, tall - 30) + 'px';                 // (room above the zoos for the taller pile of the two players)
     } else row.classList.add('withpiles');
   }

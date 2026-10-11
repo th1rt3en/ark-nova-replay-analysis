@@ -519,3 +519,7 @@ body.viewer .zoooutline .zo-ring { fill: none; stroke: none; }
 body.viewer .zoo.active .zoooutline .zo-ring { fill: var(--gold); stroke: var(--gold); stroke-width: 16; stroke-linejoin: round; }
 body.viewer .zoooutline .zo-paper { fill: var(--paper); }
 body.viewer .zoooutline .zo-ink { fill: none; stroke: var(--ink); stroke-width: 8; stroke-linejoin: round; }
+/* a pile of 6 cards or more is two columns (zoo.js): the group is as wide as its columns, the name above both */
+body.viewer .zoopiles.behind .zoopile { width: auto; }
+body.viewer .zoopiles.behind .pilecols { display: flex; gap: 8px; align-items: flex-end; }
+body.viewer .zoopiles.behind .pilecols .cards { width: var(--pw); box-sizing: content-box; flex: none; }
