@@ -315,6 +315,52 @@ def _animal_gain(step: dict) -> bool:
     return True
 
 
+def _without_unstore(options: dict | None) -> dict | None:
+    """Map 11 (Caves): putting a stored card back into the hand is a free action at any time, not the decision of the step: the replay does not offer it."""
+    if options and "unstore" in options.get("kinds", {}):
+        options = {**options, "kinds": {k: v for k, v in options["kinds"].items() if k != "unstore"}}
+    return options
+
+
+_HEAD = re.compile(r"^.+ (?:buys .+ from display|plays .+ for \d+|pays \d+ for building )")
+_FOLLOW = (re.compile(r"^.+ pays \d+ (?:money )?for playing sponsor"),
+           re.compile(r"^.+ gains \d+ \w+(?: points?)? \(.+\)$"),
+           re.compile(r"^.+ adds an? .+(?: for free| \(.+\))$"))
+_NOT_FOLLOW = re.compile(r"triggering break|income|max strength|reputation track bonus")
+
+
+def _follows(step: dict) -> bool:
+    """A step that only says what the play, the purchase or the building just before it brought: the price of a sponsor from the reputation range, a gain with its reason (the
+    animal's appeal, a placement bonus), a building the card adds. Choices of the player ("pays 2 to gain ...") are not among them."""
+    parts = _parts(step)
+    return bool(parts) and all(any(f.match(p) for f in _FOLLOW) and not _NOT_FOLLOW.search(p) for p in parts)
+
+
+def _combine_action(steps: list, keep: list) -> list:
+    """A sponsor bought / an animal played / a building built and everything that comes with it is one step (the text of the whole run in the order of the log). The step
+    "X chooses action card ..." before it and the step "places action card ..." after it stay."""
+    out = list(keep)
+    run: list = []
+
+    def flush() -> None:
+        if len(run) > 1 and run[0] != 0:
+            _join_labels(steps[run[-1]], [steps[i] for i in run[:-1]])
+            for i in run[:-1]:
+                out[i] = False
+        run.clear()
+
+    for i in (i for i, k in enumerate(keep) if k):
+        parts = _parts(steps[i])
+        if run and _follows(steps[i]):
+            run.append(i)
+            continue
+        flush()
+        if any(_HEAD.match(p) for p in parts) and not any("chooses action card" in p for p in parts):
+            run.append(i)
+    flush()
+    return out
+
+
 def _combine_runs(steps: list, keep: list) -> list:
     """Steps that belong together are one step: everything of a Wave (the cards removed from the display, a Mark that keeps one, the refill) and the gains that animals give without
     asking. The text of the whole run goes in front of the last step (the state after it), in the order of the log. The last step of the run keeps its state and its prompt, so a "must choose an action card" frame at the end of a run still shows."""
@@ -455,7 +501,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         if me.end is not None:                                              # what the engine lets the player do next, at each engine step
             for i, src in enumerate(source):
                 if src == "engine":
-                    options[i] = step_options(me.end if i == len(views) - 1 else me.state_before(g[i + 1][1]))
+                    options[i] = _without_unstore(step_options(me.end if i == len(views) - 1 else me.state_before(g[i + 1][1])))
         for i, o in enumerate(options):
             v = views[i]
             if o is not None and o.get("effects") and i in engine_vals:
@@ -479,6 +525,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                   for i, (lb, v, src, o, ac) in enumerate(zip(labels, views, source, options, actors))]
     # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step. The first step stays.
     keep = [i == 0 or bool(st["label"].strip()) for i, st in enumerate(steps)]
+    keep = _combine_action(steps, keep)
     keep = _combine_runs(steps, keep)
     keep = _fold_unchanged(steps, keep)
     setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])

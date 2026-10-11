@@ -41,6 +41,8 @@ function burst(value) {
   const pts = [];
   for (let i = 0; i < 24; i++) { const r = i % 2 ? 21 : 27, a = Math.PI * 2 * i / 24; pts.push((27 + r * Math.cos(a)).toFixed(1) + ',' + (27 + r * Math.sin(a)).toFixed(1)); }
   s.append(svg('polygon', { points: pts.join(' '), fill: '#F4B63F', stroke: '#17262B', 'stroke-width': 3, 'stroke-linejoin': 'round' }));
+  const n = String(value).length;
+  if (n >= 3) w.classList.add(n >= 4 ? 'digits4' : 'digits3');          // (-10 ... -14 and 100 or more: a smaller number so that it fits the star)
   w.append(s, el('b', '', value));
   return w;
 }
@@ -124,7 +126,9 @@ export function sidePanel(st) {
     if (isLight(seatColor(seat))) box.classList.add('light');
     const head = el('div', 'pphead');
     const pl = S.replay.players[seat];
-    const name = el('a', 'ppname', pl.name);                       // the name links to the player's BGA profile (new tab); it looks like plain text (see .ppname)
+    const name = el('a', 'ppname', pl.name);
+    const nameLen = [...pl.name].length;
+    if (nameLen > 12) name.style.fontSize = Math.max(13, 18 - (nameLen - 12) * 0.45).toFixed(1) + 'px';          // (a long name: smaller, but never below 13 px; what still does not fit ends in an ellipsis)                       // the name links to the player's BGA profile (new tab); it looks like plain text (see .ppname)
     if (pl.id) { name.href = 'https://boardgamearena.com/player?id=' + encodeURIComponent(pl.id); name.target = '_blank'; name.rel = 'noopener noreferrer'; }
     const scoreValue = p.score !== undefined ? p.score : trackScore(p);
     const score = flash(seat + ':score', scoreValue, el('span', 'ppscore'));

@@ -496,3 +496,7 @@ body.viewer .zooRow.withpiles .strip { flex: 0 0 calc((100% - var(--pilesw)) * .
 
 /* tokens on an action card (Venom, Constriction, Multiplier; side-panel.js): small round icons on the lower right corner of the card, side by side if there are several */
 body.viewer .ppactions .ac .actoken { position: absolute; right: calc(-9px + var(--k, 0) * 17px); bottom: -10px; width: 26px; height: 26px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); box-sizing: border-box; padding: 1px; object-fit: contain; z-index: 3; box-shadow: 0 2px 0 var(--ink); }
+
+/* a score with three or four characters (-10 ... -14, 100+) in the star: a smaller number (side-panel.js `burst`) */
+body.viewer .burst.digits3 b { font-size: 17px; }
+body.viewer .burst.digits4 b { font-size: 14px; }

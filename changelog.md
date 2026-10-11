@@ -1528,3 +1528,9 @@ Scope: `scripts/build_worker_slot.py`, `web/assets/worker_slot.webp`, `web/js/as
 
 ## 75. Cubes in the special enclosures
 Scope: `web/js/board.js` (`drawBuilding`, `SPECIAL_ENCLOSURE`). An animal in a petting zoo, reptile house, bird aviary, small / large aquarium (or underwater tunnel) is a cube of the player's colour (`web/cubes`, the same as on the projects and the donations) on a hex of the enclosure, one per animal, tooltip = the animal; a fourth animal on three hexes goes on the first hex again, offset a little.
+
+## 76. Unstore, action runs, long scores and names
+Scope: `view.py` (`_without_unstore`, `_combine_action`), `side-panel.js`, `parkposter.css`.
+- Map 11: the free action "unstore" is not listed among the options of a replay step (`_without_unstore`), so no bar offers it.
+- A sponsor bought / an animal played / a building built and what comes with it (the price of a sponsor from the reputation range, gains with a reason, a building the card adds, a placement bonus) is one step; the "chooses action card" step before and the "places action card" step after stay (`_combine_action`).
+- Player box: a score of three or four characters (-10 ... -14, 100+) has a smaller number in the star (`.burst.digits3` 17 px, `.digits4` 14 px); a name longer than 12 characters shrinks 0.45 px per character from 18 px, never below 13 px.
