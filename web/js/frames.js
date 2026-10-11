@@ -9,7 +9,7 @@
 // decision frame exists and only that player's lines of a merged text are shown. (The draft shows everything: both players' offers, with a point of view only its own.)
 // A decision frame exists only if the bar has something to show, and it is left out when the previous step of the same BGA move (`move_id`) already showed the same decision
 // (the engine keeps a pending decision attached to every line of a move: a break, a run of effects).
-import { FORK, SANDBOX, S } from './state.js';
+import { FORK, PLAY, SANDBOX, S } from './state.js';
 import { labelOf, povState } from './pov.js';
 import { actionBar, draftOpen, prioritySeat, turnEnds } from './action-bar.js';
 
@@ -56,7 +56,7 @@ export function framesOf(i) {
   f = textParts(i).map((_, k) => 'text' + (k || ''));
   const st = steps[i].state;
   if (draftOpen(st, i) && probe(i, 'draft')) f[0] = 'draft';       // (the first group of lines of a merged step is the draft's keep)
-  if (turnEnds(i)) f.push('gate');
+  if (PLAY && turnEnds(i)) f.push('gate');                  // (a live game only: a replay has nothing to confirm, the frame is skipped)
   const sig = probe(i, 'decision');
   if (sig && !(i > 0 && steps[i - 1].move_id === steps[i].move_id && probe(i - 1, 'decision') === sig)) f.push('decision');
   cache.set(i, f);

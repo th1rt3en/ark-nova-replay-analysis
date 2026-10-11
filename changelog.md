@@ -1496,3 +1496,6 @@ Scope: `web/js/main.js` (`zooBoards`), `web/js/zoo.js`, `parkposter.css`.
 ## 67. The other player's initial discard is hidden
 Scope: `src/ark_nova/replay/view.py`, `web/js/pov.js`.
 - In a point of view the log line of the other player's initial discard (the first `pDiscardCards` move of the game) reads "X discard 4 cards"; the steps from that move on carry `state.initial_discard` (the keys each seat discarded) and `povState` shows the other seat's cards as `?` in the discard pile. Later discards stay public.
+
+## 68. No "confirm or restart your turn" frame in the replay
+Scope: `web/js/frames.js`. The gate frame (greyed "must confirm or restart your turn") exists only in a live game (`PLAY`); the replay steps straight on to the next frame / step.
