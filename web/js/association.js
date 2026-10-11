@@ -117,7 +117,7 @@ export function bonusPanel(map, p, seat) {
   const lbAdd = (tag, attrs) => { const e = svg(tag, attrs); lockbox.append(e); return e; };
   [1, 2, 3].forEach((k, i) => {
     const cx = 40 + i * 48;     // slots 18..62, 66..110, 114..158 stay inside the box (x 14..162)
-    lbAdd('rect', { x: cx - 22, y: 26, width: 44, height: 70, rx: 8, fill: '#f9c9c9' });
+    lbAdd('image', { href: '/assets/worker_slot.webp', x: cx - 23, y: 44, width: 46, height: 46 });          // (the empty worker slot of the association board, scripts/build_worker_slot.py)
     if (k === 3) conservationBonus(lockbox, cx, 72, 38, (map.association_bonuses || {}).last_worker, '4th worker: ' + (map.association_bonuses || {}).last_worker + ' conservation');
     else if (map.id === '11' && k === 2) {               // map 11 (Caves): the middle locked worker gives an action card upgrade, shown under the worker
       const id = ICON_IDS['bonus:upgrade-card'], [w0, h0] = S.iconSizes[id] || [38, 38], h = 40, w = w0 * h / h0;
