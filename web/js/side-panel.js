@@ -104,6 +104,8 @@ function headerStats(st, flash) {
   const menu = PLAY ? gameMenu() : null;                                 // concede / propose to abandon / end on overtime
   if (menu) root.append(menu);
 }
+const CARD_TOKEN_ICON = { Venom: 'r2c12', Constriction: 'r2c9', Multiplier: 'r6c8' };       // (icons of BGA's sheet, see web/icons/names.json)
+const CARD_TOKEN_TEXT = { Venom: 'Venom token: it goes when this card is used or put back; if no token was removed this turn, 2 money are owed', Constriction: 'Constriction token: this card has 2 less strength until it is used or put back', Multiplier: 'Multiplier token' };
 export function sidePanel(st) {
   const root = $('side');
   root.replaceChildren();
@@ -192,6 +194,11 @@ export function sidePanel(st) {
         b.src = '/action_icons/' + a.type + '_' + a.variant + '_' + (a.level === 2 ? 2 : 1) + '.webp'; b.alt = 'Variant ' + a.variant;
         c.append(b);
       }
+      (a.tokens || []).forEach((t, k) => {                // the tokens that lie on the card: Venom (-> 2 money unless removed), Constriction (-2 strength), Multiplier
+        const id = CARD_TOKEN_ICON[t]; if (!id) return;
+        const b = el('img', 'actoken'); b.src = iconUrl(id); b.alt = t; b.title = CARD_TOKEN_TEXT[t] || t; b.style.setProperty('--k', String(k));
+        c.append(b);
+      });
       acts.append(c);
     });
     if (st.actions_hidden) acts.classList.add('unseen');          // (before the action cards are shuffled: the space stays, the cards are invisible)

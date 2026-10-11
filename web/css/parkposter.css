@@ -493,3 +493,6 @@ body.viewer .zoo h2 .zootab-arrow svg { width: 14px; height: 14px; }
 body.viewer .zooRow.withpiles { --pilesw: 300px; }
 body.viewer .zooRow.withpiles .bonuspanel { flex: 0 0 calc((100% - var(--pilesw)) * .16); width: calc((100% - var(--pilesw)) * .16); }
 body.viewer .zooRow.withpiles .strip { flex: 0 0 calc((100% - var(--pilesw)) * .167); width: calc((100% - var(--pilesw)) * .167); }
+
+/* tokens on an action card (Venom, Constriction, Multiplier; side-panel.js): small round icons on the lower right corner of the card, side by side if there are several */
+body.viewer .ppactions .ac .actoken { position: absolute; right: calc(-9px + var(--k, 0) * 17px); bottom: -10px; width: 26px; height: 26px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); box-sizing: border-box; padding: 1px; object-fit: contain; z-index: 3; box-shadow: 0 2px 0 var(--ink); }

@@ -1519,3 +1519,6 @@ Scope: `web/js/association.js` (`bonusPanel`), `web/js/frames.js`.
 
 ## 72. Joined labels were doubled in a point of view
 Scope: `src/ark_nova/replay/view.py` (`_join_labels`). The per-player texts of a joined step were built after the step's own label had been replaced by the joined text, so the last line was written twice (X gains 1 xtoken, X gains 1 xtoken, X places ...) in a point of view; the group's own texts are read first now. Applies to every joined step (passes, Waves, animal gains, unchanged steps).
+
+## 73. Tokens on the action cards
+Scope: `web/js/side-panel.js`, `parkposter.css`. The Venom, Constriction and Multiplier tokens on a player's action cards (`action_cards[].tokens`, already in the state) are drawn as small round icons on the lower right corner of the card in the player box (sheet icons r2c12, r2c9, r6c8), with a tooltip.
