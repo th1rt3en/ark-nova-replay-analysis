@@ -1,6 +1,6 @@
 // [module] Entry point of replay.html / fork.html / sandbox.html: `render()` draws one step, `boot()` loads and wires everything.
 import { FORK, MINIGAME, PLAY, S, SANDBOX, table } from './state.js';
-import { $, el } from './util.js';
+import { $, el, seatText } from './util.js';
 import { setupNoTips } from './notips.js';
 import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, seatOrder } from './pov.js';
 import { fetchReplay } from './load.js';
@@ -22,6 +22,22 @@ import { forkBar, initFork, renderForkMoves } from './fork.js';
 import { initPlay } from './play.js';
 import { frameKind, frameState, frameText } from './frames.js';
 
+
+// The players' boards by the layout setting (settings.js): side by side, one at a time with arrows (the seats go round in the order of the tracker), or one above the other
+// (also the order of the tracker: `seatOrder()`).
+function zooBoards(st) {
+  const zoos = $('zoos'), order = seatOrder(), layout = FORK || SANDBOX || PLAY || MINIGAME ? 'side' : S.zooLayout;
+  zoos.classList.toggle('zoos-tabs', layout === 'tabs');
+  zoos.classList.toggle('zoos-stack', layout === 'stack');
+  if (layout !== 'tabs') return order.map((seat) => renderZoo(st, seat));
+  const seat = order.includes(S.zooTab) ? S.zooTab : order[0];
+  const nav = el('div', 'zootabs'), go = (d) => { S.zooTab = order[(order.indexOf(seat) + d + order.length) % order.length]; S.lastBoard = null; render(); };
+  const mk = (d, label, path) => { const b = el('button', 'zootab-arrow'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label); b.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + path + '"/></svg>'; b.onclick = () => go(d); return b; };
+  const who = el('b', 'zootab-name', S.replay.players[seat].name); who.style.color = seatText(seat);
+  nav.append(mk(-1, 'Previous board', 'M13 3L5 10l8 7z'), who, mk(1, 'Next board', 'M7 3l8 7-8 7z'));
+  return [nav, renderZoo(st, seat)];
+}
+document.addEventListener('zoolayout', () => { S.lastBoard = null; render(); });
 
 // Redrawing keeps what did not change: the parts of a freshly drawn zone whose markup equals the one on show are put back as they were (the old elements, their pictures already
 // loaded), so only the changed zones are replaced (and flash). Used in the replay; a fork / sandbox / live game still replaces everything, because the handlers of its elements
@@ -62,14 +78,14 @@ export function render() {
   }
   // The boards are drawn again only when the position changed: the next frame of the same step (the step text, then the decision) has the same boards, and drawing ~100 pictures again
   // made the whole page flicker with every frame. A fork / sandbox / live game draws every time (what is selected or clicked changes the boards).
-  const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov && S.lastBoard.orient === S.orient;
+  const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov && S.lastBoard.orient === S.orient && S.lastBoard.zoos === S.zooLayout + S.zooTab;
   if (!same) {
     redraw($('shared'), () => renderShared(st));
     redraw($('side'), () => sidePanel(st));
     const zoos = $('zoos');
-    redraw(zoos, () => zoos.replaceChildren(...seatOrder().map((seat) => renderZoo(st, seat))));
+    redraw(zoos, () => zoos.replaceChildren(...zooBoards(st)));
     if ($('dock')) redraw($('dock'), () => renderDock(st)); else renderDock(st);
-    S.lastBoard = { st, pov: S.pov, orient: S.orient };
+    S.lastBoard = { st, pov: S.pov, orient: S.orient, zoos: S.zooLayout + S.zooTab };
   } else actionBar(st);                                           // (renderShared draws the bar too: the next frame of the same step shows another bar on the same boards)
   if (FORK) {
     const prev = S.step > 0 ? S.replay.steps[S.step - 1].state : null;          // the hand that just changed (a card found by a search...) is the one the dock shows

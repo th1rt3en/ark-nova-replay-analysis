@@ -1,14 +1,14 @@
 // [module] Settings pop-up (the wheel in the control panel): the autoplay speed, the switch that adds the timeline to the control panel and the size of the cards in the hand. All are remembered in the browser.
 import { $, el } from './util.js';
-import { S } from './state.js';
+import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { setSpeed } from './playback.js';
 import { fitSidebar } from './sidebar.js';
 import { NO_SNAKE_MODES } from './nosnake.js';
 
-const KEY = 'settings';                                                    // localStorage: { speed: 1 | 2 | 4, timeline: boolean, hand: 0.5 ... 2, handMode: 'fan' | 'tray', noSnake: 'show' | 'hide' | 'worm' }
+const KEY = 'settings';                                                    // localStorage: { speed: 1 | 2 | 4, timeline: boolean, hand: 0.5 ... 2, handMode: 'fan' | 'tray', noSnake: 'show' | 'hide' | 'worm', zoos: 'side' | 'tabs' | 'stack' }
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } };
 export const HAND_SCALES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];            // the sizes of the cards in the hand (1 = the default size)
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, timeline: S.showTimeline, hand: S.handScale, handMode: S.handMode, noSnake: S.noSnake })); } catch (e) { /* no storage */ } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, timeline: S.showTimeline, hand: S.handScale, handMode: S.handMode, noSnake: S.noSnake, zoos: S.zooLayout })); } catch (e) { /* no storage */ } };
 export const settingsOpen = () => { const m = $('settingsModal'); return !!m && !m.hidden; };
 export function toggleSettings() {
   const m = $('settingsModal'), g = $('settings');
@@ -32,6 +32,7 @@ export function setupSettings() {
   S.handScale = HAND_SCALES.includes(st.hand) ? st.hand : 1;               // default: 1x
   S.handMode = st.handMode === 'fan' ? 'fan' : 'tray';                   // default: the floating tray
   S.noSnake = NO_SNAKE_MODES.some(([v]) => v === st.noSnake) ? st.noSnake : 'show';        // default: show
+  S.zooLayout = ['side', 'tabs', 'stack'].includes(st.zoos) && !FORK && !SANDBOX && !PLAY && !MINIGAME ? st.zoos : 'side';       // default: side by side (only the replay: a fork needs both boards)
   applyHandScale();
   const modal = el('div', 'modal'); modal.id = 'settingsModal'; modal.hidden = true;
   const box = el('div', 'modalbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Settings');
@@ -71,7 +72,13 @@ export function setupSettings() {
   ssel.value = S.noSnake;
   ssel.onchange = () => { S.noSnake = ssel.value; save(); document.dispatchEvent(new Event('nosnake')); };
   snakeRow.append(el('span', 'setlabel', 'No-snake mode'), ssel);
-  box.append(head, speedRow, tlRow, handRow, modeRow, snakeRow);
+  const zooRow = el('div', 'setrow');                                     // how the two zoo boards are laid out (main.js `zooBoards`)
+  const zsel = el('select', 'setselect'); zsel.setAttribute('aria-label', "Players' boards");
+  for (const [v, t] of [['side', 'Side by side'], ['tabs', 'Tabbed (one board, arrows)'], ['stack', 'Top / bottom']]) { const o = el('option', '', t); o.value = v; zsel.append(o); }
+  zsel.value = S.zooLayout;
+  zsel.onchange = () => { S.zooLayout = zsel.value; save(); document.dispatchEvent(new Event('zoolayout')); };
+  zooRow.append(el('span', 'setlabel', "Players' boards"), zsel);
+  box.append(head, speedRow, tlRow, handRow, modeRow, zooRow, snakeRow);
   modal.append(box);
   modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });         // a click on the dimmed background closes it
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen()) { e.stopPropagation(); close(); } }, true);

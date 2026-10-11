@@ -73,6 +73,8 @@ export const S = {
   handScale: 1,                                          // size of the cards in the hand, 0.5 ... 2 (settings pop-up, settings.js; --hs on body)
   noSnake: 'show',                                       // 'show' | 'hide' | 'worm': the cards with a snake photo, see nosnake.js / settings.js
   handMode: 'tray',                                      // how the hand is shown: 'fan' (at the screen edge) or 'tray' (floating container), see settings.js
+  zooLayout: 'side',                                     // the zoo boards: 'side' (side by side), 'tabs' (one, with arrows) or 'stack' (one above the other); settings.js, replay only
+  zooTab: null,                                          // 'tabs': the seat on show (null = the first of seatOrder())
   showTimeline: false,         // the timeline row in the control panel (settings pop-up, settings.js)
   sbSeat: null,        // sandbox: the seat whose tools are shown
   sbUnlocked: false,   // sandbox: the action card list can be reordered by dragging

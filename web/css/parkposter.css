@@ -455,3 +455,13 @@ body.viewer .kbhint { margin-top: 10px; font: 600 16px 'Barlow Condensed', syste
 body.viewer .setrange:focus-visible { outline: none; }
 body.viewer .setrange:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--sun); }
 body.viewer .setrange:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--sun); }
+
+/* Players' boards layout (settings: Players' boards; main.js `zooBoards`): tabbed = one board under an arrow bar, top / bottom = one column */
+body.viewer .zoos.zoos-tabs, body.viewer .zoos.zoos-stack { grid-template-columns: minmax(0, 1fr); }
+body.viewer .zootabs { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 0 6px; }
+body.viewer .zootab-name { font: 700 24px 'Barlow Condensed', system-ui, sans-serif; min-width: 12ch; text-align: center; padding: 4px 18px; background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; }
+body.viewer .zootab-arrow { width: 48px; height: 40px; display: grid; place-items: center; padding: 0; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+body.viewer .zootab-arrow svg { width: 20px; height: 20px; fill: currentColor; }
+body.viewer .zootab-arrow:hover { background: var(--gold); }
+body.viewer .zootab-arrow:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+body.viewer .zootab-arrow:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }

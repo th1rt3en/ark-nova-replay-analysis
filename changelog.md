@@ -1469,3 +1469,7 @@ Scope: `scripts/build_cubes.py`, `web/cubes/`, `web/cylinders/`, `web/js/icons.j
 ## 61. Folded steps are one frame
 Scope: `web/js/frames.js` (`textParts`).
 - `replay/view.py` joins a step that changes nothing visible to the next one with " · " in the label (the log keeps every text). `textParts` split every label on " · " into one text frame per group of lines (meant for the merged steps of the setup), so each folded step became several forward presses with the same board. Now only a step of the setup phase is split; elsewhere the whole joined text is one frame.
+
+## 62. Players' boards layout
+Scope: `web/js/settings.js`, `main.js` (`zooBoards`), `state.js` (`zooLayout`, `zooTab`), `parkposter.css`.
+- Settings > "Players' boards": side by side (default, as before), tabbed (one board under an arrow bar with the player name; the arrows go round the seats in the order of the tracker) or top / bottom (one column, tracker order, `seatOrder()`). Replay only (fork, sandbox, live play and the mini games stay side by side). Kept in `localStorage.settings.zoos`; the `zoolayout` event redraws.
