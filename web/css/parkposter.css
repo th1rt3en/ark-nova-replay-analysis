@@ -500,3 +500,12 @@ body.viewer .ppactions .ac .actoken { position: absolute; right: calc(-9px + var
 /* a score with three or four characters (-10 ... -14, 100+) in the star: a smaller number (side-panel.js `burst`) */
 body.viewer .burst.digits3 b { font-size: 17px; }
 body.viewer .burst.digits4 b { font-size: 14px; }
+
+/* side by side: the played animals and sponsors are two piles behind the board, rising out of its top edge at the top right; each card shows its top 18 % (the icons), the board covers
+   the rest, also of the last card (zoo.js; the card is 92 px wide, a strip 23 px) */
+body.viewer .zooRow { position: relative; }
+body.viewer .zooRow > .board, body.viewer .zooRow > .bonuspanel, body.viewer .zooRow > .strip { position: relative; z-index: 1; }
+body.viewer .zoopiles.behind { --pw: 92px; position: absolute; right: 10px; bottom: 100%; margin: 0; z-index: 0; gap: 8px; align-items: flex-end; }
+body.viewer .zoopiles.behind h3 { display: none; }
+body.viewer .zoopiles.behind .cards .card, body.viewer .zoopiles.behind .cards.small .card { margin-bottom: calc(var(--pw) * -1.397 * .82); border-radius: 7px; }
+body.viewer .zoopiles.behind .cards .card:last-child { margin-bottom: calc(var(--pw) * -1.397 * .82); }

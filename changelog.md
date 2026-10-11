@@ -1534,3 +1534,6 @@ Scope: `view.py` (`_without_unstore`, `_combine_action`), `side-panel.js`, `park
 - Map 11: the free action "unstore" is not listed among the options of a replay step (`_without_unstore`), so no bar offers it.
 - A sponsor bought / an animal played / a building built and what comes with it (the price of a sponsor from the reputation range, gains with a reason, a building the card adds, a placement bonus) is one step; the "chooses action card" step before and the "places action card" step after stay (`_combine_action`).
 - Player box: a score of three or four characters (-10 ... -14, 100+) has a smaller number in the star (`.burst.digits3` 17 px, `.digits4` 14 px); a name longer than 12 characters shrinks 0.45 px per character from 18 px, never below 13 px.
+
+## 77. Played cards behind the board in the side-by-side layout
+Scope: `web/js/zoo.js`, `parkposter.css`. Side by side (replay): the played animals and sponsors are two piles (`.zoopiles.behind`) at the top right corner of the board, behind it: each card shows its top 18 % (a 23 px strip of a card 92 px wide), the board, the bonus panel and the partner zoo strip (z-index 1) cover the rest, also of the last card. The zoo gets room above it for the taller pile of the two players (`marginTop`). The tabbed and top / bottom layouts keep the columns beside the board.

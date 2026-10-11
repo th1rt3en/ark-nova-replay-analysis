@@ -23,11 +23,17 @@ export function renderZoo(st, seat) {
   const row = el('div', 'zooRow');
   row.append(bonusPanel(map, p, seat), zooBoard(map, p, seat), associationStrip(p, map, seat));
   // one board at a time (tabbed) or one above the other: the played animals and sponsors stand at the right of the board, each a column of cards in which only the last card is whole
-  const piles = !FORK && !SANDBOX && !PLAY && !MINIGAME && S.zooLayout !== 'side';
+  const replayOnly = !FORK && !SANDBOX && !PLAY && !MINIGAME;
+  const piles = replayOnly;                                              // (the replay: the played cards are piles, not rows under the board)
   if (piles) {
-    const cols = el('div', 'zoopiles');
+    const behind = S.zooLayout === 'side';                               // side by side: the piles stand behind the board, at its top right corner, and rise out of its top edge
+    const cols = el('div', 'zoopiles' + (behind ? ' behind' : ''));
     cols.append(section('Animals', cardRow(p.animals, 'small', 'none', seat + ':animals'), 'sect zoopile'), section('Sponsors', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), 'sect zoopile'));
-    row.append(cols); row.classList.add('withpiles');
+    row.append(cols);
+    if (behind) {                                                        // room above the zoo for the taller pile of the two players (a strip is 23 px: the top 18 % of a card 92 px wide)
+      const most = Math.max(...st.players.map((q) => Math.max(q.animals.length, q.sponsors.length)));
+      box.style.marginTop = Math.max(0, most * 23 - 34) + 'px';
+    } else row.classList.add('withpiles');
   }
   box.append(row);
 
