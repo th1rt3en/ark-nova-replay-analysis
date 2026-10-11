@@ -1554,3 +1554,5 @@ Scope: `web/js/zoo.js`, `parkposter.css`. Side by side: an animals or sponsors p
 
 ## 82. Constricted action cards are replayed
 Scope: `src/ark_nova/replay/actions.py` (`turn_actions`), `tests/test_problem_fixes.py`. A card chosen under Constriction tokens (-2 strength each) took the wrong number of X tokens as paid strength (-2 gave +1 instead of 0), so the differential harness skipped the turn ("strength above the slot that the engine does not explain", 814290712 step 287) and the viewer showed the log state with a flag. The tokens are counted as 2 each now: -2 = one token, -1 = one token and 1 paid, -4 = two tokens.
+
+- Fix: the right inner corner of the bump ended 10 px from the zoo's right edge, inside the zoo's own rounded corner (which starts 20 px from it), so the path doubled back and the corner looked jagged. The bump now ends 44 px from the right edge (`x1 = W - R - F - 8`), the piles with it (`right: 44px`).

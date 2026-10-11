@@ -18,7 +18,7 @@ function outline(box, tall, columns) {
   box.prepend(svgEl);
   const draw = () => {
     if (!box.isConnected) { ro.disconnect(); return; }
-    const W = box.offsetWidth, Hb = box.offsetHeight, B = tall, x1 = W - 26, x0 = x1 - BW, top = 0;
+    const W = box.offsetWidth, Hb = box.offsetHeight, B = tall, x1 = W - R - F - 8, x0 = x1 - BW, top = 0;
     if (!W || x0 < R + F) { svgEl.replaceChildren(); return; }
     const d = ['M', R, B, 'H', x0 - F, 'A', F, F, 0, 0, 0, x0, B - F, 'V', top + C, 'A', C, C, 0, 0, 1, x0 + C, top, 'H', x1 - C, 'A', C, C, 0, 0, 1, x1, top + C,
       'V', B - F, 'A', F, F, 0, 0, 0, x1 + F, B, 'H', W - R, 'A', R, R, 0, 0, 1, W, B + R, 'V', B + Hb - R, 'A', R, R, 0, 0, 1, W - R, B + Hb,
