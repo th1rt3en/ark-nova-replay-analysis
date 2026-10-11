@@ -30,9 +30,9 @@ export function renderZoo(st, seat) {
     const cols = el('div', 'zoopiles' + (behind ? ' behind' : ''));
     cols.append(section('Animals', cardRow(p.animals, 'small', 'none', seat + ':animals'), 'sect zoopile'), section('Sponsors', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), 'sect zoopile'));
     row.append(cols);
-    if (behind) {                                                        // room above the zoo for the taller pile of the two players (a strip is 23 px: the top 18 % of a card 92 px wide)
+    if (behind) {                                                        // room at the top of the zoo for the taller pile of the two players (a strip is 23 px: the top 18 % of a card 92 px wide)
       const most = Math.max(...st.players.map((q) => Math.max(q.animals.length, q.sponsors.length)));
-      box.style.marginTop = Math.max(0, most * 23 - 34) + 'px';
+      box.style.paddingTop = (8 + 26 + most * 23) + 'px';                  // (the paper of the zoo reaches up round the piles: the names of the columns 26 px, a strip 23 px)
     } else row.classList.add('withpiles');
   }
   box.append(row);
@@ -42,7 +42,6 @@ export function renderZoo(st, seat) {
     played.append(section('Animals', cardRow(p.animals, 'small', 'none', seat + ':animals'), 'sect pg'));
     played.append(section('Sponsors', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), 'sect pg'));
   }
-  if (p.released.length) played.append(section('Released', cardRow(p.released, 'small', undefined, seat + ':released'), 'sect pg'));
   if (played.children.length) box.append(played);
   if (MINIGAME && S.pov === null) {                                      // a mini game that shows both players in full (Who's ahead): the dock holds one hand at a time, so each zoo carries its player's cards
     const own = el('div', 'played handsunder');

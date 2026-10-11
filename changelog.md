@@ -1537,3 +1537,8 @@ Scope: `view.py` (`_without_unstore`, `_combine_action`), `side-panel.js`, `park
 
 ## 77. Played cards behind the board in the side-by-side layout
 Scope: `web/js/zoo.js`, `parkposter.css`. Side by side (replay): the played animals and sponsors are two piles (`.zoopiles.behind`) at the top right corner of the board, behind it: each card shows its top 18 % (a 23 px strip of a card 92 px wide), the board, the bonus panel and the partner zoo strip (z-index 1) cover the rest, also of the last card. The zoo gets room above it for the taller pile of the two players (`marginTop`). The tabbed and top / bottom layouts keep the columns beside the board.
+
+## 78. Piles inside the zoo paper, column names, the covered part cut off, no Released row
+Scope: `web/js/zoo.js`, `parkposter.css`.
+- The Released row under the zoo is gone (the end-of-game statistic stays).
+- Side by side: the zoo box gets padding at the top (`paddingTop` = 34 px + 23 px per card of the longer pile) so the paper reaches up round the piles; the piles show the column names Animals / Sponsors; their `.cards` clip the covered part (`overflow: hidden`), so nothing of it shows between the panels.
