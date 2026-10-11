@@ -526,6 +526,9 @@ body.viewer .zoopiles.behind .pilecols .cards { width: var(--pw); box-sizing: co
 
 /* cubes on a sponsor card (zoo.js `withCubes`): Okapi Stable, Breeding Program, Breeding Cooperation (a used cube is an empty ring) and the kind chosen with Waza Special Assignment; at the top right of the card, which is the part that shows in a pile */
 body.viewer .card.hascubes { position: relative; }
-body.viewer .cardcubes { position: absolute; z-index: 6; top: 3px; right: 3px; display: flex; align-items: center; gap: 2px; padding: 1px 5px; background: rgba(248, 237, 203, .94); border: 2px solid var(--ink); border-radius: 999px; pointer-events: none; font: 700 12px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); text-transform: uppercase; }
+body.viewer .cardcubes { position: absolute; z-index: 6; top: 3px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 1px 5px; background: rgba(248, 237, 203, .94); border: 2px solid var(--ink); border-radius: 999px; pointer-events: none; font: 700 12px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); text-transform: uppercase; }
 body.viewer .cardcubes .cube { width: 19px; height: 19px; display: block; border: 0; border-radius: 0; box-shadow: none; }
 body.viewer .cardcubes .cube.used { box-sizing: border-box; width: 15px; height: 15px; margin: 2px; border: 2px dashed rgba(23, 38, 43, .55); border-radius: 50%; }
+body.viewer .card .wazax { position: absolute; z-index: 6; top: 2%; width: 31%; height: 20%; pointer-events: none; overflow: visible; }
+body.viewer .card .wazax.left { left: 25%; }
+body.viewer .card .wazax.right { left: 61%; }

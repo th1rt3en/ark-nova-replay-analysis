@@ -23,10 +23,17 @@ function withCubes(row, p, seat) {
         if (i < left) { const c = el('img', 'cube'); c.src = pieceUrl('cubes', colour); c.alt = ''; chip.append(c); } else chip.append(el('i', 'cube used'));
       }
       chip.title = left + ' of ' + CUBE_SLOTS[key] + ' cubes left on this card';
-    } else if (key === 'S227' && p.flags.waza) {
-      const small = p.flags.waza === 1, c = el('img', 'cube'); c.src = pieceUrl('cubes', colour); c.alt = '';
-      chip.append(c, el('b', '', small ? 'small' : 'large'));
-      chip.title = 'Chosen: ' + (small ? 'small' : 'large') + ' animals';
+    } else if (key === 'S227' && p.flags.waza) {                      // Waza: a red X over the bonus of the kind that was not chosen (left: 2 appeal per small animal, right: 4 per large one)
+      const small = p.flags.waza === 1, ns = 'http://www.w3.org/2000/svg', x = document.createElementNS(ns, 'svg');
+      x.setAttribute('viewBox', '0 0 100 70'); x.setAttribute('class', 'wazax ' + (small ? 'right' : 'left'));
+      for (const [w, col] of [[17, '#17262B'], [11, '#D1241F']]) {
+        const path = document.createElementNS(ns, 'path');
+        path.setAttribute('d', 'M14 10L86 60M86 10L14 60'); path.setAttribute('stroke', col); path.setAttribute('stroke-width', String(w)); path.setAttribute('stroke-linecap', 'round'); path.setAttribute('fill', 'none');
+        x.append(path);
+      }
+      const t = document.createElementNS(ns, 'title'); t.textContent = 'Chosen: ' + (small ? 'small' : 'large') + ' animals (' + (small ? '2' : '4') + ' appeal for each)'; x.append(t);
+      node.classList.add('hascubes'); node.append(x);
+      continue;
     } else continue;
     node.classList.add('hascubes');
     node.append(chip);
