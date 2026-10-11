@@ -1,5 +1,6 @@
 // [module] Renders one player's zoo: board, cards row, association strip, bonus panel.
-import { el, seatColor, section } from './util.js';
+import { el, seatColor, seatRawColor, section } from './util.js';
+import { pieceUrl } from './icons.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { cardRow } from './cards.js';
 import { zooStep } from './main.js';
@@ -9,6 +10,30 @@ import { associationStrip, bonusPanel } from './association.js';
 
 // The outline of a zoo with a bump (side by side): one shape for the paper, the ink border, the hard shadow and the gold ring of the active player, drawn as an svg behind the content (the
 // box itself has no background, border or shadow then, `.hasbump` in parkposter.css). The bump rises round the two piles at the top right and joins the top edge with rounded inner corners.
+// The cubes that lie on a sponsor card: Okapi Stable 3, Breeding Program 2, Breeding Cooperation 2 (a cube that was used is an empty ring), and Waza Special Assignment's one cube on the
+// kind that was chosen (small / large animals). They are drawn over the top of the card, which stays visible when the cards overlap in a pile.
+const CUBE_SLOTS = { S253: 3, S215: 2, S218: 2 };
+function withCubes(row, p, seat) {
+  const colour = seatRawColor(seat);
+  for (const node of row.querySelectorAll('.card[data-key]')) {
+    const key = node.dataset.key, chip = el('span', 'cardcubes');
+    if (CUBE_SLOTS[key]) {
+      const left = p.tokens.filter((t) => t.type === 'token' && t.location.startsWith(key + '_')).length;
+      for (let i = 0; i < CUBE_SLOTS[key]; i++) {
+        if (i < left) { const c = el('img', 'cube'); c.src = pieceUrl('cubes', colour); c.alt = ''; chip.append(c); } else chip.append(el('i', 'cube used'));
+      }
+      chip.title = left + ' of ' + CUBE_SLOTS[key] + ' cubes left on this card';
+    } else if (key === 'S227' && p.flags.waza) {
+      const small = p.flags.waza === 1, c = el('img', 'cube'); c.src = pieceUrl('cubes', colour); c.alt = '';
+      chip.append(c, el('b', '', small ? 'small' : 'large'));
+      chip.title = 'Chosen: ' + (small ? 'small' : 'large') + ' animals';
+    } else continue;
+    node.classList.add('hascubes');
+    node.append(chip);
+  }
+  return row;
+}
+
 const SPLIT = 5;                                                          // a pile of this many cards or more is split into two columns
 
 function outline(box, tall, columns) {
@@ -63,9 +88,9 @@ export function renderZoo(st, seat) {
     const split = (keys) => (keys.length >= SPLIT ? [keys.slice(0, Math.ceil(keys.length / 2)), keys.slice(Math.ceil(keys.length / 2))] : [keys]);      // (6 cards or more: a second column, the first one longer by a card if odd)
     let columns = 0;
     const group = (name, keys, zone) => {
-      if (!behind) return section(name, cardRow(keys, 'small', 'none', zone), 'sect zoopile');
+      if (!behind) return section(name, (name === 'Sponsors' ? withCubes : (r) => r)(cardRow(keys, 'small', 'none', zone), p, seat), 'sect zoopile');
       const parts = split(keys), wrap = el('div', 'pilecols');
-      parts.forEach((part, i) => wrap.append(cardRow(part, 'small', 'none', zone + (i ? ':2' : ''))));
+      parts.forEach((part, i) => wrap.append((name === 'Sponsors' ? withCubes : (r) => r)(cardRow(part, 'small', 'none', zone + (i ? ':2' : '')), p, seat)));
       columns += parts.length;
       return section(name, wrap, 'sect zoopile');
     };
@@ -83,7 +108,7 @@ export function renderZoo(st, seat) {
   const played = el('div', 'played');                                    // the played cards under the map: animals and sponsors side by side (no counts)
   if (!piles) {
     played.append(section('Animals', cardRow(p.animals, 'small', 'none', seat + ':animals'), 'sect pg'));
-    played.append(section('Sponsors', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), 'sect pg'));
+    played.append(section('Sponsors', withCubes(cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), p, seat), 'sect pg'));
   }
   if (played.children.length) box.append(played);
   if (MINIGAME && S.pov === null) {                                      // a mini game that shows both players in full (Who's ahead): the dock holds one hand at a time, so each zoo carries its player's cards
