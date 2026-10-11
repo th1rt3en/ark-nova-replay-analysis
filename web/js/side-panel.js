@@ -1,38 +1,11 @@
 // [module] Right column per player: tracker (score, appeal, income, reputation...), break track, deck / discard icons, bonus tokens.
 import { $, el, seatColor, svg } from './util.js';
 import { MINIGAME, PLAY, S } from './state.js';
-import { eyeLocked, eyeOpen, toggleEye } from './pov.js';
-import { hidePreview, showPreview, zoneNew } from './cards.js';
+import { eyeLocked, eyeOpen, seatOrder, toggleEye } from './pov.js';
+import { bindPreview, zoneNew } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, pic, workerUrl } from './icons.js';
-import { openPile } from './pile.js';
 import { clockBadge, gameMenu } from './play.js';
 
-// the draw pile (two grey cards, the count on the front one) and the discard pile (count and a trash can), drawn like BGA's
-function deckIcon(n) {
-  const w = el('span', 'dc');
-  w.title = 'Cards in the deck';
-  const s = svg('svg', { viewBox: '0 0 72 56', width: 72, height: 56 });
-  s.append(svg('rect', { x: 26, y: 3, width: 40, height: 48, rx: 6, transform: 'rotate(8 46 27)', fill: '#7d7a73', stroke: '#2b2b2b', 'stroke-width': 3 }));
-  s.append(svg('rect', { x: 8, y: 6, width: 40, height: 48, rx: 6, fill: '#8d8a83', stroke: '#2b2b2b', 'stroke-width': 3 }));
-  s.append(svg('rect', { x: 12, y: 10, width: 32, height: 40, rx: 4, fill: 'none', stroke: 'rgba(255,255,255,.35)', 'stroke-width': 2 }));
-  const t = svg('text', { x: 28, y: 36, class: 'deck-num', style: 'font-size:' + (String(n).length > 2 ? 17 : 22) + 'px' });
-  t.textContent = n;
-  s.append(t);
-  w.append(s);
-  return w;
-}
-function discardIcon(n) {
-  const w = el('span', 'dc');
-  w.title = 'Cards in the discard pile';
-  w.append(el('b', '', n));
-  const s = svg('svg', { viewBox: '0 0 44 48', width: 40, height: 44 });
-  s.append(svg('rect', { x: 2, y: 2, width: 40, height: 44, rx: 9, fill: '#5d5a54', stroke: '#fff', 'stroke-width': 2.5 }));
-  s.append(svg('rect', { x: 2, y: 2, width: 40, height: 44, rx: 9, fill: 'none', stroke: '#1d1d1d', 'stroke-width': 1 }));
-  s.append(svg('path', { d: 'M13 16h18M18 16v-3h8v3M15 19l1.5 17a2 2 0 0 0 2 2h7a2 2 0 0 0 2-2L29 19z', fill: 'none', stroke: '#111', 'stroke-width': 3.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
-  s.append(svg('path', { d: 'M20 22v12M24 22v12', stroke: '#111', 'stroke-width': 2.6, 'stroke-linecap': 'round' }));
-  w.append(s);
-  return w;
-}
 // score = appeal + conservation points (-14 at 0, +2 per step to 10, then +3): same rule as engine/tracks.py, used when the server did not send it
 const trackScore = (p) => Math.max(0, Math.min(113, p.appeal)) + (p.conservation <= 10 ? 2 * p.conservation - 14 : 3 * Math.min(41, p.conservation) - 24);
 // money the appeal track gives at a break (engine/tracks.py income_from_appeal): 5 at 0, +1 per appeal to 5, then per 2 to 17, 3 to 32, 4 to 56, 5 to 96, 6 to 113
@@ -46,12 +19,12 @@ function trackIncome(appeal) {
   }
   return income;
 }
-function eyeButton(seat) {                                          // open eye = this player's cards are shown; the only open eye cannot be closed
+function eyeButton(seat) {                                          // open eye = this player's cards are shown; exactly one eye is open, opening the other closes it
   if (PLAY || MINIGAME) return document.createTextNode('');                     // (a live game: no eyes, the server decides what a seat sees)
   const open = eyeOpen(seat), locked = eyeLocked(seat), nm = S.replay.players[seat].name;
   const b = el('button', 'poveye' + (open ? '' : ' closed') + (locked ? ' only' : ''));
   b.type = 'button';
-  b.title = locked ? nm + "'s cards are shown (at least one player's cards must stay visible)" : open ? 'Hide ' + nm + "'s cards" : 'Show ' + nm + "'s cards";
+  b.title = locked ? nm + "'s cards are shown" : 'Show ' + nm + "'s cards (and hide the other player's)";
   b.setAttribute('aria-label', b.title); b.setAttribute('aria-pressed', String(open));
   const g = svg('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
   g.append(svg('path', { d: 'M2 12C5 6.5 8.5 4.5 12 4.5S19 6.5 22 12C19 17.5 15.5 19.5 12 19.5S5 17.5 2 12Z' }), svg('circle', { cx: 12, cy: 12, r: 3.2, fill: 'currentColor' }));
@@ -61,6 +34,76 @@ function eyeButton(seat) {                                          // open eye 
   return b;
 }
 const isLight = (hex) => { const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || ''); return !!m && (0.299 * parseInt(m[1], 16) + 0.587 * parseInt(m[2], 16) + 0.114 * parseInt(m[3], 16)) / 255 > 0.6; };
+// a starburst with a number in it (the score of a player, the round)
+function burst(value) {
+  const w = el('span', 'burst');
+  const s = svg('svg', { viewBox: '0 0 54 54', 'aria-hidden': 'true' });
+  const pts = [];
+  for (let i = 0; i < 24; i++) { const r = i % 2 ? 21 : 27, a = Math.PI * 2 * i / 24; pts.push((27 + r * Math.cos(a)).toFixed(1) + ',' + (27 + r * Math.sin(a)).toFixed(1)); }
+  s.append(svg('polygon', { points: pts.join(' '), fill: '#F4B63F', stroke: '#17262B', 'stroke-width': 3, 'stroke-linejoin': 'round' }));
+  w.append(s, el('b', '', value));
+  return w;
+}
+// the numbered resource tile of the info box: the number sits on the icon (`ov`) or under it (`xt`)
+function tile(cls, title, img, value, sub) {
+  const t = el('span', 'rt ' + cls);
+  t.title = title;
+  t.append(img, el('b', '', value));
+  if (sub !== undefined) t.append(el('small', '', sub));
+  return t;
+}
+const plainIcon = (id, h) => { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = h; return i; };
+// The number is centred by its ink, not by its advance width: the digits of Bowlby One have uneven side bearings (a 1 sat 1.6 px left of the middle, a 10 1.2 px right).
+// The Turn number of the Round | Turn element: the turn of the player who is acting, counted per player (both players' first turns are turn 1). The action card draft and the choice of the
+// starting hand are no turns (0 until the first player chooses an action card). `st.turn` counts the finished turns of both players (a second action of the same turn does not count, see
+// replay/builder.py), the players alternate, so the first player is `active_player` xor (turn odd). A turn begins with "chooses action card" (`current_action` is set); between two turns the
+// number of the player who has just finished stays.
+function turnNumber(st) {
+  const t = st.turn || 0, a = st.active_player || 0, first = a ^ (t & 1);
+  const done = (seat) => Math.floor((t + (seat === first ? 1 : 0)) / 2);        // (the finished turns of a seat)
+  if (st.current_action) return done(a) + 1;
+  const steps = S.replay && S.replay.steps, cur = steps && steps[S.step];
+  if (cur && cur.state === st) {                                    // (replay: after the first action of a turn with a second one to come, no card is chosen for a moment; the turn goes on)
+    for (let j = S.step - 1; j >= 0 && steps[j].state.turn === t; j--) if (steps[j].state.current_action) return done(a) + 1;
+  }
+  return done(1 - a);
+}
+function centreInk(node) {
+  const shift = () => {
+    const cs = getComputedStyle(node), ctx = (centreInk.ctx = centreInk.ctx || document.createElement('canvas').getContext('2d'));
+    ctx.font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    const m = ctx.measureText(node.textContent);
+    const off = (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2 - m.width / 2;
+    node.style.transform = 'translateX(' + (-off).toFixed(2) + 'px)';
+  };
+  shift();
+  if (document.fonts && !document.fonts.check('28px "Bowlby One"')) document.fonts.ready.then(shift);          // (the font may still be loading on the first draw)
+}
+// round and break counter: the two pills at the right of the top bar (#hdrstats)
+function headerStats(st, flash) {
+  const root = $('hdrstats');
+  if (!root) return;
+  root.replaceChildren();
+  const rnd = flash('round', st.round, el('div', 'pill rnd'));
+  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends. Turn: the number of turns the player who is acting has had in this game (the action card draft and the starting hand do not count)';
+  const rn = el('b', 'rn', st.round), tn = el('b', 'tn', turnNumber(st));
+  const rh = el('div', 'half'), th = el('div', 'half');          // (two equal halves, the word small above the number, a dashed divider between them)
+  rh.append(el('span', 'lab', 'Round'), rn);
+  th.append(el('span', 'lab', 'Turn'), tn);
+  rnd.append(rh, el('i', 'dv'), th);
+  centreInk(rn); centreInk(tn);
+  const brk = flash('break', st.break_position, el('div', 'pill brk'));
+  brk.title = 'Break track: the break ends the round when the token reaches 9';
+  const pips = el('div', 'pips');
+  for (let k = 0; k < 9; k++) pips.append(el('i', k < st.break_position - 1 ? 'done' : k === st.break_position - 1 ? 'cur' : ''));
+  const num = el('b', 'bn', st.break_position);
+  num.append(el('small', '', '/9'));
+  const mug = el('img', 'brkicon'); mug.src = '/icons/r3c14.webp'; mug.alt = 'Break'; mug.draggable = false;            // (Ark Nova's symbol for the break: a coffee mug)
+  brk.append(mug, num, pips);
+  root.append(rnd, brk);
+  const menu = PLAY ? gameMenu() : null;                                 // concede / propose to abandon / end on overtime
+  if (menu) root.append(menu);
+}
 export function sidePanel(st) {
   const root = $('side');
   root.replaceChildren();
@@ -71,99 +114,68 @@ export function sidePanel(st) {
     if (old !== undefined && old !== value) node.classList.add(value > old ? 'flash-up' : 'flash-down');
     return node;
   };
-  const top = el('div', 'sidetop');
-  const brk = el('div', 'breaktrack');
-  brk.title = 'Break track';
-  const bi = el('img', 'icon'); bi.src = iconUrl('r3c14'); bi.alt = 'Break'; bi.height = 40;
-  const rnd = flash('round', st.round, el('span', 'roundno', 'Round ' + st.round));
-  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends';
-  brk.append(flash('break', st.break_position, el('b', '', st.break_position + ' / 9')), bi, rnd);
-  const menu = PLAY ? gameMenu() : null;                                 // concede / propose to abandon / end on overtime, in the row of the round counter
-  if (menu) brk.append(menu);
-  top.append(brk);
-  const counts = el('div', 'deckcounts');
-  const discardBtn = flash('discard', st.main_discard_size, discardIcon(st.main_discard_size));
-  discardBtn.classList.add('pilebtn');
-  discardBtn.title = 'Discard pile: click to list its cards';
-  discardBtn.onclick = () => openPile('discard');
-  const deckBtn = flash('deck', st.main_deck_size, deckIcon(st.main_deck_size));
-  deckBtn.classList.add('pilebtn');
-  deckBtn.title = 'Draw pile: click to list the cards that are left (in no particular order)';
-  deckBtn.onclick = () => openPile('deck');
-  counts.append(deckBtn, discardBtn);
-  const eg = el('span', 'dc');
-  eg.title = 'Endgame cards left';
-  const ei = el('img', 'icon'); ei.src = iconUrl('r10c15'); ei.alt = 'Endgame cards'; ei.height = 32;
-  eg.append(el('b', '', st.endgame_deck_size), ei);                       // the number first, like the discard pile
-  eg.classList.add('pilebtn');
-  eg.title = 'Endgame cards left: click to list them';
-  eg.onclick = () => openPile('endgame');
-  flash('egdeck', st.endgame_deck_size, eg);
-  counts.append(eg);
-  top.append(counts);
-  root.append(top);
-  st.players.forEach((p, seat) => {
+  headerStats(st, flash);
+  seatOrder().forEach((seat) => {                                   // (the spectated player's box first: above)
+    const p = st.players[seat];
     const box = el('div', 'pp' + (st.active_player === seat && st.phase !== 'over' ? ' active' : ''));
+    box.style.setProperty('--pc', seatColor(seat));
+    if (isLight(seatColor(seat))) box.classList.add('light');
     const head = el('div', 'pphead');
     const pl = S.replay.players[seat];
     const name = el('a', 'ppname', pl.name);                       // the name links to the player's BGA profile (new tab); it looks like plain text (see .ppname)
     if (pl.id) { name.href = 'https://boardgamearena.com/player?id=' + encodeURIComponent(pl.id); name.target = '_blank'; name.rel = 'noopener noreferrer'; }
-    name.style.color = seatColor(seat);
-    if (isLight(seatColor(seat))) name.classList.add('light');     // yellow / white: a very thin black outline keeps the name readable
-    const score = el('span', 'ppscore');
-    score.title = 'Score (appeal + conservation points)';
     const scoreValue = p.score !== undefined ? p.score : trackScore(p);
-    score.append(document.createTextNode(scoreValue + ' ★'));
-    flash(seat + ':score', scoreValue, score);
+    const score = flash(seat + ':score', scoreValue, el('span', 'ppscore'));
+    score.title = 'Score (appeal + conservation points)';
+    score.append(burst(scoreValue));
     const who = el('span', 'who');
-    who.append(name);
-    who.append(eyeButton(seat));
-    const cb = clockBadge(seat);                                            // the clock of the time control, to the right of the name
+    if (st.active_player === seat && st.phase !== 'over') who.append(el('i', 'live'));
+    who.append(name, eyeButton(seat));
+    const cb = clockBadge(seat);                                            // the clock of the time control, next to the name
     head.append(...(cb ? [who, cb, score] : [who, score]));
     box.append(head);
 
-    const res = el('div', 'ppres');
-    const xr = el('span', 'rs xr');               // X tokens: the number sits to the left of the token
-    xr.title = 'X tokens';
-    xr.append(el('b', '', p.x_tokens), pic('xtoken', 40));
-    flash(seat + ':x', p.x_tokens, xr);
-    for (const [icon, n, label] of [['money', p.money, 'Money'], ['reputation', p.reputation, 'Reputation'], ['appeal', p.appeal, 'Appeal'], ['conservation', p.conservation, 'Conservation']]) {
-      const r = el('span', 'rs inside rs-' + icon + (icon === 'money' ? ' money' : ''));    // the number is printed over the icon
-      r.title = label;
-      r.append(pic(icon, 42), el('b', '', n));
-      flash(seat + ':' + icon, n, r);
-      if (icon === 'appeal') {                       // a small money icon on top of the appeal icon: the income this player gets at a break
-        const inc = el('span', 'income money');       // the standard money tile: number inside the icon, white rounded border
-        inc.title = 'Income at the next break (from the appeal track' + (['5', '5a'].includes(S.replay.maps[seat].id) ? ' and the hexes covered next to the restaurant' : '') + ')';
-        inc.append(pic('money', 30), el('i', '', p.income !== undefined ? p.income : trackIncome(p.appeal)));
-        r.append(inc);
-      }
-      res.append(r);
-      if (icon === 'money') res.append(xr);
-    }
-
+    const res = el('div', 'ppres');                                        // the five tiles: money (and income), X tokens, reputation, appeal, conservation points
+    const inc = p.income !== undefined ? p.income : trackIncome(p.appeal);
+    const mo = flash(seat + ':money', p.money, tile('ov money', 'Money', pic('money', 48), p.money, '+' + inc));          // (the income paid at the next break sits on the money tile)
+    mo.querySelector('small').title = 'Income at the next break (from the appeal track' + (['5', '5a'].includes(S.replay.maps[seat].id) ? ' and the hexes covered next to the restaurant' : '') + ')';
+    res.append(mo);
+    res.append(flash(seat + ':x', p.x_tokens, tile('ov xo', 'X tokens', pic('xtoken', 46), p.x_tokens)));          // (the number lies on the X, white with a black outline)
+    res.append(flash(seat + ':reputation', p.reputation, tile('ov', 'Reputation', pic('reputation', 48), p.reputation)));
+    res.append(flash(seat + ':appeal', p.appeal, tile('ov dk', 'Appeal', pic('appeal', 48), p.appeal)));
+    res.append(flash(seat + ':conservation', p.conservation, tile('ov dk', 'Conservation points', pic('conservation', 48), p.conservation)));
     box.append(res);
 
     const res2 = el('div', 'ppres2');
-    const wr = el('span', 'rs xr');                // workers ready to use (the ones in the reserve); the number sits left of the meeple like the X tokens
-    wr.title = 'Workers available (' + p.tokens.filter((t) => t.type === 'worker' && /^supply_/.test(t.location)).length + ' still locked)';
-    const wi = el('img', 'icon'); wi.src = workerUrl(seat); wi.alt = 'Workers'; wi.height = 40;
-    const ready = p.tokens.filter((t) => t.type === 'worker' && t.location === 'reserve').length;
-    wr.append(el('b', '', ready), wi);
-    flash(seat + ':workers', ready, wr);
-    const hand = el('span', 'rs handcount');         // cards in hand / hand size (3, or 5 with the hand-size university)
+    const workers = p.tokens.filter((t) => t.type === 'worker');
+    const ready = workers.filter((t) => t.location === 'reserve').length;     // workers ready to use (the ones in the reserve)
+    const wi = el('img', 'icon'); wi.src = workerUrl(seat); wi.alt = ''; wi.height = 36;
+    const wr = flash(seat + ':workers', ready, tile('wk', 'Workers available (' + workers.filter((t) => /^supply_/.test(t.location)).length + ' still locked)', wi, ready));
     const limit = p.hand_limit !== undefined ? p.hand_limit : (p.tokens.some((t) => t.type === 'fac-rep-hand' && /^university_/.test(t.location)) ? 5 : 3);
+    const hb = el('b', p.hand.length > limit ? 'over' : '', p.hand.length);   // red while the hand is over the limit, as on BGA
+    hb.append(el('small', '', '/' + limit));
+    const hand = el('span', 'rt hd');
     hand.title = 'Cards in hand / hand size';
-    const hi = el('img', 'icon'); hi.src = iconUrl('r10c8'); hi.alt = 'Cards in hand'; hi.height = 40;
-    const hb = el('b', p.hand.length > limit ? 'over' : '', p.hand.length + '/' + limit);   // red while the hand is over the limit, as on BGA
-    hand.append(hi, hb);
+    hand.append(plainIcon('r10c8', 36), hb);
     flash(seat + ':hand', p.hand.length, hand);
-    const eg = el('span', 'rs handcount');          // endgame scoring cards held: 2 at the start, 1 after the discard at 10 conservation, more with Resistance
-    eg.title = 'Endgame scoring cards';
-    const ei = el('img', 'icon'); ei.src = iconUrl('r10c15'); ei.alt = 'Endgame cards'; ei.height = 40;
-    eg.append(ei, el('b', '', p.endgame_hand.length));
-    flash(seat + ':endgame', p.endgame_hand.length, eg);
-    res2.append(wr, hand, eg);
+    res2.append(wr, hand);
+    const egBase = p.conservation >= 10 ? 1 : 2;                            // endgame scoring cards: 2 at the start, 1 after the discard at 10 conservation; the extra ones (Resistance...) are shown, only when there are any
+    if (p.endgame_hand.length > egBase) {
+      const eg = el('span', 'rt egx');
+      eg.title = 'Endgame scoring cards: ' + p.endgame_hand.length + ' (' + (p.endgame_hand.length - egBase) + ' more than usual)';
+      eg.append(plainIcon('r10c15', 36), el('b', '', '+' + (p.endgame_hand.length - egBase)));
+      flash(seat + ':endgame', p.endgame_hand.length, eg);
+      res2.append(eg);
+    }
+    // the bonus tokens of the player's notepad (one-time effects), at the right end of the row; every token goes at the step it is used
+    const toks = p.tokens.filter((t) => BONUS_TOKENS.includes(t.type)).sort((x, y) => BONUS_TOKENS.indexOf(x.type) - BONUS_TOKENS.indexOf(y.type) || x.id - y.id);
+    const bz = zoneNew(seat + ':bonustokens', toks.map((t) => t.type));
+    const bons = el('span', 'bons');
+    bons.title = 'Bonus tokens';
+    const items = toks.map((t) => bonusToken(t.type, bz.isNew(t.type) ? 'card-new' : ''));
+    for (const g of bz.gone) items.splice(Math.min(g.index, items.length), 0, bonusToken(g.key, 'card-gone', true));      // a token that was just used fades away in its place
+    bons.append(...items);
+    res2.append(bons);
     box.append(res2);
 
     const acts = el('div', 'ppactions');
@@ -174,8 +186,7 @@ export function sidePanel(st) {
       c.title = 'Slot ' + (i + 1) + ': ' + ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + (a.variant ? ' (variant ' + a.variant + ')' : '');
       c.append(pic(ACTION_ICON[a.type], 40));
       const art = '/action_cards/' + a.type + '_' + (S.replay.marine_worlds ? a.variant : 0) + '_' + (a.level === 2 ? 2 : 1) + '.webp';     // the whole action card
-      c.addEventListener('mouseenter', () => showPreview(art));
-      c.addEventListener('mouseleave', hidePreview);
+      bindPreview(c, art);
       if (S.replay.marine_worlds && a.variant) {         // the variant's silver effect badge (side I or II of the card) on the top left of the action card
         const b = el('img', 'variant');
         b.src = '/action_icons/' + a.type + '_' + a.variant + '_' + (a.level === 2 ? 2 : 1) + '.webp'; b.alt = 'Variant ' + a.variant;
@@ -186,35 +197,25 @@ export function sidePanel(st) {
     if (st.actions_hidden) acts.classList.add('unseen');          // (before the action cards are shuffled: the space stays, the cards are invisible)
     box.append(acts);
 
-    const grid = el('div', 'ppicons');
+    const grid = el('div', 'ppicons');                            // the icons in three rows like BGA: 5 continents, 5 (6 with Marine Worlds) animal kinds, 5 others
     const ICON_ROWS = [['Africa', 'Europe', 'Asia', 'Americas', 'Australia'],
                        ['Bird', 'Predator', 'Herbivore', 'Reptile', 'Primate', ...(S.replay.marine_worlds ? ['SeaAnimal'] : [])],
                        ['Bear', 'Pet', 'Science', 'Rock', 'Water']];
-    ICON_ROWS.forEach((names, r) => names.forEach((k, ci) => {
-      const n = (p.icons || {})[k] || 0;
-      const c = el('span', 'ic' + (n ? '' : ' zero'));
-      c.title = k;
-      const img = el('img', 'badge');
-      img.src = '/badges/' + k + '.webp'; img.alt = k; img.width = 30; img.height = 30;
-      c.append(el('b', '', n), img);
-      flash(seat + ':icon:' + k, n, c);
-      c.style.gridColumn = String(ci + 1);                            // (a row of 5 icons fills the 5 columns, the 6 of the animal row use 6 columns)
-      c.style.gridRow = String(r + 1);
-      grid.append(c);
-    }));
-    grid.style.gridTemplateColumns = 'repeat(' + (S.replay.marine_worlds ? 6 : 5) + ', 1fr)';
+    ICON_ROWS.forEach((names) => {
+      const row = el('div', 'icrow');
+      for (const k of names) {
+        const n = (p.icons || {})[k] || 0;
+        const c = el('span', 'ic' + (n ? '' : ' zero'));
+        c.title = k;
+        const img = el('img', 'badge');
+        img.src = '/badges/' + k + '.webp'; img.alt = k; img.width = 44; img.height = 44;
+        c.append(img, el('b', '', n));
+        flash(seat + ':icon:' + k, n, c);
+        row.append(c);
+      }
+      grid.append(row);
+    });
     box.append(grid);
-    // the bonus tokens of the player's notepad (one-time effects); the row exists only while the player has at least one, every token goes at the step it is used
-    const toks = p.tokens.filter((t) => BONUS_TOKENS.includes(t.type)).sort((x, y) => BONUS_TOKENS.indexOf(x.type) - BONUS_TOKENS.indexOf(y.type) || x.id - y.id);
-    const bz = zoneNew(seat + ':bonustokens', toks.map((t) => t.type));
-    if (toks.length) {
-      const row = el('div', 'bonusrow');
-      row.title = 'Bonus tokens';
-      const items = toks.map((t) => bonusToken(t.type, bz.isNew(t.type) ? 'card-new' : ''));
-      for (const g of bz.gone) items.splice(Math.min(g.index, items.length), 0, bonusToken(g.key, 'card-gone', true));      // a token that was just used fades away in its place
-      row.append(...items);
-      box.append(row);
-    }
     root.append(box);
   });
   S.lastNums = nums;

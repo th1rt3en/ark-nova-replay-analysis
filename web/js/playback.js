@@ -1,7 +1,7 @@
 // [module] Step navigation: timeline, autoplay, speed, keyboard, move list.
 import { $, el, seatColor } from './util.js';
 import { S } from './state.js';
-import { labelOf } from './pov.js';
+import { labelOf, povState } from './pov.js';
 import { cardMarks } from './cards.js';
 import { draftMarks } from './action-bar.js';
 import { engineBadge, labelNode } from './log-labels.js';
@@ -9,12 +9,13 @@ import { render } from './main.js';
 import { keepSel } from './fork.js';
 import { framesOf } from './frames.js';
 
+const PLAY_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2l13 8-13 8z"/></svg>', PAUSE_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h4v14H4zM12 3h4v14h-4z"/></svg>';
 export function setPlaying(on) {
   if (S.timer) { clearInterval(S.timer); S.timer = null; }
   if (on && atEnd()) go(0);                                              // started at the end: play again from the start
   if (on) S.timer = setInterval(() => { if (atEnd()) setPlaying(false); else stepBy(1); }, 1000 / S.speed);
   const b = $('play');
-  b.textContent = on ? '⏸︎' : '▶︎';
+  b.innerHTML = on ? PAUSE_SVG : PLAY_SVG;
   b.title = on ? 'Stop autoplay (Space)' : 'Start autoplay (Space)';
   b.setAttribute('aria-label', on ? 'Stop autoplay' : 'Start autoplay');
   b.classList.toggle('on', on);
@@ -35,6 +36,7 @@ export function buildTimeline() {
   const tl = $('timeline'), n = S.replay.steps.length, starts = roundStarts();
   if (!tl) return;                                                       // (no timeline element on the page)
   tl.replaceChildren();
+  tl.append(el('div', 'tlfill'));                                        // (the part of the game that is over, left of the head; under the round marks)
   starts.forEach((a, k) => {
     const b = k + 1 < starts.length ? starts[k + 1] : n;
     const seg = el('div', 'tlseg');
@@ -43,23 +45,52 @@ export function buildTimeline() {
     tl.append(seg);
   });
   tl.append(el('div', 'tlhead'));
-  tl.onclick = (e) => {
-    const r = tl.getBoundingClientRect();
-    go(Math.round((e.clientX - r.left) / r.width * (n - 1)));
+  // a click goes to the step under the pointer; the head (or the whole bar) can be dragged: the board follows while the pointer moves (at most one redraw per frame)
+  const stepAt = (e) => { const r = tl.getBoundingClientRect(); return Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * (n - 1)); };
+  let dragging = false, want = -1, frame = 0;
+  const flush = () => { frame = 0; if (want >= 0 && want !== S.step) go(want); want = -1; };
+  tl.onpointerdown = (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    dragging = true; tl.setPointerCapture(e.pointerId); tl.classList.add('dragging');
+    if (S.timer) setPlaying(false);                                       // (autoplay would fight the hand that holds the head)
+    want = stepAt(e); flush(); e.preventDefault();
   };
+  tl.onpointermove = (e) => { if (!dragging) return; want = stepAt(e); if (!frame) frame = requestAnimationFrame(flush); };
+  const end = (e) => { if (!dragging) return; dragging = false; tl.classList.remove('dragging'); if (tl.hasPointerCapture(e.pointerId)) tl.releasePointerCapture(e.pointerId); if (frame) { cancelAnimationFrame(frame); flush(); } };
+  tl.onpointerup = end; tl.onpointercancel = end;
 }
 export function updateTimeline() {
-  const head = document.querySelector('#timeline .tlhead');
-  if (head) head.style.left = (S.replay.steps.length > 1 ? S.step / (S.replay.steps.length - 1) * 100 : 0) + '%';
+  const head = document.querySelector('#timeline .tlhead'), fill = document.querySelector('#timeline .tlfill');
+  const pct = (S.replay.steps.length > 1 ? S.step / (S.replay.steps.length - 1) * 100 : 0) + '%';
+  if (head) head.style.left = pct;
+  if (fill) fill.style.width = pct;
 }
 
 // ---- frames: a step is shown in consecutive frames (frames.js); the keys, buttons and autoplay go frame by frame, the timeline, log and jump box step by step ----
 export const atEnd = () => S.step >= S.replay.steps.length - 1 && S.phase >= framesOf(S.step).length - 1;
 export const atStart = () => S.step === 0 && S.phase === 0;
+// The action card draft, seen from a player's point of view, shows nothing of what the opponent chooses (pov.js hides it): the opponent's steps ("X chooses action cards
+// (action card draft)") would be frames that look exactly like the one before, and Next would seem to do nothing. The keys, buttons and autoplay skip them: a draft frame
+// whose lightbox (the draft as the point of view sees it) is the same as the step before. They stay in the log, and the log, the timeline and the jump box still go there.
+function draftSeen(i) {
+  const st = S.replay.steps[i].state;
+  if (!(st && st.phase === 'setup' && st.draft)) return null;
+  const d = povState(st).draft;
+  return JSON.stringify({ ...d, stage: d.stage === 'done' ? 'keep' : d.stage });          // ('done' only says that the opponent's keep, which is hidden, ended the draft: the lightbox looks the same)
+}
+function skipFrame(n, ph) {
+  if (S.pov === null || ph !== 0 || n < 1 || framesOf(n)[0] !== 'draft') return false;
+  const seen = draftSeen(n);
+  return seen !== null && seen === draftSeen(n - 1);
+}
+function frameAfter(n, ph, d) {
+  if (d > 0) return ph < framesOf(n).length - 1 ? [n, ph + 1] : n < S.replay.steps.length - 1 ? [n + 1, 0] : null;
+  return ph > 0 ? [n, ph - 1] : n > 0 ? [n - 1, framesOf(n - 1).length - 1] : null;
+}
 export function stepBy(d) {
-  if (d > 0) { if (S.phase < framesOf(S.step).length - 1) go(S.step, S.phase + 1); else go(S.step + 1); }
-  else if (S.phase > 0) go(S.step, S.phase - 1);
-  else if (S.step > 0) go(S.step - 1, framesOf(S.step - 1).length - 1);
+  let f = frameAfter(S.step, S.phase, d);
+  while (f && skipFrame(f[0], f[1])) { const g = frameAfter(f[0], f[1], d); if (!g) break; f = g; }
+  if (f) go(f[0], f[1]);
 }
 export function go(n, phase = 0) {
   const before = S.step;
