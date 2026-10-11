@@ -1503,3 +1503,11 @@ Scope: `web/js/frames.js`. The gate frame (greyed "must confirm or restart your 
 ## 69. Waves and animal gains are one step
 Scope: `src/ark_nova/replay/view.py` (`_combine_runs`).
 - A Wave (the "Removing n cards ... Wave icons reveal" line, a Mark that keeps a card, the refill of the display) is one step, and so is a run of gains that animals give without asking (appeal / reputation / conservation whose reason is an animal card, "Iconic animal" or "Petting Zoo Animal action"). The text of the run goes in front of the last step (state and prompt of the last step), in the order of the log; later `_fold_unchanged` still joins steps that change nothing visible.
+
+## 70. Pass step, university prompt, duplicate decisions, tabbed header, zoo row sizes
+Scope: `view.py` (`_combine_runs`), `options.py`, `action-bar.js`, `frames.js`, `main.js`, `zoo.js`, `parkposter.css`.
+- An action card put back for an X token ("X gains 1 xtoken" with no reason, then "places action card ... (finishing action)") is one step.
+- The replay bar of a pending `take_tile` effect (the Fac / Partner-Zoo bonus; the effect now carries `tile`) reads "must choose a university / partner zoo to gain" without a button.
+- A decision frame is skipped when the step before has the same decision and the same options, also across moves (the engine state still holds the effect that the log line resolves, e.g. the tutor draw).
+- Tabbed layout: the arrows sit on either side of the name in the zoo tab (`zooStep` in `main.js`), the bar above the board is gone.
+- Tabbed / top-bottom: the bonus panel and the partner zoo strip are 16 % / 16.7 % of the row without the card columns (`.zooRow.withpiles`, `--pilesw`), the proportions they have in the side-by-side layout, so the map grows with them.

@@ -2,6 +2,7 @@
 import { el, seatColor, section } from './util.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { cardRow } from './cards.js';
+import { zooStep } from './main.js';
 import { zooBoard } from './board.js';
 import { associationStrip, bonusPanel } from './association.js';
 
@@ -9,8 +10,13 @@ import { associationStrip, bonusPanel } from './association.js';
 export function renderZoo(st, seat) {
   const p = st.players[seat], who = S.replay.players[seat], map = S.replay.maps[seat];
   const box = el('div', 'zoo seat' + seat + (st.active_player === seat && st.phase !== 'over' ? ' active' : ''));
-  const h = el('h2', '', who.name);                                      // the tab above the zoo: a dot in the player's colour, the name, the map
+  const tabbed = !FORK && !SANDBOX && !PLAY && !MINIGAME && S.zooLayout === 'tabs';
+  const h = el('h2', '', tabbed ? '' : who.name);                        // the tab above the zoo: a dot in the player's colour, the name, the map
   h.style.setProperty('--pc', seatColor(seat));
+  if (tabbed) {                                                          // tabbed: an arrow on either side of the name goes to the other board (main.js `zooStep`)
+    const arrow = (d, label, path) => { const b = el('button', 'zootab-arrow'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label); b.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + path + '"/></svg>'; b.onclick = () => zooStep(d); return b; };
+    h.append(arrow(-1, 'Previous board', 'M13 3L5 10l8 7z'), el('span', 'zootab-name', who.name), arrow(1, 'Next board', 'M7 3l8 7-8 7z'));
+  }
   h.append(el('span', 'map', 'Map ' + map.id + (map.name ? ': ' + map.name : '')));
   box.append(h);
 
@@ -21,7 +27,7 @@ export function renderZoo(st, seat) {
   if (piles) {
     const cols = el('div', 'zoopiles');
     cols.append(section('Animals', cardRow(p.animals, 'small', 'none', seat + ':animals'), 'sect zoopile'), section('Sponsors', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), 'sect zoopile'));
-    row.append(cols);
+    row.append(cols); row.classList.add('withpiles');
   }
   box.append(row);
 

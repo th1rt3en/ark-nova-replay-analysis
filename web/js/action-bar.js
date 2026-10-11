@@ -548,6 +548,11 @@ function genericBar(bar, st, o, seat) {
   const label = S.replay.steps[S.step].label || '';
   const drawn = /draw .* for (perception|hunter|scuba dive) effect/i.test(label);          // the cards of a reveal-and-keep effect have been drawn: the player now chooses
   for (const e of o.effects || []) {                          // every effect the player can resolve has its own button (in any order); automatic gains have none
+    if (!FORK && e.kind === 'take_tile') {                    // (the replay: the tile is taken in the log's next line, there is nothing to click)
+      bar.append(el('b', '', ' must choose a ' + (e.tile === 'partner' ? 'partner zoo' : 'university') + ' to gain'));
+      shown++;
+      continue;
+    }
     if (e.kind === 'reveal' && drawn) {
       const n = e.n || 1;
       bar.append(el('b', '', ' must choose ' + n + ' card' + (n === 1 ? '' : 's') + ' to keep'));

@@ -458,9 +458,8 @@ body.viewer .setrange:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px va
 
 /* Players' boards layout (settings: Players' boards; main.js `zooBoards`): tabbed = one board under an arrow bar, top / bottom = one column */
 body.viewer .zoos.zoos-tabs, body.viewer .zoos.zoos-stack { grid-template-columns: minmax(0, 1fr); }
-body.viewer .zootabs { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 0 6px; }
-body.viewer .zootab-name { font: 700 24px 'Barlow Condensed', system-ui, sans-serif; min-width: 12ch; text-align: center; padding: 4px 18px; background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; }
-body.viewer .zootab-arrow { width: 48px; height: 40px; display: grid; place-items: center; padding: 0; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+body.viewer .zoo h2 .zootab-name { font: inherit; color: inherit; }
+body.viewer .zootab-arrow { flex: none; width: 34px; height: 28px; margin: 0 6px; display: grid; place-items: center; padding: 0; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
 body.viewer .zootab-arrow svg { width: 20px; height: 20px; fill: currentColor; }
 body.viewer .zootab-arrow:hover { background: var(--gold); }
 body.viewer .zootab-arrow:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
@@ -488,3 +487,9 @@ body.viewer .zoopiles .cards { display: flex; flex-direction: column; flex-wrap:
 body.viewer .zoopiles .cards .card, body.viewer .zoopiles .cards.small .card { position: relative; flex: none; width: var(--pw); height: auto; margin: 0 0 calc(var(--pw) * -1.397 * .82); border: 0; border-radius: 8px; box-shadow: 0 0 0 2px var(--ink); }
 body.viewer .zoopiles .cards .card:last-child { margin-bottom: 0; }
 body.viewer .zoopiles .cards .empty { display: none; }
+body.viewer .zoo h2 .zootab-arrow { width: 28px; height: 22px; margin: 0 2px; border-width: 2px; box-shadow: none; }
+body.viewer .zoo h2 .zootab-arrow svg { width: 14px; height: 14px; }
+/* the zoo row with the played-card columns at the right: the bonus panel and the partner zoo strip keep the proportions they have beside the map in the side-by-side layout, of the room that is left after the columns (--pilesw) */
+body.viewer .zooRow.withpiles { --pilesw: 300px; }
+body.viewer .zooRow.withpiles .bonuspanel { flex: 0 0 calc((100% - var(--pilesw)) * .16); width: calc((100% - var(--pilesw)) * .16); }
+body.viewer .zooRow.withpiles .strip { flex: 0 0 calc((100% - var(--pilesw)) * .167); width: calc((100% - var(--pilesw)) * .167); }

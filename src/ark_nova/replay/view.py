@@ -288,6 +288,8 @@ def _join_labels(step: dict, folded: list) -> None:
     step["label_pov"] = [j if j != step["label"] else None for j in joined] if any(j != step["label"] for j in joined) else None
 
 
+_BARE_XTOKEN = re.compile(r"^.+ gains \d+ xtoken$")
+_PLACES_CARD = re.compile(r"^.+ places action card \w+ at position \d+ \(finishing action\)")
 _GAIN = re.compile(r"^.+ gains \d+ (?:appeal|reputation|conservation(?: points?)?) \((.+)\)$")
 
 
@@ -327,8 +329,19 @@ def _combine_runs(steps: list, keep: list) -> list:
 
     wave: list = []                                              # the steps of the Wave on its way
     gains: list = []
+    passed = None                                                # the step "X gains 1 xtoken": an action card put back on slot 1, joined to the line that places it
     for i in order:
         parts = _parts(steps[i])
+        if passed is not None:
+            if parts and _PLACES_CARD.match(parts[0]):
+                merge([passed, i])
+                passed = None
+                continue
+            passed = None
+        if len(parts) == 1 and _BARE_XTOKEN.match(parts[0]) and not wave:
+            merge(gains); gains = []
+            passed = i
+            continue
         if wave:
             wave.append(i)
             if any(p.startswith("The display is replenished") for p in parts):

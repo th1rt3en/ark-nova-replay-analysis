@@ -58,7 +58,8 @@ export function framesOf(i) {
   if (draftOpen(st, i) && probe(i, 'draft')) f[0] = 'draft';       // (the first group of lines of a merged step is the draft's keep)
   if (PLAY && turnEnds(i)) f.push('gate');                  // (a live game only: a replay has nothing to confirm, the frame is skipped)
   const sig = probe(i, 'decision');
-  if (sig && !(i > 0 && steps[i - 1].move_id === steps[i].move_id && probe(i - 1, 'decision') === sig)) f.push('decision');
+  const again = i > 0 && probe(i - 1, 'decision') === sig && (steps[i - 1].move_id === steps[i].move_id || JSON.stringify(steps[i - 1].options) === JSON.stringify(steps[i].options));       // (the decision of the step before, still pending in the engine's state while the log resolves it: nothing new to show)
+  if (sig && !again) f.push('decision');
   cache.set(i, f);
   return f;
 }
