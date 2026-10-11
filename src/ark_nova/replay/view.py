@@ -282,10 +282,11 @@ def _must_choose(step: dict) -> bool:
 def _join_labels(step: dict, folded: list) -> None:
     """The texts of the folded steps go in front of the text of the step that stays (for every point of view)."""
     group = folded + [step]
-    step["label"] = " · ".join(x["label"] for x in group)
-    texts = [[(x["label_pov"] or [None, None])[seat] or x["label"] for x in group] for seat in (0, 1)]
+    label = " · ".join(x["label"] for x in group)
+    texts = [[(x["label_pov"] or [None, None])[seat] or x["label"] for x in group] for seat in (0, 1)]       # (before the label of `step` is replaced: it is one of the group)
     joined = [" · ".join(t) for t in texts]
-    step["label_pov"] = [j if j != step["label"] else None for j in joined] if any(j != step["label"] for j in joined) else None
+    step["label"] = label
+    step["label_pov"] = [j if j != label else None for j in joined] if any(j != label for j in joined) else None
 
 
 _BARE_XTOKEN = re.compile(r"^.+ gains \d+ xtoken$")

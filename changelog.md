@@ -1516,3 +1516,6 @@ Scope: `view.py` (`_combine_runs`), `options.py`, `action-bar.js`, `frames.js`, 
 Scope: `web/js/association.js` (`bonusPanel`), `web/js/frames.js`.
 - Map 11 (Caves): the bonus panel shows the action card upgrade under the first locked worker (the player's third worker, `bonuses.hire_worker`).
 - Replay: a step "X chooses action card ..." has no decision frame ("must play a sponsor or break for money", "must choose a task" ...); the step that follows says what was done. The "must choose an action card" frames after the end of a turn stay.
+
+## 72. Joined labels were doubled in a point of view
+Scope: `src/ark_nova/replay/view.py` (`_join_labels`). The per-player texts of a joined step were built after the step's own label had been replaced by the joined text, so the last line was written twice (X gains 1 xtoken, X gains 1 xtoken, X places ...) in a point of view; the group's own texts are read first now. Applies to every joined step (passes, Waves, animal gains, unchanged steps).
