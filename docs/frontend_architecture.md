@@ -48,6 +48,7 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `playback.js` | autoplay, speed, timeline (shown or hidden by the settings pop-up, changelog.md 8.10), `go(step, frame)`, `stepBy`, move list |
 | `settings.js` | settings pop-up (autoplay speed, timeline row on/off; localStorage `settings`), changelog.md 8.10 |
 | `shortcuts.js` | keyboard shortcuts pop-up behind the ? button (`#extra`, replay page only) and the ? key; the `D` table must match the keydown handler in `main.js`; changelog.md 49 |
+| `nosnake.js` | no-snake mode: `snakeSafe(url)` swaps the 11 snake cards to `<key>_ns` / `_sw` images; used by `cards.js` (small card + `largeOf`); changelog.md 50 |
 | `sandbox.js` | sandbox lobby/setup tools |
 | `logstore.js` | IndexedDB store for uploaded logs. Stays a CLASSIC script (global `LogStore`), loaded in `replay.html` (before `main.js`) and in `submit.html`; `load.js` reads the global for `source=upload`. Do not convert it. |
 | `main.js` | `render()` (redraws only the zones whose position changed, `S.lastBoard`, `reconcile`; changelog.md 13.2), `boot()` |

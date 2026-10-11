@@ -3,11 +3,12 @@ import { $, el } from './util.js';
 import { S } from './state.js';
 import { setSpeed } from './playback.js';
 import { fitSidebar } from './sidebar.js';
+import { NO_SNAKE_MODES } from './nosnake.js';
 
-const KEY = 'settings';                                                    // localStorage: { speed: 1 | 2 | 4, timeline: boolean, hand: 0.5 ... 2, handMode: 'fan' | 'tray' }
+const KEY = 'settings';                                                    // localStorage: { speed: 1 | 2 | 4, timeline: boolean, hand: 0.5 ... 2, handMode: 'fan' | 'tray', noSnake: 'show' | 'hide' | 'worm' }
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } };
 export const HAND_SCALES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];            // the sizes of the cards in the hand (1 = the default size)
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, timeline: S.showTimeline, hand: S.handScale, handMode: S.handMode })); } catch (e) { /* no storage */ } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, timeline: S.showTimeline, hand: S.handScale, handMode: S.handMode, noSnake: S.noSnake })); } catch (e) { /* no storage */ } };
 export const settingsOpen = () => { const m = $('settingsModal'); return !!m && !m.hidden; };
 export function toggleSettings() {
   const m = $('settingsModal'), g = $('settings');
@@ -30,6 +31,7 @@ export function setupSettings() {
   S.speed = [1, 2, 4].includes(st.speed) ? st.speed : 1;                  // default: 1x
   S.handScale = HAND_SCALES.includes(st.hand) ? st.hand : 1;               // default: 1x
   S.handMode = st.handMode === 'fan' ? 'fan' : 'tray';                   // default: the floating tray
+  S.noSnake = NO_SNAKE_MODES.some(([v]) => v === st.noSnake) ? st.noSnake : 'show';        // default: show
   applyHandScale();
   const modal = el('div', 'modal'); modal.id = 'settingsModal'; modal.hidden = true;
   const box = el('div', 'modalbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Settings');
@@ -63,7 +65,13 @@ export function setupSettings() {
   sel.value = S.handMode;
   sel.onchange = () => { S.handMode = sel.value === 'fan' ? 'fan' : 'tray'; save(); document.dispatchEvent(new Event('handmode')); };
   modeRow.append(el('span', 'setlabel', 'Hand display'), sel);
-  box.append(head, speedRow, tlRow, modeRow, handRow);
+  const snakeRow = el('div', 'setrow');                                   // the cards with a snake photo (nosnake.js): shown, suppressed or replaced by the Slow Worm
+  const ssel = el('select', 'setselect'); ssel.setAttribute('aria-label', 'No-snake mode');
+  for (const [v, t] of NO_SNAKE_MODES) { const o = el('option', '', t); o.value = v; ssel.append(o); }
+  ssel.value = S.noSnake;
+  ssel.onchange = () => { S.noSnake = ssel.value; save(); document.dispatchEvent(new Event('nosnake')); };
+  snakeRow.append(el('span', 'setlabel', 'No-snake mode'), ssel);
+  box.append(head, speedRow, tlRow, modeRow, handRow, snakeRow);
   modal.append(box);
   modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });         // a click on the dimmed background closes it
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen()) { e.stopPropagation(); close(); } }, true);

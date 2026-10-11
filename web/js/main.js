@@ -111,6 +111,7 @@ function init() {
   $('next').onclick = () => { stepBy(1); };
   $('play').onclick = () => { setPlaying(!S.timer); };
   setupSettings();
+  document.addEventListener('nosnake', () => { S.lastBoard = null; render(); });                  // (the cards with a snake photo get their new picture at once, no reload)
   setupShortcuts();
   $('last').onclick = () => { go(S.replay.steps.length - 1, 99); };
   $('jump').onchange = (e) => {                                          // a move number past the end jumps to the end (its last frame)
