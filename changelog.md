@@ -1423,3 +1423,15 @@ Scope: `web/js/side-panel.js`, `web/css/parkposter.css`.
 Scope: `web/css/parkposter.css` (`.traybtns`, `.traycount`).
 - The two discs (hand, endgame cards) sit 16 px higher (`top: -46px`, was -30px): their bottom edge is now above the top edge of the cards (measured at 1920 px: disc bottom 826, card top 837) so nothing of the discs lies on a card, folded or not (the head strip of the tray is 20 px, the cards start 25 px below the tray's top edge).
 - The count chips moved from the lower right to the upper right of the disc (`top: -6px; right: -6px`).
+
+## 54. Dragging cards in the hand (audit of the fan drag)
+
+An outside audit (`ark-nova-fan-drag-audit.md`) listed six findings; checked against the code and a before/after run in the browser (6 cards, a 480 px drag to the right and back, grab point measured as pointer minus card centre):
+
+- **Agreed, fixed (1, 2, 3, 4, 6 in part).** Before: the grabbed point drifted by up to 265 px, because `refan()` gave the held card a new `--i` (a new angle) every time it crossed a slot. After: it stays within 0.5 px. `web/js/cards.js` `dragRow`:
+  - the held card keeps its angle (`refan` skips `.dragging`; it is set again on release);
+  - no more clamping of the pointer used for the card position (the hard limits made the card stop while the pointer went on); the card follows the real pointer, only the slot decision is limited (no reordering far above / below the hand);
+  - the shift of the whole row (the raised fan is still rising at pick-up) is taken out with one `row.getBoundingClientRect()`; a running entrance animation (`dockIntro`) is cancelled when the drag starts;
+  - pointer moves are only stored; once per animation frame all neighbours are measured, one target slot is computed and the card is moved once (before: a loop that moved the node and re-measured). A swap needs the pointer 6 px past the neighbour's middle (hysteresis, no flicker on a boundary); the last position counts on release;
+  - one pointer is tracked (`pointerId`); release commits, `pointercancel` / window blur / a live update that replaced the cards **cancel**: the original order is restored and no `cardorder` is sent.
+- **Not done.** (5) The tooltip observer and the two `drop-shadow` filters of the fan row: not measured, no problem seen, so left as they are. (6) A settling animation on release: not added, the card now lands without a jump because the dragged pose and the final pose have the same angle.

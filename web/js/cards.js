@@ -126,47 +126,58 @@ function dragRow(row, zone, shown, nodes) {
     node.style.touchAction = 'none';
     node.addEventListener('pointerdown', (e) => {
       if (e.button !== 0 && e.pointerType === 'mouse') return;
-      const k = S.scale || 1, startX = e.clientX, startY = e.clientY, home = { left: node.offsetLeft, top: node.offsetTop };
-      let moved = false;
-      const place = () => {                                            // the card keeps its distance to the pointer, however the row was rearranged meanwhile
-        const dx = (cx - startX) / k - (node.offsetLeft - home.left), dy = (cy - startY) / k - (node.offsetTop - home.top);
+      const pid = e.pointerId, k = S.scale || 1, startX = e.clientX, startY = e.clientY, home = { left: node.offsetLeft, top: node.offsetTop };
+      const order0 = [...row.children], HYST = 6 * k;                  // (order0: for a cancelled drag; HYST: how far past a neighbour's middle the pointer must go to swap, so a pointer resting on the boundary does not make the order flicker)
+      let moved = false, row0 = null, cx = startX, cy = startY, frame = 0;
+      const place = () => {                                            // the grabbed point stays under the real pointer: the layout shift of the card (reordering) and the shift of the whole row (the raised fan is still rising) are taken out
+        const rr = row.getBoundingClientRect();
+        const dx = (cx - startX) / k - (node.offsetLeft - home.left) - (rr.left - row0.left) / k, dy = (cy - startY) / k - (node.offsetTop - home.top) - (rr.top - row0.top) / k;
         node.style.setProperty('--dx', dx.toFixed(1) + 'px'); node.style.setProperty('--dy', dy.toFixed(1) + 'px');
       };
-      let cx = startX, cy = startY, area = null, grab = null;
+      const reorder = () => {                                          // one slot decision per frame, from the positions measured before anything is moved
+        const others = [...row.children].filter((o) => o !== node && o.dataset && o.dataset.key);
+        const rects = others.map((o) => o.getBoundingClientRect());
+        const ref = rects.length ? rects[0] : null;
+        if (!ref || cy < Math.min(...rects.map((r) => r.top)) - 40 * k || cy > Math.max(...rects.map((r) => r.bottom)) + 40 * k) return;       // (far above / below the hand: the order is left alone)
+        let before = 0, at = others.findIndex((o) => node.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING);
+        if (at < 0) at = others.length;                                // (at: how many of the others lie before the card now)
+        for (let i = 0; i < others.length; i++) {
+          const mid = rects[i].left + rects[i].width / 2;
+          if (i < at ? cx > mid - HYST : cx > mid + HYST) before++; else break;
+        }
+        if (before === at) return;
+        if (before >= others.length) others[others.length - 1].after(node); else others[before].before(node);
+        refan(row);
+      };
+      const tick = () => {
+        frame = 0;
+        if (!node.isConnected) { finish(false); return; }               // (a live update replaced the cards while dragging)
+        reorder(); place();
+      };
       const move = (ev) => {
+        if (ev.pointerId !== pid) return;
         cx = ev.clientX; cy = ev.clientY;
         if (!moved) {
           if (Math.hypot(cx - startX, cy - startY) < 6) return;       // (a click, not a drag)
           moved = true; node.classList.add('dragging'); hidePreview();
+          node.getAnimations().forEach((a) => { if (a.constructor === Animation) a.cancel(); });       // (an entrance animation still running would override the drag's transform)
           document.body.classList.add('card-dragging');               // (keeps the raised hand up while the pointer is outside its hit box)
-          area = row.getBoundingClientRect(); grab = node.getBoundingClientRect();       // (grab: where the card lies, to keep all of it in the window)
+          row0 = row.getBoundingClientRect();
         }
-        if (area) {                                                   // (the card cannot leave the neighbourhood of the hand: the pointer is held inside it)
-          const m = k * (S.handScale || 1);                          // (the margins grow with the size of the cards in the hand; 60 / 90 / 40 px at the default size)
-          const gl = startX - grab.left, gr = grab.right - startX, gt = startY - grab.top, gb = grab.bottom - startY;
-          cx = Math.min(Math.max(cx, area.left - 60 * m, gl + 4), area.right + 60 * m, innerWidth - gr - 4);
-          cy = Math.min(Math.max(cy, area.top - 90 * m, gt + 4), area.bottom + 40 * m, innerHeight - gb + 40);       // (and never leave the window)
-        }
-        for (const other of [...row.children]) {                      // (the neighbour whose middle the pointer has passed swaps places with the card)
-          if (other === node || !other.dataset || !other.dataset.key) continue;
-          const r = other.getBoundingClientRect();
-          if (cy < r.top - 40 || cy > r.bottom + 40) continue;
-          const mid = r.left + r.width / 2, after = other.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING;       // (the dragged card lies after the neighbour)
-          if (after && cx < mid) other.before(node);
-          else if (!after && cx > mid) other.after(node);
-          else continue;
-          refan(row);
-        }
-        place();
+        if (!frame) frame = requestAnimationFrame(tick);
       };
       let done = false;
-      const up = () => {
+      const finish = (commit) => {
         if (done) return; done = true;
-        window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); window.removeEventListener('blur', up);
+        if (frame) { cancelAnimationFrame(frame); frame = 0; }
+        window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onCancel); window.removeEventListener('blur', onCancel);
         if (!moved) return;
         document.body.classList.remove('card-dragging');
         node.classList.remove('dragging'); node.style.removeProperty('--dx'); node.style.removeProperty('--dy');
         node.addEventListener('click', (ev) => ev.stopImmediatePropagation(), { capture: true, once: true });          // (the click that ends a drag does not mark the card)
+        if (!node.isConnected) return;
+        if (!commit) { row.append(...order0.filter((n) => n.parentNode === row)); refan(row); return; }        // (an interrupted drag puts the cards back)
+        refan(row);
         const live = [...row.children].filter((n) => n.dataset && n.dataset.key);
         const keys = live.map((n) => n.dataset.key);
         if (keys.join('|') === shown.join('|')) return;
@@ -177,14 +188,20 @@ function dragRow(row, zone, shown, nodes) {
         userOrder[zone] = keys;
         document.dispatchEvent(new Event('cardorder'));
       };
-      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up); window.addEventListener('blur', up);       // (on the window, not the card: a fast move leaves the card behind and pointer capture is not reliable)
+      const onUp = (ev) => {
+        if (ev.pointerId !== pid || done) return;
+        if (moved && frame) { cancelAnimationFrame(frame); frame = 0; if (node.isConnected) reorder(); }         // (the last position counts)
+        finish(true);
+      };
+      const onCancel = (ev) => { if (!ev.pointerId || ev.pointerId === pid) finish(false); };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onCancel); window.addEventListener('blur', onCancel);       // (on the window, not the card: a fast move leaves the card behind and pointer capture is not reliable)
     });
   });
 }
 function refan(row) {                                                // the cards of a fan carry their place in --i: set again after the order changed
   const cards = [...row.children].filter((n) => n.classList && n.classList.contains('card') && !n.classList.contains('card-gone'));
   if (!row.style.getPropertyValue('--n')) return;
-  cards.forEach((c, i) => c.style.setProperty('--i', (i - (cards.length - 1) / 2).toFixed(1)));
+  cards.forEach((c, i) => { if (!c.classList.contains('dragging')) c.style.setProperty('--i', (i - (cards.length - 1) / 2).toFixed(1)); });       // (the card in the hand keeps its angle, so the grabbed point does not swing away)
 }
 export function cardRow(rawKeys, cls, emptyText, zone, dimmed, markable) {
   const row = el('div', 'cards' + (cls ? ' ' + cls : ''));
