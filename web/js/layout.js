@@ -34,15 +34,17 @@ export function fitDisplay() {
   box.style.zoom = 1;
   const sc = S.scale || 1, rect = (e) => { const r = e.getBoundingClientRect(); return [r.width / sc, r.height / sc]; };       // (getBoundingClientRect is in zoomed px)
   const [nw, nh] = rect(box);
-  let width = box.parentElement.clientWidth;
+  const col = box.parentElement, cs = getComputedStyle(col), px = (n) => parseFloat(cs[n]) || 0;
+  const colX = px('paddingLeft') + px('paddingRight') + px('borderLeftWidth') + px('borderRightWidth'), colY = px('paddingTop') + px('paddingBottom') + px('borderTopWidth') + px('borderBottomWidth');       // (the display's panel: border and padding around the display)
+  let width = col.clientWidth - px('paddingLeft') - px('paddingRight');
   if (S.scaled && tc && board && nw > 0 && getComputedStyle(shared).gridTemplateColumns.split(' ').length > 1) {
     const [tw, th] = rect(tc), [bw, bh] = rect(board);
     if (bw > 0) {
       const rd = nh / nw, rb = bh / bw, c = th - rb * tw;
       const gap = parseFloat(getComputedStyle(shared).columnGap) || 0, W = shared.clientWidth - gap;
-      const wa = Math.max(300, Math.min(W * 0.6, (rd * W - c) / (rd + rb)));
+      const wa = Math.max(300, Math.min(W * 0.6, (rd * (W - colX) + colY - c) / (rd + rb)));
       shared.style.setProperty('--assocw', wa + 'px');
-      width = W - wa;
+      width = W - wa - colX;
     }
   }
   box.style.zoom = Math.max(DISPLAY_MIN, Math.min(DISPLAY_MAX, width / nw));
@@ -53,6 +55,6 @@ export function fitDisplay() {
     const k = S.scale || 1, ir = icon.getBoundingClientRect(), pr = pn.getBoundingClientRect(), first = slots[0].getBoundingClientRect(), last = slots[slots.length - 1].getBoundingClientRect();
     pn.style.setProperty('--shift', (((ir.right + pr.right) / 2 - (first.left + last.right) / 2) / k) + 'px');       // (equal space between the icon and the pair and between the pair and the right edge)
   }
-  fitSidebar();       // (the control panel is aligned with the project area, whose place is final only now)
+  fitSidebar();       // (the width of the control pane's scrollbar, once the layout is final)
 }
 window.addEventListener('resize', () => { fitScale(); fitSidebar(); fitDisplay(); });

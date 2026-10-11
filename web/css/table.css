@@ -61,7 +61,7 @@ aside.sidebar { position: fixed; top: .8rem; right: 1rem; width: var(--sidebar-w
 .settingsbtn .gearicon { width: 1.9rem; height: 1.9rem; display: block; }
 .sidebar .forkinfo { flex: 0 0 auto; border: 2px solid #1b110a; border-radius: 10px; padding: .5rem .65rem; font-size: .85rem; line-height: 1.6; }
 
-/* info (the player trackers): laid out for 19rem, zoomed by fitSidebar() */
+/* info (the player trackers): laid out for 19rem (parkposter.css sets the width and zooms it to the 300 px of the sidebar) */
 .sidebar .side { flex: 0 0 auto; width: 19rem; margin: 0 auto; }
 
 /* log */

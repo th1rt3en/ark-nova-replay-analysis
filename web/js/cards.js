@@ -2,11 +2,12 @@
 import { $, el, title } from './util.js';
 import { FORK, S } from './state.js';
 import { afterMark, forkSingleSelect } from './action-bar.js';
+import { snakeSafe } from './nosnake.js';
 
 export const info = (key) => S.replay.cards[key] || { name: key, type: 'unknown' };
 // The image of the hover preview: the full size card (745 x 1040; every card has one since build_cards.py). Taken from `large` of the card catalog, else from the path of the small card
 // (/cards/X.webp -> /cards_large/X.webp), so a replay cached by the server before the large cards existed still shows them; else the small card itself.
-export const largeOf = (c) => c.large || (c.image && c.image.startsWith('/cards/') ? c.image.replace('/cards/', '/cards_large/') : c.image);
+export const largeOf = (c) => snakeSafe(c.large || (c.image && c.image.startsWith('/cards/') ? c.image.replace('/cards/', '/cards_large/') : c.image));
 export const cardName = (key) => title(info(key).name);
 
 export function card(key, extraClass) {
@@ -21,11 +22,12 @@ export function card(key, extraClass) {
   d.title = cardName(key) + ' (' + key + ')';
   if (c.image) {
     const img = el('img');
-    img.src = c.image; img.alt = cardName(key);                // (not lazy: a card drawn again with the page's next render would show an empty frame first)
+    img.src = snakeSafe(c.image); img.alt = cardName(key);                // (not lazy: a card drawn again with the page's next render would show an empty frame first)
     img.onerror = () => { img.remove(); d.append(textFace(key, c)); };
     d.append(img);
-    d.addEventListener('mouseenter', () => showPreview(largeOf(c), !!d.closest('#dock')));           // (a card of the hand is shown in the middle of the screen)
-    d.addEventListener('mouseleave', hidePreview);
+    bindPreview(d, () => largeOf(c), () => !!d.closest('#dock'));                                    // (a card of the hand is shown in the middle of the screen)
+    d.addEventListener('pointerdown', (e) => { if (e.button === 0 && d.closest('#dock')) holdPreview(largeOf(c)); });         // (grabbing a card of the hand: no enlarged view while it is held or dragged, same as after a click)
+    d.addEventListener('click', () => { if (d.closest('#dock')) holdPreview(largeOf(c)); });         // (a click on a card of the hand: its enlarged view stays away until the pointer has left the card)
   } else {
     d.append(textFace(key, c));
   }
@@ -37,12 +39,45 @@ const PREVIEW_DELAY = 1000;
 let previewTimer = 0, lastTouch = false;
 document.addEventListener('pointerdown', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
 document.addEventListener('pointermove', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
+let heldSrc = null;                                                          // the enlarged card that a click on a card of the hand switched off; the card is drawn again after the click (new element under the pointer), so this is not tied to an element
+function holdPreview(src) { if (lastTouch) return; heldSrc = src; hidePreview(); }       // (touch: the enlarged card opens by a long press, not by hovering: nothing to hold)
 export function showPreview(src, centered) {
   clearTimeout(previewTimer);
-  const show = () => { const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false; };
-  if (lastTouch) show(); else previewTimer = setTimeout(show, PREVIEW_DELAY);
+  if (document.body.classList.contains('card-dragging')) return;             // (a card is being dragged: no enlarged view of the cards it passes)
+  if (heldSrc === src) return;                                               // (still on the clicked card: no enlarged card, not even after the delay)
+  heldSrc = null;                                                            // (another card: the usual rule again)
+  const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;                      // (the action card draft lightbox is open: no enlarged cards, neither in the lightbox nor in the dimmed background)
+  if (lastTouch) return;                                                     // (the mouse events that a tap makes up: on a touch screen only a long press opens it, see bindPreview)
+  previewTimer = setTimeout(() => showNow(src, centered), PREVIEW_DELAY);
+}
+function showNow(src, centered) {
+  const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;
+  const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false;
+}
+// Puts the enlarged view on an element. Mouse: after the pointer has rested on it for PREVIEW_DELAY. Touch: a tap keeps its normal job (selecting, ...); the view opens when a finger stays on the element for TOUCH_HOLD ms
+// without moving (more than TOUCH_SLOP px cancels it, so dragging a card of the hand still works) and stays while it is down: lifting the finger closes it, and the click that may follow is swallowed.
+// `src` and `centered` are values or functions (the card may change between the binding and the hover).
+const TOUCH_HOLD = 1000, TOUCH_SLOP = 10;
+export function bindPreview(elm, src, centered) {
+  const get = (v) => (typeof v === 'function' ? v() : v);
+  elm.addEventListener('mouseenter', () => showPreview(get(src), !!get(centered)));
+  elm.addEventListener('mouseleave', hidePreview);
+  let timer = 0, x0 = 0, y0 = 0, held = false;
+  const stop = () => { clearTimeout(timer); timer = 0; };
+  elm.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    held = false; x0 = e.clientX; y0 = e.clientY; stop();
+    timer = setTimeout(() => { held = true; showNow(get(src), !!get(centered)); }, TOUCH_HOLD);
+  });
+  elm.addEventListener('pointermove', (e) => { if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > TOUCH_SLOP) stop(); });
+  const lift = () => { stop(); if (held) { hidePreview(); setTimeout(() => { held = false; }, 400); } };            // (lifting the finger closes the enlarged view; the click that may follow is still swallowed)
+  elm.addEventListener('pointerup', lift);
+  elm.addEventListener('pointercancel', lift);
+  elm.addEventListener('click', (e) => { if (held) { held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);       // (the end of a long press is not a click)
+  elm.addEventListener('contextmenu', (e) => { if (lastTouch) e.preventDefault(); });                                                   // (no browser menu on a long press)
 }
 export function hidePreview() { clearTimeout(previewTimer); $('preview').hidden = true; }
+document.addEventListener('mouseout', (e) => { if (heldSrc && e.target.closest && e.target.closest('.card') && !(e.relatedTarget && e.target.closest('.card').contains(e.relatedTarget))) heldSrc = null; }, true);       // (the pointer left the card: the next hover on it counts again)
 document.addEventListener('DOMContentLoaded', () => { const pv = $('preview'); if (pv) pv.addEventListener('click', hidePreview); });       // (on touch screens a tap closes the preview)
 function textFace(key, c) {
   const t = el('div', 'txt');
@@ -60,7 +95,7 @@ export function zoneNew(zone, keys) {
   test.isNew = (k) => { seen[k] = (seen[k] || 0) + 1; return !!prev && seen[k] > (count[k] || 0); };
   (prev || []).forEach((k, index) => {
     if (!k) return;
-    if (left[k] > 0) left[k]--; else test.gone.push({ key: k, index });
+    if (left[k] > 0) left[k]--; /* else: a card that left stays gone (no ghost / fade for now) */
   });
   return test;
 }
@@ -84,36 +119,101 @@ export function orderedKeys(zone, keys) {
   return out.concat(left);
 }
 export function quietly(fn) { quiet = true; try { fn(); } finally { quiet = false; } }           // (re-drawing without the arrival / departure flashes)
-function dragRow(row, zone, shown, nodes) {                              // cards of this row can be dragged to another position within the row
-  let dragged = null;
+// Cards of this row can be dragged to another position within the row. The drag is done with pointer events (not the browser's drag and drop, whose drag image is always see-through):
+// the card itself follows the pointer at full opacity (--dx / --dy move it, parkposter.css), and the others make room when the pointer passes the middle of a neighbour.
+function dragRow(row, zone, shown, nodes) {
   nodes.forEach((node) => {
     if (!node.classList || node.classList.contains('card-gone')) return;
-    node.draggable = true;
     node.querySelectorAll('img').forEach((im) => { im.draggable = false; });
-    node.addEventListener('dragstart', (e) => { dragged = node; node.classList.add('dragging'); hidePreview(); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); });
-    node.addEventListener('dragover', (e) => {
-      if (!dragged || dragged === node) return;
-      e.preventDefault();
-      const r = node.getBoundingClientRect();
-      const after = e.clientX > r.left + r.width / 2;
-      const ref = after ? node.nextSibling : node;
-      if (ref !== dragged && dragged.nextSibling !== ref) row.insertBefore(dragged, ref);
-    });
-    node.addEventListener('dragend', () => {
-      node.classList.remove('dragging');
-      if (dragged !== node) return;
-      dragged = null;
-      const live = [...row.children].filter((n) => n.dataset && n.dataset.key);
-      const keys = live.map((n) => n.dataset.key);
-      if (keys.join('|') === shown.join('|')) return;
-      const marked = shown.filter((k, i) => cardMarks.has(zone + '#' + i));                     // the highlighted cards stay highlighted
-      for (const m of [...cardMarks]) if (m.startsWith(zone + '#')) cardMarks.delete(m);
-      const left = keys.slice();
-      for (const k of marked) { const i = left.indexOf(k); if (i >= 0) { cardMarks.add(zone + '#' + i); left[i] = null; } }
-      userOrder[zone] = keys;
-      document.dispatchEvent(new Event('cardorder'));
+    node.style.touchAction = 'none';
+    node.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      const pid = e.pointerId, k = S.scale || 1, startX = e.clientX, startY = e.clientY, home = { left: node.offsetLeft, top: node.offsetTop };
+      const order0 = [...row.children], HYST = 6 * k;                  // (order0: for a cancelled drag; HYST: how far past a neighbour's middle the pointer must go to swap, so a pointer resting on the boundary does not make the order flicker)
+      let moved = false, row0 = null, cx = startX, cy = startY, frame = 0;
+      const fan = !!row.style.getPropertyValue('--n');
+      let ang = 0, u = null, ref = null;                               // fan: the card's angle now, the grabbed point from the card's pivot (u, in the card's own frame) and where it lay at pick-up (ref)
+      const angleOf = () => { const m = getComputedStyle(node).transform; if (!m || m === 'none') return 0; const v = m.match(/-?[\d.e-]+/g).map(Number); return Math.atan2(v[1], v[0]); };
+      const rot = (a, x, y) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
+      const place = () => {                                            // the grabbed point stays under the real pointer: the layout shift of the card (reordering) and the shift of the whole row (the raised fan is still rising) are taken out
+        const rr = row.getBoundingClientRect();
+        let dx = (cx - startX) / k - (node.offsetLeft - home.left) - (rr.left - row0.left) / k, dy = (cy - startY) / k - (node.offsetTop - home.top) - (rr.top - row0.top) / k;
+        if (u) { const q = rot(ang, u[0], u[1]); dx += ref[0] - q[0]; dy += ref[1] - q[1]; }       // (the card turned about its pivot: shifted back so that the grabbed point stays under the pointer)
+        node.style.setProperty('--dx', dx.toFixed(1) + 'px'); node.style.setProperty('--dy', dy.toFixed(1) + 'px');
+      };
+      const reorder = () => {                                          // one slot decision per frame, from the positions measured before anything is moved
+        const others = [...row.children].filter((o) => o !== node && o.dataset && o.dataset.key);
+        const rects = others.map((o) => o.getBoundingClientRect());
+        const ref = rects.length ? rects[0] : null;
+        if (!ref || cy < Math.min(...rects.map((r) => r.top)) - 40 * k || cy > Math.max(...rects.map((r) => r.bottom)) + 40 * k) return;       // (far above / below the hand: the order is left alone)
+        let before = 0, at = others.findIndex((o) => node.compareDocumentPosition(o) & Node.DOCUMENT_POSITION_FOLLOWING);
+        if (at < 0) at = others.length;                                // (at: how many of the others lie before the card now)
+        for (let i = 0; i < others.length; i++) {
+          const mid = rects[i].left + rects[i].width / 2;
+          if (i < at ? cx > mid - HYST : cx > mid + HYST) before++; else break;
+        }
+        if (before === at) return;
+        if (before >= others.length) others[others.length - 1].after(node); else others[before].before(node);
+        refan(row);
+        if (u) ang = angleOf();
+      };
+      const tick = () => {
+        frame = 0;
+        if (!node.isConnected) { finish(false); return; }               // (a live update replaced the cards while dragging)
+        reorder(); place();
+      };
+      const move = (ev) => {
+        if (ev.pointerId !== pid) return;
+        cx = ev.clientX; cy = ev.clientY;
+        if (!moved) {
+          if (Math.hypot(cx - startX, cy - startY) < 6) return;       // (a click, not a drag)
+          moved = true; node.classList.add('dragging'); hidePreview();
+          node.getAnimations().forEach((a) => { if (a.constructor === Animation) a.cancel(); });       // (an entrance animation still running would override the drag's transform)
+          document.body.classList.add('card-dragging');               // (keeps the raised hand up while the pointer is outside its hit box)
+          row0 = row.getBoundingClientRect();
+          if (fan) {
+            ang = angleOf(); const r = node.getBoundingClientRect(), v = rot(-ang, (startX - r.left - r.width / 2) / k, (startY - r.top - r.height / 2) / k);
+            u = [v[0], v[1] - 1.8 * node.offsetHeight]; ref = rot(ang, u[0], u[1]);         // (the pivot of the fan lies 1.8 card heights below the card's middle)
+          }
+        }
+        if (!frame) frame = requestAnimationFrame(tick);
+      };
+      let done = false;
+      const finish = (commit) => {
+        if (done) return; done = true;
+        if (frame) { cancelAnimationFrame(frame); frame = 0; }
+        window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onCancel); window.removeEventListener('blur', onCancel);
+        if (!moved) return;
+        document.body.classList.remove('card-dragging');
+        node.classList.remove('dragging'); node.style.removeProperty('--dx'); node.style.removeProperty('--dy');
+        node.addEventListener('click', (ev) => ev.stopImmediatePropagation(), { capture: true, once: true });          // (the click that ends a drag does not mark the card)
+        if (!node.isConnected) return;
+        if (!commit) { row.append(...order0.filter((n) => n.parentNode === row)); refan(row); return; }        // (an interrupted drag puts the cards back)
+        refan(row);
+        const live = [...row.children].filter((n) => n.dataset && n.dataset.key);
+        const keys = live.map((n) => n.dataset.key);
+        if (keys.join('|') === shown.join('|')) return;
+        const marked = shown.filter((kk, i) => cardMarks.has(zone + '#' + i));                     // the highlighted cards stay highlighted
+        for (const m of [...cardMarks]) if (m.startsWith(zone + '#')) cardMarks.delete(m);
+        const left = keys.slice();
+        for (const kk of marked) { const i = left.indexOf(kk); if (i >= 0) { cardMarks.add(zone + '#' + i); left[i] = null; } }
+        userOrder[zone] = keys;
+        document.dispatchEvent(new Event('cardorder'));
+      };
+      const onUp = (ev) => {
+        if (ev.pointerId !== pid || done) return;
+        if (moved && frame) { cancelAnimationFrame(frame); frame = 0; if (node.isConnected) reorder(); }         // (the last position counts)
+        finish(true);
+      };
+      const onCancel = (ev) => { if (!ev.pointerId || ev.pointerId === pid) finish(false); };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onCancel); window.addEventListener('blur', onCancel);       // (on the window, not the card: a fast move leaves the card behind and pointer capture is not reliable)
     });
   });
+}
+function refan(row) {                                                // the cards of a fan carry their place in --i: set again after the order changed
+  const cards = [...row.children].filter((n) => n.classList && n.classList.contains('card') && !n.classList.contains('card-gone'));
+  if (!row.style.getPropertyValue('--n')) return;
+  cards.forEach((c, i) => c.style.setProperty('--i', (i - (cards.length - 1) / 2).toFixed(1)));       // (the held card turns with its slot; dragRow keeps the grabbed point still)
 }
 export function cardRow(rawKeys, cls, emptyText, zone, dimmed, markable) {
   const row = el('div', 'cards' + (cls ? ' ' + cls : ''));

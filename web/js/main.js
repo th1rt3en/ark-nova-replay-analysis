@@ -2,20 +2,21 @@
 import { FORK, MINIGAME, PLAY, S, SANDBOX, table } from './state.js';
 import { $, el } from './util.js';
 import { setupNoTips } from './notips.js';
-import { povParam, povState } from './pov.js';
+import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, seatOrder } from './pov.js';
 import { fetchReplay } from './load.js';
 import { applyIconNames } from './icons.js';
 import { renderShared } from './shared.js';
 import { actionBar } from './action-bar.js';
 import { closePile, renderPile } from './pile.js';
 import { sidePanel } from './side-panel.js';
-import { renderDock } from './dock.js';
+import { renderDock, toggleDock } from './dock.js';
 import { renderZoo } from './zoo.js';
 import { engineBadge, labelNode } from './log-labels.js';
 import { fitDisplay, fitScale } from './layout.js';
 import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
 import { atEnd, atStart, buildMoveList, buildTimeline, go, setPlaying, stepBy, updateTimeline } from './playback.js';
 import { settingsOpen, setupSettings, toggleSettings } from './settings.js';
+import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
 import { forkBar, initFork, renderForkMoves } from './fork.js';
 import { initPlay } from './play.js';
@@ -46,7 +47,7 @@ export function render() {
   const s = S.replay.steps[S.step], st = povState(frameState());
   const cur = $('current'), kind = frameKind();
   cur.replaceChildren();
-  cur.hidden = kind !== 'text' && kind !== 'both';                 // replay: the step text and the bar are never shown together (frames.js)
+  cur.hidden = kind !== 'text' && kind !== 'both' && (FORK || kind !== 'draft');       // (the replay's draft frame shows the step text in the bar: the cards are in a lightbox)                 // replay: the step text and the bar are never shown together (frames.js)
   if (!cur.hidden) {
     let text = frameText();
     if (FORK && typeof text === 'string') text = text.replace(/^Fork of table #\d+ after step \d+: /, '');       // (the first step of a fork: the server prefixes the label; the fork box above says where it comes from)
@@ -61,14 +62,14 @@ export function render() {
   }
   // The boards are drawn again only when the position changed: the next frame of the same step (the step text, then the decision) has the same boards, and drawing ~100 pictures again
   // made the whole page flicker with every frame. A fork / sandbox / live game draws every time (what is selected or clicked changes the boards).
-  const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov;
+  const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov && S.lastBoard.orient === S.orient;
   if (!same) {
     redraw($('shared'), () => renderShared(st));
     redraw($('side'), () => sidePanel(st));
     const zoos = $('zoos');
-    redraw(zoos, () => zoos.replaceChildren(renderZoo(st, 0), renderZoo(st, 1)));
+    redraw(zoos, () => zoos.replaceChildren(...seatOrder().map((seat) => renderZoo(st, seat))));
     if ($('dock')) redraw($('dock'), () => renderDock(st)); else renderDock(st);
-    S.lastBoard = { st, pov: S.pov };
+    S.lastBoard = { st, pov: S.pov, orient: S.orient };
   } else actionBar(st);                                           // (renderShared draws the bar too: the next frame of the same step shows another bar on the same boards)
   if (FORK) {
     const prev = S.step > 0 ? S.replay.steps[S.step - 1].state : null;          // the hand that just changed (a card found by a search...) is the one the dock shows
@@ -90,6 +91,7 @@ export function render() {
   list.querySelector('.on')?.classList.remove('on');
   const li = list.children[S.step];
   li.classList.add('on');
+  for (let i = 0; i < list.children.length; i++) list.children[i].hidden = i > S.step;       // (spoiler protection: the log only lists the moves up to the one on show)
   followLog();
   history.replaceState(null, '', '#' + S.step + (S.phase ? '.' + S.phase : ''));       // (#13 = step 13, #13.1 = its second frame)
   fitSidebar();
@@ -109,6 +111,8 @@ function init() {
   $('next').onclick = () => { stepBy(1); };
   $('play').onclick = () => { setPlaying(!S.timer); };
   setupSettings();
+  document.addEventListener('nosnake', () => { S.lastBoard = null; render(); });                  // (the cards with a snake photo get their new picture at once, no reload)
+  setupShortcuts();
   $('last').onclick = () => { go(S.replay.steps.length - 1, 99); };
   $('jump').onchange = (e) => {                                          // a move number past the end jumps to the end (its last frame)
     const n = parseInt(e.target.value, 10) || 0;
@@ -117,9 +121,9 @@ function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && S.openedPile) { closePile(); return; }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
-    if ((e.key === 's' || e.key === 'S') && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
-    if (settingsOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
-    const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), End: () => go(S.replay.steps.length - 1, 99) };
+    if ((e.key === 's' || e.key === 'S') && !shortcutsOpen() && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
+    if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
+    const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   });
@@ -128,13 +132,14 @@ function init() {
   else if (FORK) initFork();
   else if (!MINIGAME) {
     const fb = $('fork');
-    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&pov=' + povParam(), '_blank'); };
+    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&pov=' + povParam() + '&orient=' + orientParam(), '_blank'); };
   }
   const [h1, h2] = PLAY ? [S.replay.steps.length - 1, 0] : FORK || MINIGAME ? [0, 0] : location.hash.slice(1).split('.').map((x) => parseInt(x, 10));
   if (loadProgress) loadProgress.done();
   $('loading').hidden = true;
   $('app').hidden = false;
   go(Number.isFinite(h1) ? h1 : 0, Number.isFinite(h2) ? h2 : 0);
+  if (needsChoice()) askSpectated();                                        // (a replay opened for the first time: whom to spectate)
 }
 // start: the old file ended with these two statements inside its function
 let loadProgress = null;                                                 // (the progress circle of the loading box, progress.js)
