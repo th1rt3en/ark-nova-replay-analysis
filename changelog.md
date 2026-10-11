@@ -1542,3 +1542,6 @@ Scope: `web/js/zoo.js`, `parkposter.css`. Side by side (replay): the played anim
 Scope: `web/js/zoo.js`, `parkposter.css`.
 - The Released row under the zoo is gone (the end-of-game statistic stays).
 - Side by side: the zoo box gets padding at the top (`paddingTop` = 34 px + 23 px per card of the longer pile) so the paper reaches up round the piles; the piles show the column names Animals / Sponsors; their `.cards` clip the covered part (`overflow: hidden`), so nothing of it shows between the panels.
+
+## 79. Bigger piles, a paper bump instead of a band
+Scope: `web/js/zoo.js`, `parkposter.css`. Side by side: the cards of the piles are 120 px wide (strip 30 px); the zoo box has no extra padding any more: a bump of paper (`.pilebump`, ink border without a bottom edge, rounded top) rises out of the top edge round the two piles and goes back down at both sides; the zoos get room above for the taller pile.

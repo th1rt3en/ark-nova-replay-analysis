@@ -30,9 +30,11 @@ export function renderZoo(st, seat) {
     const cols = el('div', 'zoopiles' + (behind ? ' behind' : ''));
     cols.append(section('Animals', cardRow(p.animals, 'small', 'none', seat + ':animals'), 'sect zoopile'), section('Sponsors', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), 'sect zoopile'));
     row.append(cols);
-    if (behind) {                                                        // room at the top of the zoo for the taller pile of the two players (a strip is 23 px: the top 18 % of a card 92 px wide)
-      const most = Math.max(...st.players.map((q) => Math.max(q.animals.length, q.sponsors.length)));
-      box.style.paddingTop = (8 + 26 + most * 23) + 'px';                  // (the paper of the zoo reaches up round the piles: the names of the columns 26 px, a strip 23 px)
+    if (behind) {                                                        // a bump of the zoo's paper rises round the piles and goes back down (a strip is 30 px: the top 18 % of a card 120 px wide; the names of the columns 26 px)
+      const most = Math.max(...st.players.map((q) => Math.max(q.animals.length, q.sponsors.length))), tall = 26 + most * 30;
+      const bump = el('div', 'pilebump'); bump.style.height = (tall + 4) + 'px';
+      box.append(bump);
+      box.style.marginTop = Math.max(0, tall - 30) + 'px';                 // (room above the zoos for the taller pile of the two players)
     } else row.classList.add('withpiles');
   }
   box.append(row);
