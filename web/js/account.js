@@ -167,7 +167,8 @@ async function init() {
     account = me.account;
   } catch (e) { return; }                                // the accounts are off on this server: no widget
   window.arkAccountsEnabled = true; window.arkAccount = account;
-  document.body.append(bar, dlg);
+  if (!movebar) document.body.append(bar);                    // (on a viewer page the widget is already in the move bar)
+  document.body.append(dlg);
   renderBar();
   document.dispatchEvent(new CustomEvent('account-changed', { detail: account }));
 }
