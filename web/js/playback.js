@@ -74,7 +74,9 @@ export const atStart = () => S.step === 0 && S.phase === 0;
 // whose lightbox (the draft as the point of view sees it) is the same as the step before. They stay in the log, and the log, the timeline and the jump box still go there.
 function draftSeen(i) {
   const st = S.replay.steps[i].state;
-  return st && st.phase === 'setup' && st.draft ? JSON.stringify(povState(st).draft) : null;
+  if (!(st && st.phase === 'setup' && st.draft)) return null;
+  const d = povState(st).draft;
+  return JSON.stringify({ ...d, stage: d.stage === 'done' ? 'keep' : d.stage });          // ('done' only says that the opponent's keep, which is hidden, ended the draft: the lightbox looks the same)
 }
 function skipFrame(n, ph) {
   if (S.pov === null || ph !== 0 || n < 1 || framesOf(n)[0] !== 'draft') return false;
