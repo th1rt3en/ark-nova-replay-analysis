@@ -1524,4 +1524,4 @@ Scope: `src/ark_nova/replay/view.py` (`_join_labels`). The per-player texts of a
 Scope: `web/js/side-panel.js`, `parkposter.css`. The Venom, Constriction and Multiplier tokens on a player's action cards (`action_cards[].tokens`, already in the state) are drawn as small round icons on the lower right corner of the card in the player box (sheet icons r2c12, r2c9, r6c8), with a tooltip.
 
 ## 74. Worker silhouette behind the locked workers
-Scope: `scripts/build_worker_slot.py`, `web/assets/worker_slot.webp`, `web/js/association.js`. The silhouette slot of the association board (light blue rounded square, 186 px) replaces the pink rectangles behind the three locked workers of the bonus panel; the meeple lies over it, an empty (unlocked) slot shows the silhouette.
+Scope: `scripts/build_worker_slot.py`, `web/assets/worker_slot.webp`, `web/js/association.js`. The silhouette slot of the association board (recoloured to a light pink, a lighter shade of the zone, centred in it vertically; rounded square, 186 px) replaces the pink rectangles behind the three locked workers of the bonus panel; the meeple lies over it, an empty (unlocked) slot shows the silhouette.
