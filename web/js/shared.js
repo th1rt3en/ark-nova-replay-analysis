@@ -1,5 +1,5 @@
 // [module] Shared area of the table: card folders, the display, the reputation track, upgrade / worker thresholds, the conservation track.
-import { $, el, seatColor, section, svg } from './util.js';
+import { $, el, seatRawColor, section, svg } from './util.js';
 import { FORK, S, SANDBOX } from './state.js';
 import { curState } from './pov.js';
 import { card, cardMarks, ghost, zoneNew } from './cards.js';
@@ -81,7 +81,7 @@ function conservationTrack(st) {
   st.players.forEach((p, seat) => {
     if (p.conservation > 10) return;                                   // past the end of this track
     const same = st.players.filter((q) => q.conservation === p.conservation);
-    const cube = blockedCube(0, seatColor(seat), S.replay.players[seat].name + ': conservation ' + p.conservation);
+    const cube = blockedCube(0, seatRawColor(seat), S.replay.players[seat].name + ': conservation ' + p.conservation, undefined, 'cylinders');
     cube.setAttribute('class', 'trackcube');
     cube.style.left = ((CT_X(p.conservation) + (same.length > 1 ? (seat - 0.5) * 0.03 : 0)) * 100) + '%';
     cube.style.top = '26%';
@@ -131,7 +131,7 @@ export function renderShared(st) {
   const repCubes = st.players.map((p, seat) => ({ seat, x: repX[Math.max(0, Math.min(15, p.reputation))] / 2000, rep: p.reputation }));
   repCubes.forEach((c, i) => {
     const same = repCubes.filter((o) => o.x === c.x);
-    const cube = blockedCube(0, seatColor(c.seat), S.replay.players[c.seat].name + ': reputation ' + c.rep + ', draws from the first ' + repRange(c.rep) + ' cards of the display');
+    const cube = blockedCube(0, seatRawColor(c.seat), S.replay.players[c.seat].name + ': reputation ' + c.rep + ', draws from the first ' + repRange(c.rep) + ' cards of the display', undefined, 'cylinders');
     cube.setAttribute('class', 'trackcube');
     cube.style.left = ((c.x + (same.length > 1 ? (same.indexOf(c) - 0.5) * 0.026 : 0)) * 100) + '%';
     cube.style.top = '50%';

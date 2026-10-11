@@ -50,7 +50,7 @@ body.minigame .sbtabs { display: none; }
 .pz-dbar { display: block; height: .4rem; margin-top: .15rem; border-radius: 3px; background: rgba(255, 255, 255, .25); overflow: hidden; }
 .pz-dbar u { display: block; height: 100%; background: #b9a3e6; text-decoration: none; }
 /* the tracker on the right starts below the account widget instead of under it */
-body.minigame aside.sidebar { top: 4.4rem; height: calc(var(--vh, 1vh) * 100 - 5.2rem); }
+body.minigame aside.sidebar { top: max(90px, 4.4rem); height: calc(var(--vh, 1vh) * 100 - max(90px, 4.4rem) - 12px); }
 /* the calendar inside the cream puzzle panel: its own colours (the shared look is in style.css) */
 #puzzle .cal { --c-fg: #2b1d12; --c-muted: #7a6455; --c-line: #c9b98a; --c-bg: #f7f0d6; --c-accent: #2f6fd0; --c-ok: #3f9e66; --c-ok-bg: #dcefd9; --c-on-accent: #fff; margin: .4rem 0 .2rem; }
 #puzzle details > summary { cursor: pointer; font-weight: 700; margin: .4rem 0; }

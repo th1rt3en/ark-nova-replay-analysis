@@ -22,3 +22,9 @@ cloudflare/
 .wrangler/
 package.json
 package-lock.json
+
+# Dev-only folders / files the Dockerfile never copies (it takes only pyproject.toml, src/ and web/)
+bga_ui_screenshots/
+extension/
+pages/
+engine_versions.json

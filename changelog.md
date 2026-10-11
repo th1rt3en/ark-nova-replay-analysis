@@ -1459,3 +1459,13 @@ Scope: `web/js/side-panel.js` (`turnNumber`), `web/js/log-labels.js` (`engineBad
 Scope: `web/js/playback.js` (`draftSeen`), `web/css/parkposter.css`.
 - Bug found on table 927726814, point of view BDWSSBB: the last frame of the draft (the opponent's keep) was not skipped, although the lightbox looked exactly like the one before. Cause: the opponent's hidden keep ends the draft, so `draft.stage` changes from `keep` to `done`, which made the two views differ for `draftSeen`. `draftSeen` now treats `done` like `keep` (the view of a keep that changes what the viewer sees, i.e. his own, still differs through `kept`). Checked from both points of view, forward and back.
 - The log uses weight 600 (was 700 since section 58); the selected line stays 700.
+
+## 60. Player cubes and cylinders from the fan site
+Scope: `scripts/build_cubes.py`, `web/cubes/`, `web/cylinders/`, `web/js/icons.js` (`pieceUrl`, `pieceImage`), `projects.js`, `association.js`, `board.js`, `shared.js`.
+- The isometric SVG cubes are replaced by the pictures `cubes.png` / `cylinders.png` of Next-Ark-Nova-Cards (cut per BGA player colour into `web/cubes/<hex>.webp`, `web/cylinders/<hex>.webp`, same colour order as `web/workers/`). A seat is matched by its raw BGA colour (`seatRawColor`, so white stays white).
+- Cubes: project slots (supporters and the 2-player blocked slots), Mark cube, donation cells, association bonus-slot cubes, map 9 continent markers. Cylinders: the reputation and conservation tracks (`blockedCube(..., kind)`).
+- Blocked cubes use a BGA colour nobody plays (`BLOCKED_COLORS` in `association.js`).
+
+## 61. Folded steps are one frame
+Scope: `web/js/frames.js` (`textParts`).
+- `replay/view.py` joins a step that changes nothing visible to the next one with " · " in the label (the log keeps every text). `textParts` split every label on " · " into one text frame per group of lines (meant for the merged steps of the setup), so each folded step became several forward presses with the same board. Now only a step of the setup phase is split; elsewhere the whole joined text is one frame.

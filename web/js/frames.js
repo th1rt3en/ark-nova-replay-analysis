@@ -26,7 +26,7 @@ export function frameText() {
 // (they act simultaneously) only the followed player's are kept
 function textParts(i) {
   const label = String(labelOf(S.replay.steps[i]) || '(state update)'), parts = label.split(' · ');
-  if (parts.length < 2) return [label];
+  if (parts.length < 2 || S.replay.steps[i].state.phase !== 'setup') return [label];       // (outside the setup, " · " joins the steps that `view.py` folded into this one because nothing visible changed: one frame, the whole text)
   const names = S.replay.players.map((p) => p.name), owner = (p) => names.findIndex((n) => p.startsWith(n + ' '));
   const groups = [];
   for (const p of parts) {

@@ -1,8 +1,8 @@
 // [module] Association board, conservation bonus panel and the association strip of a player.
-import { mix, seatColor, svg } from './util.js';
+import { seatRawColor, svg } from './util.js';
 import { FORK, S } from './state.js';
 import { zoneNew } from './cards.js';
-import { ICON_IDS, SLOT_ICON, SLOT_NUMBER, iconUrl, moneyTile, workerUrl } from './icons.js';
+import { ICON_IDS, SLOT_ICON, SLOT_NUMBER, iconUrl, moneyTile, pieceUrl, workerUrl } from './icons.js';
 import { bindActs, forkActs } from './action-bar.js';
 import { render } from './main.js';
 
@@ -17,7 +17,7 @@ const ASSOC = {
   },
 };
 
-const BLOCKED_COLORS = ['#d9372b', '#2fa84f', '#e8c030', '#e07a1f', '#7a4fd0'];
+const BLOCKED_COLORS = ['#7f4e30', '#b91b1b', '#d1c81c', '#cb7b19', '#c028d3'];       // (BGA's player colours, the pieces of web/cubes)
 export function unusedColor() {
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const far = (c) => S.replay.players.every((p) => !p.color || rgb(c).reduce((d, v, i) => d + Math.abs(v - rgb(p.color)[i]), 0) > 200);
@@ -66,19 +66,15 @@ export function associationBoard(st) {
     const w = 92, h = w * 277 / 282;
     put('image', { href: workerUrl(seat), x: cx - w / 2, y: cy - h / 2, width: w, height: h }, undefined, tip);
   };
-  // a cube like the ones on the base projects (isometric, three shades of the colour), centred on (x, y)
+  // a cube of the fan site's picture (web/cubes, as on the base projects), centred on (x, y)
   const cubeAt = (x, y, colour, tip) => {
-    const g = svg('g', { transform: 'translate(' + x + ' ' + (y - 2) + ') scale(1.55)' });
-    const edge = mix(colour, '#000000', .6);
-    for (const [pts, fill] of [['0,-19 19,-9 0,2 -19,-9', mix(colour, '#ffffff', .45)], ['-19,-9 0,2 0,21 -19,10', colour], ['19,-9 0,2 0,21 19,10', mix(colour, '#000000', .3)]]) {
-      g.append(svg('polygon', { points: pts, fill, stroke: edge, 'stroke-width': 1.3, 'stroke-linejoin': 'round' }));
-    }
+    const g = svg('image', { href: pieceUrl('cubes', colour), x: x - 37, y: y - 39, width: 74, height: 74 });
     if (tip) { const t = svg('title'); t.textContent = tip; g.append(t); }
     s.append(g);
   };
   const blocked = unusedColor();                     // 2 players: the left donation cells of 5 / 7 / 10 money are covered by cubes of a colour nobody plays
   for (const k of [1, 3, 5]) cubeAt(ASSOC.donation[k][0], ASSOC.donation[k][1], blocked, 'Blocked in a 2 player game');
-  ASSOC.donation.forEach(([x, y], k) => (at['association_0_' + k] || []).forEach((seat) => cubeAt(x, y, seatColor(seat), S.replay.players[seat].name + ': donation')));      // a donation is a cube of the player's colour
+  ASSOC.donation.forEach(([x, y], k) => (at['association_0_' + k] || []).forEach((seat) => cubeAt(x, y, seatRawColor(seat), S.replay.players[seat].name + ': donation')));      // a donation is a cube of the player's colour
   for (const [n, [cx, cy, xs]] of Object.entries(ASSOC.workers)) {
     (at['association_' + n] || []).slice(0, 3).forEach((seat, i) => {
       workerAt(cx + xs[i], cy, seat, S.replay.players[seat].name + ': worker');
@@ -102,7 +98,6 @@ function conservationBonus(root, cx, cy, h, value, tip) {
 }
 
 export function bonusPanel(map, p, seat) {
-  const color = seatColor(seat);
   const slots = [...map.bonus_slots].sort((a, b) => a.index - b.index);
   const lead = slots.findIndex((x) => x.kind !== 'instant_income');
   const upper = lead === -1 ? slots.length : Math.max(lead, 1);              // the purple (income) slots come first, in the upper panel
@@ -187,11 +182,7 @@ export function bonusPanel(map, p, seat) {
         hit.addEventListener('click', () => { S.forkBonus = sl.index; render(); });
       }
       if (!(used & (1 << sl.index))) {                     // the cube is still on the slot: its bonus has not been chosen yet
-        const cx = 46, c = add('g', { transform: 'translate(' + cx + ' ' + (y - 1) + ')' });
-        const face = (pts, fill) => c.append(svg('polygon', { points: pts, fill, stroke: mix(color, '#000000', .6), 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
-        face('0,-19 19,-9 0,2 -19,-9', mix(color, '#ffffff', .45));
-        face('-19,-9 0,2 0,21 -19,10', color);
-        face('19,-9 0,2 0,21 19,10', mix(color, '#000000', .3));
+        const cx = 46, c = add('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: cx - 26, y: y - 27, width: 52, height: 52 });
         const tip = svg('title');
         tip.textContent = S.replay.players[seat].name + ': bonus ' + (sl.index + 1) + ' not chosen yet';
         c.append(tip);

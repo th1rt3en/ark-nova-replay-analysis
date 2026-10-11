@@ -1,8 +1,8 @@
 // [module] Zoo board geometry (axial hex maths, map cells, building sprites, legal-placement test) and the SVG zoo board.
 import { FORK, S, params } from './state.js';
 import { cardName, zoneNew } from './cards.js';
-import { ICON_IDS, SHOW_VALUE, iconUrl, moneyTile } from './icons.js';
-import { mix, seatColor, svg } from './util.js';
+import { ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, pieceUrl } from './icons.js';
+import { seatRawColor, svg } from './util.js';
 import { render } from './main.js';
 import { playFork } from './fork.js';
 import { animalSelection } from './action-bar.js';
@@ -99,11 +99,7 @@ export function zooBoard(map, player, seat) {
       const cx = Math.max(52, Math.min(1070, at[c][0])), cy = Math.max(30, Math.min(946, at[c][1]));
       const g = svg('g', {});
       g.append(svg('rect', { x: cx - 50, y: cy - 25, width: 100, height: 50, rx: 12, fill: '#f3ecd2', stroke: '#2b1d12', 'stroke-width': 3 }));
-      const col = seatColor(seat), edge = mix(col, '#000000', .6);
-      const cube = svg('g', { transform: 'translate(' + (cx - 24) + ' ' + (cy - 1) + ') scale(.8)' });
-      for (const [pts, fill] of [['0,-19 19,-9 0,2 -19,-9', mix(col, '#ffffff', .45)], ['-19,-9 0,2 0,21 -19,10', col], ['19,-9 0,2 0,21 19,10', mix(col, '#000000', .3)]]) {
-        cube.append(svg('polygon', { points: pts, fill, stroke: edge, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
-      }
+      const cube = svg('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: cx - 24 - 19, y: cy - 1 - 19, width: 38, height: 38 });
       g.append(cube);
       const id = ICON_IDS[c];
       if (id) { const [w0, h0] = S.iconSizes[id] || [190, 152], h = 38, w = w0 * h / h0; g.append(svg('image', { href: iconUrl(id), x: cx + 26 - w / 2, y: cy - h / 2, width: w, height: h })); }

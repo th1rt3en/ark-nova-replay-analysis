@@ -44,11 +44,20 @@ export function moneyTile(root, cx, cy, size) {
 // chosen (a conservation project was supported) and a worker disappears when it is unlocked. Cubes and workers are drawn in the player's colour.
 // BGA's player colours with a worker picture (web/workers); a colour that is not one of them gets the closest
 const WORKER_COLORS = ['30a638', '1863a5', '7f4e30', '000000', '5a5856', 'ffffff', 'd1c81c', 'b91b1b', 'c028d3', 'cb7b19'];
-export function workerUrl(seat) {
-  const c = seatRawColor(seat).replace('#', '').toLowerCase();          // (the colour as BGA has it: a white player keeps BGA's white meeple)
+function nearestPlayerColor(hex) {
+  const c = hex.replace('#', '').toLowerCase();
   const rgb = (h) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
   const dist = (h) => rgb(h).reduce((d, v, i) => d + Math.abs(v - rgb(c)[i]), 0);
-  return '/workers/' + WORKER_COLORS.reduce((best, h) => (dist(h) < dist(best) ? h : best)) + '.webp';
+  return WORKER_COLORS.reduce((best, h) => (dist(h) < dist(best) ? h : best));
+}
+export function workerUrl(seat) {
+  return '/workers/' + nearestPlayerColor(seatRawColor(seat)) + '.webp';          // (the colour as BGA has it: a white player keeps BGA's white meeple)
+}
+// the player pieces of the fan site (scripts/build_cubes.py): `kind` 'cubes' (projects, donations, marks, map 9 markers) or 'cylinders' (the reputation and conservation tracks), one picture per BGA colour
+export const pieceUrl = (kind, hex) => '/' + kind + '/' + nearestPlayerColor(hex) + '.webp';
+// the same as an <image> in an svg whose viewBox is centred on the piece (cubes 48 px cells, cylinders 72): `size` is the side in the units of that svg
+export function pieceImage(kind, hex, size) {
+  return svg('image', { href: pieceUrl(kind, hex), x: -size / 2, y: -size / 2, width: size, height: size });
 }
 // icon (and whether to print the value on it) of a bonus slot
 export const SLOT_ICON = {};   // the slots use the same icons as the placement bonuses (ICON_IDS 'bonus:<type>', named from BGA's stylesheet)

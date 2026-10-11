@@ -1,8 +1,8 @@
 // [module] Conservation project panel: project cards, worker / owner markers, blocked cubes.
-import { el, mix, seatColor, svg } from './util.js';
+import { el, seatRawColor, svg } from './util.js';
 import { S } from './state.js';
 import { bindPreview, info, largeOf, zoneNew } from './cards.js';
-import { iconUrl } from './icons.js';
+import { iconUrl, pieceImage } from './icons.js';
 import { unusedColor } from './association.js';
 
 
@@ -21,15 +21,12 @@ function projectTokens(st, key) {
 const SLOT_X = [0.375, 0.625, 0.875];       // (a cube on a card of the track areas / when a strip has no entry in cubes.json: the middle of the three slots of a strip)
 const STRIP_CUBES = await fetch('/project_strips/cubes.json').then((r) => r.json()).catch(() => ({}));       // {key: [[x, y, width], ...]}: where the cube of each slot of a project strip goes (fractions of the strip; made by scripts/build_cards.py, the slots are centred and enlarged)
 const stripOf = (c) => (c.image && c.image.startsWith('/cards/') ? c.image.replace('/cards/', '/project_strips/') : '');
-export function blockedCube(i, colour, title, spot) {            // colour / title: a cube of a player who supports the project at slot i; spot: [x, y, width] on a project strip
+export function blockedCube(i, colour, title, spot, kind = 'cubes') {            // colour / title: a cube of a player who supports the project at slot i; spot: [x, y, width] on a project strip; kind 'cylinders' for the tracks
   const c = colour || unusedColor();
-  const e = mix(c, '#000000', .6);
   const g = svg('svg', { class: 'blockcube', viewBox: '-24 -24 48 48' });
   g.style.left = ((spot ? spot[0] : SLOT_X[i]) * 100) + '%';
   if (spot) { g.style.top = (spot[1] * 100) + '%'; g.style.width = (spot[2] * 100) + '%'; }
-  for (const [pts, fill] of [['0,-19 19,-9 0,2 -19,-9', mix(c, '#ffffff', .45)], ['-19,-9 0,2 0,21 -19,10', c], ['19,-9 0,2 0,21 19,10', mix(c, '#000000', .3)]]) {
-    g.append(svg('polygon', { points: pts, fill, stroke: e, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
-  }
+  g.append(pieceImage(kind, c, 48));
   const tip = svg('title');
   tip.textContent = title || 'Blocked in a 2 player game';
   g.append(tip);
@@ -57,7 +54,7 @@ export function projectPanel(st, keys, count, iconName, title, blocked) {
       const spots = STRIP_CUBES[keys[i]] || [];
       if (blocked) line.append(blockedCube(i, undefined, undefined, spots[i]));
       for (const t of projectTokens(st, keys[i])) {         // a supporter's cube blocks its slot
-        line.append(blockedCube(t.slot, seatColor(t.seat), S.replay.players[t.seat].name + ': slot ' + (t.slot + 1), spots[t.slot]));
+        line.append(blockedCube(t.slot, seatRawColor(t.seat), S.replay.players[t.seat].name + ': slot ' + (t.slot + 1), spots[t.slot]));
       }
       wrap.append(line);
       slot.append(wrap);
@@ -72,11 +69,8 @@ export function markOwner(st, key) {
   return st.players.findIndex((p) => p.tokens.some((t) => t.type === 'token' && t.location.slice(0, 5) === key + '_'));
 }
 export function markCube(seat) {
-  const c = seatColor(seat), e = mix(c, '#000000', .6);
   const g = svg('svg', { class: 'markcube', viewBox: '-24 -24 48 48' });
-  for (const [pts, fill] of [['0,-19 19,-9 0,2 -19,-9', mix(c, '#ffffff', .45)], ['-19,-9 0,2 0,21 -19,10', c], ['19,-9 0,2 0,21 19,10', mix(c, '#000000', .3)]]) {
-    g.append(svg('polygon', { points: pts, fill, stroke: e, 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
-  }
+  g.append(pieceImage('cubes', seatRawColor(seat), 48));
   const tip = svg('title');
   tip.textContent = 'Marked by ' + S.replay.players[seat].name;
   g.append(tip);
