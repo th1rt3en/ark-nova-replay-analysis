@@ -1,6 +1,6 @@
 // Isolated world: receives the captured log, shows the button, and hands the log to the replay site's import page.
 (() => {
-  const DEFAULT_SITE = 'https://ark-nova-replay-analysis-725889947830.us-central1.run.app';
+  const DEFAULT_SITE = 'https://ark-nova.pages.dev';
   const api = typeof browser !== 'undefined' ? browser : chrome;
   let captured = null;                                   // { table, log }
   let button = null;
