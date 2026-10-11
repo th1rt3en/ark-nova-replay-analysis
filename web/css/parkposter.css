@@ -320,7 +320,7 @@ body.viewer .handtray .cards .card, body.viewer .handtray .cards.small .card { w
 body.viewer .handtray .cards .card:hover { z-index: 6; }
 body.viewer .handtray .cards .card.dragging, body.viewer .handtray .cards .card.dragging:hover { z-index: 20; cursor: grabbing; transition: none; box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 10px 18px rgba(0, 0, 0, .45); }
 body.viewer .handtray .cards .empty { display: block; padding: 6px 4px 14px; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; opacity: .55; }
-body.viewer .traybtns { position: absolute; left: 22px; top: -43px; z-index: 40; display: flex; gap: 14px; pointer-events: auto; }
+body.viewer .traybtns { position: absolute; left: 22px; top: -46px; z-index: 40; display: flex; gap: 14px; pointer-events: auto; }
 body.viewer .traydisc { position: relative; display: grid; place-items: center; width: 60px; height: 60px; padding: 0; border: 0; border-radius: 50%; background: rgba(98, 98, 98, .92); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); cursor: pointer; }
 body.viewer .traydisc:hover { background: rgba(120, 120, 120, .95); }
 body.viewer .traydisc.on, body.viewer .traydisc.on:hover { background: var(--sun); box-shadow: 0 0 0 3px var(--ink), 0 4px 0 3px var(--ink); }

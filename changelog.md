@@ -1421,5 +1421,5 @@ Scope: `web/js/side-panel.js`, `web/css/parkposter.css`.
 
 ## 53. Floating tray: the discs no longer overlap the cards
 Scope: `web/css/parkposter.css` (`.traybtns`, `.traycount`).
-- The two discs (hand, endgame cards) sit 13 px higher (`top: -43px`, was -30px): their bottom edge is now above the top edge of the cards (measured at 1920 px: disc bottom 829, card top 839) so nothing of the discs lies on a card, folded or not (the head strip of the tray is 20 px, the cards start 25 px below the tray's top edge).
+- The two discs (hand, endgame cards) sit 16 px higher (`top: -46px`, was -30px): their bottom edge is now above the top edge of the cards (measured at 1920 px: disc bottom 826, card top 837) so nothing of the discs lies on a card, folded or not (the head strip of the tray is 20 px, the cards start 25 px below the tray's top edge).
 - The count chips moved from the lower right to the upper right of the disc (`top: -6px; right: -6px`).
