@@ -1545,3 +1545,6 @@ Scope: `web/js/zoo.js`, `parkposter.css`.
 
 ## 79. Bigger piles, a paper bump instead of a band
 Scope: `web/js/zoo.js`, `parkposter.css`. Side by side: the cards of the piles are 120 px wide (strip 30 px); the zoo box has no extra padding any more: a bump of paper (`.pilebump`, ink border without a bottom edge, rounded top) rises out of the top edge round the two piles and goes back down at both sides; the zoos get room above for the taller pile.
+
+## 80. One outline for a zoo with a bump
+Scope: `web/js/zoo.js` (`outline`), `parkposter.css`. The paper bump was a separate box, so its border did not join the zoo's and the gold ring of the active player ignored it. A zoo with piles behind its board (`.hasbump`) has no background, border or shadow of its own any more: an svg behind the content (`.zoooutline`, redrawn by a ResizeObserver) draws one path for the paper, the ink border (clipped stroke), the hard shadow and the gold ring, with rounded inner corners where the bump joins the top edge.

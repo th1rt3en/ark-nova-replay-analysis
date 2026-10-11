@@ -510,6 +510,12 @@ body.viewer .zoopiles.behind h3 { margin: 0 0 4px; font-size: 16px; }
 body.viewer .zoopiles.behind .cards { overflow: hidden; padding: 2px 2px 0; margin: -2px -2px 0; }          /* (the covered part of the cards is cut off, not hidden behind the board: nothing of it shows between the panels) */
 body.viewer .zoopiles.behind .cards .card, body.viewer .zoopiles.behind .cards.small .card { margin-bottom: calc(var(--pw) * -1.397 * .82); border-radius: 7px; }
 body.viewer .zoopiles.behind .cards .card:last-child { margin-bottom: calc(var(--pw) * -1.397 * .82); }
-/* the bump of the zoo's paper behind the piles (zoo.js): it rises out of the top edge, covers the seam of the zoo's border, and goes back down at both sides */
-body.viewer .zoo .pilebump { position: absolute; right: 22px; bottom: calc(100% - 2px); width: calc(var(--bw, 120px) * 2 + 8px + 24px); box-sizing: border-box; background: var(--paper); border: 4px solid var(--ink); border-bottom: 0; border-radius: 18px 18px 0 0; pointer-events: none; }
-body.viewer .zoo .pilebump { --bw: 120px; }
+/* a zoo with a bump (zoo.js `outline`): the paper, the ink border, the hard shadow and the gold ring of the active player are one svg behind the content, so the bump joins the border cleanly */
+body.viewer .zoo.hasbump { isolation: isolate; background: transparent; border-color: transparent; box-shadow: none; }
+body.viewer .zoo.active.hasbump { box-shadow: none; }
+body.viewer .zoo .zoooutline { position: absolute; z-index: -1; overflow: visible; pointer-events: none; }
+body.viewer .zoooutline .zo-shadow { fill: var(--ink); }
+body.viewer .zoooutline .zo-ring { fill: none; stroke: none; }
+body.viewer .zoo.active .zoooutline .zo-ring { fill: var(--gold); stroke: var(--gold); stroke-width: 16; stroke-linejoin: round; }
+body.viewer .zoooutline .zo-paper { fill: var(--paper); }
+body.viewer .zoooutline .zo-ink { fill: none; stroke: var(--ink); stroke-width: 8; stroke-linejoin: round; }

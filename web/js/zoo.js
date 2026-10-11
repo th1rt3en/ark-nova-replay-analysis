@@ -7,6 +7,36 @@ import { zooBoard } from './board.js';
 import { associationStrip, bonusPanel } from './association.js';
 
 
+// The outline of a zoo with a bump (side by side): one shape for the paper, the ink border, the hard shadow and the gold ring of the active player, drawn as an svg behind the content (the
+// box itself has no background, border or shadow then, `.hasbump` in parkposter.css). The bump rises round the two piles at the top right and joins the top edge with rounded inner corners.
+function outline(box, tall) {
+  const ns = 'http://www.w3.org/2000/svg', R = 20, F = 16, C = 18, BW = 2 * 120 + 8 + 24;
+  const svgEl = document.createElementNS(ns, 'svg');
+  svgEl.setAttribute('class', 'zoooutline'); svgEl.setAttribute('aria-hidden', 'true');
+  box.prepend(svgEl);
+  const draw = () => {
+    if (!box.isConnected) { ro.disconnect(); return; }
+    const W = box.offsetWidth, Hb = box.offsetHeight, B = tall, x1 = W - 26, x0 = x1 - BW, top = 0;
+    if (!W || x0 < R + F) { svgEl.replaceChildren(); return; }
+    const d = ['M', R, B, 'H', x0 - F, 'A', F, F, 0, 0, 0, x0, B - F, 'V', top + C, 'A', C, C, 0, 0, 1, x0 + C, top, 'H', x1 - C, 'A', C, C, 0, 0, 1, x1, top + C,
+      'V', B - F, 'A', F, F, 0, 0, 0, x1 + F, B, 'H', W - R, 'A', R, R, 0, 0, 1, W, B + R, 'V', B + Hb - R, 'A', R, R, 0, 0, 1, W - R, B + Hb,
+      'H', R, 'A', R, R, 0, 0, 1, 0, B + Hb - R, 'V', B + R, 'A', R, R, 0, 0, 1, R, B, 'Z'].join(' ');
+    svgEl.style.cssText = 'top:' + (-(tall + 4)) + 'px;left:-4px;width:' + W + 'px;height:' + (tall + Hb) + 'px';
+    svgEl.setAttribute('viewBox', '0 0 ' + W + ' ' + (tall + Hb));
+    const mk = (tag, attrs) => { const e = document.createElementNS(ns, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+    const clip = mk('clipPath', { id: 'zo' + Math.random().toString(36).slice(2, 8) });
+    clip.append(mk('path', { d }));
+    svgEl.replaceChildren(
+      mk('path', { d, class: 'zo-shadow', transform: 'translate(0 6)' }),
+      mk('path', { d, class: 'zo-ring' }),
+      clip,
+      mk('path', { d, class: 'zo-paper' }),
+      mk('path', { d, class: 'zo-ink', 'clip-path': 'url(#' + clip.id + ')' }));
+  };
+  const ro = new ResizeObserver(draw);
+  ro.observe(box);                                                       // (it reports as soon as the box is in the page and has a size)
+}
+
 export function renderZoo(st, seat) {
   const p = st.players[seat], who = S.replay.players[seat], map = S.replay.maps[seat];
   const box = el('div', 'zoo seat' + seat + (st.active_player === seat && st.phase !== 'over' ? ' active' : ''));
@@ -32,8 +62,7 @@ export function renderZoo(st, seat) {
     row.append(cols);
     if (behind) {                                                        // a bump of the zoo's paper rises round the piles and goes back down (a strip is 30 px: the top 18 % of a card 120 px wide; the names of the columns 26 px)
       const most = Math.max(...st.players.map((q) => Math.max(q.animals.length, q.sponsors.length))), tall = 26 + most * 30;
-      const bump = el('div', 'pilebump'); bump.style.height = (tall + 4) + 'px';
-      box.append(bump);
+      box.classList.add('hasbump'); outline(box, tall);
       box.style.marginTop = Math.max(0, tall - 30) + 'px';                 // (room above the zoos for the taller pile of the two players)
     } else row.classList.add('withpiles');
   }
