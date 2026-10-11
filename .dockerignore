@@ -16,6 +16,7 @@ venv/
 
 # Large or build-time-only inputs
 log_examples/
+log_examples
 log_examples_unsupported/
 vendor/
 node_modules/
@@ -30,3 +31,10 @@ cloudflare/
 .wrangler/
 package.json
 package-lock.json
+
+# Local files that stay on one computer
+mockups*/
+_to_delete/
+_backup_before_FE001/
+baselines/
+Start Ark Nova.bat

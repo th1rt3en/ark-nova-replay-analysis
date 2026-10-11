@@ -34,6 +34,7 @@ vendor/
 
 # Raw BGA logs: ~400 MB, keep out of git (they live in GCS; the golden tests read them from here locally)
 log_examples/
+log_examples
 log_examples_unsupported/
 
 # Real maps of the sample tables, fetched from BigQuery by scripts/fetch_sample_maps.py (regenerated locally, not versioned)
@@ -60,3 +61,9 @@ scripts/cardgen/site/arknova.css
 scripts/cardgen/site/cards.html
 scripts/cardgen/keys.json
 scripts/cardgen/rendered_keys.json
+
+# Local files that stay on one computer: design mock-ups, old backups and baselines, the local start script
+mockups*/
+_to_delete/
+baselines/
+Start Ark Nova.bat
