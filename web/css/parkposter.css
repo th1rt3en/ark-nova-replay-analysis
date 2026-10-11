@@ -479,3 +479,12 @@ body.viewer dialog.acctdlg { background: var(--paper); color: var(--ink); border
 body.viewer .acctinput { background: #fff8e1; color: var(--ink); border: 3px solid var(--ink); border-radius: 10px; }
 body.viewer dialog.acctdlg button:not(.linkbtn) { font: 700 18px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 18px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
 body.viewer dialog.acctdlg button.linkbtn { color: var(--ocean); }
+
+/* ---- tabbed / top-bottom layout (zoo.js): the played animals and sponsors are two columns at the right of the board; the cards overlap so that only the last card is whole and the others show their top 18 % (the icons) ---- */
+body.viewer .zoopiles { --pw: 132px; flex: none; display: flex; align-items: flex-start; gap: 14px; margin-left: 6px; }
+body.viewer .zoopiles .zoopile { margin: 0; width: var(--pw); }
+body.viewer .zoopiles h3 { margin: 0 0 6px; padding: 0; border: 0; text-align: center; font: 700 17px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .zoopiles .cards { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 0; }
+body.viewer .zoopiles .cards .card, body.viewer .zoopiles .cards.small .card { position: relative; flex: none; width: var(--pw); height: auto; margin: 0 0 calc(var(--pw) * -1.397 * .82); border: 0; border-radius: 8px; box-shadow: 0 0 0 2px var(--ink); }
+body.viewer .zoopiles .cards .card:last-child { margin-bottom: 0; }
+body.viewer .zoopiles .cards .empty { display: none; }

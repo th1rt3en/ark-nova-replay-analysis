@@ -1487,3 +1487,8 @@ Scope: `web/js/account.js`, `web/css/parkposter.css`, `web/minigames/*.html`.
 ## 65. Who's ahead shows both hands
 Scope: `web/js/zoo.js`, `web/js/dock.js`.
 - With no point of view in a mini game (`MINIGAME && S.pov === null`) the dock is empty (it shows one hand at a time, and the eyes are gone) and each zoo carries its player's Hand (and endgame / stored cards) in a row under the played cards.
+
+## 66. Tabbed arrows, played cards beside the board
+Scope: `web/js/main.js` (`zooBoards`), `web/js/zoo.js`, `parkposter.css`.
+- The tab arrows worked once: the buttons have the same markup every time, so `redraw` put the old ones back, and their handlers still held the seat of the first drawing. They now read the current seat when clicked (and go round, so the same direction cycles).
+- Tabbed and top / bottom layouts: the played animals and sponsors are two columns at the right of the board (`.zoopiles`), overlapped so that the last card is whole and the others show their top 18 % (`--pw` 132 px); the preview opens after the usual second. Side by side keeps the rows under the board.

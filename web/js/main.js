@@ -31,7 +31,8 @@ function zooBoards(st) {
   zoos.classList.toggle('zoos-stack', layout === 'stack');
   if (layout !== 'tabs') return order.map((seat) => renderZoo(st, seat));
   const seat = order.includes(S.zooTab) ? S.zooTab : order[0];
-  const nav = el('div', 'zootabs'), go = (d) => { S.zooTab = order[(order.indexOf(seat) + d + order.length) % order.length]; S.lastBoard = null; render(); };
+  // (the buttons are kept when the board is drawn again, because their markup does not change: they must not remember the seat of the moment they were made)
+  const nav = el('div', 'zootabs'), go = (d) => { const o = seatOrder(), at = Math.max(0, o.indexOf(S.zooTab)); S.zooTab = o[(at + d + o.length) % o.length]; S.lastBoard = null; render(); };
   const mk = (d, label, path) => { const b = el('button', 'zootab-arrow'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label); b.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + path + '"/></svg>'; b.onclick = () => go(d); return b; };
   const who = el('b', 'zootab-name', S.replay.players[seat].name); who.style.color = seatText(seat);
   nav.append(mk(-1, 'Previous board', 'M13 3L5 10l8 7z'), who, mk(1, 'Next board', 'M7 3l8 7-8 7z'));
