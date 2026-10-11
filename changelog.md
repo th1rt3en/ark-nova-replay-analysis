@@ -1549,5 +1549,5 @@ Scope: `web/js/zoo.js`, `parkposter.css`. Side by side: the cards of the piles a
 ## 80. One outline for a zoo with a bump
 Scope: `web/js/zoo.js` (`outline`), `parkposter.css`. The paper bump was a separate box, so its border did not join the zoo's and the gold ring of the active player ignored it. A zoo with piles behind its board (`.hasbump`) has no background, border or shadow of its own any more: an svg behind the content (`.zoooutline`, redrawn by a ResizeObserver) draws one path for the paper, the ink border (clipped stroke), the hard shadow and the gold ring, with rounded inner corners where the bump joins the top edge.
 
-## 81. Piles of six or more are two columns
-Scope: `web/js/zoo.js`, `parkposter.css`. Side by side: an animals or sponsors pile with 6 cards or more is split into two columns (the first one card longer if odd; `SPLIT`), under one name; the bump (`outline(box, tall, columns)`) is as wide as all the columns (120 px each, 8 px between) and as tall as the longest column of either player.
+## 81. Piles of five or more are two columns
+Scope: `web/js/zoo.js`, `parkposter.css`. Side by side: an animals or sponsors pile with 5 cards or more is split into two columns (the first one card longer if odd; `SPLIT`), under one name; the bump (`outline(box, tall, columns)`) is as wide as all the columns (120 px each, 8 px between) and as tall as the longest column of either player.

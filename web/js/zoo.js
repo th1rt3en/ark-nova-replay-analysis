@@ -9,7 +9,7 @@ import { associationStrip, bonusPanel } from './association.js';
 
 // The outline of a zoo with a bump (side by side): one shape for the paper, the ink border, the hard shadow and the gold ring of the active player, drawn as an svg behind the content (the
 // box itself has no background, border or shadow then, `.hasbump` in parkposter.css). The bump rises round the two piles at the top right and joins the top edge with rounded inner corners.
-const SPLIT = 6;                                                          // a pile of this many cards or more is split into two columns
+const SPLIT = 5;                                                          // a pile of this many cards or more is split into two columns
 
 function outline(box, tall, columns) {
   const ns = 'http://www.w3.org/2000/svg', R = 20, F = 16, C = 18, BW = columns * 120 + (columns - 1) * 8 + 24;       // (the bump is as wide as the columns of the piles: 120 px each, 8 px between)
