@@ -51,14 +51,12 @@ export function setupSettings() {
   sw.onchange = () => { S.showTimeline = sw.checked; save(); applyTimeline(); };
   tlRow.append(el('span', 'setlabel', 'Timeline in the control panel'), sw);
   const handRow = el('div', 'setrow setslide');                            // the size of the cards in the hand: a slider with seven steps
-  const handVal = el('b', 'setval', S.handScale.toFixed(2) + 'x');
   const slider = el('input'); slider.type = 'range'; slider.className = 'setrange'; slider.min = '0'; slider.max = String(HAND_SCALES.length - 1); slider.step = '1';
   slider.value = String(HAND_SCALES.indexOf(S.handScale)); slider.setAttribute('aria-label', 'Size of the cards in the hand'); slider.setAttribute('list', 'handSizes');
-  slider.oninput = () => { S.handScale = HAND_SCALES[Number(slider.value)]; handVal.textContent = S.handScale.toFixed(2) + 'x'; applyHandScale(); save(); };
+  slider.oninput = () => { S.handScale = HAND_SCALES[Number(slider.value)]; applyHandScale(); save(); };
   const ticks = el('div', 'setticks'); ticks.id = 'handSizes';
   for (const v of HAND_SCALES) ticks.append(el('span', '', v === 1 ? '1' : String(v).replace(/^0/, '')));
-  const handTop = el('div', 'settop'); handTop.append(el('span', 'setlabel', 'Cards in hand'), handVal);
-  handRow.append(handTop, slider, ticks);
+  handRow.append(el('span', 'setlabel', 'Cards in hand'), slider, ticks);          // (label and slider side by side, the sizes under the slider)
   const modeRow = el('div', 'setrow');                                    // how the hand is shown: a fan at the screen edge, or a floating tray (dock.js)
   const sel = el('select', 'setselect'); sel.setAttribute('aria-label', 'Hand display');
   for (const [v, t] of [['tray', 'Floating container'], ['fan', 'Fan at the screen edge']]) { const o = el('option', '', t); o.value = v; sel.append(o); }
@@ -71,7 +69,7 @@ export function setupSettings() {
   ssel.value = S.noSnake;
   ssel.onchange = () => { S.noSnake = ssel.value; save(); document.dispatchEvent(new Event('nosnake')); };
   snakeRow.append(el('span', 'setlabel', 'No-snake mode'), ssel);
-  box.append(head, speedRow, tlRow, modeRow, handRow, snakeRow);
+  box.append(head, speedRow, tlRow, handRow, modeRow, snakeRow);
   modal.append(box);
   modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });         // a click on the dimmed background closes it
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen()) { e.stopPropagation(); close(); } }, true);

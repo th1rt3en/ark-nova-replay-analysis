@@ -1436,3 +1436,8 @@ An outside audit (`ark-nova-fan-drag-audit.md`) listed six findings; checked aga
   - one pointer is tracked (`pointerId`); release commits, `pointercancel` / window blur / a live update that replaced the cards **cancel**: the original order is restored and no `cardorder` is sent.
 - **Not done.** (5) The tooltip observer and the two `drop-shadow` filters of the fan row: not measured, no problem seen, so left as they are. (6) A settling animation on release: not added, the card now lands without a jump (the held card already has its slot's angle).
 - **Enlarged view while dragging.** Grabbing a card of the hand (pointer down) now holds its enlarged view like a click does (`holdPreview` in `cards.js`), and `showPreview` does nothing while `body.card-dragging` is set, so neither the grabbed card nor the cards it passes get enlarged. After the drop the usual rule applies again (leave the card and come back).
+
+## 55. Settings order, empty project places
+Scope: `web/js/settings.js`, `web/css/parkposter.css`.
+- Settings: "Cards in hand" now comes above "Hand display"; the value text ("1.25x", `.setval` / `.settop`, removed) is gone: the label and the slider sit side by side (`.setslide` is a two-column grid, the size labels under the slider in column 2).
+- An empty place of the project area (`.projslot.projempty` in `.shared`) has a thin ink outline (`inset 0 0 0 2px rgba(23, 38, 43, .35)`), so the area no longer looks like a blank gap.

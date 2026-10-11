@@ -91,6 +91,7 @@ body.viewer .shared > .displaycol, body.viewer .shared > .tablecol { box-sizing:
 body.viewer .shared > .tablecol { gap: 5px; }
 body.viewer .shared .projpanel { background: none; border: 0; box-shadow: none; padding: 0; border-radius: 9px; }
 body.viewer .shared .projslot { border-radius: 9px; box-shadow: none; }
+body.viewer .shared .projslot.projempty { background: none; box-shadow: inset 0 0 0 2px rgba(23, 38, 43, .35); }       /* (an empty project place: a thin outline, so the area does not look like a blank gap) */
 body.viewer .zoos { gap: 16px; padding-top: 40px; }
 body.viewer .zoo { position: relative; box-sizing: border-box; padding: 8px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
 body.viewer .zoo.active { border-color: var(--ink); box-shadow: 0 6px 0 var(--ink), 0 0 0 8px var(--gold); }
@@ -354,9 +355,8 @@ body.viewer .abtn.xbtn, body.viewer .abtn.gen, body.viewer .abtn.gainx { backgro
 body.viewer .forkmove { border-width: 3px; border-radius: 999px; font: 700 15px 'Barlow Condensed', system-ui, sans-serif; }
 
 /* ---- settings: the slider of the hand size ------------------------------------------------------------------------------------------------------------------------------ */
-body.viewer .setslide { display: grid; gap: 8px; }
-body.viewer .settop { display: flex; justify-content: space-between; align-items: baseline; }
-body.viewer .setval { font: 400 18px 'Bowlby One', system-ui, sans-serif; color: var(--ink); }
+body.viewer .setslide { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 18px; row-gap: 6px; align-items: center; }
+body.viewer .setslide .setticks { grid-column: 2; }
 body.viewer .setrange { width: 100%; margin: 0; accent-color: var(--rust); cursor: pointer; }
 body.viewer .setticks { display: flex; justify-content: space-between; font: 600 14px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); opacity: .7; padding: 0 2px; }
 body.viewer .moves li[hidden] { display: none; }
