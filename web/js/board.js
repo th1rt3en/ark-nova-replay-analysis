@@ -38,6 +38,8 @@ export function spriteOf(b) {
   return S.sprites[id];
 }
 
+const SPECIAL_ENCLOSURE = /aquarium|aviary|reptile-house|petting-zoo|tunnel/;       // (the building types that hold their animals as cubes)
+
 export function zooBoard(map, player, seat) {
   const s = svg('svg', { class: 'board', viewBox: '0 0 1122 976', role: 'img', 'aria-label': 'Zoo map ' + map.name });
   if (map.image) s.append(svg('image', { href: map.image, x: 0, y: 0, width: 1122, height: 976 }));
@@ -176,6 +178,15 @@ export function zooBoard(map, player, seat) {
       });
       img.append(title);
       g.append(img);
+    }
+    if (animals && animals.length && SPECIAL_ENCLOSURE.test(b.type)) {         // a special enclosure is filled with the player's cubes (the cubes of the projects and the donations): one per animal, on its hexes in turn
+      const cells = b.cells.slice().sort((p, q) => p[0] - q[0] || p[1] - q[1]), size = 66;
+      animals.forEach((k, i) => {
+        const [hx, hy] = cellCentre(...cells[i % cells.length]), lap = Math.floor(i / cells.length) * 14;
+        const cube = svg('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: hx - size / 2 + lap, y: hy - size / 2 - lap, width: size, height: size });
+        const t = svg('title'); t.textContent = cardName(k); cube.append(t);
+        g.append(cube);
+      });
     }
     if (cls) g.append(svg('path', { d: outlinePath(b.cells), class: 'frame' }));
     return g;

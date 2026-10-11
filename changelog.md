@@ -1525,3 +1525,6 @@ Scope: `web/js/side-panel.js`, `parkposter.css`. The Venom, Constriction and Mul
 
 ## 74. Worker silhouette behind the locked workers
 Scope: `scripts/build_worker_slot.py`, `web/assets/worker_slot.webp`, `web/js/association.js`. The silhouette slot of the association board (recoloured to a light pink, a lighter shade of the zone, centred in it vertically; rounded square, 186 px) replaces the pink rectangles behind the three locked workers of the bonus panel; the meeple lies over it, an empty (unlocked) slot shows the silhouette.
+
+## 75. Cubes in the special enclosures
+Scope: `web/js/board.js` (`drawBuilding`, `SPECIAL_ENCLOSURE`). An animal in a petting zoo, reptile house, bird aviary, small / large aquarium (or underwater tunnel) is a cube of the player's colour (`web/cubes`, the same as on the projects and the donations) on a hex of the enclosure, one per animal, tooltip = the animal; a fourth animal on three hexes goes on the first hex again, offset a little.
