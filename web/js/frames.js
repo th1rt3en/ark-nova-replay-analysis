@@ -59,7 +59,8 @@ export function framesOf(i) {
   if (PLAY && turnEnds(i)) f.push('gate');                  // (a live game only: a replay has nothing to confirm, the frame is skipped)
   const sig = probe(i, 'decision');
   const again = i > 0 && probe(i - 1, 'decision') === sig && (steps[i - 1].move_id === steps[i].move_id || JSON.stringify(steps[i - 1].options) === JSON.stringify(steps[i].options));       // (the decision of the step before, still pending in the engine's state while the log resolves it: nothing new to show)
-  if (sig && !again) f.push('decision');
+  const chose = !PLAY && /chooses action card/.test(String(labelOf(steps[i]) || ''));         // (the replay: what the player has to do inside the action card just chosen is the next step, not a frame of its own)
+  if (sig && !again && !chose) f.push('decision');
   cache.set(i, f);
   return f;
 }
