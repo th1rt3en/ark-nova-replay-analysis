@@ -39,12 +39,12 @@ body.minigame .sbtabs { display: none; }
 .pz-prompt button.alt { background: transparent; color: #1f5fb8; border: 2px solid #1f5fb8; }
 
 /* Daily starting hand: the cards to click are the player's hand in the dock; picks and the reveal are drawn on those cards */
-.dockpanel .card.pz-dock-card { position: relative; border: 3px solid transparent; border-radius: 8px; cursor: pointer; }
-.dockpanel .card.pz-dock-card.pz-mine { border-color: #2f80e8; box-shadow: 0 0 0 2px rgba(47, 128, 232, .45); }
-.dockpanel .card.pz-dock-card.pz-orig { border-color: #2e8b4a; box-shadow: 0 0 0 2px rgba(46, 139, 74, .5); }
-.dockpanel .card.pz-dock-card.pz-orig.pz-mine { border-color: #2e8b4a; }
-.dockpanel .card.pz-dock-card.pz-mine::after { content: "\2713"; position: absolute; top: 6px; right: 8px; color: #fff; background: #2f80e8; width: 1.5rem; height: 1.5rem; border-radius: 50%; font-size: 1rem; text-align: center; line-height: 1.5rem; }
-.dockpanel .card.pz-dock-card.pz-orig::after { background: #2e8b4a; }
+.dock .cards .card.pz-dock-card { cursor: pointer; overflow: visible; }
+/* picking: the theme's `.marked` (green tint and check tag) is on the picked cards; after the answer: blue ring = your pick, green ring = what the original player kept */
+.dock .cards .card.pz-dock-card.pz-mine:not(.marked) { outline: 5px solid #2f80e8; outline-offset: 0; }
+.dock .cards .card.pz-dock-card.pz-orig { outline: 5px solid #2e8b4a; outline-offset: 0; }
+.dock .cards .card.pz-dock-card.pz-mine:not(.marked)::after { content: "\2713"; position: absolute; z-index: 10; top: -9px; right: -7px; color: #fff; background: #2f80e8; width: 1.7rem; height: 1.7rem; border-radius: 50%; font-size: 1.1rem; text-align: center; line-height: 1.7rem; }
+.dock .cards .card.pz-dock-card.pz-orig:not(.marked)::after { background: #2e8b4a; }
 .pz-dtag { position: absolute; left: 0; right: 0; bottom: 0; padding: .25rem .3rem .3rem; background: rgba(27, 17, 10, .82); color: #fff; font-size: .72rem; line-height: 1.2; text-align: center; border-radius: 0 0 6px 6px; pointer-events: none; }
 .pz-dtag b { display: block; min-height: 1em; }
 .pz-dbar { display: block; height: .4rem; margin-top: .15rem; border-radius: 3px; background: rgba(255, 255, 255, .25); overflow: hidden; }

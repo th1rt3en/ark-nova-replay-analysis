@@ -47,7 +47,7 @@ async function mount(puzzle) {
           const bar = el('i', 'pz-dbar'); const fill = el('u'); fill.style.width = Math.round(rate * 100) + '%'; bar.append(fill); tag.append(bar);
           node.append(tag);
         } else {
-          node.classList.toggle('pz-mine', picked.has(key));
+          node.classList.toggle('pz-mine', picked.has(key)); node.classList.toggle('marked', picked.has(key));       // ('marked': the theme's green tint and check tag)
           node.onclick = () => { if (picked.has(key)) picked.delete(key); else if (picked.size < pub.keep) picked.add(key); draw(); redock(); };
         }
       }

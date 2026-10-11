@@ -1473,3 +1473,8 @@ Scope: `web/js/frames.js` (`textParts`).
 ## 62. Players' boards layout
 Scope: `web/js/settings.js`, `main.js` (`zooBoards`), `state.js` (`zooLayout`, `zooTab`), `parkposter.css`.
 - Settings > "Players' boards": side by side (default, as before), tabbed (one board under an arrow bar with the player name; the arrows go round the seats in the order of the tracker) or top / bottom (one column, tracker order, `seatOrder()`). Replay only (fork, sandbox, live play and the mini games stay side by side). Kept in `localStorage.settings.zoos`; the `zoolayout` event redraws.
+
+## 63. Daily starting hand: picks, fixed point of view
+Scope: `web/css/minigame.css`, `web/js/minigames/daily_hand.js`, `web/js/pov.js`.
+- The pick styles were written for the fan (`.dockpanel`) and never matched the floating tray. Picked cards now carry the theme's `.marked` (green tint, check tag); after the answer a blue ring is your pick and a green ring what the original player kept (selectors on `.dock .cards`, any hand display).
+- A mini game never asks whom to spectate (`needsChoice` is off) and starts with the puzzle's seat as the left map / upper box (`S.orient` from `MINIGAME_POV`).
