@@ -1514,7 +1514,7 @@ Scope: `view.py` (`_combine_runs`), `options.py`, `action-bar.js`, `frames.js`, 
 
 ## 71. Map 11 third worker upgrade; no decision frame after choosing an action card
 Scope: `web/js/association.js` (`bonusPanel`), `web/js/frames.js`.
-- Map 11 (Caves): the bonus panel shows the action card upgrade under the first locked worker (the player's third worker, `bonuses.hire_worker`).
+- Map 11 (Caves): the bonus panel shows the action card upgrade under the middle one of the three locked workers.
 - Replay: a step "X chooses action card ..." has no decision frame ("must play a sponsor or break for money", "must choose a task" ...); the step that follows says what was done. The "must choose an action card" frames after the end of a turn stay.
 
 ## 72. Joined labels were doubled in a point of view

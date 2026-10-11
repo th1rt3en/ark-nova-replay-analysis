@@ -119,11 +119,11 @@ export function bonusPanel(map, p, seat) {
     const cx = 40 + i * 48;     // slots 18..62, 66..110, 114..158 stay inside the box (x 14..162)
     lbAdd('rect', { x: cx - 22, y: 26, width: 44, height: 70, rx: 8, fill: '#f9c9c9' });
     if (k === 3) conservationBonus(lockbox, cx, 72, 38, (map.association_bonuses || {}).last_worker, '4th worker: ' + (map.association_bonuses || {}).last_worker + ' conservation');
-    else if (map.id === '11' && k === 1) {               // map 11 (Caves): the first locked worker (the player's third) gives an action card upgrade, shown under the worker
+    else if (map.id === '11' && k === 2) {               // map 11 (Caves): the middle locked worker gives an action card upgrade, shown under the worker
       const id = ICON_IDS['bonus:upgrade-card'], [w0, h0] = S.iconSizes[id] || [38, 38], h = 40, w = w0 * h / h0;
       const g = svg('g', { class: 'consbonus' });
       g.append(svg('image', { href: iconUrl(id), x: cx - w / 2, y: 72 - h / 2, width: w, height: h }));
-      const tt = svg('title'); tt.textContent = '3rd worker: an action card upgrade'; g.append(tt);
+      const tt = svg('title'); tt.textContent = 'Worker 2: an action card upgrade'; g.append(tt);
       lockbox.append(g);
     }
     else if (map.id === 'T1') {                          // T1: the first and the second worker also give 1 reputation, shown under the worker
