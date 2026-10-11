@@ -1,6 +1,6 @@
 // [module] Renders one player's zoo: board, cards row, association strip, bonus panel.
 import { el, seatColor, section } from './util.js';
-import { S } from './state.js';
+import { MINIGAME, S } from './state.js';
 import { cardRow } from './cards.js';
 import { zooBoard } from './board.js';
 import { associationStrip, bonusPanel } from './association.js';
@@ -23,5 +23,12 @@ export function renderZoo(st, seat) {
   played.append(section('Sponsors', cardRow(p.sponsors, 'small', 'none', seat + ':sponsors'), 'sect pg'));
   if (p.released.length) played.append(section('Released', cardRow(p.released, 'small', undefined, seat + ':released'), 'sect pg'));
   box.append(played);
+  if (MINIGAME && S.pov === null) {                                      // a mini game that shows both players in full (Who's ahead): the dock holds one hand at a time, so each zoo carries its player's cards
+    const own = el('div', 'played handsunder');
+    own.append(section('Hand', cardRow(p.hand, 'small', 'empty', seat + ':hand'), 'sect pg'));
+    if ((p.endgame_hand || []).length) own.append(section('Endgame cards', cardRow(p.endgame_hand, 'small', 'none', seat + ':endgame'), 'sect pg'));
+    if ((p.stored || []).length) own.append(section('Stored', cardRow(p.stored, 'small', 'none', seat + ':stored'), 'sect pg'));
+    box.append(own);
+  }
   return box;
 }

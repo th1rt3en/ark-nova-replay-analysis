@@ -1483,3 +1483,7 @@ Scope: `web/css/minigame.css`, `web/js/minigames/daily_hand.js`, `web/js/pov.js`
 Scope: `web/js/account.js`, `web/css/parkposter.css`, `web/minigames/*.html`.
 - On a viewer page (`body.viewer .movebar`, the mini games) `account.js` puts `#acctbar` into the move bar as a 60 px pill after the Round / Break pills (name, rating, Log out; or the Log in / Sign up button) instead of a fixed box over them; the log in dialog is on paper. Other pages keep the fixed box.
 - The puzzle panel (`#puzzle`) now sits under the move bar in `main`, not above it: the sticky move bar and the top band covered its first 80 px.
+
+## 65. Who's ahead shows both hands
+Scope: `web/js/zoo.js`, `web/js/dock.js`.
+- With no point of view in a mini game (`MINIGAME && S.pov === null`) the dock is empty (it shows one hand at a time, and the eyes are gone) and each zoo carries its player's Hand (and endgame / stored cards) in a row under the played cards.

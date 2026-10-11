@@ -88,6 +88,7 @@ export function renderDock(st) {
   if (S.handMode !== 'tray') dock.style.left = '';                                       // (the tray sets `left` on the dock: the fan must go back to the stylesheet's)
   dock.className = 'dock' + (S.handMode === 'tray' ? ' traymode' : '') + (S.handMode === 'fan' && fanRaised ? ' raised' : '');                 // (the hand is shown in a fan at the screen edge, or in a floating tray)
   if (SANDBOX && S.replay.setup) { dock.replaceChildren(); return; }                // (nothing to show before the game: the seat and the maps are chosen first)
+  if (MINIGAME && S.pov === null) { dock.replaceChildren(); document.body.style.paddingBottom = ''; return; }      // (both hands are under the zoos, zoo.js)
   const panel = el('div', 'dockpanel');
   const bar = el('div', 'dockbar');
   const rows = {};
