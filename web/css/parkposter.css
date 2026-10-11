@@ -532,3 +532,13 @@ body.viewer .cardcubes .cube.used { box-sizing: border-box; width: 15px; height:
 body.viewer .card .wazax { position: absolute; z-index: 6; top: 2%; width: 31%; height: 20%; pointer-events: none; overflow: visible; }
 body.viewer .card .wazax.left { left: 25%; }
 body.viewer .card .wazax.right { left: 61%; }
+
+/* what a sponsor has given so far (cards.js `showStats`, the replay only): a paper panel at the right of the enlarged card; the enlarged card moves left to make room */
+body.viewer .preview.withstats { right: calc(21rem + 13.5rem); }
+body.viewer .previewstats { position: fixed; right: 21rem; bottom: 1rem; z-index: 61; width: 12.5rem; box-sizing: border-box; padding: 12px 14px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); pointer-events: none; }
+body.viewer .previewstats[hidden] { display: none; }
+body.viewer .previewstats .psttitle { display: block; margin: 0 0 8px; font: 700 18px 'Barlow Condensed', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+body.viewer .previewstats .pstrow { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+body.viewer .previewstats .pstrow img { height: 34px; width: auto; display: block; }
+body.viewer .previewstats .pstrow b { font: 400 26px 'Bowlby One', system-ui, sans-serif; color: var(--ink); }
+body.viewer .previewstats .pstnone { font: 600 17px 'Barlow Condensed', system-ui, sans-serif; opacity: .7; }

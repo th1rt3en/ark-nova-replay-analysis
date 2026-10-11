@@ -432,6 +432,33 @@ def _fold_unchanged(steps: list, keep: list) -> list:
     return out
 
 
+# What a sponsor has given its owner (the replay only): the gains that the log names after the card ("X gains 2 appeal (Expert On Europe)"), added up per card and resource. Only the
+# sponsors with a passive effect (triggers, markers) are followed: the viewer shows the totals next to the enlarged card.
+@functools.lru_cache(maxsize=1)
+def _tracked_sponsors() -> dict:
+    """Lower-case card name -> key of every sponsor that has a passive effect."""
+    return {str(c["name"]).lower(): c["key"] for c in data.cards_by_key().values()
+            if c.get("card_type") == "sponsor" and any(e.get("effectType") == "passive" for e in c.get("effects") or [])}
+
+
+def _sponsor_gains(move: Move) -> list:
+    """[(order, sponsor key, resource, amount)] of the gains of one move that a tracked sponsor paid."""
+    out = []
+    tracked = _tracked_sponsors()
+    for e in move.events:
+        a = e.args if isinstance(e.args, dict) else {}
+        if e.type != "getBonuses":
+            continue
+        src = a.get("card_name") or a.get("source")
+        key = tracked.get(src.lower()) if isinstance(src, str) else None
+        bonuses = a.get("bonuses")
+        if key and isinstance(bonuses, dict):
+            for res, n in bonuses.items():
+                if isinstance(n, (int, float)) and n:
+                    out.append((e.order, key, res, int(n)))
+    return sorted(out)
+
+
 def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False, first_moves: int | None = None):
     """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking.
     With `first_moves` only that many moves are replayed and the engine does not play them (the mini games need the first steps only; the table's setup is read from the whole log)."""
@@ -459,6 +486,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     known_prefix = len(seed.main_order)                                       # the cards of the draw pile whose order the log tells; the rest is a random guess
     full_deck = len(rep.states[0].main_deck) if rep.states else 0
     steps = []
+    sponsor_stats: dict = {}                                                  # sponsor key -> {resource: amount} so far
     first_discard = next((m.index for m in parsed.moves if any(e.type == "pDiscardCards" for e in m.events)), None)       # the move of the initial discards
     initial_discard = [list(setup.discarded.get(pid, [])) for pid in config.player_ids]
     for mv, final, g in zip(rep.moves, rep.states, groups):
@@ -516,6 +544,13 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
             if o is not None and o["prompt"] == "choose_action_card" and (v["current_action"] or v["active_player"] != o["seat"]):
                 options[i] = None                                          # the engine is a step ahead of the log here (it ends the turn inside the last action)
         actors = group_actors(mv, g, {pid: i for i, pid in enumerate(config.player_ids)}) if len(g) == len(views) else [None] * len(views)
+        ends = [start for _, start in g[1:]] + [10 ** 12] if len(g) == len(views) else [10 ** 12] * len(views)
+        pending = _sponsor_gains(mv)
+        for i, v in enumerate(views):                                           # the totals after each step of the move
+            while pending and pending[0][0] < ends[i]:
+                _, key, res, n = pending.pop(0)
+                sponsor_stats.setdefault(key, {})[res] = sponsor_stats.get(key, {}).get(res, 0) + n
+            v["sponsor_stats"] = {k: dict(d) for k, d in sponsor_stats.items()}
         if first_discard is not None and mv.index >= first_discard:
             for v in views:
                 v["initial_discard"] = initial_discard                          # (the viewer hides the other player's cards in the discard pile, pov.js)
@@ -546,6 +581,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     view = {
         "table_id": parsed.table_id,
         "marine_worlds": config.marine_worlds,
+        "tracked_sponsors": sorted(_tracked_sponsors().values()),                      # (the sponsors whose gains `state.sponsor_stats` adds up)
         "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid)} for i, pid in enumerate(config.player_ids)],
         "maps": [map_view(m) for m in config.maps],
         "base_projects": config.base_projects,

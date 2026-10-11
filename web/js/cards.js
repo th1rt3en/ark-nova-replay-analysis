@@ -1,6 +1,7 @@
 // [module] Card rendering: card faces, previews on hover / click, changed-card flash and 'ghost' cards that left a zone.
 import { $, el, title } from './util.js';
-import { FORK, S } from './state.js';
+import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
+import { pic } from './icons.js';
 import { afterMark, forkSingleSelect } from './action-bar.js';
 import { snakeSafe } from './nosnake.js';
 
@@ -53,6 +54,24 @@ export function showPreview(src, centered) {
 function showNow(src, centered) {
   const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;
   const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false;
+  showStats(src, p);
+}
+// What a sponsor with passive effects has given its owner so far (the replay only; the totals are in `state.sponsor_stats`, made by view.py from the log): a panel at the right of the enlarged card
+const STAT_ORDER = ['appeal', 'money', 'reputation', 'conservation', 'xtoken'];
+function showStats(src, p) {
+  let box = $('previewstats');
+  const key = (/\/(S\d{3})(?:_\w+)?\.webp/.exec(String(src)) || [])[1];
+  const st = S.replay && S.replay.steps[S.step] && S.replay.steps[S.step].state;
+  const on = key && st && st.sponsor_stats && !FORK && !PLAY && !SANDBOX && !MINIGAME && (S.replay.tracked_sponsors || []).includes(key) && st.players.some((q) => q.sponsors.includes(key));
+  p.classList.toggle('withstats', !!on);
+  if (!on) { if (box) box.hidden = true; return; }
+  if (!box) { box = el('div', 'previewstats'); box.id = 'previewstats'; document.body.append(box); }
+  const got = st.sponsor_stats[key] || {};
+  box.replaceChildren(el('b', 'psttitle', 'Given by this card'));
+  const rows = STAT_ORDER.filter((r) => got[r]);
+  for (const r of rows) { const row = el('div', 'pstrow'); row.append(pic(r, 34), el('b', '', '+' + got[r])); box.append(row); }
+  if (!rows.length) box.append(el('div', 'pstnone', 'nothing yet'));
+  box.hidden = false;
 }
 // Puts the enlarged view on an element. Mouse: after the pointer has rested on it for PREVIEW_DELAY. Touch: a tap keeps its normal job (selecting, ...); the view opens when a finger stays on the element for TOUCH_HOLD ms
 // without moving (more than TOUCH_SLOP px cancels it, so dragging a card of the hand still works) and stays while it is down: lifting the finger closes it, and the click that may follow is swallowed.
@@ -76,7 +95,7 @@ export function bindPreview(elm, src, centered) {
   elm.addEventListener('click', (e) => { if (held) { held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);       // (the end of a long press is not a click)
   elm.addEventListener('contextmenu', (e) => { if (lastTouch) e.preventDefault(); });                                                   // (no browser menu on a long press)
 }
-export function hidePreview() { clearTimeout(previewTimer); $('preview').hidden = true; }
+export function hidePreview() { clearTimeout(previewTimer); $('preview').hidden = true; const b = $('previewstats'); if (b) b.hidden = true; }
 document.addEventListener('mouseout', (e) => { if (heldSrc && e.target.closest && e.target.closest('.card') && !(e.relatedTarget && e.target.closest('.card').contains(e.relatedTarget))) heldSrc = null; }, true);       // (the pointer left the card: the next hover on it counts again)
 document.addEventListener('DOMContentLoaded', () => { const pv = $('preview'); if (pv) pv.addEventListener('click', hidePreview); });       // (on touch screens a tap closes the preview)
 function textFace(key, c) {
