@@ -1418,3 +1418,8 @@ Scope: `web/css/parkposter.css`, `web/css/replay.css`, `web/css/table.css`, `web
 Scope: `web/js/side-panel.js`, `web/css/parkposter.css`.
 - X tokens (`.rt.ov.xo`, replaces `.rt.xt`): the icon is 46 px and the number lies on it, 25 px Bowlby One, white with a 5 px black outline (`-webkit-text-stroke` + `paint-order: stroke fill`), like the reputation number.
 - The income at the next break ("+16") moved from the appeal tile to the money tile (it is money): a mint pill (`--mint`, ink text and border, Barlow Condensed 17 px, was a 14 px gold pill) at the lower right of the money tile (`.rt.ov small`). Its tooltip is unchanged ("Income at the next break (from the appeal track ...)"). The appeal tile has no pill any more.
+
+## 53. Floating tray: the discs no longer overlap the cards
+Scope: `web/css/parkposter.css` (`.traybtns`, `.traycount`).
+- The two discs (hand, endgame cards) sit 11 px higher (`top: -41px`, was -30px): their bottom edge is now above the top edge of the cards (measured at 1920 px: disc bottom 831, card top 839) so nothing of the discs lies on a card, folded or not (the head strip of the tray is 20 px, the cards start 25 px below the tray's top edge).
+- The count chips moved from the lower right to the upper right of the disc (`top: -6px; right: -6px`).
