@@ -122,14 +122,14 @@ export function sidePanel(st) {
     head.append(...(cb ? [who, cb, score] : [who, score]));
     box.append(head);
 
-    const res = el('div', 'ppres');                                        // the five tiles: money, X tokens, reputation, appeal (and income), conservation points
-    res.append(flash(seat + ':money', p.money, tile('ov money', 'Money', pic('money', 48), p.money)));
-    res.append(flash(seat + ':x', p.x_tokens, tile('xt', 'X tokens', pic('xtoken', 36), p.x_tokens)));
-    res.append(flash(seat + ':reputation', p.reputation, tile('ov', 'Reputation', pic('reputation', 48), p.reputation)));
+    const res = el('div', 'ppres');                                        // the five tiles: money (and income), X tokens, reputation, appeal, conservation points
     const inc = p.income !== undefined ? p.income : trackIncome(p.appeal);
-    const ap = flash(seat + ':appeal', p.appeal, tile('ov dk', 'Appeal', pic('appeal', 48), p.appeal, '+' + inc));
-    ap.querySelector('small').title = 'Income at the next break (from the appeal track' + (['5', '5a'].includes(S.replay.maps[seat].id) ? ' and the hexes covered next to the restaurant' : '') + ')';
-    res.append(ap);
+    const mo = flash(seat + ':money', p.money, tile('ov money', 'Money', pic('money', 48), p.money, '+' + inc));          // (the income paid at the next break sits on the money tile)
+    mo.querySelector('small').title = 'Income at the next break (from the appeal track' + (['5', '5a'].includes(S.replay.maps[seat].id) ? ' and the hexes covered next to the restaurant' : '') + ')';
+    res.append(mo);
+    res.append(flash(seat + ':x', p.x_tokens, tile('ov xo', 'X tokens', pic('xtoken', 46), p.x_tokens)));          // (the number lies on the X, white with a black outline)
+    res.append(flash(seat + ':reputation', p.reputation, tile('ov', 'Reputation', pic('reputation', 48), p.reputation)));
+    res.append(flash(seat + ':appeal', p.appeal, tile('ov dk', 'Appeal', pic('appeal', 48), p.appeal)));
     res.append(flash(seat + ':conservation', p.conservation, tile('ov dk', 'Conservation points', pic('conservation', 48), p.conservation)));
     box.append(res);
 

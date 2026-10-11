@@ -204,11 +204,9 @@ body.viewer .rt.ov { display: grid; place-items: center; height: 50px; }
 body.viewer .rt.ov img { grid-area: 1 / 1; height: 48px; }
 body.viewer .rt.ov b { grid-area: 1 / 1; color: #fff; font-size: 25px; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
 body.viewer .rt.ov.dk b { color: #000; text-shadow: none; }
-body.viewer .rt.ov small { position: absolute; right: -3px; top: -3px; font: 700 14px 'Barlow Condensed', system-ui, sans-serif; background: var(--gold); border: 2px solid var(--ink); border-radius: 9px; padding: 0 5px; }
+body.viewer .rt.ov small { position: absolute; right: -9px; bottom: -8px; z-index: 2; font: 700 17px 'Barlow Condensed', system-ui, sans-serif; background: var(--mint); color: var(--ink); border: 2px solid var(--ink); border-radius: 11px; padding: 0 6px; white-space: nowrap; }   /* the income pill at the lower right of the money tile */
 body.viewer .rt.ov.money img { border: 0; border-radius: 0; background: none; box-sizing: border-box; }
-body.viewer .rt.xt { flex-direction: column; justify-content: flex-start; gap: 0; height: 50px; }
-body.viewer .rt.xt img { height: 33px; }
-body.viewer .rt.xt b { font-size: 24px; margin-top: -1px; }
+body.viewer .rt.xo b { font-size: 25px; color: #fff; text-shadow: none; -webkit-text-stroke: 5px #000; paint-order: stroke fill; }   /* X tokens: the number on the X, white with a black outline */
 body.viewer .pp .ppres2 { display: flex; align-items: center; gap: 14px; margin: 0 10px; padding: 5px 0; min-height: 38px; border: 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
 body.viewer .ppres2 .rt { gap: 7px; }
 body.viewer .ppres2 .rt img { height: 32px; }
