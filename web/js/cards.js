@@ -26,6 +26,7 @@ export function card(key, extraClass) {
     img.onerror = () => { img.remove(); d.append(textFace(key, c)); };
     d.append(img);
     bindPreview(d, () => largeOf(c), () => !!d.closest('#dock'));                                    // (a card of the hand is shown in the middle of the screen)
+    d.addEventListener('pointerdown', (e) => { if (e.button === 0 && d.closest('#dock')) holdPreview(largeOf(c)); });         // (grabbing a card of the hand: no enlarged view while it is held or dragged, same as after a click)
     d.addEventListener('click', () => { if (d.closest('#dock')) holdPreview(largeOf(c)); });         // (a click on a card of the hand: its enlarged view stays away until the pointer has left the card)
   } else {
     d.append(textFace(key, c));
@@ -42,6 +43,7 @@ let heldSrc = null;                                                          // 
 function holdPreview(src) { if (lastTouch) return; heldSrc = src; hidePreview(); }       // (touch: the enlarged card opens by a long press, not by hovering: nothing to hold)
 export function showPreview(src, centered) {
   clearTimeout(previewTimer);
+  if (document.body.classList.contains('card-dragging')) return;             // (a card is being dragged: no enlarged view of the cards it passes)
   if (heldSrc === src) return;                                               // (still on the clicked card: no enlarged card, not even after the delay)
   heldSrc = null;                                                            // (another card: the usual rule again)
   const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;                      // (the action card draft lightbox is open: no enlarged cards, neither in the lightbox nor in the dimmed background)
@@ -129,9 +131,14 @@ function dragRow(row, zone, shown, nodes) {
       const pid = e.pointerId, k = S.scale || 1, startX = e.clientX, startY = e.clientY, home = { left: node.offsetLeft, top: node.offsetTop };
       const order0 = [...row.children], HYST = 6 * k;                  // (order0: for a cancelled drag; HYST: how far past a neighbour's middle the pointer must go to swap, so a pointer resting on the boundary does not make the order flicker)
       let moved = false, row0 = null, cx = startX, cy = startY, frame = 0;
+      const fan = !!row.style.getPropertyValue('--n');
+      let ang = 0, u = null, ref = null;                               // fan: the card's angle now, the grabbed point from the card's pivot (u, in the card's own frame) and where it lay at pick-up (ref)
+      const angleOf = () => { const m = getComputedStyle(node).transform; if (!m || m === 'none') return 0; const v = m.match(/-?[\d.e-]+/g).map(Number); return Math.atan2(v[1], v[0]); };
+      const rot = (a, x, y) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)];
       const place = () => {                                            // the grabbed point stays under the real pointer: the layout shift of the card (reordering) and the shift of the whole row (the raised fan is still rising) are taken out
         const rr = row.getBoundingClientRect();
-        const dx = (cx - startX) / k - (node.offsetLeft - home.left) - (rr.left - row0.left) / k, dy = (cy - startY) / k - (node.offsetTop - home.top) - (rr.top - row0.top) / k;
+        let dx = (cx - startX) / k - (node.offsetLeft - home.left) - (rr.left - row0.left) / k, dy = (cy - startY) / k - (node.offsetTop - home.top) - (rr.top - row0.top) / k;
+        if (u) { const q = rot(ang, u[0], u[1]); dx += ref[0] - q[0]; dy += ref[1] - q[1]; }       // (the card turned about its pivot: shifted back so that the grabbed point stays under the pointer)
         node.style.setProperty('--dx', dx.toFixed(1) + 'px'); node.style.setProperty('--dy', dy.toFixed(1) + 'px');
       };
       const reorder = () => {                                          // one slot decision per frame, from the positions measured before anything is moved
@@ -148,6 +155,7 @@ function dragRow(row, zone, shown, nodes) {
         if (before === at) return;
         if (before >= others.length) others[others.length - 1].after(node); else others[before].before(node);
         refan(row);
+        if (u) ang = angleOf();
       };
       const tick = () => {
         frame = 0;
@@ -163,6 +171,10 @@ function dragRow(row, zone, shown, nodes) {
           node.getAnimations().forEach((a) => { if (a.constructor === Animation) a.cancel(); });       // (an entrance animation still running would override the drag's transform)
           document.body.classList.add('card-dragging');               // (keeps the raised hand up while the pointer is outside its hit box)
           row0 = row.getBoundingClientRect();
+          if (fan) {
+            ang = angleOf(); const r = node.getBoundingClientRect(), v = rot(-ang, (startX - r.left - r.width / 2) / k, (startY - r.top - r.height / 2) / k);
+            u = [v[0], v[1] - 1.8 * node.offsetHeight]; ref = rot(ang, u[0], u[1]);         // (the pivot of the fan lies 1.8 card heights below the card's middle)
+          }
         }
         if (!frame) frame = requestAnimationFrame(tick);
       };
@@ -201,7 +213,7 @@ function dragRow(row, zone, shown, nodes) {
 function refan(row) {                                                // the cards of a fan carry their place in --i: set again after the order changed
   const cards = [...row.children].filter((n) => n.classList && n.classList.contains('card') && !n.classList.contains('card-gone'));
   if (!row.style.getPropertyValue('--n')) return;
-  cards.forEach((c, i) => { if (!c.classList.contains('dragging')) c.style.setProperty('--i', (i - (cards.length - 1) / 2).toFixed(1)); });       // (the card in the hand keeps its angle, so the grabbed point does not swing away)
+  cards.forEach((c, i) => c.style.setProperty('--i', (i - (cards.length - 1) / 2).toFixed(1)));       // (the held card turns with its slot; dragRow keeps the grabbed point still)
 }
 export function cardRow(rawKeys, cls, emptyText, zone, dimmed, markable) {
   const row = el('div', 'cards' + (cls ? ' ' + cls : ''));
