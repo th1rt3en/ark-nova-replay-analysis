@@ -54,9 +54,11 @@ export function setupSettings() {
   const slider = el('input'); slider.type = 'range'; slider.className = 'setrange'; slider.min = '0'; slider.max = String(HAND_SCALES.length - 1); slider.step = '1';
   slider.value = String(HAND_SCALES.indexOf(S.handScale)); slider.setAttribute('aria-label', 'Size of the cards in the hand'); slider.setAttribute('list', 'handSizes');
   slider.oninput = () => { S.handScale = HAND_SCALES[Number(slider.value)]; applyHandScale(); save(); };
-  const ticks = el('div', 'setticks'); ticks.id = 'handSizes';
-  for (const v of HAND_SCALES) ticks.append(el('span', '', v === 1 ? '1' : String(v).replace(/^0/, '')));
-  handRow.append(el('span', 'setlabel', 'Cards in hand'), slider, ticks);          // (label and slider side by side, the sizes under the slider)
+  const track = el('div', 'settrack'), bubble = el('b', 'setbubble');     // the current size is written on the slider's knob (the knob is drawn by CSS, the number lies over it)
+  const showVal = () => { const f = Number(slider.value) / (HAND_SCALES.length - 1); bubble.textContent = S.handScale.toFixed(2).replace(/0$/, '').replace(/\.0$/, '') + 'x'; bubble.style.left = 'calc(var(--knob) / 2 + (100% - var(--knob)) * ' + f + ')'; };
+  slider.addEventListener('input', showVal); showVal();
+  track.append(slider, bubble);
+  handRow.append(el('span', 'setlabel', 'Cards in hand'), track);
   const modeRow = el('div', 'setrow');                                    // how the hand is shown: a fan at the screen edge, or a floating tray (dock.js)
   const sel = el('select', 'setselect'); sel.setAttribute('aria-label', 'Hand display');
   for (const [v, t] of [['tray', 'Floating container'], ['fan', 'Fan at the screen edge']]) { const o = el('option', '', t); o.value = v; sel.append(o); }

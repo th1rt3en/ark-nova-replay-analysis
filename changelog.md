@@ -1441,3 +1441,4 @@ An outside audit (`ark-nova-fan-drag-audit.md`) listed six findings; checked aga
 Scope: `web/js/settings.js`, `web/css/parkposter.css`.
 - Settings: "Cards in hand" now comes above "Hand display"; the value text ("1.25x", `.setval` / `.settop`, removed) is gone: the label and the slider sit side by side (`.setslide` is a two-column grid, the size labels under the slider in column 2).
 - An empty place of the project area (`.projslot.projempty` in `.shared`) has a thin ink outline (`inset 0 0 0 2px rgba(23, 38, 43, .35)`), so the area no longer looks like a blank gap.
+- Settings, later: the size of "Cards in hand" is written on the slider's knob (a wide rust pill, `.settrack` + `.setbubble`, 20 px number like "1.25x"); the size labels under the slider (`.setticks`) are gone.
