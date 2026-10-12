@@ -1,6 +1,6 @@
 // [module] Fork mode: starts from a replay step, posts moves with their state to the server, placement controls, move flow.
 import { $, el, seatColor, seatText } from './util.js';
-import { PLAY, S, SANDBOX } from './state.js';
+import { PLAY, S, SANDBOX, params } from './state.js';
 import { legalPlacement, spriteOf, zooBoard } from './board.js';
 import { associationStrip, bonusPanel } from './association.js';
 import { curState, orientParam, povParam } from './pov.js';
@@ -39,6 +39,7 @@ export function initFork() {
   copy.title = 'The link of this fork position with its seed: opening it gives the same position and deck order';
   copy.onclick = async () => {
     const q = new URLSearchParams({ table: String(S.replay.table_id), step: String(S.forkInfo.step), seed: String(S.forkInfo.seed), pov: povParam(), orient: orientParam() });
+    if (params.get('source') === 'upload') q.set('source', 'upload');            // (a log kept in this browser: the link opens here only)
     const link = location.origin + '/fork.html?' + q.toString();
     try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; } catch (e) { window.prompt('Link of this fork', link); }
     setTimeout(() => { copy.textContent = 'Copy link'; }, 1500);

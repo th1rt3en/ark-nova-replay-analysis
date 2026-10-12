@@ -170,3 +170,15 @@ def test_drawing_from_the_deck_cannot_be_taken_back(client):
         if True in seen:
             break
     assert seen.get(True, True) is True and seen.get(False, False) is False
+
+
+def test_a_table_without_a_collected_log_forks_from_the_log_the_page_brings(client):
+    """A table that is indexed but not logged (opened with the extension): the log lives in the browser, the fork request carries it."""
+    step = _forkable_step(client)
+    path = next(p for p in sorted(LOG_DIR.glob(f"{client.tid}.json")))
+    unlogged = TestClient(create_app(Settings(cache_dir="off"), Idx(TableRecord(client.tid)), Logs({})))
+    assert unlogged.post(f"/api/tables/{client.tid}/fork", json={"step": step}).status_code == 404            # (no log, none brought)
+    r = unlogged.post(f"/api/tables/{client.tid}/fork", json={"step": step, "log": path.read_text(encoding="utf-8")})
+    assert r.status_code == 200 and r.json()["steps"][0]["actions"] and r.json()["fork"]["step"] == step
+    r = unlogged.post(f"/api/tables/{client.tid}/fork", json={"step": step, "log": "{\"data\": {\"logs\": []}}"})       # (a log that is not this game is refused)
+    assert r.status_code == 422

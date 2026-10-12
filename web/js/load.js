@@ -18,8 +18,13 @@ export async function fetchReplay() {
   }
   if (FORK) {
     const seed = params.get('seed');
+    let log;                                                                 // a table without a collected log (opened with the extension): the log is in this browser, the server builds the fork from it
+    if (params.get('source') === 'upload') {
+      log = await LogStore.get(table);
+      if (!log) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
+    }
     res = await fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                           body: JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined }) });
+                                                           body: JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log }) });
   } else if (params.get('source') === 'upload') {
     const text = await LogStore.get(table);
     if (!text) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }

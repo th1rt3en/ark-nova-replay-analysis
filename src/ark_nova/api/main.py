@@ -1,4 +1,5 @@
 """FastAPI app: /healthz, table lookup (landing page flow), log fetch / verification and the static frontend."""
+import hashlib
 import json
 import logging
 import os
@@ -258,16 +259,17 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             app.state.replays.put(key, body)
         return Response(content=body, media_type="application/json", headers={"ETag": tag, "Cache-Control": CACHE_CONTROL})
 
-    def _fork_entry(table_id: int, rec: TableRecord, raw: dict):
+    def _fork_entry(table_id: int, rec: TableRecord, raw: dict, key=None):
+        key = table_id if key is None else key                           # (a log that the player brought along is kept under its own key: it may differ from another player's)
         with app.state.forks_lock:
-            hit = app.state.forks.get(table_id)
+            hit = app.state.forks.get(key)
             if hit is not None:
-                app.state.forks.move_to_end(table_id)
+                app.state.forks.move_to_end(key)
                 return hit
         view, states = build_replay_view(raw, rec, with_states=True)
         entry = ({k: v for k, v in view.items() if k != "steps"}, states, [st["label"] for st in view["steps"]])
         with app.state.forks_lock:
-            app.state.forks[table_id] = entry
+            app.state.forks[key] = entry
             while len(app.state.forks) > 3:
                 app.state.forks.popitem(last=False)
         return entry
@@ -284,14 +286,27 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         if not 0 <= seed <= forking.MAX_SEED:
             return _error(422, "invalid", "The seed must be a number between 0 and 2^63 - 1.", table_id=table_id)
         rec = app.state.index.find(table_id)
-        if rec is None or not rec.logged:
-            return _error(404, "not_logged", "No log has been collected for this table.", table_id=table_id)
+        key = None
+        if rec is not None and not rec.logged and body.get("log"):           # a table without a collected log, opened with the extension: the page brings the log it keeps in the browser
+            text = body["log"] if isinstance(body["log"], str) else json.dumps(body["log"])
+            try:
+                raw = json.loads(text)
+            except ValueError:
+                return _error(422, "invalid", "The log is not valid JSON.", table_id=table_id)
+            key = (table_id, hashlib.sha1(text.encode()).hexdigest())
+            if key not in app.state.forks:                                   # (checked once: a log that was built before is the one that passed)
+                errors = await run_in_threadpool(verify_log, raw, table_id)
+                if errors:
+                    return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
+        else:
+            if rec is None or not rec.logged:
+                return _error(404, "not_logged", "No log has been collected for this table.", table_id=table_id)
+            try:
+                raw = json.loads(app.state.logs.read(rec.gcs_path, table_id))
+            except LogNotFound:
+                return _error(502, "log_missing", "The log is indexed but could not be found in storage.", table_id=table_id)
         try:
-            raw = json.loads(app.state.logs.read(rec.gcs_path, table_id))
-        except LogNotFound:
-            return _error(502, "log_missing", "The log is indexed but could not be found in storage.", table_id=table_id)
-        try:
-            skeleton, states, labels = await run_in_threadpool(_fork_entry, table_id, rec, raw)
+            skeleton, states, labels = await run_in_threadpool(_fork_entry, table_id, rec, raw, key)
         except Exception:  # noqa: BLE001
             log.exception("fork build failed for table %s", table_id)
             return _error(500, "replay_failed", "The replay could not be built.", table_id=table_id)
