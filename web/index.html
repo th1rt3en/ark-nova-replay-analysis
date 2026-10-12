@@ -84,7 +84,7 @@ document.getElementById('f').addEventListener('submit', async (e) => {
     const body = await res.json();
     if (body.status === 'ready') { show('Table found, opening the replay…', 'loading'); location.href = body.next; }
     else if (body.status === 'needs_log') {
-      show('This table is indexed but its log has not been collected. Taking you to the log submission page…', 'ok');
+      show('This table is indexed but its log has not been collected yet. Taking you to the page that shows how to open it with our browser extension…', 'ok');
       setTimeout(() => { location.href = body.next; }, 1200);
     } else { show(body.message || 'Something went wrong.', 'error'); }
   } catch (err) { show('Could not reach the server, try again.', 'error'); }

@@ -1574,3 +1574,6 @@ Scope: `src/ark_nova/replay/variant_stats.py` (new, `observe_variants`), `differ
 
 ## 88. Who's ahead: the final position after the answer
 Scope: `web/js/minigames/whos_ahead.js`, `web/js/frames.js`. After the result is shown, a button switches the boards between the puzzle position and the last step of the real game (`/api/tables/<id>/replay`, fetched once; `S.replay` is swapped, the move list and timeline rebuilt, `go()` to the last / first step). `framesOf` drops its cache when another replay is on show.
+
+## 89. A table without a log: the extension instead of an upload
+Scope: `web/submit.html`, `web/index.html`. The page after "indexed but not logged" (`/submit.html?table=<id>`) no longer asks for the log file: it links the Chrome Web Store and Firefox Add-ons pages of the extension and the table's BGA replay (`https://boardgamearena.com/gamereview?table=<id>`), where the extension adds the button that opens the replay here. The upload form and the verify call of that page are gone (`web/js/load.js` still reads a log that is already in the browser).
