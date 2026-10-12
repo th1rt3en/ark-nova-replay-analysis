@@ -438,13 +438,17 @@ def _fold_unchanged(steps: list, keep: list) -> list:
 def _tracked_sponsors() -> dict:
     """Lower-case card name -> key of every sponsor that has a passive effect."""
     return {str(c["name"]).lower(): c["key"] for c in data.cards_by_key().values()
-            if c.get("card_type") == "sponsor" and any(e.get("effectType") == "passive" for e in c.get("effects") or [])}
+            if c.get("card_type") == "sponsor" and c["key"] not in NO_STATS
+            and (c["key"] in EXTRA_TRACKED or any(e.get("effectType") == "passive" for e in c.get("effects") or []))}
 
 
 # The sponsors whose gains in the log are only the instant gain of playing them: what they do afterwards is counted from the engine's effects (`differential.observe_sponsors`:
 # Clever of Expert On Africa, pavilions of Asia, pouches of Australia, the enlargements of Conference On Australia, the snaps and the third animal of Waza Small Animal Program)
 # or from the animals played (the experts in small / large animals save 3 / 4 money per animal).
-OWN_STATS = {"S212", "S213", "S214", "S228", "S229", "S230", "S269"}
+OWN_STATS = {"S210", "S211", "S212", "S213", "S214", "S228", "S229", "S230"}
+NO_STATS = {"S215", "S218", "S225", "S272"}                       # Breeding Cooperation / Program (the cubes are on the card), Quarantine Lab, Expansion Area
+EXTRA_TRACKED = {"S209"}                                          # Technology Institute: the X tokens it gave
+ONLY = {"S209": {"xtoken"}, "S224": {"conservation"}}            # of the gains named after the card, only these are shown
 SAVES = {"S229": ("small", 3), "S230": ("large", 4)}
 
 
@@ -472,7 +476,7 @@ def _sponsor_gains(move: Move, in_play: dict) -> list:
             bonuses = a.get("bonuses")
             if key and key not in OWN_STATS and isinstance(bonuses, dict):
                 for res, n in bonuses.items():
-                    if isinstance(n, (int, float)) and n:
+                    if isinstance(n, (int, float)) and n and res in ONLY.get(key, {res}):
                         out.append((e.order, key, res, int(n)))
     return sorted(out)
 

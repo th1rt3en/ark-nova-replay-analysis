@@ -59,7 +59,8 @@ function showNow(src, centered) {
 // What a sponsor with passive effects has given its owner so far (the replay only; the totals are in `state.sponsor_stats`, made by view.py from the log): a panel at the right of the enlarged card
 const STAT_ORDER = ['appeal', 'money', 'reputation', 'conservation', 'xtoken'];
 // what some sponsors are counted by instead of the resources of their instant gain (view.py `OWN_STATS`, `differential.observe_sponsors`)
-const STAT_TEXT = { clever: 'Clevers activated', pavilion: 'Pavilions built', pouch: 'Pouches', enlarge: 'Enclosures enlarged', snap_small: 'Small animals snapped', third_small: '3rd small animals played', saved: 'saved' };
+const STAT_TEXT = { clever: 'Clevers activated', pavilion: 'Pavilions built', pouch: 'Pouches', enlarge: 'Enclosures enlarged', snap_small: 'Small animals snapped', third_small: '3rd small animals played', saved: 'saved',
+  expeditions: 'Expeditions', scuba3: 'Scuba Dive 3 triggered', kiosk: 'Kiosks gained', size1: 'Size-1 enclosures gained', birds: 'Bird icons played', sunbathed: 'Cards sunbathed', hunts: 'Hunts triggered', seen: 'Cards seen', donations: 'Donations' };
 function showStats(src, p) {
   let box = $('previewstats');
   const key = (/\/(S\d{3})(?:_\w+)?\.webp/.exec(String(src)) || [])[1];

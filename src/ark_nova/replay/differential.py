@@ -26,7 +26,10 @@ from ark_nova.replay.builder import Replay
 
 # What the sponsors with a trigger did, seen from the effects that the engine has pending (the log does not name the sponsor of a Clever, a pavilion, a pouch ...): (kind, source) of the
 # pending effect -> the statistic of the sponsor that is counted when the player resolves it (not when they skip it). `observe_sponsors` is called for every engine action of the replay.
-RESOLVED_STATS = {("slot1", "S214"): "clever", ("build", "S213"): "pavilion", ("pouch", "S212"): "pouch", ("enlarge", "S269"): "enlarge", ("take", "S228"): "snap_small"}
+RESOLVED_STATS = {("slot1", "S214"): "clever", ("build", "S213"): "pavilion", ("pouch", "S212"): "pouch", ("enlarge", "S269"): "enlarge", ("take", "S228"): "snap_small",
+                  ("build", "S210"): "kiosk", ("build", "S211"): "size1", ("expedition", "S270"): "expeditions", ("sell", "S250"): "sunbathed", ("donation", "S273"): "donations"}
+# the effects that a sponsor adds (counted when they appear among the pending effects, used or not): (kind, source) -> [(statistic, amount or the key of the effect that holds it)]
+APPEARED_STATS = {("take", "S228"): [("third_small", 1)], ("reveal", "S249"): [("birds", 1)], ("reveal", "S252"): [("hunts", 1), ("seen", "x")]}
 
 
 def _pending_effects(state: GameState) -> Counter:
@@ -34,20 +37,33 @@ def _pending_effects(state: GameState) -> Counter:
     pr = state.prompt
     if pr is not None and pr.kind == "effects":
         for e in pr.args.get("pending") or []:
-            out[(e.get("kind"), e.get("source"))] += 1
+            out[(e.get("kind"), e.get("source"), e.get("x"))] += 1
     return out
 
 
 def observe_sponsors(before: GameState, act: Action, after: GameState) -> list:
-    """[(sponsor key, statistic, amount)] that this engine action counts: an effect of a sponsor resolved (it left the pending effects and was not skipped), or the extra small animal of
-    Waza Small Animal Program played (its snap appears among the pending effects of the animal)."""
+    """[(sponsor key, statistic, amount)] that this engine action counts: an effect of a sponsor resolved (it left the pending effects and was not skipped), or an effect of a sponsor
+    that appeared (the extra small animal of Waza Small Animal Program, a Bird icon of the Barred Owl Hut, a hunt of the Spotted Hyena Compound with the cards it looks at)."""
     out = []
     was, now = _pending_effects(before), _pending_effects(after)
+
+    def total(c: Counter, kind: str, src: str) -> int:
+        return sum(n for (k, s_, _), n in c.items() if (k, s_) == (kind, src))
+
     for (kind, src), stat in RESOLVED_STATS.items():
-        if act.kind != "skip_effect" and was[(kind, src)] > now[(kind, src)] and (kind, src) in was:
-            out.append((src, stat, was[(kind, src)] - now[(kind, src)]))
-    if now[("take", "S228")] > was[("take", "S228")]:
-        out.append(("S228", "third_small", 1))
+        gone = total(was, kind, src) - total(now, kind, src)
+        if act.kind != "skip_effect" and gone > 0:
+            if stat == "sunbathed":
+                out.append((src, stat, len(act.args.get("cards") or [])))
+            else:
+                out.append((src, stat, gone))
+            if stat == "expeditions" and act.args.get("scuba"):
+                out.append((src, "scuba3", 1))
+    for (kind, src), stats in APPEARED_STATS.items():
+        new = [(key, n - was[key]) for key, n in now.items() if (key[0], key[1]) == (kind, src) and n > was[key]]
+        for key, extra in new:
+            for stat, amount in stats:
+                out.append((src, stat, extra * (key[2] or 0 if amount == "x" else amount)))
     return out
 
 
