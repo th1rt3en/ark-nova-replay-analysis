@@ -81,6 +81,7 @@ export function renderZoo(st, seat) {
     const arrow = (d, label, path) => { const b = el('button', 'zootab-arrow'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label); b.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + path + '"/></svg>'; b.onclick = () => zooStep(d); return b; };
     h.append(arrow(-1, 'Previous board', 'M13 3L5 10l8 7z'), el('span', 'zootab-name', who.name), arrow(1, 'Next board', 'M7 3l8 7-8 7z'));
   }
+  if (who.elo) { const elo = el('span', 'elo', 'Elo ' + who.elo); elo.title = 'Elo at this table (before the game)'; h.append(elo); }
   h.append(el('span', 'map', 'Map ' + map.id + (map.name ? ': ' + map.name : '')));
   box.append(h);
 

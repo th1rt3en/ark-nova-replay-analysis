@@ -1580,3 +1580,6 @@ Scope: `web/submit.html`, `web/index.html`. The page after "indexed but not logg
 
 ## 90. Forking a replay opened with the extension
 Scope: `src/ark_nova/api/main.py` (`fork_table`, `_fork_entry`), `web/js/load.js`, `main.js`, `fork.js`, `web/fork.html`, `tests/test_fork.py`. The log that the extension brings lives only in the browser (IndexedDB `LogStore`), so the fork request, which the server answers from the collected log, found nothing. Now the replay's Fork button keeps `source=upload` in the fork URL, the fork page reads the log from the browser and sends it with `{step, seed, log}`; for a table that is indexed but not logged the server verifies it (once per log, kept under `(table, sha1)`) and builds the fork from it. A table that has a collected log ignores a log that is sent. The "copy link" of such a fork carries `source=upload` too (it opens in this browser only).
+
+## 91. Elo of the players at this table
+Scope: `src/ark_nova/storage/index.py` (`TableRecord.elos`, column `elo` of `all_games_stat` in the index query), `replay/view.py` (`players[].elo`), `side-panel.js` (`.ppelo`), `zoo.js` (`.elo` in the tab), `parkposter.css`. The Elo that each player had at this table is a small pill after the name in the player box and in the zoo tab; nothing shows when the index has no value (the dev server's local index has none).

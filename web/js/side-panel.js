@@ -136,7 +136,9 @@ export function sidePanel(st) {
     score.append(burst(scoreValue));
     const who = el('span', 'who');
     if (st.active_player === seat && st.phase !== 'over') who.append(el('i', 'live'));
-    who.append(name, eyeButton(seat));
+    who.append(name);
+    if (pl.elo) { const elo = el('span', 'ppelo', String(pl.elo)); elo.title = 'Elo of ' + pl.name + ' at this table (before the game)'; who.append(elo); }
+    who.append(eyeButton(seat));
     const cb = clockBadge(seat);                                            // the clock of the time control, next to the name
     head.append(...(cb ? [who, cb, score] : [who, score]));
     box.append(head);

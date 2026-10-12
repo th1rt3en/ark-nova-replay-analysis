@@ -182,3 +182,13 @@ def test_a_table_without_a_collected_log_forks_from_the_log_the_page_brings(clie
     assert r.status_code == 200 and r.json()["steps"][0]["actions"] and r.json()["fork"]["step"] == step
     r = unlogged.post(f"/api/tables/{client.tid}/fork", json={"step": step, "log": "{\"data\": {\"logs\": []}}"})       # (a log that is not this game is refused)
     assert r.status_code == 422
+
+
+def test_the_replay_carries_the_elo_of_each_player_at_the_table(client):
+    path = next(p for p in sorted(LOG_DIR.glob(f"{client.tid}.json")))
+    players = client.get(f"/api/tables/{client.tid}/replay").json()["players"]
+    elos = {p["id"]: 1000 + i for i, p in enumerate(players)}
+    c = TestClient(create_app(Settings(cache_dir="off"), Idx(TableRecord(client.tid, "x.json", elos={str(k): v for k, v in elos.items()})), Logs({"x.json": path.read_bytes()})))
+    got = c.get(f"/api/tables/{client.tid}/replay").json()["players"]
+    assert [p["elo"] for p in got] == [1000, 1001]
+    assert all(p["elo"] is None for p in players)                                     # (an index without the column: nothing shown)

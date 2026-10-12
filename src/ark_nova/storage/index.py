@@ -16,6 +16,7 @@ class TableRecord:
     gcs_path: str | None = None  # None until the log has been collected and processed
     player_maps: dict[str, str] = field(default_factory=dict)  # BGA player id -> map id ('1', '3a', 'T1', ...)
     marine_worlds: bool = False
+    elos: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's Elo at this table (column `elo`)
 
     @property
     def logged(self) -> bool:
@@ -69,10 +70,11 @@ class BigQueryIndex:
         return [dict(r) for r in self._client.query(sql, job_config=config).result()]
 
     def find(self, table_id: int) -> TableRecord | None:
-        stats = self._query(f"SELECT table_id, player_id, map, is_mw FROM `{self._stats_table}` WHERE table_id = @table_id", table_id)
+        stats = self._query(f"SELECT table_id, player_id, map, is_mw, elo FROM `{self._stats_table}` WHERE table_id = @table_id", table_id)
         if not stats:
             return None
         logs = self._query(f"SELECT table_id, file_name FROM `{self._logs_table}` WHERE table_id = @table_id LIMIT 1", str(table_id))
         return TableRecord(table_id=table_id, gcs_path=logs[0]["file_name"] if logs else None,
                            player_maps={str(r["player_id"]): map_id(str(r["map"])) for r in stats},
-                           marine_worlds=any(bool(r["is_mw"]) for r in stats))
+                           marine_worlds=any(bool(r["is_mw"]) for r in stats),
+                           elos={str(r["player_id"]): round(r["elo"]) for r in stats if r.get("elo") is not None})

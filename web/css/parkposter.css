@@ -543,3 +543,7 @@ body.viewer .previewstats .pstrow img { height: 34px; width: auto; display: bloc
 body.viewer .previewstats .pstrow b { font: 400 26px 'Bowlby One', system-ui, sans-serif; color: var(--ink); }
 body.viewer .previewstats .pstnone { font: 600 17px 'Barlow Condensed', system-ui, sans-serif; opacity: .7; }
 body.viewer .previewstats .pstrow .pstlabel { font: 600 17px/1.1 'Barlow Condensed', system-ui, sans-serif; }
+
+/* the Elo of a player at this table (from the index, `elo`): a small pill after the name in the player box and in the zoo tab */
+body.viewer .ppelo { flex: none; padding: 1px 7px 0; border: 2px solid currentColor; border-radius: 999px; font: 700 14px/1.25 'Barlow Condensed', system-ui, sans-serif; opacity: .9; }
+body.viewer .zoo h2 .elo { font: 700 15px 'Barlow Condensed', system-ui, sans-serif; padding: 0 8px; border: 2px solid var(--paper); border-radius: 999px; opacity: .85; }
