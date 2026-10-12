@@ -27,6 +27,7 @@ function mount(puzzle) {
   const names = pub.replay.players.map((p) => p.name);
   let result = puzzle.result;
   let askedLogin = false;
+  let puzzleReplay = null, finalReplay = null, showingFinal = false;       // after the answer: the button switches the boards between the puzzle position and the last step of the real game
 
   function accountsOn() { return !!window.arkAccountsEnabled; }
 
@@ -91,6 +92,28 @@ function mount(puzzle) {
     const b = el('a', null, 'open its replay'); b.href = r.links.replay; b.target = '_blank'; b.rel = 'noopener';
     p.append(a, ' on Board Game Arena (', b, '). Pick another day from the calendar, or come back at 00:00 UTC for a new puzzle.');
     root.append(p);
+    const toggle = el('button', 'pz-toggle', showingFinal ? 'Back to the puzzle position' : 'Show the final position of the game');
+    const note = el('span', 'muted');
+    toggle.onclick = async () => {
+      toggle.disabled = true; note.textContent = '';
+      try {
+        const { S } = await import('/js/state.js');
+        const { go, buildMoveList, buildTimeline } = await import('/js/playback.js');
+        if (!puzzleReplay) puzzleReplay = S.replay;
+        if (!showingFinal && !finalReplay) {
+          const res = await fetch('/api/tables/' + encodeURIComponent(r.table_id) + '/replay');
+          if (!res.ok) throw new Error('the game could not be loaded');
+          finalReplay = await res.json();
+        }
+        S.replay = showingFinal ? puzzleReplay : finalReplay;
+        buildMoveList(); buildTimeline();
+        go(showingFinal ? 0 : S.replay.steps.length - 1, showingFinal ? 0 : 99);
+        showingFinal = !showingFinal;
+        toggle.textContent = showingFinal ? 'Back to the puzzle position' : 'Show the final position of the game';
+      } catch (e) { note.textContent = e.message; }
+      toggle.disabled = false;
+    };
+    const row = el('div', 'pz-actions'); row.append(toggle, note); root.append(row);
     if (accountsOn() && !window.arkAccount) root.append(el('p', 'pz-login', 'Log in or create an account to save your results and compete on the leaderboards.'));
     const boards = el('div', 'pz-board'); root.append(boards);
     renderBoards(boards, KEY, 'Mean Brier', true);          // (fresh: the player's own score must be in it)

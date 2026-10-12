@@ -13,7 +13,7 @@ import { FORK, PLAY, SANDBOX, S } from './state.js';
 import { labelOf, povState } from './pov.js';
 import { actionBar, draftOpen, prioritySeat, turnEnds } from './action-bar.js';
 
-let cache = new Map(), cachePov = null;
+let cache = new Map(), cachePov = null, cacheReplay = null;
 const virt = new Map();
 const frameName = () => framesOf(S.step)[S.phase] || 'text';
 export const frameKind = () => (FORK || SANDBOX ? 'both' : frameName().replace(/\d+$/, ''));
@@ -49,7 +49,7 @@ function probe(i, kind) {
 }
 export function framesOf(i) {
   if (FORK || SANDBOX) return ['both'];
-  if (S.pov !== cachePov) { cache = new Map(); cachePov = S.pov; }
+  if (S.pov !== cachePov || S.replay !== cacheReplay) { cache = new Map(); virt.clear(); cachePov = S.pov; cacheReplay = S.replay; }       // (another replay on show: a mini game after the answer)
   let f = cache.get(i);
   if (f) return f;
   const steps = S.replay.steps;
