@@ -1,5 +1,6 @@
 """Runtime configuration, read from environment variables (Cloud Run friendly)."""
 import os
+import re
 from dataclasses import dataclass
 
 
@@ -59,5 +60,5 @@ class Settings:
             bga_seed_table=os.environ.get("BGA_SEED_TABLE", "freestyle-190711.ark_nova.bga_player_elo"),
             allowed_origins=os.environ.get("ALLOWED_ORIGINS", "https://ark-nova.pages.dev,https://engine.emufriends.pet"),
             minigames_db=os.environ.get("MINIGAMES_DB", ""),
-            disabled_features=frozenset(x.strip().lower() for x in os.environ.get("DISABLED_FEATURES", "").split(",") if x.strip()),
+            disabled_features=frozenset(x.lower() for x in re.split(r"[,\s]+", os.environ.get("DISABLED_FEATURES", "")) if x),          # (commas or spaces: gcloud stores a comma list with spaces)
         )

@@ -40,6 +40,8 @@ def _client(disabled: frozenset):
 def test_the_environment_switches_features_off(monkeypatch):
     monkeypatch.setenv("DISABLED_FEATURES", " Live, sandbox ,, minigames")
     assert Settings.from_env().disabled_features == frozenset({"live", "sandbox", "minigames"})
+    monkeypatch.setenv("DISABLED_FEATURES", "live accounts minigames sandbox")          # (what gcloud stores
+    assert Settings.from_env().disabled_features == frozenset({"live", "sandbox", "minigames"})
     monkeypatch.delenv("DISABLED_FEATURES")
     assert Settings.from_env().disabled_features == frozenset()
 
