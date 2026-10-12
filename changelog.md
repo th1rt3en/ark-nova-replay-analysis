@@ -1583,3 +1583,6 @@ Scope: `src/ark_nova/api/main.py` (`fork_table`, `_fork_entry`), `web/js/load.js
 
 ## 91. Elo of the players at this table
 Scope: `src/ark_nova/storage/index.py` (`TableRecord.elos`, column `elo` of `all_games_stat` in the index query), `replay/view.py` (`players[].elo`), `side-panel.js` (`.ppelo`), `zoo.js` (`.elo` in the tab), `parkposter.css`. The Elo that each player had at this table is a small pill after the name in the player box and in the zoo tab; nothing shows when the index has no value (the dev server's local index has none).
+
+## 92. Features switched off on the live site
+Scope: `src/ark_nova/config.py` (`disabled_features`, env `DISABLED_FEATURES`), `src/ark_nova/api/main.py` (the `coming_soon` middleware), `scripts/deploy_pages.py` (`coming_soon`, applied when the branch is `main`), `pages/coming-soon.html`, `tests/test_features.py`. Live site: live games, accounts (with ratings, profiles and leaderboards), mini games, sandbox are "coming soon": their API routes answer 404 `coming_soon` (Cloud Run env `DISABLED_FEATURES=live,accounts,minigames,sandbox`); their standalone pages and the start page cards are replaced in the uploaded copy only. The replay, the fork, the lookup, the submit / extension pages and the internal routes (daily rollover) are unchanged. Develop keeps everything on.

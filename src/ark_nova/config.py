@@ -33,6 +33,7 @@ class Settings:
     bga_seed_table: str = "freestyle-190711.ark_nova.bga_player_elo"  # the BGA players and their latest Elo (scripts/setup_bga_player_elo.py)
     allowed_origins: str = "https://ark-nova.pages.dev,https://engine.emufriends.pet"  # sites whose browsers may post to /api/auth (besides the request's own host)
     minigames_db: str = ""  # a SQLite file for the mini games' puzzles and submissions; empty = in memory (lost on restart: the production store is D1, written with the accounts)
+    disabled_features: frozenset = frozenset()  # features switched off for the public ("live", "accounts", "minigames", "sandbox"): their routes answer coming soon (DISABLED_FEATURES)
     live_gcs_bucket: str = "temp-common-storage"  # where the records of finished / conceded games go (live/<yyyy>/<mm>/E12.json.gz); empty = nothing is exported and the keeper keeps the tables
 
     @classmethod
@@ -58,4 +59,5 @@ class Settings:
             bga_seed_table=os.environ.get("BGA_SEED_TABLE", "freestyle-190711.ark_nova.bga_player_elo"),
             allowed_origins=os.environ.get("ALLOWED_ORIGINS", "https://ark-nova.pages.dev,https://engine.emufriends.pet"),
             minigames_db=os.environ.get("MINIGAMES_DB", ""),
+            disabled_features=frozenset(x.strip().lower() for x in os.environ.get("DISABLED_FEATURES", "").split(",") if x.strip()),
         )

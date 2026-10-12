@@ -145,6 +145,15 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     app.state.forks_lock = threading.Lock()
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.middleware("http")(rate_limit_middleware)
+    # Features switched off (DISABLED_FEATURES): their public routes answer "coming soon". The replay and the fork stay; the internal routes (the daily rollover) keep working.
+    gated = {"live": ("/api/games", "/api/live"), "accounts": ("/api/auth", "/api/players", "/api/leaderboard"), "minigames": ("/api/minigames",), "sandbox": ("/api/sandbox",)}
+    blocked = tuple(path for name, paths in gated.items() if name in st.disabled_features for path in paths)
+    if blocked:
+        @app.middleware("http")
+        async def coming_soon(request: Request, call_next):
+            if request.url.path.startswith(blocked):
+                return JSONResponse(status_code=404, content={"status": "coming_soon", "message": "This feature is coming soon."})
+            return await call_next(request)
     if accounts is None:
         accounts = _default_accounts(st)                                      # (first: the rated games keep their ratings in the account store)
     if live is None and st.live_keeper_url and st.internal_secret:                 # the live games: only when the keeper (the Cloudflare Worker) is configured
