@@ -1,0 +1,24 @@
+{
+    // The develop environment's table keeper: a separate Worker with its own Durable Objects, D1 database and secret (nothing shared with ark-nova-live).
+    // Deploy: npx wrangler deploy -c wrangler.dev.jsonc. Secrets: npx wrangler secret put INTERNAL_SECRET -c wrangler.dev.jsonc
+    "name": "ark-nova-live-dev",
+    "main": "src/index.ts",
+    "compatibility_date": "2026-08-01",
+    "durable_objects": {
+        "bindings": [
+            { "name": "TABLE", "class_name": "Table" },
+            { "name": "COUNTER", "class_name": "Counter" }
+        ]
+    },
+    "triggers": { "crons": ["0 0 * * *", "10 0 * * *"] },       // the daily mini game rollover of the dev Cloud Run service (src/cron.ts)
+    "d1_databases": [
+        { "binding": "DB", "database_name": "ark-nova-accounts-dev", "database_id": "b0836f32-e282-4f93-89d1-29a66abae675", "migrations_dir": "migrations" }
+    ],
+    "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["Table", "Counter"] }
+    ],
+    "vars": {
+        // the develop Cloud Run service behind /api/* of the develop site
+        "CLOUD_RUN_URL": "https://ark-nova-replay-analysis-dev-725889947830.us-central1.run.app"
+    }
+}
