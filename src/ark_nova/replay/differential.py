@@ -64,7 +64,11 @@ def observe_sponsors(before: GameState, act: Action, after: GameState) -> list:
         for key, extra in new:
             for stat, amount in stats:
                 out.append((src, stat, extra * (key[2] or 0 if amount == "x" else amount)))
-    return out
+    from ark_nova.replay.variant_stats import observe_variants
+    try:
+        return out + observe_variants(before, act, after)
+    except Exception:                                  # noqa: BLE001  (a statistic must never stop the replay)
+        return out
 
 
 @dataclass

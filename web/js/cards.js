@@ -42,27 +42,35 @@ document.addEventListener('pointerdown', (e) => { lastTouch = e.pointerType === 
 document.addEventListener('pointermove', (e) => { lastTouch = e.pointerType === 'touch'; }, true);
 let heldSrc = null;                                                          // the enlarged card that a click on a card of the hand switched off; the card is drawn again after the click (new element under the pointer), so this is not tied to an element
 function holdPreview(src) { if (lastTouch) return; heldSrc = src; hidePreview(); }       // (touch: the enlarged card opens by a long press, not by hovering: nothing to hold)
-export function showPreview(src, centered) {
+export function showPreview(src, centered, extra) {
   clearTimeout(previewTimer);
   if (document.body.classList.contains('card-dragging')) return;             // (a card is being dragged: no enlarged view of the cards it passes)
   if (heldSrc === src) return;                                               // (still on the clicked card: no enlarged card, not even after the delay)
   heldSrc = null;                                                            // (another card: the usual rule again)
   const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;                      // (the action card draft lightbox is open: no enlarged cards, neither in the lightbox nor in the dimmed background)
   if (lastTouch) return;                                                     // (the mouse events that a tap makes up: on a touch screen only a long press opens it, see bindPreview)
-  previewTimer = setTimeout(() => showNow(src, centered), PREVIEW_DELAY);
+  previewTimer = setTimeout(() => showNow(src, centered, extra), PREVIEW_DELAY);
 }
-function showNow(src, centered) {
+function showNow(src, centered, extra) {
   const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;
   const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false;
-  showStats(src, p);
+  showStats(src, p, extra);
 }
 // What a sponsor with passive effects has given its owner so far (the replay only; the totals are in `state.sponsor_stats`, made by view.py from the log): a panel at the right of the enlarged card
 const STAT_ORDER = ['appeal', 'money', 'reputation', 'conservation', 'xtoken'];
 // what some sponsors are counted by instead of the resources of their instant gain (view.py `OWN_STATS`, `differential.observe_sponsors`)
 const STAT_TEXT = { clever: 'Clevers activated', pavilion: 'Pavilions built', pouch: 'Pouches', enlarge: 'Enclosures enlarged', snap_small: 'Small animals snapped', third_small: '3rd small animals played', saved: 'saved',
   expeditions: 'Expeditions', scuba3: 'Scuba Dive 3 triggered', kiosk: 'Kiosks gained', size1: 'Size-1 enclosures gained', birds: 'Bird icons played', sunbathed: 'Cards sunbathed', hunts: 'Hunts triggered', seen: 'Cards seen', donations: 'Donations' };
-function showStats(src, p) {
+function showStats(src, p, extra) {
   let box = $('previewstats');
+  if (extra) {                                                               // (an action card of the player box: the statistics of its variant, `variantStatsBox`)
+    const content = extra();
+    p.classList.toggle('withstats', !!content);
+    if (!content) { if (box) box.hidden = true; return; }
+    if (!box) { box = el('div', 'previewstats'); box.id = 'previewstats'; document.body.append(box); }
+    box.replaceChildren(...content); box.hidden = false;
+    return;
+  }
   const key = (/\/(S\d{3})(?:_\w+)?\.webp/.exec(String(src)) || [])[1];
   const st = S.replay && S.replay.steps[S.step] && S.replay.steps[S.step].state;
   const on = key && st && st.sponsor_stats && !FORK && !PLAY && !SANDBOX && !MINIGAME && (S.replay.tracked_sponsors || []).includes(key) && st.players.some((q) => q.sponsors.includes(key));
@@ -81,20 +89,52 @@ function showStats(src, p) {
   if (!rows.length) box.append(el('div', 'pstnone', 'nothing yet'));
   box.hidden = false;
 }
+// What the action card variants of Marine Worlds have done (the replay only; `state.variant_stats[seat][action]`, made by replay/variant_stats.py): [statistic, text]; the sides I and II are named in the text
+const VARIANT_NAME = { animals_1: 'Ignore Animals', animals_2: 'Hunter Animals', animals_3: 'Discount Animals', animals_4: 'Mark Animals', association_2: 'Hire Association', association_3: 'X Association',
+  association_4: 'Self-clever Association', build_1: 'Pavilion Build', build_2: 'Kiosk Build', build_3: '+1 Build', build_4: 'Terrain Build', cards_2: 'Digging Cards', cards_3: 'Snap Cards', cards_4: 'Clever Cards',
+  sponsors_1: 'Money Sponsors', sponsors_2: 'Money Sponsors', sponsors_3: 'Sunbathing Sponsors', sponsors_4: 'Snap Sponsors' };
+const ACTION_STATS = {
+  animals_1: [['ignored', 'Animals played ignoring a condition']],
+  animals_2: [['hunts', 'Hunts'], ['seen', 'Cards hunted']],
+  animals_3: [['saved', 'Money saved (side I)'], ['appeal', 'Appeal gained (side II)']],
+  animals_4: [['marks', 'Marks placed'], ['reputation', 'Reputation gained (side II)']],
+  association_2: [['hired', 'Workers hired (side I)'], ['reduced', 'Workers used to lower the strength (side II)']],
+  association_3: [['xtoken', 'X tokens gained (side I)'], ['saved', 'Money saved on donations (side II)']],
+  association_4: [['determination', 'Determination used (side I)'], ['draws', 'Cards instead of a donation (side II)']],
+  build_1: [['extra3', 'Pavilions built for 3 (side I)'], ['extra2', 'Pavilions built for 2 (side II)']],
+  build_2: [['extra3', 'Kiosks built for 3 (side I)'], ['extra2', 'Kiosks built for 2 (side II)']],
+  build_3: [['extra_strength', 'Times the extra strength was used']],
+  build_4: [['terrain_paid', 'Built on rock / water, paid 2 (side I)'], ['terrain_gained', 'Built on rock / water, gained 2 (side II)']],
+  cards_2: [['dig_hand', 'Digging from the hand'], ['dig_display', 'Digging from the display']],
+  cards_3: [['snaps', 'Snaps']],
+  cards_4: [['clever_paid', 'Clevers for 2 money (side I)'], ['clever_free', 'Clevers for free (side II)']],
+  sponsors_1: [['x_money', 'X token for 5 money'], ['money_x', '5 money for an X token'], ['money_rep', '5 money for 1 reputation (side II)'], ['x_rep', 'X token for 1 reputation (side II)']],
+  sponsors_2: [['money', 'Money gained by the ability']],
+  sponsors_3: [['money', 'Discarded for 4 money'], ['strength', 'Discarded for 2 strength (side II)']],
+  sponsors_4: [['snap', 'Sponsors discarded to snap a sponsor (side I)'], ['play', 'Cards discarded to play a sponsor (side II)']],
+};
+export function variantStatsBox(st, seat, a) {
+  const rows = ACTION_STATS[a.type + '_' + a.variant];
+  if (!rows || !a.variant || !S.replay.marine_worlds || !st.variant_stats || FORK || PLAY || SANDBOX || MINIGAME) return null;
+  const got = ((st.variant_stats[seat] || {})[a.type]) || {};
+  const out = [el('b', 'psttitle', VARIANT_NAME[a.type + '_' + a.variant])];
+  for (const [stat, text] of rows) { const row = el('div', 'pstrow'); row.append(el('b', '', String(got[stat] || 0)), el('span', 'pstlabel', text)); out.push(row); }
+  return out;
+}
 // Puts the enlarged view on an element. Mouse: after the pointer has rested on it for PREVIEW_DELAY. Touch: a tap keeps its normal job (selecting, ...); the view opens when a finger stays on the element for TOUCH_HOLD ms
 // without moving (more than TOUCH_SLOP px cancels it, so dragging a card of the hand still works) and stays while it is down: lifting the finger closes it, and the click that may follow is swallowed.
 // `src` and `centered` are values or functions (the card may change between the binding and the hover).
 const TOUCH_HOLD = 1000, TOUCH_SLOP = 10;
-export function bindPreview(elm, src, centered) {
+export function bindPreview(elm, src, centered, extra) {
   const get = (v) => (typeof v === 'function' ? v() : v);
-  elm.addEventListener('mouseenter', () => showPreview(get(src), !!get(centered)));
+  elm.addEventListener('mouseenter', () => showPreview(get(src), !!get(centered), extra));
   elm.addEventListener('mouseleave', hidePreview);
   let timer = 0, x0 = 0, y0 = 0, held = false;
   const stop = () => { clearTimeout(timer); timer = 0; };
   elm.addEventListener('pointerdown', (e) => {
     if (e.pointerType !== 'touch') return;
     held = false; x0 = e.clientX; y0 = e.clientY; stop();
-    timer = setTimeout(() => { held = true; showNow(get(src), !!get(centered)); }, TOUCH_HOLD);
+    timer = setTimeout(() => { held = true; showNow(get(src), !!get(centered), extra); }, TOUCH_HOLD);
   });
   elm.addEventListener('pointermove', (e) => { if (timer && Math.hypot(e.clientX - x0, e.clientY - y0) > TOUCH_SLOP) stop(); });
   const lift = () => { stop(); if (held) { hidePreview(); setTimeout(() => { held = false; }, 400); } };            // (lifting the finger closes the enlarged view; the click that may follow is still swallowed)

@@ -452,7 +452,7 @@ ONLY = {"S209": {"xtoken"}, "S224": {"conservation"}}            # of the gains 
 SAVES = {"S229": ("small", 3), "S230": ("large", 4)}
 
 
-def _sponsor_gains(move: Move, in_play: dict) -> list:
+def _sponsor_gains(move: Move, in_play: dict, seat_of: dict) -> list:
     """[(order, sponsor key, statistic, amount)] of one move: the gains that the log names after a tracked sponsor, and what the experts in small / large animals saved. `in_play`:
     player id -> the keys of the experts in play (kept from move to move)."""
     out = []
@@ -474,6 +474,8 @@ def _sponsor_gains(move: Move, in_play: dict) -> list:
             src = a.get("card_name") or a.get("source")
             key = tracked.get(src.lower()) if isinstance(src, str) else None
             bonuses = a.get("bonuses")
+            if src == "Sponsors2 effect" and isinstance(bonuses, dict) and str(a.get("player_id")) in seat_of:        # Money Sponsors (variant 2): the extra money of its ability
+                out.append((e.order, f"{seat_of[str(a['player_id'])]}:sponsors", "money", int(bonuses.get("money") or 0)))
             if key and key not in OWN_STATS and isinstance(bonuses, dict):
                 for res, n in bonuses.items():
                     if isinstance(n, (int, float)) and n and res in ONLY.get(key, {res}):
@@ -509,6 +511,8 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     full_deck = len(rep.states[0].main_deck) if rep.states else 0
     steps = []
     sponsor_stats: dict = {}                                                  # sponsor key -> {statistic: amount} so far
+    variant_stats: dict = {}                                                  # seat -> action -> {statistic: amount} so far (the action card variants)
+    seat_of_pid = {str(pid): i for i, pid in enumerate(config.player_ids)}
     in_play: dict = {}                                                        # player id -> the experts in small / large animals that they have played
     first_discard = next((m.index for m in parsed.moves if any(e.type == "pDiscardCards" for e in m.events)), None)       # the move of the initial discards
     initial_discard = [list(setup.discarded.get(pid, [])) for pid in config.player_ids]
@@ -568,12 +572,18 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                 options[i] = None                                          # the engine is a step ahead of the log here (it ends the turn inside the last action)
         actors = group_actors(mv, g, {pid: i for i, pid in enumerate(config.player_ids)}) if len(g) == len(views) else [None] * len(views)
         ends = [start for _, start in g[1:]] + [10 ** 12] if len(g) == len(views) else [10 ** 12] * len(views)
-        pending = sorted(_sponsor_gains(mv, in_play) + [(o, key, stat, n) for o, key, stat, n in me.obs])
+        pending = sorted(_sponsor_gains(mv, in_play, seat_of_pid) + [(o, key, stat, n) for o, key, stat, n in me.obs])
         for i, v in enumerate(views):                                           # the totals after each step of the move
             while pending and pending[0][0] < ends[i]:
                 _, key, res, n = pending.pop(0)
-                sponsor_stats.setdefault(key, {})[res] = sponsor_stats.get(key, {}).get(res, 0) + n
+                if ":" in key:                                                  # an action card variant: "<seat>:<action>"
+                    seat_key, typ = key.split(":")
+                    mine = variant_stats.setdefault(seat_key, {}).setdefault(typ, {})
+                    mine[res] = mine.get(res, 0) + n
+                else:
+                    sponsor_stats.setdefault(key, {})[res] = sponsor_stats.get(key, {}).get(res, 0) + n
             v["sponsor_stats"] = {k: dict(d) for k, d in sponsor_stats.items()}
+            v["variant_stats"] = {s_: {t_: dict(d) for t_, d in typs.items()} for s_, typs in variant_stats.items()}
         if first_discard is not None and mv.index >= first_discard:
             for v in views:
                 v["initial_discard"] = initial_discard                          # (the viewer hides the other player's cards in the discard pile, pov.js)
