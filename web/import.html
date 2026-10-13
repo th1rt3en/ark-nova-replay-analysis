@@ -34,12 +34,16 @@ if (!/^\d+$/.test(table || '') || !window.opener) {
   window.addEventListener('message', async (e) => {
     const d = e.data;
     if (e.source !== window.opener || !d || d.type !== 'ark-nova-log' || d.table !== table || typeof d.log !== 'string') return;
+    // the table info the extension collected (optional): it must be about the same table as the log
+    const index = d.index && typeof d.index === 'object' ? d.index : null;
+    if (index && String(index.id) !== table) { show('The table info is about another table (' + index.id + ').', 'error'); return; }
     show('Verifying the log…', 'loading');
     try {
       const res = await fetch('/api/tables/' + table + '/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: d.log });
       const body = await res.json();
       if (body.ok) {
         await LogStore.put(table, d.log);
+        if (index) await LogStore.put('index:' + table, JSON.stringify(index));       // (kept with the log: the replay and the fork read the players' Elo from it)
         location.replace('/replay.html?table=' + table + '&source=upload');
       } else if (body.errors) { show('This log cannot be used:', 'error', body.errors); }
       else { show(body.message || 'Something went wrong.', 'error'); }
