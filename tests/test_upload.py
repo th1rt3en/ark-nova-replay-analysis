@@ -59,3 +59,13 @@ def test_an_unindexed_log_is_verified(client):
     r = client.post("/api/tables/607674960/verify", content=LOG.read_bytes())
     assert r.status_code == 200 and r.json() == {"ok": True, "errors": []}
     assert client.post("/api/tables/123456789/verify", content=LOG.read_bytes()).status_code == 422       # another table's log
+
+
+def test_same_map_for_all_players_gives_both_players_one_map(client):
+    """Table 930655556 was played with "Same map for all players" (option 102 = 5): both seats are on the map that the log shows (3a: Silver Lake there)."""
+    info = json.loads(INFO.read_text(encoding="utf-8"))["data"]
+    info["options"]["102"]["value"] = "5"
+    r = client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), info))
+    assert r.status_code == 200
+    ids = [m["id"] for m in r.json()["maps"]]
+    assert len(ids) == 2 and ids[0] == ids[1]

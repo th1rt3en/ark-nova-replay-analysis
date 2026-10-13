@@ -20,7 +20,7 @@ from ark_nova.engine.state import GameState
 from ark_nova.parser.log import parse_log
 from ark_nova.parser.model import Move, ParsedLog
 from ark_nova.replay.builder import Replay, build_replay
-from ark_nova.replay.config import game_from_log
+from ark_nova.replay.config import game_from_log, infer_maps
 from ark_nova.replay.engine_replay import build_engine_replay
 from ark_nova.replay.options import step_options
 from ark_nova.storage.index import TableRecord
@@ -491,6 +491,10 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     maps = None
     if record.player_maps and all(pid in record.player_maps for pid in seats):
         maps = [record.player_maps[pid] for pid in seats]
+    elif record.same_map:                                    # one map for both players: the log tells it from either of them
+        known = next((m for m in infer_maps(parsed, seats) if m), None)
+        if known:
+            maps = [known, known]
     setup, config, seed = game_from_log(parsed, maps=maps, marine_worlds=record.marine_worlds if record.player_maps else None)
     if maps is None:
         maps = config.maps

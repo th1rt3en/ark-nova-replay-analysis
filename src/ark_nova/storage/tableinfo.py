@@ -23,6 +23,16 @@ def table_id_of(info: dict) -> str:
     return str(info.get("id") or "")
 
 
+def same_map_of(info: dict) -> bool:
+    """BGA's "Competitive level" option (102) is "Same map for all players" in the table info."""
+    opt = (info.get("options") or {}).get("102") or {}
+    values = opt.get("values")
+    try:
+        return values[int(opt["value"])]["name"] == "Same map for all players"
+    except (KeyError, IndexError, TypeError, ValueError):
+        return False
+
+
 def record_from_tableinfo(info: dict, table_id: int) -> TableRecord:
     """The record that stands in for the index of a table that is not indexed: the Elo of the players (the maps and Marine Worlds come from the log)."""
-    return TableRecord(table_id=table_id, elos=elos_from_tableinfo(info))
+    return TableRecord(table_id=table_id, elos=elos_from_tableinfo(info), same_map=same_map_of(info))

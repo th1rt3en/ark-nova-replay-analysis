@@ -1599,3 +1599,6 @@ Scope: `src/ark_nova/api/main.py` (`/api/tables/{id}/upload`, `_record_for_uploa
 - The manifest description is shortened to the store limit (132 characters).
 
 - Verify of a log accepts a table that is not indexed (the import page said "not indexed yet"): the table id of the log is still checked.
+
+## 96. Same map for all players (table info)
+Scope: `src/ark_nova/storage/index.py` (`TableRecord.same_map`), `src/ark_nova/storage/tableinfo.py` (`same_map_of`), `src/ark_nova/replay/view.py` (one inferred map for both seats), `src/ark_nova/api/main.py`. A table whose table info has "Competitive level" (option 102) = "Same map for all players" was replayed with a different map per player (the log inference looked at each player on its own): both seats now get the map that the log shows for either of them. Found on table 930655556 (both on 3a).

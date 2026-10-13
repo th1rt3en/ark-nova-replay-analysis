@@ -16,6 +16,7 @@ class TableRecord:
     gcs_path: str | None = None  # None until the log has been collected and processed
     player_maps: dict[str, str] = field(default_factory=dict)  # BGA player id -> map id ('1', '3a', 'T1', ...)
     marine_worlds: bool = False
+    same_map: bool = False  # "Same map for all players" (BGA option 102 in the table info): both players play the same map
     elos: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's Elo at this table (column `elo`)
 
     @property
