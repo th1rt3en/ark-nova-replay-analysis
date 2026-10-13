@@ -53,3 +53,9 @@ def test_the_table_info_must_be_about_the_same_table(client):
 def test_without_table_info_the_replay_still_works(client):
     r = client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), None))
     assert r.status_code == 200 and all(p["elo"] is None for p in r.json()["players"])
+
+
+def test_an_unindexed_log_is_verified(client):
+    r = client.post("/api/tables/607674960/verify", content=LOG.read_bytes())
+    assert r.status_code == 200 and r.json() == {"ok": True, "errors": []}
+    assert client.post("/api/tables/123456789/verify", content=LOG.read_bytes()).status_code == 422       # another table's log

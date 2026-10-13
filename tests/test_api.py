@@ -123,7 +123,7 @@ def test_verify_rejects_wrong_table_and_garbage():
     r = c.post(f"/api/tables/{table_id + 1}/verify", content=path.read_bytes())
     assert r.status_code == 422 and not r.json()["ok"]
     assert c.post(f"/api/tables/{table_id + 1}/verify", content=b"not json").json()["errors"] == ["The file is not valid JSON."]
-    assert c.post("/api/tables/999/verify", content=b"{}").status_code == 404
+    assert c.post("/api/tables/999/verify", content=b"{}").status_code == 422          # not indexed is fine now: the log itself is not a game
 
 
 def test_verify_rejects_other_games_and_unfinished():

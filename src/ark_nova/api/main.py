@@ -452,9 +452,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
 
     @app.post("/api/tables/{table_id}/verify")
     async def verify(table_id: int, request: Request):
-        """Manual submission: check the uploaded log is a finished 2p Ark Nova log of this (indexed) table."""
-        if app.state.index.find(table_id) is None:
-            return _error(404, "not_indexed", "This table has not been indexed yet.", table_id=table_id)
+        """Manual submission: check the uploaded log is a finished 2p Ark Nova log of this table. The table need not be indexed (its table info comes with the upload)."""
         try:
             raw = json.loads(await request.body())
         except ValueError:
