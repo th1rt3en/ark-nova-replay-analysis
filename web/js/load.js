@@ -18,17 +18,21 @@ export async function fetchReplay() {
   }
   if (FORK) {
     const seed = params.get('seed');
-    let log;                                                                 // a table without a collected log (opened with the extension): the log is in this browser, the server builds the fork from it
+    let log, index = null;                                                   // a table without a collected log (opened with the extension): the log and the table info are in this browser, the server builds the fork from them
     if (params.get('source') === 'upload') {
       log = await LogStore.get(table);
       if (!log) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
+      const info = await LogStore.get('index:' + table);
+      index = info ? JSON.parse(info) : null;
     }
     res = await fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                           body: JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log }) });
+                                                           body: JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log, index }) });
   } else if (params.get('source') === 'upload') {
     const text = await LogStore.get(table);
     if (!text) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
-    res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: text });
+    const info = await LogStore.get('index:' + table);                       // the table info of the extension (optional): the Elo of the players
+    res = await fetch('/api/tables/' + encodeURIComponent(table) + '/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                                              body: '{"log":' + text + ',"index":' + (info || 'null') + '}' });
   } else {
     res = await fetch(url);
   }

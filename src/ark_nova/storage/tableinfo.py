@@ -5,6 +5,8 @@ pre-match rating = `rank_after_game` - `point_win` (the change of the game), ind
 """
 import math
 
+from ark_nova.storage.index import TableRecord
+
 
 OFFSET = 1300
 
@@ -19,3 +21,8 @@ def elos_from_tableinfo(info: dict) -> dict[str, int]:
 
 def table_id_of(info: dict) -> str:
     return str(info.get("id") or "")
+
+
+def record_from_tableinfo(info: dict, table_id: int) -> TableRecord:
+    """The record that stands in for the index of a table that is not indexed: the Elo of the players (the maps and Marine Worlds come from the log)."""
+    return TableRecord(table_id=table_id, elos=elos_from_tableinfo(info))

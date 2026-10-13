@@ -1592,3 +1592,6 @@ Scope: `extension/capture.js`, `extension/button.js`, `extension/manifest.json` 
 
 ## 94. Elo from the table info
 Scope: `src/ark_nova/storage/tableinfo.py`, `tests/test_tableinfo.py`, `tests/fixtures/tableinfos_607674960.json`. The Elo before the game of each player is `floor(rank_after_game - point_win - 1300)` from BGA's table info (checked against the index of table 607674960: 358 and 391). Not wired into the replay or the fork yet.
+
+## 95. Replay and fork from the extension's table info
+Scope: `src/ark_nova/api/main.py` (`/api/tables/{id}/upload`, `_record_for_upload`, the fork takes `index`), `src/ark_nova/storage/tableinfo.py` (`record_from_tableinfo`), `web/js/load.js` (upload replay and fork send the table info stored by the import page), `tests/test_upload.py`. A log that the browser brings is replayed also when the table is not indexed: the table info stands in for the index (the Elo of the players comes from it, checked against the index). The table info must be about the same table as the log. The extension zip (`extension/extension.zip`, 1.2.0) is rebuilt; it is gitignored like every zip here.

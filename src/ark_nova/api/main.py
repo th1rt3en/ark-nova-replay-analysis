@@ -1,4 +1,5 @@
 """FastAPI app: /healthz, table lookup (landing page flow), log fetch / verification and the static frontend."""
+import dataclasses
 import hashlib
 import json
 import logging
@@ -24,6 +25,7 @@ from ark_nova.replay import fork as forking
 from ark_nova.replay import sandbox
 from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
+from ark_nova.storage.tableinfo import elos_from_tableinfo, record_from_tableinfo
 from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
 from ark_nova.storage.requests import request_log
 
@@ -296,14 +298,18 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             return _error(422, "invalid", "The seed must be a number between 0 and 2^63 - 1.", table_id=table_id)
         rec = app.state.index.find(table_id)
         key = None
-        if rec is not None and not rec.logged and body.get("log"):           # a table without a collected log, opened with the extension: the page brings the log it keeps in the browser
+        if body.get("log"):                                  # a log that the page brings (the extension, or a table that is not indexed): with the table info, when there is one
             text = body["log"] if isinstance(body["log"], str) else json.dumps(body["log"])
+            index_info = body.get("index")
             try:
                 raw = json.loads(text)
             except ValueError:
                 return _error(422, "invalid", "The log is not valid JSON.", table_id=table_id)
-            key = (table_id, hashlib.sha1(text.encode()).hexdigest())
-            if key not in app.state.forks:                                   # (checked once: a log that was built before is the one that passed)
+            rec = _record_for_upload(table_id, index_info)
+            if rec is None:
+                return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
+            key = (table_id, hashlib.sha1((text + json.dumps(index_info, sort_keys=True)).encode()).hexdigest())
+            if key not in app.state.forks:                   # (checked once: a log that was built before is the one that passed)
                 errors = await run_in_threadpool(verify_log, raw, table_id)
                 if errors:
                     return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
@@ -415,6 +421,33 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         errors = await run_in_threadpool(verify_log, raw, table_id)               # (seconds of work: not on the event loop, which serves every other request)
         if errors:
             return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
+        return await run_in_threadpool(_replay, table_id, rec, raw)
+
+    def _record_for_upload(table_id: int, index_info):
+        """The record of an uploaded log: the index's when the table has one, else built from the table info of the extension (None: that table info is about another table)."""
+        if index_info is None:
+            return app.state.index.find(table_id) or TableRecord(table_id)
+        if not isinstance(index_info, dict) or str(index_info.get("id")) != str(table_id):
+            return None
+        base = app.state.index.find(table_id) or TableRecord(table_id)
+        return dataclasses.replace(base, elos=elos_from_tableinfo(index_info))
+
+    @app.post("/api/tables/{table_id}/upload")
+    async def upload_replay(table_id: int, request: Request):
+        """Replay of a log the browser brings: {log, index}. `index` is the table info that the extension collected (optional): it gives the Elo of the
+        players and stands in for the index, so a table that is not indexed yet can be replayed."""
+        try:
+            body = json.loads(await request.body())
+            raw = body["log"]
+            index_info = body.get("index")
+        except (ValueError, KeyError, TypeError):
+            return _error(422, "invalid", "Send {log, index}.", table_id=table_id)
+        errors = await run_in_threadpool(verify_log, raw, table_id)
+        if errors:
+            return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
+        rec = _record_for_upload(table_id, index_info)
+        if rec is None:
+            return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
         return await run_in_threadpool(_replay, table_id, rec, raw)
 
     @app.post("/api/tables/{table_id}/verify")
