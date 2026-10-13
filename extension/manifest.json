@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "Ark Nova Replay for BGA",
     "version": "1.2.0",
-    "description": "Collects the table info (on the table page) and the log (on the game review page) of a BGA table, and adds an \"Open in Ark Nova Replay\" button when both are there.",
+    "description": "Opens a BGA table in the Ark Nova replay: collects its table info and log, then adds an Open button.",
     "icons": {
         "16": "icons/icon16.png",
         "32": "icons/icon32.png",
