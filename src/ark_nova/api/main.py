@@ -25,7 +25,7 @@ from ark_nova.replay import fork as forking
 from ark_nova.replay import sandbox
 from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
-from ark_nova.storage.tableinfo import elos_from_tableinfo, record_from_tableinfo, same_map_of
+from ark_nova.storage.tableinfo import elos_from_tableinfo, maps_from_tableinfo, marine_worlds_of, record_from_tableinfo, same_map_of
 from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
 from ark_nova.storage.requests import request_log
 
@@ -430,7 +430,10 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         if not isinstance(index_info, dict) or str(index_info.get("id")) != str(table_id):
             return None
         base = app.state.index.find(table_id) or TableRecord(table_id)
-        return dataclasses.replace(base, elos=elos_from_tableinfo(index_info), same_map=same_map_of(index_info))
+        changes = {"elos": elos_from_tableinfo(index_info), "same_map": same_map_of(index_info)}
+        if not base.player_maps:                              # the table is not indexed: its table info tells the maps and the Marine Worlds flag
+            changes.update(player_maps=maps_from_tableinfo(index_info), marine_worlds=marine_worlds_of(index_info))
+        return dataclasses.replace(base, **changes)
 
     @app.post("/api/tables/{table_id}/upload")
     async def upload_replay(table_id: int, request: Request):

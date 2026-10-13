@@ -1602,3 +1602,6 @@ Scope: `src/ark_nova/api/main.py` (`/api/tables/{id}/upload`, `_record_for_uploa
 
 ## 96. Same map for all players (table info)
 Scope: `src/ark_nova/storage/index.py` (`TableRecord.same_map`), `src/ark_nova/storage/tableinfo.py` (`same_map_of`), `src/ark_nova/replay/view.py` (one inferred map for both seats), `src/ark_nova/api/main.py`. A table whose table info has "Competitive level" (option 102) = "Same map for all players" was replayed with a different map per player (the log inference looked at each player on its own): both seats now get the map that the log shows for either of them. Found on table 930655556 (both on 3a).
+
+## 97. Maps and Marine Worlds from the table info
+Scope: `src/ark_nova/storage/tableinfo.py` (`maps_from_tableinfo` from `result.stats.player.map`, `marine_worlds_of` from option 111), `src/ark_nova/api/main.py` (`_record_for_upload` takes them for a table that is not indexed), `tests/test_upload.py`. The maps of 930655556 are both 3a in its table info, so the log inference is no longer needed for them; the same-map fallback is kept for a table info without the maps. The Marine Worlds flag from option 111 is checked on one table (607674960, index says Marine Worlds and the option is 1).

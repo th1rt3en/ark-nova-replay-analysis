@@ -65,7 +65,19 @@ def test_same_map_for_all_players_gives_both_players_one_map(client):
     """Table 930655556 was played with "Same map for all players" (option 102 = 5): both seats are on the map that the log shows (3a: Silver Lake there)."""
     info = json.loads(INFO.read_text(encoding="utf-8"))["data"]
     info["options"]["102"]["value"] = "5"
+    del info["result"]["stats"]["player"]["map"]           # (without the maps of the table info: the log has to tell)
     r = client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), info))
     assert r.status_code == 200
     ids = [m["id"] for m in r.json()["maps"]]
     assert len(ids) == 2 and ids[0] == ids[1]
+
+
+def test_both_maps_come_from_the_table_info(client):
+    """The table info gives each player's map (stats.player.map): the replay uses them, and the Marine Worlds flag of the table info (option 111)."""
+    info = json.loads(INFO.read_text(encoding="utf-8"))["data"]
+    r = client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), info))
+    assert [m["id"] for m in r.json()["maps"]] == ["10", "9"]              # (seat order: SylAce10 is seat 0, on map 10)
+    info["result"]["stats"]["player"]["map"]["values"] = {"95347471": "3a", "89641657": "3a"}
+    info["result"]["stats"]["player"]["map"]["valuelabels"] = {"95347471": "Map 3a: Silver Lake", "89641657": "Map 3a: Silver Lake"}
+    r = client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), info))
+    assert [m["id"] for m in r.json()["maps"]] == ["3a", "3a"]
