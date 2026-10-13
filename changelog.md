@@ -1589,3 +1589,6 @@ Scope: `src/ark_nova/config.py` (`disabled_features`, env `DISABLED_FEATURES`), 
 
 ## 93. Extension: table info and log, kept per table
 Scope: `extension/capture.js`, `extension/button.js`, `extension/manifest.json` (1.2.0, `unlimitedStorage`), `web/import.html`. On a BGA table page the extension keeps the table info (tableinfos.html, its `data`) under `ark:index:<table id>` in extension storage; on a game review page the log (archive/logs.html) under `ark:log:<table id>`. The button shows only when both exist for the table of the page and their table ids agree. The import page checks the table info is about the same table and keeps it as `index:<table id>` in the browser next to the log. Not done yet: the server side (the replay and the fork read the table info, the Elo of each player) and the Elo scale (see the notes of the session).
+
+## 94. Elo from the table info
+Scope: `src/ark_nova/storage/tableinfo.py`, `tests/test_tableinfo.py`, `tests/fixtures/tableinfos_607674960.json`. The Elo before the game of each player is `floor(rank_after_game - point_win - 1300)` from BGA's table info (checked against the index of table 607674960: 358 and 391). Not wired into the replay or the fork yet.
