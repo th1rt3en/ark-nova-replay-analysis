@@ -28,10 +28,12 @@ function textParts(i) {
   const label = String(labelOf(S.replay.steps[i]) || '(state update)'), parts = label.split(' · ');
   if (parts.length < 2 || S.replay.steps[i].state.phase !== 'setup') return [label];       // (outside the setup, " · " joins the steps that `view.py` folded into this one because nothing visible changed: one frame, the whole text)
   const names = S.replay.players.map((p) => p.name), owner = (p) => names.findIndex((n) => p.startsWith(n + ' '));
+  // the verb of a line ("draw", "keeps", ...): after the player's name, which may have several words ("Papa Emeritus V draw ...")
+  const verb = (p) => { const n = names.find((x) => p.startsWith(x + ' ')); return ((n ? p.slice(n.length + 1) : p).split(' ')[0]) || ''; };
   const groups = [];
   for (const p of parts) {
     const last = groups[groups.length - 1];
-    if (last && (last[0].split(' ')[1] || '') === (p.split(' ')[1] || '')) last.push(p); else groups.push([p]);
+    if (last && verb(last[0]) === verb(p)) last.push(p); else groups.push([p]);
   }
   return groups.map((g) => {
     const owners = [...new Set(g.map(owner).filter((o) => o >= 0))];
@@ -59,7 +61,7 @@ export function framesOf(i) {
   if (PLAY && turnEnds(i)) f.push('gate');                  // (a live game only: a replay has nothing to confirm, the frame is skipped)
   const sig = probe(i, 'decision');
   const again = i > 0 && probe(i - 1, 'decision') === sig && (steps[i - 1].move_id === steps[i].move_id || JSON.stringify(steps[i - 1].options) === JSON.stringify(steps[i].options));       // (the decision of the step before, still pending in the engine's state while the log resolves it: nothing new to show)
-  const chose = !PLAY && /chooses action card/.test(String(labelOf(steps[i]) || ''));         // (the replay: what the player has to do inside the action card just chosen is the next step, not a frame of its own)
+  const chose = !PLAY && /chooses action card [^(]*with strength/.test(String(labelOf(steps[i]) || ''));       // (the choice of an action card, not the draft's "chooses action cards (action card draft)")         // (the replay: what the player has to do inside the action card just chosen is the next step, not a frame of its own)
   if (sig && !again && !chose) f.push('decision');
   cache.set(i, f);
   return f;

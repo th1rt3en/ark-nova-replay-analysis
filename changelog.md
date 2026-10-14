@@ -1611,3 +1611,6 @@ Scope: `web/js/playback.js` (`ownChoice`: the frame of the viewed player's own d
 
 ## 99. Placement bonus buttons are named
 Scope: `src/ark_nova/replay/options.py` (`placement_bonus_name`, `effect_name` for `pbonus`), `tests/test_placement_names.py`. The bar named a placement bonus "pbonus"; it now says what the bonus gives ("Placement bonus: 5 money", "Placement bonus: kiosk", "Placement bonus: size-2 enclosure").
+
+## 100. Starting hand with multi-word names and the discard decision
+Scope: `web/js/frames.js`. (1) The lines of a merged setup step are grouped by their verb (after the player name, which can have several words: "Papa Emeritus V draw ..."; grouping by the second word put every line of such a player in one group, so the 8 starting cards had no frame). (2) The decision frame is dropped after a choice only for the real action card choice ("chooses action card X with strength N"), not for the draft line "chooses action cards (action card draft)", which dropped the initial discard frame. Found on table 930752686 as the second player.
