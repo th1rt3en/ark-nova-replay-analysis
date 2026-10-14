@@ -58,6 +58,17 @@ def effect_name(e: dict) -> str | None:
     return f"{prefix} {n}" if isinstance(n, int) and n > 1 else prefix
 
 
+def _expedition_buttons(state: GameState, pending: list, entry: dict) -> list:
+    """Marine Research Expedition is two buttons: the expedition (send a person sponsor away, greyed out without one) and Scuba Dive 3."""
+    e = pending[entry["index"]] if isinstance(entry.get("index"), int) and entry["index"] < len(pending) else {}
+    if entry.get("kind") != "expedition" or e.get("kind") != "expedition":
+        return [entry]
+    owner = e.get("player", 0)
+    persons = [s for s in state.players[owner].sponsors if data.cards_by_key().get(s, {}).get("type") == "HUMAN"]
+    return [{**entry, "name": "Expedition", "option": "send", "enabled": bool(persons)},
+            {**entry, "name": "Scuba Dive 3", "option": "scuba", "enabled": True}]
+
+
 def step_options(state: GameState, seat: int | None = None) -> dict | None:
     """What the bar is drawn from. `seat`: a live game gives each player their own (both discard at once in a break: each one sees their own discard); None = the player of the prompt."""
     pr = state.prompt
@@ -133,4 +144,5 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile") if k in e and isinstance(e[k], (str, int, bool))},
                            **({"name": effect_name(e)} if effect_name(e) else {}), "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
+        out["effects"] = [b for entry in out["effects"] for b in _expedition_buttons(state, pending, entry)]
     return out

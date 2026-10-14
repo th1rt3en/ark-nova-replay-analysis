@@ -464,12 +464,14 @@ const EFFECT_TEXT = {
   archaeologist: 'Archaeologist', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', reef: 'Reef', ability: 'Animal ability',
 };
 const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
+// the option of an effect with several buttons (Marine Research Expedition: "send" a person sponsor away, or "scuba" Scuba Dive 3)
+const effectOption = (a, e) => (e.option === 'send' ? a.args.send !== undefined : e.option === 'scuba' ? !!a.args.scuba : true);
 function effectButton(e) {
   if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res)) return null;
   if (e.kind === 'take' || e.kind === 'build') return null;                      // shown as the deck button / the pieces
   if (/^income_/.test(e.kind)) return null;                                       // the incomes of a break are paid by themselves (BGA shows them as log lines, not as a choice)
-  if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
-  const b = el('span', 'abtn deckbtn');
+  if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
+  const b = el('span', 'abtn deckbtn' + (e.enabled === false ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)
   const src = e.source && /^[ASPF]\d{3}$/.test(e.source) ? cardName(e.source) : '';
   b.title = (e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
   const SEARCH_ICON = { bird: ['Bird', 'r2c3'], herbivore: ['Herbivore', 'r2c4'], predator: ['Predator', 'r2c5'], primate: ['Primate', 'r2c6'], reptile: ['Reptile', 'r2c7'], marine: ['Sea animal', 'r2c8'] };
@@ -483,15 +485,15 @@ function effectButton(e) {
   } else {
     b.append(el('b', '', e.name || EFFECT_TEXT[e.kind] || e.kind.replace(/_/g, ' ')));
   }
-  if (FORK && (e.kind === 'threshold2' || e.kind === 'upgrade') && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && (a.args.upgrade || a.args.hire)).length) {
+  if (FORK && (e.kind === 'threshold2' || e.kind === 'upgrade') && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && (a.args.upgrade || a.args.hire)).length) {
     b.classList.add('choosable');                                      // (click it: gain a worker or an upgrade, see forkBar)
     b.onclick = () => { S.thresholdMode = { index: e.index, stage: e.kind === 'upgrade' ? 'upgrade' : 'choose' }; refreshBar(); };
-  } else if (FORK && e.kind === 'marketing' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.card === 'string').length) {
+  } else if (FORK && e.kind === 'marketing' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && typeof a.args.card === 'string').length) {
     b.classList.add('choosable');                                      // (click it, then choose the sponsor in the hand: see forkBar)
     b.onclick = () => { S.marketMode = e.index; S.forkDockStep = -1; refreshBar(); renderDock(curState()); };
-  } else if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).every(cardPickAct)) {
+  } else if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)).length && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)).every(cardPickAct)) {
     b.classList.add('choosable');                                      // (select the card in the hand / display, then confirm: see forkBar)
-  } else bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index));
+  } else bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)));
   return b;
 }
 

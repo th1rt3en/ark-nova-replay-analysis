@@ -76,10 +76,40 @@ _PUBLIC_DRAW = re.compile(r"hunter effect|perception effect|scuba dive effect|re
 _SECRET_DISCARD = re.compile(r"scoring card|adapt effect|pouch")
 
 
+# the reveals (Hunter, Scuba Dive, Scavenging, Perception): what the player draws and keeps is not named for the other player
+REVEAL_EFFECT = re.compile(r"for (hunter|scuba dive|scavenging|perception) effect")
+
+
+def _reveal(e) -> str | None:
+    """The reveal that a draw or keep line of an event belongs to ("hunter", "scuba dive", ...), None for any other event."""
+    if e.type not in ("pDrawCards", "pDiscardCards"):
+        return None
+    m = REVEAL_EFFECT.search(e.log or "")
+    return m.group(1) if m else None
+
+
+def _reveal_hidden(e, effect: str) -> str:
+    """The line of a reveal for the other player: the number of cards drawn; the card kept for Hunter / Scuba Dive, the number kept for the others."""
+    a = e.args if isinstance(e.args, dict) else {}
+    if e.type == "pDrawCards":
+        n = len(a.get("cards") or []) or 1
+        return f"You draws {n} card{'' if n == 1 else 's'} for the {effect} effect"
+    if effect in ("hunter", "scuba dive") and "card" in a:
+        try:
+            text = render_log(re.sub(r" and discard \$\{card_names\}", "", e.log), a)
+        except Exception:                                    # noqa: BLE001 (a line that does not match the template: the count)
+            text = None
+        if text:
+            return text.replace("You keep ", "You keeps ", 1).replace(f" for {effect} effect", f" for the {effect} effect")
+    return f"You keeps 1 card for the {effect} effect"
+
+
 def _secret(e) -> bool:
     """Is this private event (written for one player) something that the other player must not read?"""
     if e.player is None:
         return False
+    if _reveal(e):
+        return True
     log = e.log or ""
     if e.type == "pDrawCards":
         return not _PUBLIC_DRAW.search(log)
@@ -90,6 +120,8 @@ def _secret(e) -> bool:
 
 def _hidden_text(e) -> str:
     """The log line of a secret event with the cards replaced by their number."""
+    if _reveal(e):
+        return _reveal_hidden(e, _reveal(e))
     a = e.args if isinstance(e.args, dict) else {}
     cards = a.get("cards")
     n = len(cards) if isinstance(cards, list) and cards else 1
