@@ -17,9 +17,31 @@ ABILITY_PREFIX = {"digging": "Digging", "scavenge": "Scavenging", "glide": "Glid
 REVEAL_NAME = {"animal": "Hunter", "any": "Perception", "sponsor": "Scuba Dive"}          # what a reveal-and-keep effect is called, by what it may keep
 
 
+# the placement bonuses (the bonus of a space or a building that a building covers): how the bar names them
+PLACEMENT_BONUS = {
+    "money": "money", "xtoken": "X token", "reputation": "reputation", "appeal": "appeal", "conservation": "conservation",
+    "Worker": "worker", "Multiplier": "multiplier", "Scavenging": "scavenging", "Digging": "digging", "Pouch": "pouch", "Mark": "mark",
+    "kiosk": "kiosk", "Clever": "clever", "upgrade-card": "upgrade", "bonus-sponsor": "marketing token", "bonus-extra-shift": "extra shift",
+    "bonus-ignore-conditions": "ignore conditions", "bonus-increased-hand": "hand size", "Snapping": "snap", "Partner-Zoo": "partner zoo",
+    "Fac": "university", "animal-magnet": "animal magnet", "sponsor-person-card": "person sponsor", "Cut Down": "cut down",
+}
+VALUED = {"money", "xtoken", "reputation", "appeal", "conservation", "Snapping", "Scavenging", "Worker", "Multiplier"}
+
+
+def placement_bonus_name(bonus: dict) -> str:
+    """"Placement bonus: 5 money", "Placement bonus: kiosk" (the bonus of a space or building that the player chooses to take)."""
+    t = str((bonus or {}).get("type", ""))
+    label = PLACEMENT_BONUS.get(t) or (f"{t} enclosure" if t.startswith("size-") else t.replace("bonus-", "").replace("-", " ").lower()) or "bonus"
+    v = (bonus or {}).get("value")
+    value = f"{v} " if isinstance(v, int) and v > 0 and (t in VALUED or t == "money") else ""
+    return f"Placement bonus: {value}{label}"
+
+
 def effect_name(e: dict) -> str | None:
     """The name of the ability behind a pending effect, as the card writes it ("Perception 2"), None when it is not an ability."""
     kind, src = e.get("kind"), e.get("source")
+    if kind == "pbonus":
+        return placement_bonus_name(e.get("bonus"))
     if kind == "reveal":
         prefix = REVEAL_NAME.get(e.get("filter", "any"))
         return f"{prefix} {e['x']}" if prefix and e.get("x") is not None else None

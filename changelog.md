@@ -1608,3 +1608,6 @@ Scope: `src/ark_nova/storage/tableinfo.py` (`maps_from_tableinfo` from `result.s
 
 ## 98. Own draft choice is not skipped; hunter and scuba dive reveals
 Scope: `web/js/playback.js` (`ownChoice`: the frame of the viewed player's own draft choice is never skipped; before, the opponent-skip rule also skipped the second player's keep, so the starting hand came straight after the draft), `web/js/dock.js` (`revealDim`: during a Hunter / Scuba Dive draw step only the drawn cards the effect takes stay bright (animals for Hunter, sponsors for Scuba Dive); the other drawn cards and the rest of the hand are greyed out; the drawn cards are the hand gained in that step).
+
+## 99. Placement bonus buttons are named
+Scope: `src/ark_nova/replay/options.py` (`placement_bonus_name`, `effect_name` for `pbonus`), `tests/test_placement_names.py`. The bar named a placement bonus "pbonus"; it now says what the bonus gives ("Placement bonus: 5 money", "Placement bonus: kiosk", "Placement bonus: size-2 enclosure").
