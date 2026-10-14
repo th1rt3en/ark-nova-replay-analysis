@@ -78,8 +78,10 @@ function draftSeen(i) {
   const d = povState(st).draft;
   return JSON.stringify({ ...d, stage: d.stage === 'done' ? 'keep' : d.stage });          // ('done' only says that the opponent's keep, which is hidden, ended the draft: the lightbox looks the same)
 }
+// The step is the viewed player's own choice (its label starts with that player's name): never skipped, the viewer sees what they chose.
+const ownChoice = (n) => { const me = S.replay.players[S.pov]; return !!me && String(S.replay.steps[n].label || '').startsWith(me.name + ' '); };
 function skipFrame(n, ph) {
-  if (S.pov === null || ph !== 0 || n < 1 || framesOf(n)[0] !== 'draft') return false;
+  if (S.pov === null || ph !== 0 || n < 1 || framesOf(n)[0] !== 'draft' || ownChoice(n)) return false;
   const seen = draftSeen(n);
   return seen !== null && seen === draftSeen(n - 1);
 }

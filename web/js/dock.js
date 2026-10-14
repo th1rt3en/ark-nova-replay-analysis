@@ -8,6 +8,19 @@ import { cardPickAct, forkActs, pickCardOf } from './action-bar.js';
 import { settingsOpen } from './settings.js';
 
 
+// A Hunter / Scuba Dive reveal (the step "X draw ... for hunter effect"): the cards are drawn and one of them is kept. Of the drawn cards only those the effect takes stay
+// bright (animals for Hunter, sponsors for Scuba Dive); the other drawn cards and every other card of the hand are greyed out. The drawn cards are the ones the hand of the
+// drawing player gained in this step. The label is the source (the engine's own prompt is not there when it could not replay the turn).
+function revealDim(seat) {
+  const i = S.step, st = S.replay.steps[i], me = S.replay.players[seat];
+  const label = st ? String(st.label || '') : '';
+  const kind = /draw .* for (hunter|scuba dive) effect/i.exec(label);
+  if (!kind || !me || !label.startsWith(me.name + ' ') || !st.state.players[seat]) return null;
+  const before = i > 0 && S.replay.steps[i - 1].state.players[seat] ? S.replay.steps[i - 1].state.players[seat].hand : [];
+  const drawn = st.state.players[seat].hand.filter((k) => !before.includes(k));
+  const takes = (k) => (/hunter/i.test(kind[1] || kind[0]) ? k.startsWith('A') : k.startsWith('S'));
+  return (k) => !(drawn.includes(k) && takes(k));
+}
 // while a sponsor is to be played, everything in the hand of that player that is not a playable sponsor is greyed out
 function handDim(seat) {
   if (FORK && S.marketMode !== null) {                                    // Marketing: the sponsors that cannot be played are greyed out
@@ -22,6 +35,8 @@ function handDim(seat) {
     const ok = forkActs((a) => a.player === seat && a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind)).map((a) => a.args.card);
     if (ok.length) return (k) => !ok.includes(k);
   }
+  const reveal = revealDim(seat);
+  if (reveal) return reveal;
   const o = S.replay.steps[S.step].options;
   // (a Sponsors action that has nothing left to play, e.g. while the effects of the sponsor just played resolve: the lists are empty, so the hand is not greyed out)
   return o && o.sponsors && o.seat === seat && !hides(seat) && (o.sponsors.hand.length || (o.sponsors.display || []).length) ? (k) => !o.sponsors.hand.includes(k) : null;

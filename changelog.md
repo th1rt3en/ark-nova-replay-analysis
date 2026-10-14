@@ -1605,3 +1605,6 @@ Scope: `src/ark_nova/storage/index.py` (`TableRecord.same_map`), `src/ark_nova/s
 
 ## 97. Maps and Marine Worlds from the table info
 Scope: `src/ark_nova/storage/tableinfo.py` (`maps_from_tableinfo` from `result.stats.player.map`, `marine_worlds_of` from option 111), `src/ark_nova/api/main.py` (`_record_for_upload` takes them for a table that is not indexed), `tests/test_upload.py`. The maps of 930655556 are both 3a in its table info, so the log inference is no longer needed for them; the same-map fallback is kept for a table info without the maps. The Marine Worlds flag from option 111 is checked on one table (607674960, index says Marine Worlds and the option is 1).
+
+## 98. Own draft choice is not skipped; hunter and scuba dive reveals
+Scope: `web/js/playback.js` (`ownChoice`: the frame of the viewed player's own draft choice is never skipped; before, the opponent-skip rule also skipped the second player's keep, so the starting hand came straight after the draft), `web/js/dock.js` (`revealDim`: during a Hunter / Scuba Dive draw step only the drawn cards the effect takes stay bright (animals for Hunter, sponsors for Scuba Dive); the other drawn cards and the rest of the hand are greyed out; the drawn cards are the hand gained in that step).
