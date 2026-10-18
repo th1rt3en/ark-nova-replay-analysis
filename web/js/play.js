@@ -5,7 +5,7 @@ import { S, params } from './state.js';
 import { render } from './main.js';
 import { buildMoveList, go } from './playback.js';
 import { refreshBar } from './action-bar.js';
-import { forkBar, renderForkMoves, warnIrreversible } from './fork.js';
+import { renderForkMoves, warnIrreversible } from './fork.js';
 
 const P = S.play;
 

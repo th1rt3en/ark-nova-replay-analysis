@@ -27,7 +27,7 @@ STRIP = (1000, 412, 250)                               # the strip of a project 
 STRIP_OUT = (600, 247)
 SLOT_SCALE = 1.5                                       # (the slots as large as the strip allows up to this factor of the card)
 SLOT_HEIGHT = 0.8
-VARIANTS = ["P131_MW"]                                 # Marine Worlds reprint with other indicators (data_manual/variants_mw.json); S250_MW is made from S250 below
+VARIANTS = ["P131_MW", "S274_VC"]                       # Marine Worlds reprint with other indicators (data_manual/variants_mw.json); S250_MW is made from S250 below; S274_VC = the Mascot Statue under its BGA name Victory Column (setting "Mascot Statue")
 
 
 def keys() -> list[str]:

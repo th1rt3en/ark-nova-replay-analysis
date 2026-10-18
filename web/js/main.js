@@ -2,15 +2,14 @@
 import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
 import { $, el } from './util.js';
 import { setupNoTips } from './notips.js';
-import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, seatOrder } from './pov.js';
+import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, refreshLabels, seatOrder } from './pov.js';
 import { fetchReplay } from './load.js';
 import { applyIconNames } from './icons.js';
 import { renderShared } from './shared.js';
 import { actionBar } from './action-bar.js';
-import { closePile, renderPile } from './pile.js';
 import { sidePanel } from './side-panel.js';
 import { renderDock, toggleDock } from './dock.js';
-import { renderZoo } from './zoo.js';
+import { fitPlayed, renderCards, renderZoo } from './zoo.js';
 import { engineBadge, labelNode } from './log-labels.js';
 import { fitDisplay, fitScale } from './layout.js';
 import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
@@ -20,6 +19,8 @@ import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
 import { forkBar, initFork, renderForkMoves } from './fork.js';
 import { initPlay } from './play.js';
+import './thin-numbers.js';
+import './bpreview.js';
 import { frameKind, frameState, frameText } from './frames.js';
 
 
@@ -29,12 +30,17 @@ function zooBoards(st) {
   const zoos = $('zoos'), order = seatOrder(), layout = FORK || SANDBOX || PLAY || MINIGAME ? 'side' : S.zooLayout;
   zoos.classList.toggle('zoos-tabs', layout === 'tabs');
   zoos.classList.toggle('zoos-stack', layout === 'stack');
+  zoos.classList.toggle('zoos-beside', layout === 'tabs' || layout === 'stack');       // (tabbed and top / bottom: the zoo box in the display's column, the played cards in the association element's column)
+  if (layout === 'stack') return order.flatMap((seat) => [renderZoo(st, seat), renderCards(st, seat)]);       // (one row per player, no switch)
   if (layout !== 'tabs') return order.map((seat) => renderZoo(st, seat));
-  return [renderZoo(st, order.includes(S.zooTab) ? S.zooTab : order[0])];
+  const seat = order.includes(S.zooTab) ? S.zooTab : order[0];
+  return [renderZoo(st, seat), renderCards(st, seat)];
 }
 // the arrows beside the player's name (zoo.js) go round the seats in the order of the tracker
 export function zooStep(d) { const o = seatOrder(), at = Math.max(0, o.indexOf(S.zooTab)); S.zooTab = o[(at + d + o.length) % o.length]; S.lastBoard = null; render(); }
 document.addEventListener('zoolayout', () => { S.lastBoard = null; render(); });
+document.addEventListener('eglive', () => { S.lastBoard = null; render(); });                  // (the live count of the endgame points is switched on or off)
+document.addEventListener('playedmode', () => { S.lastBoard = null; render(); });          // (where the played cards are shown: the boards and the dock are drawn again)
 
 // Redrawing keeps what did not change: the parts of a freshly drawn zone whose markup equals the one on show are put back as they were (the old elements, their pictures already
 // loaded), so only the changed zones are replaced (and flash). Used in the replay; a fork / sandbox / live game still replaces everything, because the handlers of its elements
@@ -43,6 +49,7 @@ const markup = (n) => (n.nodeType === 1 ? n.outerHTML.replace(/mt\d+/g, 'mt') 
 function reconcile(old, fresh) {
   if (old.nodeType !== fresh.nodeType) return fresh;
   if (markup(old) === markup(fresh)) return old;
+  if (fresh.classList && fresh.classList.contains('flip')) return fresh;                // (the score plates are animated by closures over their own elements: never mix old pieces into them, see `plate` in side-panel.js)
   if (old.nodeType === 1 && old.tagName === fresh.tagName && old.childNodes.length && fresh.childNodes.length) {
     const a = [...old.childNodes], b = [...fresh.childNodes];
     b.forEach((n, i) => { if (a[i]) { const keep = reconcile(a[i], n); if (keep !== n) n.replaceWith(keep); } });
@@ -56,6 +63,7 @@ function redraw(root, draw) {
 }
 
 export function render() {
+  if (S.preview && S.preview.step !== S.step) S.preview = null;           // (the building preview belongs to the step it was started on)
   const scrollY = window.scrollY, scrollX = window.scrollX;       // rebuilding the boards must not move the page
   const s = S.replay.steps[S.step], st = povState(frameState());
   const cur = $('current'), kind = frameKind();
@@ -109,8 +117,8 @@ export function render() {
   history.replaceState(null, '', '#' + S.step + (S.phase ? '.' + S.phase : ''));       // (#13 = step 13, #13.1 = its second frame)
   fitSidebar();
   fitDisplay();
+  fitPlayed();
   updateTimeline();
-  if (S.openedPile) renderPile();
   window.scrollTo(scrollX, scrollY);
 }
 
@@ -124,7 +132,7 @@ function init() {
   $('next').onclick = () => { stepBy(1); };
   $('play').onclick = () => { setPlaying(!S.timer); };
   setupSettings();
-  document.addEventListener('nosnake', () => { S.lastBoard = null; render(); });                  // (the cards with a snake photo get their new picture at once, no reload)
+  document.addEventListener('nosnake', () => { refreshLabels(); S.lastBoard = null; render(); });                  // (the cards with a snake photo get their new picture at once, no reload)
   setupShortcuts();
   $('last').onclick = () => { go(S.replay.steps.length - 1, 99); };
   $('jump').onchange = (e) => {                                          // a move number past the end jumps to the end (its last frame)
@@ -132,7 +140,6 @@ function init() {
     if (n >= S.replay.steps.length - 1) go(S.replay.steps.length - 1, 99); else go(Math.max(0, n));
   };
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && S.openedPile) { closePile(); return; }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
     if ((e.key === 's' || e.key === 'S') && !shortcutsOpen() && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
     if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;

@@ -58,6 +58,7 @@ def project(state: GameState, role: str) -> dict:
             if not mine:
                 p[k] = _mask(p.get(k) or [])
         if not mine:
+            p["endgame_cards"] = None                                       # (the points of the hidden endgame cards would give them away)
             p["initial_offer"] = []
             p["under"] = _mask_deep(p.get("under") or {})
     pr = v.get("prompt")

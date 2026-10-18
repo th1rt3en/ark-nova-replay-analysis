@@ -2,3 +2,4 @@
 body.compact .animal-ability-desc,
 body.compact .ark-card-bottom .dijitTooltipContainer,
 body.compact .project-card .project-card-description { display: none !important; }
+body.compact .emu-caption { display: none !important; }       /* (S274_VC: the champion is named on the large card only) */

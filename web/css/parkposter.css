@@ -15,6 +15,7 @@
 body.viewer {
   --teal: #0E4B5A; --teal2: #146577; --sun: #EE6C2B; --gold: #F4B63F; --rust: #A8321E; --paper: #F8EDCB; --ink: #17262B;
   --ocean: #1F67B0;
+  --stone: #D9D6CE;                                      /* the bar under a zoo box while its drawer is open (assocbar.js): a light warm grey, a step darker than the paper */
   --mint: #6FD3A8; --act1: #229DD7; --act2: #A72070;   /* the unupgraded / upgraded action cards: player info box, action buttons in the move bar */
   --sidebar-w: 320px;
   --fg: var(--ink); --muted: #52666B; --border: var(--ink); --accent: var(--sun);
@@ -29,7 +30,7 @@ body.viewer::before { content: ""; position: fixed; left: -400px; top: -2500px; 
   background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .06) 0 6deg, transparent 6deg 15deg); animation: pp-spin 240s linear infinite; }       /* the rays turn slowly about a point beyond the top right corner (2000, -100); no sun */
 #app::before { content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 150px; z-index: -1; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 150' preserveAspectRatio='none'%3E%3Cpath d='M0 70C220 20 420 110 700 70S1200 10 1500 60 1800 90 1920 50V150H0z' fill='%230A3A47'/%3E%3Cpath d='M0 110C300 70 560 140 900 108S1500 70 1920 112V150H0z' fill='%23072C37'/%3E%3C/svg%3E") bottom / 100% 100% no-repeat; }
 @keyframes pp-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { body.viewer::before, body.viewer::after, .pp .live { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { body.viewer::before, body.viewer::after { animation: none !important; } }
 
 /* ---- layout: the main column left, the sidebar fixed at the right; the top bar sticks to the top of the window ------------------------------------------------------------- */
 body.viewer .layout { --sidebar-w: 320px; padding: 0 calc(var(--sidebar-w) + 38px) 0 14px; }
@@ -40,7 +41,7 @@ body.viewer .movebar { position: sticky; top: 0; z-index: 30; display: flex; ali
   background: none; border: 0; border-radius: 0; box-shadow: none; font-size: 1rem; }
 body.viewer .movepill { position: relative; flex: 1 1 0; min-width: 0; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; min-height: 60px; padding: 3px 44px 3px 22px;
   background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 29px; box-shadow: 0 4px 0 var(--ink);
-  font: 700 18px/1.15 'Barlow', system-ui, sans-serif; }          /* the ONE font of the move bar: the step text, the choices and every text in the bar inherit it */
+  font: 700 20px/1.15 'Barlow', system-ui, sans-serif; }          /* the ONE font of the move bar: the step text, the choices and every text in the bar inherit it */
 body.viewer .movepill .actionbar { flex: 1 1 auto; margin: 0; min-height: 0; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }
 body.viewer .movepill .actionbar, body.viewer .movepill .actionbar b, body.viewer .movepill .actionbar .who { font: inherit; }       /* (the old rules gave the bar 0.95rem and its bold text weight 900) */
 body.viewer .movepill .actionbar b { color: var(--ink); }
@@ -94,16 +95,20 @@ body.viewer .shared .projslot { border-radius: 9px; box-shadow: none; }
 body.viewer .shared .projslot.projempty { background: none; box-shadow: inset 0 0 0 2px rgba(23, 38, 43, .35); }       /* (an empty project place: a thin outline, so the area does not look like a blank gap) */
 body.viewer .zoos { gap: 16px; padding-top: 40px; }
 body.viewer .zoo { position: relative; box-sizing: border-box; padding: 8px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
-body.viewer .zoo.active { border-color: var(--ink); box-shadow: 0 6px 0 var(--ink), 0 0 0 8px var(--gold); }
-body.viewer .zoo h2 { position: absolute; left: 22px; top: -38px; margin: 0; height: 34px; box-sizing: border-box; display: flex; align-items: center; gap: 9px; flex-wrap: nowrap; padding: 0 20px 0 11px; background: var(--ink); color: var(--paper);
+body.viewer .zoo h2 { position: absolute; left: 22px; top: -38px; margin: 0; height: 38px; box-sizing: border-box; display: flex; align-items: center; gap: 9px; flex-wrap: nowrap; padding: 0 20px 4px 9px; background: var(--ink); color: var(--paper);
   border: 0; border-radius: 14px 14px 0 0; white-space: nowrap; font: 400 17px 'Bowlby One', system-ui, sans-serif; }
-body.viewer .zoo h2::before { content: ""; width: 18px; height: 18px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--paper); background: var(--pc, #888); flex: none; }
+body.viewer .zoo h2::before { content: none; }   /* (the colour dot is now the eye button, see .poveye below) */
 body.viewer .zoo h2 .map { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; color: var(--paper); opacity: .8; }
-body.viewer .zoo .played { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 20px; margin-top: 8px; padding-top: 7px; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .zoo .played { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 20px; margin-top: 10px; }
 body.viewer .zoo .played .sect { margin: 0; }
 body.viewer .zoo .played h3 { margin: 0 0 4px; padding: 0; border: 0; font: 700 15px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
-body.viewer .zoo .played .cards { gap: 6px; flex-wrap: wrap; }
-body.viewer .zoo .played .cards .card, body.viewer .zoo .played .cards.small .card { width: 92px; border-radius: 7px; border: 0; box-shadow: 0 0 0 2px var(--ink); }
+body.viewer .zoo .played { --cw: 160px; gap: 6px 36px; }
+body.viewer .zoo .played h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; font-size: 20px; }
+body.viewer .zoo .played h3 img.icon { height: 26px; width: auto; }
+body.viewer .zoo .played .pstacks { display: flex; align-items: flex-start; gap: 12px; }
+body.viewer .zoo .played .pstacks .cards { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 0; width: var(--cw); }
+body.viewer .zoo .played .cards .card, body.viewer .zoo .played .cards.small .card { width: var(--cw); border-radius: 10px; border: 0; box-shadow: 0 0 0 1.5px var(--ink); }
+body.viewer .zoo .played .pstacks .cards .card + .card { margin-top: calc(var(--cw) * -1.1178); }      /* a card covers 80% of the one before (card height = 1.3972 x width) */
 body.viewer .zoo .played .empty { display: none; }
 body.viewer .card { border-radius: 7px; border-color: var(--ink); }
 
@@ -183,38 +188,45 @@ body.viewer .timeline.dragging, body.viewer .timeline.dragging .tlhead { cursor:
 /* info boxes */
 body.viewer .pp { --pc: #888; padding: 0; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); overflow: hidden; }
 body.viewer .pp:last-child { border-radius: 20px; }
-body.viewer .pphead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; padding: 4px 8px 4px 14px; background: var(--pc); color: #fff; border-bottom: 4px solid var(--ink); }
+body.viewer .pphead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; padding: 0 8px 0 14px; box-sizing: border-box; height: 56px; background: var(--pc); color: #fff; border-bottom: 4px solid var(--ink); }
 body.viewer .pp.light .pphead { color: var(--ink); }
 body.viewer .pphead .who { min-width: 0; display: flex; align-items: center; gap: 9px; }
-body.viewer .ppname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 18px 'Bowlby One', system-ui, sans-serif; color: inherit; text-decoration: none; text-shadow: 0 2px 0 rgba(0, 0, 0, .28); -webkit-text-stroke: 0; }
+body.viewer .ppname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 20px 'Bowlby One', system-ui, sans-serif; color: inherit; text-decoration: none; text-shadow: 0 2px 0 rgba(0, 0, 0, .28); -webkit-text-stroke: 0; }
 body.viewer .pp.light .ppname { text-shadow: none; }
 body.viewer .ppname.light { -webkit-text-stroke: 0; }
-body.viewer .pp .live { width: 15px; height: 15px; box-sizing: border-box; border-radius: 50%; background: var(--gold); border: 3px solid var(--ink); flex: none; animation: pp-blink 2.4s ease-in-out infinite; }
+/* the name is drawn 86% as wide (side-panel.js `squeezeName`): the text is scaled inside the link, the link itself takes the squeezed width and shrinks when the row is tight */
+body.viewer .ppname .nm { display: block; width: calc(100% / .86); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transform: translateY(1.5px) scaleX(.86); transform-origin: 0 50%; }   /* (the 1.5px: Bowlby's letters sit high in their line box, now the caps are centred in the coloured part of the header, like the score sun) */
 @keyframes pp-blink { 50% { background: #fff; } }
 body.viewer .pphead .clock { margin: 0 4px 0 auto; font-size: 17px; background: rgba(255, 255, 255, .85); color: var(--ink); }
 body.viewer .poveye { color: inherit; }
-body.viewer .burst { position: relative; width: 52px; height: 52px; margin: -4px 0; flex: none; display: grid; place-items: center; }
-body.viewer .burst svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-body.viewer .burst b { position: relative; font: 400 23px 'Bowlby One', system-ui, sans-serif; color: var(--ink); text-shadow: none; }
+/* the score: a scoreboard, one plate per character on an ink plate; a plate swings over (rotateX, `plate` in side-panel.js) when its character changes; the small hole at the top is the hook */
+body.viewer .flip { display: inline-flex; gap: 0; padding: 3px; box-sizing: border-box; height: 38px; background: var(--ink); border-radius: 6px; align-items: center; }
+body.viewer .flip .ft { position: relative; display: block; width: 19px; height: 32px; perspective: 160px; flex: none; }
+body.viewer .flip .fc { position: absolute; inset: 0; display: block; transform-style: preserve-3d; }
+body.viewer .flip .ff { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 7px; box-sizing: border-box; border-radius: 0; background: #F1EEE0; backface-visibility: hidden; box-shadow: inset -1px 0 0 rgba(23, 38, 43, .55); font: 400 24px/1 'Bowlby One', system-ui, sans-serif; color: var(--ink); text-shadow: none; }
+body.viewer .flip .ff.back { transform: rotateX(180deg); }
+body.viewer .flip .ft:first-child .ff { border-radius: 3px 0 0 3px; }          /* (the plates touch: one board, fine lines between them) */
+body.viewer .flip .ft:last-child .ff { border-radius: 0 3px 3px 0; box-shadow: none; }
+body.viewer .flip .ff::before { content: ""; position: absolute; left: 50%; top: 1px; width: 3px; height: 3px; margin-left: -1.5px; border-radius: 50%; background: var(--ink); opacity: .8; }
 body.viewer .ppscore { display: inline-flex; flex: none; }
-body.viewer .pp .ppres { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; align-items: start; text-align: center; margin: 0; padding: 8px 10px 4px; border: 0; }
+body.viewer .pp .ppres { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; align-items: center; text-align: center; margin: 0; padding: 0 10px; box-sizing: border-box; height: 56px; border: 0; }
 body.viewer .rt { position: relative; display: inline-flex; align-items: center; justify-content: center; }
 body.viewer .rt img { display: block; width: auto; }
 body.viewer .rt b { font: 400 20px/1 'Bowlby One', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; }
 body.viewer .rt.ov { display: grid; place-items: center; height: 50px; }
 body.viewer .rt.ov img { grid-area: 1 / 1; height: 48px; }
-body.viewer .rt.ov b { grid-area: 1 / 1; color: #fff; font-size: 25px; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
+body.viewer .rt.ov b { grid-area: 1 / 1; color: #fff; font-size: 24px; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
 body.viewer .rt.ov.dk b { color: #000; text-shadow: none; }
-body.viewer .rt.ov small { position: absolute; right: -9px; bottom: -8px; z-index: 2; font: 700 17px 'Barlow Condensed', system-ui, sans-serif; background: var(--mint); color: var(--ink); border: 2px solid var(--ink); border-radius: 11px; padding: 0 6px; white-space: nowrap; }   /* the income pill at the lower right of the money tile */
+body.viewer .rt.ov small { position: absolute; right: -9px; bottom: -8px; z-index: 2; font: 700 18px 'Barlow Condensed', system-ui, sans-serif; background: var(--mint); color: var(--ink); border: 2px solid var(--ink); border-radius: 12px; padding: 0 7px; white-space: nowrap; }   /* the income pill at the lower right of the money tile */
+body.viewer .rt.ov small.eg { right: -9px; bottom: -8px; background: #7B4FB5; color: #fff; border-color: var(--ink); font-size: 17px; line-height: 20px; padding: 0 6px; }   /* the endgame live count: a violet pill at the lower right of the appeal / conservation tile, at the height of the income pill (not green, so it is not taken for income) */
 body.viewer .rt.ov.money img { border: 0; border-radius: 0; background: none; box-sizing: border-box; }
-body.viewer .rt.xo b { font-size: 25px; color: #fff; text-shadow: none; -webkit-text-stroke: 5px #000; paint-order: stroke fill; }   /* X tokens: the number on the X, white with a black outline */
-body.viewer .pp .ppres2 { display: flex; align-items: center; gap: 14px; margin: 0 10px; padding: 5px 0; min-height: 38px; border: 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
+body.viewer .rt.xo b { font-size: 24px; color: #fff; text-shadow: none; -webkit-text-stroke: 5px #000; paint-order: stroke fill; }   /* X tokens: the number on the X, white with a black outline */
+body.viewer .pp .ppres2 { display: flex; align-items: center; gap: 14px; margin: 0 10px; padding: 0; box-sizing: border-box; height: 56px; border: 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
 body.viewer .ppres2 .rt { gap: 7px; }
 body.viewer .ppres2 .rt img { height: 32px; }
 body.viewer .ppres2 .rt b { font-size: 24px; }
-body.viewer .ppres2 .rt b small { font: 700 17px 'Barlow Condensed', system-ui, sans-serif; opacity: .6; }
+body.viewer .ppres2 .rt b small { font: 700 18px 'Barlow Condensed', system-ui, sans-serif; opacity: .6; }
 body.viewer .ppres2 .rt b.over { color: var(--rust); }
-body.viewer .ppres2 .egx b { font-size: 20px; }
 body.viewer .ppres2 .bons { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; justify-content: flex-end; }
 body.viewer .ppres2 .btoken { display: inline-flex; margin: 0; }
 body.viewer .ppres2 .btoken img { height: 36px; width: auto; display: block; }
@@ -223,7 +235,7 @@ body.viewer .ppactions .ac { position: relative; display: inline-flex; box-sizin
 body.viewer .ppactions .ac.lvl2 { border-color: var(--act2); }
 body.viewer .ppactions .ac img.icon { width: 38px; height: 38px; display: block; }
 body.viewer .ppactions .ac .variant { left: -11px; top: -11px; width: 25px; height: 25px; }
-body.viewer .ppactions .ac.chosen { border-color: var(--ink); box-shadow: 0 0 0 3px var(--gold), 0 5px 0 var(--ink); transform: translateY(-5px); }
+body.viewer .ppactions .ac.chosen { box-shadow: 0 5px 5px rgba(23,38,43,.35); transform: translateY(-5px); }
 body.viewer .pp .ppicons { display: grid; grid-template-columns: 1fr; gap: 2px; margin: 6px 10px 10px; padding-top: 7px; border-top: 3px dashed rgba(23, 38, 43, .4); }
 body.viewer .ppicons .icrow { display: flex; justify-content: space-around; }
 body.viewer .ppicons .ic { position: relative; display: inline-block; width: 44px; height: 44px; margin: 0 4px 4px 0; font-size: 0; }
@@ -264,14 +276,9 @@ body.viewer .povok { display: block; margin: 22px auto 0; min-width: 210px; heig
 body.viewer .povok:hover:not(:disabled) { background: #48ad59; }
 body.viewer .povok:disabled { background: #b9b58f; color: rgba(248, 237, 203, .85); box-shadow: 0 5px 0 rgba(23, 38, 43, .45); border-color: rgba(23, 38, 43, .45); cursor: default; }
 body:has(#povChoice) .draftbox { visibility: hidden; }       /* (the action card draft of the first step waits behind the dialog) */
-body.viewer .povname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 body.viewer .modalx { width: 38px; height: 38px; margin: 0; border: 4px solid var(--ink); border-radius: 50%; background: var(--sun); color: var(--paper); }
 body.viewer .modalx:hover { color: var(--paper); background: #ff7f3e; }
 body.viewer .setrow { padding: 14px 0 0; margin-top: 14px; border-top: 3px dashed rgba(23, 38, 43, .4); font: 700 21px 'Barlow Condensed', system-ui, sans-serif; }
-body.viewer .setspeed { gap: 6px; }
-body.viewer .setspeed button { min-width: 0; padding: 6px 14px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font: 400 16px 'Bowlby One', system-ui, sans-serif; }
-body.viewer .setspeed button:hover { background: #fff7dc; }
-body.viewer .setspeed button.on { background: var(--gold); }
 body.viewer .setswitch { width: 64px; height: 34px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; box-sizing: border-box; }
 body.viewer .setswitch::after { top: 3px; left: 3px; width: 22px; height: 22px; border: 0; background: var(--ink); }
 body.viewer .setswitch:checked { background: var(--sun); }
@@ -312,28 +319,32 @@ body.viewer .dockpanel .cards .empty { display: none; }
    the bottom of the window, so what hangs below its frame is off screen. -- */
 body.viewer .dock.traymode { left: 14px; bottom: 0; width: auto; height: auto; max-width: none; }
 body.viewer .dock.traymode::after { display: none; }
-body.viewer .handtray { --W: calc(170px * var(--hs, 1)); --gap: 8px; --avail: calc(var(--maxw, 1200px) - 50px); --step: calc(var(--W) + var(--gap) + min(0px, (var(--avail) - var(--cols, 5) * var(--W) - (var(--cols, 5) - 1) * var(--gap)) / max(var(--cols, 5) - 1, 1))); position: relative; pointer-events: none; color: var(--ink); }
-body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: #E3CF9C; border: 5px solid transparent; border-bottom: 0; border-radius: 26px 26px 0 0; box-shadow: 0 0 10px rgba(0, 0, 0, .9), 0 0 26px rgba(0, 0, 0, .6);       /* (no outline: the same dark glow as the fan; the border stays, transparent, so the layout does not change) */ width: min(var(--maxw, 1200px), calc(var(--cols, 5) * var(--W) + (var(--cols, 5) - 1) * var(--gap) + 50px)); transition: height .4s cubic-bezier(.3, .8, .25, 1); }
-body.viewer .handtray.unf .trayframe { height: calc(30px + var(--W) * 1.3972); }
-body.viewer .handtray.fol .trayframe { height: calc(25px + 74px * var(--hs, 1)); }
+body.viewer .handtray { --W: calc(170px * var(--hs, 1)); --gap: 8px; --avail: calc(var(--maxw, 1200px) - 16px); --step: calc(var(--W) + var(--gap) + min(0px, (var(--avail) - var(--cols, 5) * var(--W) - (var(--cols, 5) - 1) * var(--gap)) / max(var(--cols, 5) - 1, 1))); position: relative; pointer-events: none; color: var(--ink); }
+body.viewer .trayframe { position: relative; box-sizing: border-box; pointer-events: auto; background: rgba(20, 25, 29, .74); -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); border: 0; border-radius: 14px 14px 0 0; box-shadow: 0 0 12px rgba(255, 255, 255, .22), 0 0 34px rgba(255, 255, 255, .12);       /* (dark slate glass with a pale glow, slim: 8 px round the cards) */ width: min(var(--maxw, 1200px), calc(var(--cols, 5) * var(--W) + (var(--cols, 5) - 1) * var(--gap) + 16px)); transition: height .4s cubic-bezier(.3, .8, .25, 1); }
+body.viewer .handtray.unf .trayframe { height: calc(16px + var(--W) * 1.3972); }
+body.viewer .handtray.fol .trayframe { height: calc(14px + 74px * var(--hs, 1)); }
 @keyframes tray-in { from { transform: translateY(105%); } to { transform: none; } }
 body.viewer .handtray.enter { animation: tray-in .35s cubic-bezier(.2, .9, .25, 1); }
-body.viewer .trayhead { height: 20px; cursor: pointer; }
-body.viewer .handtray .cards { display: grid; justify-content: start; align-items: start; gap: 0; padding: 0 20px 5px; }
+body.viewer .trayhead { height: 8px; }
+body.viewer .handtray .cards { display: grid; justify-content: start; align-items: start; gap: 0; padding: 0 8px 8px; }
 body.viewer .handtray .cards.multi { max-height: calc(var(--W) * 1.3972 + 5px); overflow-x: hidden; overflow-y: auto; }
 body.viewer .handtray .cards .card, body.viewer .handtray .cards.small .card { width: var(--W); height: auto; border: 0; border-radius: calc(10px * var(--hs, 1)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 3px 8px rgba(0, 0, 0, .4);
   transform: translate(var(--dx, 0px), var(--dy, 0px)); }
 body.viewer .handtray .cards .card:hover { z-index: 6; }
 body.viewer .handtray .cards .card.dragging, body.viewer .handtray .cards .card.dragging:hover { z-index: 20; cursor: grabbing; transition: none; box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 10px 18px rgba(0, 0, 0, .45); }
-body.viewer .handtray .cards .empty { display: block; padding: 6px 4px 14px; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; opacity: .55; }
+body.viewer .handtray .cards .empty { display: block; padding: 6px 4px 14px; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; color: var(--paper); opacity: .6; }
 body.viewer .traybtns { position: absolute; left: 22px; top: -46px; z-index: 40; display: flex; gap: 14px; pointer-events: auto; }
-body.viewer .traydisc { position: relative; display: grid; place-items: center; width: 60px; height: 60px; padding: 0; border: 0; border-radius: 50%; background: rgba(98, 98, 98, .92); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); cursor: pointer; }
-body.viewer .traydisc:hover { background: rgba(120, 120, 120, .95); }
+body.viewer .traydisc { position: relative; display: grid; place-items: center; width: 60px; height: 60px; padding: 0; border: 0; border-radius: 50%; background: #8499A6; box-shadow: 0 0 0 3px var(--ink), 0 2px 6px rgba(0, 0, 0, .5); cursor: pointer; }       /* (slate blue with an ink ring: it stands out on the dark glass of the tray) */
+body.viewer .traydisc:hover { background: #9BB0BC; }
 body.viewer .traydisc.on, body.viewer .traydisc.on:hover { background: var(--sun); box-shadow: 0 0 0 3px var(--ink), 0 4px 0 3px var(--ink); }
 body.viewer .traydisc img { display: block; width: 38px; height: 38px; filter: brightness(1.6); }
+body.viewer .traydisc img.tiles { filter: none; }       /* (already light tiles: not brightened like the line icons) */
 body.viewer .traycount { position: absolute; right: -6px; top: -6px; box-sizing: border-box; min-width: 26px; height: 26px; padding: 0 4px; border: 3px solid var(--ink); border-radius: 13px; background: var(--paper); color: var(--ink); font: 400 13px/20px 'Bowlby One', system-ui, sans-serif; text-align: center; }
-@keyframes tray-hint { 0%, 6% { opacity: 0; } 14%, 86% { opacity: 1; } 100% { opacity: 0; } }
-body.viewer .trayhint { position: absolute; z-index: 41; right: 24px; top: -44px; padding: 7px 12px; border-radius: 10px; background: var(--gold); color: var(--ink); font: 700 15px 'Barlow', system-ui, sans-serif; white-space: nowrap; pointer-events: none; opacity: 0; animation: tray-hint 4.6s linear forwards; }
+body.viewer .trayfold { position: absolute; z-index: 42; right: 14px; top: -19px; display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; background: rgba(20, 25, 29, .92); color: var(--paper); box-shadow: 0 2px 6px rgba(0, 0, 0, .5), 0 0 0 1.5px rgba(255, 255, 255, .22); cursor: pointer; pointer-events: auto; }
+body.viewer .trayfold:hover { background: #000; }
+body.viewer .trayfold:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+body.viewer .trayfold::before { content: ''; width: 10px; height: 10px; border-right: 3.5px solid currentColor; border-bottom: 3.5px solid currentColor; transform: translateY(-3px) rotate(45deg); transition: transform .3s; }
+body.viewer .handtray.fol .trayfold::before { transform: translateY(3px) rotate(-135deg); }
 body.viewer .setselect { font: 700 19px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
 body.viewer .setselect:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
@@ -459,10 +470,12 @@ body.viewer .setrange:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px va
 /* Players' boards layout (settings: Players' boards; main.js `zooBoards`): tabbed = one board under an arrow bar, top / bottom = one column */
 body.viewer .zoos.zoos-tabs, body.viewer .zoos.zoos-stack { grid-template-columns: minmax(0, 1fr); }
 body.viewer .zoo h2 .zootab-name { font: inherit; color: inherit; }
-body.viewer .zootab-arrow { flex: none; width: 34px; height: 28px; margin: 0 6px; display: grid; place-items: center; padding: 0; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
-body.viewer .zootab-arrow svg { width: 20px; height: 20px; fill: currentColor; }
-body.viewer .zootab-arrow:hover { background: var(--gold); }
-body.viewer .zootab-arrow:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+/* the board switch of the tabbed layout: a small ink tab at the right edge of the zoo box (zoo.js `renderZoo`) with two outline buttons (cream rim and arrow), a fully saturated gold fill with an ink arrow on hover */
+body.viewer .zoo .zootab-switch { position: absolute; right: 22px; top: -38px; height: 38px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; padding: 0 10px 4px; background: var(--ink); border-radius: 14px 14px 0 0; }
+body.viewer .zootab-arrow { flex: none; width: 40px; height: 26px; display: grid; place-items: center; padding: 0; color: var(--paper); background: transparent; border: 2px solid rgba(248, 237, 203, .65); border-radius: 999px; cursor: pointer; }
+body.viewer .zootab-arrow svg { width: 14px; height: 14px; fill: currentColor; }
+body.viewer .zootab-arrow:hover { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+body.viewer .zootab-arrow:active { transform: translateY(1px); }
 body.viewer .zootab-arrow:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
 /* ---- the account widget (js/account.js) on the viewer pages (mini games): a pill at the right end of the move bar, like the Round and Break pills; its log in / sign up dialog on paper ---- */
@@ -479,50 +492,11 @@ body.viewer .acctinput { background: #fff8e1; color: var(--ink); border: 3px sol
 body.viewer dialog.acctdlg button:not(.linkbtn) { font: 700 18px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 18px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
 body.viewer dialog.acctdlg button.linkbtn { color: var(--ocean); }
 
-/* ---- tabbed / top-bottom layout (zoo.js): the played animals and sponsors are two columns at the right of the board; the cards overlap so that only the last card is whole and the others show their top 18 % (the icons) ---- */
-body.viewer .zoopiles { --pw: 132px; flex: none; display: flex; align-items: flex-start; gap: 14px; margin-left: 6px; }
-body.viewer .zoopiles .zoopile { margin: 0; width: var(--pw); }
-body.viewer .zoopiles h3 { margin: 0 0 6px; padding: 0; border: 0; text-align: center; font: 700 17px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
-body.viewer .zoopiles .cards { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 0; }
-body.viewer .zoopiles .cards .card, body.viewer .zoopiles .cards.small .card { position: relative; flex: none; width: var(--pw); height: auto; margin: 0 0 calc(var(--pw) * -1.397 * .82); border: 0; border-radius: 8px; box-shadow: 0 0 0 2px var(--ink); }
-body.viewer .zoopiles .cards .card:last-child { margin-bottom: 0; }
-body.viewer .zoopiles .cards .empty { display: none; }
-body.viewer .zoo h2 .zootab-arrow { width: 28px; height: 22px; margin: 0 2px; border-width: 2px; box-shadow: none; }
-body.viewer .zoo h2 .zootab-arrow svg { width: 14px; height: 14px; }
-/* the zoo row with the played-card columns at the right: the bonus panel and the partner zoo strip keep the proportions they have beside the map in the side-by-side layout, of the room that is left after the columns (--pilesw) */
-body.viewer .zooRow.withpiles { --pilesw: 300px; }
-body.viewer .zooRow.withpiles .bonuspanel { flex: 0 0 calc((100% - var(--pilesw)) * .16); width: calc((100% - var(--pilesw)) * .16); }
-body.viewer .zooRow.withpiles .strip { flex: 0 0 calc((100% - var(--pilesw)) * .167); width: calc((100% - var(--pilesw)) * .167); }
+/* ---- tabbed layout: the arrows in the zoo tab (zoo.js) ---- */
 
 /* tokens on an action card (Venom, Constriction, Multiplier; side-panel.js): small round icons on the lower right corner of the card, side by side if there are several */
 body.viewer .ppactions .ac .actoken { position: absolute; right: calc(-9px + var(--k, 0) * 17px); bottom: -10px; width: 26px; height: 26px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); box-sizing: border-box; padding: 1px; object-fit: contain; z-index: 3; box-shadow: 0 2px 0 var(--ink); }
 
-/* a score with three or four characters (-10 ... -14, 100+) in the star: a smaller number (side-panel.js `burst`) */
-body.viewer .burst.digits3 b { font-size: 17px; }
-body.viewer .burst.digits4 b { font-size: 14px; }
-
-/* side by side: the played animals and sponsors are two piles behind the board, rising out of its top edge at the top right; each card shows its top 18 % (the icons), the board covers
-   the rest, also of the last card (zoo.js; the card is 92 px wide, a strip 23 px) */
-body.viewer .zooRow { position: relative; }
-body.viewer .zooRow > .board, body.viewer .zooRow > .bonuspanel, body.viewer .zooRow > .strip { position: relative; z-index: 1; }
-body.viewer .zoopiles.behind { --pw: 120px; position: absolute; right: 44px; bottom: 100%; margin: 0; z-index: 0; gap: 8px; align-items: flex-end; }
-body.viewer .zoopiles.behind h3 { margin: 0 0 4px; font-size: 16px; }
-body.viewer .zoopiles.behind .cards { overflow: hidden; padding: 2px 2px 0; margin: -2px -2px 0; }          /* (the covered part of the cards is cut off, not hidden behind the board: nothing of it shows between the panels) */
-body.viewer .zoopiles.behind .cards .card, body.viewer .zoopiles.behind .cards.small .card { margin-bottom: calc(var(--pw) * -1.397 * .82); border-radius: 7px; }
-body.viewer .zoopiles.behind .cards .card:last-child { margin-bottom: calc(var(--pw) * -1.397 * .82); }
-/* a zoo with a bump (zoo.js `outline`): the paper, the ink border, the hard shadow and the gold ring of the active player are one svg behind the content, so the bump joins the border cleanly */
-body.viewer .zoo.hasbump { isolation: isolate; background: transparent; border-color: transparent; box-shadow: none; }
-body.viewer .zoo.active.hasbump { box-shadow: none; }
-body.viewer .zoo .zoooutline { position: absolute; z-index: -1; overflow: visible; pointer-events: none; }
-body.viewer .zoooutline .zo-shadow { fill: var(--ink); }
-body.viewer .zoooutline .zo-ring { fill: none; stroke: none; }
-body.viewer .zoo.active .zoooutline .zo-ring { fill: var(--gold); stroke: var(--gold); stroke-width: 16; stroke-linejoin: round; }
-body.viewer .zoooutline .zo-paper { fill: var(--paper); }
-body.viewer .zoooutline .zo-ink { fill: none; stroke: var(--ink); stroke-width: 8; stroke-linejoin: round; }
-/* a pile of 6 cards or more is two columns (zoo.js): the group is as wide as its columns, the name above both */
-body.viewer .zoopiles.behind .zoopile { width: auto; }
-body.viewer .zoopiles.behind .pilecols { display: flex; gap: 8px; align-items: flex-end; }
-body.viewer .zoopiles.behind .pilecols .cards { width: var(--pw); box-sizing: content-box; flex: none; }
 
 /* cubes on a sponsor card (zoo.js `withCubes`): Okapi Stable, Breeding Program, Breeding Cooperation (a used cube is an empty ring) and the kind chosen with Waza Special Assignment; at the top right of the card, which is the part that shows in a pile */
 body.viewer .card.hascubes { position: relative; }
@@ -534,7 +508,7 @@ body.viewer .card .wazax.left { left: 25%; }
 body.viewer .card .wazax.right { left: 61%; }
 
 /* what a sponsor has given so far (cards.js `showStats`, the replay only): a paper panel at the right of the enlarged card; the enlarged card moves left to make room */
-body.viewer .preview.withstats { right: calc(21rem + 15rem); }
+body.viewer .preview.withstats, body.viewer .preview.withroll:not(.center) { right: calc(21rem + 17rem); }
 body.viewer .previewstats { position: fixed; right: 21rem; bottom: 1rem; z-index: 61; width: 14rem; box-sizing: border-box; padding: 12px 14px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); pointer-events: none; }
 body.viewer .previewstats[hidden] { display: none; }
 body.viewer .previewstats .psttitle { display: block; margin: 0 0 8px; font: 700 18px 'Barlow Condensed', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
@@ -547,3 +521,302 @@ body.viewer .previewstats .pstrow .pstlabel { font: 600 17px/1.1 'Barlow Condens
 /* the Elo of a player at this table (from the index, `elo`): a small pill after the name in the player box and in the zoo tab */
 body.viewer .ppelo { flex: none; padding: 1px 7px 0; border: 2px solid currentColor; border-radius: 999px; font: 700 14px/1.25 'Barlow Condensed', system-ui, sans-serif; opacity: .9; }
 body.viewer .zoo h2 .elo { font: 700 15px 'Barlow Condensed', system-ui, sans-serif; padding: 0 8px; border: 2px solid var(--paper); border-radius: 999px; opacity: .85; }
+/* the eye in the tab above the zoo (zoo.js, pov.js `eyeButton`): paper coloured, closed = faded */
+body.viewer .zoo h2 .poveye { order: -1; width: 30px; height: 26px; margin: 0; color: var(--paper); }   /* the eye is also the player's colour marker: it sits first, where the dot was */
+body.viewer .zoo h2 .poveye svg { width: 30px; height: 30px; overflow: visible; }
+body.viewer .zoo h2 .poveye svg > path:first-child { fill: var(--pc, #888); stroke: var(--paper); stroke-width: 2.2; }   /* the eye is filled with the player's colour */
+body.viewer .zoo h2 .poveye svg circle { fill: color-mix(in srgb, var(--paper) 80%, var(--ink)); stroke: var(--ink); stroke-width: 1.2; }   /* (the iris and the strike are a duller cream than the outline of the eye) */
+body.viewer .zoo h2 .poveye svg .strike-under { stroke: var(--ink); stroke-width: 5.4; }   /* closed: the same eye struck through, the line outlined in ink */
+body.viewer .zoo h2 .poveye svg .strike { stroke: color-mix(in srgb, var(--paper) 80%, var(--ink)); }
+body.viewer .zoo h2 .poveye.closed { opacity: 1; }
+body.viewer .zoo h2 .poveye:not(.only):hover { filter: brightness(1.2); background: transparent; }
+body.viewer .zoo h2 .poveye.only:hover { background: transparent; }
+/* the name's letters lightly thinned (Bowlby One is one heavy weight): a 0.45px outline in the colour of the ground eats into the edge; the box name sits on the player's colour, the tab name on the ink of the tab */
+body.viewer .ppname .nm { -webkit-text-stroke: .45px var(--pc); }
+body.viewer .zoo h2 .zootab-name { -webkit-text-stroke: .45px var(--ink); }
+/* whose turn it is: the line under the header of the player on turn (`.on`, side-panel.js) is gold and glows, slowly pulsing */
+body.viewer .pphead.on { position: relative; z-index: 1; border-bottom-color: var(--gold); animation: pp-turn-glow 2.6s ease-in-out infinite; }
+@keyframes pp-turn-glow { 0%, 100% { box-shadow: 0 3px 6px -3px rgba(244, 182, 63, .45); } 50% { box-shadow: 0 5px 12px -2px rgba(244, 182, 63, .95); } }
+@media (prefers-reduced-motion: reduce) { body.viewer .pphead.on { animation: none; box-shadow: 0 4px 9px -2px rgba(244, 182, 63, .7); } }
+/* light player colours (yellow, white, grey): gold vanishes on them, so the line and glow turn deep orange */
+body.viewer .pp.light .pphead.on { border-bottom-color: #E0701E; animation-name: pp-turn-glow-light; }
+@keyframes pp-turn-glow-light { 0%, 100% { box-shadow: 0 3px 6px -3px rgba(224, 112, 30, .5); } 50% { box-shadow: 0 5px 12px -2px rgba(224, 112, 30, .95); } }
+@media (prefers-reduced-motion: reduce) { body.viewer .pp.light .pphead.on { animation: none; box-shadow: 0 4px 9px -2px rgba(224, 112, 30, .75); } }
+
+/* ---- numbers in Bowlby One, lightly thinned (thin-numbers.js; the first row of the player box, the numbers in svg) ---- */
+body.viewer .ppres > :nth-child(1) b { -webkit-text-stroke: .4px rgb(91, 105, 116); }
+body.viewer .ppres > :nth-child(3) b { -webkit-text-stroke: .4px rgb(38, 35, 39); }
+body.viewer .ppres > :nth-child(4) b { -webkit-text-stroke: .4px rgb(238, 175, 158); }
+body.viewer .ppres > :nth-child(5) b { -webkit-text-stroke: .4px rgb(204, 224, 196); }
+body.viewer .rt.xo b { -webkit-text-stroke: .4px #000; paint-order: normal; text-shadow: -2px 0 #000, 2px 0 #000, 0 -2px #000, 0 2px #000, -2px -2px #000, 2px 2px #000, -2px 2px #000, 2px -2px #000, -3px 0 #000, 3px 0 #000, 0 -3px #000, 0 3px #000; }
+body.viewer .bonus-number, body.viewer .slot-number, body.viewer .cons-number { font-family: 'Bowlby One', system-ui, sans-serif; font-weight: 400; letter-spacing: 0; }
+body.viewer .ctcomposed .bonus-number, body.viewer .board .bonus-number { font-size: 36px; }          /* (Bowlby One is bigger than the Myriad it replaces; numbers with an inline size keep it) */
+body.viewer .bonus-number.num-top, body.viewer .slot-number.num-top { fill: #fff; stroke: #222; stroke-width: .02em !important; paint-order: normal; }
+body.viewer .bonus-number.num-under, body.viewer .slot-number.num-under { fill: #222; stroke: #222; paint-order: normal; stroke-linejoin: round; }
+body.viewer .bonus-number.dk, body.viewer .slot-number.dk { fill: #000; stroke-width: .02em; paint-order: normal; }
+body.viewer .dk.appeal { stroke: rgb(238, 175, 158); }
+body.viewer .dk.conservation { stroke: rgb(204, 224, 196); }
+body.viewer .cons-number { fill: #000; stroke: #E6F0DF; stroke-width: .02em; paint-order: normal; }
+body.viewer .cons-number.rep-number { fill: #fff; stroke: rgb(38, 35, 39); }
+
+/* ---- the row of the zoo: bonus panel | map | association strip ----
+   One tray from frame to frame, the parts divided by ink lines. They share the width in the proportions of their pictures (192 : 720, 1122 : 976, 351 : 1776,
+   or 451 : 1776 with the margins for the upgrade sets, `--strip-fr` set in zoo.js), so all three are as tall as the map and nothing is stretched. */
+body.viewer .zoo .zooRow { display: grid; grid-template-columns: 0.2667fr 1.1496fr var(--strip-fr, 0.1976fr); gap: 4px; align-items: stretch; margin: -8px -8px 4px; background: var(--ink); border-radius: 16px 16px 0 0; overflow: hidden; box-shadow: 0 4px 0 var(--ink); }
+body.viewer .zoo .zooRow > * { flex: none; width: 100%; height: auto; min-width: 0; margin: 0; border-radius: 0; box-shadow: none; }
+body.viewer .zoo.mappreview .zooRow { margin: 0; border-radius: 12px; box-shadow: none; }
+
+/* ---- zoo tab: bar + map badge, the rule of the map in a tooltip card ---- */
+body.viewer .zoo h2 .mapsep { flex: none; width: 2px; height: 18px; margin: 0 3px; background: rgba(248, 237, 203, .4); }
+body.viewer .zoo h2 .mapbadge { position: relative; flex: none; padding: 3px 7px 2px; border: 2px solid rgba(248, 237, 203, .6); border-radius: 999px; font: 700 12px/1 'Barlow', system-ui, sans-serif; letter-spacing: .07em; text-transform: uppercase; color: var(--paper); cursor: help; outline: 0; }
+body.viewer .zoo h2 .mapbadge:hover, body.viewer .zoo h2 .mapbadge:focus-visible, body.viewer .zoo h2 .mapbadge.on { border-color: var(--gold); color: var(--gold); }
+body.viewer .zoo h2 .maptip { display: none; position: absolute; z-index: 60; left: -26px; top: 32px; width: 440px; box-sizing: border-box; padding: 12px 16px 13px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 5px 0 var(--ink);
+  font: 500 15px/1.35 'Barlow', system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: normal; text-align: left; cursor: default; }
+body.viewer .zoo h2 .maptip::before { content: ''; position: absolute; left: 44px; top: -9px; width: 14px; height: 14px; background: var(--paper); border-left: 3px solid var(--ink); border-top: 3px solid var(--ink); transform: rotate(45deg); }
+body.viewer .zoo h2 .mapbadge:hover .maptip, body.viewer .zoo h2 .mapbadge:focus-visible .maptip, body.viewer .zoo h2 .mapbadge.on .maptip { display: block; }
+body.viewer .zoo h2 .maptip .mt-title { font: 400 17px/1.2 'Bowlby One', system-ui, sans-serif; margin-bottom: 7px; }
+body.viewer .zoo h2 .maptip p { margin: 0 0 5px; }
+body.viewer .zoo h2 .maptip .mt-main { font-weight: 700; }
+body.viewer .zoo h2 .maptip .mt-note { font-size: 13.5px; color: rgba(23, 38, 43, .75); }
+body.viewer .zoo h2 .maptip :last-child { margin-bottom: 0; }
+
+/* ---- conservation track (vector, ctrack.js): the bonus tiles lie on the pentagon row at y 140 of the 2000 x 188 drawing ---- */
+body.viewer .ctrack { display: block; width: 100%; height: auto; border-radius: 0; box-shadow: none; }
+body.viewer .ctrackwrap .ctbonus { top: calc(133 / var(--ct-h) * 100%); height: calc(86 * 94 / 80 / var(--ct-h) * 100%); transform: translate(-50%, -46.8%); filter: none; }
+body.viewer .ctrackwrap img.ctbonus { height: calc(86 / var(--ct-h) * 100%); transform: translate(-50%, -50%); filter: drop-shadow(0 4px 0 #17262B); }
+
+/* X tokens with several units: the number lies on the X, white with a black outline (like the player box) */
+body.viewer .bonus-number.xnum, body.viewer .slot-number.xnum { fill: #fff; stroke: #000; stroke-width: .12em !important; paint-order: stroke fill; stroke-linejoin: round; font-size: 32px; }
+/* two-digit money numbers: tighter, and shifted back by half the negative spacing (dx -.05em) so that they stay centred on the coin */
+body.viewer .bonus-number.two, body.viewer .slot-number.two { letter-spacing: -.1em; }
+
+/* Display folders, "tab on the edge": no paper folder and no town strip; each card (10.5rem, nearly the whole pitch of its stretch of the reputation track) has a soft ink outline and a
+   small shadow, and the folder number sits on a dark brown tab (the colour of the old folder tab) that hangs over the card's top edge. An empty slot is a tan card-sized plate. */
+body.viewer .folders { gap: 0; align-items: flex-start; }
+body.viewer .folder { aspect-ratio: auto; margin: 0; width: 11.32rem; height: 16.2rem; background: none; filter: none; }
+body.viewer .folder .folname { display: none; }
+body.viewer .shared .displaycol .cards .folder > .card, body.viewer .folder > .card { left: .4rem; top: .9rem; width: 10.5rem; border-radius: 7px; box-shadow: 0 0 0 .75px rgba(23, 38, 43, .3), 0 1px 0 .75px rgba(23, 38, 43, .1); }
+body.viewer .folder:not(:has(.card))::before { content: ''; position: absolute; left: .4rem; top: .9rem; width: 10.5rem; height: 14.6rem; box-sizing: border-box; background: #E4C385; border: .75px solid rgba(23, 38, 43, .3); border-radius: 8px; box-shadow: 0 1px 0 .75px rgba(23, 38, 43, .1); }
+body.viewer .folder .folnum { left: 50%; top: .05rem; width: 2.5rem; height: 1.6rem; margin-left: -1.25rem; transform: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box; z-index: 3;
+  background: #572411; border: .75px solid rgba(23, 38, 43, .3); border-radius: 7px; box-shadow: none;
+  font: 400 1rem/1 'Bowlby One', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; color: #F4E9CF; text-shadow: none; }
+
+/* Reputation track: a vector (js/reptrack.js, same size as the old picture). The reward pentagons are about 30 % bigger with a thin edge; the reward of 16 reputation lies above the end of the
+   track (the ticket); the card upgrade badge sits smaller on the 9 | 10 border. */
+body.viewer .reptrackwrap .reptrack { display: block; width: 100%; height: auto; margin: 0; border-radius: 0; box-shadow: none; }
+body.viewer .reptrackwrap { margin-bottom: 2.95rem; }
+body.viewer .reptrackwrap .repreward { position: absolute; top: calc(100% - .5rem); bottom: auto; width: 3.3rem; height: 3.3rem; transform: translateX(-50%); z-index: 1; }
+body.viewer .reptrackwrap .rep16 { position: absolute; top: auto; bottom: calc(100% - .5rem); width: 3.3rem; height: 3.3rem; transform: translateX(-50%); z-index: 1; }
+body.viewer .reptrackwrap .repupgrade { top: 50%; transform: translate(-50%, -50%) scale(.84); margin-left: -.1rem; }
+
+/* ---- played cards: a ground under the map with a recessed tray per kind (soft red: animals, cool blue-grey: sponsors), paper seams between the stacked cards (zoo.js `stacks`) ---- */
+body.viewer .zoo { display: flex; flex-direction: column; }
+body.viewer .zoo .played { flex: 1 1 auto; align-content: flex-start; flex-wrap: nowrap; gap: 6px 12px; margin: 10px -8px -8px; padding: 14px 16px 20px; border-radius: 0 0 16px 16px; background: #F7EFD3; }
+body.viewer .zoo .played .pkind { background: var(--tray); border-radius: 14px; padding: 9px 8px 10px; }
+body.viewer .zoo .played .pkind:nth-child(1) { --tray: #EFDEC2; border: 1.5px solid rgba(120, 95, 40, .38); box-shadow: inset 0 3px 7px rgba(120, 80, 40, .2); }
+body.viewer .zoo .played .pkind:nth-child(2) { --tray: #E3E2D0; border: 1.5px solid rgba(120, 95, 40, .38); box-shadow: inset 0 3px 7px rgba(60, 70, 60, .2); }
+body.viewer .zoo .played h3 { margin: 0 0 8px 4px; }
+body.viewer .zoo .played h3 .cnt { margin-left: 4px; font: 700 15px/20px 'Barlow Condensed', system-ui, sans-serif; background: rgba(23, 38, 43, .11); border-radius: 10px; padding: 0 8px; }
+body.viewer .zoo .played .cards .card, body.viewer .zoo .played .cards.small .card { border-radius: 11px; box-shadow: 0 0 0 .75px rgba(23, 38, 43, .35); }
+body.viewer .zoo .played .pstacks .cards .card + .card { box-shadow: 0 -3px 0 var(--tray), 0 0 0 .75px rgba(23, 38, 43, .35); }      /* (a seam of tray colour between the stacked cards) */
+
+/* the seam under the map: no ink line, a soft cast shadow instead */
+body.viewer .zoo .zooRow { position: relative; z-index: 1; box-shadow: 0 8px 10px -4px rgba(23, 38, 43, .42); }
+
+/* cubes on a sponsor card: directly on the card, no pill, strip or outline; only a soft shadow lifts them off the art, a used cube is a light dashed ring */
+body.viewer .cardcubes { top: 7px; left: 57.5%; padding: 0; gap: 2px; background: none; border: 0; border-radius: 0; box-shadow: none; }
+body.viewer .cardcubes .cube { width: 20px; height: 20px; filter: drop-shadow(0 2px 2px rgba(10, 25, 35, .6)); }
+body.viewer .cardcubes .cube.used { width: 15px; height: 15px; margin: 2.5px; border: 2px dashed rgba(255, 255, 255, .9); filter: drop-shadow(0 1px 1.5px rgba(10, 25, 35, .8)); }
+
+/* ---- played cards: the display modes of the setting "Played cards" (zoo.js `playedMode`, dock.js `playedTrayBody`); the default, under the map, is the block above ---- */
+body.viewer .gchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 5px; border: 2.5px solid var(--ink); border-radius: 14px; background: var(--paper); font: 700 16px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); white-space: nowrap; }
+body.viewer .gchip img { height: 17px; width: auto; }
+body.viewer .gchip b { font-weight: 700; background: rgba(23, 38, 43, .12); border-radius: 9px; padding: 0 6px; font-size: 14px; line-height: 17px; }
+/* drawer: a chip on the top edge of the board (as high as the name tab) with the number of played cards; its sheet lies over the map (narrow beside it, or the whole map, see below) */
+body.viewer .drtab { position: absolute; right: 22px; top: -38px; z-index: 3; display: flex; align-items: center; gap: 9px; height: 38px; margin: 0; padding: 0 12px 4px 16px; box-sizing: border-box; background: #30373C; color: var(--paper); border: 0; border-radius: 14px 14px 0 0; font: 400 17px 'Bowlby One', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+body.viewer .drtab b { font: 700 15px/1 'Barlow Condensed', system-ui, sans-serif; background: color-mix(in srgb, var(--pc, #888) 72%, #30373C); border-radius: 8px; padding: 2px 8px; }
+body.viewer .drtab i { display: inline-block; font-style: normal; font-size: 12px; opacity: .85; }
+body.viewer .drtab:hover, body.viewer .drtab:focus-visible { color: var(--gold); }
+body.viewer .zoo.mapends .zooRow { margin-bottom: -8px; border-radius: 16px; box-shadow: none; }       /* (no played cards under the map: no soft edge, no strip of paper, rounded bottom corners) */
+/* tabbed layout (one board at a time): the zoo box stands in the column of the display element above it and the played cards in a box of their own (`.cardsbox`, zoo.js `renderCards`) in the column of the association element: `#zoos` gets the same
+   two columns as `#shared` (`--assocw`, which layout.js `fitDisplay` copies from #shared to #zoos); the cards box is as tall as the zoo box (the grid stretches it) and holds the sheet of the expanded drawer, whose cards `fitPlayed` sizes */
+body.viewer .zoos.zoos-beside { grid-template-columns: minmax(0, 1fr) var(--assocw, 40%); }
+body.viewer .zoos.zoos-stack.zoos-beside { row-gap: 66px; }       /* (top / bottom: the second player's name tab hangs 38 px above its box, so the rows need that room and some air between them) */
+body.viewer .zoo.cardsbox { padding: 0; min-height: 0; background: none; border: 0; box-shadow: none; overflow: visible; }       /* (a `.zoo` only for the played-cards styles; it has no plate of its own: the two trays lie straight on the poster) */
+body.viewer .zoo.cardsbox { align-self: start; }       /* (as tall as the cards it holds, not as the zoo box: `fitPlayed` caps the card size so the tallest pile is never taller than the zoo box) */
+body.viewer .zoo.cardsbox .sheet { background: none; overflow: visible; position: relative; inset: auto; }
+/* the trays span the box: the Animals tray starts at its left edge (under the association element's), the Sponsors tray ends at its right edge, both as tall as the map row beside them (4 px in from the box's outer edge: the row ends inside the zoo box's border) */
+body.viewer .zoo.cardsbox .sheet .played { justify-content: stretch; align-items: flex-start; gap: 12px; margin: 0; padding: 4px 0; overflow: visible; }
+body.viewer .zoo.cardsbox .played .pkind { flex: 1 1 0; min-width: 0; }
+body.viewer .zoo.cardsbox .played .pstacks { justify-content: center; }
+body.viewer .zoo.drawer-open { z-index: 5; }
+body.viewer .sheetclip { position: absolute; inset: 0; z-index: 20; border-radius: 16px; overflow: hidden; }       /* (the window the tray slides in: exactly the place of the map row; it starts at the inner edge of the box, like the row with its -8px margin against the 8px padding) */
+body.viewer .sheet { position: absolute; inset: 0; display: flex; flex-direction: column; background: #F7EFD3; overflow: hidden; }
+body.viewer .sheet.enter { animation: sheet-out 460ms linear both; }       /* (the expanded drawer only: the narrow one does not move, see below) */
+body.viewer .zoo:not(.nrw).closing .sheet { animation: sheet-in 300ms linear forwards; }
+@keyframes sheet-out { 0% { transform: translateY(-100%); animation-timing-function: cubic-bezier(.2, .75, .35, 1); } 62% { transform: translateY(1.6%); animation-timing-function: ease-in-out; } 82% { transform: translateY(-.5%); animation-timing-function: ease-in-out; } 100% { transform: translateY(0); } }
+@keyframes sheet-in { 0% { transform: translateY(0); animation-timing-function: ease-out; } 16% { transform: translateY(1.2%); animation-timing-function: cubic-bezier(.55, 0, .85, .45); } 100% { transform: translateY(-100%); } }
+body.viewer .drtab.open i { transform: rotate(180deg); }
+body.viewer .drtab.open i.enter { animation: sheet-arrow-out 460ms cubic-bezier(.2, .75, .35, 1) both; }
+body.viewer .zoo.closing .drtab i { animation: sheet-arrow-in 300ms ease-in forwards; }
+@keyframes sheet-arrow-out { from { transform: rotate(0); } to { transform: rotate(180deg); } }
+@keyframes sheet-arrow-in { from { transform: rotate(180deg); } to { transform: rotate(0); } }
+@media (prefers-reduced-motion: reduce) { body.viewer .sheet.enter, body.viewer .zoo.closing .sheet, body.viewer .drtab.open i.enter, body.viewer .zoo.closing .drtab i { animation: none; } }
+body.viewer .sheet .played { flex: 1 1 auto; min-height: 0; justify-content: space-evenly; --cw: 96px; margin: 0; padding: 14px 16px 6px; border-radius: 0; background: none; overflow: hidden; }
+/* tray: the third disc of the hand tray opens a wide tray with the played cards of one player: as tall as the hand tray; each group starts with a vertical rail (icon, name, count), the player switch sits on the top edge */
+body.viewer .handtray.played .trayframe { width: var(--maxw, 1200px); }
+body.viewer .pt { padding: 0 8px; }
+body.viewer .ptdeck { position: relative; height: calc(var(--W) * 1.3972); }
+body.viewer .ptdeck .card { position: absolute; top: 0; width: var(--W); height: auto; border: 0; border-radius: calc(10px * var(--hs, 1)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), -5px 0 8px -3px rgba(0, 0, 0, .4); transition: transform .15s; }
+body.viewer .ptdeck .card:hover { z-index: 30; transform: translateY(-8px); box-shadow: 0 0 0 2px var(--ink), 0 12px 22px rgba(0, 0, 0, .5); }
+body.viewer .ptdeck .empty { color: var(--paper); padding: 30px 4px; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; opacity: .55; }
+body.viewer .prail { position: absolute; top: 0; bottom: 0; box-sizing: border-box; width: 26px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 7px 0; border-radius: 9px; background: rgba(255, 255, 255, .12); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18); color: var(--paper); }
+body.viewer .prail img { width: 18px; height: auto; filter: brightness(1.7); }
+body.viewer .prail span { writing-mode: vertical-rl; transform: rotate(180deg); font: 700 17px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+body.viewer .prail b { font: 400 13px/1 'Bowlby One', system-ui, sans-serif; background: var(--paper); color: var(--ink); border-radius: 9px; padding: 3px 6px; }
+body.viewer .handtray.fol .prail span { display: none; }       /* (folded: icon and count only) */
+body.viewer .ptseg { position: absolute; z-index: 41; top: -15px; right: 62px; display: flex; box-sizing: border-box; height: 30px; border: 2px solid var(--pc, rgba(255, 255, 255, .4)); border-radius: 999px; overflow: hidden; background: rgba(20, 25, 29, .94); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); }
+body.viewer .ptseg button { display: flex; align-items: center; gap: 7px; margin: 0; padding: 4px 14px; border: 0; border-radius: 999px; background: none; color: var(--paper); opacity: .55; font: 700 17px/1 'Barlow Condensed', system-ui, sans-serif; cursor: pointer; }
+body.viewer .ptseg button::before { content: ''; width: 11px; height: 11px; border-radius: 50%; background: var(--pc, #888); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .7); }       /* (a dot in the player's colour before each name) */
+body.viewer .ptseg button:hover { opacity: .85; }
+body.viewer .ptseg button.on { opacity: 1; background: var(--pc, #888); color: var(--pt, #fff); }       /* (the selected name: filled with the player's colour, the other one is dimmed) */
+body.viewer .ptseg button.on::before { width: 9px; height: 9px; background: var(--pt, #fff); box-shadow: none; }
+body.viewer .handtray.played .trayframe { box-shadow: 0 0 0 3px var(--pc), 0 0 26px 2px var(--pc); }       /* (the tray glows in the colour of the selected player; `--pc` is set on `.handtray` by drawTray) */
+
+/* Tray with few cards (0-2): never narrower than its round buttons plus the fold button, so the fold button cannot sit on top of a round button (`--nb` = number of round buttons, set by drawTray); the few cards stand in the middle of the glass. */
+body.viewer .trayframe { min-width: calc(22px + var(--nb, 3) * 60px + (var(--nb, 3) - 1) * 14px + 14px + 38px + 14px); }
+body.viewer .handtray .cards { justify-content: center; }
+body.viewer .handtray .cards.multi { justify-content: start; }
+body.viewer .handtray .cards .empty { text-align: center; }
+
+/* Roll of honour next to the enlarged Victory Column card (cards.js `showRoll`): the stats panel's look, the champion in gold, round portraits */
+body.viewer .previewroll { position: fixed; z-index: 61; width: 16rem; box-sizing: border-box; padding: 12px 14px 12px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 6px 0 rgba(23, 38, 43, .35); overflow: hidden; pointer-events: none; }
+body.viewer .previewroll[hidden] { display: none; }
+body.viewer .previewroll .psttitle { display: block; margin: 0 0 8px; font: 700 18px 'Barlow Condensed', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+body.viewer .previewroll ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+body.viewer .previewroll li { display: flex; align-items: center; gap: 9px; font: 600 19px/1.1 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .previewroll li[hidden] { display: none; }
+body.viewer .previewroll li.cur { margin: 0 -8px 3px; padding: 5px 8px; background: var(--gold); border-radius: 10px; font-weight: 700; font-size: 22px; }
+body.viewer .previewroll .ph { flex: none; display: grid; place-items: center; width: 56px; height: 56px; overflow: hidden; border-radius: 50%; background: #C9B88A; box-shadow: 0 0 0 3px var(--ink); font: 400 18px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .previewroll .ph img { display: block; width: 100%; height: 100%; object-fit: cover; }
+body.viewer .previewroll .who { display: flex; flex-direction: column; min-width: 0; }
+body.viewer .previewroll .who .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.viewer .previewroll .who small { font: 600 14px 'Barlow Condensed', system-ui, sans-serif; opacity: .7; }
+body.viewer .previewroll li.more { justify-content: center; padding-top: 2px; font-size: 16px; opacity: .7; }
+
+/* the narrow drawer (class `nrw`, zoo.js): the sheet does not move; the map slides left over the project rewards and the association strip tucks under it; the sheet takes both areas (--sd-b, --sd-s, --sd-left are set by fitPlayed) */
+body.viewer .drbar { position: absolute; right: 22px; top: -38px; z-index: 3; display: flex; align-items: flex-end; gap: 4px; }
+body.viewer .drbar .drtab { position: static; }
+body.viewer .drexp { width: 42px; padding: 0 0 4px; justify-content: center; }
+body.viewer .drexp svg { width: 17px; height: 17px; }
+body.viewer .zoo.nrw.drawer-open .sheetclip { left: var(--sd-left, 66%); right: 0; z-index: 0; }       /* (behind the map (z 3) and the strip (z 1): they uncover it as they slide) */
+body.viewer .zoo.nrw.drawer-open .zooRow > :nth-child(2) { position: relative; z-index: 3; transform: translateX(calc(-1 * var(--sd-b, 0px))); box-shadow: 6px 0 14px rgba(0, 0, 0, .3); }
+body.viewer .zoo.nrw.drawer-open .zooRow > :nth-child(3) { position: relative; z-index: 1; transform: translateX(calc(-1 * var(--sd-s, 0px))); }
+body.viewer .zoo.nrw.fresh .zooRow > :nth-child(2), body.viewer .zoo.nrw.fresh .zooRow > :nth-child(3) { animation: sd-map-out 400ms cubic-bezier(.3, .7, .2, 1) both; }       /* (the door: the map and the strip slide aside and uncover the sheet, which stays where it is) */
+body.viewer .zoo.nrw .drtab.open i.enter { animation-duration: 400ms; }
+body.viewer .zoo.nrw.closing .zooRow > :nth-child(2), body.viewer .zoo.nrw.closing .zooRow > :nth-child(3) { animation: sd-map-in 300ms ease-in forwards; }
+body.viewer .zoo.nrw .zooRow > :nth-child(3) { --sd-b: var(--sd-s); }
+@keyframes sd-map-out { from { transform: none; } to { transform: translateX(calc(-1 * var(--sd-b, 0px))); } }
+@keyframes sd-map-in { from { transform: translateX(calc(-1 * var(--sd-b, 0px))); } to { transform: none; } }
+/* switching the size: the sheet wipes between the narrow and the whole width while the map slides (class .rz on the box, for the new state) */
+body.viewer .zoo.rz.drawer-open:not(.nrw) .sheetclip { animation: sd-wipe-out 360ms cubic-bezier(.3, .7, .3, 1) both; }
+body.viewer .zoo.rz.drawer-open:not(.nrw) .zooRow > :nth-child(2), body.viewer .zoo.rz.drawer-open:not(.nrw) .zooRow > :nth-child(3) { animation: sd-map-in 360ms cubic-bezier(.3, .7, .3, 1) both; position: relative; }
+body.viewer .zoo.rz.drawer-open:not(.nrw) .zooRow > :nth-child(3) { --sd-b: var(--sd-s); }
+body.viewer .zoo.rz.nrw .zooRow > :nth-child(2), body.viewer .zoo.rz.nrw .zooRow > :nth-child(3) { animation: sd-map-out 360ms cubic-bezier(.3, .7, .3, 1) both; }
+/* expanded -> narrow: the reverse. The board is already drawn narrow (the map slides aside with sd-map-out above); a copy of the expanded sheet (`.ghost`, zoo.js `shrinkGhost`) lies over it, covers the whole map row at first and wipes down to the narrow width, fading out in the last third so that the real narrow sheet takes over without a jump */
+body.viewer .zoo.nrw.drawer-open .sheetclip.ghost { left: 0; right: 0; z-index: 20; pointer-events: none; animation: sd-wipe-in 360ms cubic-bezier(.3, .7, .3, 1) both; }
+@keyframes sd-wipe-in { 0% { clip-path: inset(0); opacity: 1; } 65% { opacity: 1; } 100% { clip-path: inset(0 0 0 var(--sd-left, 66%)); opacity: 0; } }
+@keyframes sd-wipe-out { from { clip-path: inset(0 0 0 var(--sd-left, 66%)); } to { clip-path: inset(0); } }
+@media (prefers-reduced-motion: reduce) { body.viewer .zoo.nrw.fresh .zooRow > *, body.viewer .zoo.nrw.closing .zooRow > *, body.viewer .zoo.rz .zooRow > *, body.viewer .zoo.rz .sheetclip { animation: none; } body.viewer .sheetclip.ghost { display: none; } }
+/* the narrow sheet: flat (no tray frames), one column per kind, centred, a small heading with the count */
+body.viewer .sheet.nrw { box-shadow: inset 10px 0 12px -6px rgba(60, 40, 10, .35); }
+body.viewer .zoo .sheet.nrw .played { flex-direction: row; align-items: flex-start; justify-content: space-evenly; gap: 0; padding: 12px 10px 14px; overflow-x: hidden; overflow-y: auto; --tray: #F7EFD3; }
+body.viewer .zoo .sheet.nrw .played .pkind:nth-child(n) { --tray: #F7EFD3; background: none; border: 0; box-shadow: none; padding: 0; }
+body.viewer .zoo .sheet.nrw .played .pkind h3 { display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0 0 4px; font-size: 13px; }
+body.viewer .zoo .sheet.nrw .played .pkind h3 img { display: none; }
+body.viewer .zoo.drawer-open .zooRow { position: relative; }       /* (the sheet is a child of the row, pinned to its four edges: exactly the place of the map) */
+body.viewer .zoo .zooRow > .sheetclip { width: auto; height: auto; border-radius: 16px; }       /* (beats the rule for the parts of the row: width 100%, no radius) */
+body.viewer .zoo.nrw.drawer-open .zooRow > .sheetclip { border-radius: 0 16px 16px 0; }
+
+/* the bar under a zoo box while its drawer is open (assocbar.js, added by playedDrawer in zoo.js): bonus spaces, partner zoos and universities in one row. The box and the bar are ONE ticket: the box's bottom
+   corners are square, the bar hangs from it (absolute, so nothing moves) over the free strip under the boards, as wide as the box, with a dashed perforation as the seam and the round corners at its foot; the bar is
+   a light warm grey (--stone). A bite is punched out of each side at the perforation: the zoo box carries a mask (two circles; the tile is 8000 px larger than the box so that nothing overflowing is cut) and the
+   ink rim of the bites is the `::before` of the box (above the map, which runs right up to the side edge). The bar repeats the cut itself because it overflows the masked box: this keeps its grey fill out of the lower half of each bite.
+   Taken bonus spaces are in full colour, covered ones pale; empty partner zoo and university slots show their silhouette. */
+body.viewer .zoo.drawer-open { --bite: 11px; --hole: 11px; --seam: 7px;       /* (the radius of the bites; the height of the seam's middle above the bottom edge of the box) */
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: none;
+  -webkit-mask-image: radial-gradient(circle at 4000px calc(100% - 4000px - var(--seam)), transparent calc(var(--hole) - .5px), #000 calc(var(--hole) + .5px)),
+    radial-gradient(circle at calc(100% - 4000px) calc(100% - 4000px - var(--seam)), transparent calc(var(--hole) - .5px), #000 calc(var(--hole) + .5px));
+  mask-image: radial-gradient(circle at 4000px calc(100% - 4000px - var(--seam)), transparent calc(var(--hole) - .5px), #000 calc(var(--hole) + .5px)),
+    radial-gradient(circle at calc(100% - 4000px) calc(100% - 4000px - var(--seam)), transparent calc(var(--hole) - .5px), #000 calc(var(--hole) + .5px));
+  -webkit-mask-composite: source-in; mask-composite: intersect;
+  -webkit-mask-size: calc(100% + 8000px) calc(100% + 8000px); mask-size: calc(100% + 8000px) calc(100% + 8000px);
+  -webkit-mask-position: -4000px -4000px; mask-position: -4000px -4000px;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-clip: no-clip; mask-clip: no-clip; }
+body.viewer .zoo.drawer-open .zooRow, body.viewer .zoo.drawer-open .zooRow > .sheetclip { border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+body.viewer .zoo.drawer-open::before { content: ""; position: absolute; left: -4px; right: -4px; top: -4px; bottom: -24px; z-index: 6; pointer-events: none;       /* (the ink rim of the two bites; the layer is 20 px longer than the box so that the lower half of the rims fits) */
+  background: radial-gradient(circle at 0 calc(100% - var(--seam) - 20px), transparent calc(var(--bite) - 1px), var(--ink) calc(var(--bite) - 1px) calc(var(--bite) + 4px), transparent calc(var(--bite) + 4.5px)),
+    radial-gradient(circle at 100% calc(100% - var(--seam) - 20px), transparent calc(var(--bite) - 1px), var(--ink) calc(var(--bite) - 1px) calc(var(--bite) + 4px), transparent calc(var(--bite) + 4.5px)); }
+body.viewer .zoo .assocbar { position: absolute; left: -4px; right: -4px; top: calc(100% - 4px); z-index: 4; box-sizing: border-box; height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 10px;
+  background: var(--stone); color: var(--ink); border: 4px solid var(--ink); border-top: 3px dashed var(--ink); border-radius: 0 0 20px 20px; box-shadow: 0 6px 0 var(--ink);
+  -webkit-mask-image: radial-gradient(circle at 4000px calc(4000px + 8px - var(--seam)), transparent calc(var(--hole) - .5px), #000 calc(var(--hole) + .5px)),
+    radial-gradient(circle at calc(100% - 4000px) calc(4000px + 8px - var(--seam)), transparent calc(var(--hole) - .5px), #000 calc(var(--hole) + .5px));
+  mask-image: radial-gradient(circle at 4000px calc(4000px + 8px - var(--seam)), transparent calc(var(--hole) - .5px), #000 calc(var(--hole) + .5px)),
+    radial-gradient(circle at calc(100% - 4000px) calc(4000px + 8px - var(--seam)), transparent calc(var(--hole) - .5px), #000 calc(var(--hole) + .5px));
+  -webkit-mask-composite: source-in; mask-composite: intersect;
+  -webkit-mask-size: calc(100% + 8000px) calc(100% + 8000px); mask-size: calc(100% + 8000px) calc(100% + 8000px);
+  -webkit-mask-position: -4000px -4000px; mask-position: -4000px -4000px;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-clip: no-clip; mask-clip: no-clip; }
+body.viewer .assocbar .abgroup { display: flex; flex: 1 1 auto; align-items: center; justify-content: space-evenly; gap: 10px; }          /* (each side of the perforation takes its half of the room and spreads its clusters evenly: the icons are centred, with air between) */
+body.viewer .assocbar .abcl { display: flex; align-items: center; gap: 5px; }
+body.viewer .assocbar .abperf { align-self: stretch; flex: none; margin: 7px 0; border-left: 2px dashed rgba(23, 38, 43, .38); }
+body.viewer .assocbar .abs { display: inline-flex; flex: none; }
+body.viewer .assocbar svg { display: block; overflow: visible; }
+body.viewer .assocbar .abg.off svg { opacity: .34; filter: saturate(.35); }
+body.viewer .zoo.foot-in .assocbar { animation: assocbar-in 320ms 120ms cubic-bezier(.3, .7, .2, 1) both; }
+body.viewer .zoo.closing .assocbar { animation: assocbar-out 200ms ease-in forwards; }
+@keyframes assocbar-in { from { transform: translateY(-14px); opacity: 0; } }
+@keyframes assocbar-out { to { transform: translateY(-14px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { body.viewer .zoo.foot-in .assocbar, body.viewer .zoo.closing .assocbar { animation: none; } }
+/* room to scroll the bar clear of the hand: while a drawer is open (and so its bar hangs 54 px under the box) the page can be scrolled until the bar's lower edge lies above the top of the hand: the unfolded tray
+   (169 px x --hk high) or the fan at rest (124 px x --hk); the folded tray is low enough for the normal room (118 px x --hk) */
+body.viewer:has(.zoo.drawer-open):has(.handtray.unf) { padding-bottom: calc(169px * var(--hk, 1.5) + 56px); }
+body.viewer:has(.zoo.drawer-open):has(.dock:not(.traymode)) { padding-bottom: calc(124px * var(--hk, 1.5) + 56px); }
+
+/* settings panel: wider, with the controls in one column of equal width at the right (labels on the left); the text inside the controls is centred */
+body.viewer #settingsModal .modalbox { width: 620px; }
+body.viewer #settingsModal { --setcol: 300px; }
+body.viewer #settingsModal .setselect { box-sizing: border-box; width: var(--setcol); text-align: center; text-align-last: center; }
+body.viewer #settingsModal .setslide { grid-template-columns: minmax(0, 1fr) var(--setcol); }
+body.viewer #settingsModal .setswitch { margin-left: auto; }
+/* settings panel tabs: Control | Board | Cards, a gold pill like the Control | Log tabs of the sidebar; the panels keep the height of the tallest one so the box does not jump */
+body.viewer .settabs { display: flex; margin-bottom: 4px; border: 3px solid var(--ink); border-radius: 999px; overflow: hidden; background: var(--paper); }
+body.viewer .settab { flex: 1 1 0; padding: 7px 0 6px; border: 0; background: transparent; color: var(--ink); font: 400 17px 'Bowlby One', system-ui, sans-serif; cursor: pointer; }
+body.viewer .settab + .settab { border-left: 3px solid var(--ink); }
+body.viewer .settab:hover { background: #fff7dc; }
+body.viewer .settab.on { background: var(--gold); }
+body.viewer .settab:focus-visible { outline: 3px solid var(--sun); outline-offset: -6px; }
+body.viewer .setpanel { min-height: 232px; }
+body.viewer .setpanel[hidden] { display: none; }
+body.viewer #settingsModal .setpanel > .setrow:first-child { border-top: 0; margin-top: 10px; }
+
+/* building preview (bpreview.js, board.js `previewLayer`): the building is half see-through, so it cannot be taken for a placed one; the pill names it and says whether it fits */
+body.viewer .board .pghost { opacity: .5; }
+body.viewer .board .pvpill { fill: rgba(23, 38, 43, .86); stroke: var(--gold); stroke-width: 3; }
+body.viewer .board .pvtext { font: 700 42px 'Barlow Condensed', system-ui, sans-serif; fill: var(--paper); letter-spacing: .02em; white-space: pre; }
+body.viewer .board .pvtext.small { font-size: 28px; }
+body.viewer .card.previewing { outline: 3px dashed var(--sun); outline-offset: -3px; }
+
+/* the picker of the enclosures (bpreview.js `openMenu`: a right click on a zoo map): a small paper card with the enclosure pictures */
+body.viewer .bpmenu { position: fixed; z-index: 400; box-sizing: border-box; padding: 12px 14px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); }
+body.viewer .bpmtitle { display: block; margin: 0 0 10px 2px; font: 400 20px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .bpmgrid { display: grid; grid-template-columns: repeat(5, 114px); gap: 8px; }
+body.viewer .bpmitem { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px; height: 104px; padding: 6px 2px 5px; box-sizing: border-box; background: #fff8e0; border: 3px solid var(--ink); border-radius: 12px; cursor: pointer; color: var(--ink); }
+body.viewer .bpmitem img { flex: 1 1 0; min-height: 0; max-width: 100%; object-fit: contain; pointer-events: none; }
+body.viewer .bpmitem span { font: 700 17px/1 'Barlow Condensed', system-ui, sans-serif; text-align: center; white-space: nowrap; }
+body.viewer .bpmitem:hover, body.viewer .bpmitem:focus-visible { background: var(--gold); outline: none; }
+
+/* the endgame scoring cards that count (side-panel.js `egCardIcon`): a small card with the number on it at the upper right of the conservation tile of the player whose cards are hidden */
+body.viewer .rt.ov .egcard { position: absolute; top: -1px; right: -8px; z-index: 2; width: 22px; height: 30px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .45)); }
+body.viewer .rt.ov .egcard svg { display: block; }
+body.viewer .rt.ov .egcard .n { position: absolute; left: 0; right: 0; top: 6px; font: 800 19px/1 'Barlow Condensed', system-ui, sans-serif; font-style: normal; color: #fff; text-align: center; }

@@ -6,7 +6,7 @@
 import { $, el, svg } from './util.js';
 import { S } from './state.js';
 import { ICON_IDS, SHOW_VALUE, applyIconNames, iconUrl, moneyTile } from './icons.js';
-import { associationStrip, bonusPanel } from './association.js';
+import { SLOT_SIZE, STRIP, associationStrip, bonusPanel } from './association.js';
 
 const MAP = { x0: 96, y0: 88, dx: 115, dy: 66.5 };
 const R = MAP.dx / 1.5, HH = 133, TILE = [156, 135];
@@ -88,7 +88,6 @@ function buildBoard() {
     layers.cells.append(poly);
   }
 }
-const STRIP = { partner: { 1: 855, 2: 619, 3: 383, 4: 147 }, university: { 1: 1612, 2: 1378, 3: 1144 } };      // y of the middle of the spaces on the association board (association.js)
 function mapStub() {                                                       // what bonusPanel / associationStrip read of a map
   return { id: 'custom', name: 'Custom map', bonus_slots: model.panel.map((b, i) => ({ index: i, kind: i < model.nIncome ? 'instant_income' : 'instant', bonus: b && b.family === 'project' ? { type: b.type, value: b.value } : null })), association_bonuses: {},
            upgrade_sets: model.upgrade.mode === 'pairs' ? model.upgrade.sets : undefined, special_hexes: [], placement_bonuses: [] };
@@ -126,11 +125,11 @@ function drawPanels() {
   });
   const strip = associationStrip(playerStub(), map, 0);
   for (let i = 1; i <= 4; i++) {
-    hitRect(strip, 'partner', i - 1, 175 - 126, STRIP.partner[i] - 99, 253, 198, 24);
+    hitRect(strip, 'partner', i - 1, 175 - SLOT_SIZE.partner[0] / 2, STRIP.partner[i] - SLOT_SIZE.partner[1] / 2, SLOT_SIZE.partner[0], SLOT_SIZE.partner[1], 24);
     overlayBonus(strip, model.partner[i - 1], 175, STRIP.partner[i] + 22, 1.35);
   }
   for (let i = 1; i <= 3; i++) {
-    hitRect(strip, 'univ', i - 1, 175 - 124, STRIP.university[i] - 99, 248, 199, 24);
+    hitRect(strip, 'univ', i - 1, 175 - SLOT_SIZE.university[0] / 2, STRIP.university[i] - SLOT_SIZE.university[1] / 2, SLOT_SIZE.university[0], SLOT_SIZE.university[1], 24);
     overlayBonus(strip, model.univ[i - 1], 175, STRIP.university[i] + 22, 1.35);
   }
   $('panelHolder').replaceChildren(panel);
