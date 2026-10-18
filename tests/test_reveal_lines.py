@@ -26,8 +26,10 @@ def test_the_other_player_does_not_read_the_hunter_cards():
 @pytest.mark.skipif(not (LOGS / "613566554.json").exists(), reason="log not available")
 def test_scavenging_keeps_a_count_for_the_other_player():
     v = build_replay_view(json.loads((LOGS / "613566554.json").read_text(encoding="utf-8")), TableRecord(613566554))
-    assert v["steps"][136]["label_pov"][1] == "Duci9 draws 3 cards for the scavenging effect"
-    assert v["steps"][137]["label_pov"][1] == "Duci9 keeps 1 card for the scavenging effect"
+    draw = next(s for s in v["steps"] if s["label"].startswith("Duci9 draw ") and "for scavenging effect" in s["label"])
+    keep = next(s for s in v["steps"] if s["label"].startswith("Duci9 keep ") and "for scavenging effect" in s["label"])
+    assert draw["label_pov"][1] == "Duci9 draws 3 cards for the scavenging effect"
+    assert keep["label_pov"][1] == "Duci9 keeps 1 card for the scavenging effect"
 
 
 def _state(sponsors):

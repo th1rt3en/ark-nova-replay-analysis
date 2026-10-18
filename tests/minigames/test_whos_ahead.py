@@ -1,5 +1,6 @@
 """Who's ahead on real logs of log_examples."""
 import json
+import re
 import random
 from pathlib import Path
 
@@ -103,7 +104,7 @@ def test_the_platform_runs_the_game_with_a_calendar():
     cal = svc.days("whos_ahead", "2026-10", me)
     assert [d["day"] for d in cal["days"]] == ["2026-10-08", "2026-10-10"]
     old = svc.puzzle("whos_ahead", "2026-10-08", me)                         # a past issue
-    assert old["played"] is False and "table" not in json.dumps(old["public"]).lower().replace("table_id\": null", "")
+    assert old["played"] is False and not re.search(r"table", json.dumps(old["public"]).lower())          # (a whole word: "profitable" is a map description)
     out = svc.submit("whos_ahead", "2026-10-08", {"p1": 40, "p2": 60}, me)
     assert out["winner"] in (0, 1, None) and 0 <= out["score"] <= 2 and out["table_id"] in (GOOD, 621974238) and out["stats"]["players"] == 1
     assert [d["played"] for d in svc.days("whos_ahead", "2026-10", me)["days"]] == [True, False]
