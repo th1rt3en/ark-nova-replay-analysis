@@ -13,7 +13,7 @@ Fingerprints (computed from the files, never typed):
 import hashlib
 from pathlib import Path
 
-ENGINE_VERSION = "0.2.4"
+ENGINE_VERSION = "0.2.5-dev"
 SCHEMA_VERSION = 1
 
 _PKG = Path(__file__).resolve().parents[1]                  # src/ark_nova

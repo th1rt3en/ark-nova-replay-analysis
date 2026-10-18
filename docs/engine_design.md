@@ -236,7 +236,7 @@ Promotion Team S282 (like Capybara A341) has `active: false` and is in no deck, 
   S241/S242 water / rock connected; S258/S259 per 2 unconnected water / rock spaces; S260 per 6 empty spaces in a group; S264 per 2 unconnected bonus spaces;
   S265 5 kiosks; S267 kiosks with 3 empty spaces around (max 3); S268 3 donations; S269 appeal per pouched card (max 5); S271 all bonus spaces covered;
   S272 border covered; S257/S217/S280 5 appeal when the map is covered; S279 3/5 appeal for 1/2 aquariums next to the tunnel; S203/S209 3 universities;
-  S210 5 kiosks; S216/S220 reputation 9; S221 border covered; S243-S247 6/6/6/7/6 icons of their kind; S251 3 bears; S214 1 appeal per X token; S219 2 appeal per
+  S210 5 kiosks; S216/S220 reputation 9; S221 border covered; S243-S247 6 icons of their kind (Cable Car too: 6 rock, engine 0.2.4 had 7); S251 Polar Bear Exhibit 1 CP at 3 bears, 2 CP at 6; S211 Expert on Europe 5 occupied 1-size enclosures (`effective_size`: next to the gate on map 2 / 2a it counts as 3); S214 1 appeal per X token; S219 2 appeal per
   rock+water pair (max 3). `scripts/check_endgame_cards.py` compares all of it with the logs; `tests/test_endgame.py`: final scores match 91 of 100 games
   (the rest miss the last action of the game, logged in the same move as the final scoring).
 

@@ -127,6 +127,9 @@ def test_nothing_secret_is_in_a_view():
             for p, pv in zip(st.players, v["players"]):
                 if p.seat != seat:
                     assert pv["hand"] == ["?"] * len(p.hand) and pv["endgame_hand"] == ["?"] * len(p.endgame_hand) and pv["initial_offer"] == []
+                    assert pv["endgame_cards"] is None                       # (the live count of the endgame cards would give the hidden cards away)
+                else:
+                    assert pv["endgame_cards"] is not None and "endgame_live" in pv
 
 
 def test_only_the_acting_seat_gets_a_decision():

@@ -215,9 +215,10 @@ def card_points(state, seat: int, key: str) -> int:
     return tier_points(card, mw, metric(state, seat, key))
 
 
-# endgame effects that the card data does not show: 1 conservation for that many icons of a kind (fitted to the logs)
-HIDDEN_ICON_TIERS = {"S243": ("Herbivore", 6), "S244": ("Bird", 6), "S245": ("Water", 6), "S246": ("Rock", 7), "S247": ("Primate", 6),
-                     "S251": ("Bear", 3)}
+# endgame effects that the card data does not show: conservation for that many icons of a kind, [(icons, conservation points), ...] (fitted to the logs;
+# Cable Car 6 rock icons and Polar Bear Exhibit 1 / 2 CP for 3 / 6 bears as the cards print them)
+HIDDEN_ICON_TIERS = {"S243": ("Herbivore", [(6, 1)]), "S244": ("Bird", [(6, 1)]), "S245": ("Water", [(6, 1)]), "S246": ("Rock", [(6, 1)]), "S247": ("Primate", [(6, 1)]),
+                     "S251": ("Bear", [(3, 1), (6, 2)])}
 
 
 def sponsor_points(state, seat: int, key: str) -> dict:
@@ -272,8 +273,11 @@ def sponsor_points(state, seat: int, key: str) -> dict:
     elif key == "S221":
         cons = all(c in cov for c in bd.border if c in _buildable(bd))
     elif key in HIDDEN_ICON_TIERS:
-        name, n = HIDDEN_ICON_TIERS[key]
-        cons = icons[name] >= n
+        name, tiers = HIDDEN_ICON_TIERS[key]
+        cons = max((cp for n, cp in tiers if icons[name] >= n), default=0)
+    elif key == "S211":                                        # Expert on Europe: 1 conservation for 5 occupied 1-space enclosures (one next to the gate of map 2 / 2a counts as a 3-space enclosure)
+        from ark_nova.engine.animals_action import effective_size
+        cons = sum(1 for b in p.buildings if b.type == "size-1" and b.animal and effective_size(p, b, bd) == 1) >= 5
     elif key == "S214":
         appeal = p.x_tokens
     elif key in ("S217", "S280"):
@@ -334,3 +338,39 @@ def finish(state) -> None:
     state.current_action = None
     top = max(sc)
     state.result = Result(scores=sc, winner=sc.index(top) if sc.count(top) == 1 else None)
+
+
+# ---- the live count: what the final scoring would add if the game ended now (the viewers' "Endgame live count") ----------------------------
+
+def kept_endgame_cards(state, seat: int) -> list:
+    """The endgame cards that would be scored: all of them once the discard is done, else (every player with more than 1 discards exactly 1) all but the lowest."""
+    hand = list(state.players[seat].endgame_hand)
+    return hand if state.endgame_discard_done or len(hand) < 2 else sorted(hand, key=lambda c: -card_points(state, seat, c))[:len(hand) - 1]
+
+
+def live_scoring(state) -> list:
+    """Per seat `{'appeal': n, 'conservation': n, 'cards': n}`: the appeal and conservation points the sponsors' endgame effects would give now (Arcade first and
+    Mascot Statue last, as in `final_scoring`), and the conservation points of the endgame cards that would be kept (private: the viewer of the other seat does not
+    know them). Nothing changes in the state. All zero once the final scoring has begun (the points are in the score then); a position the rules cannot read gives None."""
+    seats = range(len(state.players))
+    if state.phase in (Phase.OVER, Phase.SCORING):             # (SCORING: the points are being added, or in a replay already are)
+        return [{"appeal": 0, "conservation": 0, "cards": 0} for _ in seats]
+    try:
+        appeal = {s: state.players[s].appeal for s in seats}
+        out = [{"appeal": 0, "conservation": 0, "cards": 0} for _ in seats]
+        for s in seats:                                        # Arcade: scored first, against the appeal before any endgame gain
+            if "S281" in state.players[s].sponsors:
+                out[s]["appeal"] += 2 * sum(appeal[o] < appeal[s] for o in seats if o != s)
+        for s in seats:
+            for k in state.players[s].sponsors:
+                r = sponsor_points(state, s, k)
+                out[s]["conservation"] += r["conservation"]
+                out[s]["appeal"] += r["appeal"]
+            out[s]["cards"] = sum(card_points(state, s, c) for c in kept_endgame_cards(state, s))
+        final = {s: appeal[s] + out[s]["appeal"] for s in seats}
+        for s in seats:                                        # Mascot Statue: scored last, against the appeal after every other endgame gain
+            if "S274" in state.players[s].sponsors:
+                out[s]["appeal"] += 2 * sum(final[o] > final[s] for o in seats if o != s)
+        return out
+    except Exception:                                          # (a position of a log-built state the rules cannot read: the viewer shows no count)
+        return [None for _ in seats]
