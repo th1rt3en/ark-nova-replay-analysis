@@ -7,6 +7,7 @@ export const table = params.get('table');
 export const FORK = !!window.FORK_MODE;
 export const PLAY = !!window.PLAY_MODE;                                         // play.html: a live game (fork mode: the bar is the way to play; the steps are the states the server pushes)
 export const MINIGAME = !!window.MINIGAME_MODE;                                 // minigames/<key>.html: one redacted position of a finished game, no stepping, no point of view switch (js/minigames/)
+export const SHOW_ELO = false;                                                // the Elo pills (player box, zoo tab) are switched off for now: set to true to show them again
 export const SANDBOX = !!window.SANDBOX_MODE;                                   // sandbox.html: a game that is set up and edited freely against a bot that passes (fork mode, with the tools of the sandbox)
 // Mutable viewer state shared by the modules: `S.replay` (the loaded replay package), `S.step` (the index of the step on show), `S.pov` and the fork / sandbox
 // bits. Everything here used to be a `let` inside the one big function of the old replay.js.
@@ -22,6 +23,8 @@ export const S = {
   // Placing a building in a fork: { seat, type, extra, x, y, rot } - the piece is chosen in the move panel, a click on a hex of the zoo sets its anchor, the two buttons round
   // the building turn it, green / red tells whether that placement is legal, the check mark places it. null while no building is being placed.
   placement: null,
+  preview: null,              // the building preview (right click on a sponsor building card of a hand): see bpreview.js; always null in a replay step that is not the one it was started on
+  previewBuilding: true,      // the setting "Building preview" (Cards tab, settings.js)
   replay: null,
   step: 0,
   phase: 0,   // replay: the frame of the step on show (index into framesOf(step): text, gate, decision - see frames.js)
@@ -54,8 +57,6 @@ export const S = {
   dockHandStep: -1,   // fork: the last step whose changed hand the dock was pointed at
   forkSpend: 0,
   skipMode: false,   // fork: the X tokens the viewer spends on the chosen action card / puts a card back instead of acting
-  // ---- the popup that lists the cards of the discard pile / the endgame deck (stays open while stepping, closes with the X, Escape or a click outside) ----
-  openedPile: null,
   iconNames: {},   // web/icons/names.json: BGA icon name -> icon id
   // number changes in the tracker flash green (up) or red (down); the length is --flash-duration in replay.css
   lastNums: {},
@@ -71,10 +72,16 @@ export const S = {
   timer: null,
   speed: 1,
   handScale: 1,                                          // size of the cards in the hand, 0.5 ... 2 (settings pop-up, settings.js; --hs on body)
+  s274: 'victory',                                       // 'victory' | 'mascot': the sponsor S274 under its BGA name Victory Column (default) or as the Mascot Statue, see cards.js `info` / settings.js
   noSnake: 'show',                                       // 'show' | 'hide' | 'worm': the cards with a snake photo, see nosnake.js / settings.js
   handMode: 'tray',                                      // how the hand is shown: 'fan' (at the screen edge) or 'tray' (floating container), see settings.js
   zooLayout: 'side',                                     // the zoo boards: 'side' (side by side), 'tabs' (one, with arrows) or 'stack' (one above the other); settings.js, replay only
+  playedMode: 'below',                                  // where the played cards are shown: 'below' (under the map), 'tray' (a button in the hand dock), 'drawer' (a chip on the top edge + a sheet pulled out over the map, narrow or expanded: `drawerFull`); settings.js, zoo.js
+  drawerFull: {},                                        // 'drawer': seat -> true while that board's drawer is expanded over its whole map (missing / false = narrow beside the map); every board has its own size (kept in the settings)
+  drawerAnim: null,                                      // 'drawer': { seat, t, kind? } of the drawer that was just opened (it slides in once) or, with kind 'resize', of a size switch (only the drawer of that seat wipes to the new size)
+  drawerSeats: {},                                       // 'drawer': seat -> true while that board's sheet is open
   zooTab: null,                                          // 'tabs': the seat on show (null = the first of seatOrder())
+  endgameLive: true,           // the live count of the endgame points (violet +X under the appeal and conservation tiles, side-panel.js; settings pop-up, settings.js)
   showTimeline: false,         // the timeline row in the control panel (settings pop-up, settings.js)
   sbSeat: null,        // sandbox: the seat whose tools are shown
   sbUnlocked: false,   // sandbox: the action card list can be reordered by dragging

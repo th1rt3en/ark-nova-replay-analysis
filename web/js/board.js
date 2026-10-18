@@ -1,5 +1,6 @@
 // [module] Zoo board geometry (axial hex maths, map cells, building sprites, legal-placement test) and the SVG zoo board.
 import { FORK, S, params } from './state.js';
+import { endPreview, turnPreview } from './bpreview.js';
 import { cardName, zoneNew } from './cards.js';
 import { ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, pieceUrl } from './icons.js';
 import { seatRawColor, svg } from './util.js';
@@ -77,7 +78,7 @@ export function zooBoard(map, player, seat) {
     }
     else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)
     if (bn.type === 'appeal' && !icon) put('text', { x: cx, y: cy + 6, class: 'bonus-label' }, '★');      // a bonus nobody has identified yet is just the empty pentagon
-    if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
+    if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : ''), ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
     s.lastChild.append(tip);
   }
   for (const sh of map.special_hexes) {            // hex that needs the upgraded Build action: red wedge on its upper left, purple "II" shovel badge
@@ -264,6 +265,85 @@ export function zooBoard(map, player, seat) {
       button(maxX + 105, midY, '\u21B7', 'Turn clockwise', () => { S.placement.rot = (S.placement.rot + 1) % 6; render(); }, 'rot');
       if (legal) button(midX - 48, maxY + 110, '\u2713', 'Place the building here', () => playFork(legalPlacement(S.placement)), 'okbtn');
       button(midX + (legal ? 48 : 0), maxY + 110, '\u2715', 'Cancel', () => { S.placement = null; render(); }, 'cancelbtn');
+    }
+  }
+  if (!(FORK && S.placement) && !(S.preview && S.preview.seat === seat)) {                // a right click on a map without a preview: the picker of the enclosures (bpreview.js); with the setting off the browser's menu stays
+    s.addEventListener('contextmenu', (e) => {
+      if (!S.previewBuilding || !(map.hexes || []).length) return;
+      e.preventDefault();
+      document.dispatchEvent(new CustomEvent('bpreview-menu', { detail: { seat, x: e.clientX, y: e.clientY } }));
+    });
+  }
+  if (S.preview && S.preview.seat === seat && S.preview.error && !(FORK && S.placement)) {          // the answer of the server failed: say why (a right click ends it)
+    const label = S.preview.name + ': ' + S.preview.error;
+    const w = Math.min(1090, 50 + label.length * 13.5);
+    const tag = svg('g', { class: 'pvtag', 'pointer-events': 'none', transform: 'translate(561 46)' });
+    const txt = svg('text', { y: 9, 'text-anchor': 'middle', class: 'pvtext small' });
+    txt.textContent = label;
+    tag.append(svg('rect', { x: -w / 2, y: -34, width: w, height: 68, rx: 34, class: 'pvpill' }), txt);
+    s.addEventListener('contextmenu', (e) => { e.preventDefault(); endPreview(); });
+    s.append(tag);
+  }
+  if (S.preview && S.preview.seat === seat && S.preview.shape && !(FORK && S.placement)) {
+    // The placement preview (bpreview.js): every hex is a target for the anchor, the building (half see-through) follows the cursor; a click pins it there (the turn buttons appear), a second click
+    // on the same hex lets it follow again. Green = the building fits like this, red = it does not. Nothing is placed: there is no check mark, a right click anywhere on the map ends the preview.
+    const P = S.preview;
+    const cellsOf = (x, y, k) => { const [q0, r0] = toAxial(x, y); return P.shape.map((o) => { const [dq, dr] = rotateAxial(o, k); return fromAxial(q0 + dq, r0 + dr); }); };
+    const fits = (x, y, k) => P.options.has(x + ',' + y + ',' + k);
+    const layer = svg('g', { class: 'pvlayer' });
+    const hover = svg('g', { class: 'hoverplace', 'pointer-events': 'none' });
+    const at = () => (P.x !== null ? [P.x, P.y] : P.hx !== null ? [P.hx, P.hy] : null);
+    const ghostAt = (x, y) => {
+      const cells = cellsOf(x, y, P.rot);
+      const g = drawBuilding({ type: P.type, x, y, rotation: P.rot, cells }, '');
+      g.setAttribute('class', 'pghost');
+      return [g, svg('path', { d: outlinePath(cells), class: 'placeborder ' + (fits(x, y, P.rot) ? 'ok' : 'bad') })];
+    };
+    const tag = svg('g', { class: 'pvtag', 'pointer-events': 'none', transform: 'translate(561 46)' });          // how to turn / stop it
+    const pill = svg('rect', { y: -34, height: 68, rx: 34, class: 'pvpill' }), txt = svg('text', { y: 14, 'text-anchor': 'middle', class: 'pvtext' });
+    const label = 'Wheel / R: turn     Right click: stop';                                                 // (the green / red outline says whether it fits)
+    txt.textContent = label;
+    const w = 70 + label.length * 17.5;
+    pill.setAttribute('x', String(-w / 2)); pill.setAttribute('width', String(w));
+    tag.append(pill, txt);
+    for (const h of map.hexes || []) {
+      const poly = svg('polygon', { points: hexPoints(h.x, h.y), class: 'pickhex' });
+      poly.addEventListener('mouseenter', () => { P.hx = h.x; P.hy = h.y; if (P.x === null) { hover.replaceChildren(...ghostAt(h.x, h.y)); } });
+      poly.addEventListener('click', () => { if (P.x === h.x && P.y === h.y) { P.x = null; P.y = null; } else { P.x = h.x; P.y = h.y; } S.lastBoard = null; render(); });
+      poly.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); endPreview(); });
+      layer.append(poly);
+    }
+    s.addEventListener('contextmenu', (e) => { e.preventDefault(); endPreview(); });                       // (a right click beside the hexes ends it too)
+    s.addEventListener('mouseleave', () => { if (P.x === null) { P.hx = null; P.hy = null; hover.replaceChildren(); } });
+    s.addEventListener('wheel', (e) => { e.preventDefault(); turnPreview(e.deltaY > 0 ? 1 : -1); }, { passive: false });
+    layer.append(hover);
+    const here = at();
+    if (here) hover.replaceChildren(...ghostAt(here[0], here[1]));
+    s.append(layer);
+    s.append(tag);
+    if (P.x !== null) {
+      const [ax, ay] = cellCentre(P.x, P.y);
+      const anchor = svg('g', { class: 'anchormark', 'pointer-events': 'none' });
+      anchor.append(svg('circle', { cx: ax, cy: ay, r: 17, class: 'anchordot' }), svg('line', { x1: ax - 11, y1: ay, x2: ax + 11, y2: ay, class: 'anchorcross' }),
+                    svg('line', { x1: ax, y1: ay - 11, x2: ax, y2: ay + 11, class: 'anchorcross' }));
+      s.append(anchor);
+      const centres = [0, 1, 2, 3, 4, 5].flatMap((k) => cellsOf(P.x, P.y, k)).map((c) => cellCentre(c[0], c[1]));          // (the cells of every turn: the buttons stay where they are while it turns)
+      const xs = centres.map((c) => c[0]), ys = centres.map((c) => c[1]);
+      const minX = Math.min(...xs), maxX = Math.max(...xs), midY = (Math.min(...ys) + Math.max(...ys)) / 2;
+      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      const button = (cx, cy, glyph, title, onclick, cls) => {
+        const g = svg('g', { class: 'placebtn ' + (cls || ''), transform: 'translate(' + clamp(cx, 40, 1082).toFixed(0) + ' ' + clamp(cy, 40, 936).toFixed(0) + ')' });
+        const tip = svg('title');
+        tip.textContent = title;
+        const gl = svg('text', { y: 12, 'text-anchor': 'middle' });
+        gl.textContent = glyph;
+        g.append(svg('circle', { r: 34 }), gl, tip);
+        g.addEventListener('click', (e) => { e.stopPropagation(); onclick(); });
+        g.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); endPreview(); });
+        s.append(g);
+      };
+      button(minX - 105, midY, '\u21B6', 'Turn counter-clockwise (Shift + R)', () => turnPreview(-1), 'rot');
+      button(maxX + 105, midY, '\u21B7', 'Turn clockwise (R)', () => turnPreview(1), 'rot');
     }
   }
   return s;

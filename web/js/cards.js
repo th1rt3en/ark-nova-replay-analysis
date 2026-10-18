@@ -5,12 +5,19 @@ import { pic } from './icons.js';
 import { afterMark, forkSingleSelect } from './action-bar.js';
 import { snakeSafe } from './nosnake.js';
 
-export const info = (key) => S.replay.cards[key] || { name: key, type: 'unknown' };
+// S274 is the Mascot Statue of the card data and the Victory Column on BGA (setting "Statue card", S.s274): its name and pictures (made by build_cards.py as S274_VC; the photo is a placeholder for now) are swapped here, so every name and picture in the viewer follows.
+const VICTORY = new WeakMap();
+const victoryOf = (c) => { if (!VICTORY.has(c)) VICTORY.set(c, { ...c, name: 'VICTORY COLUMN', image: c.image && c.image.replace('S274.webp', 'S274_VC.webp'), large: c.large ? c.large.replace('S274.webp', 'S274_VC.webp') : c.large }); return VICTORY.get(c); };
+export const info = (key) => { const c = S.replay.cards[key]; return c ? (key === 'S274' && S.s274 !== 'mascot' ? victoryOf(c) : c) : { name: key, type: 'unknown' }; };
 // The image of the hover preview: the full size card (745 x 1040; every card has one since build_cards.py). Taken from `large` of the card catalog, else from the path of the small card
 // (/cards/X.webp -> /cards_large/X.webp), so a replay cached by the server before the large cards existed still shows them; else the small card itself.
 export const largeOf = (c) => snakeSafe(c.large || (c.image && c.image.startsWith('/cards/') ? c.image.replace('/cards/', '/cards_large/') : c.image));
 export const cardName = (key) => title(info(key).name);
 
+// the sponsor buildings: the Mascot Statue / Victory Column, Arcade, Franchise Business, Landscape Gardener, the three Experts, the playgrounds, Underwater Tunnel, Side Entrance, Expansion Area,
+// Zoo School, the animal houses, Amazon House, Aquarium, Cable Car, Excavation Site, Waza Large Animal Program (keep in step with replay/preview.py PREVIEW_CARDS)
+export const PREVIEW_CARDS = new Set(['S210', 'S211', 'S213', 'S243', 'S244', 'S245', 'S246', 'S247', 'S248', 'S249', 'S250', 'S251', 'S252', 'S253', 'S254', 'S255', 'S256', 'S257',
+  'S263', 'S265', 'S271', 'S272', 'S274', 'S276', 'S278', 'S279', 'S281']);
 export function card(key, extraClass) {
   if (key === '?') {                                                     // a card the viewer may not see (the other player's hand in a player's point of view)
     const b = el('div', 'card back' + (extraClass ? ' ' + extraClass : ''));
@@ -55,6 +62,7 @@ function showNow(src, centered, extra) {
   const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;
   const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false;
   showStats(src, p, extra);
+  showRoll(src, p);
 }
 // What a sponsor with passive effects has given its owner so far (the replay only; the totals are in `state.sponsor_stats`, made by view.py from the log): a panel at the right of the enlarged card
 const STAT_ORDER = ['appeal', 'money', 'reputation', 'conservation', 'xtoken'];
@@ -88,6 +96,53 @@ function showStats(src, p, extra) {
   }
   if (!rows.length) box.append(el('div', 'pstnone', 'nothing yet'));
   box.hidden = false;
+}
+// The roll of honour of the Emu Cup (the Victory Column card, setting "Statue card" = Victory Column): a panel right next to the enlarged card, the newest season (the incumbent champion, gold) first, each with a round portrait
+// (web/emu_cup_winners/thumbs/<season>.webp, made by scripts/build_emu_cup_thumbs.py; an initial while a winner has no photo). The list is web/emu_cup_winners/winners.json. When the panel has not room for every winner, the oldest are
+// summed up in "+ N earlier seasons" (the panel cannot be scrolled: the preview closes when the pointer leaves the card).
+let winnersData = null;
+const loadWinners = () => winnersData || (winnersData = fetch('/emu_cup_winners/winners.json').then((r) => (r.ok ? r.json() : { winners: [] })).catch(() => ({ winners: [] })));
+async function showRoll(src, p) {
+  let box = $('previewroll');
+  const on = !MINIGAME && S.s274 !== 'mascot' && /\/S274_VC\.webp/.test(String(src));
+  if (!on) { if (box) box.hidden = true; p.classList.remove('withroll'); return; }
+  const data = await loadWinners();
+  if (p.hidden || !/S274_VC\.webp/.test(p.src) || !data.winners || !data.winners.length) return;               // (the card was left while the list loaded)
+  const list = [...data.winners].sort((a, b) => b.season - a.season);
+  if (!box) { box = el('div', 'previewroll'); box.id = 'previewroll'; document.body.append(box); }
+  const ol = el('ol');
+  list.forEach((w, i) => {
+    const li = el('li', i === 0 ? 'cur' : '');
+    const ph = el('span', 'ph', String(w.name || '?')[0].toUpperCase());
+    if (w.thumb) { const img = el('img'); img.alt = ''; img.src = '/emu_cup_winners/thumbs/' + String(w.season).padStart(2, '0') + '.webp'; img.onload = () => { ph.textContent = ''; ph.append(img); }; }       // (`thumb` is set by build_emu_cup_thumbs.py; no photo yet: the initial stays)
+    const who = el('span', 'who'); who.append(el('span', 'nm', w.name), el('small', '', 'Season ' + w.season + (i === 0 ? ' · Chanpion' : '')));
+    li.append(ph, who);
+    ol.append(li);
+  });
+  box.replaceChildren(el('b', 'psttitle', (data.event || 'Emu Cup') + ' Chanpions'), ol);
+  p.classList.add('withroll');
+  const place = () => {
+    if (p.hidden) return;
+    box.hidden = false;
+    const sc = (S.scaled && S.scale) || 1;                                           // (the page is zoomed: getBoundingClientRect is in zoomed px, `left` / `top` of a fixed box are not)
+    const q = p.getBoundingClientRect(), r = { top: q.top / sc, left: q.left / sc, right: q.right / sc, height: q.height / sc }, stats = $('previewstats');
+    let room = r.height;                                                             // (as tall as the card; above the statistics panel when there is one)
+    if (stats && !stats.hidden) room = Math.min(room, stats.getBoundingClientRect().top / sc - 12 - r.top);
+    box.style.maxHeight = Math.max(140, room) + 'px';
+    box.style.top = Math.max(8, r.top) + 'px';
+    ol.querySelectorAll('.more').forEach((m) => m.remove());
+    const items = [...ol.children]; items.forEach((li) => { li.hidden = false; });
+    let hide = 0;
+    while (box.scrollHeight > box.clientHeight + 1 && items.length - hide > 2) {                // (oldest first out)
+      hide += 1; items[items.length - hide].hidden = true;
+      if (!ol.querySelector('.more')) ol.append(el('li', 'more'));
+      ol.querySelector('.more').textContent = '+ ' + hide + ' earlier season' + (hide > 1 ? 's' : '');
+    }
+    let left = r.right + 14;
+    if (left + box.offsetWidth > window.innerWidth / sc - 8) left = Math.max(8, r.left - 14 - box.offsetWidth);
+    box.style.left = left + 'px';
+  };
+  requestAnimationFrame(() => (p.complete && p.naturalWidth ? place() : p.addEventListener('load', place, { once: true })));
 }
 // What the action card variants of Marine Worlds have done (the replay only; `state.variant_stats[seat][action]`, made by replay/variant_stats.py): [statistic, text]; the sides I and II are named in the text
 const VARIANT_NAME = { animals_1: 'Ignore Animals', animals_2: 'Hunter Animals', animals_3: 'Discount Animals', animals_4: 'Mark Animals', association_2: 'Hire Association', association_3: 'X Association',
@@ -143,7 +198,7 @@ export function bindPreview(elm, src, centered, extra) {
   elm.addEventListener('click', (e) => { if (held) { held = false; e.stopImmediatePropagation(); e.preventDefault(); } }, true);       // (the end of a long press is not a click)
   elm.addEventListener('contextmenu', (e) => { if (lastTouch) e.preventDefault(); });                                                   // (no browser menu on a long press)
 }
-export function hidePreview() { clearTimeout(previewTimer); $('preview').hidden = true; const b = $('previewstats'); if (b) b.hidden = true; }
+export function hidePreview() { clearTimeout(previewTimer); $('preview').hidden = true; const b = $('previewstats'); if (b) b.hidden = true; const r = $('previewroll'); if (r) r.hidden = true; $('preview').classList.remove('withroll'); }
 document.addEventListener('mouseout', (e) => { if (heldSrc && e.target.closest && e.target.closest('.card') && !(e.relatedTarget && e.target.closest('.card').contains(e.relatedTarget))) heldSrc = null; }, true);       // (the pointer left the card: the next hover on it counts again)
 document.addEventListener('DOMContentLoaded', () => { const pv = $('preview'); if (pv) pv.addEventListener('click', hidePreview); });       // (on touch screens a tap closes the preview)
 function textFace(key, c) {
@@ -297,6 +352,16 @@ export function cardRow(rawKeys, cls, emptyText, zone, dimmed, markable) {
       const mark = zone + '#' + (n++);
       if (cardMarks.has(mark)) node.classList.add('marked');
       node.classList.add('markable');
+      const hm = /^(\d+):hand$/.exec(zone), ck = node.dataset.key;
+      if (hm && ck) {                                                    // a sponsor building card of a hand: a right click starts / ends / switches the building preview (bpreview.js)
+        const seat = +hm[1];
+        if (S.preview && S.preview.seat === seat && S.preview.card === ck) node.classList.add('previewing');
+        node.addEventListener('contextmenu', (e) => {
+          if (!S.previewBuilding || !PREVIEW_CARDS.has(ck)) return;
+          e.preventDefault();
+          document.dispatchEvent(new CustomEvent('bpreview-toggle', { detail: { seat, key: ck } }));
+        });
+      }
       node.addEventListener('click', () => {
         if (FORK && node.classList.contains('dim') && forkSingleSelect()) return;                      // (a card that cannot be played cannot be selected)
         if (cardMarks.has(mark)) cardMarks.delete(mark);

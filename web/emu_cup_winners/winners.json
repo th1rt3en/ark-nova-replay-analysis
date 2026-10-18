@@ -1,0 +1,31 @@
+{
+    "_comment": "Winners of the Emu Cup, a community tournament. `photo` is the file in data_manual/emu_cup_photos/ (<season, 2 digits>-<name>.png, ASCII; not served; may not exist yet), `focus` = [x, y] of the face in the photo (fractions) for the round thumbnail made by scripts/build_emu_cup_thumbs.py. The newest season is the incumbent champion: scripts/build_victory_column_art.py (card face + caption) and web/js/cards.js (roll of honour next to the enlarged Victory Column) read this file.",
+    "event": "Emu Cup",
+    "winners": [
+        {
+            "season": 4,
+            "name": "skälding",
+            "photo": "04-skalding.png",
+            "focus": [
+                0.48,
+                0.4
+            ],
+            "thumb": true
+        },
+        {
+            "season": 3,
+            "name": "BDWSSBB",
+            "photo": "03-BDWSSBB.png"
+        },
+        {
+            "season": 2,
+            "name": "ScientistOmni",
+            "photo": "02-ScientistOmni.png"
+        },
+        {
+            "season": 1,
+            "name": "Propaganda Panda",
+            "photo": "01-Propaganda Panda.png"
+        }
+    ]
+}
