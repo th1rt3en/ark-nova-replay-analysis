@@ -8,10 +8,11 @@ const D = {                                                                // ke
   ' ': ['Space', 'Start / stop autoplay', ''],
   Home: ['Home', 'Jump to the first step', ''],
   End: ['End', 'Jump to the last step', ''],
+  r: ['R', 'Turn the building preview', 'While a sponsor building is being previewed (right click on its card in a hand): Shift + R turns it the other way, the mouse wheel over the map too.'],
   h: ['H', 'Show / hide the hand', 'The floating tray or the fan.'],
   s: ['S', 'Open the settings', ''],
   '?': ['?', 'Open this window', 'Shift + / on most keyboards.'],
-  Escape: ['Esc', 'Close', 'A card pile, the settings or this window.'],
+  Escape: ['Esc', 'Close', 'The settings, a dialog or this window.'],
 };
 const GAP = [' ', .5];                                                     // (a blank space in a row: [label '', width])
 const MAIN = [

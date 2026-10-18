@@ -22,7 +22,6 @@ export function setPlaying(on) {
 }
 export function setSpeed(x) {
   S.speed = x;
-  for (const b of document.querySelectorAll('.speed button')) b.classList.toggle('on', +b.dataset.speed === x);
   if (S.timer) setPlaying(true);                                       // restart the timer at the new rate
 }
 

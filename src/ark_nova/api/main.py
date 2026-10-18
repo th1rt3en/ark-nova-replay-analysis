@@ -22,6 +22,7 @@ from ark_nova.parser.verify import verify_log
 from ark_nova.engine.game import IllegalAction
 from ark_nova.engine.state import GameState
 from ark_nova.replay import fork as forking
+from ark_nova.replay import preview as building_preview
 from ark_nova.replay import sandbox
 from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
@@ -331,6 +332,19 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         first = forking.step_payload(state, f"Fork of table #{table_id} after step {step}: {labels[step]}")
         return JSONResponse({**skeleton, "setup_steps": 0, "steps": [first], "shapes": forking.shapes(),
                              "fork": {"table_id": table_id, "step": step, "seed": seed, "default_seed": forking.DEFAULT_SEED, "label": labels[step]}})
+
+    @app.post("/api/preview/placements")
+    async def preview_placements(request: Request):
+        """Where the building of a sponsor card in a hand would fit (a preview, nothing is placed): {card, map_id, marine_worlds, buildings: [{type, x, y, rotation}], build_level, overbuild, terrain_build (enclosures only)};
+        returns {type, shape, options: [[x, y, rotation], ...]}."""
+        raw_body = await request.body()
+        if len(raw_body) > 200_000:
+            return _error(413, "too_large", "That request is too large.")
+        try:
+            result = await run_in_threadpool(building_preview.from_view, json.loads(raw_body))
+        except (ValueError, KeyError, TypeError) as e:
+            return _error(422, "invalid", f"Could not preview this building ({type(e).__name__}: {e}).")
+        return JSONResponse(result)
 
     @app.get("/api/sandbox/maps")
     async def sandbox_maps(marine_worlds: bool = False):

@@ -1,11 +1,11 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
 import { $, el, seatColor, seatText } from './util.js';
 import { FORK, MINIGAME, S, SANDBOX } from './state.js';
-import { curState, hides } from './pov.js';
+import { curState, hides, seatOrder } from './pov.js';
 import { cardRow, quietly } from './cards.js';
 import { iconUrl } from './icons.js';
 import { cardPickAct, forkActs, pickCardOf } from './action-bar.js';
-import { settingsOpen } from './settings.js';
+import { playedChips, playedMode, withCubes } from './zoo.js';
 
 
 // A Hunter / Scuba Dive reveal (the step "X draw ... for hunter effect"): the cards are drawn and one of them is kept. Of the drawn cards only those the effect takes stay
@@ -44,21 +44,18 @@ function handDim(seat) {
 try { S.dockSel = JSON.parse(localStorage.getItem('dockSel') || 'null'); } catch (e) { /* no storage */ }
 if (!S.dockSel) S.dockSel = { seat: 0, kind: 'hand' };
 try { S.dockHidden = localStorage.getItem('dockHidden') === '1'; } catch (e) { /* no storage */ }
-const KIND_NAME = { hand: 'hand', endgame: 'endgame cards', stored: 'storage (Caves)' };
-const KIND_ICON = { hand: 'r4c7', endgame: 'r4c11', stored: 'r5c2' };       // (the store icon of the sheet for the cards under the notepad of map 11)
+const KIND_NAME = { hand: 'hand', endgame: 'endgame cards', stored: 'storage (Caves)', played: 'played cards' };
+const KIND_ICON = { hand: 'r4c7', endgame: 'r4c11', stored: 'r5c2', played: 'played' };       // (the store icon of the sheet for the cards under the notepad of map 11)
 const saveDock = () => { if (MINIGAME) return; try { localStorage.setItem('dockSel', JSON.stringify(S.dockSel)); localStorage.setItem('dockHidden', S.dockHidden ? '1' : '0'); } catch (e) { /* no storage */ } };
 // ---- how the hand appears. Fan: "Deal" when the starting hand is dealt (setup phase, the hand was empty before), "Rise and spread" otherwise (page load, the setting changed). Tray: "Drop" for the starting hand
 // (the tray itself slides up, CSS). The cards of a hand that is drawn again while the intro runs go on where they were (negative delay), as every redraw replaces the card elements.
 const FAN_RISE_MS = 900, FAN_DEAL_MS = 520, FAN_DEAL_GAP = 110, DROP_MS = 560, DROP_GAP = 100, TRAY_SLIDE_MS = 350;       // (the drop: the starting hand falls into the floating tray once it has slid up)
 let introState = null, introDone = false;
 const lastCount = {};                                                                                        // (per seat: the cards in the hand at the last drawing and whether the game was still in its setup; only setup with an empty hand -> cards = the starting hand is dealt)
-let hintPending = false, hintStart = 0;
 let fanRaised = false;                                                                                      // (the fan stands up like on hover until the settings close: after the switch from an unfolded tray)
-const HINT_KEY = 'handTrayHint', HINT_MS = 4600;                      // (the one-time hint: remembered in localStorage; picking the setting shows it again)
-const hintSeen = () => { try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return true; } };
-// the setting "Hand display" was changed (settings.js): the next fan rises and spreads, the next tray shows its hint once the settings close
+// the setting "Hand display" was changed (settings.js): the next fan rises and spreads
 document.addEventListener('handmode', () => {
-  introDone = false; introState = null; hintPending = S.handMode === 'tray';
+  introDone = false; introState = null;
   if (S.handMode === 'fan') {
     fanRaised = !S.dockHidden;                                                                               // (an unfolded tray -> an unfolded fan that sinks to rest when the settings close; a folded tray -> the fan appears at rest)
     if (S.dockHidden) { S.dockHidden = false; saveDock(); }                                                  // (the fan has no folded state but "not drawn": it would never appear)
@@ -67,7 +64,6 @@ document.addEventListener('handmode', () => {
 });
 document.addEventListener('settingsclosed', () => {
   if (fanRaised) { fanRaised = false; const d = $('dock'); if (d) d.classList.remove('raised'); return; }   // (the CSS transition sinks the fan)
-  if (hintPending && S.handMode === 'tray') renderDock(curState());
 });
 function dockIntro(row, handCount, seat, setup, tray) {
   const prev = lastCount[seat]; lastCount[seat] = { count: handCount, setup };
@@ -104,19 +100,20 @@ export function renderDock(st) {
   dock.className = 'dock' + (S.handMode === 'tray' ? ' traymode' : '') + (S.handMode === 'fan' && fanRaised ? ' raised' : '');                 // (the hand is shown in a fan at the screen edge, or in a floating tray)
   if (SANDBOX && S.replay.setup) { dock.replaceChildren(); return; }                // (nothing to show before the game: the seat and the maps are chosen first)
   if (MINIGAME && S.pov === null) { dock.replaceChildren(); document.body.style.paddingBottom = ''; return; }      // (both hands are under the zoos, zoo.js)
+  if (S.dockSel && S.dockSel.kind === 'played' && playedMode() !== 'tray') S.dockSel = { seat: S.dockSel.seat, kind: 'hand' };         // (the setting "Played cards" was changed away from the tray)
   const panel = el('div', 'dockpanel');
   const bar = el('div', 'dockbar');
   const rows = {};
-  const shownSel = S.pov !== null && S.dockSel && S.dockSel.seat !== S.pov ? { seat: S.pov, kind: S.dockSel.kind } : S.dockSel;      // (a player's point of view has no way to the other player's cards)
+  const shownSel = S.pov !== null && S.dockSel && S.dockSel.kind !== 'played' && S.dockSel.seat !== S.pov ? { seat: S.pov, kind: S.dockSel.kind } : S.dockSel;      // (a player's point of view has no way to the other player's cards)
   st.players.forEach((p, seat) => {
     if (hides(seat)) return;
-    const cards = { hand: p.hand, endgame: p.endgame_hand || [], stored: p.stored || [] };
-    const kinds = p.map_id === '11' ? ['hand', 'endgame', 'stored'] : ['hand', 'endgame'];        // (map 11, Caves: the cards stored under the notepad are a third zone, apart from the hand)
+    const cards = { hand: p.hand, endgame: p.endgame_hand || [], stored: p.stored || [], played: [...p.animals, ...p.sponsors] };
+    const kinds = [...(p.map_id === '11' ? ['hand', 'endgame', 'stored'] : ['hand', 'endgame']), ...(playedMode() === 'tray' ? ['played'] : [])];        // (map 11, Caves: the cards stored under the notepad are a third zone, apart from the hand)
     const group = el('div', 'dockgroup');                               // the two buttons of a player (hand | endgame cards) switch between that player's cards
     group.style.setProperty('--pc', seatColor(seat));
     const pair = el('div', 'dockpair');
     for (const kind of kinds) {
-      const row = cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, !MINIGAME);                  // (a mini game: no highlighting, no dragging; the page's own hook makes the cards the thing to click)
+      const row = kind === 'played' ? el('div', 'cards') : cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, !MINIGAME);                  // (a mini game: no highlighting, no dragging; the page's own hook makes the cards the thing to click)
       rows[seat + ':' + kind] = row;                                   // (built for both players every time, so the arrivals and departures of the cards are tracked)
       const on = !S.dockHidden && shownSel && shownSel.seat === seat && shownSel.kind === kind;
       const b = el('button', 'dockbtn' + (on ? ' on' : ''));
@@ -169,10 +166,9 @@ function fitDockSpace(dock) {
 window.addEventListener('resize', () => { const d = $('dock'); if (d) fitDockSpace(d); });
 
 
-// ---- the floating tray (setting "Hand display" = Floating container): the cards of the shown row lie flat in a sand-coloured tray at the bottom left; the card / endgame card buttons are round discs on its top edge.
-// A folded tray still shows the top of the cards. A click on the header strip of the tray (the empty band above the cards) folds / unfolds it, and so does the H key (also folds the fan away).
+// ---- the floating tray (setting "Hand display" = Floating container): the cards of the shown row lie flat in a dark glass tray at the bottom left; the card / endgame card buttons are round discs on its top edge.
+// A folded tray still shows the top of the cards. The round button at the top right of the tray folds / unfolds it, and so does the H key (also folds the fan away).
 export function toggleDock() { S.dockHidden = !S.dockHidden; saveDock(); renderDock(curState()); }
-function startHint() { hintStart = Date.now(); hintPending = false; try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* no storage */ } }
 const TRAY_ROW = 20;                                                    // cards per row: more than that start a second row
 function trayBox() {                                                   // left edge = the left edge of the boards (display, map, move bar); right edge = the right edge of the display / association boards, so the tray never reaches the side bar
   const sh = document.querySelector('.shared'), sc = S.scaled ? S.scale : 1, r = sh && sh.getBoundingClientRect();
@@ -182,7 +178,8 @@ function trayBox() {                                                   // left e
 function placeTray(wrap) { const b = trayBox(); wrap.style.setProperty('--maxw', b.width + 'px'); wrap.parentNode.style.left = b.left + 'px'; }
 window.addEventListener('resize', () => { const w = document.querySelector('.handtray'); if (w) placeTray(w); });
 function drawTray(dock, rows, shownSel, st) {
-  const row = shownSel && rows[shownSel.seat + ':' + shownSel.kind];
+  const played = !!shownSel && shownSel.kind === 'played';
+  const row = played ? el('div', 'cards') : shownSel && rows[shownSel.seat + ':' + shownSel.kind];
   if (!row || (st && st.phase === 'setup' && st.draft && st.draft.stage !== 'done')) {
     const sx = shownSel ? shownSel.seat : S.dockSel.seat; if (st && st.players[sx]) lastCount[sx] = { count: st.players[sx].hand.length, setup: st.phase === 'setup' };       // (so the deal after the draft is recognised)
     dock.replaceChildren(); return;                                      // (no tray at all during the action card draft: nothing to show yet)
@@ -198,35 +195,73 @@ function drawTray(dock, rows, shownSel, st) {
     wrap = el('div', 'handtray'); frame = el('div', 'trayframe'); btns = el('div', 'traybtns');
     wrap.append(frame, btns);
     wrap.classList.add('enter'); wrap.addEventListener('animationend', (e) => { if (e.target === wrap) wrap.classList.remove('enter'); });       // (a new tray slides up: after the draft, when the mode is changed)
-  } else { frame = wrap.querySelector('.trayframe'); btns = wrap.querySelector('.traybtns'); wrap.querySelector('.trayhint')?.remove(); }
-  wrap.classList.toggle('fol', folded); wrap.classList.toggle('unf', !folded);
+  } else { frame = wrap.querySelector('.trayframe'); btns = wrap.querySelector('.traybtns') }
+  wrap.classList.toggle('fol', folded); wrap.classList.toggle('unf', !folded); wrap.classList.toggle('played', played);
   wrap.style.setProperty('--pc', seatColor(seat));
   wrap.style.setProperty('--cols', String(cols));
   const head = el('div', 'trayhead');
-  head.onclick = toggleDock;
-  frame.replaceChildren(head, row);
+  frame.replaceChildren(head, played ? playedTrayBody(st, seat, trayBox().width) : row);
   if (shownSel.kind === 'hand') dockIntro(row, st.players[seat].hand.length, seat, st.phase === 'setup', true);
   const kids = [];
   const pl = st.players[seat];
-  for (const kind of pl.map_id === '11' ? ['hand', 'endgame', 'stored'] : ['hand', 'endgame']) {          // (map 11, Caves: the cards stored under the notepad are a third zone)
-    const cnt = (kind === 'hand' ? pl.hand : kind === 'stored' ? pl.stored || [] : pl.endgame_hand || []).length;
+  for (const kind of [...(pl.map_id === '11' ? ['hand', 'endgame', 'stored'] : ['hand', 'endgame']), ...(playedMode() === 'tray' ? ['played'] : [])]) {          // (map 11, Caves: the cards stored under the notepad are a third zone; the played cards: the setting "Played cards" = tray)
+    const cnt = kind === 'played' ? pl.animals.length + pl.sponsors.length : (kind === 'hand' ? pl.hand : kind === 'stored' ? pl.stored || [] : pl.endgame_hand || []).length;
     const b = el('button', 'traydisc' + (shownSel.kind === kind ? ' on' : '')); b.type = 'button';
     const label = S.replay.players[seat].name + ': ' + KIND_NAME[kind] + ' (' + cnt + ')';
     b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(shownSel.kind === kind));
-    const img = el('img'); img.src = iconUrl(KIND_ICON[kind]); img.alt = '';
+    const img = el('img', kind === 'played' ? 'tiles' : ''); img.src = iconUrl(KIND_ICON[kind]); img.alt = '';        // (the played-cards icon is built from the two tiles of the sheet, `scripts/build_played_icon.py`)
     b.append(img, el('span', 'traycount', cnt));
     b.onclick = () => { S.dockSel = { seat, kind }; S.dockHidden = false; saveDock(); renderDock(curState()); };
     kids.push(b);
   }
   btns.replaceChildren(...kids);
-  if (!settingsOpen() && (hintPending || (!hintSeen() && !hintStart))) startHint();
-  const age = Date.now() - hintStart;
-  if (hintStart && age < HINT_MS) {                                  // (the label goes on where it was after a re-draw)
-    const hint = el('div', 'trayhint', 'Click the tray to fold or unfold it'); hint.style.animationDelay = -age + 'ms';
-    wrap.append(hint);
-  }
+  wrap.style.setProperty('--nb', String(kids.length));                  // (the number of round buttons: the tray is never narrower than they are, see `.trayframe` min-width)
+  let fold = wrap.querySelector('.trayfold');                           // the round button at the top right folds / unfolds the tray (the H key does the same)
+  if (!fold) { fold = el('button', 'trayfold'); fold.type = 'button'; fold.onclick = toggleDock; wrap.append(fold); }
+  fold.title = folded ? 'Show the cards' : 'Hide the cards'; fold.setAttribute('aria-label', fold.title); fold.setAttribute('aria-expanded', String(!folded));
   if (wrap.parentNode !== dock) dock.replaceChildren(wrap);
   placeTray(wrap);
+}
+
+// The played cards in the tray (setting "Played cards" = Tray): one row, animals then sponsors, each card showing as much as the width allows; a hovered card rises. Each group starts with a slim vertical rail (icon, name, count: the
+// width of a rail is paid, never height, so the tray is as tall as the hand tray); the switch that picks the player sits on the top edge next to the fold button.
+const RAIL_W = 32, RAIL_GAP = 22;
+const onColour = (c) => {                                         // ink or white text, whichever reads better on the colour `c` (#rrggbb)
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c || ''); if (!m) return '#fff';
+  const l = [1, 2, 3].map((i) => { const v = parseInt(m[i], 16) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2] > 0.4 ? '#17262B' : '#fff';
+};
+function playedTrayBody(st, seat, width) {
+  const p = st.players[seat], box = el('div', 'pt'), deck = el('div', 'ptdeck');
+  const cw = 170 * S.handScale, inner = Math.max(300, width - 16);
+  const groups = [['animals', p.animals], ['sponsors', p.sponsors]].filter((g) => g[1].length);
+  const total = groups.reduce((a, g) => a + g[1].length, 0), slivers = total - groups.length;
+  const fixed = groups.length * RAIL_W + RAIL_GAP * (groups.length - 1) + cw * groups.length;
+  const step = slivers > 0 ? Math.max(24, Math.min(100, (inner - fixed) / slivers)) : 0;
+  const chips = playedChips(p, true);
+  let x = 0;
+  for (const [kind, keys] of groups) {
+    const chip = chips[kind === 'animals' ? 0 : 1], rail = el('div', 'prail');
+    rail.style.left = x + 'px';
+    const img = chip.querySelector('img').cloneNode(), name = el('span', '', chip.querySelector('span').textContent), n = el('b', '', chip.querySelector('b').textContent);
+    img.alt = ''; rail.append(img, name, n); deck.append(rail);
+    x += RAIL_W;
+    const row = cardRow(keys, 'small', 'none', seat + ':' + kind);
+    if (kind === 'sponsors') withCubes(row, p, seat);
+    [...row.children].filter((c) => c.classList.contains('card') && !c.classList.contains('card-gone')).forEach((c, i) => {
+      c.style.left = x + 'px'; deck.append(c); x += i < keys.length - 1 ? step : cw;
+    });
+    x += RAIL_GAP;
+  }
+  if (!groups.length) deck.append(el('div', 'empty', 'No cards played yet'));
+  const seg = el('div', 'ptseg');                                      // (on the top edge, left of the fold button)
+  seatOrder().forEach((s) => {                                         // (the same order as the boards: the player of the left map and the upper box is on the left)
+    const b = el('button', s === seat ? 'on' : ''); b.type = 'button'; b.textContent = S.replay.players[s].name; b.style.setProperty('--pc', seatColor(s)); b.style.setProperty('--pt', onColour(seatColor(s)));        // (the dot and the fill of a name are in the player's colour, the text on the fill light or dark)
+    b.onclick = () => { S.dockSel = { seat: s, kind: 'played' }; S.dockHidden = false; saveDock(); renderDock(curState()); };
+    seg.append(b);
+  });
+  box.append(seg, deck);
+  return box;
 }
 
 document.addEventListener('cardorder', () => quietly(() => renderDock(curState())));       // a card was dragged to a new place: draw the cards again in the new order

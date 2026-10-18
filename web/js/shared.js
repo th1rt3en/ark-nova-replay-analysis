@@ -1,13 +1,16 @@
 // [module] Shared area of the table: card folders, the display, the reputation track, upgrade / worker thresholds, the conservation track.
-import { $, el, seatRawColor, section, svg } from './util.js';
+import { $, el, seatRawColor, svg } from './util.js';
 import { FORK, S, SANDBOX } from './state.js';
 import { curState } from './pov.js';
 import { card, cardMarks, ghost, zoneNew } from './cards.js';
-import { ICON_IDS, iconUrl, moneyTile } from './icons.js';
+import { ICON_IDS, iconUrl, moneyTile, moneyDx } from './icons.js';
 import { associationBoard } from './association.js';
 import { blockedCube, markCube, markOwner, projectPanel } from './projects.js';
 import { actionBar, afterMark, cardPickAct, forkActs, forkSingleSelect, pickCardOf } from './action-bar.js';
+import { CT_BONUS_DX, CT_H, conservationTrackSvg, pentagonShape } from './ctrack.js';
+import { REP16_X, REP_W, reputationTrackSvg } from './reptrack.js';
 import { sbButton, sbEdit, sbMeta, sbPickProjects, sbSlotButtons } from './sandbox.js';
+
 
 // zoo place printed on the tab of each display folder (BGA: folder 1..6)
 const FOLDER_PLACES = ['San Diego, USA', 'Frankfurt, GER', 'Johannesburg, SA', 'São Paulo, BR', 'Okinawa, JP', 'Sydney, AUS'];
@@ -18,11 +21,11 @@ const repRange = (rep) => (rep <= 1 ? 1 : rep <= 3 ? 2 : rep <= 6 ? 3 : rep <= 9
 
 // The conservation track for the first 10 points, above the display (BGA's picture); a cube per player. It goes away when both players are past 10.
 // At 5 and 8 the two random bonuses of the game still on offer lie to the left and right of the arrows, like the upgrade / worker at 2.
-const CT_X = (n) => (88 + 182.4 * n) / 2000;                       // centre of the space n on the picture (2000 px wide version)
-const CT_BONUS_X = { 5: [905, 1095], 8: [1457, 1643] };            // where the two random bonus tiles lie under the arrows
+const CT_X = (n) => (88 + 182.4 * n) / 2000;                        // (as a fraction of the width)                       // centre of the space n on the picture (2000 px wide version)
+const CT_BONUS_X = { 5: [1000 - CT_BONUS_DX, 1000 + CT_BONUS_DX], 8: [88 + 182.4 * 8 - CT_BONUS_DX, 88 + 182.4 * 8 + CT_BONUS_DX] };            // where the two random bonus tiles lie under the arrows
 // a bonus tile of the conservation track: the bonus tokens (bonus-...) are whole tiles of the icon sheet; the others (university, partner zoo, money, X tokens...)
 // are drawn like the placement bonuses of the zoo map: the yellow pentagon with the icon, and the amount for money and X tokens
-export function bonusTile(name, value) {
+export function bonusTile(name, value, po) {
   if (name.startsWith('bonus-') && S.iconNames[name]) {
     const t = el('img', 'ctbonus');
     t.src = iconUrl(S.iconNames[name]); t.alt = name;
@@ -31,24 +34,24 @@ export function bonusTile(name, value) {
   const id = ICON_IDS['bonus:' + name];
   if (!id) return null;
   // drawn in the units of the placement bonuses of the zoo map (pentagon 80, icon 48, numbers in the same typography)
-  const t = svg('svg', { class: 'ctbonus ctcomposed', viewBox: '0 0 80 80' });
+  const t = svg('svg', { class: 'ctbonus ctcomposed', viewBox: '-4 -4 88 94' });
   const picture = (iconId, cx, cy, h) => {
     const [w0, h0] = S.iconSizes[iconId] || [h, h];
     t.append(svg('image', { href: iconUrl(iconId), x: cx - (w0 * h / h0) / 2, y: cy - h / 2, width: w0 * h / h0, height: h }));
   };
-  picture(ICON_IDS.pentagon, 40, 40, 80);
+  pentagonShape(t, 40, 40, 80, { edge: (po && po.edge) ?? 2.2, shadow: (po && po.shadow) ?? 2 });                     // (a vector pentagon with an ink edge and shadow, like the bonuses of the association strip)
   if (name === 'money') {
     moneyTile(t, 40, 43, 48);
-    if (value) t.append(Object.assign(svg('text', { x: 40, y: 56, class: 'bonus-number' }), { textContent: value }));      // on top of the money icon
+    if (value) t.append(Object.assign(svg('text', Object.assign({ x: 40, y: 56, class: 'bonus-number' + (String(value).length > 1 ? ' two' : '') }, String(value).length > 1 ? { dx: moneyDx(value) } : {})), { textContent: value }));      // on top of the money icon
   } else if (name === 'reputation' || name === 'appeal' || name === 'conservation') {
     picture(id, 40, 43, 48);
-    if (value) t.append(Object.assign(svg('text', { x: 40, y: 59, class: 'bonus-number' }), { textContent: value }));      // the amount over the icon, like the other reputation bonuses
+    if (value) t.append(Object.assign(svg('text', { x: 40, y: 59, class: 'bonus-number' + (name === 'appeal' || name === 'conservation' ? ' dk ' + name : '') }), { textContent: value }));      // the amount over the icon, like the other reputation bonuses
   } else if (name === 'take-in-range-or-deck' && value > 1) {
     picture(id, 52, 43, 48);
     t.append(Object.assign(svg('text', { x: 16, y: 55, class: 'bonus-number', style: 'font-size:38px' }), { textContent: value }));   // the amount to the left of the icon
   } else if (name === 'xtoken' && value > 1) {
-    picture(id, 50, 43, 48);
-    t.append(Object.assign(svg('text', { x: 23, y: 55, class: 'bonus-number', style: 'font-size:38px' }), { textContent: value }));   // the amount to the left of the icon
+    picture(id, 40, 43, 48);
+    t.append(Object.assign(svg('text', { x: 40, y: 55, class: 'bonus-number xnum' }), { textContent: value }));   // the amount lies on the X (white, black outline), like the X tokens of the player box
   } else {
     picture(id, 40, 43, 48);
   }
@@ -56,9 +59,8 @@ export function bonusTile(name, value) {
 }
 function conservationTrack(st) {
   const wrap = el('div', 'ctrackwrap');                                // (always drawn, also when both players are past 10: then without cubes)
-  const img = el('img', 'ctrack');
-  img.src = '/assets/conservation_track.webp'; img.alt = 'Conservation track';
-  wrap.append(img);
+  wrap.append(conservationTrackSvg());
+  wrap.style.setProperty('--ct-h', CT_H); 
   const first = SANDBOX ? sbMeta().initial : S.replay.steps[0].state.conservation_options || {};     // the options of the game as dealt: a taken one leaves its place empty
   for (const th of ['5', '8']) {
     const left = (st.conservation_options || {})[th] || [];
@@ -84,11 +86,14 @@ function conservationTrack(st) {
     const cube = blockedCube(0, seatRawColor(seat), S.replay.players[seat].name + ': conservation ' + p.conservation, undefined, 'cylinders');
     cube.setAttribute('class', 'trackcube');
     cube.style.left = ((CT_X(p.conservation) + (same.length > 1 ? (seat - 0.5) * 0.03 : 0)) * 100) + '%';
-    cube.style.top = '26%';
+    cube.style.top = (57 / CT_H * 100) + '%';
     wrap.append(cube);
   });
   return wrap;
 }
+
+// the pentagons under the reputation track: thinner edge and shadow than the big ones of the zoo map
+const repPent = () => (window.REP_V && window.REP_V.pent) || { edge: 1.4, shadow: 1.2 };
 
 export function renderShared(st) {
   actionBar(st);
@@ -122,13 +127,13 @@ export function renderShared(st) {
   box.append(row);
   // the reputation track under the folders: its 6 equal stretches (hat | 2-3 | 4-6 | 7-9 | 10-12 | 13-15) lie under folders 1-6, i.e. the cards a player can reach
   // at 1 | 2-3 | 4-6 | 7-9 | 10-12 | 13-15 reputation (engine cards_action.reputation_range)
-  const track = el('img', 'reptrack');
-  track.src = '/assets/reputation_track.webp'; track.alt = 'Reputation track'; track.title = 'Reputation track: the cards under each stretch can be taken at that reputation';
+  const track = reputationTrackSvg();
+  track.setAttribute('title', 'Reputation track: the cards under each stretch can be taken at that reputation');
   const repWrap = el('div', 'reptrackwrap');
   repWrap.append(track);
   // a cube per player on the stretch of the track they can draw from (the cell with their reputation lies under the last folder in reach)
   const repX = [163, 163, 406, 568, 703, 811, 919, 1027, 1135, 1242, 1351, 1459, 1567, 1675, 1783, 1891];       // centres of the cells 1..15 (+ the first one again) on the 2000 px wide picture
-  const repCubes = st.players.map((p, seat) => ({ seat, x: repX[Math.max(0, Math.min(15, p.reputation))] / 2000, rep: p.reputation }));
+  const repCubes = st.players.map((p, seat) => ({ seat, x: repX[Math.max(0, Math.min(15, p.reputation))] / REP_W, rep: p.reputation }));
   repCubes.forEach((c, i) => {
     const same = repCubes.filter((o) => o.x === c.x);
     const cube = blockedCube(0, seatRawColor(c.seat), S.replay.players[c.seat].name + ': reputation ' + c.rep + ', draws from the first ' + repRange(c.rep) + ' cards of the display', undefined, 'cylinders');
@@ -143,10 +148,10 @@ export function renderShared(st) {
                         11: ['conservation', 1, '1 conservation'], 12: ['xtoken', 1, '1 X token'], 13: ['take-in-range-or-deck', 1, 'take a card from the deck or the reputation range'],
                         14: ['conservation', 1, '1 conservation'], 15: ['xtoken', 1, '1 X token'] };
   for (const [rep, [name, value, text]] of Object.entries(REP_REWARDS)) {
-    const t = bonusTile(name, value);
+    const t = bonusTile(name, value, repPent());
     if (!t) continue;
     t.classList.add('repreward');
-    t.style.left = (repX[+rep] / 2000 * 100) + '%';
+    t.style.left = (repX[+rep] / REP_W * 100) + '%';
     t.setAttribute('title', 'Reputation ' + rep + ': ' + text);
     repWrap.append(t);
   }
@@ -155,14 +160,14 @@ export function renderShared(st) {
   if (SANDBOX && !S.replay.setup && S.replay.marine_worlds && sbMeta().unset.b99 && sbMeta().unset.b99[0]) {
     const b = sbSlotButtons('99', 0);
     b.classList.add('rep16');
-    b.style.left = '98.6%';
+    b.style.left = (REP16_X / REP_W * 100) + '%';
     repWrap.append(b);
   } else if (bonus16) {
     const [name] = Object.keys(bonus16);
-    const t = bonusTile(name, bonus16[name]);
+    const t = bonusTile(name, bonus16[name], repPent());
     if (t) {
       t.classList.add('rep16');
-      t.style.left = '98.6%';
+      t.style.left = (REP16_X / REP_W * 100) + '%';
       t.setAttribute('title', 'Reputation 16: ' + name.replace(/^bonus-/, '').replace(/-/g, ' ') + (bonus16[name] > 1 ? ' (' + bonus16[name] + ')' : '') + ' - a reputation point gained at 15 may be traded for it');
       repWrap.append(t);
     }
@@ -173,7 +178,7 @@ export function renderShared(st) {
   icon.src = iconUrl('r3c10'); icon.alt = 'Action card upgrade requirements';
   disc.append(icon, el('span', 'repupbox', 'II'));
   req.append(disc);
-  req.style.left = ((repX[9] + repX[10]) / 2 / 2000 * 100) + '%';
+  req.style.left = ((repX[9] + repX[10]) / 2 / REP_W * 100) + '%';
   repWrap.append(req);
   box.append(repWrap);
   const dispcol = el('div', 'sect displaycol');                      // (no heading: the display is easy to recognise)

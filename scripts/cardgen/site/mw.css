@@ -25,3 +25,12 @@
 .mw-plan .zoo-card-bonuses.mw-place{position:absolute!important;right:12px!important;bottom:6px!important;top:auto!important;left:auto!important;width:54px!important;height:76px!important;float:none!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#b9b9b4;border-radius:8px 8px 0 0;box-shadow:inset 0 0 4px #777;shape-outside:none}
 .mw-plan .mw-place-in{transform:scale(1.15);display:flex;align-items:center;justify-content:center}
 .ark-card.zoo-card.project-card.mw-plan .ark-card-wrapper .ark-card-middle .ark-card-title-wrapper .ark-card-title{font-size:17px;line-height:1}
+
+/* S274_VC: the Mascot Statue shown as the Victory Column with the picture of the Emu Cup winner (scripts/build_victory_column_art.py makes art/S274_VC.jpg; entry.tsx gives this card the data-id S274_EmuCup) */
+.zoo-card.sponsor-card[data-id="S274_EmuCup"] .ark-card-wrapper{background-image:url(/art/S274_VC.jpg);background-size:100% 100%}
+/* the caption on the photo of S274_VC (harness/entry.tsx): across the bottom of the photo, which ends at 54.4 % of the card height */
+.zoo-card.sponsor-card[data-id="S274_EmuCup"] .ark-card-wrapper{position:relative}
+.emu-caption{position:absolute;left:0;right:0;top:49.6%;height:4.8%;z-index:3;display:flex;align-items:center;gap:6px;padding:0 9px;box-sizing:border-box;background:rgba(248,237,203,.93);color:#17262B;font:15px/1 MyriadPro-Cond,MyriadPro-Regular,sans-serif;white-space:nowrap;overflow:hidden}
+.emu-caption svg{height:17px;width:auto;flex:none}
+.emu-caption b{font-family:MyriadPro-Bold,sans-serif;color:#8a4a2a}
+.emu-caption i{font-style:normal;opacity:.65}

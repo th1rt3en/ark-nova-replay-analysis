@@ -12,8 +12,8 @@ from typing import Any
 
 from ark_nova import data
 from ark_nova.data import map_quirks
-from ark_nova.engine import association, sponsor_extras, tracks
-from ark_nova.engine.breaks import hand_limit, map_ability_income
+from ark_nova.engine import association, endgame, sponsor_extras, tracks
+from ark_nova.engine.breaks import hand_limit, kiosk_income, map_ability_income, map_income, sponsor_income
 from ark_nova.engine.board import footprint_cells
 from ark_nova.engine.build_action import knows_shape, shape_of
 from ark_nova.engine.state import GameState
@@ -32,7 +32,7 @@ LARGE_DIR = WEB_DIR / "cards_large"      # full size cards (745 x 1040) for the 
 CARD_DIR = WEB_DIR / "cards"    # card images (360 x 503) made by scripts/build_cards.py
 TIMED_BY_LOG = ("break_position", "round", "display", "main_deck_size", "main_deck", "main_discard_size", "main_discard", "endgame_deck", "endgame_deck_size", "current_action", "active_player", "turn")      # shown as the log has them at each step (the refill comes later than the engine's); likewise the order of the action cards
 GAIN_FIELDS = ("reputation", "appeal", "conservation")
-LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "hand_limit")      # per player, same reason
+LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "income_total", "income_parts", "hand_limit")      # per player, same reason
 PICTURE_OF = {"6a": "6"}              # map 6a has the same board as map 6; its own picture has the placement bonuses baked in (bugged)
 STATE_DROP = ("endgame_discard", "seed", "config", "rng", "base_projects_unused", "version", "checkpoint")
 
@@ -237,16 +237,34 @@ def building_cells(state_building: dict) -> list[list[int]]:
     return [list(c) for c in footprint_cells(shape_of(t), (state_building["x"], state_building["y"]), state_building["rotation"])]
 
 
+def income_parts(state: GameState, ps) -> dict:
+    """The money of the next break by source (view only): appeal track, kiosks, the map's printed ability, sponsors, income bonuses of the map already activated."""
+    parts = {"appeal": tracks.income_from_appeal(ps.appeal)}
+    try:
+        parts["kiosks"] = kiosk_income(ps)
+        parts["map"] = map_ability_income(state, ps)
+        parts["sponsors"] = sponsor_income(state, ps)["money"]
+        parts["map_bonuses"] = sum(b["value"] for b in map_income(state, ps) if b.get("type") == "money")
+    except Exception:                                      # a position the helpers cannot read: show the appeal income alone
+        parts = {"appeal": parts["appeal"]}
+    return {k: v for k, v in parts.items() if v or k == "appeal"}
+
+
 def state_view(state: GameState) -> dict:
     s = state.to_dict()
     s["main_deck_size"], s["endgame_deck_size"] = len(s["main_deck"]), len(s["endgame_deck"])
     s["main_discard_size"] = len(s["main_discard"])
     for k in STATE_DROP:
         s.pop(k, None)
-    for p, ps in zip(s["players"], state.players):
+    live = endgame.live_scoring(state)                          # what the final scoring would add now (the viewers' "Endgame live count")
+    for p, ps, lv in zip(s["players"], state.players, live):
+        p["endgame_live"] = {"appeal": lv["appeal"], "conservation": lv["conservation"]} if lv else None      # (public: sponsors in the zoo)
+        p["endgame_cards"] = lv["cards"] if lv else None        # (private: the endgame cards of the seat; the live projection takes it out for the other viewers)
         p["score"] = tracks.score(ps.appeal, ps.conservation)
         p["hand_limit"] = hand_limit(ps)
         p["income"] = tracks.income_from_appeal(ps.appeal) + (map_ability_income(state, ps) if ps.map_id in ("5", "5a") else 0)       # the money at a break: the appeal track, and Park Restaurant's 1 per covered space next to the restaurant
+        p["income_parts"] = income_parts(state, ps)
+        p["income_total"] = sum(p["income_parts"].values())
         for b in p["buildings"]:
             b["cells"] = building_cells(b)
     return s
@@ -292,6 +310,7 @@ def map_view(map_id: str) -> dict:
     geo = m["geometry"] or {}
     base = map_quirks.base_map_id(map_id)
     return {"id": base, "name": m["name"], "image": f"/maps/map-{PICTURE_OF.get(base, base)}.jpg",
+            "description": [t.strip() for t in (m.get("description") or []) if t and t.strip()],
             "hexes": geo.get("hexes", []), "placement_bonuses": geo.get("placement_bonuses", []),
             "special_hexes": geo.get("special_hexes", []), "bonus_slots": geo.get("bonus_slots", []),
             "association_bonuses": association.map_bonuses(base)}

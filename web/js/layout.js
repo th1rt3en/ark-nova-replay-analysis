@@ -44,6 +44,7 @@ export function fitDisplay() {
       const gap = parseFloat(getComputedStyle(shared).columnGap) || 0, W = shared.clientWidth - gap;
       const wa = Math.max(300, Math.min(W * 0.6, (rd * (W - colX) + colY - c) / (rd + rb)));
       shared.style.setProperty('--assocw', wa + 'px');
+      const zs = document.getElementById('zoos'); if (zs) zs.style.setProperty('--assocw', wa + 'px');       // (the tabbed layout puts the played cards under the association element: the same column width)
       width = W - wa - colX;
     }
   }
