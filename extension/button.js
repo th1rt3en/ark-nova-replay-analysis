@@ -67,6 +67,7 @@
   async function refresh() {
     const page = pageOf(), id = pageKey(page);
     if (id !== lastPage) { lastPage = id; dismissed = null; found = null; }
+    if (page && page.kind === 'frame') { try { window.frameElement.setAttribute('data-ark-nova', '1'); } catch (e) { /* not reachable: the top page then draws the panel */ } }
     if (id !== checked) {                                 // another page (or none): look at the storage again
       checked = id;
       const mine = ++loadSeq;
@@ -123,7 +124,9 @@
   // what the panel shows for the page: null (nothing), the button ('open') or the prompt to pick a point of view ('pick')
   function view() {
     const page = pageOf();
-    if (!page || page.kind === 'frame' || !pair || pair.table !== page.table || dismissed === pageKey(page)) return null;
+    if (!page || !pair || pair.table !== page.table || dismissed === pageKey(page)) return null;
+    // BGA's replay page holds the game in an iframe that covers the page: the panel is drawn there; the top page draws it only when the script is not running in the frame
+    if (page.kind === 'replay' && document.querySelector('iframe[data-ark-nova]')) return null;
     if (page.kind === 'review') {
       if (pair.complete) return { mode: 'open' };
       return pair.projects ? { mode: 'open', projects: pair.projects, names: pair.names } : { mode: 'pick' };
