@@ -1837,3 +1837,6 @@ Scope: `web/js/frames.js`. (1) The lines of a merged setup step are grouped by t
 
 ## 101. Reveals hidden from the other player; Expedition and Scuba Dive 3 buttons
 Scope: `src/ark_nova/replay/view.py` (`_reveal`, `_reveal_hidden`: the Hunter / Scuba Dive / Scavenging / Perception draws and keeps of the other player read "X draws N cards for the Y effect", "X keeps Z for the hunter / scuba dive effect", "X keeps N card(s) for the scavenging / perception effect"), `src/ark_nova/replay/options.py` (`_expedition_buttons`: Marine Research Expedition is two buttons, Expedition (greyed out without a person sponsor) and Scuba Dive 3), `web/js/action-bar.js` (`effectOption`, a disabled button, the fork sends the chosen option). The expedition buttons are unit-tested only; no sample game reaches that prompt in the replay.
+
+## 102. Production start page: coming-soon options
+Scope: `web/js/landing.js` (`off`: the options listed in `window.ARK_COMING_SOON`, and the live game until its word), `scripts/deploy_pages.py` (the production copy sets the list for the start page; the start page is a drawn map now, so the HTML is no longer rewritten).

@@ -7,6 +7,7 @@ needs the Pages project (`wrangler pages project create ark-nova --production-br
 service URL (the same value as in cloudflare/wrangler.jsonc).
 """
 import argparse
+import json
 import os
 import shutil
 import subprocess
@@ -42,38 +43,19 @@ COMING_SOON = {                                             # standalone page ->
     "map_editor.html": ("Map editor", "The map editor is coming soon."),
     "planning.html": ("Planning", "This page is coming soon."),
 }
-START_SECTIONS = {                                          # the cards of the start page (section id -> (title, text))
-    "m-sandbox": ("Sandbox mode", "Pick the maps, set up the board and edit the game at any time against a bot that only passes."),
-    "m-editor": ("Map editor", "Design a zoo map on a blank board and copy or download it as JSON."),
-    "m-minigames": ("Mini games", "Short daily puzzles played on real finished games: guess what a player kept, or who is ahead."),
-}
-
-
-def _soon_section(anchor: str, title: str, text: str) -> str:
-    lines = [
-        '<section class="mode unavailable" aria-labelledby="' + anchor + '" aria-disabled="true">',
-        '    <h2 id="' + anchor + '">' + title + ' <span class="badge">Coming soon</span></h2>',
-        '    <p class="muted">' + text + '</p>',
-        '    <button type="button" disabled>Not available yet</button>',
-        '  </section>',
-    ]
-    return chr(10).join(lines)
+START_COMING_SOON = ["custom", "sandbox", "mini", "editor"]      # the options of the start page (landing.js) that are coming soon on the production site
+LANDING_SCRIPT = '<script type="module" src="/js/landing.js"></script>'
 
 
 def coming_soon(site: Path) -> None:
-    """The production copy: the pages of the features that are switched off say so, the start page shows their cards as coming soon."""
-    import re
+    """The production copy: the pages of the features that are switched off say so; the start page marks its options as coming soon (window.ARK_COMING_SOON, read by landing.js)."""
     template = (ROOT / "pages" / "coming-soon.html").read_text(encoding="utf-8")
     for name, (title, text) in COMING_SOON.items():
         (site / name).write_text(template.replace("{{TITLE}}", title).replace("{{TEXT}}", text), encoding="utf-8")
     index = site / "index.html"
     html = index.read_text(encoding="utf-8")
-    for anchor, (title, text) in START_SECTIONS.items():
-        extra = '<p class="small muted"><a href="/terms.html">Terms and privacy</a></p>' if anchor == 'm-minigames' else ''
-        html, n = re.subn(r'<section class="mode" aria-labelledby="' + anchor + r'">.*?</section>', lambda m: _soon_section(anchor, title, text) + extra, html, count=1, flags=re.S)
-        assert n == 1, f"start page: section {anchor} not found"
-    assert html.count("LIVE_WORD = 'ilovejdansp';") == 1, "start page: the live unlock word not found"
-    html = html.replace("LIVE_WORD = 'ilovejdansp';", "LIVE_WORD = null;")                             # nothing unlocks the live games on the production site
+    assert html.count(LANDING_SCRIPT) == 1, "start page: the landing script not found"
+    html = html.replace(LANDING_SCRIPT, '<script>window.ARK_COMING_SOON = ' + json.dumps(START_COMING_SOON) + ';</script>' + chr(10) + LANDING_SCRIPT)
     index.write_text(html, encoding="utf-8")
 
 

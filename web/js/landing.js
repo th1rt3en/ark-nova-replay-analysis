@@ -1205,6 +1205,8 @@ rose.addEventListener('click', () => {
 // The live game (Custom game) is switched off for now. Whoever knows the word can open it for this browser: type it where a table id goes and click Open.
 const LIVE_KEY = 'liveUnlocked', LIVE_WORD = 'ilovejdansp';
 let liveOpen = false;
+// the options that are coming soon (the production site sets the list before this script: window.ARK_COMING_SOON); the live game stays shut until its word is typed
+const off = (id) => (window.ARK_COMING_SOON || []).includes(id) || (id === 'custom' && !liveOpen);
 try { liveOpen = localStorage.getItem(LIVE_KEY) === '1'; } catch (e) { /* no storage */ }
 
 /* ================= the ticket of the hovered / chosen option ================= */
@@ -1214,7 +1216,7 @@ function setOn(id, on) { if (id) document.querySelectorAll(`[data-opt="${id}"]`)
 function showTicket(o) {
   ticket.style.setProperty('--c', o.c);
   ticket.style.left = o.card[0] + 'px'; ticket.style.top = o.card[1] + 'px';
-  const locked = o.id === 'custom' && !liveOpen;
+  const locked = off(o.id);
   let bottom;
   if (o.id === 'replay') bottom = `<form id="tkf" class="tk-form"><input id="tki" type="text" placeholder="BGA table id or url" aria-label="BGA table id or url" autocomplete="off" required><button class="btn" id="tkgo" type="submit">${o.cta}</button></form><p class="tk-msg" id="tkmsg" role="status" hidden></p>`;
   else if (locked) bottom = `<button class="btn" type="button" disabled>Coming soon</button><span class="tk-note">Not open yet</span>`;
@@ -1274,7 +1276,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !documen
 /* ================= narrow screens: the options as a list under the map ================= */
 document.getElementById('plist').innerHTML = `<div class="brand"><img src="/brand/logo.svg" alt=""><div><h1>Ark Nova Park</h1><p>Maintained by the United Emu Friends Association</p></div></div>`
   + `<form class="tk-form" id="pform"><input id="pq" type="text" placeholder="BGA table id or url" aria-label="BGA table id or url" autocomplete="off" required><button class="btn" type="submit" style="--c:${O.replay.c}">Open replay</button></form>`
-  + OPTS.filter((o) => o.id !== 'replay').map((o) => `<a class="row" href="${o.id === 'custom' && !liveOpen ? '#' : o.href}" style="--c:${o.c}">${badge(o)}<span><b>${o.name}</b><small>${o.id === 'custom' && !liveOpen ? 'Coming soon' : o.short}</small></span></a>`).join('')
+  + OPTS.filter((o) => o.id !== 'replay').map((o) => `<a class="row" href="${off(o.id) ? '#' : o.href}" style="--c:${o.c}">${badge(o)}<span><b>${o.name}</b><small>${off(o.id) ? 'Coming soon' : o.short}</small></span></a>`).join('')
   + '<p class="plinks"><a href="/terms.html">Terms and privacy</a></p>';
 document.getElementById('pform').addEventListener('submit', async (e) => {
   e.preventDefault();
