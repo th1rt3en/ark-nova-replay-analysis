@@ -69,6 +69,8 @@ export const S = {
   scaled: false,
   // ---- autoplay: one step a second at 1x ------------------------------------------------------------------------
   sbTab: 'control',   // sidebar tab: 'control' | 'log'
+  results: false,     // replay: the results of the finished game are on show instead of the boards (› on the last step, the switch in the move bar; results.js)
+  postStats: null,    // replay: the statistics counted from the raw log once the last step is reached (results.js `loadStats`): {loading} | {error} | {players, first, ender, conceded}
   timer: null,
   speed: 1,
   handScale: 1,                                          // size of the cards in the hand, 0.5 ... 2 (settings pop-up, settings.js; --hs on body)

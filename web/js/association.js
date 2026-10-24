@@ -257,7 +257,7 @@ export function associationStrip(p, map, seat) {
     svg('path', { d: 'M24 ' + (by + 8) + 'H66V' + (by + 25) + 'a6 6 0 0 1-6 6H30a6 6 0 0 1-6-6Z', fill: '#9B1B83' }),
     svg('circle', { cx: 45, cy: by - 14, r: 8.4, fill: '#2B2427' }),
     svg('path', { d: 'M29 ' + (by + 8) + 'C29 ' + (by - 2) + ' 36 ' + (by - 3) + ' 41 ' + (by - 5) + 'H49C54 ' + (by - 3) + ' 61 ' + (by - 2) + ' 61 ' + (by + 8) + 'Z', fill: '#2B2427' }));
-  const ii = svg('text', { x: 45, y: by + 24, 'text-anchor': 'middle', style: "font:400 19px 'Bowlby One',system-ui,sans-serif;fill:#F8EDCB" }); ii.textContent = 'II';
+  const ii = svg('text', { x: 45, y: by + 24, 'text-anchor': 'middle', style: "font:400 19px 'Park Num',system-ui,sans-serif;fill:#F8EDCB" }); ii.textContent = 'II';
   bg.append(ii);
   s.append(bg);
   // the bonuses of the slots (worker, conservation points) sit on a yellow pentagon, the same shape as the placement bonuses of the zoo map

@@ -1,6 +1,6 @@
-// [module] The numbers drawn in svg (bonus tiles, placement bonuses, association slots) are Bowlby One, lightly thinned like the player names: the white number with a dark outline gets
-// a second copy below it that carries the outline (`.num-under`), the copy on top (`.num-top`) is eroded by a thin stroke in the outline's colour. Numbers on the appeal and conservation
-// icons (`.dk`) are black without an outline and use a thin stroke in the icon's colour instead (no copy). The CSS is at the end of parkposter.css.
+// [module] The numbers drawn in svg (bonus tiles, placement bonuses, association slots) are Archivo (`Park Num`, parkposter.css). The white number with a dark outline gets a second copy below it that carries
+// the outline (`.num-under`); the copy on top (`.num-top`) is the plain white number. (While the font was Bowlby One, a thin stroke in the outline's colour thinned the copy on top; it is gone.) Numbers on the
+// appeal and conservation icons (`.dk`) are black without an outline (no copy). The CSS is at the end of parkposter.css.
 const SEL = 'text.bonus-number:not(.dk):not(.num-top):not(.num-under), text.slot-number:not(.dk):not(.num-top):not(.num-under)';
 
 function thin(root) {

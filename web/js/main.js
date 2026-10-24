@@ -22,6 +22,7 @@ import { initPlay } from './play.js';
 import './thin-numbers.js';
 import './bpreview.js';
 import { frameKind, frameState, frameText } from './frames.js';
+import { resultsAvailable, syncResults } from './results.js';
 
 
 // The players' boards by the layout setting (settings.js): side by side, one at a time with arrows (the seats go round in the order of the tracker), or one above the other
@@ -104,10 +105,12 @@ export function render() {
   }
   if (!same) { S.prevZones = S.curZones; S.curZones = {}; S.prevZoneData = S.curZoneData; S.curZoneData = {}; }
   $('jump').value = S.step;
-  for (const id of ['first', 'prev']) $(id).disabled = atStart();
+  syncResults();                                                          // (the last step of a finished replay: the switch Final board | Results, results.js)
+  for (const id of ['first', 'prev']) $(id).disabled = atStart() && !S.results;
   const fb = $('fork');
-  if (fb) fb.disabled = !s.fork;
-  for (const id of ['next', 'last']) $(id).disabled = atEnd();
+  if (fb) fb.disabled = !s.fork || S.results;
+  $('next').disabled = atEnd() && (S.results || !resultsAvailable());          // (› on the last step opens the results)
+  $('last').disabled = atEnd() && !S.results;                                  // (⏭ goes to the final board, also from the results)
   const list = $('moves');
   list.querySelector('.on')?.classList.remove('on');
   const li = list.children[S.step];
@@ -144,6 +147,7 @@ function init() {
     if ((e.key === 's' || e.key === 'S') && !shortcutsOpen() && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
     if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
     const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
+    if (S.results && !FORK && !PLAY && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) keys[e.key] = () => { S.gsGraph = e.key === 'ArrowDown'; syncResults(); };       // (on the game stats: ↑ Table, ↓ Graph)
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   });

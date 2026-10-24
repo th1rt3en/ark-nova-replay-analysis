@@ -142,7 +142,7 @@ def test_verify_rejects_other_games_and_unfinished():
 
 def test_pages_served():
     c = client()
-    assert "Ark Nova Replay" in c.get("/").text
+    assert "Ark Nova Park" in c.get("/").text
     for page in ("submit.html", "guide.html", "replay.html", "style.css", "js/logstore.js"):
         assert c.get("/" + page).status_code == 200
 

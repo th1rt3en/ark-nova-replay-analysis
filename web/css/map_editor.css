@@ -34,9 +34,9 @@ body.mapeditor { padding-bottom: 2rem; }
 @media (max-width: 900px) { .melayout { grid-template-columns: minmax(0, 1fr); } .mepalette { position: static; max-height: none; } }
 .metool .bonus-label { font: 700 34px system-ui, sans-serif; fill: #222; text-anchor: middle; pointer-events: none; }
 .metool .bonus-number { font: 800 44px system-ui, sans-serif; fill: #fff; stroke: #222; stroke-width: 8px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
-.metool .flag-wedge { fill: #e2574c; opacity: .95; }
-.metool .flag-badge { fill: #a63aa6; stroke: #fff; stroke-width: 4; }
-.metool .flag-label { font: 900 21px Georgia, 'Times New Roman', serif; fill: #fff; text-anchor: middle; }
+.metool .flag-wedge { fill: #dd5749; }
+.metool .flag-badge-img { clip-path: circle(48.5% at 50% 50%); }
+.metool .flag-ring { fill: none; stroke: #fff; stroke-width: 2.5; }
 .metool .money-border { fill: none; stroke: #fff; stroke-width: 3.5; }
 
 .mecanvas { max-width: 1500px; }

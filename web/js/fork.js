@@ -15,7 +15,7 @@ import { buildMoveList, go } from './playback.js';
 
 
 export function initFork() {
-  document.title = 'Fork - Ark Nova Replay';
+  document.title = 'Fork - Ark Nova Park';
   const box = $('forkinfo');
   box.hidden = false;
   box.replaceChildren();

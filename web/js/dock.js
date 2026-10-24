@@ -113,7 +113,7 @@ export function renderDock(st) {
     group.style.setProperty('--pc', seatColor(seat));
     const pair = el('div', 'dockpair');
     for (const kind of kinds) {
-      const row = kind === 'played' ? el('div', 'cards') : cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? 'empty' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, !MINIGAME);                  // (a mini game: no highlighting, no dragging; the page's own hook makes the cards the thing to click)
+      const row = kind === 'played' ? el('div', 'cards') : cardRow(cards[kind], kind === 'hand' ? '' : 'small', kind === 'hand' ? '' : 'none', seat + ':' + kind, kind === 'hand' ? handDim(seat) : null, !MINIGAME);                  // (a mini game: no highlighting, no dragging; the page's own hook makes the cards the thing to click)
       rows[seat + ':' + kind] = row;                                   // (built for both players every time, so the arrivals and departures of the cards are tracked)
       const on = !S.dockHidden && shownSel && shownSel.seat === seat && shownSel.kind === kind;
       const b = el('button', 'dockbtn' + (on ? ' on' : ''));

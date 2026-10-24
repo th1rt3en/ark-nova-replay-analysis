@@ -670,7 +670,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         "table_id": parsed.table_id,
         "marine_worlds": config.marine_worlds,
         "tracked_sponsors": sorted(_tracked_sponsors().values()),                      # (the sponsors whose gains `state.sponsor_stats` adds up)
-        "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid))} for i, pid in enumerate(config.player_ids)],
+        "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid)), "thinking_time": (getattr(record, "thinking_times", None) or {}).get(str(pid))} for i, pid in enumerate(config.player_ids)],
         "maps": [map_view(m) for m in config.maps],
         "base_projects": config.base_projects,
         "result": [{k: r.get(k) for k in ("id", "name", "score", "rank")} for r in parsed.result or []],

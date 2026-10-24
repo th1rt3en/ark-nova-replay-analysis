@@ -11,6 +11,7 @@
 2. `build.mjs` bundles `harness/entry.tsx` with esbuild; `render.mjs` turns the card list into `site/cards.html` (every card at 2x design size, 750 x 1044).
 3. `shoot.mjs` opens it in headless Chromium (Playwright) and screenshots each card. Ability texts that do not fit are shrunk (zoom 0.6 to 1) until they end above
    the bottom of the card (sponsors: above the income/endgame bars, 85 % of the height).
+3a. `node uniform.mjs` writes `site/uniform.css`: the same layout for every card kind (photo 50 % of the card, stripe 70 px small / 100 px large); see changelog section 14.
 3b. The same page is screenshotted a second time with `body.compact` (`site/compact.css` and BGA's own `data-card-desc="0"` mode from `arknova.css`: bigger names, taller title bar, no Latin name): animals show only the names of their abilities, sponsors and projects no text (like the small cards on BGA). These are the small images, the first screenshots the large ones.
 4. `build_cards.py` scales the screenshots with Pillow and writes the webp files. `S250_MW` (Marine Worlds Sea Turtle Tank) is then painted from `S250` by
    `scripts/build_mw_card_images.py` (the top of a sponsor is a photo of the printed card, so its icons cannot be changed in HTML).

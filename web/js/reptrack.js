@@ -22,7 +22,7 @@ export function reputationTrackSvg() {
   s.append(svg('rect', { x: 0, y: 0, width: W, height: H, rx: 4.5, fill: CREAM }));
   const top = 7.3, bot = 62.6, mid = (top + bot) / 2, tip = 10.2;
   const num = (x, txt, fill) => {
-    const family = o.numFont === 'barlow' ? "'Barlow Condensed',system-ui,sans-serif" : "'Bowlby One',system-ui,sans-serif";
+    const family = o.numFont === 'barlow' ? "'Park Label',system-ui,sans-serif" : "'Park Num',system-ui,sans-serif";
     const weight = o.numFont === 'barlow' ? 700 : 400;
     const y = mid + o.numSize * (o.numFont === 'barlow' ? 0.33 : 0.36) + o.numDy;
     if (o.numShadow) s.append(Object.assign(svg('text', { x, y: y + o.numShadow, 'text-anchor': 'middle', style: 'font:' + weight + ' ' + o.numSize + 'px ' + family, fill: o.numShadowColor || 'rgba(23,38,43,.28)' }), { textContent: txt }));
@@ -52,7 +52,7 @@ export function reputationTrackSvg() {
   const t = svg('g', { class: 'repticket' });
   t.append(svg('path', { d: 'M' + (tx - tw / 2) + ' ' + ty + 'h' + (tw / 2 - nr) + 'a' + nr + ' ' + nr + ' 0 0 0 ' + (nr * 2) + ' 0h' + (tw / 2 - nr) + 'v' + th + 'h' + (-(tw / 2 - nr)) + 'a' + nr + ' ' + nr + ' 0 0 0 ' + (-nr * 2) + ' 0h' + (-(tw / 2 - nr)) + 'Z', fill: '#EEAF9E', stroke: '#3A2A2A', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
   t.append(svg('path', { d: 'M' + (tx - tw / 2 + 3) + ' ' + (ty + 14) + 'h' + (tw - 6) + 'M' + (tx - tw / 2 + 3) + ' ' + (ty + 38) + 'h' + (tw - 6), stroke: '#E48A70', 'stroke-width': 2, fill: 'none' }));
-  t.append(Object.assign(svg('text', { x: tx, y: ty + 33.5, 'text-anchor': 'middle', style: "font:400 25px 'Bowlby One',system-ui,sans-serif", fill: '#0E0E0F' }), { textContent: '1' }));
+  t.append(Object.assign(svg('text', { x: tx, y: ty + 36.8, 'text-anchor': 'middle', style: "font:400 30px 'Park Num',system-ui,sans-serif", fill: '#0E0E0F' }), { textContent: '1' }));
   s.append(t);
   return s;
 }

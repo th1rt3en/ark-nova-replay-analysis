@@ -28,9 +28,9 @@
 
 /* S274_VC: the Mascot Statue shown as the Victory Column with the picture of the Emu Cup winner (scripts/build_victory_column_art.py makes art/S274_VC.jpg; entry.tsx gives this card the data-id S274_EmuCup) */
 .zoo-card.sponsor-card[data-id="S274_EmuCup"] .ark-card-wrapper{background-image:url(/art/S274_VC.jpg);background-size:100% 100%}
-/* the caption on the photo of S274_VC (harness/entry.tsx): across the bottom of the photo, which ends at 54.4 % of the card height */
+/* the caption on the photo of S274_VC (harness/entry.tsx): across the bottom of the photo, which now ends at 50 % of the card height (uniform layout, scripts/cardgen/layout.mjs) */
 .zoo-card.sponsor-card[data-id="S274_EmuCup"] .ark-card-wrapper{position:relative}
-.emu-caption{position:absolute;left:0;right:0;top:49.6%;height:4.8%;z-index:3;display:flex;align-items:center;gap:6px;padding:0 9px;box-sizing:border-box;background:rgba(248,237,203,.93);color:#17262B;font:15px/1 MyriadPro-Cond,MyriadPro-Regular,sans-serif;white-space:nowrap;overflow:hidden}
+.emu-caption{position:absolute;left:0;right:0;top:45.2%;height:4.8%;z-index:3;display:flex;align-items:center;gap:6px;padding:0 9px;box-sizing:border-box;background:rgba(248,237,203,.93);color:#17262B;font:15px/1 MyriadPro-Cond,MyriadPro-Regular,sans-serif;white-space:nowrap;overflow:hidden}
 .emu-caption svg{height:17px;width:auto;flex:none}
 .emu-caption b{font-family:MyriadPro-Bold,sans-serif;color:#8a4a2a}
 .emu-caption i{font-style:normal;opacity:.65}

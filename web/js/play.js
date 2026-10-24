@@ -258,7 +258,7 @@ function beep() {
   } catch (e) { /* the browser does not allow sound yet */ }
 }
 function stopTitleFlash() {
-  if (titleTimer) { clearInterval(titleTimer); titleTimer = null; document.title = 'Play ' + P.id + ' - Ark Nova'; }
+  if (titleTimer) { clearInterval(titleTimer); titleTimer = null; document.title = 'Play ' + P.id + ' - Ark Nova Park'; }
 }
 function turnAlert(text) {
   if (!alertsOn || P.seat === null) return;
@@ -266,7 +266,7 @@ function turnAlert(text) {
   if (document.hidden || !document.hasFocus()) {
     if (!titleTimer) {
       let on = false;
-      titleTimer = setInterval(() => { on = !on; document.title = on ? '\u{1F514} ' + text : 'Play ' + P.id + ' - Ark Nova'; }, 1000);
+      titleTimer = setInterval(() => { on = !on; document.title = on ? '\u{1F514} ' + text : 'Play ' + P.id + ' - Ark Nova Park'; }, 1000);
     }
     try { if (window.Notification && Notification.permission === 'granted') new Notification('Ark Nova', { body: text, tag: 'ark-nova-turn-' + P.id }); } catch (e) { /* not allowed */ }
   }
@@ -395,7 +395,7 @@ export function playHeadline() {                                             // 
   line.textContent = text;
 }
 export function initPlay() {
-  document.title = 'Play ' + P.id + ' - Ark Nova';
+  document.title = 'Play ' + P.id + ' - Ark Nova Park';
   const box = $('forkinfo');
   box.hidden = false;
   box.replaceChildren();

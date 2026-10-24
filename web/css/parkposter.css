@@ -1,20 +1,25 @@
 /* ==== Park Poster: the default look of the replay / fork / sandbox / live play pages ================================================================
    Loaded last (after replay.css and table.css), so it overrides their wood-and-parchment look. A poster: teal sky with slowly turning rays, cream paper panels with a thick ink
-   border and a hard shadow, orange and gold accents. Fonts: Bowlby One (headings, numbers), Barlow Condensed (texts), Barlow. Everything is in design px (1920 wide, zoomed by
+   border and a hard shadow, orange and gold accents. Fonts: Bricolage Grotesque (names, headings), Archivo (counters, labels), Barlow (text), Bowlby One (round / turn / break numbers only). Everything is in design px (1920 wide, zoomed by
    layout.js). The structure (what is where) is described in docs/frontend_architecture.md; the art of the boards (maps, tracks, cards, icons) is not touched.
    Colours are tokens on body.viewer, so that another theme can later replace this file by redefining them. */
 
+/* Type: Bowlby One only for the round / turn / break numbers of the move bar; Park Head (Bricolage Grotesque 800) for names and headings; Park Num (Archivo 800, 90 % wide) for every counter; Park Label (Archivo, 78 % wide, 500 / 600 / 700) for
+   small labels and buttons; Barlow for running text. The three Park faces are static instances of variable fonts. size-adjust makes their capitals as tall as Bowlby One's (Park Label: as Barlow Condensed's, which it replaced) and the
+   ascent / descent overrides put the baseline where Bowlby's (Park Label: Barlow Condensed's) sat in a line box, so sizes and vertical centring tuned for those fonts still hold (docs: changelog.md, Typography). */
 @font-face { font-family: 'Bowlby One'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/bowlby-one-latin-400-normal.woff2) format('woff2'); }
-@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/barlow-condensed-latin-500-normal.woff2) format('woff2'); }
-@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/barlow-condensed-latin-600-normal.woff2) format('woff2'); }
-@font-face { font-family: 'Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/barlow-condensed-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Park Head'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/bricolage-grotesque-800.woff2) format('woff2'); size-adjust: 112.453%; ascent-override: 80.589%; descent-override: 22.232%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Num'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/archivo-800-w90.woff2) format('woff2'); size-adjust: 108.191%; ascent-override: 83.764%; descent-override: 23.107%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Label'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/archivo-w78-500.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Label'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/archivo-w78-600.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Label'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/archivo-w78-700.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/barlow-latin-500-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/barlow-latin-600-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/barlow-latin-700-normal.woff2) format('woff2'); }
 
 body.viewer {
   --teal: #0E4B5A; --teal2: #146577; --sun: #EE6C2B; --gold: #F4B63F; --rust: #A8321E; --paper: #F8EDCB; --ink: #17262B;
-  --ocean: #1F67B0;
+  --ocean: #1F67B0; --sand: #E7D39A;
   --stone: #D9D6CE;                                      /* the bar under a zoo box while its drawer is open (assocbar.js): a light warm grey, a step darker than the paper */
   --mint: #6FD3A8; --act1: #229DD7; --act2: #A72070;   /* the unupgraded / upgraded action cards: player info box, action buttons in the move bar */
   --sidebar-w: 320px;
@@ -52,7 +57,7 @@ body.viewer .movepill .current { order: -1; flex: 1 1 auto; box-sizing: border-b
   font: inherit; color: var(--ink); }
 body.viewer .movepill .actionbar:not([hidden]) ~ .current { font: inherit; color: var(--ink); align-items: center; text-align: center; flex: 0 1 auto; max-width: 42%; margin-right: 16px; padding-right: 16px; border-right: 3px dashed rgba(23, 38, 43, .35); }
 body.viewer .movepill .current[hidden] { display: none; }
-body.viewer .movepill .engine-detail { font: 600 15px 'Barlow Condensed'; opacity: .7; }
+body.viewer .movepill .engine-detail { font: 600 15px 'Park Label'; opacity: .7; }
 body.viewer .movepill .enginemark { position: absolute; top: 50%; right: 12px; transform: translateY(-50%); z-index: 2; }
 /* the logo (top left of the move bar): the emu on its hill, a link to the start page; square like the pills are tall, with their hard shadow */
 body.viewer .brand { flex: none; align-self: flex-start; width: 60px; height: 60px; display: block; border-radius: 50%; box-sizing: border-box; border: 3px solid #6E9AA3; filter: drop-shadow(0 4px 0 var(--ink)); transition: transform .12s, filter .12s; }
@@ -64,12 +69,12 @@ body.viewer .hdrstats { flex: none; display: flex; align-items: center; gap: 12p
 body.viewer .pill { height: 60px; box-sizing: border-box; display: flex; align-items: center; background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); color: var(--ink); }
 body.viewer .pill.rnd { flex: none; gap: 0; padding: 0; }          /* Round | Turn: two equal 78 px halves and a dashed divider (the pill is 167 px wide); the word small above the number in each */
 body.viewer .pill.rnd .half { width: 78px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5px 0 0; }          /* (1.5px: with the 2px gap below the label the ink block sits in the middle, 8 / 7.5 px above and below) */
-body.viewer .pill.rnd .lab { font: 700 13px/1 'Barlow Condensed'; letter-spacing: .14em; text-indent: .14em; text-transform: uppercase; margin-top: 2px; }          /* (text-indent: the letter spacing after the last letter would push the word 0.9 px left of the middle) */
+body.viewer .pill.rnd .lab { font: 700 13px/1 'Park Label'; letter-spacing: .14em; text-indent: .14em; text-transform: uppercase; margin-top: 2px; }          /* (text-indent: the letter spacing after the last letter would push the word 0.9 px left of the middle) */
 body.viewer .pill.rnd .rn, body.viewer .pill.rnd .tn { font: 400 28px/1.05 'Bowlby One', system-ui, sans-serif; margin-top: 2px; }
 body.viewer .pill.rnd .rn { color: var(--rust); }
 body.viewer .pill.rnd .tn { color: var(--ocean); }
 body.viewer .pill.rnd .dv { flex: none; align-self: stretch; width: 0; border-left: 3px dashed rgba(23, 38, 43, .45); margin: 9px 0; }
-body.viewer .pill .lab { font: 700 19px 'Barlow Condensed'; }
+body.viewer .pill .lab { font: 700 19px 'Park Label'; }
 body.viewer .pill.brk { gap: 12px; padding: 0 20px 0 19.7px;          /* (the ink of the mug and of the last pip is 20 px from the rounded ends on both sides; the mug picture starts 0.3 px inside its box) */
   background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
 body.viewer .pill.brk .brkicon { height: 32px; width: auto; display: block; flex: none; position: relative; top: -2px; }          /* (BGA's own mug picture, 96 x 108 px, 32 px high: the body is as high as the dots; it sits 2 px lower than the exact middle (body bottom y 52, the dots end at 50), because the steam above makes the exact middle look too high) */
@@ -80,9 +85,9 @@ body.viewer .pips i { width: 20px; height: 20px; box-sizing: border-box; border-
 body.viewer .pips i.done { background: var(--gold); }
 body.viewer .pips i.cur { background: var(--paper); box-shadow: 0 0 0 3px var(--gold); transform: scale(1.15); }
 body.viewer .hdrstats .gamemenu { position: relative; font-size: 1rem; }
-body.viewer .gamemenubtn { height: 50px; padding: 0 16px; border: 4px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); font: 700 19px 'Barlow Condensed'; cursor: pointer; box-shadow: 0 4px 0 var(--ink); }
+body.viewer .gamemenubtn { height: 50px; padding: 0 16px; border: 4px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); font: 700 19px 'Park Label'; cursor: pointer; box-shadow: 0 4px 0 var(--ink); }
 body.viewer .hdrstats .gamemenulist { right: 0; top: calc(100% + 8px); background: var(--paper); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink); overflow: hidden; }
-body.viewer .gamemenuitem { color: var(--ink); font: 600 18px 'Barlow Condensed'; border-bottom: 2px dashed rgba(23, 38, 43, .25); }
+body.viewer .gamemenuitem { color: var(--ink); font: 600 18px 'Park Label'; border-bottom: 2px dashed rgba(23, 38, 43, .25); }
 body.viewer .gamemenuitem:hover:not(:disabled) { background: var(--gold); }
 body.viewer .hdrstats .flash-up, body.viewer .hdrstats .flash-down { animation: flash-up var(--flash-duration, .8s) ease-out; }
 
@@ -96,12 +101,12 @@ body.viewer .shared .projslot.projempty { background: none; box-shadow: inset 0 
 body.viewer .zoos { gap: 16px; padding-top: 40px; }
 body.viewer .zoo { position: relative; box-sizing: border-box; padding: 8px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
 body.viewer .zoo h2 { position: absolute; left: 22px; top: -38px; margin: 0; height: 38px; box-sizing: border-box; display: flex; align-items: center; gap: 9px; flex-wrap: nowrap; padding: 0 20px 4px 9px; background: var(--ink); color: var(--paper);
-  border: 0; border-radius: 14px 14px 0 0; white-space: nowrap; font: 400 17px 'Bowlby One', system-ui, sans-serif; }
+  border: 0; border-radius: 14px 14px 0 0; white-space: nowrap; font: 400 17px 'Park Head', system-ui, sans-serif; }
 body.viewer .zoo h2::before { content: none; }   /* (the colour dot is now the eye button, see .poveye below) */
-body.viewer .zoo h2 .map { font: 600 15px 'Barlow Condensed', system-ui, sans-serif; color: var(--paper); opacity: .8; }
+body.viewer .zoo h2 .map { font: 600 15px 'Park Label', system-ui, sans-serif; color: var(--paper); opacity: .8; }
 body.viewer .zoo .played { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 20px; margin-top: 10px; }
 body.viewer .zoo .played .sect { margin: 0; }
-body.viewer .zoo .played h3 { margin: 0 0 4px; padding: 0; border: 0; font: 700 15px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .zoo .played h3 { margin: 0 0 4px; padding: 0; border: 0; font: 700 15px/1 'Park Label', system-ui, sans-serif; color: var(--ink); }
 body.viewer .zoo .played { --cw: 160px; gap: 6px 36px; }
 body.viewer .zoo .played h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; font-size: 20px; }
 body.viewer .zoo .played h3 img.icon { height: 26px; width: auto; }
@@ -116,7 +121,7 @@ body.viewer .card { border-radius: 7px; border-color: var(--ink); }
 body.viewer aside.sidebar { top: 90px; right: 12px; width: var(--sidebar-w); height: calc(var(--vh, 1vh) * 100 - 102px); gap: 10px; }          /* below the top row: the head row spans the full width, the sidebar starts under it */
 /* Control | Log: a segmented switch at the top of the sidebar (a dark track with a gold outline, the active half gold) */
 body.viewer .sbtabs { flex: 0 0 auto; gap: 3px; height: 44px; box-sizing: border-box; margin-bottom: 0; padding: 3px; border: 3px solid rgba(244, 182, 63, .5); border-radius: 999px; background: rgba(4, 26, 33, .7); }
-body.viewer .sbtab { flex: 1 1 0; height: auto; box-sizing: border-box; padding: 0; border: 0; border-radius: 999px; background: transparent; color: #A9CBD1; font: 400 17px 'Bowlby One', system-ui, sans-serif; box-shadow: none; }
+body.viewer .sbtab { flex: 1 1 0; height: auto; box-sizing: border-box; padding: 0; border: 0; border-radius: 999px; background: transparent; color: #A9CBD1; font: 400 17px 'Park Head', system-ui, sans-serif; box-shadow: none; }
 body.viewer .sbtab:hover { color: var(--paper); }
 body.viewer .sbtab.on { background: var(--gold); color: var(--ink); }
 body.viewer .sbtab:focus-visible { outline: 3px solid var(--paper); outline-offset: 1px; }
@@ -155,19 +160,19 @@ body.viewer .sidebar .controls #play { width: 50px; height: 50px; margin: -3px 0
 body.viewer .sidebar .controls #play.on { background: var(--paper); }
 body.viewer .sidebar .controls button svg { width: 19px; height: 19px; fill: var(--ink); }
 body.viewer .sidebar .controls button svg.gearicon { width: 22px; height: 22px; }
-body.viewer .sidebar .controls .settingsbtn { order: 2; background: var(--paper); box-shadow: 0 3px 0 var(--ink); }
+body.viewer .sidebar .controls .settingsbtn { order: 2; background: var(--sand); box-shadow: 0 3px 0 var(--ink); }
 body.viewer .sidebar .controls .settingsbtn:hover:not(:disabled) { background: var(--gold); }
 body.viewer .sidebar .controls .jump { order: 1; flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; margin: 0; padding: 4px 12px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink);
-  font: 600 17px 'Barlow Condensed', system-ui, sans-serif; white-space: nowrap; }
-body.viewer .sidebar .controls .jump input { flex: 1 1 0; min-width: 0; width: 3rem; padding: 0; border: 0; background: transparent; color: var(--ink); font: 700 22px 'Barlow Condensed', system-ui, sans-serif; box-shadow: none; -moz-appearance: textfield; }
+  font: 600 17px 'Park Label', system-ui, sans-serif; white-space: nowrap; }
+body.viewer .sidebar .controls .jump input { flex: 1 1 0; min-width: 0; width: 3rem; padding: 0; border: 0; background: transparent; color: var(--ink); font: 700 22px 'Park Label', system-ui, sans-serif; box-shadow: none; -moz-appearance: textfield; }
 body.viewer .sidebar .controls .jump input:focus { outline: 0; }
 body.viewer .sidebar .controls .jump input::-webkit-inner-spin-button, body.viewer .sidebar .controls .jump input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 /* replay: Move | settings | ? | Fork, Move as wide as Fork (92 px), 8 px gaps fill the row exactly */
 body.viewer .sidebar .controls .jump { height: 40px; box-sizing: border-box; }
 body.viewer .sidebar .controls:has(.forkbtn) .jump { flex: none; width: 92px; justify-content: center; }
 body.viewer .sidebar .controls:has(.forkbtn) .jump input { flex: none; width: 3ch; text-align: left; }
-body.viewer .sidebar .controls .extrabtn { font: 400 21px 'Bowlby One', system-ui, sans-serif; padding-top: 2px; }
-body.viewer .sidebar .controls .forkbtn { order: 3; width: 92px; height: 40px; box-sizing: border-box; display: grid; place-items: center; border-radius: 999px; padding: 0; background: var(--teal); color: var(--paper); border: 3px solid var(--ink); box-shadow: none; font: 400 15px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .sidebar .controls .extrabtn { font: 400 21px 'Park Head', system-ui, sans-serif; padding-top: 2px; }
+body.viewer .sidebar .controls .forkbtn { order: 3; width: 92px; height: 40px; box-sizing: border-box; display: grid; place-items: center; border-radius: 999px; padding: 0; background: var(--teal); color: var(--paper); border: 3px solid var(--ink); box-shadow: none; font: 400 19px 'Park Head', system-ui, sans-serif; }
 body.viewer .sidebar .controls .forkbtn:hover:not(:disabled) { background: var(--teal2); transform: none; }
 body.viewer .sidebar .controls .forkbtn:disabled { opacity: .45; }
 body.viewer .sidebar .controls2 { gap: 8px; }
@@ -191,11 +196,11 @@ body.viewer .pp:last-child { border-radius: 20px; }
 body.viewer .pphead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; padding: 0 8px 0 14px; box-sizing: border-box; height: 56px; background: var(--pc); color: #fff; border-bottom: 4px solid var(--ink); }
 body.viewer .pp.light .pphead { color: var(--ink); }
 body.viewer .pphead .who { min-width: 0; display: flex; align-items: center; gap: 9px; }
-body.viewer .ppname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 20px 'Bowlby One', system-ui, sans-serif; color: inherit; text-decoration: none; text-shadow: 0 2px 0 rgba(0, 0, 0, .28); -webkit-text-stroke: 0; }
+body.viewer .ppname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 20px 'Park Head', system-ui, sans-serif; color: inherit; text-decoration: none; text-shadow: 0 2px 0 rgba(0, 0, 0, .28); -webkit-text-stroke: 0; }
 body.viewer .pp.light .ppname { text-shadow: none; }
 body.viewer .ppname.light { -webkit-text-stroke: 0; }
-/* the name is drawn 86% as wide (side-panel.js `squeezeName`): the text is scaled inside the link, the link itself takes the squeezed width and shrinks when the row is tight */
-body.viewer .ppname .nm { display: block; width: calc(100% / .86); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transform: translateY(1.5px) scaleX(.86); transform-origin: 0 50%; }   /* (the 1.5px: Bowlby's letters sit high in their line box, now the caps are centred in the coloured part of the header, like the score sun) */
+/* the name is one block inside the link so that it can end in an ellipsis when the row is tight (the link is a flex item and shrinks) */
+body.viewer .ppname .nm { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @keyframes pp-blink { 50% { background: #fff; } }
 body.viewer .pphead .clock { margin: 0 4px 0 auto; font-size: 17px; background: rgba(255, 255, 255, .85); color: var(--ink); }
 body.viewer .poveye { color: inherit; }
@@ -203,7 +208,7 @@ body.viewer .poveye { color: inherit; }
 body.viewer .flip { display: inline-flex; gap: 0; padding: 3px; box-sizing: border-box; height: 38px; background: var(--ink); border-radius: 6px; align-items: center; }
 body.viewer .flip .ft { position: relative; display: block; width: 19px; height: 32px; perspective: 160px; flex: none; }
 body.viewer .flip .fc { position: absolute; inset: 0; display: block; transform-style: preserve-3d; }
-body.viewer .flip .ff { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 7px; box-sizing: border-box; border-radius: 0; background: #F1EEE0; backface-visibility: hidden; box-shadow: inset -1px 0 0 rgba(23, 38, 43, .55); font: 400 24px/1 'Bowlby One', system-ui, sans-serif; color: var(--ink); text-shadow: none; }
+body.viewer .flip .ff { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 7px; box-sizing: border-box; border-radius: 0; background: #F1EEE0; backface-visibility: hidden; box-shadow: inset -1px 0 0 rgba(23, 38, 43, .55); font: 400 24px/1 'Park Num', system-ui, sans-serif; color: var(--ink); text-shadow: none; }
 body.viewer .flip .ff.back { transform: rotateX(180deg); }
 body.viewer .flip .ft:first-child .ff { border-radius: 3px 0 0 3px; }          /* (the plates touch: one board, fine lines between them) */
 body.viewer .flip .ft:last-child .ff { border-radius: 0 3px 3px 0; box-shadow: none; }
@@ -212,12 +217,12 @@ body.viewer .ppscore { display: inline-flex; flex: none; }
 body.viewer .pp .ppres { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; align-items: center; text-align: center; margin: 0; padding: 0 10px; box-sizing: border-box; height: 56px; border: 0; }
 body.viewer .rt { position: relative; display: inline-flex; align-items: center; justify-content: center; }
 body.viewer .rt img { display: block; width: auto; }
-body.viewer .rt b { font: 400 20px/1 'Bowlby One', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; }
+body.viewer .rt b { font: 400 20px/1 'Park Num', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; }
 body.viewer .rt.ov { display: grid; place-items: center; height: 50px; }
 body.viewer .rt.ov img { grid-area: 1 / 1; height: 48px; }
 body.viewer .rt.ov b { grid-area: 1 / 1; color: #fff; font-size: 24px; text-shadow: 0 2px 0 rgba(0, 0, 0, .4); }
 body.viewer .rt.ov.dk b { color: #000; text-shadow: none; }
-body.viewer .rt.ov small { position: absolute; right: -9px; bottom: -8px; z-index: 2; font: 700 18px 'Barlow Condensed', system-ui, sans-serif; background: var(--mint); color: var(--ink); border: 2px solid var(--ink); border-radius: 12px; padding: 0 7px; white-space: nowrap; }   /* the income pill at the lower right of the money tile */
+body.viewer .rt.ov small { position: absolute; right: -9px; bottom: -8px; z-index: 2; font: 700 18px 'Park Label', system-ui, sans-serif; background: var(--mint); color: var(--ink); border: 2px solid var(--ink); border-radius: 12px; padding: 0 7px; white-space: nowrap; }   /* the income pill at the lower right of the money tile */
 body.viewer .rt.ov small.eg { right: -9px; bottom: -8px; background: #7B4FB5; color: #fff; border-color: var(--ink); font-size: 17px; line-height: 20px; padding: 0 6px; }   /* the endgame live count: a violet pill at the lower right of the appeal / conservation tile, at the height of the income pill (not green, so it is not taken for income) */
 body.viewer .rt.ov.money img { border: 0; border-radius: 0; background: none; box-sizing: border-box; }
 body.viewer .rt.xo b { font-size: 24px; color: #fff; text-shadow: none; -webkit-text-stroke: 5px #000; paint-order: stroke fill; }   /* X tokens: the number on the X, white with a black outline */
@@ -225,7 +230,7 @@ body.viewer .pp .ppres2 { display: flex; align-items: center; gap: 14px; margin:
 body.viewer .ppres2 .rt { gap: 7px; }
 body.viewer .ppres2 .rt img { height: 32px; }
 body.viewer .ppres2 .rt b { font-size: 24px; }
-body.viewer .ppres2 .rt b small { font: 700 18px 'Barlow Condensed', system-ui, sans-serif; opacity: .6; }
+body.viewer .ppres2 .rt b small { font: 700 18px 'Park Label', system-ui, sans-serif; opacity: .6; }
 body.viewer .ppres2 .rt b.over { color: var(--rust); }
 body.viewer .ppres2 .bons { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; justify-content: flex-end; }
 body.viewer .ppres2 .btoken { display: inline-flex; margin: 0; }
@@ -240,7 +245,7 @@ body.viewer .pp .ppicons { display: grid; grid-template-columns: 1fr; gap: 2px; 
 body.viewer .ppicons .icrow { display: flex; justify-content: space-around; }
 body.viewer .ppicons .ic { position: relative; display: inline-block; width: 44px; height: 44px; margin: 0 4px 4px 0; font-size: 0; }
 body.viewer .ppicons .ic .badge { width: 42px; height: 42px; border-radius: 50%; display: block; }
-body.viewer .ppicons .ic b { position: absolute; right: -4px; bottom: -4px; min-width: 28px; height: 28px; padding: 0 3px; box-sizing: border-box; display: grid; place-items: center; font: 400 19px/1 'Bowlby One', system-ui, sans-serif;
+body.viewer .ppicons .ic b { position: absolute; right: -4px; bottom: -4px; min-width: 28px; height: 28px; padding: 0 3px; box-sizing: border-box; display: grid; place-items: center; font: 400 19px/1 'Park Num', system-ui, sans-serif;
   background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; color: var(--ink); }
 body.viewer .ppicons .ic.zero { opacity: 1; }
 body.viewer .ppicons .ic.zero .badge { opacity: .3; }
@@ -261,24 +266,24 @@ body.viewer .movepill .enginemark .engine-badge.engine svg { width: 30px; height
 /* ---- settings pop-up ------------------------------------------------------------------------------------------------------------------------------------------------------- */
 body.viewer .modal { background: rgba(7, 44, 55, .62); }
 body.viewer .modalbox { width: 440px; box-sizing: border-box; padding: 16px 20px 20px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 8px 0 var(--ink); }
-body.viewer .modalhead { margin-bottom: 14px; font: 400 24px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .modalhead { margin-bottom: 14px; font: 400 24px 'Park Head', system-ui, sans-serif; }
 /* the first-visit dialog: whom to spectate (pov.js askSpectated): two warm gold chips with the player names, as wide as the action card window that follows (880 px) */
 body.viewer .povbox { width: 880px; max-width: 94vw; padding: 24px 28px 30px; border-width: 4px; border-radius: 26px; box-shadow: 0 8px 0 var(--ink); text-align: center; }
 body.viewer .povbox .modalhead { display: block; text-align: center; margin-bottom: 22px; font-size: 24px; line-height: 1.15; white-space: nowrap; }
 body.viewer .povchips { display: flex; gap: 18px; justify-content: center; }
-body.viewer .povchip { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 10px; height: 60px; padding: 0 16px; border: 4px solid var(--ink); border-radius: 999px; background: #F7DD9B; box-shadow: 0 5px 0 var(--ink); color: var(--ink); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }       /* (about 20 characters of a name fit: "Propaganda Panda" does, longer ones end in ...) */
+body.viewer .povchip { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 10px; height: 60px; padding: 0 16px; border: 4px solid var(--ink); border-radius: 999px; background: #F7DD9B; box-shadow: 0 5px 0 var(--ink); color: var(--ink); font: 400 20px/1 'Park Head', system-ui, sans-serif; cursor: pointer; }       /* (about 20 characters of a name fit: "Propaganda Panda" does, longer ones end in ...) */
 body.viewer .povchip:hover { background: #F4D07A; }
 body.viewer .povchip.on, body.viewer .povchip.on:hover { background: var(--sun); color: var(--paper); }
 body.viewer .povchip:focus-visible, body.viewer .povok:focus-visible { outline: 4px solid var(--gold); outline-offset: 4px; }
 body.viewer .povdot { flex: none; width: 17px; height: 17px; box-sizing: border-box; border-radius: 50%; background: var(--pc); border: 3px solid var(--ink); }
 body.viewer .povname { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-body.viewer .povok { display: block; margin: 22px auto 0; min-width: 210px; height: 52px; padding: 0 32px; border: 4px solid var(--ink); border-radius: 999px; background: #3F9A4E; box-shadow: 0 5px 0 var(--ink); color: var(--paper); font: 400 20px/1 'Bowlby One', system-ui, sans-serif; cursor: pointer; }
+body.viewer .povok { display: block; margin: 22px auto 0; min-width: 210px; height: 52px; padding: 0 32px; border: 4px solid var(--ink); border-radius: 999px; background: #3F9A4E; box-shadow: 0 5px 0 var(--ink); color: var(--paper); font: 400 20px/1 'Park Head', system-ui, sans-serif; cursor: pointer; }
 body.viewer .povok:hover:not(:disabled) { background: #48ad59; }
 body.viewer .povok:disabled { background: #b9b58f; color: rgba(248, 237, 203, .85); box-shadow: 0 5px 0 rgba(23, 38, 43, .45); border-color: rgba(23, 38, 43, .45); cursor: default; }
 body:has(#povChoice) .draftbox { visibility: hidden; }       /* (the action card draft of the first step waits behind the dialog) */
 body.viewer .modalx { width: 38px; height: 38px; margin: 0; border: 4px solid var(--ink); border-radius: 50%; background: var(--sun); color: var(--paper); }
 body.viewer .modalx:hover { color: var(--paper); background: #ff7f3e; }
-body.viewer .setrow { padding: 14px 0 0; margin-top: 14px; border-top: 3px dashed rgba(23, 38, 43, .4); font: 700 21px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .setrow { padding: 14px 0 0; margin-top: 14px; border-top: 3px dashed rgba(23, 38, 43, .4); font: 700 21px 'Park Label', system-ui, sans-serif; }
 body.viewer .setswitch { width: 64px; height: 34px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; box-sizing: border-box; }
 body.viewer .setswitch::after { top: 3px; left: 3px; width: 22px; height: 22px; border: 0; background: var(--ink); }
 body.viewer .setswitch:checked { background: var(--sun); }
@@ -297,7 +302,7 @@ body.viewer .dockbtn { position: relative; width: 100px; height: 62px; padding: 
 body.viewer .dockbtn:hover { background: #fff7dc; transform: none; }
 body.viewer .dockbtn.on { background: var(--sun); box-shadow: 0 4px 0 var(--ink); }
 body.viewer .dockbtn img { width: 40px; height: 40px; }
-body.viewer .dockn { position: static; min-width: 0; height: auto; padding: 0; border: 0; border-radius: 0; background: none; -webkit-text-stroke: 0; paint-order: normal; text-shadow: none; color: var(--ink); font: 400 28px/1 'Bowlby One', system-ui, sans-serif; }
+body.viewer .dockn { position: static; min-width: 0; height: auto; padding: 0; border: 0; border-radius: 0; background: none; -webkit-text-stroke: 0; paint-order: normal; text-shadow: none; color: var(--ink); font: 400 28px/1 'Park Num', system-ui, sans-serif; }
 body.viewer .dockbtn.on .dockn { color: var(--paper); }
 body.viewer .dockfold { position: absolute; left: 0; bottom: 100%; width: 30px; height: 30px; margin: 0 0 8px; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); color: var(--ink); font-size: 12px; cursor: pointer; pointer-events: auto; display: none; }
 body.viewer .dockpanel { position: absolute; left: 150px; top: calc(18px * var(--hk)); z-index: 2; width: calc(560px * var(--hk)); max-width: none; max-height: none; overflow: visible; padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; pointer-events: auto;
@@ -332,20 +337,20 @@ body.viewer .handtray .cards .card, body.viewer .handtray .cards.small .card { w
   transform: translate(var(--dx, 0px), var(--dy, 0px)); }
 body.viewer .handtray .cards .card:hover { z-index: 6; }
 body.viewer .handtray .cards .card.dragging, body.viewer .handtray .cards .card.dragging:hover { z-index: 20; cursor: grabbing; transition: none; box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), 0 10px 18px rgba(0, 0, 0, .45); }
-body.viewer .handtray .cards .empty { display: block; padding: 6px 4px 14px; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; color: var(--paper); opacity: .6; }
+body.viewer .handtray .cards .empty { display: block; padding: 6px 4px 14px; font: 700 20px 'Park Label', system-ui, sans-serif; color: var(--paper); opacity: .6; }
 body.viewer .traybtns { position: absolute; left: 22px; top: -46px; z-index: 40; display: flex; gap: 14px; pointer-events: auto; }
 body.viewer .traydisc { position: relative; display: grid; place-items: center; width: 60px; height: 60px; padding: 0; border: 0; border-radius: 50%; background: #8499A6; box-shadow: 0 0 0 3px var(--ink), 0 2px 6px rgba(0, 0, 0, .5); cursor: pointer; }       /* (slate blue with an ink ring: it stands out on the dark glass of the tray) */
 body.viewer .traydisc:hover { background: #9BB0BC; }
 body.viewer .traydisc.on, body.viewer .traydisc.on:hover { background: var(--sun); box-shadow: 0 0 0 3px var(--ink), 0 4px 0 3px var(--ink); }
 body.viewer .traydisc img { display: block; width: 38px; height: 38px; filter: brightness(1.6); }
 body.viewer .traydisc img.tiles { filter: none; }       /* (already light tiles: not brightened like the line icons) */
-body.viewer .traycount { position: absolute; right: -6px; top: -6px; box-sizing: border-box; min-width: 26px; height: 26px; padding: 0 4px; border: 3px solid var(--ink); border-radius: 13px; background: var(--paper); color: var(--ink); font: 400 13px/20px 'Bowlby One', system-ui, sans-serif; text-align: center; }
+body.viewer .traycount { position: absolute; right: -6px; top: -6px; box-sizing: border-box; min-width: 26px; height: 26px; padding: 0 4px; border: 3px solid var(--ink); border-radius: 13px; background: var(--paper); color: var(--ink); font: 400 13px/20px 'Park Num', system-ui, sans-serif; text-align: center; }
 body.viewer .trayfold { position: absolute; z-index: 42; right: 14px; top: -19px; display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; background: rgba(20, 25, 29, .92); color: var(--paper); box-shadow: 0 2px 6px rgba(0, 0, 0, .5), 0 0 0 1.5px rgba(255, 255, 255, .22); cursor: pointer; pointer-events: auto; }
 body.viewer .trayfold:hover { background: #000; }
 body.viewer .trayfold:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 body.viewer .trayfold::before { content: ''; width: 10px; height: 10px; border-right: 3.5px solid currentColor; border-bottom: 3.5px solid currentColor; transform: translateY(-3px) rotate(45deg); transition: transform .3s; }
 body.viewer .handtray.fol .trayfold::before { transform: translateY(3px) rotate(-135deg); }
-body.viewer .setselect { font: 700 19px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+body.viewer .setselect { font: 700 19px 'Park Label', system-ui, sans-serif; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
 body.viewer .setselect:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
 /* ---- loading box and other small things ------------------------------------------------------------------------------------------------------------------------------------ */
@@ -356,19 +361,19 @@ body.viewer .status .progresscircle .parc { stroke: var(--sun); }
 body.viewer .status .progresscircle .ppct { fill: var(--ink); }
 
 /* ---- fork / sandbox / live play: the extra boxes and buttons wear the same paper ------------------------------------------------------------------------------------------ */
-body.viewer .sidebar .forkinfo { padding: 10px 12px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 600 16px/1.4 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .sidebar .forkinfo { padding: 10px 12px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 600 16px/1.4 'Park Label', system-ui, sans-serif; }
 body.viewer .forkinfo a { color: var(--teal); }
 body.viewer .forkinfo .muted { color: #52666B; }
-body.viewer .forkinfo button { margin: 2px 4px 2px 0; padding: 3px 12px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font: 700 15px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkinfo button { margin: 2px 4px 2px 0; padding: 3px 12px; border: 3px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); font: 700 15px 'Park Label', system-ui, sans-serif; }
 body.viewer .forkinfo button:hover { background: var(--gold); }
-body.viewer .forkinfo .seedinput { width: 100%; box-sizing: border-box; border: 3px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); font: 700 16px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkinfo .seedinput { width: 100%; box-sizing: border-box; border: 3px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); font: 700 16px 'Park Label', system-ui, sans-serif; }
 body.viewer .forkpanel, body.viewer .sbtools { padding: 8px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font-family: 'Barlow', system-ui, sans-serif; }
 body.viewer .forkpanel .muted { color: #52666B; }
 body.viewer .movepill .abtn { font: inherit; justify-content: center; }
 body.viewer .abtn { background: var(--act1); border-color: var(--ink); border-width: 3px; }
 body.viewer .abtn.lvl2 { background: var(--act2); border-color: var(--ink); }
 body.viewer .abtn.xbtn, body.viewer .abtn.gen, body.viewer .abtn.gainx { background: #5a5856; border-color: var(--ink); }
-body.viewer .forkmove { border-width: 3px; border-radius: 999px; font: 700 15px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .forkmove { border-width: 3px; border-radius: 999px; font: 700 15px 'Park Label', system-ui, sans-serif; }
 
 /* ---- settings: the slider of the hand size ------------------------------------------------------------------------------------------------------------------------------ */
 body.viewer .setslide { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 18px; align-items: center; }
@@ -378,7 +383,7 @@ body.viewer .setrange::-webkit-slider-runnable-track { height: 8px; border-radiu
 body.viewer .setrange::-moz-range-track { height: 8px; border-radius: 4px; background: #fff; box-shadow: inset 0 0 0 1.5px var(--ink); }
 body.viewer .setrange::-webkit-slider-thumb { -webkit-appearance: none; width: var(--knob); height: 30px; margin-top: -11px; border-radius: 15px; background: var(--rust); border: 2px solid var(--ink); box-sizing: border-box; }
 body.viewer .setrange::-moz-range-thumb { width: var(--knob); height: 30px; border-radius: 15px; background: var(--rust); border: 2px solid var(--ink); box-sizing: border-box; }
-body.viewer .setbubble { position: absolute; top: 50%; transform: translate(-50%, -50%); pointer-events: none; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; color: var(--paper); letter-spacing: .02em; }
+body.viewer .setbubble { position: absolute; top: 50%; transform: translate(-50%, -50%); pointer-events: none; font: 700 20px 'Park Label', system-ui, sans-serif; color: var(--paper); letter-spacing: .02em; }
 body.viewer .setrange { width: 100%; margin: 0; accent-color: var(--rust); cursor: pointer; }
 body.viewer .moves li[hidden] { display: none; }
 
@@ -389,7 +394,7 @@ body.viewer .draftbox[hidden] { display: none; }
 body.viewer .draftpop { pointer-events: auto; box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 0; padding: 40px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
 body.viewer .draftwrap { display: flex; align-items: center; justify-content: center; gap: 26px; max-width: 100%; }          /* Back | panel | Next */
 body.viewer .draftwrap .draftpop { min-width: 0; max-width: calc(100vw - 2 * 118px - 52px); max-width: calc(var(--vw, 1vw) * 100 - 2 * 118px - 52px); }
-body.viewer .draftnav { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: var(--paper); font: 700 18px 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+body.viewer .draftnav { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: var(--paper); font: 700 18px 'Park Label', system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
 body.viewer .draftnav .dnbtn { width: 68px; height: 68px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); transition: background .12s, transform .12s; }
 body.viewer .draftnav .dnbtn svg { width: 40px; height: 40px; fill: none; stroke: var(--ink); stroke-width: 4.2; stroke-linecap: round; stroke-linejoin: round; }
 body.viewer .draftnav:hover:not(:disabled) .dnbtn { background: var(--gold); transform: translateY(-2px); }
@@ -401,7 +406,7 @@ body.viewer .draftnav kbd { display: grid; place-items: center; width: 30px; hei
 body.viewer .draftnav kbd svg { width: 16px; height: 16px; fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 body.viewer .draftpop .draftgroup { flex: none; width: 100%; padding: 0; border: 0; }
 body.viewer .draftpop .draftgroup + .draftgroup { padding: 14px 0 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
-body.viewer .draftpop .drafthead { line-height: 1.2; font: 700 24px/1.2 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); }
+body.viewer .draftpop .drafthead { line-height: 1.2; font: 700 24px/1.2 'Park Label', system-ui, sans-serif; color: var(--ink); }
 body.viewer .draftpop .draftcards { flex-wrap: nowrap; gap: 22px; padding: 38px 14px 24px; }
 body.viewer .draftpop .draftcard { flex: none; width: clamp(120px, calc(1230px / var(--cn, 5)), 250px); border-radius: 12px; box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 4px 10px rgba(0, 0, 0, .35); }
 body.viewer .draftpop .draftcard img { border-radius: 12px; }
@@ -452,17 +457,17 @@ body.viewer .kbblk { display: grid; gap: calc(var(--u) * .1); }
 body.viewer .kbrow { display: flex; gap: calc(var(--u) * .1); }
 body.viewer .kbrow:empty { display: none; }
 body.viewer .kbgap { flex: none; width: calc(var(--u) * var(--w)); }
-body.viewer .kbkey { box-sizing: border-box; flex: none; height: var(--u); width: calc(var(--u) * var(--w) + var(--u) * .1 * var(--g, 0)); margin: 0; padding: 0; display: grid; place-items: center; border-radius: calc(var(--u) * .16); border: 2px solid rgba(23, 38, 43, .28); background: rgba(23, 38, 43, .07); color: rgba(23, 38, 43, .45); font: 700 calc(var(--u) * .34)/1 'Barlow Condensed', system-ui, sans-serif; user-select: none; }
+body.viewer .kbkey { box-sizing: border-box; flex: none; height: var(--u); width: calc(var(--u) * var(--w) + var(--u) * .1 * var(--g, 0)); margin: 0; padding: 0; display: grid; place-items: center; border-radius: calc(var(--u) * .16); border: 2px solid rgba(23, 38, 43, .28); background: rgba(23, 38, 43, .07); color: rgba(23, 38, 43, .45); font: 700 calc(var(--u) * .34)/1 'Park Label', system-ui, sans-serif; user-select: none; }
 body.viewer .kbkey.long { font-size: calc(var(--u) * .27); }
 body.viewer .kbkey.on { border: 3px solid var(--ink); background: var(--mint); color: var(--ink); box-shadow: 0 3px 0 var(--ink); cursor: pointer; font-size: calc(var(--u) * .4); transition: transform .08s, box-shadow .08s; }
 body.viewer .kbkey.on.long { font-size: calc(var(--u) * .3); }
 body.viewer .kbkey.on:hover { transform: translateY(-2px); }
 body.viewer .kbkey.on.sel, body.viewer .kbkey.on.down { background: var(--gold); transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
-body.viewer .kbinfo { margin-top: 16px; min-height: 3.1em; padding: 10px 14px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; display: flex; gap: 14px; align-items: center; font: 600 19px/1.25 'Barlow Condensed', system-ui, sans-serif; }
-body.viewer .kbinfo kbd { flex: none; min-width: 34px; height: 34px; box-sizing: border-box; padding: 0 8px; border: 3px solid var(--ink); border-radius: 9px; background: var(--gold); box-shadow: 0 3px 0 var(--ink); display: grid; place-items: center; font: 700 17px 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .kbinfo { margin-top: 16px; min-height: 3.1em; padding: 10px 14px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; display: flex; gap: 14px; align-items: center; font: 600 19px/1.25 'Park Label', system-ui, sans-serif; }
+body.viewer .kbinfo kbd { flex: none; min-width: 34px; height: 34px; box-sizing: border-box; padding: 0 8px; border: 3px solid var(--ink); border-radius: 9px; background: var(--gold); box-shadow: 0 3px 0 var(--ink); display: grid; place-items: center; font: 700 17px 'Park Label', system-ui, sans-serif; }
 body.viewer .kbinfo p { margin: 0; }
 body.viewer .kbinfo small { display: block; opacity: .7; font-size: 16px; font-weight: 600; }
-body.viewer .kbhint { margin-top: 10px; font: 600 16px 'Barlow Condensed', system-ui, sans-serif; opacity: .75; }
+body.viewer .kbhint { margin-top: 10px; font: 600 16px 'Park Label', system-ui, sans-serif; opacity: .75; }
 body.viewer .setrange:focus-visible { outline: none; }
 body.viewer .setrange:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--sun); }
 body.viewer .setrange:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--sun); }
@@ -479,17 +484,17 @@ body.viewer .zootab-arrow:active { transform: translateY(1px); }
 body.viewer .zootab-arrow:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
 /* ---- the account widget (js/account.js) on the viewer pages (mini games): a pill at the right end of the move bar, like the Round and Break pills; its log in / sign up dialog on paper ---- */
-body.viewer #acctbar.inmovebar { position: static; flex: none; align-self: flex-start; height: 60px; box-sizing: border-box; gap: 12px; padding: 0 22px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); font: 700 20px 'Barlow Condensed', system-ui, sans-serif; white-space: nowrap; }
+body.viewer #acctbar.inmovebar { position: static; flex: none; align-self: flex-start; height: 60px; box-sizing: border-box; gap: 12px; padding: 0 22px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); font: 700 20px 'Park Label', system-ui, sans-serif; white-space: nowrap; }
 body.viewer #acctbar .acctname { color: var(--ink); text-decoration: none; font-weight: 700; max-width: 14ch; overflow: hidden; text-overflow: ellipsis; }
 body.viewer #acctbar .acctname:hover { text-decoration: underline; }
-body.viewer #acctbar .acctrating { color: var(--rust); font: 400 22px 'Bowlby One', system-ui, sans-serif; opacity: 1; }
-body.viewer #acctbar button { font: 700 18px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 16px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+body.viewer #acctbar .acctrating { color: var(--rust); font: 400 22px 'Park Num', system-ui, sans-serif; opacity: 1; }
+body.viewer #acctbar button { font: 700 18px 'Park Label', system-ui, sans-serif; color: var(--ink); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 4px 16px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
 body.viewer #acctbar button.linkbtn { background: none; border: 0; box-shadow: none; padding: 0; text-decoration: underline; color: var(--ocean); }
 body.viewer #acctbar button:not(.linkbtn):active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 body.viewer #acctbar button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 body.viewer dialog.acctdlg { background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); font-family: 'Barlow', system-ui, sans-serif; }
 body.viewer .acctinput { background: #fff8e1; color: var(--ink); border: 3px solid var(--ink); border-radius: 10px; }
-body.viewer dialog.acctdlg button:not(.linkbtn) { font: 700 18px 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 18px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+body.viewer dialog.acctdlg button:not(.linkbtn) { font: 700 18px 'Park Label', system-ui, sans-serif; color: var(--ink); background: var(--sun); border: 3px solid var(--ink); border-radius: 999px; padding: 6px 18px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
 body.viewer dialog.acctdlg button.linkbtn { color: var(--ocean); }
 
 /* ---- tabbed layout: the arrows in the zoo tab (zoo.js) ---- */
@@ -500,7 +505,7 @@ body.viewer .ppactions .ac .actoken { position: absolute; right: calc(-9px + var
 
 /* cubes on a sponsor card (zoo.js `withCubes`): Okapi Stable, Breeding Program, Breeding Cooperation (a used cube is an empty ring) and the kind chosen with Waza Special Assignment; at the top right of the card, which is the part that shows in a pile */
 body.viewer .card.hascubes { position: relative; }
-body.viewer .cardcubes { position: absolute; z-index: 6; top: 3px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 1px 5px; background: rgba(248, 237, 203, .94); border: 2px solid var(--ink); border-radius: 999px; pointer-events: none; font: 700 12px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); text-transform: uppercase; }
+body.viewer .cardcubes { position: absolute; z-index: 6; top: 3px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 1px 5px; background: rgba(248, 237, 203, .94); border: 2px solid var(--ink); border-radius: 999px; pointer-events: none; font: 700 12px/1 'Park Label', system-ui, sans-serif; color: var(--ink); text-transform: uppercase; }
 body.viewer .cardcubes .cube { width: 19px; height: 19px; display: block; border: 0; border-radius: 0; box-shadow: none; }
 body.viewer .cardcubes .cube.used { box-sizing: border-box; width: 15px; height: 15px; margin: 2px; border: 2px dashed rgba(23, 38, 43, .55); border-radius: 50%; }
 body.viewer .card .wazax { position: absolute; z-index: 6; top: 2%; width: 31%; height: 20%; pointer-events: none; overflow: visible; }
@@ -511,16 +516,16 @@ body.viewer .card .wazax.right { left: 61%; }
 body.viewer .preview.withstats, body.viewer .preview.withroll:not(.center) { right: calc(21rem + 17rem); }
 body.viewer .previewstats { position: fixed; right: 21rem; bottom: 1rem; z-index: 61; width: 14rem; box-sizing: border-box; padding: 12px 14px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); pointer-events: none; }
 body.viewer .previewstats[hidden] { display: none; }
-body.viewer .previewstats .psttitle { display: block; margin: 0 0 8px; font: 700 18px 'Barlow Condensed', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+body.viewer .previewstats .psttitle { display: block; margin: 0 0 8px; font: 700 18px 'Park Label', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
 body.viewer .previewstats .pstrow { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
 body.viewer .previewstats .pstrow img { height: 34px; width: auto; display: block; }
-body.viewer .previewstats .pstrow b { font: 400 26px 'Bowlby One', system-ui, sans-serif; color: var(--ink); }
-body.viewer .previewstats .pstnone { font: 600 17px 'Barlow Condensed', system-ui, sans-serif; opacity: .7; }
-body.viewer .previewstats .pstrow .pstlabel { font: 600 17px/1.1 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .previewstats .pstrow b { font: 400 26px 'Park Num', system-ui, sans-serif; color: var(--ink); }
+body.viewer .previewstats .pstnone { font: 600 17px 'Park Label', system-ui, sans-serif; opacity: .7; }
+body.viewer .previewstats .pstrow .pstlabel { font: 600 17px/1.1 'Park Label', system-ui, sans-serif; }
 
 /* the Elo of a player at this table (from the index, `elo`): a small pill after the name in the player box and in the zoo tab */
-body.viewer .ppelo { flex: none; padding: 1px 7px 0; border: 2px solid currentColor; border-radius: 999px; font: 700 14px/1.25 'Barlow Condensed', system-ui, sans-serif; opacity: .9; }
-body.viewer .zoo h2 .elo { font: 700 15px 'Barlow Condensed', system-ui, sans-serif; padding: 0 8px; border: 2px solid var(--paper); border-radius: 999px; opacity: .85; }
+body.viewer .ppelo { flex: none; padding: 1px 7px 0; border: 2px solid currentColor; border-radius: 999px; font: 700 14px/1.25 'Park Label', system-ui, sans-serif; opacity: .9; }
+body.viewer .zoo h2 .elo { font: 700 15px 'Park Label', system-ui, sans-serif; padding: 0 8px; border: 2px solid var(--paper); border-radius: 999px; opacity: .85; }
 /* the eye in the tab above the zoo (zoo.js, pov.js `eyeButton`): paper coloured, closed = faded */
 body.viewer .zoo h2 .poveye { order: -1; width: 30px; height: 26px; margin: 0; color: var(--paper); }   /* the eye is also the player's colour marker: it sits first, where the dot was */
 body.viewer .zoo h2 .poveye svg { width: 30px; height: 30px; overflow: visible; }
@@ -531,9 +536,6 @@ body.viewer .zoo h2 .poveye svg .strike { stroke: color-mix(in srgb, var(--paper
 body.viewer .zoo h2 .poveye.closed { opacity: 1; }
 body.viewer .zoo h2 .poveye:not(.only):hover { filter: brightness(1.2); background: transparent; }
 body.viewer .zoo h2 .poveye.only:hover { background: transparent; }
-/* the name's letters lightly thinned (Bowlby One is one heavy weight): a 0.45px outline in the colour of the ground eats into the edge; the box name sits on the player's colour, the tab name on the ink of the tab */
-body.viewer .ppname .nm { -webkit-text-stroke: .45px var(--pc); }
-body.viewer .zoo h2 .zootab-name { -webkit-text-stroke: .45px var(--ink); }
 /* whose turn it is: the line under the header of the player on turn (`.on`, side-panel.js) is gold and glows, slowly pulsing */
 body.viewer .pphead.on { position: relative; z-index: 1; border-bottom-color: var(--gold); animation: pp-turn-glow 2.6s ease-in-out infinite; }
 @keyframes pp-turn-glow { 0%, 100% { box-shadow: 0 3px 6px -3px rgba(244, 182, 63, .45); } 50% { box-shadow: 0 5px 12px -2px rgba(244, 182, 63, .95); } }
@@ -543,21 +545,15 @@ body.viewer .pp.light .pphead.on { border-bottom-color: #E0701E; animation-name:
 @keyframes pp-turn-glow-light { 0%, 100% { box-shadow: 0 3px 6px -3px rgba(224, 112, 30, .5); } 50% { box-shadow: 0 5px 12px -2px rgba(224, 112, 30, .95); } }
 @media (prefers-reduced-motion: reduce) { body.viewer .pp.light .pphead.on { animation: none; box-shadow: 0 4px 9px -2px rgba(224, 112, 30, .75); } }
 
-/* ---- numbers in Bowlby One, lightly thinned (thin-numbers.js; the first row of the player box, the numbers in svg) ---- */
-body.viewer .ppres > :nth-child(1) b { -webkit-text-stroke: .4px rgb(91, 105, 116); }
-body.viewer .ppres > :nth-child(3) b { -webkit-text-stroke: .4px rgb(38, 35, 39); }
-body.viewer .ppres > :nth-child(4) b { -webkit-text-stroke: .4px rgb(238, 175, 158); }
-body.viewer .ppres > :nth-child(5) b { -webkit-text-stroke: .4px rgb(204, 224, 196); }
-body.viewer .rt.xo b { -webkit-text-stroke: .4px #000; paint-order: normal; text-shadow: -2px 0 #000, 2px 0 #000, 0 -2px #000, 0 2px #000, -2px -2px #000, 2px 2px #000, -2px 2px #000, 2px -2px #000, -3px 0 #000, 3px 0 #000, 0 -3px #000, 0 3px #000; }
-body.viewer .bonus-number, body.viewer .slot-number, body.viewer .cons-number { font-family: 'Bowlby One', system-ui, sans-serif; font-weight: 400; letter-spacing: 0; }
-body.viewer .ctcomposed .bonus-number, body.viewer .board .bonus-number { font-size: 36px; }          /* (Bowlby One is bigger than the Myriad it replaces; numbers with an inline size keep it) */
-body.viewer .bonus-number.num-top, body.viewer .slot-number.num-top { fill: #fff; stroke: #222; stroke-width: .02em !important; paint-order: normal; }
+/* ---- numbers in Archivo (thin-numbers.js: the numbers in svg are drawn twice, the copy below carries the dark outline; the first row of the player box) ---- */
+body.viewer .rt.xo b { -webkit-text-stroke: 0; paint-order: normal; text-shadow: -2px 0 #000, 2px 0 #000, 0 -2px #000, 0 2px #000, -2px -2px #000, 2px 2px #000, -2px 2px #000, 2px -2px #000, -3px 0 #000, 3px 0 #000, 0 -3px #000, 0 3px #000; }
+body.viewer .bonus-number, body.viewer .slot-number, body.viewer .cons-number { font-family: 'Park Num', system-ui, sans-serif; font-weight: 400; letter-spacing: 0; }
+body.viewer .ctcomposed .bonus-number, body.viewer .board .bonus-number { font-size: 36px; }          /* (numbers with an inline size keep theirs) */
+body.viewer .bonus-number.num-top, body.viewer .slot-number.num-top { fill: #fff; stroke: none; stroke-width: 0 !important; paint-order: normal; }
 body.viewer .bonus-number.num-under, body.viewer .slot-number.num-under { fill: #222; stroke: #222; paint-order: normal; stroke-linejoin: round; }
-body.viewer .bonus-number.dk, body.viewer .slot-number.dk { fill: #000; stroke-width: .02em; paint-order: normal; }
-body.viewer .dk.appeal { stroke: rgb(238, 175, 158); }
-body.viewer .dk.conservation { stroke: rgb(204, 224, 196); }
-body.viewer .cons-number { fill: #000; stroke: #E6F0DF; stroke-width: .02em; paint-order: normal; }
-body.viewer .cons-number.rep-number { fill: #fff; stroke: rgb(38, 35, 39); }
+body.viewer .bonus-number.dk, body.viewer .slot-number.dk { fill: #000; stroke: none; paint-order: normal; }
+body.viewer .cons-number { fill: #000; stroke: none; paint-order: normal; }
+body.viewer .cons-number.rep-number { fill: #fff; }
 
 /* ---- the row of the zoo: bonus panel | map | association strip ----
    One tray from frame to frame, the parts divided by ink lines. They share the width in the proportions of their pictures (192 : 720, 1122 : 976, 351 : 1776,
@@ -574,7 +570,7 @@ body.viewer .zoo h2 .maptip { display: none; position: absolute; z-index: 60; le
   font: 500 15px/1.35 'Barlow', system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: normal; text-align: left; cursor: default; }
 body.viewer .zoo h2 .maptip::before { content: ''; position: absolute; left: 44px; top: -9px; width: 14px; height: 14px; background: var(--paper); border-left: 3px solid var(--ink); border-top: 3px solid var(--ink); transform: rotate(45deg); }
 body.viewer .zoo h2 .mapbadge:hover .maptip, body.viewer .zoo h2 .mapbadge:focus-visible .maptip, body.viewer .zoo h2 .mapbadge.on .maptip { display: block; }
-body.viewer .zoo h2 .maptip .mt-title { font: 400 17px/1.2 'Bowlby One', system-ui, sans-serif; margin-bottom: 7px; }
+body.viewer .zoo h2 .maptip .mt-title { font: 400 17px/1.2 'Park Head', system-ui, sans-serif; margin-bottom: 7px; }
 body.viewer .zoo h2 .maptip p { margin: 0 0 5px; }
 body.viewer .zoo h2 .maptip .mt-main { font-weight: 700; }
 body.viewer .zoo h2 .maptip .mt-note { font-size: 13.5px; color: rgba(23, 38, 43, .75); }
@@ -588,7 +584,6 @@ body.viewer .ctrackwrap img.ctbonus { height: calc(86 / var(--ct-h) * 100%); tra
 /* X tokens with several units: the number lies on the X, white with a black outline (like the player box) */
 body.viewer .bonus-number.xnum, body.viewer .slot-number.xnum { fill: #fff; stroke: #000; stroke-width: .12em !important; paint-order: stroke fill; stroke-linejoin: round; font-size: 32px; }
 /* two-digit money numbers: tighter, and shifted back by half the negative spacing (dx -.05em) so that they stay centred on the coin */
-body.viewer .bonus-number.two, body.viewer .slot-number.two { letter-spacing: -.1em; }
 
 /* Display folders, "tab on the edge": no paper folder and no town strip; each card (10.5rem, nearly the whole pitch of its stretch of the reputation track) has a soft ink outline and a
    small shadow, and the folder number sits on a dark brown tab (the colour of the old folder tab) that hangs over the card's top edge. An empty slot is a tan card-sized plate. */
@@ -599,7 +594,7 @@ body.viewer .shared .displaycol .cards .folder > .card, body.viewer .folder > .c
 body.viewer .folder:not(:has(.card))::before { content: ''; position: absolute; left: .4rem; top: .9rem; width: 10.5rem; height: 14.6rem; box-sizing: border-box; background: #E4C385; border: .75px solid rgba(23, 38, 43, .3); border-radius: 8px; box-shadow: 0 1px 0 .75px rgba(23, 38, 43, .1); }
 body.viewer .folder .folnum { left: 50%; top: .05rem; width: 2.5rem; height: 1.6rem; margin-left: -1.25rem; transform: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box; z-index: 3;
   background: #572411; border: .75px solid rgba(23, 38, 43, .3); border-radius: 7px; box-shadow: none;
-  font: 400 1rem/1 'Bowlby One', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; color: #F4E9CF; text-shadow: none; }
+  font: 400 1rem/1 'Park Num', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; color: #F4E9CF; text-shadow: none; }
 
 /* Reputation track: a vector (js/reptrack.js, same size as the old picture). The reward pentagons are about 30 % bigger with a thin edge; the reward of 16 reputation lies above the end of the
    track (the ticket); the card upgrade badge sits smaller on the 9 | 10 border. */
@@ -616,7 +611,7 @@ body.viewer .zoo .played .pkind { background: var(--tray); border-radius: 14px; 
 body.viewer .zoo .played .pkind:nth-child(1) { --tray: #EFDEC2; border: 1.5px solid rgba(120, 95, 40, .38); box-shadow: inset 0 3px 7px rgba(120, 80, 40, .2); }
 body.viewer .zoo .played .pkind:nth-child(2) { --tray: #E3E2D0; border: 1.5px solid rgba(120, 95, 40, .38); box-shadow: inset 0 3px 7px rgba(60, 70, 60, .2); }
 body.viewer .zoo .played h3 { margin: 0 0 8px 4px; }
-body.viewer .zoo .played h3 .cnt { margin-left: 4px; font: 700 15px/20px 'Barlow Condensed', system-ui, sans-serif; background: rgba(23, 38, 43, .11); border-radius: 10px; padding: 0 8px; }
+body.viewer .zoo .played h3 .cnt { margin-left: 4px; font: 700 15px/20px 'Park Label', system-ui, sans-serif; background: rgba(23, 38, 43, .11); border-radius: 10px; padding: 0 8px; }
 body.viewer .zoo .played .cards .card, body.viewer .zoo .played .cards.small .card { border-radius: 11px; box-shadow: 0 0 0 .75px rgba(23, 38, 43, .35); }
 body.viewer .zoo .played .pstacks .cards .card + .card { box-shadow: 0 -3px 0 var(--tray), 0 0 0 .75px rgba(23, 38, 43, .35); }      /* (a seam of tray colour between the stacked cards) */
 
@@ -629,12 +624,12 @@ body.viewer .cardcubes .cube { width: 20px; height: 20px; filter: drop-shadow(0 
 body.viewer .cardcubes .cube.used { width: 15px; height: 15px; margin: 2.5px; border: 2px dashed rgba(255, 255, 255, .9); filter: drop-shadow(0 1px 1.5px rgba(10, 25, 35, .8)); }
 
 /* ---- played cards: the display modes of the setting "Played cards" (zoo.js `playedMode`, dock.js `playedTrayBody`); the default, under the map, is the block above ---- */
-body.viewer .gchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 5px; border: 2.5px solid var(--ink); border-radius: 14px; background: var(--paper); font: 700 16px/1 'Barlow Condensed', system-ui, sans-serif; color: var(--ink); white-space: nowrap; }
+body.viewer .gchip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 5px; border: 2.5px solid var(--ink); border-radius: 14px; background: var(--paper); font: 700 16px/1 'Park Label', system-ui, sans-serif; color: var(--ink); white-space: nowrap; }
 body.viewer .gchip img { height: 17px; width: auto; }
 body.viewer .gchip b { font-weight: 700; background: rgba(23, 38, 43, .12); border-radius: 9px; padding: 0 6px; font-size: 14px; line-height: 17px; }
 /* drawer: a chip on the top edge of the board (as high as the name tab) with the number of played cards; its sheet lies over the map (narrow beside it, or the whole map, see below) */
-body.viewer .drtab { position: absolute; right: 22px; top: -38px; z-index: 3; display: flex; align-items: center; gap: 9px; height: 38px; margin: 0; padding: 0 12px 4px 16px; box-sizing: border-box; background: #30373C; color: var(--paper); border: 0; border-radius: 14px 14px 0 0; font: 400 17px 'Bowlby One', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
-body.viewer .drtab b { font: 700 15px/1 'Barlow Condensed', system-ui, sans-serif; background: color-mix(in srgb, var(--pc, #888) 72%, #30373C); border-radius: 8px; padding: 2px 8px; }
+body.viewer .drtab { position: absolute; right: 22px; top: -38px; z-index: 3; display: flex; align-items: center; gap: 9px; height: 38px; margin: 0; padding: 0 12px 4px 16px; box-sizing: border-box; background: #30373C; color: var(--paper); border: 0; border-radius: 14px 14px 0 0; font: 400 17px 'Park Num', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+body.viewer .drtab b { font: 700 15px/1 'Park Label', system-ui, sans-serif; background: color-mix(in srgb, var(--pc, #888) 72%, #30373C); border-radius: 8px; padding: 2px 8px; }
 body.viewer .drtab i { display: inline-block; font-style: normal; font-size: 12px; opacity: .85; }
 body.viewer .drtab:hover, body.viewer .drtab:focus-visible { color: var(--gold); }
 body.viewer .zoo.mapends .zooRow { margin-bottom: -8px; border-radius: 16px; box-shadow: none; }       /* (no played cards under the map: no soft edge, no strip of paper, rounded bottom corners) */
@@ -669,14 +664,14 @@ body.viewer .pt { padding: 0 8px; }
 body.viewer .ptdeck { position: relative; height: calc(var(--W) * 1.3972); }
 body.viewer .ptdeck .card { position: absolute; top: 0; width: var(--W); height: auto; border: 0; border-radius: calc(10px * var(--hs, 1)); box-shadow: 0 0 0 1px rgba(26, 31, 36, .6), -5px 0 8px -3px rgba(0, 0, 0, .4); transition: transform .15s; }
 body.viewer .ptdeck .card:hover { z-index: 30; transform: translateY(-8px); box-shadow: 0 0 0 2px var(--ink), 0 12px 22px rgba(0, 0, 0, .5); }
-body.viewer .ptdeck .empty { color: var(--paper); padding: 30px 4px; font: 700 20px 'Barlow Condensed', system-ui, sans-serif; opacity: .55; }
+body.viewer .ptdeck .empty { color: var(--paper); padding: 30px 4px; font: 700 20px 'Park Label', system-ui, sans-serif; opacity: .55; }
 body.viewer .prail { position: absolute; top: 0; bottom: 0; box-sizing: border-box; width: 26px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 7px 0; border-radius: 9px; background: rgba(255, 255, 255, .12); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18); color: var(--paper); }
 body.viewer .prail img { width: 18px; height: auto; filter: brightness(1.7); }
-body.viewer .prail span { writing-mode: vertical-rl; transform: rotate(180deg); font: 700 17px/1 'Barlow Condensed', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
-body.viewer .prail b { font: 400 13px/1 'Bowlby One', system-ui, sans-serif; background: var(--paper); color: var(--ink); border-radius: 9px; padding: 3px 6px; }
+body.viewer .prail span { writing-mode: vertical-rl; transform: rotate(180deg); font: 700 17px/1 'Park Label', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+body.viewer .prail b { font: 400 13px/1 'Park Num', system-ui, sans-serif; background: var(--paper); color: var(--ink); border-radius: 9px; padding: 3px 6px; }
 body.viewer .handtray.fol .prail span { display: none; }       /* (folded: icon and count only) */
 body.viewer .ptseg { position: absolute; z-index: 41; top: -15px; right: 62px; display: flex; box-sizing: border-box; height: 30px; border: 2px solid var(--pc, rgba(255, 255, 255, .4)); border-radius: 999px; overflow: hidden; background: rgba(20, 25, 29, .94); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); }
-body.viewer .ptseg button { display: flex; align-items: center; gap: 7px; margin: 0; padding: 4px 14px; border: 0; border-radius: 999px; background: none; color: var(--paper); opacity: .55; font: 700 17px/1 'Barlow Condensed', system-ui, sans-serif; cursor: pointer; }
+body.viewer .ptseg button { display: flex; align-items: center; gap: 7px; margin: 0; padding: 4px 14px; border: 0; border-radius: 999px; background: none; color: var(--paper); opacity: .55; font: 700 17px/1 'Park Label', system-ui, sans-serif; cursor: pointer; }
 body.viewer .ptseg button::before { content: ''; width: 11px; height: 11px; border-radius: 50%; background: var(--pc, #888); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .7); }       /* (a dot in the player's colour before each name) */
 body.viewer .ptseg button:hover { opacity: .85; }
 body.viewer .ptseg button.on { opacity: 1; background: var(--pc, #888); color: var(--pt, #fff); }       /* (the selected name: filled with the player's colour, the other one is dimmed) */
@@ -692,16 +687,16 @@ body.viewer .handtray .cards .empty { text-align: center; }
 /* Roll of honour next to the enlarged Victory Column card (cards.js `showRoll`): the stats panel's look, the champion in gold, round portraits */
 body.viewer .previewroll { position: fixed; z-index: 61; width: 16rem; box-sizing: border-box; padding: 12px 14px 12px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 6px 0 rgba(23, 38, 43, .35); overflow: hidden; pointer-events: none; }
 body.viewer .previewroll[hidden] { display: none; }
-body.viewer .previewroll .psttitle { display: block; margin: 0 0 8px; font: 700 18px 'Barlow Condensed', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+body.viewer .previewroll .psttitle { display: block; margin: 0 0 8px; font: 700 18px 'Park Label', system-ui, sans-serif; text-transform: uppercase; letter-spacing: .04em; }
 body.viewer .previewroll ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-body.viewer .previewroll li { display: flex; align-items: center; gap: 9px; font: 600 19px/1.1 'Barlow Condensed', system-ui, sans-serif; }
+body.viewer .previewroll li { display: flex; align-items: center; gap: 9px; font: 600 19px/1.1 'Park Label', system-ui, sans-serif; }
 body.viewer .previewroll li[hidden] { display: none; }
 body.viewer .previewroll li.cur { margin: 0 -8px 3px; padding: 5px 8px; background: var(--gold); border-radius: 10px; font-weight: 700; font-size: 22px; }
-body.viewer .previewroll .ph { flex: none; display: grid; place-items: center; width: 56px; height: 56px; overflow: hidden; border-radius: 50%; background: #C9B88A; box-shadow: 0 0 0 3px var(--ink); font: 400 18px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .previewroll .ph { flex: none; display: grid; place-items: center; width: 56px; height: 56px; overflow: hidden; border-radius: 50%; background: #C9B88A; box-shadow: 0 0 0 3px var(--ink); font: 400 18px 'Park Head', system-ui, sans-serif; }
 body.viewer .previewroll .ph img { display: block; width: 100%; height: 100%; object-fit: cover; }
 body.viewer .previewroll .who { display: flex; flex-direction: column; min-width: 0; }
 body.viewer .previewroll .who .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-body.viewer .previewroll .who small { font: 600 14px 'Barlow Condensed', system-ui, sans-serif; opacity: .7; }
+body.viewer .previewroll .who small { font: 600 14px 'Park Label', system-ui, sans-serif; opacity: .7; }
 body.viewer .previewroll li.more { justify-content: center; padding-top: 2px; font-size: 16px; opacity: .7; }
 
 /* the narrow drawer (class `nrw`, zoo.js): the sheet does not move; the map slides left over the project rewards and the association strip tucks under it; the sheet takes both areas (--sd-b, --sd-s, --sd-left are set by fitPlayed) */
@@ -791,7 +786,7 @@ body.viewer #settingsModal .setslide { grid-template-columns: minmax(0, 1fr) var
 body.viewer #settingsModal .setswitch { margin-left: auto; }
 /* settings panel tabs: Control | Board | Cards, a gold pill like the Control | Log tabs of the sidebar; the panels keep the height of the tallest one so the box does not jump */
 body.viewer .settabs { display: flex; margin-bottom: 4px; border: 3px solid var(--ink); border-radius: 999px; overflow: hidden; background: var(--paper); }
-body.viewer .settab { flex: 1 1 0; padding: 7px 0 6px; border: 0; background: transparent; color: var(--ink); font: 400 17px 'Bowlby One', system-ui, sans-serif; cursor: pointer; }
+body.viewer .settab { flex: 1 1 0; padding: 7px 0 6px; border: 0; background: transparent; color: var(--ink); font: 400 17px 'Park Head', system-ui, sans-serif; cursor: pointer; }
 body.viewer .settab + .settab { border-left: 3px solid var(--ink); }
 body.viewer .settab:hover { background: #fff7dc; }
 body.viewer .settab.on { background: var(--gold); }
@@ -803,20 +798,146 @@ body.viewer #settingsModal .setpanel > .setrow:first-child { border-top: 0; marg
 /* building preview (bpreview.js, board.js `previewLayer`): the building is half see-through, so it cannot be taken for a placed one; the pill names it and says whether it fits */
 body.viewer .board .pghost { opacity: .5; }
 body.viewer .board .pvpill { fill: rgba(23, 38, 43, .86); stroke: var(--gold); stroke-width: 3; }
-body.viewer .board .pvtext { font: 700 42px 'Barlow Condensed', system-ui, sans-serif; fill: var(--paper); letter-spacing: .02em; white-space: pre; }
+body.viewer .board .pvtext { font: 700 42px 'Park Label', system-ui, sans-serif; fill: var(--paper); letter-spacing: .02em; white-space: pre; }
 body.viewer .board .pvtext.small { font-size: 28px; }
 body.viewer .card.previewing { outline: 3px dashed var(--sun); outline-offset: -3px; }
 
 /* the picker of the enclosures (bpreview.js `openMenu`: a right click on a zoo map): a small paper card with the enclosure pictures */
 body.viewer .bpmenu { position: fixed; z-index: 400; box-sizing: border-box; padding: 12px 14px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); }
-body.viewer .bpmtitle { display: block; margin: 0 0 10px 2px; font: 400 20px 'Bowlby One', system-ui, sans-serif; }
+body.viewer .bpmtitle { display: block; margin: 0 0 10px 2px; font: 400 20px 'Park Head', system-ui, sans-serif; }
 body.viewer .bpmgrid { display: grid; grid-template-columns: repeat(5, 114px); gap: 8px; }
 body.viewer .bpmitem { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px; height: 104px; padding: 6px 2px 5px; box-sizing: border-box; background: #fff8e0; border: 3px solid var(--ink); border-radius: 12px; cursor: pointer; color: var(--ink); }
 body.viewer .bpmitem img { flex: 1 1 0; min-height: 0; max-width: 100%; object-fit: contain; pointer-events: none; }
-body.viewer .bpmitem span { font: 700 17px/1 'Barlow Condensed', system-ui, sans-serif; text-align: center; white-space: nowrap; }
+body.viewer .bpmitem span { font: 700 17px/1 'Park Label', system-ui, sans-serif; text-align: center; white-space: nowrap; }
 body.viewer .bpmitem:hover, body.viewer .bpmitem:focus-visible { background: var(--gold); outline: none; }
+body.viewer .bpmitem.taken, body.viewer .bpmitem.taken:hover { background: #e6dfcc; border-color: rgba(23, 38, 43, .35); color: rgba(23, 38, 43, .45); cursor: not-allowed; }          /* a special enclosure that stands already (only one of each) */
+body.viewer .bpmitem.taken img { filter: grayscale(1); opacity: .4; }
 
 /* the endgame scoring cards that count (side-panel.js `egCardIcon`): a small card with the number on it at the upper right of the conservation tile of the player whose cards are hidden */
 body.viewer .rt.ov .egcard { position: absolute; top: -1px; right: -8px; z-index: 2; width: 22px; height: 30px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .45)); }
 body.viewer .rt.ov .egcard svg { display: block; }
-body.viewer .rt.ov .egcard .n { position: absolute; left: 0; right: 0; top: 6px; font: 800 19px/1 'Barlow Condensed', system-ui, sans-serif; font-style: normal; color: #fff; text-align: center; }
+body.viewer .rt.ov .egcard .n { position: absolute; left: 0; right: 0; top: 6px; font: 800 19px/1 'Park Label', system-ui, sans-serif; font-style: normal; color: #fff; text-align: center; }
+
+/* ---- results of a finished replay (results.js): the switch Final board | Results in the move bar at the last step, the results section in place of the boards, the enlarged score race ---- */
+body.viewer .movepill.rsgate > :not(.rsswitchrow) { display: none !important; }        /* (at the last step the switch takes the place of the step text, which stays in the log) */
+/* the move bar at the end of a finished game: the message in the middle, a flush flap at each end, both the same width; the view that is shown is forest green with cream text, the other one pale mint (full green on hover) */
+body.viewer .movepill.rsgate { padding: 0; flex-wrap: nowrap; overflow: hidden; }
+body.viewer .rsswitchrow { flex: 1 1 auto; align-self: stretch; display: flex; align-items: stretch; min-width: 0; }
+body.viewer .rsswitchtext { flex: 1 1 auto; align-self: center; text-align: center; }
+body.viewer .rsflap { all: unset; box-sizing: border-box; cursor: pointer; flex: none; width: 180px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #CFEEDB; color: var(--ink); font: 400 18px 'Park Head', system-ui, sans-serif; white-space: nowrap; transition: background .12s, color .12s; }
+body.viewer .rsflap svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+body.viewer .rsflap.fb { border-right: 3px solid var(--ink); }
+body.viewer .rsflap.fs { border-left: 3px solid var(--ink); }
+body.viewer .rsflap[aria-pressed="false"]:hover { background: #A9E0BE; }
+body.viewer .rsflap[aria-pressed="true"] { background: #2F7D50; color: var(--paper); cursor: default; }
+body.viewer .rsflap:focus-visible { outline: 3px solid var(--sun); outline-offset: -5px; }
+body.viewer .rsswitchtext { font: 600 19px Barlow, system-ui, sans-serif; color: var(--ink); }
+body.viewer.showresults #shared, body.viewer.showresults #zoos, body.viewer.showresults #dock { display: none !important; }
+/* no page scroll behind the table: the table fills the window (--vh = a hundredth of the window height in layout px, also in full screen) and scrolls by itself */
+html.showresults { overflow-y: scroll; }          /* (the window's scrollbar stays, with nothing to scroll, so the page does not jump sideways) */
+html.showresults body.viewer { overflow: hidden; }
+html.showresults body.viewer { padding-bottom: 0 !important; }          /* (the room the page keeps for the hand dock; the dock is hidden here) */
+body.viewer .results { margin: 0; padding: 5px 37px 0 0; }          /* the frame (1 px outside the table) has its top edge level with the Control / Log tabs (y 90) and its right edge with the Round / Turn chip */
+/* the game stats (results.js `panel`): a split duel, see changelog "Results of a finished replay" */
+body.viewer .gs { --gl: color-mix(in srgb, var(--c0) 55%, #fff); --gr: color-mix(in srgb, var(--c1) 55%, #fff); --sp: 260px; height: min(calc(var(--vh, 1vh) * 100 - 104px), var(--gsh, 9999px)); display: grid; grid-template-columns: 300px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); column-gap: 24px; color: var(--paper); }
+/* the frame of the table (header + stats, 8 px corners): a 1 px edge that runs from the left seat colour through cream to the right seat colour */
+body.viewer .gs { isolation: isolate; }
+body.viewer .gs::before { content: ""; grid-column: 2; grid-row: 1 / 3; z-index: -1; margin: -1px; padding: 1px; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); border-radius: 9px; pointer-events: none; background: linear-gradient(90deg, color-mix(in srgb, var(--c0) 75%, #fff), rgba(248, 237, 203, .35) 50%, color-mix(in srgb, var(--c1) 75%, #fff)); }
+/* the view switch: two stacked buttons (Table / Graph) centred on the header row; the active one is filled teal with a filled radio mark */
+body.viewer .gstg { grid-column: 1; grid-row: 1; align-self: center; margin: 0 24px; display: flex; flex-direction: column; gap: 8px; }
+body.viewer .gstg button { all: unset; cursor: pointer; box-sizing: border-box; display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 16px; border-radius: 12px; background: #0a3540; box-shadow: inset 0 0 0 2px var(--ink); font: 700 17px Barlow, system-ui, sans-serif; letter-spacing: .05em; color: #9db8bd; transition: background .2s, color .2s; }
+body.viewer .gstg button[aria-pressed="true"] { background: linear-gradient(90deg, #1a8aa5, #137088); color: #fff; box-shadow: 0 4px 0 var(--ink); }
+body.viewer .gstg button:not([aria-pressed="true"]):hover { color: var(--paper); }
+body.viewer .gstg button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+body.viewer .gstg svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+body.viewer .gstg .chk { margin-left: auto; width: 18px; height: 18px; border-radius: 50%; box-shadow: inset 0 0 0 2px currentColor; display: grid; place-items: center; }
+body.viewer .gstg button[aria-pressed="true"] .chk::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--sun); }
+body.viewer .gshd { grid-column: 2; grid-row: 1; display: grid; grid-template-columns: 1fr var(--sp) 1fr; border-radius: 8px 8px 0 0; overflow: hidden; }
+body.viewer .gshh { display: flex; align-items: center; padding: 14px 28px; min-height: 136px; min-width: 0; }
+body.viewer .gshh.l { padding-right: 54px; background: linear-gradient(90deg, color-mix(in srgb, var(--c0) 60%, #000), var(--c0)); justify-content: flex-end; }
+body.viewer .gshh.r { padding-left: 54px; background: linear-gradient(90deg, var(--c1), color-mix(in srgb, var(--c1) 62%, #000)); }
+body.viewer .gswho { position: relative; top: -5px; min-width: 0; max-width: 100%; }                               /* the name is centred in the header like the score; the Elo chip hangs below it (absolute, so it does not push the name up) */
+body.viewer .gselo { position: absolute; top: calc(100% + 16px); }
+body.viewer .gshh.l .gselo { right: 0; }
+body.viewer .gshh.r .gselo { left: 0; }
+body.viewer .gsnm { min-width: 0; font: 400 34px/1.05 'Park Head', system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.viewer .gselo { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 13px; border-radius: 999px; background: rgba(0, 0, 0, .28); box-shadow: inset 0 0 0 1px rgba(248, 237, 203, .18); font: 400 20px/1 'Park Num', system-ui, sans-serif; color: var(--paper); }
+body.viewer .gselo.dk { background: #24343a; box-shadow: inset 0 0 0 1px rgba(248, 237, 203, .22); }   /* on a black seat the see-through layer vanishes: solid dark grey */
+body.viewer .gselo b { font: inherit; }
+body.viewer .gsd.up { color: #7EE0A0; }
+body.viewer .gsd.down { color: #FF8C7A; }
+body.viewer .gsd.up::before, body.viewer .gsd.down::before { content: ""; display: inline-block; margin-right: 4px; vertical-align: 2px; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+body.viewer .gsd.up::before { border-bottom: 8px solid currentColor; }
+body.viewer .gsd.down::before { border-top: 8px solid currentColor; }
+body.viewer .gsspine { background: var(--ink); display: grid; place-items: center; }
+body.viewer .gssc { position: relative; top: -6px; display: flex; align-items: baseline; gap: 12px; font: 400 46px/1 'Park Num', system-ui, sans-serif; color: #fff; }
+body.viewer .gssc .n.lo { opacity: .55; }
+body.viewer .gssc .dash { opacity: .5; font-size: 34px; }
+/* the rail: the category names in spaced capitals on a faint line, a glowing orange dot at the active one */
+body.viewer .gsrail { grid-column: 1; grid-row: 2; padding-top: 22px; overflow: hidden; }
+body.viewer .gsrail ul { list-style: none; margin: 0; padding: 0 20px 0 46px; position: relative; display: flex; flex-direction: column; gap: 6px; }
+body.viewer .gsrail ul::before { content: ""; position: absolute; left: 25px; top: 12px; bottom: 12px; width: 2px; background: linear-gradient(180deg, transparent, rgba(238, 108, 43, .5), transparent); }
+body.viewer .gsdot { position: absolute; left: 19px; width: 14px; height: 14px; margin-top: -7px; border-radius: 50%; background: var(--sun); box-shadow: 0 0 0 5px rgba(238, 108, 43, .25), 0 0 22px 4px rgba(238, 108, 43, .7); transition: top .4s cubic-bezier(.3, .8, .3, 1); }
+body.viewer .gsrail button { all: unset; cursor: pointer; box-sizing: border-box; display: flex; align-items: center; width: 100%; height: 46px; font: 700 19px Barlow, system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #9db8bd; transition: color .2s; }
+body.viewer .gsrail button:hover { color: var(--paper); }
+body.viewer .gsrail button:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+body.viewer .gsrail li.on button { font-size: 22px; color: #fff; text-shadow: 0 0 14px rgba(238, 108, 43, .8); }
+/* the stats: blue half, dark spine, red half */
+body.viewer .gs { --gsfade: 14px; }                                       /* the thin fade (and glow) under the header, table and graph */
+body.viewer .gsgraph { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--gsfade)); mask-image: linear-gradient(180deg, transparent 0, #000 var(--gsfade)); }
+body.viewer .gsbody, body.viewer .gsgraph { grid-column: 2; grid-row: 2; border-radius: 0 0 8px 8px; }
+body.viewer .gsbody { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--gsfade)); mask-image: linear-gradient(180deg, transparent 0, #000 var(--gsfade)); position: relative;   /* rows (and the body's background) fade out under the header */
+  padding-bottom: 20px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(248, 237, 203, .35) transparent;
+  --gsbg: linear-gradient(90deg, color-mix(in srgb, var(--c0) 34%, transparent) 0, color-mix(in srgb, var(--c0) 14%, transparent) calc(50% - var(--sp) / 2), var(--ink) calc(50% - var(--sp) / 2), var(--ink) calc(50% + var(--sp) / 2), color-mix(in srgb, var(--c1) 14%, transparent) calc(50% + var(--sp) / 2), color-mix(in srgb, var(--c1) 34%, transparent) 100%), #0a2630; background: var(--gsbg); }
+body.viewer .gssh { display: grid; grid-template-columns: 1fr var(--sp) 1fr; align-items: center; padding: 26px 0 10px; }
+body.viewer .gssec:first-child .gssh { padding-top: 24px; }
+body.viewer .gssh span { text-align: center; font: 400 22px 'Bowlby One', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--sun); }      /* (Bowlby One, as in the chosen mock: one of the few places besides the round / turn / break numbers) */
+body.viewer .gssh i { height: 2px; background: linear-gradient(90deg, transparent, rgba(238, 108, 43, .6), transparent); }
+body.viewer .gsrow { display: grid; grid-template-columns: 1fr var(--sp) 1fr; align-items: center; min-height: 56px; border-top: 1px solid rgba(248, 237, 203, .06); transition: background .2s; }
+body.viewer .gsrow:hover { background: linear-gradient(90deg, transparent, rgba(248, 237, 203, .05) 30%, rgba(248, 237, 203, .05) 70%, transparent); }
+body.viewer .gsv { display: flex; align-items: center; gap: 14px; padding: 0 30px; font: 400 30px/1 'Park Num', system-ui, sans-serif; color: #fff; }
+body.viewer .gsv.a { justify-content: flex-end; }
+body.viewer .gsv.lo { opacity: .38; }
+body.viewer .gsch { width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; visibility: hidden; }
+body.viewer .gsv.a .gsch { border-left: 10px solid var(--sun); }
+body.viewer .gsv.b .gsch { border-right: 10px solid var(--sun); }
+body.viewer .gsv.hi .gsch { visibility: visible; }
+body.viewer .gslab { text-align: center; padding: 0 10px; font: 600 18px Barlow, system-ui, sans-serif; color: rgba(248, 237, 203, .85); }
+body.viewer .gswait { padding: 30px; text-align: center; font: 600 18px Barlow, system-ui, sans-serif; color: var(--paper); }
+/* the graph view (the score race for now) on the dark field */
+body.viewer .gsgraph { background: rgba(7, 36, 45, .6); display: grid; place-items: stretch; padding: 8px 10px; min-height: 0; overflow: hidden; }
+body.viewer .gsgraph line.rsgrid { stroke: rgba(248, 237, 203, .16); }
+body.viewer .gsgraph text.rsax { fill: rgba(248, 237, 203, .6); }
+body.viewer .rsrace-svg { display: block; width: 100%; height: auto; overflow: visible; }
+body.viewer .gsgraph .rsrace-svg.big { width: 100%; height: 100%; }       /* (its viewBox is the pixel size of the area, `fitResults` redraws it: the graph stretches, text and lines keep their size) */
+body.viewer .rsgrid line, body.viewer line.rsgrid { stroke: rgba(23, 38, 43, .18); stroke-width: 1.2; }
+body.viewer line.rsgrid.goal { stroke: var(--rust); stroke-dasharray: 4 4; stroke-width: 1.5; }
+body.viewer line.rsbreak { stroke-width: 1.6; stroke-dasharray: 5 4; opacity: .75; }
+body.viewer text.rsbreakn { font: 400 14px 'Park Num', system-ui, sans-serif; }
+body.viewer path.rsline { fill: none; stroke-width: 3.2; stroke-linejoin: round; }
+body.viewer text.rsax { font: 600 12px 'Park Label', system-ui, sans-serif; fill: rgba(23, 38, 43, .6); }
+body.viewer .rsrace-svg.big text.rsax { font-size: 20px; }
+body.viewer .rsrace-svg:not(.big) text.rsax { font-size: 14px; }
+body.viewer .rsrace-svg.big text.rsbreakn { font-size: 18px; }
+body.viewer .rsrace-svg.big path.rsline { stroke-width: 4.5; }
+
+/* graph hover: guide line, dots on both lines, a tip with the turn and both scores */
+body.viewer .rsrace-svg .rshit { cursor: crosshair; }
+body.viewer .rsrace-svg .rsdot { stroke: #fff; stroke-width: 2; }
+body.viewer .rsrace-svg line.rsaxis { stroke: rgba(248, 237, 203, .5); stroke-width: 1.5; }
+body.viewer .rsrace-svg .rschipbg { fill: #061f27; stroke: rgba(248, 237, 203, .3); stroke-width: 1; }
+body.viewer .rsrace-svg .rschipt { fill: rgba(248, 237, 203, .75); font: 600 10px 'Barlow', sans-serif; }
+body.viewer .rsrace-svg.big .rschipt { font-size: 15px; }
+body.viewer .gsgraph .gsempty { align-self: center; justify-self: center; color: rgba(248, 237, 203, .6); font: 600 22px 'Barlow', sans-serif; }
+body.viewer .gsgraph line.rsgrid.goal { stroke: rgba(255, 112, 92, .5); stroke-dasharray: none; stroke-width: 1.2; }
+body.viewer .gsgraph text.rsax.goal { fill: #f08a78; }
+body.viewer .gsgraph line.rsbreak { stroke-width: 2.5; stroke-dasharray: none; opacity: 1; }
+body.viewer .rsrace-svg .rsguide { stroke: rgba(248, 237, 203, .5); stroke-width: 2; stroke-dasharray: none; }
+body.viewer .rsrace-svg path.rscase { stroke-width: 7.5; opacity: .8; }
+body.viewer .rsrace-svg:not(.big) path.rscase { stroke-width: 5.5; }
+
+body.viewer .rsrace-svg path.rsblk { stroke-width: 5.6; }
+body.viewer .rsrace-svg.big path.rsblk { stroke-width: 8; }
+body.viewer .rsrace-svg path.rscore { stroke-width: 1.7; }
+body.viewer .rsrace-svg.big path.rscore { stroke-width: 2.4; }
+body.viewer .rsrace-svg .rspillt { font-family: 'Barlow Semi Condensed', 'Barlow', sans-serif; font-weight: 800; }

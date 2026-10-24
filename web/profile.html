@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Player - Ark Nova</title>
+<title>Player - Ark Nova Park</title>
 <link rel="stylesheet" href="/style.css">
 <style>
   body.landing { max-width: 46rem; }
@@ -22,7 +22,7 @@
 </style>
 </head>
 <body class="landing">
-<p class="small"><a href="/">&larr; Ark Nova Replay</a> &middot; <a href="/ratings.html">Ratings</a></p>
+<p class="small"><a href="/">&larr; Ark Nova Park</a> &middot; <a href="/ratings.html">Ratings</a></p>
 <div id="msg" class="muted">Loading…</div>
 <main id="player" hidden>
   <h1 id="name"></h1>
@@ -49,7 +49,7 @@ async function main() {
   if (!res.ok) { $('msg').textContent = 'No such player.'; return; }
   const p = await res.json();
   $('msg').hidden = true; $('player').hidden = false;
-  document.title = p.username + ' - Ark Nova';
+  document.title = p.username + ' - Ark Nova Park';
   $('name').textContent = p.username;
   $('sub').textContent = `Player ${p.id} · member since ${p.member_since}` + (p.seeded_from_bga ? ' · starting rating copied from Board Game Arena (not verified)' : '');
   const stat = (v, l) => { const d = mk('div', 'stat'); d.append(mk('b', null, String(v)), mk('span', null, l)); return d; };

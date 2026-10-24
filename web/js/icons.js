@@ -75,16 +75,15 @@ export function pic(name, h) {
   return img;
 }
 
-// two-digit money numbers are set with a tighter letter-spacing (.two, -.1em); the ink then lies right of the anchor by this much (em, measured with the font), so it is shifted back
-const MONEY_INK = { 10: .098, 11: .005, 12: .099, 13: .09, 14: .115, 15: .086, 16: .099, 17: .088, 18: .096, 19: .095 };
-export const moneyDx = (v) => '-' + (MONEY_INK[v] ?? .06) + 'em';
-// the shift (em) that centres a number set in Bowlby One with the letter-spacing `ls` (em) by its ink: with a negative spacing the advance ends short of the last digit and the digits have
-// uneven side bearings, so the ink lies right / left of the middle; measured with a canvas (HTML numbers; the SVG ones use the table above)
+// the shift (em) that centres a number set in Park Num (Archivo, parkposter.css) with the letter-spacing `ls` (em) by its ink: the digits have uneven side bearings (a 1 especially), so the ink lies right / left of the middle;
+// measured with a canvas
 let inkCtx = null;
-export function inkDxEm(text, ls = -.1) {
+export function inkDxEm(text, ls = 0) {
   if (!inkCtx) inkCtx = document.createElement('canvas').getContext('2d');
-  inkCtx.font = "100px 'Bowlby One'"; inkCtx.letterSpacing = (ls * 100) + 'px';
+  inkCtx.font = "100px 'Park Num'"; inkCtx.letterSpacing = (ls * 100) + 'px';
   const m = inkCtx.measureText(String(text));
   return -((m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2 - m.width / 2) / 100;
 }
+// the shift of a two-digit money number in an svg text (bonus tiles, association strip), centred by its ink; the digits keep Park Num's own spacing
+export const moneyDx = (v) => inkDxEm(v, 0) + 'em';
 
