@@ -2,7 +2,7 @@
 // and shows "Open in Ark Nova Replay" on the game review page only when the table's index data AND its log are both stored
 // and the index data is about the same table as the log.
 // The three base conservation projects must be known for a replay. When the log never shows all of them (they appear only when a project is supported), the review page
-// shows a prompt instead of the button: open BGA's own replay as one of the players, where the extension reads the projects off the association board (#base-projects-holder),
+// shows a prompt instead of the button: the user picks a player's point of view with BGA's own replay buttons, and on the replay page the extension reads the projects off the association board (#base-projects-holder),
 // stores them with the table, and the button then sends them along with the log. Everything the extension puts on a page can be closed with its x.
 (() => {
   const DEFAULT_SITE = 'https://ark-nova.pages.dev';
@@ -136,14 +136,7 @@
     } else if (v.mode === 'pick') {
       const box = make('div', BOX);
       box.append(make('div', { fontWeight: '600', marginBottom: '4px' }, 'This log does not show all 3 base conservation projects.'));
-      box.append(make('div', { marginBottom: '8px' }, 'Open the BGA replay as one of the players: the extension reads the projects off the board and sends them with the log.'));
-      const row = make('div', { display: 'flex', flexWrap: 'wrap', gap: '6px' });
-      for (const p of pair.players) {
-        const b = make('button', { ...GREEN, padding: '6px 10px', fontSize: '13px' }, 'Replay as ' + p.name);
-        b.addEventListener('click', () => window.open(replayUrl(p.id), '_blank'));
-        row.append(b);
-      }
-      box.append(row);
+      box.append(make('div', {}, "Pick a player's point of view in BGA's replay options: the extension then reads the projects off the board and sends them with the log."));
       body.append(box);
     } else {
       body.append(make('div', BOX, 'Reading the base projects from the board… (they appear once the game has loaded)'));
@@ -154,19 +147,6 @@
     close.addEventListener('click', () => { dismissed = pageKey(pageOf()); render(); });
     ui.append(body, close);
     document.body.appendChild(ui);
-  }
-
-  // BGA's own replay page of the table as `player`: a link of the page when there is one, else built from the version of the table info (the version BGA's replay urls carry)
-  function replayUrl(player) {
-    let version = pair.index && pair.index.siteversion;
-    for (const a of document.querySelectorAll('a[href*="/archive/replay/"]')) {
-      try {
-        const u = new URL(a.href, location.href), m = /\/archive\/replay\/([^/]+)\//.exec(u.pathname);
-        if (u.searchParams.get('table') === pair.table && u.searchParams.get('player') === player) return u.href;
-        if (m && !version) version = m[1];
-      } catch (e) { /* not a link */ }
-    }
-    return `${location.origin}/archive/replay/${version ? version + '/' : ''}?table=${pair.table}&player=${player}&comments=${player};`;
   }
 
   async function openReplay() {
