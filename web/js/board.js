@@ -81,16 +81,15 @@ export function zooBoard(map, player, seat) {
     if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : ''), ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
     s.lastChild.append(tip);
   }
-  for (const sh of map.special_hexes) {            // hex that needs the upgraded Build action: red wedge on its upper left, purple "II" shovel badge
+  for (const sh of map.special_hexes) {            // hex that needs the upgraded Build action, as on BGA: a red parallelogram over the upper left of the hex, BGA's own Build II badge (web/badges/BuildII.webp) in a white ring over its right end
     if (sh.kind !== 'upgrade_flag' || covered.has(sh.x + ',' + sh.y)) continue;
     const [cx, cy] = cellCentre(sh.x, sh.y);
     const R = MAP.dx / 1.5, h = R * 0.866;
-    put('polygon', { points: [[cx - R * 0.96, cy + 3], [cx - R * 0.5, cy - h * 0.96], [cx + R * 0.38, cy - h * 0.96], [cx - R * 0.1, cy + 3]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '),
+    put('polygon', { points: [[cx - R * 0.95, cy], [cx - R * 0.475, cy - h * 0.95], [cx + R * 0.36, cy - h * 0.95], [cx - R * 0.115, cy]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '),
       class: 'flag-wedge' });
-    const br = 30, bx = cx + 3, by = cy - h + br + 2;   // the badge touches the top edge of the hex
-    put('circle', { cx: bx, cy: by, r: br, class: 'flag-badge' });
-    iconBox('r3c9', bx, by - 8, 29);               // the shovel (Build action) on white
-    put('text', { x: bx, y: by + 20, class: 'flag-label' }, 'II');
+    const br = R * 0.42, bx = cx + R * 0.02, by = cy - R * 0.42;
+    put('image', { href: '/badges/BuildII.webp', x: bx - br, y: by - br, width: 2 * br, height: 2 * br, class: 'flag-badge-img' });
+    put('circle', { cx: bx, cy: by, r: br - 1, class: 'flag-ring' });
   }
 
   // map 9: a slot with the continent icon on the edge of the map holds the player's cube until the marker is removed (the log line "removes <ASIA> marker")
@@ -267,14 +266,14 @@ export function zooBoard(map, player, seat) {
       button(midX + (legal ? 48 : 0), maxY + 110, '\u2715', 'Cancel', () => { S.placement = null; render(); }, 'cancelbtn');
     }
   }
-  if (!(FORK && S.placement) && !(S.preview && S.preview.seat === seat)) {                // a right click on a map without a preview: the picker of the enclosures (bpreview.js); with the setting off the browser's menu stays
+  if (!(FORK && S.placement) && !(S.preview && S.preview.seats.includes(seat))) {                // a right click on a map without a preview: the picker of the enclosures (bpreview.js); with the setting off the browser's menu stays
     s.addEventListener('contextmenu', (e) => {
       if (!S.previewBuilding || !(map.hexes || []).length) return;
       e.preventDefault();
       document.dispatchEvent(new CustomEvent('bpreview-menu', { detail: { seat, x: e.clientX, y: e.clientY } }));
     });
   }
-  if (S.preview && S.preview.seat === seat && S.preview.error && !(FORK && S.placement)) {          // the answer of the server failed: say why (a right click ends it)
+  if (S.preview && S.preview.seats.includes(seat) && S.preview.error && !(FORK && S.placement)) {          // the answer of the server failed: say why (a right click ends it)
     const label = S.preview.name + ': ' + S.preview.error;
     const w = Math.min(1090, 50 + label.length * 13.5);
     const tag = svg('g', { class: 'pvtag', 'pointer-events': 'none', transform: 'translate(561 46)' });
@@ -284,18 +283,17 @@ export function zooBoard(map, player, seat) {
     s.addEventListener('contextmenu', (e) => { e.preventDefault(); endPreview(); });
     s.append(tag);
   }
-  if (S.preview && S.preview.seat === seat && S.preview.shape && !(FORK && S.placement)) {
-    // The placement preview (bpreview.js): every hex is a target for the anchor, the building (half see-through) follows the cursor; a click pins it there (the turn buttons appear), a second click
-    // on the same hex lets it follow again. Green = the building fits like this, red = it does not. Nothing is placed: there is no check mark, a right click anywhere on the map ends the preview.
-    const P = S.preview;
-    const cellsOf = (x, y, k) => { const [q0, r0] = toAxial(x, y); return P.shape.map((o) => { const [dq, dr] = rotateAxial(o, k); return fromAxial(q0 + dq, r0 + dr); }); };
-    const fits = (x, y, k) => P.options.has(x + ',' + y + ',' + k);
+  if (S.preview && S.preview.seats.includes(seat) && S.preview.per[seat] && !(FORK && S.placement)) {
+    // The placement preview (bpreview.js): every hex is a target for the anchor, the building (half see-through) follows the cursor, also while it is turned (R / Shift + R / wheel). Green = the building fits like this, red = it does not. Nothing is placed: there is no check mark, a right click anywhere on the map ends the preview.
+    const P = S.preview, D = P.per[seat];                                                          // (D: the shape and the legal anchors of this zoo)
+    const cellsOf = (x, y, k) => { const [q0, r0] = toAxial(x, y); return D.shape.map((o) => { const [dq, dr] = rotateAxial(o, k); return fromAxial(q0 + dq, r0 + dr); }); };
+    const fits = (x, y, k) => D.options.has(x + ',' + y + ',' + k);
     const layer = svg('g', { class: 'pvlayer' });
     const hover = svg('g', { class: 'hoverplace', 'pointer-events': 'none' });
-    const at = () => (P.x !== null ? [P.x, P.y] : P.hx !== null ? [P.hx, P.hy] : null);
+    const at = () => (P.hx !== null && P.hs === seat ? [P.hx, P.hy] : null);                                      // (always the hex under the cursor: the building keeps following it while it is turned)
     const ghostAt = (x, y) => {
       const cells = cellsOf(x, y, P.rot);
-      const g = drawBuilding({ type: P.type, x, y, rotation: P.rot, cells }, '');
+      const g = drawBuilding({ type: D.type, x, y, rotation: P.rot, cells }, '');
       g.setAttribute('class', 'pghost');
       return [g, svg('path', { d: outlinePath(cells), class: 'placeborder ' + (fits(x, y, P.rot) ? 'ok' : 'bad') })];
     };
@@ -308,43 +306,18 @@ export function zooBoard(map, player, seat) {
     tag.append(pill, txt);
     for (const h of map.hexes || []) {
       const poly = svg('polygon', { points: hexPoints(h.x, h.y), class: 'pickhex' });
-      poly.addEventListener('mouseenter', () => { P.hx = h.x; P.hy = h.y; if (P.x === null) { hover.replaceChildren(...ghostAt(h.x, h.y)); } });
-      poly.addEventListener('click', () => { if (P.x === h.x && P.y === h.y) { P.x = null; P.y = null; } else { P.x = h.x; P.y = h.y; } S.lastBoard = null; render(); });
+      poly.addEventListener('mouseenter', () => { P.hx = h.x; P.hy = h.y; P.hs = seat; hover.replaceChildren(...ghostAt(h.x, h.y)); });
       poly.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); endPreview(); });
       layer.append(poly);
     }
     s.addEventListener('contextmenu', (e) => { e.preventDefault(); endPreview(); });                       // (a right click beside the hexes ends it too)
-    s.addEventListener('mouseleave', () => { if (P.x === null) { P.hx = null; P.hy = null; hover.replaceChildren(); } });
+    s.addEventListener('mouseleave', () => { if (P.hs === seat) { P.hx = null; P.hy = null; P.hs = null; } hover.replaceChildren(); });
     s.addEventListener('wheel', (e) => { e.preventDefault(); turnPreview(e.deltaY > 0 ? 1 : -1); }, { passive: false });
     layer.append(hover);
     const here = at();
     if (here) hover.replaceChildren(...ghostAt(here[0], here[1]));
     s.append(layer);
     s.append(tag);
-    if (P.x !== null) {
-      const [ax, ay] = cellCentre(P.x, P.y);
-      const anchor = svg('g', { class: 'anchormark', 'pointer-events': 'none' });
-      anchor.append(svg('circle', { cx: ax, cy: ay, r: 17, class: 'anchordot' }), svg('line', { x1: ax - 11, y1: ay, x2: ax + 11, y2: ay, class: 'anchorcross' }),
-                    svg('line', { x1: ax, y1: ay - 11, x2: ax, y2: ay + 11, class: 'anchorcross' }));
-      s.append(anchor);
-      const centres = [0, 1, 2, 3, 4, 5].flatMap((k) => cellsOf(P.x, P.y, k)).map((c) => cellCentre(c[0], c[1]));          // (the cells of every turn: the buttons stay where they are while it turns)
-      const xs = centres.map((c) => c[0]), ys = centres.map((c) => c[1]);
-      const minX = Math.min(...xs), maxX = Math.max(...xs), midY = (Math.min(...ys) + Math.max(...ys)) / 2;
-      const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-      const button = (cx, cy, glyph, title, onclick, cls) => {
-        const g = svg('g', { class: 'placebtn ' + (cls || ''), transform: 'translate(' + clamp(cx, 40, 1082).toFixed(0) + ' ' + clamp(cy, 40, 936).toFixed(0) + ')' });
-        const tip = svg('title');
-        tip.textContent = title;
-        const gl = svg('text', { y: 12, 'text-anchor': 'middle' });
-        gl.textContent = glyph;
-        g.append(svg('circle', { r: 34 }), gl, tip);
-        g.addEventListener('click', (e) => { e.stopPropagation(); onclick(); });
-        g.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); endPreview(); });
-        s.append(g);
-      };
-      button(minX - 105, midY, '\u21B6', 'Turn counter-clockwise (Shift + R)', () => turnPreview(-1), 'rot');
-      button(maxX + 105, midY, '\u21B7', 'Turn clockwise (R)', () => turnPreview(1), 'rot');
-    }
   }
   return s;
 }

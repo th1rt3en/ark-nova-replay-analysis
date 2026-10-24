@@ -340,7 +340,7 @@ function refan(row) {                                                // the card
 export function cardRow(rawKeys, cls, emptyText, zone, dimmed, markable) {
   const row = el('div', 'cards' + (cls ? ' ' + cls : ''));
   const keys = markable ? orderedKeys(zone, rawKeys) : rawKeys;
-  if (!keys.length) row.append(el('span', 'empty', emptyText || 'none'));
+  if (!keys.length) row.append(el('span', 'empty', emptyText === '' ? '\u00a0' : emptyText || 'none')); // '' = no text (an empty hand), the space keeps the row's height
   const z = zone ? zoneNew(zone, keys) : null;
   const items = keys.map((k, i) => (k ? card(k, (z && !quiet && z.isNew(k) ? 'card-new' : '') + (dimmed && dimmed(k) ? ' dim' : '')) : el('div', 'card')));
   keys.forEach((k, i) => { if (k) items[i].dataset.key = k; });

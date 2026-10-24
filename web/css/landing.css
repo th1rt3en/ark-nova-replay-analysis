@@ -1,0 +1,143 @@
+/* The start page (web/index.html, js/landing.js): the park map. Laid out at 1920 x 1080 and zoomed to the window. changelog.md "Start page (park map)". */
+@font-face { font-family: 'Land Head'; font-weight: 600 900; font-display: swap; src: url(/fonts/bricolage-grotesque-800.woff2) format('woff2'); }
+@font-face { font-family: 'Land Text'; font-weight: 400 500; font-display: swap; src: url(/fonts/archivo-w78-500.woff2) format('woff2'); }
+@font-face { font-family: 'Land Text'; font-weight: 600; font-display: swap; src: url(/fonts/archivo-w78-600.woff2) format('woff2'); }
+@font-face { font-family: 'Land Sign'; font-weight: 600; font-display: swap; src: url(/fonts/fredoka-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Land Text'; font-weight: 700 900; font-display: swap; src: url(/fonts/archivo-w78-700.woff2) format('woff2'); }
+
+:root{
+  --ink:#17262B; --cream:#FFF7E6; --paper:#FFF3DA; --mute:#5E5446; --sand:#EFCB8E;
+  --replay:#1D8AA1; --custom:#E9662A; --sandbox:#E0A02A; --mini:#8058C4; --editor:#3E9A55;
+  color-scheme:light;
+}
+body.parkmap a{color:inherit}
+html,body{height:100%}
+body.parkmap{max-width:none;padding:0;line-height:1.4;margin:0;background:var(--sand);color:var(--ink);overflow:hidden;font:500 16px/1.4 'Land Text',system-ui,sans-serif}
+#wrap{position:fixed;inset:0;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+#map{position:absolute;left:0;top:0;overflow:visible;display:block}
+#map text{font-family:'Land Head',system-ui,sans-serif}
+.grain{position:absolute;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:.22;background-size:220px}
+.vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,transparent 58%,rgba(120,70,20,.20) 100%)}
+
+/* ---------- map motion ---------- */
+.flap{animation:flap .26s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+@keyframes flap{to{transform:scaleY(.28)}}
+.pindrop{animation:pindrop .9s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes pindrop{from{transform:translateY(-160px);opacity:0}40%{opacity:1}to{transform:none;opacity:1}}
+.pinbob{animation:pinbob 2.8s ease-in-out infinite alternate}
+@keyframes pinbob{to{transform:translateY(-7px)}}
+.pinpop{transform-box:fill-box;transform-origin:50% 100%;transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+.pinshadow{transition:opacity .25s}
+.pinpop.on{transform:scale(1.14)}
+.lab{opacity:0;animation:labin .5s ease-out both;cursor:pointer}
+@keyframes labin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.lab text{font-weight:600;fill:#F4D27A;transition:fill .2s}
+.lab .board{fill:#5E3D26;transition:fill .2s}
+.lab .line{stroke:#E9C46A;transition:stroke .2s}
+/* hover / focus: the board takes the option's colour, line and letters turn cream (letters outlined for the light colours) */
+.lab.on .board{fill:var(--c)}
+.lab.on .line{stroke:#FFF7E6}
+.lab.on text{fill:#FFF7E6;stroke:#17262B;stroke-width:3.5;stroke-linejoin:round;paint-order:stroke}
+.lab:focus{outline:none}
+.lab:focus-visible .board{stroke:#fff;stroke-width:4}
+.halo{opacity:0;transition:opacity .25s}
+.halo.on{opacity:1}
+.hit{cursor:pointer}
+.flagw{animation:flagw 1.4s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:0 50%}
+@keyframes flagw{to{transform:skewY(-9deg) scaleX(.88)}}
+.blink{animation:blink 5s infinite;transform-box:fill-box;transform-origin:center}
+@keyframes blink{0%,94%,100%{transform:none}96%{transform:scaleY(.1)}}
+.pulse{animation:pulse 2.2s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{from{transform:scale(.6);opacity:.8}to{transform:scale(2.4);opacity:0}}
+
+.drift{animation:drift linear infinite}
+@keyframes drift{from{transform:translateX(-900px)}to{transform:translateX(2900px)}}
+.sway{animation:sway 4s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes sway{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
+.intro{animation:intro .8s ease-out both}
+@keyframes intro{from{opacity:0}to{opacity:1}}
+
+.brandchip{position:absolute;z-index:6;left:calc(34px * var(--k,1));top:calc(50px * var(--k,1));transform:scale(var(--k,1));transform-origin:0 0;display:flex;gap:14px;align-items:center;border:3px solid var(--ink);border-radius:14px;padding:16px 34px 16px 18px;animation:intro .7s .2s ease-out both;
+  /* bottle-green enamel sign with a cream double rule, hung from two ropes; a rivet where each rope is fixed */
+  background:radial-gradient(circle at 46px 10px,#E9E2CC 0 2.4px,#8A8670 2.6px 3.4px,transparent 3.8px),radial-gradient(circle at calc(100% - 46px) 10px,#E9E2CC 0 2.4px,#8A8670 2.6px 3.4px,transparent 3.8px),linear-gradient(180deg,#24694F,#1C5641);
+  box-shadow:inset 0 0 0 5px #1F5E46,inset 0 0 0 7px #F3E6C8,inset 0 0 0 9px #1F5E46,inset 0 0 0 10px rgba(243,230,200,.45),6px 7px 0 rgba(23,38,43,.22)}
+.brandchip::before,.brandchip::after{content:"";position:absolute;top:-64px;width:5px;height:72px;background:repeating-linear-gradient(160deg,#8A6A42 0 4px,#C9A876 4px 8px);border:1.5px solid var(--ink);border-radius:3px;z-index:-1}
+.brandchip::before{left:42px}.brandchip::after{right:42px}
+.brandchip.brand h1{color:#FFF7E6}
+.brandchip.brand p{color:#D6EADD;font-size:17px;margin-top:6px}
+.brand{display:flex;gap:14px;align-items:center}
+.brand img{width:68px;height:68px;flex:none}
+.brand h1{font:800 31px/1 'Land Head',system-ui,sans-serif;margin:0;letter-spacing:-.01em}
+.brand div{text-align:center}
+.brand p{margin:4px 0 0;font:600 14px/1.25 'Land Text',system-ui,sans-serif;color:var(--mute)}
+.row{display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center;padding:8px 10px 8px 6px;border-radius:16px;text-decoration:none;color:var(--ink)}
+.row svg{width:48px;height:48px;display:block}
+.row b{display:block;font:800 20px/1.1 'Land Head',system-ui,sans-serif}
+.row small{display:block;font:500 14px/1.3 'Land Text',system-ui,sans-serif;color:var(--mute)}
+.row:hover,.row:focus-visible{background:color-mix(in srgb,var(--c) 16%,transparent)}
+
+/* ---------- top right / footer ---------- */
+.account{position:absolute;z-index:6;right:calc(34px * var(--k,1));top:calc(30px * var(--k,1));transform:scale(var(--k,1));transform-origin:100% 0;display:flex;gap:10px;animation:intro .7s .3s ease-out both}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;white-space:nowrap;font:800 18px/1 'Land Head',system-ui,sans-serif;padding:12px 20px;border:3px solid var(--ink);border-radius:999px;background:var(--cream);box-shadow:0 4px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 0 var(--ink)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:0 4px 0 var(--ink)}
+.btn:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.btn.dark{background:var(--ink);color:var(--cream);box-shadow:0 4px 0 #0B1416}
+.credits{position:absolute;z-index:6;right:calc(34px * var(--k,1));bottom:calc(16px * var(--k,1));transform:scale(var(--k,1));transform-origin:100% 100%;font:700 17px/1 'Land Text',system-ui,sans-serif;letter-spacing:.02em;animation:intro .7s .4s ease-out both}
+.compass{position:absolute;z-index:6;left:calc(28px * var(--k,1));bottom:calc(14px * var(--k,1));transform:scale(var(--k,1));transform-origin:0 100%;pointer-events:none;animation:intro .7s .4s ease-out both}
+.compass svg{display:block}
+.compass .rose{pointer-events:auto;cursor:pointer;transform-box:view-box;transform-origin:0 0}
+/* Terms and privacy mowed into the lawn: darker grass in fine horizontal mower stripes with a light cut edge under it */
+#wrap .credits a{text-decoration:none;color:transparent;background:repeating-linear-gradient(180deg,#5A8A37 0 2px,#4A782C 2px 4px);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 1px 0 rgba(205,232,160,.55))}
+#wrap .credits a:hover,#wrap .credits a:focus-visible{background:repeating-linear-gradient(180deg,#3F6E25 0 2px,#335E1D 2px 4px);-webkit-background-clip:text;background-clip:text;outline:none}
+
+/* ---------- ticket card ---------- */
+.ticket{position:absolute;width:384px;background:var(--paper);border:3px solid var(--ink);border-radius:22px;box-shadow:7px 8px 0 rgba(23,38,43,.2);z-index:5;animation:tk .28s cubic-bezier(.3,1.4,.5,1)}
+@keyframes tk{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.tk-top{display:grid;grid-template-columns:58px 1fr;gap:14px;padding:18px 20px 16px;align-items:start}
+.tk-top svg{width:58px;height:58px}
+.tk-top h3{margin:2px 0 6px;font:800 26px/1 'Land Head',system-ui,sans-serif}
+.tk-top p{margin:0;font:500 15.5px/1.4 'Land Text',system-ui,sans-serif;color:#3D392F}
+.tk-cut{position:relative;height:0;border-top:2.5px dashed #BFA97C;margin:0 18px}
+.tk-bot{padding:16px 20px 18px;display:flex;gap:10px;align-items:center}
+.tk-bot.col{flex-direction:column;align-items:stretch}
+.tk-form{display:flex;gap:10px;width:100%;margin:0;flex-wrap:nowrap}
+.tk-msg{margin:0;font:600 14px/1.35 'Land Text',system-ui,sans-serif;color:var(--mute)}
+.tk-msg.error{color:#B3261E}.tk-msg.ok{color:#2A6E3C}
+.tk-msg.loading::before{content:"";display:inline-block;width:.9em;height:.9em;margin-right:.5em;vertical-align:-.12em;border:2px solid #D9C59A;border-top-color:var(--c);border-radius:50%;animation:spin .8s linear infinite}
+.tk-bot input,.plist input{flex:1;min-width:0;font:600 16px 'Land Text',system-ui,sans-serif;padding:11px 14px;border:2.5px solid var(--ink);border-radius:14px;background:#fff;color:var(--ink)}
+.tk-bot input:focus{outline:3px solid var(--c);outline-offset:1px}
+.tk-bot .btn,.plist .btn{background:var(--c);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.tk-note{font:500 13px 'Land Text',system-ui,sans-serif;color:var(--mute);margin-left:auto}
+
+/* ---------- narrow screens ---------- */
+.plist{display:none}
+body.portrait{overflow:auto}
+body.portrait #wrap{position:relative;inset:auto}
+body.portrait .brandchip,body.portrait .credits,body.portrait .compass{display:none}
+body.portrait .plist{display:flex;flex-direction:column;gap:6px;padding:20px 16px 40px}
+.plist .brand h1{font-size:28px}
+.plist .tk-form{margin:8px 0 6px}
+.plinks{display:flex;gap:18px;margin:14px 6px 0;font:600 15px 'Land Text',system-ui,sans-serif}
+/* the account widget of account.js, moved into the top right corner: logged out it is one Uluru red admission ticket with a person sign (no text; aria-label from landing.js), logged in the name on a red ticket tag and a Log out link */
+.account #acctbar{position:static;display:flex;gap:14px;align-items:center;background:none;border:0;box-shadow:none;padding:0;font:700 18px 'Land Text',system-ui,sans-serif}
+.account #acctbar:empty{display:none}
+.account #acctbar > button:not(.linkbtn){all:unset;box-sizing:border-box;cursor:pointer;width:108px;height:58px;font-size:0;color:transparent;background:url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20108%2058%22%3E%3Cpath%20d%3D%22M9%202H70A8%208%200%200%200%2086%202H99A7%207%200%200%201%20106%209V49A7%207%200%200%201%2099%2056H86A8%208%200%200%200%2070%2056H9A7%207%200%200%201%202%2049V9A7%207%200%200%201%209%202Z%22%20fill%3D%22%23D2553A%22%20stroke%3D%22%2317262B%22%20stroke-width%3D%223%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M78%2014V44%22%20stroke%3D%22%238E2E19%22%20stroke-width%3D%222.2%22%20stroke-dasharray%3D%223%203.4%22/%3E%3Cpath%20d%3D%22M12%2010H64%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%20opacity%3D%22.35%22%20stroke-linecap%3D%22round%22/%3E%3Cg%20transform%3D%22translate%2822%2013%29%20scale%281.35%29%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%228%22%20r%3D%224.6%22%20fill%3D%22%23FFF7E6%22%20stroke%3D%22%2317262B%22%20stroke-width%3D%221.8%22/%3E%3Cpath%20d%3D%22M3.5%2021.5c1-5%204.5-7%208.5-7s7.5%202%208.5%207z%22%20fill%3D%22%23FFF7E6%22%20stroke%3D%22%2317262B%22%20stroke-width%3D%221.8%22%20stroke-linejoin%3D%22round%22/%3E%3C/g%3E%3Cpath%20d%3D%22M92%2024.5l1.3%202.7%203%20.4-2.2%202.1.5%203-2.6-1.4-2.7%201.4.5-3-2.1-2.1%203-.4z%22%20fill%3D%22%23FFF7E6%22%20stroke%3D%22%2317262B%22%20stroke-width%3D%221.2%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E") no-repeat center/100% 100%;filter:drop-shadow(0 4px 0 #17262B);transition:transform .12s,filter .12s}
+.account #acctbar > button:not(.linkbtn):hover{transform:translateY(-2px);filter:drop-shadow(0 6px 0 #17262B)}
+.account #acctbar > button:not(.linkbtn):active{transform:translateY(3px);filter:drop-shadow(0 1px 0 #17262B)}
+.account #acctbar button:focus-visible{outline:3px solid #fff;outline-offset:3px;border-radius:10px}
+.account #acctbar .acctname{color:#FFF7E6;font:800 18px 'Land Head',system-ui,sans-serif;text-decoration:none;background:#D2553A;border:3px solid var(--ink);border-radius:10px;padding:12px 18px;box-shadow:0 4px 0 var(--ink);outline:2px dashed #8E2E19;outline-offset:-8px;max-width:16ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.account #acctbar .acctrating{display:none}
+.account #acctbar button.linkbtn{all:unset;cursor:pointer;color:var(--ink);font:700 16px 'Land Text',system-ui,sans-serif;text-decoration:underline;text-shadow:0 0 3px #FFF3DA,0 0 3px #FFF3DA}
+body.portrait .account{right:12px;top:12px;transform:scale(.6)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+#here{pointer-events:none}
+/* the moving animals, cloud shadows and the flock never catch clicks, so every bush stays clickable */
+.deco{pointer-events:none}
+/* the lookout's binoculars: lens caps on in a window, light lenses and a gold ring in full screen */
+#lookout .lens{fill:#3E4C52;transition:fill .3s}#lookout .glint{fill:#fff;opacity:0;transition:opacity .3s}
+#lookout .lookring{transition:stroke .3s}
+.fullhint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);padding:9px 18px;border-radius:999px;background:#1F2A2E;color:#fff;font:600 15px 'Land Text',sans-serif;opacity:0;pointer-events:none;transition:opacity .3s;z-index:20}.fullhint.on{opacity:.94}
+body.fullview #lookout .lens{fill:#BFE3F0}body.fullview #lookout .glint{opacity:.9}body.fullview #lookout .lookring{stroke:#E0A02A}

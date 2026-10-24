@@ -58,9 +58,9 @@ h3 { margin: 0 0 .4rem; font-size: .95rem; }
 .board { width: 100%; display: block; margin-bottom: .6rem; border-radius: 6px; background: #cfd8c4; }
 .board .bonus-label { font: 700 34px system-ui, sans-serif; fill: #222; text-anchor: middle; pointer-events: none; }
 .board .bonus-number { font: 800 44px system-ui, sans-serif; fill: #fff; stroke: #222; stroke-width: 8px; paint-order: stroke; text-anchor: middle; pointer-events: none; }
-.board .flag-wedge { fill: #e2574c; opacity: .95; pointer-events: none; }
-.board .flag-badge { fill: #a63aa6; stroke: #fff; stroke-width: 4; }
-.board .flag-label { font: 900 25px Georgia, 'Times New Roman', serif; fill: #fff; text-anchor: middle; pointer-events: none; }
+.board .flag-wedge { fill: #dd5749; pointer-events: none; }
+.board .flag-badge-img { clip-path: circle(48.5% at 50% 50%); pointer-events: none; }
+.board .flag-ring { fill: none; stroke: #fff; stroke-width: 2.5; pointer-events: none; }
 .board .money-border, .bonuspanel .money-border, .assocbar .money-border { fill: none; stroke: #fff; stroke-width: 3.5; pointer-events: none; }
 .board .nosprite { fill: rgba(60, 120, 176, .7); stroke: #fff; stroke-width: 3; }
 .iconchip { display: inline-flex; align-items: center; gap: .15rem; }
@@ -232,7 +232,6 @@ aside { max-height: calc(calc(var(--vh, 1vh) * 100) - 5.5rem); overflow-y: auto;
 .handcount { gap: .3rem; }
 .handcount b { font-size: 1.4rem; }
 .handcount b.over { color: #c4261d; }
-.board .flag-label { font-size: 21px; }
 
 /* player tracker: a thin line between its rows */
 .pp .ppres, .pp .ppres2, .pp .ppactions { padding-bottom: .45rem; margin-bottom: .45rem; border-bottom: 1px solid rgba(111, 87, 73, .45); }
@@ -992,8 +991,8 @@ body.viewer .lobby a { color: #7a3b00; font-weight: 600; }
 
 .abandonbox[hidden] { display: none; }
 
-/* display folders like BGA (.folder-number / .folder-name): MyriadPro-Bold number, white, centred in the brown square of the picture (folder 150px -> 17px font; 19px = 1.47rem, a deliberate step above BGA); zoo place in the tab, italic 8px #624c0a */
-.folnum { left: 82.2%; top: 7.9%; font: 400 1.47rem/1 MyriadPro-Bold, system-ui, sans-serif; letter-spacing: -.05em; text-indent: -.05em; text-shadow: none; }
+/* display folders like BGA (.folder-number / .folder-name): number (BGA uses Myriad Pro Bold, no longer shipped), white, centred in the brown square of the picture (folder 150px -> 17px font; 19px = 1.47rem, a deliberate step above BGA); zoo place in the tab, italic 8px #624c0a */
+.folnum { left: 82.2%; top: 7.9%; font: 400 1.47rem/1 system-ui, sans-serif; letter-spacing: -.05em; text-indent: -.05em; text-shadow: none; }
 .folname { position: absolute; left: 6%; top: 0; width: 54%; height: 1.93rem; line-height: 2rem; font: italic .55rem/2rem system-ui, "Segoe UI", sans-serif; color: #624c0a; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
 
 /* player boxes: the extra height of the side bar (set by spreadInfo() in sidebar.js) goes to the icon rows: larger badges, more space between the rows, empty space at the bottom */

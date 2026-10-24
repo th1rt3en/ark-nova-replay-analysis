@@ -31,34 +31,31 @@ Interfaces (API calls, URL parameters, browser storage keys): changelog.md secti
 | `load.js` | `fetchReplay` |
 | `cards.js` | card faces (images from `web/cards`, made by `scripts/build_cards.py`, see changelog 14), preview popup (the 745 x 1040 `web/cards_large` image, chosen by `largeOf`; every place that shows it uses `bindPreview`: mouse = rest 1 s, touch = long press 1 s), `zoneNew` (which cards are new in a zone; the arrival flash and the departure ghosts are switched off, see changelog 27, `.gone` stays empty and `ghost()` is unused), session-only drag-to-reorder of hand / endgame cards (`orderedKeys`, `dragRow`) Hand drag (`dragRow()`): pointer events with move / up listeners on `window` (not the card: capture is unreliable), pointer clamped near the hand, `body.card-dragging` keeps the hand raised. |
 | `board.js` | hex maths, map cells, building sprites, `legalPlacement`, `zooBoard` |
-| `association.js` | association board / strip, conservation bonus panel; `slotGlyph` (the picture of one bonus space, used by the panel and by `assocbar.js`) |
-| `assocbar.js` | the bar that hangs under a zoo box while its drawer is open: bonus spaces (taken / covered), partner zoo and university slots in one row (`assocBar`), it is drawn as a ticket stub joined to the box by CSS (`parkposter.css`, `.zoo.drawer-open` mask with two bites + `.assocbar`), see changelog.md "Played cards: the drawer" |
+| `association.js` | association board / strip, conservation bonus panel |
 | `projects.js` | conservation project panel (BGA-like green strips from `web/project_strips`, see changelog 15) and markers |
 | `action-bar.js` | the bar of a frame (replay: text / gate / decision; fork/sandbox: playable controls) |
 | `fork.js` | fork mode: `initFork`, placement controls, `commitSteps`, `playFork`, `forkBar` |
 | `shared.js` | table centre: card folders (zoo place names + numbers like BGA), display, reputation track, thresholds, conservation track |
+| `pile.js` | discard / endgame deck popup |
 | `side-panel.js` | the two player info boxes (`sidePanel`) and the round (stacked label + number) / break pills of the top bar (`headerStats`, into `#hdrstats`); no deck / discard counters |
-| `dock.js` | hand / endgame-card dock: a fan of cards at the bottom left that rises on hover (CSS), per-player buttons; `S.handMode === 'tray'` draws the floating tray instead (`drawTray`, fold with the round `.trayfold` button or key H, `toggleDock`); `dockIntro` plays how the hand appears (fan: deal at the start of the game, rise and spread otherwise; tray: the starting hand drops in), the `handmode` / `settingsclosed` listeners handle the switch between the two (a raised fan while the settings are open); changelog 20-31 |
-| `zoo.js` | one player's zoo: the tab (name, eye, map badge), `renderZoo`, and the three ways to show the played cards: under the map, in the hand dock (`dock.js`) or in the drawer (`playedDrawer`, `fitPlayed`, narrow beside the map or expanded over it; see the last section of changelog.md) |
+| `dock.js` | hand / endgame-card dock: a fan of cards at the bottom left that rises on hover (CSS), per-player buttons; `S.handMode === 'tray'` draws the floating tray instead (`drawTray`, fold with `toggleDock` / key H, hint state in localStorage); `dockIntro` plays how the hand appears (fan: deal at the start of the game, rise and spread otherwise; tray: the starting hand drops in), the `handmode` / `settingsclosed` listeners handle the switch between the two (a raised fan while the settings are open); changelog 20-31 |
+| `zoo.js` | one player's zoo |
 | `log-labels.js` | move-list label icons and engine badge |
 | `layout.js` | `fitScale` (page zoom), `fitDisplay`; registers the resize listener |
 | `frames.js` | the frames of a replay step (step text, turn-end gate, decision), see changelog.md section 9 |
 | `notips.js` | one rule that removes tooltips from pictures (images, SVG, project panel, image-only elements), see changelog.md section 7 |
 | `sidebar.js` | Control / Log tabs, `followLog`, `fitSidebar` (measures the pane's scrollbar gutter; the sidebar content is a fixed 300 px wide, see changelog 42) |
 | `playback.js` | autoplay, speed, timeline (shown or hidden by the settings pop-up, changelog.md 8.10), `go(step, frame)`, `stepBy`, move list |
-| `settings.js` | settings pop-up: autoplay speed, timeline row, hand size and style, where the played cards are shown (`PLAYED_MODES`), card variants (no-snake, S274), layout of the two zoos; all in `localStorage.settings` (also `drawerFull`, set by the drawer's size button), changelog.md 8.10 |
+| `settings.js` | settings pop-up (autoplay speed, timeline row on/off; localStorage `settings`), changelog.md 8.10 |
 | `shortcuts.js` | keyboard shortcuts pop-up behind the ? button (`#extra`, replay page only) and the ? key; the `D` table must match the keydown handler in `main.js`; changelog.md 49 |
 | `nosnake.js` | no-snake mode: `snakeSafe(url)` swaps the 11 snake cards to `<key>_ns` / `_sw` images; used by `cards.js` (small card + `largeOf`); changelog.md 50 |
 | `sandbox.js` | sandbox lobby/setup tools |
-| `account.js` | the Log in / Sign up widget (start page, mini games hub), docs/accounts_plan.md |
-| `ctrack.js` | the conservation track (first 10 points) as a vector and the bonus pentagon (`pentagonShape`) shared with the other bonus tiles |
-| `reptrack.js` | the reputation track as a vector (15 chevron spaces, cap, appeal ticket) |
-| `handshake.js` | vector outlines of the partner zoo handshake and the university token (association strip) |
-| `thin-numbers.js` | thins the Bowlby One numbers drawn in svg (bonus tiles, placement bonuses, association slots); CSS at the end of `parkposter.css` |
-| `map_editor.js` | the map editor page (`map_editor.html`, a dev tool; `window.MAP_EDITOR` keeps `main.js` from booting the viewer) |
 | `logstore.js` | IndexedDB store for uploaded logs. Stays a CLASSIC script (global `LogStore`), loaded in `replay.html` (before `main.js`) and in `submit.html`; `load.js` reads the global for `source=upload`. Do not convert it. |
 | `main.js` | `render()` (redraws only the zones whose position changed, `S.lastBoard`, `reconcile`; changelog.md 13.2), `boot()` |
 | `play.js` | live play (play.html; the lobby / create / join form is the inline script of `play.html`): sockets or polling, clocks, game menu, abandon proposals, turn alert, end of game (also for abandoned games; a render error is retried), polling stops when the game is over; state in `S.play`; changelog.md sections 13 and 13.3 |
+| `bonusart.js` | the bonus pictures of the pentagons (5 / 8 conservation, 16 reputation, reputation track, 2 conservation): BGA's pictures in HD (`web/icons_hd`, placed by the generated `bonus_hd_data.js`, made by `scripts/build_bonus_hd.py`) on the vector pentagon, and the vector Multiplier; used by `bonusTile` (shared.js) and `ctrack.js`; changelog.md "Bonus pentagons in HD" |
+| `results.js` | the results of a finished replay: the switch Final board | Results in the move bar at the last step, › / ‹ into and out of them (`stepBy` in playback.js), the statistics counted from the raw log (`countStats`), the score race and its enlarged view; changelog.md "Results of a finished replay" |
+| `landing.js` | the start page (`web/index.html`, styles `css/landing.css`): the park map drawn in SVG, the five options with their pins, labels and tickets, the replay lookup and the live-game unlock, the account widget moved into the top right; not part of the viewer (no imports); changelog.md "Start page (park map)" |
 | `endstats.js` | classic script: the statistics of a finished game (`end.html`, and the play page at the end) |
 | `progress.js` | classic script: the progress circle of the loading box (`window.Progress`), loaded before `main.js` in `replay.html` / `fork.html` |
 

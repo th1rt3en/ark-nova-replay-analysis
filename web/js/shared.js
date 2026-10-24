@@ -2,7 +2,7 @@
 import { $, el, seatRawColor, svg } from './util.js';
 import { FORK, S, SANDBOX } from './state.js';
 import { curState } from './pov.js';
-import { card, cardMarks, ghost, zoneNew } from './cards.js';
+import { PREVIEW_CARDS, card, cardMarks, ghost, zoneNew } from './cards.js';
 import { ICON_IDS, iconUrl, moneyTile, moneyDx } from './icons.js';
 import { associationBoard } from './association.js';
 import { blockedCube, markCube, markOwner, projectPanel } from './projects.js';
@@ -10,6 +10,7 @@ import { actionBar, afterMark, cardPickAct, forkActs, forkSingleSelect, pickCard
 import { CT_BONUS_DX, CT_H, conservationTrackSvg, pentagonShape } from './ctrack.js';
 import { REP16_X, REP_W, reputationTrackSvg } from './reptrack.js';
 import { sbButton, sbEdit, sbMeta, sbPickProjects, sbSlotButtons } from './sandbox.js';
+import { drawHdBonus, hdBonus, marketingTile } from './bonusart.js';
 
 
 // zoo place printed on the tab of each display folder (BGA: folder 1..6)
@@ -26,6 +27,15 @@ const CT_BONUS_X = { 5: [1000 - CT_BONUS_DX, 1000 + CT_BONUS_DX], 8: [88 + 182.4
 // a bonus tile of the conservation track: the bonus tokens (bonus-...) are whole tiles of the icon sheet; the others (university, partner zoo, money, X tokens...)
 // are drawn like the placement bonuses of the zoo map: the yellow pentagon with the icon, and the amount for money and X tokens
 export function bonusTile(name, value, po) {
+  if (name === 'bonus-sponsor') return marketingTile();                         // (Marketing has no pentagon on BGA: its picture alone, in HD, bonusart.js)
+  const hd = hdBonus(name);
+  if (hd) {                                                                    // the pictures in HD, centred in the pentagon (bonusart.js); the Marine Worlds ones on a beige ground with the mark
+    const t = svg('svg', { class: 'ctbonus ctcomposed', viewBox: '-4 -4 88 94' }), edge = (po && po.edge) ?? 2.2;
+    pentagonShape(t, 40, 40, 80, { fill: hd.fill, edge, shadow: (po && po.shadow) ?? 2 });
+    drawHdBonus(t, name, edge);
+    if (name === 'conservation' && value) t.append(Object.assign(svg('text', { x: 40, y: 55.5, class: 'bonus-number dk conservation' }), { textContent: value }));
+    return t;
+  }
   if (name.startsWith('bonus-') && S.iconNames[name]) {
     const t = el('img', 'ctbonus');
     t.src = iconUrl(S.iconNames[name]); t.alt = name;
@@ -45,10 +55,10 @@ export function bonusTile(name, value, po) {
     if (value) t.append(Object.assign(svg('text', Object.assign({ x: 40, y: 56, class: 'bonus-number' + (String(value).length > 1 ? ' two' : '') }, String(value).length > 1 ? { dx: moneyDx(value) } : {})), { textContent: value }));      // on top of the money icon
   } else if (name === 'reputation' || name === 'appeal' || name === 'conservation') {
     picture(id, 40, 43, 48);
-    if (value) t.append(Object.assign(svg('text', { x: 40, y: 59, class: 'bonus-number' + (name === 'appeal' || name === 'conservation' ? ' dk ' + name : '') }), { textContent: value }));      // the amount over the icon, like the other reputation bonuses
+    if (value) t.append(Object.assign(svg('text', { x: 40, y: name === 'conservation' ? 55.5 : 59, class: 'bonus-number' + (name === 'appeal' || name === 'conservation' ? ' dk ' + name : '') }), { textContent: value }));      // the amount over the icon, like the other reputation bonuses (on the shield of the conservation points it sits 3.5 higher: the shield narrows towards its tip, so the foot of a 1 would hang over it)
   } else if (name === 'take-in-range-or-deck' && value > 1) {
-    picture(id, 52, 43, 48);
-    t.append(Object.assign(svg('text', { x: 16, y: 55, class: 'bonus-number', style: 'font-size:38px' }), { textContent: value }));   // the amount to the left of the icon
+    picture(id, 52, 42, 38);
+    t.append(Object.assign(svg('text', { x: 24, y: 53, class: 'bonus-number', style: 'font-size:32px' }), { textContent: value }));   // the amount to the left of a smaller card, both inside the pentagon
   } else if (name === 'xtoken' && value > 1) {
     picture(id, 40, 43, 48);
     t.append(Object.assign(svg('text', { x: 40, y: 55, class: 'bonus-number xnum' }), { textContent: value }));   // the amount lies on the X (white, black outline), like the X tokens of the player box
@@ -86,7 +96,7 @@ function conservationTrack(st) {
     const cube = blockedCube(0, seatRawColor(seat), S.replay.players[seat].name + ': conservation ' + p.conservation, undefined, 'cylinders');
     cube.setAttribute('class', 'trackcube');
     cube.style.left = ((CT_X(p.conservation) + (same.length > 1 ? (seat - 0.5) * 0.03 : 0)) * 100) + '%';
-    cube.style.top = (57 / CT_H * 100) + '%';
+    cube.style.top = 'calc(' + (57 / CT_H * 100) + '% - 18px)';          // 18 px above the centre of the shield, so the cube stands on the shield and the number stays readable
     wrap.append(cube);
   });
   return wrap;
@@ -113,6 +123,14 @@ export function renderShared(st) {
     if (k && FORK) {                                                              // a card of the display can be chosen for a move
       f.classList.add('markable');
       f.addEventListener('click', () => { if (dim && forkSingleSelect()) return; const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if (x.startsWith('display#') || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); afterMark(); });
+    }
+    if (k && PREVIEW_CARDS.has(k)) {                                                // a sponsor building of the display: a right click previews it on either zoo (bpreview.js)
+      if (S.preview && S.preview.seat === 'display' && S.preview.card === k) { const c = f.querySelector('.card'); if (c) c.classList.add('previewing'); }
+      f.addEventListener('contextmenu', (e) => {
+        if (!S.previewBuilding) return;
+        e.preventDefault();
+        document.dispatchEvent(new CustomEvent('bpreview-toggle', { detail: { seat: 'display', key: k } }));
+      });
     }
     for (const g of displayGone) if (g.index === i) f.append(ghost(g.key));       // the card that left this slot fades away on top of it
     f.append(el('span', 'folname', FOLDER_PLACES[i] || ''));

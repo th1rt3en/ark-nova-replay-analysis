@@ -7,90 +7,26 @@
 <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
-<title>Ark Nova Replay</title>
+<link rel="preload" href="/fonts/bricolage-grotesque-800.woff2" as="font" type="font/woff2" crossorigin>
+<title>Ark Nova Park</title>
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/landing.css">
 </head>
-<body class="landing">
-<h1>Ark Nova Replay</h1>
-<p class="muted">Step through a finished 2-player Ark Nova game, and soon play it out yourself.</p>
-<div class="modes">
-  <section class="mode" aria-labelledby="m-replay">
-    <h2 id="m-replay">Replay</h2>
-    <p class="muted">Step through a finished 2-player game move by move, and fork it at any point to play out an alternative line.</p>
-    <form id="f">
-      <input type="text" id="q" placeholder="Table id or table url" autocomplete="off" autofocus required
-             aria-label="BGA table id or url">
-      <button id="go">Open</button>
-    </form>
-    <p class="muted small">Paste a BGA table id (<code>924000095</code>) or a table url
-      (<code>https://boardgamearena.com/table?table=924000095</code>).</p>
-    <div id="msg" role="status" hidden></div>
-  </section>
-  <section class="mode unavailable" id="live" aria-labelledby="m-live" aria-disabled="true">
-    <h2 id="m-live">Play a live game <span class="badge" id="liveBadge">Coming soon</span></h2>
-    <p class="muted">Play a real game against a friend on the from-scratch engine: you get a link for each seat, hidden cards stay hidden, and every game is recorded for a replay.</p>
-    <button type="button" id="liveBtn" disabled>Not available yet</button>
-  </section>
-  <section class="mode" aria-labelledby="m-sandbox">
-    <h2 id="m-sandbox">Sandbox mode</h2>
-    <p class="muted">Pick the maps, set up the board and edit the game at any time (cards, display, resources, partner zoos, workers...) against a bot that only passes.</p>
-    <a href="/sandbox.html"><button type="button">Start a sandbox</button></a>
-  </section>
-  <section class="mode" aria-labelledby="m-editor">
-    <h2 id="m-editor">Map editor</h2>
-    <p class="muted">Design a zoo map: place rock and water hexes, placement bonuses and upgrade requirements on a blank board, then copy or download it as JSON.</p>
-    <a href="/map_editor.html"><button type="button">Open the map editor</button></a>
-  </section>
-  <section class="mode" aria-labelledby="m-minigames">
-    <h2 id="m-minigames">Mini games</h2>
-    <p class="muted">Short daily puzzles played on real finished games: guess what a player kept, or who is ahead.</p>
-    <a href="/minigames/"><button type="button">See the mini games</button></a>
-    <p class="small muted"><a href="/ratings.html">Ratings of rated live games</a> &middot; <a href="/terms.html">Terms and privacy</a></p>
-  </section>
-  <section class="mode unavailable" aria-labelledby="m-custom" aria-disabled="true">
-    <h2 id="m-custom">Custom game mode <span class="badge">Coming soon</span></h2>
-    <p class="muted">Start a new game with your own choice of map, expansions and options.</p>
-    <button type="button" disabled>Not available yet</button>
-  </section>
+<body class="parkmap">
+<div id="wrap">
+  <div id="stage">
+    <svg id="map" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-label="Park map: an aviary with Replay, Custom game and Sandbox, a kiosk with the mini games and a construction site for the map editor, with Uluru in the distance"></svg>
+    <div class="ticket" id="ticket" hidden></div>
+  </div>
+  <div class="grain" id="grain"></div>
+  <div class="vignette"></div>
+  <header class="brandchip brand"><img src="/brand/logo.svg" alt=""><div><h1>Ark Nova Park</h1><p>Maintained by the United Emu Friends Association</p></div></header>
+  <div class="account"></div>
+  <div class="compass" id="compass"></div>
+  <footer class="credits"><a href="/terms.html">Terms and privacy</a></footer>
 </div>
-<script>
-const msg = document.getElementById('msg');
-function show(text, kind) { msg.textContent = text; msg.className = kind; msg.hidden = false; }
-// The live game mode is switched off for now (coming soon). Whoever knows the word can open it for this browser: type it where a table id goes and click Open.
-const LIVE_KEY = 'liveUnlocked', LIVE_WORD = 'ilovejdansp';
-function unlockLive() {
-  const sec = document.getElementById('live');
-  sec.classList.remove('unavailable'); sec.removeAttribute('aria-disabled');
-  document.getElementById('liveBadge').remove();
-  const btn = document.getElementById('liveBtn');
-  const a = document.createElement('a'); a.href = '/play.html';
-  const nb = document.createElement('button'); nb.type = 'button'; nb.textContent = 'Create a game';
-  a.append(nb); btn.replaceWith(a);
-}
-try { if (localStorage.getItem(LIVE_KEY) === '1') unlockLive(); } catch (e) { /* no storage */ }
-document.getElementById('f').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (document.getElementById('q').value.trim().toLowerCase() === LIVE_WORD) {          // (stay on this page)
-    try { localStorage.setItem(LIVE_KEY, '1'); } catch (err) { /* no storage */ }
-    if (document.getElementById('live').classList.contains('unavailable')) unlockLive();
-    document.getElementById('q').value = '';
-    msg.hidden = true;
-    return;
-  }
-  const go = document.getElementById('go');
-  go.disabled = true; show('Checking the table…', 'loading');
-  try {
-    const res = await fetch('/api/lookup?q=' + encodeURIComponent(document.getElementById('q').value));
-    const body = await res.json();
-    if (body.status === 'ready') { show('Table found, opening the replay…', 'loading'); location.href = body.next; }
-    else if (body.status === 'needs_log') {
-      show('This table is indexed but its log has not been collected yet. Taking you to the page that shows how to open it with our browser extension…', 'ok');
-      setTimeout(() => { location.href = body.next; }, 1200);
-    } else { show(body.message || 'Something went wrong.', 'error'); }
-  } catch (err) { show('Could not reach the server, try again.', 'error'); }
-  finally { go.disabled = false; }
-});
-</script>
+<nav class="plist" id="plist" aria-label="Modes"></nav>
+<script type="module" src="/js/landing.js"></script>
 <script type="module" src="/js/account.js"></script>
 </body>
 </html>

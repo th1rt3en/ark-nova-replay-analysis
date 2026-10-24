@@ -8,6 +8,7 @@ import { engineBadge, labelNode } from './log-labels.js';
 import { render } from './main.js';
 import { keepSel } from './fork.js';
 import { framesOf } from './frames.js';
+import { closeResults, openResults, resultsAvailable } from './results.js';
 
 const PLAY_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2l13 8-13 8z"/></svg>', PAUSE_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h4v14H4zM12 3h4v14h-4z"/></svg>';
 export function setPlaying(on) {
@@ -89,12 +90,15 @@ function frameAfter(n, ph, d) {
   return ph > 0 ? [n, ph - 1] : n > 0 ? [n - 1, framesOf(n - 1).length - 1] : null;
 }
 export function stepBy(d) {
+  if (S.results) { if (d < 0) closeResults(); return; }                  // (the results of a finished replay sit after the last step: ‹ goes back to the final board)
+  if (d > 0 && atEnd() && resultsAvailable()) { openResults(); return; }  // (› on the last step opens them, results.js)
   let f = frameAfter(S.step, S.phase, d);
   while (f && skipFrame(f[0], f[1])) { const g = frameAfter(f[0], f[1], d); if (!g) break; f = g; }
   if (f) go(f[0], f[1]);
 }
 export function go(n, phase = 0) {
   const before = S.step;
+  S.results = false;                                                     // (going to any step, the last one included, leaves the results)
   S.step = Math.max(0, Math.min(S.replay.steps.length - 1, n));
   S.phase = Math.max(0, Math.min(framesOf(S.step).length - 1, phase));
   if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }

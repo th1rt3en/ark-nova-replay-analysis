@@ -7,7 +7,7 @@
 <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
-<title>Game over - Ark Nova</title>
+<title>Game over - Ark Nova Park</title>
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/css/endstats.css">
 <style>
@@ -64,7 +64,7 @@
   msg.hidden = true;
   $('end').hidden = false;
   const res = data.result || {};
-  document.title = 'Game ' + game + ' over - Ark Nova';
+  document.title = 'Game ' + game + ' over - Ark Nova Park';
   EndStats.render($('endstats'), { names: [0, 1].map((i) => data.names[i] || 'Seat ' + (i + 1)), scores: res.scores || [], winner: res.winner, conceded: res.conceded, reason: res.reason || (/overtime/.test(data.end_reason || '') ? 'overtime' : undefined),
                                    status: data.status, stats: data.stats && data.stats.players });
   const bits = ['Game ' + game];

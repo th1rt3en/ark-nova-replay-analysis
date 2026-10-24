@@ -15,7 +15,7 @@ PHOTO = ROOT / "scripts" / "cardgen" / "site" / "img" / "animals" / "A488_SlowWo
 LARGE, SMALL = (745, 1040), (360, 503)
 ANIMALS = ["A470", "A474", "A475", "A482", "A483", "A485", "A487", "A492"]
 SNAKE_CARDS = ANIMALS + ["P109", "P125", "S203"]
-ART_BOTTOM = {"A": (592, 276), "P": (527, 244), "S": (563, 263)}           # y where the title bar starts: (large card, small card)
+ART_BOTTOM = {"A": (520, 252), "P": (520, 252), "S": (520, 252)}           # y where the title bar starts: (large card, small card)
 PAPER = (233, 224, 196)
 INK = (120, 110, 90)
 

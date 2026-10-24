@@ -3,6 +3,7 @@ import { svg } from './util.js';
 import { S } from './state.js';
 import { ICON_IDS, iconUrl } from './icons.js';
 import { pentagon } from './handshake.js';
+import { drawHdBonus } from './bonusart.js';
 
 export const CT_W = 2000;                                              // the drawing is 2000 units wide; the cubes and bonus tiles are placed in the same units (percent of the width / height)
 export const CT_X = (n) => 88 + 182.4 * n;
@@ -34,12 +35,8 @@ export function pentagonShape(root, cx, cy, H, { fill = SHARED.hexFill, line = S
   return g;
 }
 
-const pic = (root, id, cx, cy, h) => {
-  const [w0, h0] = S.iconSizes[id] || [h, h], w = w0 * h / h0;
-  root.append(svg('image', { href: iconUrl(id), x: cx - w / 2, y: cy - h / 2, width: w, height: h }));
-};
 const numText = (root, x, y, size, txt, fill, stroke, sw = 0.09, squeeze = 1) => {
-  const t = svg('text', { x, y, 'text-anchor': 'middle', 'font-size': size, class: 'ctnum', style: "font:400 " + size + "px 'Bowlby One',system-ui,sans-serif", fill, stroke: stroke || 'none', 'stroke-width': stroke ? size * sw : 0, 'stroke-linejoin': 'round', 'paint-order': 'stroke' });
+  const t = svg('text', { x, y, 'text-anchor': 'middle', 'font-size': size, class: 'ctnum', style: "font:400 " + size + "px 'Park Num',system-ui,sans-serif", fill, stroke: stroke || 'none', 'stroke-width': stroke ? size * sw : 0, 'stroke-linejoin': 'round', 'paint-order': 'stroke' });
   if (squeeze !== 1) t.setAttribute('transform', 'translate(' + x + ' ' + y + ') scale(' + squeeze + ' 1) translate(' + (-x) + ' ' + (-y) + ')');       // (a narrower numeral, the same height)
   t.textContent = txt; root.append(t); return t;
 };
@@ -128,10 +125,12 @@ export function conservationTrackSvg() {
     if (n === 5 || n === 8) smallFive(s, cx, hy + 6);
     if (n === 10) endSign(s, cx, hy);
   }
-  for (const [side, id] of [[-1, ICON_IDS['bonus:upgrade-card'] || 'r10c5'], [1, ICON_IDS['bonus:Worker'] || 'r5c13']]) {      // the fixed bonuses of 2: upgrade an action card, hire a worker
-    const cx = CT_X(2) + side * CT_BONUS_DX;
+  for (const [side, name] of [[-1, 'upgrade-card'], [1, 'Worker']]) {      // the fixed bonuses of 2: upgrade an action card, hire a worker (HD pictures, bonusart.js, in the units of an 80 high pentagon)
+    const cx = CT_X(2) + side * CT_BONUS_DX, k = HEX / 80;
     pentagonShape(s, cx, hy, HEX);
-    pic(s, id, cx, hy + HEX * 0.0375, HEX * 0.6);
+    const art = svg('g', { transform: 'translate(' + (cx - 40 * k) + ' ' + (hy - 40 * k) + ') scale(' + k + ')' });
+    drawHdBonus(art, name);
+    s.append(art);
   }
   return s;
 }

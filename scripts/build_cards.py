@@ -30,6 +30,12 @@ SLOT_HEIGHT = 0.8
 VARIANTS = ["P131_MW", "S274_VC"]                       # Marine Worlds reprint with other indicators (data_manual/variants_mw.json); S250_MW is made from S250 below; S274_VC = the Mascot Statue under its BGA name Victory Column (setting "Mascot Statue")
 
 
+def trim(im: Image.Image) -> Image.Image:
+    """The screenshot of a card is a little larger than the card itself (the card wrapper is narrower and lower than its container): the last 1-2 px at the right and bottom (3-4 px at the large size) are transparent and would show as a sliver beside the card. Crop to the opaque part before scaling."""
+    box = im.getchannel("A").point(lambda v: 255 if v > 128 else 0).getbbox()
+    return im.crop(box) if box else im
+
+
 def keys() -> list[str]:
     out = []
     for prefix, name in (("A", "animals"), ("S", "sponsors"), ("P", "projects"), ("F", "endgames")):
@@ -93,6 +99,7 @@ def main() -> None:
         run("node", "build.mjs")
         run("npx", "tailwindcss", "-i", "tailwind.css", "-o", "site/tw.css")
         shutil.copy(GEN / "src" / "arknova.css", GEN / "site" / "arknova.css")
+        run("node", "uniform.mjs")                      # site/uniform.css: the same photo and stripe heights for every kind of card
         (GEN / "keys.json").write_text(json.dumps(ks))
         shutil.rmtree(GEN / "out", ignore_errors=True)
         run("node", "render.mjs", "keys.json")
@@ -101,9 +108,9 @@ def main() -> None:
     for d in ("cards", "cards_large"):
         (WEB / d).mkdir(exist_ok=True)
     for k in rendered["ok"]:
-        im = Image.open(GEN / "out" / "raw" / f"{k}.png").convert("RGBA")
+        im = trim(Image.open(GEN / "out" / "raw" / f"{k}.png").convert("RGBA"))
         im.resize(LARGE, Image.LANCZOS).save(WEB / "cards_large" / f"{k}.webp", quality=90, method=4, alpha_quality=80)   # (rounded corners stay transparent)
-        small = Image.open(GEN / "out" / "compact" / f"{k}.png").convert("RGBA")                                          # the small card shows the ability names only (like BGA)
+        small = trim(Image.open(GEN / "out" / "compact" / f"{k}.png").convert("RGBA"))                                          # the small card shows the ability names only (like BGA)
         small.resize(SMALL, Image.LANCZOS).save(WEB / "cards" / f"{k}.webp", quality=88, method=4, alpha_quality=80)
     build_strips([k for k in rendered["ok"] if k[0] == "P"])
     if "S250" in rendered["ok"]:                      # Marine Worlds Sea Turtle Tank: other icons painted over the S250 card (keeps its 360 / 745 px sizes)

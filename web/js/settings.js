@@ -1,4 +1,4 @@
-// [module] Settings pop-up (the wheel in the control panel): autoplay speed, timeline row, size and style of the hand, where the played cards are shown, the card variants (no-snake, S274), the layout of the two zoos. All are remembered in the browser (`localStorage`, key `settings`); the size of the drawer (`drawerFull`) is saved without a control here: the button on the drawer sets it.
+// [module] Settings pop-up (the wheel in the control panel): full screen, autoplay speed, timeline row, size and style of the hand, where the played cards are shown, the card variants (no-snake, S274), the layout of the two zoos. All are remembered in the browser (`localStorage`, key `settings`); the size of the drawer (`drawerFull`) is saved without a control here: the button on the drawer sets it.
 import { $, el } from './util.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { setSpeed } from './playback.js';
@@ -17,7 +17,7 @@ export const settingsOpen = () => { const m = $('settingsModal'); return !!m && 
 export function toggleSettings() {
   const m = $('settingsModal'), g = $('settings');
   if (!m || !g || g.offsetParent === null) return;                 // (no gear on the page, e.g. the fork page: no settings)
-  if (m.hidden) { m.hidden = false; m.querySelector('.modalx').focus(); } else close();
+  if (m.hidden) { document.dispatchEvent(new Event('fullscreenchange')); m.hidden = false; m.querySelector('.modalx').focus(); } else close();
 }
 function close() { const m = $('settingsModal'); if (m) m.hidden = true; document.dispatchEvent(new Event('settingsclosed')); }
 // the timeline is a row of its own between the two button rows of the control panel; while it is off, a decorative line (#tldeco) holds its place
@@ -59,6 +59,16 @@ export function setupSettings() {
   const head = el('div', 'modalhead');
   const x = el('button', 'modalx'); x.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>'; x.type = 'button'; x.title = 'Close (Esc)'; x.setAttribute('aria-label', 'Close'); x.onclick = close;
   head.append(el('b', '', 'Settings'), x);
+  const fsRow = el('label', 'setrow');                                    // full screen: the Fullscreen API (F11 does the same in the browser itself); the switch follows the real state
+  const fssw = el('input'); fssw.type = 'checkbox'; fssw.className = 'setswitch';
+  const inFull = () => !!document.fullscreenElement || (window.innerWidth === screen.width && window.innerHeight === screen.height);      // (the second test: F11 browser full screen, which sets no fullscreenElement)
+  const syncFull = () => { fssw.checked = inFull(); };
+  fssw.onchange = () => {
+    try { const p = fssw.checked ? document.documentElement.requestFullscreen?.() : document.fullscreenElement ? document.exitFullscreen() : null; p?.catch?.(syncFull); } catch (e) { syncFull(); }
+  };
+  document.addEventListener('fullscreenchange', syncFull); window.addEventListener('resize', syncFull); syncFull();
+  fsRow.append(el('span', 'setlabel', 'Full screen'), fssw);
+  fsRow.title = 'Fills the whole screen (F11 does the same)';
   const speedRow = el('div', 'setrow setslide');                         // the autoplay speed: a slider with five steps (0.5x ... 4x)
   speedRow.append(el('span', 'setlabel', 'Autoplay speed'), knobSlider(SPEEDS, S.speed, 'Autoplay speed', (v) => { setSpeed(v); save(); }));
   const tlRow = el('label', 'setrow');
@@ -122,7 +132,7 @@ export function setupSettings() {
   zsel.onchange = () => { S.zooLayout = zsel.value; syncPlayedOptions(); save(); document.dispatchEvent(new Event('zoolayout')); };
   zooRow.append(el('span', 'setlabel', 'Player boards'), zsel);
   const tabs = el('div', 'settabs'); tabs.setAttribute('role', 'tablist');       // Control | Board | Cards: the rows are grouped on three tabs; the one last used stays open while the page is open
-  const panels = [['Control', [speedRow, tlRow, egRow]], ['Board', [zooRow, playedRow, modeRow, pvRow]], ['Cards', [handRow, statueRow, snakeRow]]].map(([name, rows], i) => {
+  const panels = [['Control', [fsRow, speedRow, tlRow, egRow]], ['Board', [zooRow, playedRow, modeRow, pvRow]], ['Cards', [handRow, statueRow, snakeRow]]].map(([name, rows], i) => {
     const pn = el('div', 'setpanel'); pn.setAttribute('role', 'tabpanel'); pn.append(...rows);
     const b = el('button', 'settab', name); b.type = 'button'; b.setAttribute('role', 'tab');
     b.onclick = () => showTab(i);
@@ -138,7 +148,7 @@ export function setupSettings() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen()) { e.stopPropagation(); close(); } }, true);
   document.body.append(modal);
   const wheel = $('settings');
-  if (wheel) wheel.onclick = () => { modal.hidden = false; x.focus(); };
+  if (wheel) wheel.onclick = () => { syncFull(); modal.hidden = false; x.focus(); };
   setSpeed(S.speed);
   applyTimeline();
 }

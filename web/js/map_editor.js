@@ -65,13 +65,12 @@ function drawBonus(g, bn) {                                              // as z
   if (bn.type === 'appeal' && !icon) put(g, 'text', { x: 0, y: 6, class: 'bonus-label' }, '★');
   if (SHOW_VALUE.has(bn.type) || bn.type === 'conservation') put(g, 'text', { x: 0, y: bn.type === 'money' ? 14 : 16, class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);
 }
-function drawFlag(g) {                                                    // the red wedge and the purple "II" shovel badge of a hex that needs the upgraded Build action
+function drawFlag(g) {                                                    // as zooBoard draws a hex that needs the upgraded Build action (BGA's look): red parallelogram, BGA's Build II badge in a white ring
   const h = R * 0.866;
-  put(g, 'polygon', { points: [[-R * 0.96, 3], [-R * 0.5, -h * 0.96], [R * 0.38, -h * 0.96], [-R * 0.1, 3]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '), class: 'flag-wedge' });
-  const br = 30, bx = 3, by = -h + br + 2;
-  put(g, 'circle', { cx: bx, cy: by, r: br, class: 'flag-badge' });
-  iconBox(g, 'r3c9', bx, by - 8, 29);
-  put(g, 'text', { x: bx, y: by + 20, class: 'flag-label' }, 'II');
+  put(g, 'polygon', { points: [[-R * 0.95, 0], [-R * 0.475, -h * 0.95], [R * 0.36, -h * 0.95], [-R * 0.115, 0]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '), class: 'flag-wedge' });
+  const br = R * 0.42, bx = R * 0.02, by = -R * 0.42;
+  put(g, 'image', { href: '/badges/BuildII.webp', x: bx - br, y: by - br, width: 2 * br, height: 2 * br, class: 'flag-badge-img' });
+  put(g, 'circle', { cx: bx, cy: by, r: br - 1, class: 'flag-ring' });
 }
 const group = (cx, cy, scale = 1) => svg('g', { transform: 'translate(' + cx + ' ' + cy + ')' + (scale === 1 ? '' : ' scale(' + scale + ')') });
 

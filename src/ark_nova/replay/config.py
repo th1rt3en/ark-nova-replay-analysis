@@ -7,7 +7,7 @@ from typing import Optional
 from ark_nova import data
 from ark_nova.data import map_quirks
 from ark_nova.engine.board import board
-from ark_nova.engine.build_action import SIZES, valid_placements
+from ark_nova.engine.build_action import SIZES, knows_shape, valid_placements
 from ark_nova.engine.game import deck_cards
 from ark_nova.engine.state import ActionCardChoice, GameConfig, SeedSpec
 from ark_nova.parser.conservation import extract_conservation_bonuses
@@ -28,21 +28,31 @@ def infer_maps(parsed: ParsedLog, seats: list[str]) -> list[Optional[str]]:
             if e.type == "setupPlayer" and isinstance(e.args, dict):
                 maps[str(e.args["player_id"])] = str(e.args["mapId"])
     built = set()
+    placed: dict = {}                            # a first building that is a unique building (free, from a sponsor) has no size-1 list: the next normal list, with that building on the board, tells the map
     candidates = [m["id"] for m in data.maps() if m["geometry"]]
     for mv in parsed.moves:
         for e in mv.events:
             if e.type == "buyBuilding" and isinstance(e.args, dict):
-                built.add(str(e.args["player_id"]))
+                pid = str(e.args["player_id"])
+                b = e.args.get("building") or {}
+                built.add(pid)
+                if placed.get(pid, []) is not None and knows_shape(b.get("type")):
+                    placed.setdefault(pid, []).append((b["type"], b["x"], b["y"], b.get("rotation", 0)))
+                else:
+                    placed[pid] = None
         for chk in mv.checks:
             pid = chk.get("player")
-            if "build" not in chk or pid != chk["active"] or pid in maps or pid in built:
+            if "build" not in chk or pid != chk["active"] or pid in maps:
+                continue
+            if pid in built and (placed.get(pid) is None or chk["build"].get("free") or chk["build"].get("lvl") is None):
                 continue
             # (a first building that is a sponsor's free Victory Column lists the same border cells as a size-1 building: S274, e.g. table 920295323, where no other build list precedes the first building)
             opts = {FIRST_BUILD_KINDS.get(t, t): sorted(map(tuple, v)) for t, v in chk["build"]["options"].items() if FIRST_BUILD_KINDS.get(t, t) in SIZES and v}
             if not opts:
                 continue
             lvl = chk["build"]["lvl"] or 1
-            match = [c for c in candidates if all(sorted(valid_placements(board(c), [], t, lvl)) == v for t, v in opts.items())]
+            mine = placed.get(pid) or []
+            match = [c for c in candidates if all(sorted(valid_placements(board(c), mine, t, lvl)) == v for t, v in opts.items())]
             if len(match) == 1:
                 maps[pid] = match[0]
     return [maps.get(pid) for pid in seats]

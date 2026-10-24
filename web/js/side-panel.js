@@ -57,10 +57,7 @@ function tile(cls, title, img, value, sub) {
   const t = el('span', 'rt ' + cls);
   t.title = title;
   const b = el('b', '', value);
-  if (/\bov\b/.test(cls) && !/\b(xo|money)\b/.test(cls) && String(value).length > 1) {          // appeal, conservation, reputation: several digits are set tighter (-.1em, like the money tiles), centred by their ink
-    b.style.letterSpacing = '-.1em';
-    b.style.transform = 'translateX(' + inkDxEm(value) + 'em)';
-  }
+  if (/\bov\b/.test(cls) && !/\b(xo|money)\b/.test(cls) && String(value).length > 1) b.style.transform = 'translateX(' + inkDxEm(value, 0) + 'em)';          // appeal, conservation, reputation: several digits keep Park Num's own spacing (it is already narrow), centred by their ink
   t.append(img, b);
   if (sub !== undefined) t.append(el('small', '', sub));
   return t;
@@ -101,19 +98,30 @@ function turnNumber(st) {
   }
   return done(1 - a);
 }
-// The player's name is drawn 86% as wide (Bowlby One is very wide): the text is scaled inside the link (`.ppname .nm`, parkposter.css) and the link takes the squeezed width, so the Elo pill and the
-// eye move closer; the link is a flex item and still shrinks when the row is tight, then the name ends in an ellipsis. The width is measured with a canvas (font and size as in `.ppname`, 18px).
-const NAME_SQUEEZE = 0.86;
+// The player's name sits in a span inside the link (`.ppname .nm`, parkposter.css). A name that is too long for the row is set smaller (20 px down to 16 px, so it just fits);
+// if it does not fit even at 16 px it keeps that size and ends in an ellipsis (`.nm` has text-overflow).
+const NAME_MAX = 20, NAME_MIN = 16;
+const zoomOf = (e) => e.getBoundingClientRect().width / (e.offsetWidth || 1) || 1;          // (the page is zoomed to the window: widths from getBoundingClientRect are scaled)
 function squeezeName(a, text) {
   a.textContent = '';
   a.append(el('span', 'nm', text));
   const fit = () => {
+    const who = a.parentElement, head = who && who.parentElement;
+    if (!head || !head.clientWidth) return;
+    const px = (e, k) => parseFloat(getComputedStyle(e)[k]) || 0;
+    const others = (box) => [...box.children].filter((c) => c !== a && c !== who);
+    // the room of the name = the header minus its padding, minus everything else in the header (and in the name's own group) and the gaps between them
+    const w = head.clientWidth - px(head, 'paddingLeft') - px(head, 'paddingRight') -
+      others(head).reduce((s, c) => s + c.getBoundingClientRect().width / zoomOf(head), 0) - px(head, 'columnGap') * (head.children.length - 1) -
+      others(who).reduce((s, c) => s + c.getBoundingClientRect().width / zoomOf(head), 0) - px(who, 'columnGap') * (who.children.length - 1);
     const ctx = (squeezeName.ctx = squeezeName.ctx || document.createElement('canvas').getContext('2d'));
-    ctx.font = '400 20px "Bowlby One"';
-    a.style.width = Math.ceil(ctx.measureText(text).width * NAME_SQUEEZE + 1) + 'px';
+    ctx.font = "400 " + NAME_MAX + "px 'Park Head', system-ui, sans-serif";
+    const tw = ctx.measureText(text).width;
+    const size = tw <= w ? NAME_MAX : Math.max(NAME_MIN, Math.floor(NAME_MAX * (w - 2) / tw * 10) / 10);          // (2 px spare so a near miss does not end in an ellipsis)
+    a.style.fontSize = size === NAME_MAX ? '' : size + 'px';
   };
-  fit();
-  if (document.fonts && !document.fonts.check('20px "Bowlby One"')) document.fonts.ready.then(fit);          // (the font may still be loading on the first draw)
+  if (typeof ResizeObserver !== 'undefined') queueMicrotask(() => { if (a.parentElement && a.parentElement.parentElement) new ResizeObserver(fit).observe(a.parentElement.parentElement); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 }
 function centreInk(node) {
   const shift = () => {

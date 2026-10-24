@@ -3,20 +3,23 @@ import { $, el } from './util.js';
 import { settingsOpen } from './settings.js';
 
 const D = {                                                                // key id (KeyboardEvent.key, letters lower case) -> [label, title, detail]; keep in step with the keydown handler in main.js
-  ArrowLeft: ['←', 'Back one step', 'Skips the opponent\'s hidden steps in the action card draft.'],
-  ArrowRight: ['→', 'Forward one step', 'Skips the opponent\'s hidden steps in the action card draft.'],
+  ArrowLeft: ['←', 'Back one step', 'Skips the opponent\'s hidden steps in the action card draft. On the results of a finished game: back to the final board.'],
+  ArrowRight: ['→', 'Forward one step', 'Skips the opponent\'s hidden steps in the action card draft. On the last step of a finished game: opens the results.'],
   ' ': ['Space', 'Start / stop autoplay', ''],
+  ArrowUp: ['↑', 'Table', 'In the game stats: shows the table.'],
+  ArrowDown: ['↓', 'Graph', 'In the game stats: shows the score graph.'],
   Home: ['Home', 'Jump to the first step', ''],
-  End: ['End', 'Jump to the last step', ''],
+  End: ['End', 'Jump to the last step', 'The final board, also from the results.'],
   r: ['R', 'Turn the building preview', 'While a sponsor building is being previewed (right click on its card in a hand): Shift + R turns it the other way, the mouse wheel over the map too.'],
   h: ['H', 'Show / hide the hand', 'The floating tray or the fan.'],
   s: ['S', 'Open the settings', ''],
+  F11: ['F11', 'Full screen', 'Switches the browser to full screen and back; also a switch at the top of the settings.'],
   '?': ['?', 'Open this window', 'Shift + / on most keyboards.'],
   Escape: ['Esc', 'Close', 'The settings, a dialog or this window.'],
 };
 const GAP = [' ', .5];                                                     // (a blank space in a row: [label '', width])
 const MAIN = [
-  [['Esc', 1, 'Escape'], GAP, ...[1, 2, 3, 4].map((i) => ['F' + i, 1]), GAP, ...[5, 6, 7, 8].map((i) => ['F' + i, 1]), GAP, ...[9, 10, 11, 12].map((i) => ['F' + i, 1])],
+  [['Esc', 1, 'Escape'], GAP, ...[1, 2, 3, 4].map((i) => ['F' + i, 1]), GAP, ...[5, 6, 7, 8].map((i) => ['F' + i, 1]), GAP, ...[9, 10, 11, 12].map((i) => i === 11 ? ['F11', 1, 'F11'] : ['F' + i, 1])],
   [...'`1234567890-='.split('').map((c) => [c, 1]), ['⌫', 2]],
   [['Tab', 1.5], ...'QWERTYUIOP[]'.split('').map((c) => [c, 1]), ['\\', 1.5]],
   [['Caps', 1.75], ...'ASDFGHJKL;\''.split('').map((c) => [c, 1]), ['Enter', 2.25]],
@@ -26,8 +29,8 @@ const MAIN = [
 const NAV = [
   [['Ins', 1], ['Home', 1, 'Home'], ['PgUp', 1]],
   [['Del', 1], ['End', 1, 'End'], ['PgDn', 1]],
-  [['', 1], ['↑', 1], ['', 1]],
-  [['←', 1, 'ArrowLeft'], ['↓', 1], ['→', 1, 'ArrowRight']],
+  [['', 1], ['↑', 1, 'ArrowUp'], ['', 1]],
+  [['←', 1, 'ArrowLeft'], ['↓', 1, 'ArrowDown'], ['→', 1, 'ArrowRight']],
 ];
 const idOf = (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; return k === '/' ? '?' : k; };
 export const shortcutsOpen = () => { const m = $('shortcutsModal'); return !!m && !m.hidden; };

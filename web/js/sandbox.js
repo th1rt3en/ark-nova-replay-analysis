@@ -314,7 +314,7 @@ export function sbSetupBar(bar) {
 }
 
 export function initSandbox() {
-  document.title = 'Sandbox - Ark Nova';
+  document.title = 'Sandbox - Ark Nova Park';
   if (S.replay.setup) {
     Object.assign(S.replay.setup, { stage: 'seat', controller: 0, maps: [null, null] });
     S.replay.players.forEach((q, i) => { q.name = 'Seat ' + (i + 1); });

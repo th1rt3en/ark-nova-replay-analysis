@@ -18,6 +18,7 @@ class TableRecord:
     marine_worlds: bool = False
     same_map: bool = False  # "Same map for all players" (BGA option 102 in the table info): both players play the same map
     elos: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's Elo at this table (column `elo`)
+    thinking_times: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's thinking time in seconds (column `thinking_time`)
 
     @property
     def logged(self) -> bool:
@@ -71,11 +72,12 @@ class BigQueryIndex:
         return [dict(r) for r in self._client.query(sql, job_config=config).result()]
 
     def find(self, table_id: int) -> TableRecord | None:
-        stats = self._query(f"SELECT table_id, player_id, map, is_mw, elo FROM `{self._stats_table}` WHERE table_id = @table_id", table_id)
+        stats = self._query(f"SELECT table_id, player_id, map, is_mw, elo, thinking_time FROM `{self._stats_table}` WHERE table_id = @table_id", table_id)
         if not stats:
             return None
         logs = self._query(f"SELECT table_id, file_name FROM `{self._logs_table}` WHERE table_id = @table_id LIMIT 1", str(table_id))
         return TableRecord(table_id=table_id, gcs_path=logs[0]["file_name"] if logs else None,
                            player_maps={str(r["player_id"]): map_id(str(r["map"])) for r in stats},
                            marine_worlds=any(bool(r["is_mw"]) for r in stats),
-                           elos={str(r["player_id"]): round(r["elo"]) for r in stats if r.get("elo") is not None})
+                           elos={str(r["player_id"]): round(r["elo"]) for r in stats if r.get("elo") is not None},
+                           thinking_times={str(r["player_id"]): round(r["thinking_time"]) for r in stats if r.get("thinking_time") is not None})
