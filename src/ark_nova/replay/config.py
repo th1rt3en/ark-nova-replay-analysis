@@ -232,6 +232,10 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
                 maps[i] = "14"
     known = [m is not None for m in maps]
     maps = [map_quirks.played_map_id(m or "1", parsed.table_id) for m in maps]
+    if base_projects is not None:                                         # given by the user / the extension: used only when it is 3 different base projects of this game
+        base_projects = list(base_projects)
+        if len(set(base_projects)) != 3 or not set(base_projects) <= set(deck_cards("base_project", marine_worlds)):
+            base_projects = None
     infer_bp = base_projects is None
     if base_projects is None:
         base_projects = infer_base_projects(parsed, marine_worlds)

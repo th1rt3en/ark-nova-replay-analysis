@@ -1840,3 +1840,9 @@ Scope: `src/ark_nova/replay/view.py` (`_reveal`, `_reveal_hidden`: the Hunter / 
 
 ## 102. Production start page: coming-soon options
 Scope: `web/js/landing.js` (`off`: the options listed in `window.ARK_COMING_SOON`, and the live game until its word), `scripts/deploy_pages.py` (the production copy sets the list for the start page; the start page is a drawn map now, so the HTML is no longer rewritten).
+
+## 103. Extension 1.3.0: base projects read off BGA's replay
+Scope: `extension/button.js`, `extension/manifest.json`, `web/import.html`, `web/js/load.js`, server `base_projects` (`api/main.py`, `replay/config.py`, `replay/view.py`, `storage/index.py`).
+- The extension parses the captured log and checks that `base_0..2` all appear in `slideMeeples` events (the same test as `infer_base_projects`). If yes, the "Open in Ark Nova Replay" button shows as before. If not, the review page shows a prompt with one "Replay as <player>" button per player, which opens BGA's replay page (`/archive/replay/<siteversion>/?table=..&player=..`, from a link of the page when there is one). On that page the extension reads `#base-projects-holder #base-project-0..2 .project-card[data-id]` (the keys `P103`, ..., in board order), stores them as `ark:bp:<table>` and shows the button there too; the review tab gets it through `storage.onChanged`.
+- The projects travel with the log: the import page keeps them as `baseprojects:<table>` in `LogStore`, `load.js` sends `base_projects` to `/api/tables/{id}/upload` and `/fork`; the server uses them (3 different base projects of the game, else they are ignored) in place of the inference. A log that shows all three never gets them.
+- Everything the extension adds to a page has an x; a closed panel stays closed until the page changes.

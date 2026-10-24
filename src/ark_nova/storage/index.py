@@ -19,6 +19,7 @@ class TableRecord:
     same_map: bool = False  # "Same map for all players" (BGA option 102 in the table info): both players play the same map
     elos: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's Elo at this table (column `elo`)
     thinking_times: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's thinking time in seconds (column `thinking_time`)
+    base_projects: list[str] = field(default_factory=list)  # the 3 base projects in play, positions base_0..2 (['P103', 'P106', 'P111']), read off BGA's replay by the extension; empty = infer from the log
 
     @property
     def logged(self) -> bool:

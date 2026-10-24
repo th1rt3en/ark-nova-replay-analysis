@@ -546,7 +546,8 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         known = next((m for m in infer_maps(parsed, seats) if m), None)
         if known:
             maps = [known, known]
-    setup, config, seed = game_from_log(parsed, maps=maps, marine_worlds=record.marine_worlds if record.player_maps else None)
+    setup, config, seed = game_from_log(parsed, maps=maps, marine_worlds=record.marine_worlds if record.player_maps else None,
+                                        base_projects=list(record.base_projects) or None)       # (the extension reads them off BGA's replay when the log never shows all three)
     if maps is None:
         maps = config.maps
     names = {str(p.id): p.name for p in parsed.players}

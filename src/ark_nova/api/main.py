@@ -306,10 +306,10 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
                 raw = json.loads(text)
             except ValueError:
                 return _error(422, "invalid", "The log is not valid JSON.", table_id=table_id)
-            rec = _record_for_upload(table_id, index_info)
+            rec = _record_for_upload(table_id, index_info, body.get("base_projects"))
             if rec is None:
                 return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
-            key = (table_id, hashlib.sha1((text + json.dumps(index_info, sort_keys=True)).encode()).hexdigest())
+            key = (table_id, hashlib.sha1((text + json.dumps(index_info, sort_keys=True) + json.dumps(rec.base_projects)).encode()).hexdigest())
             if key not in app.state.forks:                   # (checked once: a log that was built before is the one that passed)
                 errors = await run_in_threadpool(verify_log, raw, table_id)
                 if errors:
@@ -437,14 +437,22 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
         return await run_in_threadpool(_replay, table_id, rec, raw)
 
-    def _record_for_upload(table_id: int, index_info):
-        """The record of an uploaded log: the index's when the table has one, else built from the table info of the extension (None: that table info is about another table)."""
+    def _clean_base_projects(value) -> list[str]:
+        """The base projects the extension read off BGA's replay: 3 different keys like 'P103', in the order of the board (else [])."""
+        if not isinstance(value, list) or len(value) != 3 or not all(isinstance(k, str) and re.fullmatch(r"P\d{3}", k) for k in value) or len(set(value)) != 3:
+            return []
+        return list(value)
+
+    def _record_for_upload(table_id: int, index_info, base_projects=None):
+        """The record of an uploaded log: the index's when the table has one, else built from the table info of the extension (None: that table info is about another table).
+        `base_projects` are the three base projects the extension saw on BGA's replay (the log does not show them all)."""
+        projects = _clean_base_projects(base_projects)
         if index_info is None:
-            return app.state.index.find(table_id) or TableRecord(table_id)
+            return dataclasses.replace(app.state.index.find(table_id) or TableRecord(table_id), base_projects=projects)
         if not isinstance(index_info, dict) or str(index_info.get("id")) != str(table_id):
             return None
         base = app.state.index.find(table_id) or TableRecord(table_id)
-        changes = {"elos": elos_from_tableinfo(index_info), "same_map": same_map_of(index_info)}
+        changes = {"elos": elos_from_tableinfo(index_info), "same_map": same_map_of(index_info), "base_projects": projects}
         if not base.player_maps:                              # the table is not indexed: its table info tells the maps and the Marine Worlds flag
             changes.update(player_maps=maps_from_tableinfo(index_info), marine_worlds=marine_worlds_of(index_info))
         return dataclasses.replace(base, **changes)
@@ -457,12 +465,13 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             body = json.loads(await request.body())
             raw = body["log"]
             index_info = body.get("index")
+            base_projects = body.get("base_projects")
         except (ValueError, KeyError, TypeError):
             return _error(422, "invalid", "Send {log, index}.", table_id=table_id)
         errors = await run_in_threadpool(verify_log, raw, table_id)
         if errors:
             return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
-        rec = _record_for_upload(table_id, index_info)
+        rec = _record_for_upload(table_id, index_info, base_projects)
         if rec is None:
             return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
         return await run_in_threadpool(_replay, table_id, rec, raw)

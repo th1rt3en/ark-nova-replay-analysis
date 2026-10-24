@@ -81,3 +81,30 @@ def test_both_maps_come_from_the_table_info(client):
     info["result"]["stats"]["player"]["map"]["valuelabels"] = {"95347471": "Map 3a: Silver Lake", "89641657": "Map 3a: Silver Lake"}
     r = client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), info))
     assert [m["id"] for m in r.json()["maps"]] == ["3a", "3a"]
+
+
+def _projects_body(log_text: str, projects) -> bytes:
+    return ('{"log":' + log_text + ',"index":null,"base_projects":' + json.dumps(projects) + "}").encode()
+
+
+def test_the_extension_sends_the_base_projects_the_log_never_shows(client):
+    """Table 603637393 shows two of the three base projects (P106 on base_0, P110 on base_1): the extension reads the third off BGA's replay."""
+    log = ROOT / "log_examples" / "603637393.json"
+    if not log.exists():
+        pytest.skip("log not available")
+    text = log.read_text(encoding="utf-8")
+    r = client.post("/api/tables/603637393/upload", content=_projects_body(text, ["P106", "P110", "P111"]))
+    assert r.status_code == 200 and r.json()["base_projects"] == ["P106", "P110", "P111"]
+    r = client.post("/api/tables/603637393/upload", content=_projects_body(text, ["P111", "P106", "P110"]))      # (the order is the board's: the position of each project)
+    assert r.json()["base_projects"] == ["P111", "P106", "P110"]
+
+
+def test_base_projects_that_are_not_three_different_ones_are_ignored(client):
+    log = ROOT / "log_examples" / "603637393.json"
+    if not log.exists():
+        pytest.skip("log not available")
+    text = log.read_text(encoding="utf-8")
+    inferred = client.post("/api/tables/603637393/upload", content=_projects_body(text, None)).json()["base_projects"]
+    for bad in (["P106", "P106", "P110"], ["P106", "P110"], ["P106", "P110", "S201"], ["P106", "P110", "P999"], "P106,P110,P111"):
+        r = client.post("/api/tables/603637393/upload", content=_projects_body(text, bad))
+        assert r.status_code == 200 and r.json()["base_projects"] == inferred
