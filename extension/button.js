@@ -2,7 +2,7 @@
 // and shows "Open in Ark Nova Replay" on the game review page only when the table's index data AND its log are both stored
 // and the index data is about the same table as the log.
 // The three base conservation projects must be known for a replay. When the log never shows all of them (they appear only when a project is supported), the review page
-// shows a prompt instead of the button: the user picks a player's point of view with BGA's own replay buttons, and on the replay page the extension reads the projects off the association board (#base-projects-holder),
+// shows a prompt instead of the button: the user picks a player's point of view with BGA's own replay buttons; the game is in an iframe of the replay page (all_frames), so there the extension reads the projects off the association board (#base-projects-holder),
 // stores them with the table, and the button then sends them along with the log. Everything the extension puts on a page can be closed with its x.
 (() => {
   const DEFAULT_SITE = 'https://ark-nova.pages.dev';
@@ -24,12 +24,13 @@
     } catch (e) { return DEFAULT_SITE; }
   };
 
-  // the review page of a table, or BGA's replay page of it (/archive/replay/<version>/?table=...&player=...)
+  // the review page of a table, BGA's replay page of it (/archive/replay/<version>/?table=...&player=...) or the frame of that page that holds the game
   function pageOf() {
     const table = new URLSearchParams(location.search).get('table');
     if (!/^\d+$/.test(table || '')) return null;
     if (/^\/gamereview/.test(location.pathname)) return { kind: 'review', table };
     if (/^\/archive\/replay\//.test(location.pathname)) return { kind: 'replay', table };
+    if (/^\/archive\/archive\/frame\.html/.test(location.pathname)) return { kind: 'frame', table };       // the game itself: BGA's replay page holds it in an iframe, so the board is read here (no panel)
     return null;
   }
   const pageKey = (p) => (p ? p.kind + ':' + p.table : null);
@@ -91,7 +92,7 @@
 
   async function collect() {
     const page = pageOf();
-    if (!page || page.kind !== 'replay' || !pair || pair.table !== page.table || pair.complete || found) return;
+    if (!page || page.kind === 'review' || !pair || pair.table !== page.table || pair.complete || found) return;
     const seen = readBoard();
     if (!seen) return;
     found = seen;
@@ -108,7 +109,7 @@
   // what the panel shows for the page: null (nothing), the button ('open'), the prompt to pick a point of view ('pick') or the wait for the board ('reading')
   function view() {
     const page = pageOf();
-    if (!page || !pair || pair.table !== page.table || dismissed === pageKey(page)) return null;
+    if (!page || page.kind === 'frame' || !pair || pair.table !== page.table || dismissed === pageKey(page)) return null;
     if (page.kind === 'review') {
       if (pair.complete) return { mode: 'open' };
       return pair.projects ? { mode: 'open', projects: pair.projects, names: pair.names } : { mode: 'pick' };
@@ -132,14 +133,13 @@
       button.id = 'ark-nova-replay-btn';
       button.addEventListener('click', openReplay);
       body.append(button);
-      if (v.projects) body.append(make('div', { ...BOX, padding: '4px 10px', fontSize: '12px' }, 'Base projects read from the BGA replay: ' + (v.names.length === 3 ? v.names : v.projects).join(', ')));
+      if (v.projects) body.append(make('div', { ...BOX, padding: '4px 10px', fontSize: '12px' }, 'Base projects: ' + (v.names.length === 3 ? v.names : v.projects).join(', ')));
     } else if (v.mode === 'pick') {
       const box = make('div', BOX);
-      box.append(make('div', { fontWeight: '600', marginBottom: '4px' }, 'This log does not show all 3 base conservation projects.'));
-      box.append(make('div', {}, "Pick a player's point of view in BGA's replay options: the extension then reads the projects off the board and sends them with the log."));
+      box.append(make('div', { fontWeight: '600' }, "Pick a player's point of view in BGA's replay to find the base projects."));
       body.append(box);
     } else {
-      body.append(make('div', BOX, 'Reading the base projects from the board… (they appear once the game has loaded)'));
+      body.append(make('div', BOX, 'Reading the base projects…'));
     }
     const close = make('button', { position: 'absolute', top: '-9px', right: '-9px', width: '22px', height: '22px', padding: 0, border: 'none', borderRadius: '50%', background: '#333', color: '#fff', font: '700 14px/22px sans-serif', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,.4)' }, '×');
     close.title = 'Close';
