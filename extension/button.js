@@ -14,6 +14,7 @@
   let lastPage = null;                                    // the page seen on the last look (a new one forgets what was closed and what was read)
   let loadSeq = 0;
   let dismissed = null;                                   // the page whose panel was closed with its x
+  let lastNote = 0;                                       // the time of the last console note while looking for the board
   let found = null;                                       // replay page: { projects, names } read off the board on this visit
   let ui = null;
 
@@ -29,8 +30,8 @@
     const table = new URLSearchParams(location.search).get('table');
     if (!/^\d+$/.test(table || '')) return null;
     if (/^\/gamereview/.test(location.pathname)) return { kind: 'review', table };
-    if (/^\/archive\/replay\//.test(location.pathname)) return { kind: 'replay', table };
-    if (/^\/archive\/archive\/frame\.html/.test(location.pathname)) return { kind: 'frame', table };       // the game itself: BGA's replay page holds it in an iframe, so the board is read here (no panel)
+    if (/^\/archive\/archive\/frame\.html/.test(location.pathname)) return { kind: 'frame', table };
+    if (/^\/archive\//.test(location.pathname)) return { kind: 'replay', table };       // the game itself: BGA's replay page holds it in an iframe, so the board is read here (no panel)
     return null;
   }
   const pageKey = (p) => (p ? p.kind + ':' + p.table : null);
@@ -77,25 +78,38 @@
   }
 
   // ---- BGA's replay page: the three base projects of the association board, left to right (base-project-0..2) -------------------------------
-  function readBoard() {
+  // (the game is in a same-origin iframe of the replay page: the page's own script looks into it as well, so it does not depend on the script being injected into the frame)
+  function readBoard(doc = document, depth = 0) {
     const keys = [], names = [];
     for (let n = 0; n < 3; n += 1) {
-      const card = document.querySelector(`#base-projects-holder #base-project-${n} .project-card[data-id]`);
+      const card = doc.querySelector(`#base-projects-holder #base-project-${n} .project-card[data-id]`);
       const m = card && /^(P\d{3})/.exec(card.getAttribute('data-id') || '');
-      if (!m) return null;
+      if (!m) break;
       keys.push(m[1]);
       const title = card.querySelector('.ark-card-title');
       names.push(title ? title.textContent.trim() : m[1]);
     }
-    return new Set(keys).size === 3 ? { projects: keys, names } : null;
+    if (keys.length === 3 && new Set(keys).size === 3) return { projects: keys, names };
+    if (depth > 3) return null;
+    for (const f of doc.querySelectorAll('iframe')) {
+      try { const inner = f.contentDocument && readBoard(f.contentDocument, depth + 1); if (inner) return inner; } catch (e) { /* another origin */ }
+    }
+    return null;
   }
 
   async function collect() {
     const page = pageOf();
     if (!page || page.kind === 'review' || !pair || pair.table !== page.table || pair.complete || found) return;
     const seen = readBoard();
-    if (!seen) return;
+    if (!seen) {
+      if (Date.now() - lastNote > 10000) {                // (for a bug report: what this frame can see; F12 console, filter "ark-nova")
+        lastNote = Date.now();
+        console.debug('[ark-nova] looking for the base projects:', { page: page.kind, iframes: document.querySelectorAll('iframe').length, holder: !!document.querySelector('#base-projects-holder') });
+      }
+      return;
+    }
     found = seen;
+    console.debug('[ark-nova] base projects read from the board:', seen.projects.join(', '));
     pair = { ...pair, projects: seen.projects, names: seen.names };
     await api.storage.local.set({ [key('bp', page.table)]: { table: page.table, projects: seen.projects, names: seen.names, savedAt: Date.now() } }).catch(() => {});
     render();
