@@ -2,7 +2,7 @@
 // and shows "Open in Ark Nova Replay" on the game review page only when the table's index data AND its log are both stored
 // and the index data is about the same table as the log.
 // The three base conservation projects must be known for a replay. When the log never shows all of them (they appear only when a project is supported), the review page
-// shows a prompt instead of the button: the user picks a player's point of view with BGA's own replay buttons; the game is in an iframe of the replay page (all_frames), so there the extension reads the projects off the association board (#base-projects-holder),
+// shows a prompt instead of the button: the user picks a player's point of view with BGA's own replay buttons; the replay page has the button at once (the board is read in the iframe of the game when it is clicked, or earlier) the extension reads the projects off the association board (#base-projects-holder),
 // stores them with the table, and the button then sends them along with the log. Everything the extension puts on a page can be closed with its x.
 (() => {
   const DEFAULT_SITE = 'https://ark-nova.pages.dev';
@@ -120,7 +120,7 @@
   const GREEN = { border: 'none', borderRadius: '6px', background: '#2e7d32', color: '#fff', font: '600 14px sans-serif', cursor: 'pointer', padding: '10px 16px', boxShadow: '0 2px 8px rgba(0,0,0,.35)' };
   const make = (tag, style, text) => { const n = document.createElement(tag); Object.assign(n.style, style || {}); if (text) n.textContent = text; return n; };
 
-  // what the panel shows for the page: null (nothing), the button ('open'), the prompt to pick a point of view ('pick') or the wait for the board ('reading')
+  // what the panel shows for the page: null (nothing), the button ('open') or the prompt to pick a point of view ('pick')
   function view() {
     const page = pageOf();
     if (!page || page.kind === 'frame' || !pair || pair.table !== page.table || dismissed === pageKey(page)) return null;
@@ -129,7 +129,7 @@
       return pair.projects ? { mode: 'open', projects: pair.projects, names: pair.names } : { mode: 'pick' };
     }
     if (pair.complete) return null;                       // (a replay page of a table whose log needs nothing from it)
-    return pair.projects ? { mode: 'open', projects: pair.projects, names: pair.names } : { mode: 'reading' };
+    return pair.projects ? { mode: 'open', projects: pair.projects, names: pair.names } : { mode: 'open' };       // (the button is here at once: it reads the board when it is clicked)
   }
 
   function render() {
@@ -152,8 +152,6 @@
       const box = make('div', BOX);
       box.append(make('div', { fontWeight: '600' }, "Pick a player's point of view in BGA's replay to find the base projects."));
       body.append(box);
-    } else {
-      body.append(make('div', BOX, 'Reading the base projects…'));
     }
     const close = make('button', { position: 'absolute', top: '-9px', right: '-9px', width: '22px', height: '22px', padding: 0, border: 'none', borderRadius: '50%', background: '#333', color: '#fff', font: '700 14px/22px sans-serif', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,.4)' }, '×');
     close.title = 'Close';
@@ -168,7 +166,9 @@
     if (!v || !pair) return;
     const origin = await siteOrigin();
     const { table, log, index } = pair;
-    const base_projects = pair.complete ? null : pair.projects;             // (a log that shows them all needs nothing: it stays the authority)
+    // (a log that shows them all needs nothing: it stays the authority; on the replay page the board is read now, if it was not read yet)
+    const seen = pair.complete || pair.projects ? null : readBoard();
+    const base_projects = pair.complete ? null : pair.projects || (seen && seen.projects);
     const win = window.open(origin + '/import.html?table=' + table, '_blank');
     if (!win) { alert('The popup was blocked, allow popups for this site.'); return; }
     // the import page announces itself once loaded; answer only the window we opened, only from the site's origin

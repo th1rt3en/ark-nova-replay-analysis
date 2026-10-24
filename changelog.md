@@ -1848,3 +1848,4 @@ Scope: `extension/button.js`, `extension/manifest.json`, `web/import.html`, `web
 - Everything the extension adds to a page has an x; a closed panel stays closed until the page changes.
 - BGA's replay page holds the game in an iframe (`/archive/archive/frame.html?table=..`): `button.js` runs in all frames (`all_frames`), and the frame instance only reads the board and stores the projects (no panel); the top page shows the button through `storage.onChanged`. The prompt texts are one short line each.
 - The top page of a replay also looks into same-origin iframes for the board (the script need not be injected into the frame), any `/archive/...` path counts as BGA's replay page, and the console (filter "ark-nova") says what is found.
+- The replay page shows the Open button at once (no "Reading..." state); a click reads the board then and sends the projects it finds, else the replay tool infers them.
