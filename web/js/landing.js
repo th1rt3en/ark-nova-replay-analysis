@@ -563,9 +563,9 @@ function rooSVG(dark = false) {
     <g data-torso><g data-tail><path data-tail-skin d="M-19 0C-36 7 -45 21 -63 29C-73 34 -79 33 -83 31C-86 29 -88 32 -83 35C-67 44 -44 28 -24 21C-17 20 -12 16 -10 10Z" fill="${color}" stroke="#17262b" stroke-width="1.7" stroke-linejoin="round"/>
     <path data-tail-shade d="M-29 15C-47 25 -65 37 -79 34C-65 35 -45 20 -33 14Z" fill="${shade}" opacity=".5"/>
     </g>
-    <g data-far-arm><path d="M10 -40C13 -41 16 -37 18 -33L21 -26L22.4 -22.5Q22.8 -20.9 21.6 -20.6L20.7 -22Q21 -20 19.6 -20.3Q17.9 -20.9 17.8 -23L16 -28.5L12 -34.4Z" fill="${shade}" stroke="#17262b" stroke-width="1.35" stroke-linejoin="round"/></g>
+    <g data-far-arm><path d="M9 -43C14 -43 17 -37 18 -33L21 -26L22.4 -22.5Q22.8 -20.9 21.6 -20.6L20.7 -22Q21 -20 19.6 -20.3Q17.9 -20.9 17.8 -23L16 -28.5L12 -34.4Z" fill="${shade}"/><path d="M14 -40C16 -38 17 -35 18 -33L21 -26L22.4 -22.5Q22.8 -20.9 21.6 -20.6L20.7 -22Q21 -20 19.6 -20.3Q17.9 -20.9 17.8 -23L16 -28.5L12 -34.4" fill="none" stroke="#17262b" stroke-width="1.35" stroke-linejoin="round" stroke-linecap="round"/></g>
     <path d="M-22 9C-31 4 -31 -9 -25 -22C-20 -35 -11 -43 -2 -49C4 -54 7 -59 13 -58C20 -57 20 -51 16 -45C11 -37 15 -25 12 -14C11 2 2 14 -12 15C-17 16 -20 14 -22 9Z" fill="${color}" stroke="#17262b" stroke-width="1.7" stroke-linejoin="round"/>
-    <path d="M10 -47C9 -38 14 -28 7 -17C3 -10 -2 -7 -10 -6C-14 -5 -17 -6 -15 -9C-11 -16 -11 -25 -6 -34C0 -42 6 -46 10 -47Z" fill="${belly}"/>
+    <path d="M5 -41C8 -38 13 -28 7 -17C3 -10 -2 -7 -10 -6C-14 -5 -17 -6 -15 -9C-11 -16 -11 -25 -6 -34C-1 -41 2 -43 5 -41Z" fill="${belly}"/>
     <g data-head><path d="M10 -62C3 -68 0 -77 3 -82C7 -88 13 -74 16 -64Q14 -61 10 -62Z" fill="${shade}" stroke="#17262b" stroke-width="1.5"/>
     <path d="M17 -64C17 -75 23 -85 27 -83C34 -80 28 -67 23 -61Z" fill="${color}" stroke="#17262b" stroke-width="1.5"/>
     <path d="M20 -66C20 -73 24 -80 26 -80C28 -77 25 -69 23 -66Z" fill="#D8A78D"/>
@@ -577,7 +577,11 @@ function rooSVG(dark = false) {
     <path d="M20 -63Q23 -64.3 25.5 -62.8" stroke="${shade}" stroke-width=".85" fill="none" stroke-linecap="round"/>
     <path d="M30 -51Q32.5 -48.5 34.5 -50" stroke="#684936" stroke-width=".8" fill="none" stroke-linecap="round"/>
     </g>
-    <g data-arm><path d="M7 -38C10 -40 13 -38 15 -34L18 -28L20 -22.5L20.4 -19.6Q20.3 -17.8 19 -18.3L18.5 -20Q18.8 -17.3 17.3 -17.8L16.6 -19.4Q16.8 -17.8 15.6 -18.4C14.3 -19.8 14.4 -21.4 14.5 -23.2L12 -28.4L8.3 -32.2Q5.4 -35 7 -38Z" fill="${color}" stroke="#17262b" stroke-width="1.45" stroke-linejoin="round"/><path d="M9 -36.5Q12.2 -33.3 14.3 -29.3L17.1 -23.4" fill="none" stroke="${shade}" stroke-width="1.1" stroke-linecap="round"/><path d="M14.8 -22Q17 -22.7 20 -22.1" fill="none" stroke="${shade}" stroke-width=".7" stroke-linecap="round"/></g>
+    <g data-arm>
+    <path d="M-1 -43C2 -48 8 -49 12 -44L14 -38L15 -34L18 -28L20 -22.5L20.4 -19.6Q20.3 -17.8 19 -18.3L18.5 -20Q18.8 -17.3 17.3 -17.8L16.6 -19.4Q16.8 -17.8 15.6 -18.4C14.3 -19.8 14.4 -21.4 14.5 -23.2L12 -28.4L8.3 -32.2C5.4 -35 2 -39 -1 -43Z" fill="${color}"/>
+    <path d="M11.8 -42C13 -40 14 -37 15 -34L18 -28L20 -22.5L20.4 -19.6Q20.3 -17.8 19 -18.3L18.5 -20Q18.8 -17.3 17.3 -17.8L16.6 -19.4Q16.8 -17.8 15.6 -18.4C14.3 -19.8 14.4 -21.4 14.5 -23.2L12 -28.4L8.3 -32.2Q6 -34.2 6.1 -36.5" fill="none" stroke="#17262b" stroke-width="1.45" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M8.4 -37.8Q12.2 -33.3 14.3 -29.3L17.1 -23.4" fill="none" stroke="${shade}" stroke-width="1.1" stroke-linecap="round"/>
+    <path d="M14.8 -22Q17 -22.7 20 -22.1" fill="none" stroke="${shade}" stroke-width=".7" stroke-linecap="round"/></g>
     </g><g data-near fill="${color}" stroke="#17262b" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path data-shin/>
     <path data-foot/>
     <path data-haunch/>
@@ -585,8 +589,8 @@ function rooSVG(dark = false) {
     </g>
     </g>`;
 }
-function bindRoo(el) {
-  const model = el.querySelector('.roo-model'), find = (name) => model.querySelector(`[data-${name}]`);
+function bindRoo(el, model = el.querySelector('.roo-model')) {
+  const find = (name) => model.querySelector(`[data-${name}]`);
   return {
     lift: find('lift'), torso: find('torso'), tail: find('tail'), tailSkin: find('tail-skin'), tailShade: find('tail-shade'),
     head: find('head'), arm: find('arm'), farArm: find('far-arm'),
@@ -616,6 +620,191 @@ function drawRoo(r, p) {
     const fold = g.fold;if(fold)fold.setAttribute('d',`M${H[0]-12} ${H[1]-3}Q${H[0]-7} ${H[1]-8} ${H[0]-1} ${H[1]-5}`);
   });
 }
+
+
+// A directional view owns persistent SVG nodes. The approved drawing helpers
+// update only path/transform attributes; they never replace markup per frame.
+let rooDrawing = null;
+function rooPart(attribute, value) {
+  if (!rooDrawing) return '';
+  const i = rooDrawing.next++;
+  if (rooDrawing.parts) {
+    if (rooDrawing.values[i] !== value) {
+      rooDrawing.parts[i].setAttribute(attribute, value);
+      rooDrawing.values[i] = value;
+    }
+    return '';
+  }
+  rooDrawing.values[i] = value;
+  return ` data-roo-part="${i}"`;
+}
+function bindRooDirections(el, dark) {
+  return { el, model: el.querySelector('.roo-model'), flip: el.querySelector('.rooflip'), dark, views: new Map(), angle: null, active: null };
+}
+function faceRoo(r, angle) {
+  if (r.angle === angle) return;
+  const canonical = angle > 180 ? 360 - angle : angle;
+  let view = r.views.get(canonical);
+  if (!view) {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    if (canonical === 90) {
+      node.innerHTML = rooSVG(r.dark);
+      view = { node, rig: bindRoo(null, node) };
+    } else {
+      const drawing = { next: 0, parts: null, values: [] };
+      rooDrawing = drawing;
+      try { node.innerHTML = makeDirectional8(canonical, 0, r.dark); }
+      finally { rooDrawing = null; }
+      drawing.parts = [];
+      node.querySelectorAll('[data-roo-part]').forEach(part => { drawing.parts[Number(part.getAttribute('data-roo-part'))] = part; });
+      view = { node, drawing };
+    }
+    r.model.appendChild(node); r.views.set(canonical, view);
+  }
+  if (r.active && r.active !== view) r.active.node.setAttribute('display', 'none');
+  view.node.removeAttribute('display');
+  r.flip.setAttribute('transform', `scale(${angle > 180 ? -1 : 1} 1)`);
+  r.el.setAttribute('data-direction', angle);
+  r.active = view; r.angle = angle;
+}
+function drawRooDirection(r, phase) {
+  if (!r.active) return;
+  if (r.active.rig) { drawRoo(r.active.rig, phase); return; }
+  rooDrawing = r.active.drawing; rooDrawing.next = 0;
+  try { makeDirectional8(r.angle > 180 ? 360 - r.angle : r.angle, phase, r.dark); }
+  finally { rooDrawing = null; }
+}
+// SVG/map coordinates: zero points up; bearings increase clockwise.
+function rooBearing(dx, dy) {
+  return ((Math.round(Math.atan2(dx, -dy) / (Math.PI / 4)) % 8 + 8) % 8) * 45;
+}
+function rooAligned(dx, dy) {
+  return Math.abs(dx) < 1e-7 || Math.abs(dy) < 1e-7 || Math.abs(Math.abs(dx) - Math.abs(dy)) < 1e-7;
+}
+
+// Approved directional artwork. 225/270/315 mirror the matching right-facing views.
+const ink8='#17262b';
+const palette8=dark=>({coat:dark?'#926C50':'#BF875D',shade:dark?'#77563F':'#A46B49',belly:dark?'#D6BE9C':'#EBD3AD',ear:'#D8A78D',nose:'#45352C'});
+function path8(d,fill,w=1.7,stroke=ink8){const part=rooPart('d',d);if(rooDrawing?.parts)return '';return `<path${part} d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${w}"/>`;}
+function patch8(d,fill){return path8(d,fill,0,'none');}
+function line8(d,color=ink8,w=.8){return path8(d,'none',w,color);}
+function eye8(x,y,rx=2.5,ry=2.8){if(rooDrawing?.parts)return '';return `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#443127"/><ellipse cx="${x+.6}" cy="${y-.8}" rx=".75" ry=".85" fill="#fff5df"/>`;}
+function group8(html,transform=''){const part=rooPart('transform',transform);if(rooDrawing?.parts)return '';return `<g${part}${transform?` transform="${transform}"`:''}>${html}</g>`;}
+function earFront8(p){return path8('M-10 -65C-16 -69 -22 -82 -18 -85C-13 -88 -7 -75 -6 -66Z',p.coat,1.5)+patch8('M-11 -68C-14 -72 -18 -81 -17 -82C-14 -82 -10 -74 -9 -68Z',p.ear)+path8('M7 -66C9 -77 16 -88 20 -85C24 -81 17 -69 12 -64Z',p.coat,1.5)+patch8('M10 -68C12 -75 18 -83 19 -82C20 -78 15 -71 13 -68Z',p.ear);}
+function frontHead8(p){return earFront8(p)+path8('M-14 -57C-15 -65 -8 -69 0 -69C9 -69 15 -64 14 -57C14 -51 9 -48 6 -44Q0 -40 -6 -44C-10 -48 -14 -51 -14 -57Z',p.coat)+patch8('M-7 -53Q0 -58 7 -53C10 -48 6 -43 0 -43C-6 -43 -10 -48 -7 -53Z',p.belly)+eye8(-8,-57,2.4,2.8)+eye8(8,-57,2.4,2.8)+line8('M-11 -61Q-8 -63 -5 -61M5 -61Q8 -63 11 -61',p.shade,.85)+path8('M-4 -51Q0 -53 4 -51Q5 -48 0 -47Q-5 -48 -4 -51Z',p.nose,0)+line8('M0 -47V-45M-4 -45Q0 -42 4 -45','#684936',.75);}
+function backHead8(p){return path8('M-10 -65C-18 -71 -22 -83 -18 -85C-13 -88 -7 -76 -5 -66Z',p.shade,1.5)+path8('M7 -66C9 -78 17 -87 20 -85C24 -81 18 -69 12 -64Z',p.coat,1.5)+line8('M12 -69Q16 -75 18 -81',p.shade,1)+path8('M-14 -58C-15 -65 -8 -69 0 -69C8 -69 15 -65 14 -58C14 -53 10 -49 5 -47L-5 -47C-10 -49 -14 -53 -14 -58Z',p.coat)+patch8('M-8 -51Q0 -47 8 -51L7 -46H-7Z',p.coat);}
+function frontArm8(p,side,angle){
+ const d='M10 -39C13 -41 17 -38 17 -34L16 -28L15 -23Q16 -20 14 -18Q13 -17 12.6 -19Q12 -16.8 11 -18L10.6 -19.6Q10 -18 9.5 -19C9 -21 10 -23 10.6 -25L11 -31Q8 -36 10 -39Z';
+ const shoulder=patch8('M8 -43Q12 -44 15 -39L17 -33L11 -30L8 -36Z',p.coat);
+ const contour='M12.5 -42C15 -40 17 -37 17 -34L16 -28L15 -23Q16 -20 14 -18Q13 -17 12.6 -19Q12 -16.8 11 -18L10.6 -19.6Q10 -18 9.5 -19C9 -21 10 -23 10.6 -25L11 -31Q9.5 -33 10 -35';
+ return group8(shoulder+patch8(d,p.coat)+line8(contour,ink8,1.4)+line8('M13 -33L13 -26M11 -22Q13 -23 15 -22',p.shade,.85),`scale(${side} 1) rotate(${angle*.4} 12 -37)`);
+}
+function axialLeg8(p,side,vals,rear){
+ const [hx,hy,pitch,kx,ky,ax,ay,fa]=vals;
+ const H=hy,K=ky+(rear?-2:1),A=ay+(rear?-2:0),k=(rear?19:20)+(kx-15)*.13,a=(rear?14:16)+(ax+11)*.13;
+ let html=path8(`M${k-3} ${K}Q${k+2} ${K+5} ${a+3} ${A}L${a-3} ${A+1}Q${k-5} ${K+7} ${k-3} ${K}Z`,rear?p.shade:p.coat,1.5);
+ const tip=A+(rear?-5:8),toeX=a+(rear?-1:2),fy=fa*.12;
+ html+=rear?path8(`M${a-3} ${A+1}Q${a-6} ${A-3} ${a-4} ${A-9}Q${a-2} ${A-12} ${a+2} ${A-10}Q${a+4} ${A-8} ${a+4} ${A-4}L${a+4} ${A+1}Q${a} ${A+3} ${a-3} ${A+1}Z`,p.shade,1.45):path8(`M${a-3} ${A-2}Q${a+1} ${A-4} ${a+4} ${A-1}L${toeX+4} ${tip+fy}Q${toeX+3} ${tip+3+fy} ${toeX-2} ${tip+2+fy}Q${toeX-5} ${tip+1+fy} ${toeX-4} ${tip-2+fy}Z`,p.coat,1.45);
+ if(!rear)html+=line8(`M${toeX} ${tip}l0 2M${toeX+2.5} ${tip}l0 1.8`,p.shade,.65);
+ if(rear)return group8(html,`scale(${side} 1)`);
+ const thigh=`M21 ${H-14}C24 ${H-9} 27 ${H} 26 ${H+6}C26 ${H+13} ${k+4} ${K+6} ${k} ${K+7}C${k-5} ${K+7} 13 ${H+13} 13 ${H+5}Q13 ${H-5} 17 ${H-12}Z`;
+ html+=patch8(thigh,p.coat);
+ // The outside flows from the flank into the knee. The inner crease ends
+ // before the hip, avoiding the old closed oval around the whole muscle.
+ html+=line8(`M21 ${H-14}C24 ${H-9} 27 ${H} 26 ${H+6}C26 ${H+13} ${k+4} ${K+6} ${k} ${K+7}C${k-5} ${K+7} 13 ${H+13} 13 ${H+5}`,ink8,1.7);
+ html+=line8(`M16 ${H+1}Q17 ${H-3} 20 ${H-2}`,p.shade,.9);
+ return group8(html,`scale(${side} 1)`);
+}
+function makeDirectional8(angle,phase=0,dark=false){
+ if(angle===225||angle===315)return group8(makeDirectional8(360-angle,phase,dark),'scale(-1 1)');
+ if(angle===45)return rearQuarter8(phase,dark);
+ if(angle===135)return frontQuarter8(phase,dark);
+ const p=palette8(dark),v=rooValues(ROO_POSES,phase),[hx,hy,pitch,kx,ky,ax,ay,fa,ta,aa]=v,[bend,tip]=rooValues(ROO_TAIL_POSES,phase);
+ const rear=angle===0||angle===45,axial=angle===0||angle===180;
+ let html='';
+ if(axial){
+   const bh=ky-hy+3;
+   const torso=rear?path8(`M-7 -54C-11 -48 -11 -39 -14 -30C-19 -19 -24 -8 -24 3C-25 ${bh-5} -20 ${bh+2} -13 ${bh}Q-7 ${bh-2} -4 ${bh-6}L4 ${bh-6}Q7 ${bh-2} 13 ${bh}C20 ${bh+2} 25 ${bh-5} 24 3C24 -8 19 -19 14 -30C11 -39 11 -48 7 -54Z`,p.coat):patch8('M-7 -54C-13 -49 -12 -41 -16 -32C-23 -22 -25 -8 -22 3C-20 13 -12 17 0 17C12 17 20 13 22 3C25 -8 23 -22 16 -32C12 -41 13 -49 7 -54Z',p.coat)+line8('M-21 -14C-20 -24 -16 -32 -14 -38C-12 -45 -12 -49 -7 -54L7 -54C12 -49 12 -45 14 -38C16 -32 20 -24 21 -14M-15 11Q0 22 15 11',ink8,1.7);
+   const belly=rear?'':patch8('M-5 -46C-9 -37 -13 -28 -13 -15C-14 -5 -8 5 0 6C8 5 14 -5 13 -15C13 -28 9 -37 5 -46Q0 -49 -5 -46Z',p.belly);
+   const tail=rear?patch8(`M-6.5 0C-8 18 -5 28 -2 ${37+tip*.35}Q0 ${44+tip*.35} 3 ${38+tip*.35}C8 ${26+bend*.4} 7 18 6.5 0Z`,p.coat)+line8(`M-6.5 0C-8 18 -5 28 -2 ${37+tip*.35}Q0 ${44+tip*.35} 3 ${38+tip*.35}C8 ${26+bend*.4} 7 18 6.5 0`,ink8,1.7)+patch8(`M1 16Q5 26 1 ${38+tip*.35}Q6 29 6 17Z`,p.shade):'';
+   const head=group8(rear?backHead8(p):frontHead8(p),`translate(0 ${pitch*.12})`);
+   if(rear){
+     html=axialLeg8(p,-1,v,true)+axialLeg8(p,1,v,true);
+     html+=group8(torso+line8('M-18 -2Q-21 9 -15 13M18 -2Q21 9 15 13',p.shade,1.1)+tail+head,`translate(0 ${hy})`);
+   }else{
+     html=group8(torso+belly,`translate(0 ${hy})`)+axialLeg8(p,-1,v,false)+axialLeg8(p,1,v,false);
+     html+=group8(frontArm8(p,-1,aa)+frontArm8(p,1,aa)+head,`translate(0 ${hy})`);
+   }
+ }
+ return group8(html,`translate(0 ${rooLift(phase)})`).replace('<g ','<g stroke-linecap="round" stroke-linejoin="round" ');
+}
+
+function rearQuarterLeg8(p,v,near){
+ const [hx,hy,pitch,kx,ky,ax,ay,fa]=v,dx=near?7:-13,dy=near?3:-4;
+ const H=[hx*.58+dx,hy+dy],K=[kx*.52+dx,ky+dy],A=[ax*.58+dx,ay+dy];
+ const c=near?p.coat:p.shade;
+ let s=path8(`M${K[0]-3} ${K[1]-2}Q${K[0]+1} ${K[1]+4} ${A[0]+3} ${A[1]+2}L${A[0]-3} ${A[1]+1}Q${K[0]-6} ${K[1]+5} ${K[0]-3} ${K[1]-2}Z`,c,1.5);
+ s+=group8(path8(`M${A[0]-3} ${A[1]-2}Q${A[0]} ${A[1]-4} ${A[0]+4} ${A[1]-3}L${A[0]+14} ${A[1]-9}Q${A[0]+18} ${A[1]-10} ${A[0]+18} ${A[1]-7}Q${A[0]+17} ${A[1]-5} ${A[0]+13} ${A[1]-3}L${A[0]+2} ${A[1]+4}Q${A[0]-4} ${A[1]+5} ${A[0]-3} ${A[1]-2}Z`,c,1.5),`rotate(${fa*.4} ${A[0]} ${A[1]})`);
+ const thigh=`M${H[0]-9} ${H[1]-9}C${H[0]-18} ${H[1]-5} ${H[0]-15} ${H[1]+9} ${H[0]-7} ${H[1]+15}C${K[0]-4} ${K[1]+8} ${K[0]+5} ${K[1]+7} ${K[0]+5} ${K[1]}C${K[0]+4} ${K[1]-8} ${H[0]+6} ${H[1]-10} ${H[0]-2} ${H[1]-11}Z`;
+ s+=patch8(near?thigh:`M${H[0]-3} ${H[1]-4}C${H[0]-7} ${H[1]+4} ${H[0]-6} ${H[1]+10} ${K[0]-3} ${K[1]+5}Q${K[0]+5} ${K[1]+5} ${K[0]+4} ${K[1]-1}L${H[0]+5} ${H[1]-5}Z`,c);
+ if(near){s+=line8(`M${H[0]-12} ${H[1]+1}C${H[0]-14} ${H[1]+9} ${H[0]-7} ${H[1]+15} ${K[0]-4} ${K[1]+8}Q${K[0]+5} ${K[1]+7} ${K[0]+5} ${K[1]}C${K[0]+4} ${K[1]-7} ${H[0]+6} ${H[1]-9} ${H[0]+3} ${H[1]-9}`,ink8,1.7);s+=line8(`M${H[0]-6} ${H[1]-2}Q${H[0]} ${H[1]-7} ${H[0]+5} ${H[1]-1}`,p.shade,.9);}
+ return s;
+}
+function rearQuarter8(phase,dark){
+ const p=palette8(dark),v=rooValues(ROO_POSES,phase),[hx,hy,pitch,kx,ky,ax,ay,fa,ta,aa]=v;
+ const tr=`translate(${hx*.58} ${hy}) rotate(${(pitch-1.5)*.55})`;
+ const t=rooTailContours(phase);
+ const tail=group8(path8(t.skin,p.coat)+patch8(t.shade,p.shade),`rotate(${ta*.6} -16 5) matrix(.62 -.13 0 1 0 0)`);
+ const arm=group8(path8('M11 -42C16 -41 18 -35 18 -31L20 -26L20 -23Q19.6 -21 18.5 -22L18 -23.5Q17.8 -21.5 16.7 -22.5L16 -25L13 -31L9 -37Z',p.shade,1.3),`rotate(${aa*.5} 12 -37)`);
+ // Rotate the skull landmarks, then join them to the shoulders with
+ // continuous curves. A single outline avoids a pinched overlapping joint.
+ const rad=-pitch*.3*Math.PI/180,co=Math.cos(rad),si=Math.sin(rad);
+ const hp=(x,y)=>`${(11+(x-11)*co-(y+55)*si).toFixed(3)} ${(-55+(x-11)*si+(y+55)*co).toFixed(3)}`;
+ const body=path8(`M-10 -36C-6 -41 ${hp(0,-45)} ${hp(0,-50)}C${hp(0,-53)} ${hp(-1,-54)} ${hp(-1,-57)}C${hp(-1,-64)} ${hp(4,-70)} ${hp(13,-69)}C${hp(22,-68)} ${hp(27,-62)} ${hp(25,-56)}C${hp(23,-51)} ${hp(20,-50)} ${hp(18,-47)}C${hp(15,-43)} 13 -40 13 -35C12 -23 18 -11 15 0C13 10 1 18 -11 17C-22 16 -28 6 -25 -5C-23 -15 -17 -26 -10 -36Z`,p.coat);
+ const ears=path8('M5 -65C-1 -70 -7 -81 -4 -84C0 -87 7 -76 10 -66Z',p.coat,1.5)+line8('M5 -70Q1 -77 -2 -81',p.shade,.9)+path8('M17 -66C19 -76 24 -85 27 -83C31 -80 26 -69 23 -64Z',p.shade,1.5);
+ const earPose=group8(ears,`rotate(${-pitch*.3} 11 -55)`);
+ let s=rearQuarterLeg8(p,v,false)+group8(tail+arm+earPose+body,tr)+rearQuarterLeg8(p,v,true);
+ return group8(s,`translate(0 ${rooLift(phase)})`).replace('<g ','<g stroke-linecap="round" stroke-linejoin="round" ');
+}
+
+// Front three-quarter study: a foreshortened muzzle, a visible near cheek,
+// separated shoulders and open hip contours rather than profile parts.
+function frontQuarterHead8(p){
+ const ears=path8('M-4 -64C-11 -69 -17 -82 -13 -85C-9 -88 -1 -75 1 -65Z',p.coat,1.5)+patch8('M-5 -68C-9 -74 -13 -82 -12 -82C-9 -81 -5 -74 -3 -68Z',p.ear)+path8('M11 -65C12 -75 19 -85 23 -83C27 -80 22 -69 17 -63Z',p.shade,1.5)+patch8('M14 -68Q17 -77 22 -80Q24 -76 18 -67Z',p.ear);
+ const face=path8('M-8 -57C-10 -65 0 -70 9 -67C15 -66 18 -62 18 -58C19 -55 23 -53 23 -50Q23 -46 17 -46C12 -43 7 -45 5 -47C-2 -46 -7 -50 -8 -57Z',p.coat);
+ const muzzle=patch8('M9 -54Q14 -56 20 -53Q25 -49 20 -46C16 -44 10 -46 8 -48Q6 -51 9 -54Z',p.belly);
+ const eyes=eye8(1,-59,2.5,2.7)+eye8(14.5,-60,1.35,2.15)+line8('M-2 -63Q1 -64 4 -62M13 -63Q15 -64 16.5 -62',p.shade,.8);
+ const nose=patch8('M17 -53Q21 -54 23 -51Q23 -49 19 -48Q16 -49 17 -53Z',p.nose)+line8('M19 -48L17 -46.5Q14 -45.8 12 -47','#684936',.75);
+ return ears+face+muzzle+eyes+nose;
+}
+function frontQuarterArm8(p,aa,near){
+ if(!near)return group8(path8('M13 -43C18 -42 20 -37 20 -33L22 -27L23 -23Q23 -21 21.8 -21.8L21 -23Q21 -21 19.8 -21.6L19 -23L17 -29L13 -35Z',p.shade,1.3),`rotate(${aa*.5} 15 -38)`);
+ const skin='M-8 -43C-3 -46 1 -42 2 -35L4 -29L6 -23L6.2 -20Q6 -18.2 4.9 -19L4.5 -20.4Q4.6 -18.4 3.3 -18.8L2.8 -20.1Q2.7 -18.6 1.7 -19.3C.5 -20.7 1 -22.6 .8 -24L-1.5 -30L-5 -34Q-8 -38 -8 -43Z';
+ const edge='M.3 -40Q1.5 -38 2 -35L4 -29L6 -23L6.2 -20Q6 -18.2 4.9 -19L4.5 -20.4Q4.6 -18.4 3.3 -18.8L2.8 -20.1Q2.7 -18.6 1.7 -19.3C.5 -20.7 1 -22.6 .8 -24L-1.5 -30L-5 -34Q-6 -35.5 -6 -37';
+ return group8(patch8(skin,p.coat)+line8(edge,ink8,1.4)+line8('M-3 -36L2.7 -25M1.4 -22.7Q3.4 -23.2 5.7 -22.7',p.shade,.85),`rotate(${aa*.55} -3 -37)`);
+}
+function frontQuarterLeg8(p,v,near){
+ const [hx,hy,pitch,kx,ky,ax,ay,fa]=v,dx=near?-9:7,dy=near?2:-4;
+ const H=[hx*.55+dx,hy+dy],K=[kx*.42+dx,ky+dy],A=[ax*.48+dx,ay+dy];
+ const c=near?p.coat:p.shade;
+ let s=path8(`M${K[0]-3} ${K[1]-2}Q${K[0]+2} ${K[1]+4} ${A[0]+3} ${A[1]+2}L${A[0]-3} ${A[1]+1}Q${K[0]-6} ${K[1]+6} ${K[0]-3} ${K[1]-2}Z`,c,1.5);
+ s+=group8(path8(`M${A[0]-3} ${A[1]-2}Q${A[0]} ${A[1]-4} ${A[0]+5} ${A[1]-1}L${A[0]+17} ${A[1]+8}Q${A[0]+21} ${A[1]+10} ${A[0]+19} ${A[1]+12}Q${A[0]+17} ${A[1]+13} ${A[0]+13} ${A[1]+11}L${A[0]-2} ${A[1]+4}Q${A[0]-5} ${A[1]+2} ${A[0]-3} ${A[1]-2}Z`,c,1.5),`rotate(${fa*.5} ${A[0]} ${A[1]})`);
+ const shape=`M${H[0]-10} ${H[1]-12}C${H[0]-16} ${H[1]-3} ${H[0]-13} ${H[1]+10} ${H[0]-4} ${H[1]+15}C${K[0]-3} ${K[1]+8} ${K[0]+5} ${K[1]+6} ${K[0]+4} ${K[1]}C${K[0]+3} ${K[1]-6} ${H[0]+6} ${H[1]-5} ${H[0]} ${H[1]-7}C${H[0]-4} ${H[1]-9} ${H[0]-7} ${H[1]-12} ${H[0]-10} ${H[1]-12}Z`;
+ s+=near?patch8(shape,c):path8(shape,c,1.5);
+ if(near)s+=line8(`M${H[0]-10} ${H[1]-12}C${H[0]-16} ${H[1]-3} ${H[0]-13} ${H[1]+10} ${H[0]-4} ${H[1]+15}C${K[0]-3} ${K[1]+8} ${K[0]+5} ${K[1]+6} ${K[0]+4} ${K[1]}Q${K[0]+3} ${K[1]-4} ${H[0]+3} ${H[1]+2}`,ink8,1.7)+line8(`M${H[0]-6} ${H[1]}Q${H[0]-1} ${H[1]-4} ${H[0]+3} ${H[1]}`,p.shade,.9);
+ return s;
+}
+function frontQuarter8(phase,dark){
+ const p=palette8(dark),v=rooValues(ROO_POSES,phase),[hx,hy,pitch,kx,ky,ax,ay,fa,ta,aa]=v;
+ const tr=`translate(${hx*.55} ${hy}) rotate(${(pitch-1.5)*.5})`,t=rooTailContours(phase);
+ const tail=group8(path8(t.skin,p.coat)+patch8(t.shade,p.shade),`rotate(${ta*.6} -16 5) matrix(.62 .12 0 1 0 0)`);
+ const body=path8('M-21 10C-28 2 -27 -12 -21 -25C-17 -35 -10 -43 -2 -49C4 -54 10 -57 15 -53C19 -49 16 -43 14 -38C15 -31 18 -22 15 -11C13 1 4 15 -8 17Q-17 18 -21 10Z',p.coat);
+ const belly=patch8('M5 -42C11 -41 14 -31 13 -22C12 -13 8 -7 2 -6C-4 -5 -10 -8 -10 -14C-9 -23 -8 -31 -4 -36Q0 -42 5 -42Z',p.belly);
+ const head=group8(frontQuarterHead8(p),`rotate(${-pitch*.3} 6 -55)`);
+ let s=frontQuarterLeg8(p,v,false)+group8(tail+frontQuarterArm8(p,aa,false)+body+belly,tr)+frontQuarterLeg8(p,v,true)+group8(frontQuarterArm8(p,aa,true)+head,tr);
+ return group8(s,`translate(0 ${rooLift(phase)})`).replace('<g ','<g stroke-linecap="round" stroke-linejoin="round" ');
+}
+
 function koalaSVG() {
   return `<g transform="translate(-4 -2)">
     <path d="M-20 12C-8 6 8 6 20 12" stroke="${INK}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M-20 12C-8 6 8 6 20 12" stroke="#8A5A35" stroke-width="4" fill="none" stroke-linecap="round"/>
@@ -644,7 +833,7 @@ function animals() {
     ${walker(`<g transform="scale(.82)">${emuAdult(.9, 0)}</g>`, -12, 26)}
     ${walker(`<g transform="scale(.82)">${emuChick(.5, 0)}</g>`, -9.6)}
     ${walker(`<g transform="scale(.76)">${emuChick(.5, -.2)}</g>`, -8)}
-    ${[false, true].map((dark) => `<g class="roo" visibility="hidden"><ellipse class="rooshadow" rx="${22 * ROO_SCALE / .55}" ry="${5 * ROO_SCALE / .55}" fill="#2B3A1C" opacity=".2"/><g class="rooflip"><g class="roo-model" transform="scale(${ROO_SCALE})">${rooSVG(dark)}</g></g></g>`).join('')}
+    ${[false, true].map((dark) => `<g class="roo" visibility="hidden"><ellipse class="rooshadow" rx="${22 * ROO_SCALE / .55}" ry="${5 * ROO_SCALE / .55}" fill="#2B3A1C" opacity=".2"/><g class="rooflip"><g class="roo-model" transform="scale(${ROO_SCALE})"></g></g></g>`).join('')}
   </g>`;
 }
 function wildlife() {
@@ -911,92 +1100,156 @@ function roos() {
   const solid = (x, y, pad = 0) => near(x, y, 12 + pad) || near(x, y - 44, 12 + pad) || near(x, y - 92, 12 + pad) || under(x, y, 12 + pad) || under(x, y - 44, 3 + pad);   // feet, middle and head of a kangaroo
   const inPond = (x, y) => wet(x, y) || [0, 1, 2, 3, 4, 5, 6, 7].some((i) => wet(x + Math.cos(i * .785) * 32, y + Math.sin(i * .785) * 32)); // the water, with a margin of 32
   // The emus' lane is an obstacle of its own (painted below): the strip that the adult emus fill along the low path, from their head down, with rounded ends. It follows the path's curve, so the kangaroos neither cross nor land in it.
-  const GRID = 16, ROO_R = 114, LANE_END = 90, LANE_GAP = 140;
-  const inside = (x, y) => x > 82 && x < 1838 && y > lawnTopAt(x) + 100 && y < 1000;
-  // Everything static is rasterised once (8 px cells, a 4 px wider margin than the exact test so that a cell lookup is never less safe): what a kangaroo may not stand on
-  // (scenery, bushes, the billabong with its margin) and the creek (may be jumped, never landed in). The graph and every route test below only read these tables.
-  const CELL = 8, GW = Math.ceil(1920 / CELL), GH = Math.ceil(1080 / CELL), blocked = new Uint8Array(GW * GH), creek = new Uint8Array(GW * GH);
-  // The obstacles are painted into the table (not tested cell by cell): each one, inflated by the margin, at the three heights of a kangaroo (feet, middle, head: a point of the body
-  // lies on the obstacle when the cell lies 0 / 44 / 92 below it).
-  const PAD = 4, inCell = (x0, y0, x1, y1, fn) => {
-    for (let gy = Math.max(0, Math.floor(y0 / CELL)); gy <= Math.min(GH - 1, Math.floor(y1 / CELL)); gy++) for (let gx = Math.max(0, Math.floor(x0 / CELL)); gx <= Math.min(GW - 1, Math.floor(x1 / CELL)); gx++) fn(gx, gy, gx * CELL + CELL / 2, gy * CELL + CELL / 2);
+  const GRID = 8, ROO_R = 114, LANE_END = 90, LANE_GAP = 140;
+  const HEDGE_CLEARANCE = 140; // Includes the raised body, ears and sideways reach during flight.
+  const inside = (x, y) => x > 82 && x < 1838 && y > lawnTopAt(x) + HEDGE_CLEARANCE && y < 1000;
+  // Cache every cell touched by an obstacle, rather than testing just its centre.
+  // This preserves exact scenery clearance even at a cell's diagonal corners.
+  const CELL = 8, HALF = CELL / 2, GW = Math.ceil(1920 / CELL), GH = Math.ceil(1080 / CELL);
+  const blocked = new Uint8Array(GW * GH), creek = new Uint8Array(GW * GH);
+  const inCell = (x0, y0, x1, y1, fn) => {
+    for (let gy = Math.max(0, Math.floor(y0 / CELL)); gy <= Math.min(GH - 1, Math.floor(y1 / CELL)); gy++) for (let gx = Math.max(0, Math.floor(x0 / CELL)); gx <= Math.min(GW - 1, Math.floor(x1 / CELL)); gx++) fn(gx, gy, gx * CELL + HALF, gy * CELL + HALF);
   };
-  const paintDisc = (cx, cy, r, h) => inCell(cx - r, cy - r + h, cx + r, cy + r + h, (gx, gy, x, y) => { if ((x - cx) ** 2 + (y - h - cy) ** 2 < r * r) blocked[gy * GW + gx] = 1; });
+  const paintDisc = (cx, cy, r, h, table = blocked) => inCell(cx - r, cy - r + h, cx + r, cy + r + h, (gx, gy, x, y) => {
+    const dx = Math.max(0, Math.abs(x - cx) - HALF), dy = Math.max(0, Math.abs(y - h - cy) - HALF);
+    if (dx * dx + dy * dy <= r * r) table[gy * GW + gx] = 1;
+  });
   for (const h of [0, 44, 92]) {
-    const m = 12 + PAD;
+    const m = 12;
     for (const [cx, cy, r] of disc) paintDisc(cx, cy, r + m, h);
     for (const [a, b, c, d] of box) inCell(a - m, b - m + h, c + m, d + m + h, (gx, gy) => { blocked[gy * GW + gx] = 1; });
-    for (const [cx, cy, rx, ry] of ell) inCell(cx - rx - m, cy - ry - m + h, cx + rx + m, cy + ry + m + h, (gx, gy, x, y) => { if (((x - cx) / (rx + m)) ** 2 + ((y - h - cy) / (ry + m)) ** 2 < 1) blocked[gy * GW + gx] = 1; });
+    for (const [cx, cy, rx, ry] of ell) inCell(cx - rx - m, cy - ry - m + h, cx + rx + m, cy + ry + m + h, (gx, gy, x, y) => {
+      const dx = Math.max(0, Math.abs(x - cx) - HALF), dy = Math.max(0, Math.abs(y - h - cy) - HALF);
+      if ((dx / (rx + m)) ** 2 + (dy / (ry + m)) ** 2 <= 1) blocked[gy * GW + gx] = 1;
+    });
   }
-  for (const [cx, cy, r] of canopy) { paintDisc(cx, cy, r + 12 + PAD, 0); paintDisc(cx, cy, r + 3 + PAD, 44); }
-  const pb = pondEl.getBBox();                                           // the billabong: its outline once per cell, then a margin of 32 (+ PAD) around the wet cells
-  const wetCells = [];
-  inCell(pb.x - 4, pb.y - 4, pb.x + pb.width + 4, pb.y + pb.height + 4, (gx, gy, x, y) => { if (wet(x, y)) wetCells.push([gx, gy]); });
-  for (const [wx, wy] of wetCells) inCell(wx * CELL - 36, wy * CELL - 36, wx * CELL + CELL + 36, wy * CELL + CELL + 36, (gx, gy, x, y) => { if ((x - wx * CELL - CELL / 2) ** 2 + (y - wy * CELL - CELL / 2) ** 2 <= (32 + PAD) ** 2) blocked[gy * GW + gx] = 1; });
-  for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) { const x = gx * CELL + CELL / 2, y = gy * CELL + CELL / 2; if (x < 60 || x > 1860 || y < 280 || y > 1020) blocked[gy * GW + gx] = 1; }
+  for (const [cx, cy, r] of canopy) { paintDisc(cx, cy, r + 12, 0); paintDisc(cx, cy, r + 3, 44); }
+  const pb = pondEl.getBBox();
+  inCell(pb.x, pb.y, pb.x + pb.width, pb.y + pb.height, (gx, gy, x, y) => { if (wet(x, y)) blocked[gy * GW + gx] = 1; });
+  // Samples at most two arc units apart: a radius of 33 covers the full outline
+  // and its 32-unit water margin, including the one-unit sampling uncertainty.
+  const pondLength = pondEl.getTotalLength();
+  for (let l = 0; l <= pondLength + 2; l += 2) { const p = pondEl.getPointAtLength(Math.min(l, pondLength)); paintDisc(p.x, p.y, 33, 0); }
+  for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+    const x0 = gx * CELL, y0 = gy * CELL;
+    const hedge = Math.max(lawnTopAt(x0), lawnTopAt(x0 + CELL)) + HEDGE_CLEARANCE;
+    if (x0 <= 82 || x0 + CELL >= 1838 || y0 <= hedge || y0 + CELL >= 1000) blocked[gy * GW + gx] = 1;
+  }
   // The emus' lane. Feet only (the body is above the feet): a foot cell is blocked from LANE_GAP above the path (the adult's head ~126 + a margin) downwards, between the path's two ends
   // plus LANE_END, with the ends rounded off (a quarter ellipse), so a kangaroo can walk around the lane's ends but never between or through the emus.
   const LANE = [[436, 949], [560, 959], [760, 959], [960, 944], [1160, 957], [1330, 962], [1446, 946]];
   const laneY = (x) => { for (let k = 1; k < LANE.length; k++) if (x <= LANE[k][0]) { const [x0, y0] = LANE[k - 1], [x1, y1] = LANE[k]; return y0 + (y1 - y0) * (x - x0) / (x1 - x0); } return LANE[LANE.length - 1][1]; };
-  for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
-    const x = gx * CELL + CELL / 2, y = gy * CELL + CELL / 2, x0 = LANE[0][0], x1 = LANE[LANE.length - 1][0];
-    if (x < x0 - LANE_END || x > x1 + LANE_END) continue;
+  const laneTop = (x) => {
+    const x0 = LANE[0][0], x1 = LANE[LANE.length - 1][0];
     const u = x < x0 ? (x0 - x) / LANE_END : x > x1 ? (x - x1) / LANE_END : 0;
-    if (y > laneY(Math.min(Math.max(x, x0), x1)) - LANE_GAP * Math.sqrt(Math.max(0, 1 - u * u))) blocked[gy * GW + gx] = 1;
+    return laneY(Math.min(Math.max(x, x0), x1)) - LANE_GAP * Math.sqrt(Math.max(0, 1 - u * u));
+  };
+  for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+    const lo = Math.max(gx * CELL, LANE[0][0] - LANE_END), hi = Math.min((gx + 1) * CELL, LANE[LANE.length - 1][0] + LANE_END);
+    if (lo > hi) continue;
+    let top = Math.min(laneTop(lo), laneTop(hi));
+    for (const [x] of LANE) if (x > lo && x < hi) top = Math.min(top, laneTop(x));
+    if ((gy + 1) * CELL >= top) blocked[gy * GW + gx] = 1;
   }
-  for (const [a, b] of stream) for (let gy = Math.max(0, Math.floor((b - 45) / CELL)); gy <= Math.min(GH - 1, Math.floor((b + 45) / CELL)); gy++) for (let gx = Math.max(0, Math.floor((a - 45) / CELL)); gx <= Math.min(GW - 1, Math.floor((a + 45) / CELL)); gx++) {
-    const x = gx * CELL + CELL / 2, y = gy * CELL + CELL / 2; if ((x - a) ** 2 + (y - b) ** 2 < 45 * 45) creek[gy * GW + gx] = 1;
-  }
+  for (const [x, y] of stream) paintDisc(x, y, 45, 0, creek);
   const cellAt = (x, y) => Math.max(0, Math.min(GH - 1, Math.floor(y / CELL))) * GW + Math.max(0, Math.min(GW - 1, Math.floor(x / CELL)));
   const landable = (x, y) => inside(x, y) && !blocked[cellAt(x, y)] && !creek[cellAt(x, y)];
   const clear = (x0, y0, x1, y1) => {
-    const steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 8));
-    for (let i = 0; i <= steps; i++) {
-      const u = i / steps, x = x0 + (x1 - x0) * u, y = y0 + (y1 - y0) * u;
-      if (!inside(x, y) || blocked[cellAt(x, y)]) return false;
+    if (!inside(x0, y0) || !inside(x1, y1)) return false;
+    // Visit every cell crossed by the line, including both sides of a corner.
+    // Fixed-distance samples can miss a briefly clipped obstacle cell.
+    let gx = Math.floor(x0 / CELL), gy = Math.floor(y0 / CELL);
+    const ex = Math.floor(x1 / CELL), ey = Math.floor(y1 / CELL), dx = x1 - x0, dy = y1 - y0;
+    const sx = Math.sign(dx), sy = Math.sign(dy), tx = dx ? CELL / Math.abs(dx) : Infinity, ty = dy ? CELL / Math.abs(dy) : Infinity;
+    let ax = dx ? ((sx > 0 ? gx + 1 : gx) * CELL - x0) / dx : Infinity;
+    let ay = dy ? ((sy > 0 ? gy + 1 : gy) * CELL - y0) / dy : Infinity;
+    const hit = (x, y) => x < 0 || y < 0 || x >= GW || y >= GH || blocked[y * GW + x];
+    const horizontalEdge = !dy && Math.abs(y0 / CELL - gy) < 1e-9, verticalEdge = !dx && Math.abs(x0 / CELL - gx) < 1e-9;
+    for (;;) {
+      if (hit(gx, gy) || (horizontalEdge && hit(gx, gy - 1)) || (verticalEdge && hit(gx - 1, gy))) return false;
+      if (gx === ex && gy === ey) return true;
+      if (Math.abs(ax - ay) < 1e-10) {
+        if (hit(gx + sx, gy) || hit(gx, gy + sy)) return false;
+        gx += sx; gy += sy; ax += tx; ay += ty;
+      } else if (ax < ay) { gx += sx; ax += tx; }
+      else { gy += sy; ay += ty; }
     }
-    return true; // A creek can be jumped, but each landing must be dry.
   };
-  // A small, cached visibility graph follows open lawn corridors. Longer edges
+  // Eight-direction visibility edges follow open lawn corridors. Longer edges
   // bridge the creek without requiring a landing in the water.
-  const nodes = [], NX = Math.floor((1838 - 112) / GRID) + 1, NY = Math.floor((1000 - 328 - 1) / GRID) + 1, grid = new Int32Array(NX * NY).fill(-1);
+  const nodes = [], NX = Math.floor((1838 - 116) / GRID) + 1, NY = Math.floor((1000 - 332 - 1) / GRID) + 1, grid = new Int32Array(NX * NY).fill(-1);
   for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
-    const x = 112 + i * GRID, y = 328 + j * GRID;
+    const x = 116 + i * GRID, y = 332 + j * GRID;
     if (landable(x, y)) { grid[j * NX + i] = nodes.length; nodes.push({ x, y, i, j, id: nodes.length, edges: [] }); }
   }
   // nodes near the creek (a jump over it is an edge of up to 160, elsewhere edges reach 100 only: that keeps the graph small)
   const nearCreek = (n) => { for (let gy = Math.floor((n.y - 120) / CELL); gy <= Math.floor((n.y + 120) / CELL); gy += 2) for (let gx = Math.floor((n.x - 120) / CELL); gx <= Math.floor((n.x + 120) / CELL); gx += 2) if (creek[cellAt(gx * CELL, gy * CELL)]) return true; return false; };
   for (const n of nodes) {
-    const far = nearCreek(n), reach = far ? 10 : 6, maxd = far ? 160 : 100;
-    for (let dj = -reach; dj <= reach; dj++) for (let di = -reach; di <= reach; di++) {
-      const i = n.i + di, j = n.j + dj; if (i < 0 || j < 0 || i >= NX || j >= NY) continue;
-      const m = nodes[grid[j * NX + i]]; if (!m || m.id <= n.id) continue;
-      const d = Math.hypot(m.x - n.x, m.y - n.y);
-      if (d <= maxd && clear(n.x, n.y, m.x, m.y)) { n.edges.push([m.id, d]); m.edges.push([n.id, d]); }
+    const maxd = nearCreek(n) ? 160 : 100;
+    // Four positive rays add each undirected eight-way edge once.
+    for (const [di, dj] of [[1, 0], [0, 1], [1, 1], [-1, 1]]) {
+      for (let step = 1; step * GRID * Math.hypot(di, dj) <= maxd; step++) {
+        const i = n.i + di * step, j = n.j + dj * step;
+        if (i < 0 || j < 0 || i >= NX || j >= NY) break;
+        const m = nodes[grid[j * NX + i]]; if (!m) continue;
+        const d = Math.hypot(m.x - n.x, m.y - n.y);
+        if (clear(n.x, n.y, m.x, m.y)) { n.edges.push([m.id, d]); m.edges.push([n.id, d]); }
+      }
     }
   }
   const rnd = (a, b) => a + Math.random() * (b - a);
-  const R = els.map((el) => ({ el, rig: bindRoo(el), flip: el.querySelector('.rooflip'), shadow: el.querySelector('.rooshadow'), x: NaN, y: NaN, h: 0, face: 1, route: [], history: [], hop: null }));
+  const R = els.map((el, i) => ({ el, rig: bindRooDirections(el, !!i), flip: el.querySelector('.rooflip'), shadow: el.querySelector('.rooshadow'), x: NaN, y: NaN, h: 0, face: 1, route: [], history: [], hop: null }));
   const separated = (r, x, y) => R.every(o => o === r || !Number.isFinite(o.x)
     || (Math.hypot(o.x - x, o.y - y) >= ROO_R && (!o.hop || Math.hypot(o.hop.x1 - x, o.hop.y1 - y) >= ROO_R)));
   const place = (r, x, y) => { r.x = x; r.y = y; r.el.setAttribute('transform', `translate(${f(x)} ${f(y)})`); };
-  function route(r) {
+  function route(r, avoidOthers = false) {
     if (!nodes.length) return [];
     let start = null, nearest = Infinity;
     for (const n of nodes) {
       const d = Math.hypot(n.x - r.x, n.y - r.y);
-      if (d < nearest && clear(r.x, r.y, n.x, n.y)) { start = n; nearest = d; }
+      if (d < nearest && rooAligned(n.x - r.x, n.y - r.y) && clear(r.x, r.y, n.x, n.y)) { start = n; nearest = d; }
     }
     if (!start) return [];
     const distance = nodes.map(() => Infinity), parent = nodes.map(() => -1), done = new Uint8Array(nodes.length);
-    distance[start.id] = 0;
-    for (;;) {
-      let id = -1, best = Infinity;
-      for (const n of nodes) if (!done[n.id] && distance[n.id] < best) { id = n.id; best = distance[id]; }
-      if (id < 0) break;
+    const available = nodes.map(n => !avoidOthers || n.id === start.id || separated(r, n.x, n.y));
+    const corridorFree = (a, b) => !avoidOthers || R.every(o => {
+      if (o === r || !Number.isFinite(o.x)) return true;
+      return [[o.x, o.y], ...(o.hop ? [[o.hop.x1, o.hop.y1]] : [])].every(([x, y]) => {
+        const dx = b.x - a.x, dy = b.y - a.y, t = Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / (dx * dx + dy * dy)));
+        return Math.hypot(a.x + t * dx - x, a.y + t * dy - y) >= ROO_R;
+      });
+    });
+    // A binary heap keeps the finer eight-way grid inexpensive to search.
+    const pending = [];
+    const push = (id, cost) => {
+      const entry = [id, cost]; let i = pending.length; pending.push(entry);
+      while (i) { const p = (i - 1) >> 1; if (pending[p][1] <= cost) break; pending[i] = pending[p]; i = p; }
+      pending[i] = entry;
+    };
+    const pop = () => {
+      const first = pending[0], last = pending.pop();
+      if (pending.length) {
+        let i = 0;
+        while (i * 2 + 1 < pending.length) {
+          let c = i * 2 + 1;
+          if (c + 1 < pending.length && pending[c + 1][1] < pending[c][1]) c++;
+          if (pending[c][1] >= last[1]) break;
+          pending[i] = pending[c]; i = c;
+        }
+        pending[i] = last;
+      }
+      return first;
+    };
+    distance[start.id] = 0; push(start.id, 0);
+    while (pending.length) {
+      const [id, best] = pop(); if (done[id] || best !== distance[id]) continue;
       done[id] = 1;
       for (const [next, length] of nodes[id].edges) {
-        if (best + length < distance[next]) { distance[next] = best + length; parent[next] = id; }
+        // A small per-edge cost favors longer, cleaner stretches over zigzags.
+        const cost = best + length + 12;
+        if (available[next] && cost < distance[next] && corridorFree(nodes[id], nodes[next])) {
+          distance[next] = cost; parent[next] = id; push(next, cost);
+        }
       }
     }
     const reachable = nodes.filter(n => n.id !== start.id && Number.isFinite(distance[n.id]) && separated(r, n.x, n.y));
@@ -1018,7 +1271,7 @@ function roos() {
     const result = []; let from = r;
     for (let i = 0; i < path.length;) {
       let next = i;
-      for (let j = path.length - 1; j > i; j--) if (clear(from.x, from.y, path[j].x, path[j].y)) { next = j; break; }
+      for (let j = path.length - 1; j > i; j--) if (rooAligned(path[j].x - from.x, path[j].y - from.y) && clear(from.x, from.y, path[j].x, path[j].y)) { next = j; break; }
       if (Math.hypot(path[next].x - from.x, path[next].y - from.y) > 1) { result.push(path[next]); from = path[next]; }
       i = next + 1;
     }
@@ -1026,42 +1279,74 @@ function roos() {
     return result;
   }
   function safeHop(r, x, y, now) {
-    if (!landable(x, y) || !clear(r.x, r.y, x, y)) return false;
+    if (!rooAligned(x - r.x, y - r.y) || !landable(x, y) || !clear(r.x, r.y, x, y)) return false;
     return R.every(o => {
       if (o === r || !Number.isFinite(o.x)) return true;
-      // Check simultaneous progress, including the other animal's landing.
-      for (let i = 0; i <= 12; i++) {
-        const t = i / 12, ours = rooTravel(t), h = o.hop;
-        const theirs = h ? rooTravel(Math.max(0, Math.min(1, (now + t * ROO_HOP_MS - h.t0) / h.dur))) : 0;
-        const ox = h ? h.x0 + (h.x1 - h.x0) * theirs : o.x, oy = h ? h.y0 + (h.y1 - h.y0) * theirs : o.y;
-        if (Math.hypot(r.x + (x - r.x) * ours - ox, r.y + (y - r.y) * ours - oy) < ROO_R) return false;
+      // Reserve both trajectories through the later landing. Travel is linear
+      // during flight and stationary on the ground, so the closest approach
+      // can be solved exactly between their take-off/landing boundaries.
+      const h = o.hop, end = Math.max(now + ROO_HOP_MS, h ? h.t0 + h.dur : now);
+      const times = [now, now + ROO_LIFTOFF * ROO_HOP_MS, now + ROO_TOUCHDOWN * ROO_HOP_MS, end];
+      if (h) times.push(h.t0 + ROO_LIFTOFF * h.dur, h.t0 + ROO_TOUCHDOWN * h.dur, h.t0 + h.dur);
+      const cuts = [...new Set(times.filter(t => t >= now && t <= end))].sort((a, b) => a - b);
+      const relative = t => {
+        const u = rooTravel((t - now) / ROO_HOP_MS), v = h ? rooTravel((t - h.t0) / h.dur) : 0;
+        return [r.x + (x - r.x) * u - (h ? h.x0 + (h.x1 - h.x0) * v : o.x), r.y + (y - r.y) * u - (h ? h.y0 + (h.y1 - h.y0) * v : o.y)];
+      };
+      for (let i = 1; i < cuts.length; i++) {
+        const a = relative(cuts[i - 1]), b = relative(cuts[i]), dx = b[0] - a[0], dy = b[1] - a[1], length2 = dx * dx + dy * dy;
+        const t = length2 ? Math.max(0, Math.min(1, -(a[0] * dx + a[1] * dy) / length2)) : 0;
+        if (Math.hypot(a[0] + t * dx, a[1] + t * dy) < ROO_R) return false;
       }
       return true;
     });
   }
+  function movingHop(r, x1, y1, now) {
+    r.h = Math.atan2(y1 - r.y, x1 - r.x);
+    r.face = Math.cos(r.h) < -.01 ? -1 : 1;
+    faceRoo(r.rig, rooBearing(x1 - r.x, y1 - r.y));
+    return { x0: r.x, y0: r.y, x1, y1, t0: now, dur: ROO_HOP_MS };
+  }
   function plan(r, now) {
     for (let attempt = 0; attempt < 2; attempt++) {
       while (r.route.length && Math.hypot(r.route[0].x - r.x, r.route[0].y - r.y) < 1) r.route.shift();
-      if (!r.route.length) r.route = route(r);
-      const goal = r.route[0];
-      if (!goal) break;
-      const dx = goal.x - r.x, dy = goal.y - r.y, distance = Math.hypot(dx, dy);
-      let stride = Math.min(distance, rnd(150, 190));
-      if (distance > stride && distance - stride < 60) stride = distance / 2;
-      for (const d of [stride, stride * .85, stride * .65, distance <= 190 ? distance : 0]) {
-        if (d < 1) continue;
-        const x1 = r.x + dx / distance * d, y1 = r.y + dy / distance * d;
-        if (safeHop(r, x1, y1, now)) {
-          r.h = Math.atan2(dy, dx);
-          if (Math.abs(Math.cos(r.h)) > .35) r.face = Math.cos(r.h) < 0 ? -1 : 1;
-          r.flip.setAttribute('transform', `scale(${r.face} 1)`);
-          return { x0: r.x, y0: r.y, x1, y1, t0: now, dur: ROO_HOP_MS };
-        }
+      if (!r.route.length || attempt) r.route = route(r, !!attempt);
+      if (!r.route.length) continue;
+      // Merge collinear waypoints into long strides. Candidate landings stay
+      // on the same lattice and bearing used by the eight-direction graph.
+      const target = rnd(150, 190), candidates = []; let from = r, walked = 0;
+      for (let i = 0; i < r.route.length && walked < 230; i++) {
+        const to = r.route[i], dx = to.x - from.x, dy = to.y - from.y, length = Math.hypot(dx, dy);
+        if (length < 1) { from = to; continue; }
+        const limit = Math.min(length, 230 - walked);
+        const add = d => {
+          const x = from.x + dx * d / length, y = from.y + dy * d / length, stride = Math.hypot(x - r.x, y - r.y);
+          if (stride > 1 && stride <= 190 && rooAligned(x - r.x, y - r.y)) candidates.push({ x, y, stride, advance: walked + d, consumed: i + (d === length ? 1 : 0) });
+        };
+        const step = GRID * (dx && dy ? Math.SQRT2 : 1);
+        for (let k = 1; k * step < limit - 1e-7; k++) add(k * step);
+        // A hop always ends on the lattice. Do not stop at an arbitrary point
+        // on a later segment: that can strand the next eight-direction route.
+        if (length <= limit + 1e-7) add(length); walked += length; from = to;
       }
-      r.route = []; // Replan around another kangaroo without random per-hop turns.
+      candidates.sort((a, b) => (Math.abs(a.stride - target) - a.advance * .08) - (Math.abs(b.stride - target) - b.advance * .08));
+      for (const c of candidates) if (safeHop(r, c.x, c.y, now)) {
+        r.route.splice(0, c.consumed);
+        return movingHop(r, c.x, c.y, now);
+      }
     }
-    // If the other kangaroo temporarily blocks a corridor, continue the jump
-    // cycle on this safe patch instead of introducing a standing rest.
+    // Yield by taking a clear side step, rather than repeatedly selecting a
+    // blocked route. Prefer forward travel and room away from the other animal.
+    const options = nodes.map(n => ({ n, d: Math.hypot(n.x - r.x, n.y - r.y) })).filter(o => o.d >= 16 && o.d <= 190 && rooAligned(o.n.x - r.x, o.n.y - r.y));
+    const room = (x, y) => Math.min(400, ...R.filter(o => o !== r && Number.isFinite(o.x)).map(o => Math.hypot(x - o.x, y - o.y)));
+    options.sort((a, b) => {
+      const score = o => o.d + 70 * Math.cos(Math.atan2(o.n.y - r.y, o.n.x - r.x) - r.h) + room(o.n.x, o.n.y) * .5;
+      return score(b) - score(a);
+    });
+    r.route = [];
+    for (const { n } of options) if (safeHop(r, n.x, n.y, now)) return movingHop(r, n.x, n.y, now);
+    // Safety fallback only: keep animating on the current patch if every exit
+    // is blocked. Normal routes never introduce a standing break.
     return { x0: r.x, y0: r.y, x1: r.x, y1: r.y, t0: now, dur: ROO_HOP_MS };
   }
   R.forEach((r, i) => {
@@ -1069,7 +1354,8 @@ function roos() {
     const candidates = nodes.filter(n => n.edges.length && separated(r, n.x, n.y)).sort((a, b) => Math.hypot(a.x - sx, a.y - sy) - Math.hypot(b.x - sx, b.y - sy));
     const start = candidates[0]; if (!start) return;
     place(r, start.x, start.y); r.h = i ? 0 : Math.PI / 2;
-    drawRoo(r.rig, 0); r.el.removeAttribute('visibility');
+    faceRoo(r.rig, rooBearing(Math.cos(r.h), Math.sin(r.h)));
+    drawRooDirection(r.rig, 0); r.el.removeAttribute('visibility');
   });
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const active = R.filter(r => Number.isFinite(r.x));
@@ -1084,7 +1370,7 @@ function roos() {
       }
       const u = Math.max(0, Math.min((clock - r.hop.t0) / r.hop.dur, 1)), travel = rooTravel(u);
       place(r, r.hop.x0 + (r.hop.x1 - r.hop.x0) * travel, r.hop.y0 + (r.hop.y1 - r.hop.y0) * travel);
-      drawRoo(r.rig, u);
+      drawRooDirection(r.rig, u);
       r.shadow.setAttribute('rx', (22 + rooLift(u) * .12) * ROO_SCALE / .55);
     }
     requestAnimationFrame(frame);

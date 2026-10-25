@@ -861,7 +861,7 @@ body.viewer .gselo { position: absolute; top: calc(100% + 16px); }
 body.viewer .gshh.l .gselo { right: 0; }
 body.viewer .gshh.r .gselo { left: 0; }
 body.viewer .gsnm { min-width: 0; font: 400 34px/1.05 'Park Head', system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-body.viewer .gselo { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 13px; border-radius: 999px; background: rgba(0, 0, 0, .28); box-shadow: inset 0 0 0 1px rgba(248, 237, 203, .18); font: 400 20px/1 'Park Num', system-ui, sans-serif; color: var(--paper); }
+body.viewer .gselo { width: max-content; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 13px; border-radius: 999px; background: rgba(0, 0, 0, .28); box-shadow: inset 0 0 0 1px rgba(248, 237, 203, .18); font: 400 20px/1 'Park Num', system-ui, sans-serif; color: var(--paper); }
 body.viewer .gselo.dk { background: #24343a; box-shadow: inset 0 0 0 1px rgba(248, 237, 203, .22); }   /* on a black seat the see-through layer vanishes: solid dark grey */
 body.viewer .gselo b { font: inherit; }
 body.viewer .gsd.up { color: #7EE0A0; }
@@ -941,3 +941,25 @@ body.viewer .rsrace-svg.big path.rsblk { stroke-width: 8; }
 body.viewer .rsrace-svg path.rscore { stroke-width: 1.7; }
 body.viewer .rsrace-svg.big path.rscore { stroke-width: 2.4; }
 body.viewer .rsrace-svg .rspillt { font-family: 'Barlow Semi Condensed', 'Barlow', sans-serif; font-weight: 800; }
+/* the key events graph (results.js keSvg): three lanes with a row per player, the events as icons */
+body.viewer .gsgraph .kelane { fill: rgba(248, 237, 203, .045); stroke: rgba(248, 237, 203, .16); stroke-width: 1.2; }
+body.viewer .gsgraph .kerow { opacity: .1; }
+body.viewer .gsgraph .kehov { fill: #f8edcb; opacity: .07; pointer-events: none; }
+body.viewer .gsgraph .keev { cursor: pointer; transform-box: fill-box; transform-origin: center; transition: transform .12s; }
+body.viewer .gsgraph .keev.now, body.viewer .gsgraph .keev.on { transform: scale(1.14); }
+body.viewer .gsgraph .keii { font-family: Georgia, serif; font-weight: 900; fill: #10222a; }
+body.viewer .gsgraph .ketipbg { fill: #061f27; stroke: rgba(248, 237, 203, .3); }
+body.viewer .gsgraph .ketip1 { font: 800 18px Barlow, system-ui, sans-serif; fill: #f3ead0; }
+body.viewer .gsgraph .ketip2 { font: 500 15px Barlow, system-ui, sans-serif; fill: #a9c4c9; }
+
+.kerep { filter: drop-shadow(0 0 .6px rgba(246,237,211,.8)) drop-shadow(0 0 2.5px rgba(246,237,211,.22)); }   /* the dark reputation cap would vanish on the dark band */
+.kecp { font-family: 'Park Num', system-ui, sans-serif; font-weight: 400; fill: #000; stroke: none; }   /* the 2 on the shield of a worker taken as the 2 CP bonus: the number style of the shield counters (`.slot-number.dk`) */
+
+/* the move bar after the game (results.js resultsSwitch): warm paper with a wash of the winner's colour from the left, one forest green button at the left for the other view */
+body.viewer .movepill.rsgate { background: linear-gradient(90deg, color-mix(in srgb, var(--win, #F3DFA6) 24%, #F3DFA6) 0, color-mix(in srgb, var(--win, #F3DFA6) 10%, #F3DFA6) 38%, #F3DFA6 62%); }
+body.viewer .rsflap.rsgo { background: #2F7D50; color: var(--paper); border-right: 3px solid var(--ink); border-left: 0; width: auto; padding: 0 28px; gap: 10px; }
+body.viewer .rsflap.rsgo:hover { background: #3B9361; }
+body.viewer .rsflap.rsgo svg.o, body.viewer .rsflap.rsgo .o { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linejoin: round; }
+body.viewer .rsflap.rsgo .f { fill: currentColor; stroke: none; }
+body.viewer .rsflap.rsgo svg { width: 22px; height: 22px; }
+body.viewer .rsflap.rsgo svg:first-child:not([viewBox="0 0 24 24"]), body.viewer .rsflap.rsgo svg:last-child:not([viewBox="0 0 24 24"]) { width: 18px; height: 18px; }

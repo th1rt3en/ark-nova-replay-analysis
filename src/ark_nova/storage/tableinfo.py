@@ -19,6 +19,16 @@ def elos_from_tableinfo(info: dict) -> dict[str, int]:
     return out
 
 
+def elos_after_from_tableinfo(info: dict) -> dict[str, int]:
+    """{BGA player id: the Elo the player has after the game} (the index's `post_match_elo` = `rank_after_game` - 1300)."""
+    return {str(p["player_id"]): round(float(p["rank_after_game"]) - OFFSET) for p in (info.get("result") or {}).get("player") or [] if p.get("rank_after_game") is not None}
+
+
+def elo_changes_from_tableinfo(info: dict) -> dict[str, int]:
+    """{BGA player id: the change of the game} (`point_win`, rounded)."""
+    return {str(p["player_id"]): round(float(p["point_win"])) for p in (info.get("result") or {}).get("player") or [] if p.get("point_win") is not None}
+
+
 def table_id_of(info: dict) -> str:
     return str(info.get("id") or "")
 
@@ -47,4 +57,4 @@ def same_map_of(info: dict) -> bool:
 
 def record_from_tableinfo(info: dict, table_id: int) -> TableRecord:
     """The record that stands in for the index of a table that is not indexed: the Elo of the players (the maps and Marine Worlds come from the log)."""
-    return TableRecord(table_id=table_id, elos=elos_from_tableinfo(info), same_map=same_map_of(info), player_maps=maps_from_tableinfo(info), marine_worlds=marine_worlds_of(info))
+    return TableRecord(table_id=table_id, elos=elos_from_tableinfo(info), elos_after=elos_after_from_tableinfo(info), elo_changes=elo_changes_from_tableinfo(info), same_map=same_map_of(info), player_maps=maps_from_tableinfo(info), marine_worlds=marine_worlds_of(info))

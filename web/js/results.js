@@ -6,6 +6,7 @@ import { FORK, MINIGAME, PLAY, S, params, table } from './state.js';
 import { framesOf } from './frames.js';
 import { seatOrder } from './pov.js';
 import { render } from './main.js';
+import { ICON_IDS, iconUrl } from './icons.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
@@ -132,7 +133,7 @@ export function loadStats() {
 
 // ---- the score race: the score of both players after every turn, the breaks as dashed lines ------------------------------------------------------------------------------
 // The graph categories (the rail in the graph view): [title, what is plotted per round]. 'score' is the score race; null = not drawn yet.
-const GRAPH_CATS = [['Points', 'score'], ['Key events', null], ['Conservation', 'conservation'], ['Appeal', 'appeal'], ['Reputation', 'reputation'], ['Money', 'money'], ['X-tokens', 'x_tokens']];
+const GRAPH_CATS = [['Points', 'score'], ['Key events', 'events'], ['Conservation', 'conservation'], ['Appeal', 'appeal'], ['Reputation', 'reputation'], ['Money', 'money'], ['X-tokens', 'x_tokens']];
 const metric = (p, key) => (key === 'cards' ? (Array.isArray(p.hand) ? p.hand.length : NaN) : p[key]);
 function niceTicks(lo, hi) {
   const span = Math.max(1, hi - lo), raw = span / 5, mag = 10 ** Math.floor(Math.log10(raw));
@@ -153,7 +154,8 @@ function race(key = 'score') {
     }
     const label = s.label || '';
     if (/\(triggering break\)/.test(label)) trigger = S.replay.players.findIndex((pl) => label.startsWith(pl.name + ' '));
-    if (/^Starting a new break/m.test(label)) { breaks.push({ turn: (st.turn - 0.5) / 2, seat: trigger }); trigger = null; }
+    // a break is drawn exactly between the last finished round and the next point, whenever in the round it starts
+    if (st && /^Starting a new break/m.test(label)) { breaks.push({ turn: Math.floor((st.turn - 0.5) / 2) + 0.5, seat: trigger }); trigger = null; }
   });
   const turns = [...byRound.keys()].sort((a, b) => a - b), scores = turns.map((t) => byRound.get(t));
   const end = !!last && last.phase === 'over';
@@ -164,6 +166,158 @@ function race(key = 'score') {
   return { turns, scores, breaks, end, ticks, lo, hi, goal: key === 'score' };
 }
 let raceSeq = 0;
+// ---- key events: when each player upgraded an action card, gained a worker, and what each Association action took --------------------------------------------------------------
+// Three lanes on the turn axis of the score race (upgrades, workers, the Association actions; that lane is taller), without any lane text, each with a row per player tinted in the seat colour. An upgrade is the
+// action card icon framed in the owner's colour with a II badge; a worker is the bare meeple in the seat colour; a partner zoo / university is its exact token, reputation the reputation icon,
+// a supported project the conservation project icon. Several events of one row in the same round stack below each other.
+const KE_UP = { animals: 'r3c7', association: 'r3c8', build: 'r3c9', cards: 'r3c10', sponsors: 'r3c12' }, KE_TYPE = { animals: 'Animals', association: 'Association', build: 'Build', cards: 'Cards', sponsors: 'Sponsors' };
+const KE_UNI = { 'fac-rep-hand': 'Hand size', 'fac-science-rep': '2 reputation', 'fac-science-science': '2 science', 'fac-science-herbivore': 'Herbivores', 'fac-science-predator': 'Predators', 'fac-science-bird': 'Birds', 'fac-science-reptile': 'Reptiles', 'fac-science-primate': 'Primates', 'fac-science-marine': 'Sea Animals' };       // (fac-generic, the university before its kind is chosen, never becomes an event)
+function keyEvents() {
+  const names = S.replay.players.map((p) => p.name), seatOf = (n) => names.indexOf(n), ev = [];
+  const held = (p) => { const m = new Map(); p.tokens.forEach((t) => { if (/^(partner|university)_/.test(t.location)) m.set(t.type, (m.get(t.type) || 0) + 1); }); return m; };
+  let prev = null;
+  const cpAt = new Map(), pend = {};                                                                      // 5 / 8 conservation point bonuses by 'move_id:seat' (view.cp_bonuses), the gift waiting for its partner zoo / university
+  (S.replay.cp_bonuses || []).forEach((c) => cpAt.set(c.move_id + ':' + c.seat, c));
+  S.replay.steps.forEach((s) => {
+    const st = s.state, label = s.label || '';
+    if (!st || !Number.isFinite(st.turn) || !st.players) return;
+    const round = Math.ceil(st.turn / 2);
+    for (const m of label.matchAll(/^(.+?) upgrades (Animals|Association|Build|Cards|Sponsors)II\b/gm)) {
+      const seat = seatOf(m[1].replace(/^.* · /, ''));
+      if (seat >= 0) ev.push({ seat, round, lane: 0, kind: 'upgrade', type: m[2].toLowerCase() });
+    }
+    const firstW = ev.length;
+    for (const m of label.matchAll(/(?:^|· )([^·\n]+?) gains a new Association worker/gm)) {
+      const seat = seatOf(m[1]);
+      if (seat >= 0) ev.push({ seat, round, lane: 1, kind: 'worker' });
+    }
+    for (const m of label.matchAll(/(?:^|· )([^·\n]+?) gets 1 x add-worker(?! \()/gm)) {                  // the 2 conservation points bonus (choice: worker or upgrade); the reputation track's has "(reputation track bonus)"
+      const seat = seatOf(m[1]), w = ev.slice(firstW).filter((e) => e.kind === 'worker' && e.seat === seat).pop();
+      if (w) w.cp = true;
+    }
+    for (const m of label.matchAll(/(?:^|· )([^·\n]+?) hires a new worker \(Association2 effect\)/gm)) {            // the unupgraded Association2 card: a worker instead of a project
+      const seat = seatOf(m[1]);
+      if (seat >= 0) ev.push({ seat, round, lane: 1, kind: 'worker' }, { seat, round, lane: 2, kind: 'hire' });
+    }
+    for (const m of label.matchAll(/(?:^|· )([^·\n]+?) supports a conservation project on the \w+ slot : ([^·\n]+)/gm)) {
+      const seat = seatOf(m[1]);
+      if (seat >= 0) ev.push({ seat, round, lane: 2, kind: 'project', name: m[2].trim() });
+    }
+    for (const m of label.matchAll(/(?:^|· )([^·\n]+?) increases reputation/gm)) { const seat = seatOf(m[1]); if (seat >= 0) ev.push({ seat, round, lane: 2, kind: 'reputation' }); }
+    for (const m of label.matchAll(/(?:^|· )([^·\n]+?) gets (?:1 x (Fac|Partner-Zoo)|\d+ x (reputation))(?! \()/gm)) {       // the free partner zoo / university / reputation of 5 or 8 conservation points
+      const seat = seatOf(m[1]), c = cpAt.get(s.move_id + ':' + seat);
+      if (seat < 0 || !c) continue;
+      if (m[3]) ev.push({ seat, round, lane: 2, kind: 'reputation', cp: c.threshold }); else pend[seat] = c.threshold;
+    }
+    if (prev) st.players.forEach((p, seat) => {                                                         // a partner zoo / university is a token that arrived on the player's board (counted by type)
+      const a = held(prev.players[seat]), b = held(p);
+      b.forEach((n, type) => { for (let i = a.get(type) || 0; i < n; i++) { ev.push({ seat, round, lane: 2, kind: type.startsWith('partner') ? 'partner' : 'university', type, cp: pend[seat] }); delete pend[seat]; } });
+    });
+    prev = st;
+  });
+  return ev;
+}
+function shield(g, bx, by, r, n) {                                                                   // the conservation shield with a number (the number style of the boards)
+  g.append(sv('image', { href: iconUrl(ICON_IDS.conservation), x: bx - r, y: by - r, width: r * 2, height: r * 2 }));
+  const t = sv('text', { x: bx, y: by + r * .38, class: 'kecp', 'text-anchor': 'middle', style: `font-size:${r * 1.45}px` }); t.textContent = String(n); g.append(t);
+}
+function keSvg(w, h) {
+  const R = race('score'), ev = keyEvents().filter((e) => R.turns.includes(e.round));
+  const pad = { l: 60, r: 40, t: 50, b: 46 }, t0 = R.turns[0] || 0, t1 = R.turns[R.turns.length - 1] || 1;
+  const X = (t) => pad.l + (w - pad.l - pad.r) * (t - t0) / Math.max(1, t1 - t0);
+  const s = sv('svg', { viewBox: `0 0 ${w} ${h}`, class: 'rsrace-svg big kesvg' });
+  const uid = 'ke' + (++raceSeq), GS = [graphStyle(0), graphStyle(1)];
+  const defs = sv('defs'), fade = sv('linearGradient', { id: uid + 'f', gradientUnits: 'userSpaceOnUse', x1: 0, x2: 0, y1: pad.t, y2: h - pad.b });
+  fade.append(sv('stop', { offset: 0, 'stop-color': '#f8edcb', 'stop-opacity': .45 }), sv('stop', { offset: 1, 'stop-color': '#f8edcb', 'stop-opacity': .15 }));
+  defs.append(fade); s.append(defs);
+  // the lanes: Association gets the most room (several tasks of one turn stack in it)
+  const weights = [1, 1, 1.9], gap = 22, total = h - pad.t - pad.b - 10 - gap * 2, lanes = [];
+  let y = pad.t + 10;
+  weights.forEach((wt, i) => { const lh = total * wt / weights.reduce((a, b) => a + b); lanes.push({ y0: y, y1: y + lh }); y += lh + gap; });
+  const band = sv('g', { class: 'keband' }); s.append(band);
+  const hover = sv('rect', { class: 'kehov', visibility: 'hidden' }); s.append(hover);
+  [0, 1, 2].forEach((i) => {
+    const L = lanes[i];
+    s.append(sv('rect', { x: pad.l - 36, y: L.y0, width: w - pad.l - pad.r + 36, height: L.y1 - L.y0, rx: 12, class: 'kelane' }));
+    [0, 1].forEach((seat) => {
+      const ry0 = L.y0 + 6 + (L.y1 - L.y0 - 12) * Math.max(0, seatOrder().indexOf(seat)) / 2,         // (the seat of the left map / top info box is the top row)
+         rh = (L.y1 - L.y0 - 12) / 2 - 3;
+      s.append(sv('rect', { x: pad.l - 30, y: ry0, width: w - pad.l - pad.r + 30, height: rh, rx: 8, fill: GS[seat].c, class: 'kerow' }));
+      L['r' + seat] = ry0 + rh / 2; L['h' + seat] = rh;
+    });
+  });
+  R.breaks.forEach((b) => {
+    const known = b.seat !== null && b.seat >= 0, x = X(b.turn), cy = pad.t - 22;
+    s.append(sv('line', { x1: x, x2: x, y1: pad.t - 2, y2: h - pad.b, class: 'rsbreak', stroke: `url(#${uid}f)` }));
+    s.append(sv('circle', { cx: x, cy, r: 16.8, fill: known ? GS[b.seat].df : '#f8edcb' }));
+    s.append(mugIcon(known ? GS[b.seat].mf : '#2a2a2a', x, cy, 21.8));
+  });
+  const yb = h - pad.b;
+  // the events: one cell = one row of one lane in one round; several events of a cell stack downwards (a little overlap is fine)
+  const cells = new Map();
+  ev.forEach((e) => { const k = e.lane + ':' + e.seat + ':' + e.round; if (!cells.has(k)) cells.set(k, []); cells.get(k).push(e); });
+  const tip = sv('g', { class: 'ketip', visibility: 'hidden', 'pointer-events': 'none' }), tb = sv('rect', { rx: 10, class: 'ketipbg' }), t1el = sv('text', { class: 'ketip1' }), t2el = sv('text', { class: 'ketip2' });
+  tip.append(tb, t1el, t2el);
+  const items = [];
+  cells.forEach((list) => {
+    const e0 = list[0], L = lanes[e0.lane], rh = L['h' + e0.seat], sz = e0.lane === 2 ? Math.min(52, rh * .5) : Math.min(44, rh * .82), step = e0.lane === 2 ? Math.min(sz * 1.15, (rh - 8 - sz) / Math.max(1, list.length - 1)) : sz * .62;       // (the Association icons are bigger and several of one turn are spread over the row's height)
+    list.forEach((e, i) => {
+      const x = X(e.round), cy = L['r' + e.seat] + (i - (list.length - 1) / 2) * (list.length > 1 ? step : 0);
+      const g = sv('g', { class: 'keev' }), c = GS[e.seat].df, ol = inkOn(c) === '#10222a' ? '#06222b' : '#f6edd3';           // (the outline: cream, dark on the bright seat colours white / yellow)
+      if (e.kind === 'upgrade') {
+        const q = sz * .9;                                                                              // (a dark casing, the owner's colour as the frame, a cream II chip: readable on every seat colour)
+        g.append(sv('rect', { x: x - q / 2 - 2, y: cy - q / 2 - 2, width: q + 4, height: q + 4, rx: q * .24 + 2, fill: ol }), sv('rect', { x: x - q / 2, y: cy - q / 2, width: q, height: q, rx: q * .24, fill: c }),
+          sv('image', { href: iconUrl(KE_UP[e.type]), x: x - q * .4, y: cy - q * .4, width: q * .8, height: q * .8 }),
+          sv('rect', { x: x + q * .1, y: cy + q * .14, width: q * .52, height: q * .38, rx: q * .1, fill: '#f6edd3', stroke: '#06222b', 'stroke-width': 1.6 }));
+        const ii = sv('text', { x: x + q * .36, y: cy + q * .43, class: 'keii', 'text-anchor': 'middle', style: `font-size:${q * .3}px` }); ii.textContent = 'II'; g.append(ii);
+      } else if (e.kind === 'worker') {
+        const raw = String(seatRawColor(e.seat) || '').replace('#', '').toLowerCase();
+        g.append(sv('image', { href: '/workers/' + raw + '.webp', x: x - sz / 2, y: cy - sz / 2, width: sz, height: sz, class: GS[e.seat].black ? 'kerep' : '' }));
+        if (e.cp) shield(g, x + sz * .3, cy + sz * .3, Math.min(44, lanes[1].h0 * .82) * .27, 2);                                      // taken as the 2 conservation points bonus instead of an upgrade: a small shield with 2 at the bottom right
+      } else {
+        const hire = e.kind === 'hire', id = e.kind === 'project' ? 'r11c6' : e.kind === 'reputation' ? ICON_IDS['bonus:reputation'] : ICON_IDS[e.kind === 'partner' ? e.type.replace('partner-', '') : e.type] || ICON_IDS['bonus:Fac'];
+        g.append(sv('image', { href: hire ? '/action_icons/association_2_1.webp' : iconUrl(id), x: x - (hire ? sz * .4 : sz / 2), y: cy - (hire ? sz * .4 : sz / 2), width: hire ? sz * .8 : sz, height: hire ? sz * .8 : sz, class: e.kind === 'reputation' || hire ? 'kerep' : '' }),
+          sv('circle', { cx: x - sz * .4, cy: cy - sz * .4, r: sz * .17, fill: c, stroke: ol, 'stroke-width': 1.6 }));          // (owner mark: a corner pip in the seat colour)
+      }
+      if (e.lane === 2 && e.cp) shield(g, x + sz * .4, cy + sz * .4, Math.min(44, lanes[1].h0 * .82) * .27, e.cp);                  // a free gift of 5 / 8 conservation points, not an Association action
+      g.append(sv('rect', { x: x - sz / 2, y: cy - sz / 2, width: sz, height: sz, fill: 'transparent' }));
+      let what = e.kind === 'upgrade' ? KE_TYPE[e.type] + ' upgraded to II' : e.kind === 'worker' ? (e.cp ? 'Gained a worker (2 CP bonus)' : 'Gained a worker') : e.kind === 'project' ? 'Supported a project: ' + e.name
+        : e.kind === 'hire' ? 'Hired a worker instead of a project' : e.kind === 'reputation' ? (e.cp ? 'Took reputation (' + e.cp + ' CP bonus)' : 'Took reputation') : e.kind === 'partner' ? 'Partner zoo: ' + e.type.replace('partner-', '') : 'University' + (KE_UNI[e.type] ? ': ' + KE_UNI[e.type] : '');
+      const cpTxt = e.cp && (e.kind === 'partner' || e.kind === 'university') ? ' (' + e.cp + ' CP bonus)' : '';       // 
+      what += cpTxt;
+      g.addEventListener('pointerenter', () => {
+        t1el.textContent = what; t2el.textContent = 'Turn ' + e.round + ' · ' + S.replay.players[e.seat].name;
+        const wd = Math.max(t1el.getComputedTextLength(), t2el.getComputedTextLength()) + 28, th = 54;
+        let tx = x + sz / 2 + 10, ty = cy - th / 2; if (tx + wd > w - 4) tx = x - sz / 2 - 10 - wd; ty = Math.max(4, Math.min(h - th - 4, ty));
+        tb.setAttribute('x', tx); tb.setAttribute('y', ty); tb.setAttribute('width', wd); tb.setAttribute('height', th);
+        [t1el, t2el].forEach((t, k) => { t.setAttribute('x', tx + 14); t.setAttribute('y', ty + 24 + k * 20); });
+        tip.setAttribute('visibility', 'visible'); g.classList.add('on');
+      });
+      g.addEventListener('pointerleave', () => { tip.setAttribute('visibility', 'hidden'); g.classList.remove('on'); });
+      items.push({ g, round: e.round }); s.append(g);
+    });
+  });
+  // hover: the round under the pointer gets a faint band, its icons grow a little, the round in a chip on the axis
+  const cw = (w - pad.l - pad.r) / Math.max(1, t1 - t0), chip = sv('g', { class: 'rschip', visibility: 'hidden' }), cr = sv('rect', { class: 'rschipbg' }), ct = sv('text', { class: 'rschipt', 'text-anchor': 'middle' }), tick = sv('line', { class: 'rsguide', y1: yb - 9, y2: yb + 7 });
+  chip.append(tick, cr, ct); s.append(chip, tip);
+  const show = (ev2) => {
+    const r = s.getBoundingClientRect(), px = (ev2.clientX - r.left) * w / r.width;
+    if (px < pad.l - 12 || px > w - pad.r + 12) return hide();
+    let k = 0, best = Infinity; R.turns.forEach((t, i) => { const d = Math.abs(X(t) - px); if (d < best) { best = d; k = i; } });
+    const x = X(R.turns[k]);
+    hover.setAttribute('x', x - cw / 2); hover.setAttribute('y', pad.t); hover.setAttribute('width', cw); hover.setAttribute('height', yb - pad.t); hover.setAttribute('visibility', 'visible');
+    items.forEach((it) => it.g.classList.toggle('now', it.round === R.turns[k]));
+    ct.textContent = R.end && k === R.turns.length - 1 ? 'End' : k === 0 ? 'Start' : 'Turn ' + R.turns[k];
+    const w2 = ct.textContent.length * 15 * .62 + 24, cy = yb + 12;
+    cr.setAttribute('x', x - w2 / 2); cr.setAttribute('y', cy); cr.setAttribute('width', w2); cr.setAttribute('height', 27); cr.setAttribute('rx', 13.5);
+    ct.setAttribute('x', x); ct.setAttribute('y', cy + 19); tick.setAttribute('x1', x); tick.setAttribute('x2', x); chip.setAttribute('visibility', 'visible');
+  };
+  const hide = () => { hover.setAttribute('visibility', 'hidden'); chip.setAttribute('visibility', 'hidden'); items.forEach((it) => it.g.classList.remove('now')); };
+  s.addEventListener('pointermove', show); s.addEventListener('pointerleave', hide);
+  return s;
+}
+const graphFor = (key, w, h) => (key === 'events' ? keSvg(w, h) : raceSvg(race(key), w, h, true));
+
 // How a seat is drawn on the dark graph (the colour the rest of the page uses is made for paper and info boxes). Every seat has the same parts: the line, a pill behind the numbers
 // and a disc behind the break mug (pf/ps/pt = pill fill / edge / text, df/mf = disc / mug). A seat colour fills pill and disc, with dark (or white) content. A white seat is an ice
 // white with a dark casing under the line (the page's mid grey looks like the cream break lines); a black seat is a black line with a thin grey core, a black pill, a slate disc.
@@ -252,13 +406,15 @@ function raceSvg(R, w, h, big) {
     gl.setAttribute('x1', x); gl.setAttribute('x2', x);
     dots.forEach((d, p) => { d.setAttribute('cx', x); d.setAttribute('cy', Y(v[p])); });
     const left = x > w - pad.r - fs * 3.2;
+    const ph = fs * .9 * 1.5, low = h - pad.b - ph / 2 - 3;                                           // (a pill never reaches the x-axis and its round chip: low scores near the axis push the trailer up, and the leader above it)
+    const pcy = [0, 1].map((p) => (p === top ? Y(v[p]) - fs * 1.2 : Math.min(Y(v[p]) + fs * 1.2, low)));
+    pcy[top] = Math.min(pcy[top], pcy[1 - top] - ph - 3);
     nums.forEach((n, p) => {
-      const above = p === top, y = Y(v[p]);
       n.g.style.display = atEnd ? 'none' : '';
-      n.set(left ? x - fs * .45 : x + fs * .45, above ? y - fs * 1.2 : y + fs * 1.2, v[p] < 0 ? '\u2212' + Math.abs(v[p]) : String(v[p]), left ? 'end' : 'start', fs * .9);
+      n.set(left ? x - fs * .45 : x + fs * .45, pcy[p], v[p] < 0 ? '\u2212' + Math.abs(v[p]) : String(v[p]), left ? 'end' : 'start', fs * .9);
     });
     ct.textContent = atEnd ? 'End' : k === 0 ? 'Start' : 'Turn ' + R.turns[k];
-    const cw = ct.textContent.length * cf * .62 + cf * 1.6, ch = cf * 1.8, cy = h - pad.b + cf * .5;
+    const cw = ct.textContent.length * cf * .62 + cf * 1.6, ch = cf * 1.8, cy = h - pad.b + cf * (big ? .8 : .5);
     cr.setAttribute('x', x - cw / 2); cr.setAttribute('y', cy); cr.setAttribute('width', cw); cr.setAttribute('height', ch); cr.setAttribute('rx', ch / 2);
     ct.setAttribute('x', x); ct.setAttribute('y', cy + ch * .7);
     ax.style.visibility = 'hidden';
@@ -282,7 +438,7 @@ function groups(D) {
   const [a, b] = D.players, hx = [hexes(0), hexes(1)];
   const r = (label, f) => [label, f(a), f(b)];
   return [
-    ['Actions', [r('Animals', (p) => p.act.animals), r('Association', (p) => p.act.association), r('Build', (p) => p.act.build), r('Cards', (p) => p.act.cards), r('Sponsors', (p) => p.act.sponsors), r('Clever', (p) => p.clever), r('X-back', (p) => p.xPass)]],
+    ['Actions', [r('Animals', (p) => p.act.animals), r('Association', (p) => p.act.association), r('Build', (p) => p.act.build), r('Cards', (p) => p.act.cards), r('Sponsors', (p) => p.act.sponsors), r('X-back', (p) => p.xPass), r('Clever', (p) => p.clever)]],
     ['Association', [r('Projects', (p) => p.projects), r('Releases', (p) => p.released), r('Donations', (p) => p.donations), r('Universities', (p) => p.universities), r('Partner zoos', (p) => p.partners), r('Reputation', (p) => p.reputation), r('Workers', (p) => p.workers)]],
     ['Cards', [r('Drawn from deck', (p) => p.drawn), r('Drawn from range', (p) => p.fromRange), r('Snapped', (p) => p.snapped), r('Manual snaps', (p) => p.manualSnaps), r('Bonus snaps', (p) => p.projectSnaps), r('Discarded', (p) => p.discarded), r('Animals played', (p) => p.animals), r('Sponsors played', (p) => p.sponsors)]],
     ['Money', [r('Gained overall', (p) => p.money), r('Gained from income', (p) => p.income), r('Spent on animals', (p) => p.onAnimals), r('Spent on buildings', (p) => p.onBuildings), r('Spent on donations', (p) => p.onDonations), r('Spent on display cost', (p) => p.onRange)]],
@@ -338,13 +494,21 @@ function panel() {
   }
   const hd = el('div', 'gshd');
   const conceded = O.conceded !== null && O.conceded !== undefined;
-  // the new Elo and its change: a placeholder for now (the winner 130 +7, the other 116 -7); the real values will come from the index
-  const eloAfter = (i) => { const w = O.winner === null || O.winner === i; return { elo: w ? 130 : 116, d: w ? 7 : -7 }; };
+  // the new Elo and its change: the player's `elo_after` / `elo_change` of the replay (BigQuery `post_match_elo` and `post_match_elo` - `pre_match_elo`, or the table info of an uploaded
+  // log). Without them (a table the index has no Elo for) the chip is left out; only a local copy (no BigQuery) shows the placeholder (the winner 130 +7, the other 116 -7).
+  const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  const eloAfter = (i) => {
+    const p = S.replay.players[i] || {};
+    if (Number.isFinite(p.elo_after) && Number.isFinite(p.elo_change)) return { elo: p.elo_after, d: p.elo_change };
+    if (!LOCAL) return null;
+    const w = O.winner === null || O.winner === i; return { elo: w ? 130 : 116, d: w ? 7 : -7 };
+  };
   const side = (i, pos) => {
     const h = el('div', 'gshh ' + (pos ? 'r' : 'l'));
     const who = el('div', 'gswho');
     const nm = el('span', 'gsnm', O.names[i]);
     const e = eloAfter(i), chip = el('span', 'gselo');
+    if (!e) { who.append(nm); h.append(who); return h; }
     const rgb = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(seatColor(i) || ''); if (rgb && Math.max(...[1, 2, 3].map((k) => parseInt(rgb[k], 16))) < 80) chip.classList.add('dk');   // a (nearly) black seat gets the solid grey chip
     chip.append(el('b', '', String(e.elo)), el('span', 'gsd ' + (e.d > 0 ? 'up' : e.d < 0 ? 'down' : ''), (e.d > 0 ? '+' : e.d < 0 ? '\u2212' : '\u00b1') + Math.abs(e.d)));
     chip.title = 'New Elo rating and its change';
@@ -369,7 +533,7 @@ function panel() {
   });
   if (!D && !S.gsGraph) body.append(el('div', 'gswait', S.postStats && S.postStats.error ? 'The statistics could not be counted: the log of this table could not be read.' : 'Counting the statistics…'));
   rail.append(ul);
-  const graph = el('div', 'gsgraph'); const gcat = GRAPH_CATS[S.gsCat || 0]; graph.append(gcat[1] ? raceSvg(race(gcat[1]), 1180, 760, true) : el('div', 'gsempty', gcat[0] + ': nothing to show here yet.'));
+  const graph = el('div', 'gsgraph'); const gcat = GRAPH_CATS[S.gsCat || 0]; graph.append(gcat[1] ? graphFor(gcat[1], 1180, 760) : el('div', 'gsempty', gcat[0] + ': nothing to show here yet.'));
   let act = -1;
   const spy = () => {
     const y = body.scrollTop + 120; let i = 0;
@@ -389,11 +553,14 @@ function panel() {
 
 // ---- the switch in the move bar and the results section; called at the end of every render ----------------------------------------------------------------------------------
 function resultsSwitch() {
+  const ICB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7z" class="o"/><path d="M12 7l4.5 2.5v5L12 17l-4.5-2.5v-5z" class="f"/></svg>', ICS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18" class="o"/><rect x="4.5" y="11" width="4" height="8" rx="1" class="f"/><rect x="10" y="6" width="4" height="13" rx="1" class="f"/><rect x="15.5" y="13" width="4" height="6" rx="1" class="f"/></svg>';
   const AL = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 4l-6 6 6 6"/></svg>', AR = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l6 6-6 6"/></svg>';
-  const mk = (cls, label, on, act, key) => { const b = el('button', 'rsflap ' + cls); b.type = 'button'; b.innerHTML = cls === 'fb' ? AL + '<span>' + label + '</span>' : '<span>' + label + '</span>' + AR; b.setAttribute('aria-pressed', String(on)); b.title = label + ' (' + key + ')'; b.onclick = act; return b; };
+  const b = el('button', 'rsflap rsgo'); b.type = 'button';                                      // one button, only the view that can be switched to: Game stats on the final board, Final board on the results
+  if (S.results) { b.innerHTML = AL + ICB + '<span>Final board</span>'; b.title = 'Final board (←)'; b.onclick = closeResults; }
+  else { b.innerHTML = ICS + '<span>Game stats</span>' + AR; b.title = 'Game stats (→)'; b.onclick = openResults; }
   const O = outcome(), text = el('span', 'rsswitchtext');
   text.textContent = 'Game over · ' + (O.winner === null ? 'tie ' : O.names[O.winner] + ' wins ') + O.scores[0] + ' : ' + O.scores[1];
-  const w = el('div', 'rsswitchrow'); w.append(mk('fb', 'Final board', !S.results, closeResults, '←'), text, mk('fs', 'Game stats', S.results, openResults, '→'));
+  const w = el('div', 'rsswitchrow'); w.append(b, text);
   return w;
 }
 export function syncResults() {
@@ -403,6 +570,7 @@ export function syncResults() {
   if (!gate) S.results = false;
   const pill = document.querySelector('.movepill');
   pill.classList.toggle('rsgate', gate);
+  if (gate) { const O = outcome(); pill.style.setProperty('--win', O.winner === null ? '#F3DFA6' : graphStyle(O.winner).df); } else pill.style.removeProperty('--win');          // (the post-game bar: a wash of the winner's colour on warm paper)
   pill.querySelector('.rsswitchrow')?.remove();
   if (gate) pill.append(resultsSwitch());
   document.body.classList.toggle('showresults', S.results);
@@ -417,7 +585,7 @@ export function syncResults() {
 export function fitResults() {
   const gs = document.querySelector('.gs'), boxes = document.querySelectorAll('aside.sidebar .pp');
   if (!gs) return;
-  const fitGraph = () => { const g = gs.querySelector('.gsgraph'); if (!g || !GRAPH_CATS[S.gsCat || 0][1]) return; const cs = getComputedStyle(g), w = g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = g.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); if (w > 300 && h > 240) g.replaceChildren(raceSvg(race(GRAPH_CATS[S.gsCat || 0][1]), Math.round(w), Math.round(h), true)); };
+  const fitGraph = () => { const g = gs.querySelector('.gsgraph'); if (!g || !GRAPH_CATS[S.gsCat || 0][1]) return; const cs = getComputedStyle(g), w = g.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), h = g.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom); if (w > 300 && h > 240) g.replaceChildren(graphFor(GRAPH_CATS[S.gsCat || 0][1], Math.round(w), Math.round(h))); };
   const k = S.scale || 1;
   gs.style.removeProperty('--gsh');
   if (!boxes.length) { fitGraph(); return; }
