@@ -194,13 +194,30 @@ def test_bigquery_index_caches_each_query():
 
     def run(sql, table_id):
         calls.append((sql.split("FROM")[1].split()[0], table_id))
+        if "post_match_elo" in sql:
+            return [{"player_id": 1, "pre_match_elo": 100.4, "post_match_elo": 112.6}, {"player_id": 2, "pre_match_elo": 50.0, "post_match_elo": None}]
         return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
 
     idx._run = run
     for _ in range(3):
         rec = idx.find(5)
-    assert rec == TableRecord(5, None, {"1": "3a"}, True)
-    assert calls == [("`stats`", 5), ("`logs`", "5")]
+    assert rec == TableRecord(5, None, {"1": "3a"}, True, elos_after={"1": 113}, elo_changes={"1": 12})          # (the Elo after the game and its change; a player without post_match_elo has neither)
+    assert calls == [("`stats`", 5), ("`logs`", "5"), ("`stats`", 5)]
+
+
+def test_bigquery_index_survives_a_missing_elo_column():
+    from ark_nova.storage.index import BigQueryIndex
+
+    idx = BigQueryIndex("stats", "logs")
+
+    def run(sql, table_id):
+        if "post_match_elo" in sql:
+            raise RuntimeError("Unrecognized name: post_match_elo")
+        return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
+
+    idx._run = run
+    rec = idx.find(5)
+    assert rec.player_maps == {"1": "3a"} and rec.elos_after == {} and rec.elo_changes == {}
 
 
 def test_replay_endpoints_build_steps_from_a_log():

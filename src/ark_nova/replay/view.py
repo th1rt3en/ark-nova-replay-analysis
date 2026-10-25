@@ -534,6 +534,28 @@ def _sponsor_gains(move: Move, in_play: dict, seat_of: dict) -> list:
     return sorted(out)
 
 
+def _cp_bonuses(parsed: ParsedLog, seat_of: dict) -> list:
+    """The bonuses taken for 5 or 8 conservation points (a `takeBonus` without a source whose `remove` is "5-n" / "8-n"): [{move_id, seat, threshold, type}].
+    The text of the step ("X gets 1 x Fac") does not say which threshold it was, the viewer's Key events graph marks the gifts with it."""
+    out = []
+    for mv in parsed.moves:
+        for e in mv.events:
+            try:
+                a = e.args
+                if e.type != "takeBonus" or not isinstance(a, dict) or a.get("source"):
+                    continue
+                m = re.match(r"^(5|8)-\d+$", str(a.get("remove") or ""))
+                seat = seat_of.get(str(a.get("player_id", e.player)))
+                if not m or seat is None:
+                    continue
+                bd = a.get("bonus_desc")
+                ba = bd.get("args") if isinstance(bd, dict) else None
+                out.append({"move_id": mv.move_id, "seat": seat, "threshold": int(m.group(1)), "type": ba.get("bonus_type") if isinstance(ba, dict) else None})
+            except Exception:                                                  # (a log line of an unexpected shape never breaks the replay)
+                continue
+    return out
+
+
 def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False, first_moves: int | None = None):
     """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking.
     With `first_moves` only that many moves are replayed and the engine does not play them (the mini games need the first steps only; the table's setup is read from the whole log)."""
@@ -671,7 +693,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         "table_id": parsed.table_id,
         "marine_worlds": config.marine_worlds,
         "tracked_sponsors": sorted(_tracked_sponsors().values()),                      # (the sponsors whose gains `state.sponsor_stats` adds up)
-        "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid)), "thinking_time": (getattr(record, "thinking_times", None) or {}).get(str(pid))} for i, pid in enumerate(config.player_ids)],
+        "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid)), "elo_after": (getattr(record, "elos_after", None) or {}).get(str(pid)), "elo_change": (getattr(record, "elo_changes", None) or {}).get(str(pid)), "thinking_time": (getattr(record, "thinking_times", None) or {}).get(str(pid))} for i, pid in enumerate(config.player_ids)],
         "maps": [map_view(m) for m in config.maps],
         "base_projects": config.base_projects,
         "result": [{k: r.get(k) for k in ("id", "name", "score", "rank")} for r in parsed.result or []],
@@ -679,5 +701,6 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         "cards": card_catalog(keys, bool(config.marine_worlds)),
         "engine": eng.summary(),
         "steps": steps,
+        "cp_bonuses": _cp_bonuses(parsed, seat_of_pid),
     }
     return (view, objs_by_step) if with_states else view
