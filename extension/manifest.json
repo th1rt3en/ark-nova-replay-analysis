@@ -35,10 +35,10 @@
         },
         {
             "matches": [
-                "https://ark-nova.pages.dev/import.html*",
-                "https://develop.ark-nova.pages.dev/import.html*",
-                "https://engine.emufriends.pet/import.html*",
-                "http://localhost/import.html*"
+                "https://ark-nova.pages.dev/import*",
+                "https://develop.ark-nova.pages.dev/import*",
+                "https://engine.emufriends.pet/import*",
+                "http://localhost/import*"
             ],
             "js": ["importer.js"],
             "run_at": "document_idle"
