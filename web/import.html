@@ -33,12 +33,14 @@ const auto = new URLSearchParams(location.search).get('ark') === 'auto';
 if (!/^\d+$/.test(table || '') || !(window.opener || auto)) {
   show('Open this page with the extension button on a BGA game review page.', 'error');
 } else {
+  let started = false;                                      // (the extension may post the message more than once)
   window.addEventListener('message', async (e) => {
     const d = e.data;
-    if (e.source !== (auto ? window : window.opener) || (auto && e.origin !== location.origin) || !d || d.type !== 'ark-nova-log' || d.table !== table || typeof d.log !== 'string') return;
+    if (started || (auto ? e.origin !== location.origin : e.source !== window.opener) || !d || d.type !== 'ark-nova-log' || d.table !== table || typeof d.log !== 'string') return;
     // the table info the extension collected (optional): it must be about the same table as the log
     const index = d.index && typeof d.index === 'object' ? d.index : null;
     if (index && String(index.id) !== table) { show('The table info is about another table (' + index.id + ').', 'error'); return; }
+    started = true;
     show('Verifying the log…', 'loading');
     try {
       const res = await fetch('/api/tables/' + table + '/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: d.log });
@@ -55,6 +57,10 @@ if (!/^\d+$/.test(table || '') || !(window.opener || auto)) {
     } catch (err) { show('Could not verify the log, try again.', 'error'); }
   });
   if (window.opener) window.opener.postMessage({ type: 'ark-nova-import-ready' }, '*');
+  if (auto) setTimeout(() => {
+    if (started) return;
+    show('The extension has not sent the log. Go back to the BGA game review page and click "Open in Ark Nova Replay" again. If nothing happens, allow the extension to access this site (browser add-on settings, Permissions).', 'error');
+  }, 8000);
 }
 </script>
 </body>
