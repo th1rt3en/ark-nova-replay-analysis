@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Ark Nova Replay for BGA",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "Opens a BGA table in the Ark Nova replay: collects its log, table info and base projects.",
     "icons": {
         "16": "icons/icon16.png",
@@ -10,7 +10,16 @@
         "128": "icons/icon128.png"
     },
     "permissions": ["storage", "unlimitedStorage"],
-    "host_permissions": ["https://boardgamearena.com/*"],
+    "host_permissions": [
+        "https://boardgamearena.com/*",
+        "https://ark-nova.pages.dev/*",
+        "https://develop.ark-nova.pages.dev/*",
+        "https://engine.emufriends.pet/*"
+    ],
+    "background": {
+        "service_worker": "background.js",
+        "scripts": ["background.js"]
+    },
     "content_scripts": [
         {
             "matches": ["https://boardgamearena.com/*"],
@@ -23,6 +32,16 @@
             "js": ["button.js"],
             "run_at": "document_start",
             "all_frames": true
+        },
+        {
+            "matches": [
+                "https://ark-nova.pages.dev/import.html*",
+                "https://develop.ark-nova.pages.dev/import.html*",
+                "https://engine.emufriends.pet/import.html*",
+                "http://localhost/import.html*"
+            ],
+            "js": ["importer.js"],
+            "run_at": "document_idle"
         }
     ],
     "options_ui": {

@@ -1,22 +1,25 @@
 // Isolated world. Stores what capture.js sees, per table id, in the extension's storage (so opening several tables keeps each one's data),
-// and shows "Open in Ark Nova Replay" on the game review page only when the table's index data AND its log are both stored
-// and the index data is about the same table as the log.
-// The three base conservation projects must be known for a replay. When the log never shows all of them (they appear only when a project is supported), the review page
-// shows a prompt instead of the button: the user picks a player's point of view with BGA's own replay buttons; the replay page has the button at once (the board is read in the iframe of the game when it is clicked, or earlier) the extension reads the projects off the association board (#base-projects-holder),
-// stores them with the table, and the button then sends them along with the log. Everything the extension puts on a page can be closed with its x.
+// and shows one button, "Open in Ark Nova Replay", on the game review page once the table's index data AND its log are both stored and agree.
+// A click opens the replay tool when the three base conservation projects are known: the log shows all of them (they appear only when a project is supported) or they were
+// read before. Otherwise a BGA replay page of a player opens in a background tab, where this script (also running in the game's iframe) reads them off the association board
+// (#base-projects-holder) and stores them; the review page, which shows "Preparing your replay…" meanwhile, then opens the replay tool (importer.js hands it the stored data).
+// Everything the extension puts on a page can be closed with its x.
 (() => {
   const DEFAULT_SITE = 'https://ark-nova.pages.dev';
+  const SLOW_AFTER = 60000;                               // ms: after that the popup offers to open the replay without the projects
   const api = typeof browser !== 'undefined' ? browser : chrome;
   const key = (kind, table) => `ark:${kind}:${table}`;
   const PROJECT = /^P\d{3}$/;
-  let pair = null;                                        // { table, log, index, complete, players, projects, names } for the table on show, once its log and index data are stored and match
+  let pair = null;                                        // { table, log, index, complete, projects } for the table on show, once its log and index data are stored and match
   let checked = null;                                     // the page (kind:table) whose storage was looked at last
   let lastPage = null;                                    // the page seen on the last look (a new one forgets what was closed and what was read)
   let loadSeq = 0;
-  let dismissed = null;                                   // the page whose panel was closed with its x
+  let dismissed = null;                                   // the page whose button was closed with its x
+  let waiting = null;                                     // review page: { slow } while a replay page collects the projects
+  let slowTimer = null;
+  let found = null;                                       // replay page: the projects read off the board on this visit
   let lastNote = 0;                                       // the time of the last console note while looking for the board
-  let found = null;                                       // replay page: { projects, names } read off the board on this visit
-  let ui = null;
+  let ui = null, dlg = null;
 
   const siteOrigin = async () => {
     try {
@@ -31,17 +34,16 @@
     if (!/^\d+$/.test(table || '')) return null;
     if (/^\/gamereview/.test(location.pathname)) return { kind: 'review', table };
     if (/^\/archive\/archive\/frame\.html/.test(location.pathname)) return { kind: 'frame', table };
-    if (/^\/archive\//.test(location.pathname)) return { kind: 'replay', table };       // the game itself: BGA's replay page holds it in an iframe, so the board is read here (no panel)
+    if (/^\/archive\//.test(location.pathname)) return { kind: 'replay', table };
     return null;
   }
   const pageKey = (p) => (p ? p.kind + ':' + p.table : null);
 
-  // what the log says without the replay tool: the players, and whether base_0..2 are all named (a base project is shown on its slot once it is supported)
-  function logFacts(text) {
-    const slots = [null, null, null], players = [];
+  // whether the log names base_0..2 (a base project is shown on its slot once it is supported)
+  function logComplete(text) {
+    const slots = [null, null, null];
     try {
       const data = JSON.parse(text).data;
-      for (const p of data.players || []) players.push({ id: String(p.id), name: String(p.name) });
       for (const move of data.logs || []) {
         for (const e of move.data || []) {
           const card = e && e.type === 'slideMeeples' && e.args && e.args.card;
@@ -49,8 +51,8 @@
           if (where) slots[+where[1]] = String(card.id || '').slice(0, 4);
         }
       }
-    } catch (e) { return { complete: true, players };  /* a log that cannot be read is not a reason to hide the button: the replay tool verifies it */ }
-    return { complete: slots.every((k) => PROJECT.test(k || '')), players };
+    } catch (e) { return true;  /* a log that cannot be read is not a reason to hold the replay back: the replay tool verifies it */ }
+    return slots.every((k) => PROJECT.test(k || ''));
   }
 
   // what is stored for `table`: the log and the index data, only when both exist and agree; the base projects read off BGA's replay, when there are some
@@ -59,15 +61,13 @@
     const log = got[key('log', table)], index = got[key('index', table)], bp = got[key('bp', table)];
     if (!log || !index) return null;
     if (String(index.data.id) !== String(log.table) || String(log.table) !== String(table)) return null;      // the table ids must agree
-    const facts = logFacts(log.text);
     const ok = bp && Array.isArray(bp.projects) && bp.projects.length === 3 && bp.projects.every((k) => PROJECT.test(k));
-    return { table, log: log.text, index: index.data, complete: facts.complete, players: facts.players, projects: ok ? bp.projects : null, names: ok && Array.isArray(bp.names) ? bp.names : [] };
+    return { table, log: log.text, index: index.data, complete: logComplete(log.text), projects: ok ? bp.projects : null };
   }
 
   async function refresh() {
     const page = pageOf(), id = pageKey(page);
-    if (id !== lastPage) { lastPage = id; dismissed = null; found = null; }
-    if (page && page.kind === 'frame') { try { window.frameElement.setAttribute('data-ark-nova', '1'); } catch (e) { /* not reachable: the top page then draws the panel */ } }
+    if (id !== lastPage) { lastPage = id; dismissed = null; found = null; stopWaiting(); }
     if (id !== checked) {                                 // another page (or none): look at the storage again
       checked = id;
       const mine = ++loadSeq;
@@ -75,22 +75,21 @@
       if (mine !== loadSeq) return;
       pair = loaded;
     }
+    if (waiting && pair && pair.projects) { stopWaiting(); openImportTab(); }        // (the replay page has read them)
     render();
   }
 
   // ---- BGA's replay page: the three base projects of the association board, left to right (base-project-0..2) -------------------------------
   // (the game is in a same-origin iframe of the replay page: the page's own script looks into it as well, so it does not depend on the script being injected into the frame)
   function readBoard(doc = document, depth = 0) {
-    const keys = [], names = [];
+    const keys = [];
     for (let n = 0; n < 3; n += 1) {
       const card = doc.querySelector(`#base-projects-holder #base-project-${n} .project-card[data-id]`);
       const m = card && /^(P\d{3})/.exec(card.getAttribute('data-id') || '');
       if (!m) break;
       keys.push(m[1]);
-      const title = card.querySelector('.ark-card-title');
-      names.push(title ? title.textContent.trim() : m[1]);
     }
-    if (keys.length === 3 && new Set(keys).size === 3) return { projects: keys, names };
+    if (keys.length === 3 && new Set(keys).size === 3) return keys;
     if (depth > 3) return null;
     for (const f of doc.querySelectorAll('iframe')) {
       try { const inner = f.contentDocument && readBoard(f.contentDocument, depth + 1); if (inner) return inner; } catch (e) { /* another origin */ }
@@ -110,71 +109,95 @@
       return;
     }
     found = seen;
-    console.debug('[ark-nova] base projects read from the board:', seen.projects.join(', '));
-    pair = { ...pair, projects: seen.projects, names: seen.names };
-    await api.storage.local.set({ [key('bp', page.table)]: { table: page.table, projects: seen.projects, names: seen.names, savedAt: Date.now() } }).catch(() => {});
-    render();
+    console.debug('[ark-nova] base projects read from the board:', seen.join(', '));
+    await api.storage.local.set({ [key('bp', page.table)]: { table: page.table, projects: seen, savedAt: Date.now() } }).catch(() => {});
+    api.runtime.sendMessage({ type: 'board-read' }).catch(() => {});             // (a tab the extension opened for this closes itself)
   }
 
-  // ---- the panel ---------------------------------------------------------------------------------------------------------------------------------
-  const BOX = { background: '#fff', color: '#222', border: '2px solid #2e7d32', borderRadius: '8px', padding: '10px 14px', font: '13px/1.4 sans-serif', maxWidth: '300px', boxShadow: '0 2px 8px rgba(0,0,0,.35)' };
+  // ---- the button and the popup ------------------------------------------------------------------------------------------------------------------
+  const BOX = { background: '#fff', color: '#222', border: '2px solid #2e7d32', borderRadius: '8px', padding: '14px 18px', font: '14px/1.45 sans-serif', maxWidth: '340px', boxShadow: '0 4px 16px rgba(0,0,0,.4)' };
   const GREEN = { border: 'none', borderRadius: '6px', background: '#2e7d32', color: '#fff', font: '600 14px sans-serif', cursor: 'pointer', padding: '10px 16px', boxShadow: '0 2px 8px rgba(0,0,0,.35)' };
   const make = (tag, style, text) => { const n = document.createElement(tag); Object.assign(n.style, style || {}); if (text) n.textContent = text; return n; };
-
-  // what the panel shows for the page: null (nothing), the button ('open') or the prompt to pick a point of view ('pick')
-  function view() {
-    const page = pageOf();
-    if (!page || !pair || pair.table !== page.table || dismissed === pageKey(page)) return null;
-    // BGA's replay page holds the game in an iframe that covers the page: the panel is drawn there; the top page draws it only when the script is not running in the frame
-    if (page.kind === 'replay' && document.querySelector('iframe[data-ark-nova]')) return null;
-    if (page.kind === 'review') {
-      if (pair.complete) return { mode: 'open' };
-      return pair.projects ? { mode: 'open', projects: pair.projects, names: pair.names } : { mode: 'pick' };
-    }
-    if (pair.complete) return null;                       // (a replay page of a table whose log needs nothing from it)
-    return pair.projects ? { mode: 'open', projects: pair.projects, names: pair.names } : { mode: 'open' };       // (the button is here at once: it reads the board when it is clicked)
-  }
-
-  function render() {
-    const v = view();
-    if (!v || !document.body) { if (ui) { ui.remove(); ui = null; } return; }
-    const sig = JSON.stringify([v, pair.table, pair.players]);
-    if (ui && ui.isConnected && ui.dataset.sig === sig) return;
-    if (ui) ui.remove();
-    ui = make('div', { position: 'fixed', right: '16px', top: '72px', zIndex: 99999 });
-    ui.id = 'ark-nova-replay-ui';
-    ui.dataset.sig = sig;
-    const body = make('div', { display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' });
-    if (v.mode === 'open') {
-      const button = make('button', GREEN, 'Open in Ark Nova Replay (table ' + pair.table + ')');
-      button.id = 'ark-nova-replay-btn';
-      button.addEventListener('click', openReplay);
-      body.append(button);
-      if (v.projects) body.append(make('div', { ...BOX, padding: '4px 10px', fontSize: '12px' }, 'Base projects: ' + (v.names.length === 3 ? v.names : v.projects).join(', ')));
-    } else if (v.mode === 'pick') {
-      const box = make('div', BOX);
-      box.append(make('div', { fontWeight: '600' }, "Pick a player's point of view in BGA's replay to find the base projects."));
-      body.append(box);
-    }
+  function closeButton(onClose) {
     const close = make('button', { position: 'absolute', top: '-9px', right: '-9px', width: '22px', height: '22px', padding: 0, border: 'none', borderRadius: '50%', background: '#333', color: '#fff', font: '700 14px/22px sans-serif', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,.4)' }, '×');
     close.title = 'Close';
     close.setAttribute('aria-label', 'Close');
-    close.addEventListener('click', () => { dismissed = pageKey(pageOf()); render(); });
-    ui.append(body, close);
-    document.body.appendChild(ui);
+    close.addEventListener('click', onClose);
+    return close;
   }
 
+  function render() {
+    const page = pageOf();
+    const show = page && page.kind === 'review' && pair && pair.table === page.table && document.body;
+    // the button
+    if (!show || dismissed === pageKey(page)) { if (ui) { ui.remove(); ui = null; } }
+    else if (!ui || !ui.isConnected) {
+      ui = make('div', { position: 'fixed', right: '16px', top: '72px', zIndex: 99999 });
+      ui.id = 'ark-nova-replay-ui';
+      const button = make('button', GREEN, 'Open in Ark Nova Replay (table ' + pair.table + ')');
+      button.id = 'ark-nova-replay-btn';
+      button.addEventListener('click', onClick);
+      ui.append(button, closeButton(() => { dismissed = pageKey(pageOf()); render(); }));
+      document.body.appendChild(ui);
+    }
+    // the popup while a replay page collects the projects
+    if (!show || !waiting) { if (dlg) { dlg.remove(); dlg = null; } return; }
+    const sig = String(waiting.slow);
+    if (dlg && dlg.isConnected && dlg.dataset.sig === sig) return;
+    if (dlg) dlg.remove();
+    dlg = make('div', { position: 'fixed', left: '50%', top: '30%', transform: 'translateX(-50%)', zIndex: 100000 });
+    dlg.id = 'ark-nova-replay-dialog';
+    dlg.dataset.sig = sig;
+    const box = make('div', BOX);
+    const head = make('div', { display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700', fontSize: '16px', marginBottom: '6px' });
+    const spinner = make('span', { width: '16px', height: '16px', border: '3px solid #c8e6c9', borderTopColor: '#2e7d32', borderRadius: '50%', display: 'inline-block' });
+    try { spinner.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 900, iterations: Infinity }); } catch (e) { /* no animation */ }
+    head.append(spinner, make('span', {}, 'Preparing your replay…'));
+    box.append(head, make('div', {}, 'Collecting the remaining game information. Your replay will open automatically when it’s ready.'));
+    if (waiting.slow) {
+      box.append(make('div', { marginTop: '8px' }, 'This is taking longer than expected.'));
+      const b = make('button', { ...GREEN, marginTop: '8px', padding: '7px 12px' }, 'Open the replay anyway');
+      b.addEventListener('click', () => { stopWaiting(); openReplay(); render(); });
+      box.append(b);
+    }
+    dlg.append(box, closeButton(() => { stopWaiting(); render(); }));
+    document.body.appendChild(dlg);
+  }
+
+  function stopWaiting() {
+    waiting = null;
+    if (slowTimer) { clearTimeout(slowTimer); slowTimer = null; }
+  }
+
+  // BGA's replay page of a player, from the review page's own links (div.playerselection), else built from the version of the table info
+  function playerReplayUrl() {
+    const link = document.querySelector('.playerselection a.choosePlayerLink[href*="/archive/replay/"], a[href*="/archive/replay/"][href*="table=' + pair.table + '"]');
+    if (link) { try { return new URL(link.getAttribute('href'), location.href).href; } catch (e) { /* fall through */ } }
+    const version = pair.index && pair.index.siteversion;
+    let player = null;
+    try { const p = (JSON.parse(pair.log).data.players || [])[0]; player = p && p.id; } catch (e) { /* no players */ }
+    return version && player ? `${location.origin}/archive/replay/${version}/?table=${pair.table}&player=${player}&comments=` : null;
+  }
+
+  function onClick() {
+    if (!pair) return;
+    if (pair.complete || pair.projects) { openReplay(); return; }          // the projects are known
+    const url = playerReplayUrl();
+    if (!url) { openReplay(); return; }                                    // (no replay page to read them from: the replay tool infers them)
+    waiting = { slow: false };
+    slowTimer = setTimeout(() => { if (waiting) { waiting.slow = true; render(); } }, SLOW_AFTER);
+    api.runtime.sendMessage({ type: 'open-helper', url }).catch(() => { stopWaiting(); openReplay(); });
+    render();
+  }
+
+  // the replay tool, from a click: its import page announces itself once loaded; answer only the window we opened, only from the site's origin
   async function openReplay() {
-    const v = view();
-    if (!v || !pair) return;
+    if (!pair) return;
     const origin = await siteOrigin();
     const { table, log, index } = pair;
-    // (a log that shows them all needs nothing: it stays the authority; on the replay page the board is read now, if it was not read yet)
-    const seen = pair.complete || pair.projects ? null : readBoard();
-    const base_projects = pair.complete ? null : pair.projects || (seen && seen.projects);
+    const base_projects = pair.complete ? null : pair.projects;             // (a log that shows them all needs nothing: it stays the authority)
     const win = window.open(origin + '/import.html?table=' + table, '_blank');
     if (!win) { alert('The popup was blocked, allow popups for this site.'); return; }
-    // the import page announces itself once loaded; answer only the window we opened, only from the site's origin
     const onReady = (e) => {
       if (e.source !== win || e.origin !== origin || !e.data || e.data.type !== 'ark-nova-import-ready') return;
       window.removeEventListener('message', onReady);
@@ -182,6 +205,13 @@
     };
     window.addEventListener('message', onReady);
     setTimeout(() => window.removeEventListener('message', onReady), 60000);
+  }
+
+  // without a click (the projects arrived later) a tab is opened by the background script; importer.js there hands over the stored log
+  async function openImportTab() {
+    if (!pair) return;
+    const origin = await siteOrigin();
+    api.runtime.sendMessage({ type: 'open-import', url: origin + '/import.html?table=' + pair.table + '&ark=auto' }).catch(() => {});
   }
 
   // capture.js hands over each response; it is stored under its table id and the page is looked at again
