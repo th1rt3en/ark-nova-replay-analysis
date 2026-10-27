@@ -12,8 +12,9 @@
     "permissions": ["storage", "unlimitedStorage"],
     "host_permissions": [
         "https://boardgamearena.com/*",
-        "https://emufriends.pet/park/*",
-        "https://develop.ark-nova.pages.dev/*"
+        "https://ark-nova.pages.dev/*",
+        "https://develop.ark-nova.pages.dev/*",
+        "https://engine.emufriends.pet/*"
     ],
     "background": {
         "service_worker": "background.js",
@@ -34,8 +35,9 @@
         },
         {
             "matches": [
-                "https://emufriends.pet/park/import.html*",
+                "https://ark-nova.pages.dev/import.html*",
                 "https://develop.ark-nova.pages.dev/import.html*",
+                "https://engine.emufriends.pet/import.html*",
                 "http://localhost/import.html*"
             ],
             "js": ["importer.js"],

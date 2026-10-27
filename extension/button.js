@@ -5,7 +5,7 @@
 // (#base-projects-holder) and stores them; the review page, which shows "Preparing your replay…" meanwhile, then opens the replay tool (importer.js hands it the stored data).
 // Everything the extension puts on a page can be closed with its x.
 (() => {
-  const DEFAULT_SITE = 'https://emufriends.pet/park';
+  const DEFAULT_SITE = 'https://ark-nova.pages.dev';
   const SLOW_AFTER = 60000;                               // ms: after that the popup offers to open the replay without the projects
   const api = typeof browser !== 'undefined' ? browser : chrome;
   const key = (kind, table) => `ark:${kind}:${table}`;
@@ -21,13 +21,11 @@
   let lastNote = 0;                                       // the time of the last console note while looking for the board
   let ui = null, dlg = null;
 
-  // the replay site: its address without a trailing slash (it may live under a path, https://emufriends.pet/park), and its origin (what the messages are checked against)
-  const siteBase = async () => {
+  const siteOrigin = async () => {
     try {
       const { site } = await api.storage.sync.get('site');
-      const u = new URL(site || DEFAULT_SITE);
-      return { base: u.origin + u.pathname.replace(/\/+$/, ''), origin: u.origin };
-    } catch (e) { const u = new URL(DEFAULT_SITE); return { base: DEFAULT_SITE, origin: u.origin }; }
+      return new URL(site || DEFAULT_SITE).origin;
+    } catch (e) { return DEFAULT_SITE; }
   };
 
   // the review page of a table, BGA's replay page of it (/archive/replay/<version>/?table=...&player=...) or the frame of that page that holds the game
@@ -195,10 +193,10 @@
   // the replay tool, from a click: its import page announces itself once loaded; answer only the window we opened, only from the site's origin
   async function openReplay() {
     if (!pair) return;
-    const { base, origin } = await siteBase();
+    const origin = await siteOrigin();
     const { table, log, index } = pair;
     const base_projects = pair.complete ? null : pair.projects;             // (a log that shows them all needs nothing: it stays the authority)
-    const win = window.open(base + '/import.html?table=' + table, '_blank');
+    const win = window.open(origin + '/import.html?table=' + table, '_blank');
     if (!win) { alert('The popup was blocked, allow popups for this site.'); return; }
     const onReady = (e) => {
       if (e.source !== win || e.origin !== origin || !e.data || e.data.type !== 'ark-nova-import-ready') return;
@@ -212,8 +210,8 @@
   // without a click (the projects arrived later) a tab is opened by the background script; importer.js there hands over the stored log
   async function openImportTab() {
     if (!pair) return;
-    const { base } = await siteBase();
-    api.runtime.sendMessage({ type: 'open-import', url: base + '/import.html?table=' + pair.table + '&ark=auto' }).catch(() => {});
+    const origin = await siteOrigin();
+    api.runtime.sendMessage({ type: 'open-import', url: origin + '/import.html?table=' + pair.table + '&ark=auto' }).catch(() => {});
   }
 
   // capture.js hands over each response; it is stored under its table id and the page is looked at again
