@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Ark Nova Replay for BGA",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "description": "Opens a BGA table in the Ark Nova replay: collects its log, table info and base projects.",
     "icons": {
         "16": "icons/icon16.png",

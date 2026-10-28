@@ -1900,3 +1900,6 @@ Scope: `extension/button.js` (rewritten), `extension/background.js`, `extension/
 - The replay pages show no panel any more (1.3.0 had one). `manifest.json` has `background` with both `service_worker` and `scripts` (Chrome / Firefox).
 - Cloudflare Pages redirects `/import.html` to `/import`, so the importer matches `/import*` (not `/import.html*`).
 - `import.html` with `ark=auto` accepts the extension's message by origin only (Firefox may not give `event.source` for a content script's message), ignores copies after the first, and after 8 s without it says so and what to do (click the button again; allow the extension on the site). `importer.js` posts twice and logs to the console (filter "ark-nova").
+
+## 105. Extension 1.4.1: the popup ends with an "Open replay" button
+When the replay page has read the base projects, the "Preparing your replay…" popup of the review page becomes "Your replay is ready" with an "Open replay" button (it goes away after 30 s or with its x), while the tab with `import.html?ark=auto` is still opened by the background script. The button opens the replay tool by the click handshake (`window.open`), which needs no access to the replay site: where Firefox has not granted the extension that access, `importer.js` does not run and the automatic tab alone would wait forever.

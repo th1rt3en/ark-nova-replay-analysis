@@ -6,6 +6,7 @@
 // Everything the extension puts on a page can be closed with its x.
 (() => {
   const DEFAULT_SITE = 'https://ark-nova.pages.dev';
+  const READY_FOR = 30000;                                // ms the "ready" popup stays
   const SLOW_AFTER = 60000;                               // ms: after that the popup offers to open the replay without the projects
   const api = typeof browser !== 'undefined' ? browser : chrome;
   const key = (kind, table) => `ark:${kind}:${table}`;
@@ -75,7 +76,12 @@
       if (mine !== loadSeq) return;
       pair = loaded;
     }
-    if (waiting && pair && pair.projects) { stopWaiting(); openImportTab(); }        // (the replay page has read them)
+    if (waiting && !waiting.ready && pair && pair.projects) {                         // (the replay page has read them)
+      stopWaiting();
+      waiting = { ready: true };                          // the popup stays with a button: the tab opened below needs the extension to have access to the site, a click always works
+      openImportTab();
+      slowTimer = setTimeout(() => { stopWaiting(); render(); }, READY_FOR);
+    }
     render();
   }
 
@@ -142,7 +148,7 @@
     }
     // the popup while a replay page collects the projects
     if (!show || !waiting) { if (dlg) { dlg.remove(); dlg = null; } return; }
-    const sig = String(waiting.slow);
+    const sig = waiting.ready ? 'ready' : String(waiting.slow);
     if (dlg && dlg.isConnected && dlg.dataset.sig === sig) return;
     if (dlg) dlg.remove();
     dlg = make('div', { position: 'fixed', left: '50%', top: '30%', transform: 'translateX(-50%)', zIndex: 100000 });
@@ -152,8 +158,16 @@
     const head = make('div', { display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700', fontSize: '16px', marginBottom: '6px' });
     const spinner = make('span', { width: '16px', height: '16px', border: '3px solid #c8e6c9', borderTopColor: '#2e7d32', borderRadius: '50%', display: 'inline-block' });
     try { spinner.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 900, iterations: Infinity }); } catch (e) { /* no animation */ }
-    head.append(spinner, make('span', {}, 'Preparing your replay…'));
-    box.append(head, make('div', {}, 'Collecting the remaining game information. Your replay will open automatically when it’s ready.'));
+    if (waiting.ready) {
+      head.append(make('span', {}, 'Your replay is ready'));
+      box.append(head, make('div', {}, 'It should open in a new tab. If it does not, open it here:'));
+      const open = make('button', { ...GREEN, marginTop: '8px', padding: '7px 12px' }, 'Open replay');
+      open.addEventListener('click', () => { stopWaiting(); openReplay(); render(); });
+      box.append(open);
+    } else {
+      head.append(spinner, make('span', {}, 'Preparing your replay…'));
+      box.append(head, make('div', {}, 'Collecting the remaining game information. Your replay will open automatically when it’s ready.'));
+    }
     if (waiting.slow) {
       box.append(make('div', { marginTop: '8px' }, 'This is taking longer than expected.'));
       const b = make('button', { ...GREEN, marginTop: '8px', padding: '7px 12px' }, 'Open the replay anyway');
