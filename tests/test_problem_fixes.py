@@ -37,6 +37,7 @@ FIXED = {
     "819962687": "a Symbiosis that nothing in the log uses is skipped",
     "894764261": "peaceful Pilfering 1: 3 money or a card",
     "805339373": "a Constriction ignores the appeal that the triggers of the animal gave",
+    "920295323": "Symbiosis does not copy a Reef Dweller effect (turn 71: the Anemone's Mark is its reef effect, the log shows one Mark)",
 }
 
 

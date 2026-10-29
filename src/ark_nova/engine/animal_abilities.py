@@ -286,7 +286,7 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     if k == "symbiosis":
         from ark_nova.engine import animals_action
         return [Action(seat, "choose_effect", {"index": i, "animal": a, "ability": n}) for a in _symbiosis_targets(p, e["source"])
-                for n in dict.fromkeys(n for n, _ in animals_action.abilities(a))]            # (1 ability of 1 other sea animal)
+                for n in dict.fromkeys(n for n, _ in _symbiosis_abilities(a))]            # (1 ability of 1 other sea animal)
     if k == "cut_down":
         return [Action(seat, "choose_effect", {"index": i, "building": [b.x, b.y]}) for b in p.buildings if _empty_standard(b)]
     if k == "trade":
@@ -349,12 +349,20 @@ def _empty_standard(b) -> bool:
     return b.type.startswith("size-") and b.animal is None and not b.animals
 
 
+def _symbiosis_abilities(key: str) -> list:
+    """What Symbiosis may copy from a sea animal: its abilities, not its Reef Dweller effect ("Use 1 ability (not a Reef Dweller effect)"). The data lists the Reef Dweller effect of
+    8 sea animals among their abilities too (A529, A531, A533, A535, A536, A541, A542, A544: the card shows it once, with the coral icon), so those entries are left out."""
+    from ark_nova.engine import animals_action
+    reef = animals_action.reef_abilities(key)
+    return [pair for pair in animals_action.abilities(key) if pair not in reef]
+
+
 def _symbiosis_targets(p, source: str) -> list:
     from ark_nova.engine import animals_action
     out = []
     for a in p.animals:
         if a != source and _sea_animal(a):
-            names = [n for n, _ in animals_action.abilities(a)]
+            names = [n for n, _ in _symbiosis_abilities(a)]
             if names and "Symbiosis" not in names and all(supported(n) or animals_action.supported(n) for n in names):
                 out.append(a)
     return sorted(out)
@@ -480,7 +488,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         c = a["animal"]
         if c not in _symbiosis_targets(p, e["source"]):
             raise fx.IllegalEffect("that animal has no ability to use")
-        pairs = [(n, v) for n, v in animals_action.abilities(c) if n == a.get("ability")]
+        pairs = [(n, v) for n, v in _symbiosis_abilities(c) if n == a.get("ability")]
         if not pairs:
             raise fx.IllegalEffect("that animal has no such ability")
         new = animals_action.ability_effects(state, c, pairs)

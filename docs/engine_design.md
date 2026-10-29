@@ -250,7 +250,7 @@ All 160 animals can be played (was 74). Abilities are pending effects of the pro
 - **Decisions:** Posturing X (X optional free kiosks or pavilions), Peacocking (free large bird aviary), Pouch, Digging X (discard a display card or a hand card
   + draw, X times), Scavenging X (shuffle the discard pile with the game's RNG, draw X, keep 1), Glide X (discard up to X cards; per sea animal icon 1 reputation /
   2 appeal / a free kiosk), Shark Attack X (discard up to X animals of the display in the reputation range: half their appeal each), Symbiosis (use an ability
-  of another sea animal), Cut Down (remove an empty standard enclosure, refund 2 per space), Trade (X token <-> 5 money), Extra Shift (a worker back from the
+  of another sea animal, not its Reef Dweller effect: the data lists the Reef Dweller effect of A529, A531, A533, A535, A536, A541, A542 and A544 among their abilities too, `animal_abilities._symbiosis_abilities` leaves those out), Cut Down (remove an empty standard enclosure, refund 2 per space), Trade (X token <-> 5 money), Extra Shift (a worker back from the
   association board), Assertion, Resistance / Adapt (draw endgame cards, discard), Scuba Dive X (reveal X = sea + reptile icons, take a sponsor),
   Pilfering 1 / 2 (the opponent decides: give a card or pay 5 money; target = the player with at least as much appeal / conservation).
 - **Second actions:** Determination (another action card) and Action: X (the named card, optional) open a second `choose_action_card` of the same player after

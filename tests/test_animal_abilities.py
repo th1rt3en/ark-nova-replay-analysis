@@ -491,3 +491,21 @@ def test_animals1_single_animal_choice_before_playing_ignores_a_condition():
     while s.prompt.kind == "effects":
         s = apply(s, Action(0, "skip_effect", {"index": 0}))
     assert s.prompt.kind != "animals_play" or not any(a.kind == "play_animal" for a in legal_actions(s))      # only one animal
+
+
+def _symbiosis_offers(*zoo):
+    """The animals that Symbiosis (Sharknose Goby, played into the aquarium) may copy from, with the ability names offered, in a zoo that already has `zoo`."""
+    s = _zoo("A535")
+    s.players[0].buildings.append(Building(id=3, type="large-aquarium", x=6, y=5))
+    s.players[0].animals = list(zoo)
+    s = _play(_start(s), "A535", 6, 5)
+    assert any(e["kind"] == "symbiosis" for e in s.prompt.args["pending"])
+    return {(a.args["animal"], a.args["ability"]) for a in legal_actions(s) if a.kind == "choose_effect" and "animal" in a.args}
+
+
+def test_symbiosis_does_not_copy_a_reef_dweller_effect():
+    """"Use 1 ability (not a Reef Dweller effect)": the data lists the Reef Dweller effect of A529, A531, A533, A535, A536, A541, A542, A544 among their abilities too."""
+    assert _symbiosis_offers("A534") == {("A534", "Venom")}                            # Octopus: Venom 1 is an ability, Money 3 its reef effect: only the ability can be copied
+    assert _symbiosis_offers("A529", "A534") == {("A534", "Venom")}                    # Magnificent Sea Anemone: Mark is its reef effect only
+    assert _symbiosis_offers("A531", "A533", "A534") == {("A534", "Venom")}            # Palette Surgeonfish (Trade), Blackside Hawkfish (Posturing 1)
+    assert _symbiosis_offers("A529", "A531") == set()                                  # nothing left to copy: the effect is skipped
