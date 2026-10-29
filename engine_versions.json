@@ -73,5 +73,19 @@
         "notes": [
             "map 11 (Caves): the Extra Shift comes once, when the second partner zoo + university pair is complete (it came with each 2nd tile before)"
         ]
+    },
+    {
+        "version": "0.2.5",
+        "code_hash": "2f6a897a1270411d8da07143ce6457fc795fac295f2260d2a084cc5c8a7796da",
+        "data_hash": "44d7dc435f71dec099304d6d461687c90155099fe851d7646dffb4f96ce06e40+c35c11942ee2b15a1dbf589bd9347bc4db6f144f93cd3418466a0407cbf27b34",
+        "schema_version": 1,
+        "commit": "2ae9d15bd23f7ad48d34bd1f64251089cf0028af",
+        "uncommitted_changes": false,
+        "date": "2026-10-29",
+        "notes": [
+            "Symbiosis does not copy a Reef Dweller effect (the data lists the Reef Dweller effect of A529, A531, A533, A535, A536, A541, A542 and A544 among their abilities too)",
+            "endgame: Cable Car scores at 6 rock icons (7 before), Polar Bear Exhibit gives 1 conservation at 3 bears and 2 at 6, Expert on Europe counts the occupied 1-size enclosures with their effective size (an enclosure next to the gate of map 2 / 2a counts as 3)",
+            "the endgame live count (engine/endgame.py live_scoring) only reads the state: no rule changed"
+        ]
     }
 ]
