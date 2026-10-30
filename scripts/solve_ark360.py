@@ -56,7 +56,7 @@ def solve(map_id: str, cfg: dict, minimise_pairs: bool = False, seed: int = 0, l
                 m.Add(both >= x[a] + x[b] - 1)
                 (adjacent if d == 1 else apart).append(both)
     m.Add(sum(adjacent) <= lay["max_adjacent_pairs"])
-    if not minimise_pairs:
+    if not minimise_pairs and lay["max_one_hex_apart_pairs"] is not None:
         m.Add(sum(apart) <= lay["max_one_hex_apart_pairs"])
     border = sum(x[c] for c in cand if c in bd.border)
     m.Add(border >= lay["min_border"])

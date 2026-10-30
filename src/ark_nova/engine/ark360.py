@@ -6,12 +6,14 @@ file is part of the rules fingerprint of `engine/version.py`):
 
 - `min_distinct_x` / `min_distinct_y`: how many of the 9 columns (x 0..8) and of the 13 rows (y 0..12) hold a bonus at least;
 - `max_adjacent_pairs`: pairs of bonuses on neighbouring hexes; `max_one_hex_apart_pairs`: pairs with one hex between them (`one_hex_apart`: "straight" = the hex between
-  them is on the line through both, "any" = every pair at hex distance 2);
+  them is on the line through both, "any" = every pair at hex distance 2); `null` = no limit, which is how it is now: put a number there to bring the rule back;
 - `min_border` / `max_border`: bonuses on the border of the board (a hex with a neighbour off the board);
 - `min_next_to_rock_share` / `min_next_to_water_share`: the share of the bonuses that touch a rock / water hex;
 - `allowed_terrain`, `forbidden_special_kinds`: where a bonus may be put (the printed bonuses of the standard maps are on plain hexes only, none on a flag or a feature);
 - `search_steps`, `search_restarts`: the effort of the search; `excluded_maps`: maps that never get this mode; `study_seconds`, `time_control`: the format of the game;
-- `map_overrides`: `{map id: {layout key: number}}`, rules of one map that differ from the ones above (map 2a has 7 bonuses, so it asks for 7 rows instead of 8).
+- `map_overrides`: `{map id: {layout key: number}}`, rules of one map that differ from the ones above (map 2a has 7 bonuses, so it asks for 7 rows instead of 8);
+- `rules_to_come`: `{map id: text}`, the maps whose own rules are not written yet (3 / 3a / 7 / 7a: their own bonus rules; 8 / 8a: the H hexes; 13: the binder bonus). They are all drawn: with the common
+  rules or, where those cannot lay out the map, with the provisional rules of `map_overrides` (3 / 3a: no pair limits, 8: 7 rows, 8 / 8a: no bonus on an H hex). The text says which.
 
 A layout is stored as a list of placement bonus entries (the format of `placement_bonuses` in the map geometry) in `PlayerState.bonus_layout`; `board.board_of(player)`
 reads it. The search uses `Rng` only and integers, so a layout is reproducible from the seed on any platform.
@@ -34,7 +36,7 @@ CONFIG_PATH = Path(__file__).resolve().parents[1] / "data" / "ark360.json"
 SEED_OFFSET = 360360                                    # the layout has a stream of its own, so the decks keep their order
 STRAIGHT_GAPS = ((0, 4), (2, 2))                        # (|dx|, |dy|) of two hexes with exactly one hex between them on a straight line
 WORSE_ODDS = 12                                         # the search takes a move that is one worse in 1 of this many tries
-_NUMBERS = ("min_distinct_x", "min_distinct_y", "max_adjacent_pairs", "max_one_hex_apart_pairs", "min_border", "max_border", "search_steps", "search_restarts")
+_NUMBERS = ("min_distinct_x", "min_distinct_y", "max_adjacent_pairs", "min_border", "max_border", "search_steps", "search_restarts")
 
 
 class Ark360Error(ValueError):
@@ -57,12 +59,17 @@ def check_config(cfg: dict) -> None:
         check_rules({**cfg["layout"], **over})
     if not isinstance(cfg.get("excluded_maps"), list) or not isinstance(cfg.get("study_seconds"), int) or cfg["study_seconds"] < 0:
         raise Ark360Error("ark360.json: excluded_maps must be a list and study_seconds a number of seconds")
+    if not all(isinstance(k, str) and isinstance(v, str) for k, v in (cfg.get("rules_to_come") or {}).items()):
+        raise Ark360Error("ark360.json: rules_to_come maps a map id to a text")
     tc = cfg.get("time_control") or {}
     if not isinstance(tc.get("start"), int) or not isinstance(tc.get("increment"), int):
         raise Ark360Error("ark360.json: time_control needs start and increment, in seconds")
 
 
 def check_rules(lay: dict) -> None:
+    gap = lay.get("max_one_hex_apart_pairs")
+    if gap is not None and (not isinstance(gap, int) or isinstance(gap, bool) or gap < 0):
+        raise Ark360Error("ark360.json: layout.max_one_hex_apart_pairs must be a whole number of 0 or more, or null for no limit")
     for k in _NUMBERS:
         if not isinstance(lay.get(k), int) or lay[k] < 0:
             raise Ark360Error(f"ark360.json: layout.{k} must be a whole number of 0 or more")
@@ -107,8 +114,8 @@ def candidates(map_id: str, cfg: dict | None = None) -> list:
 
 
 def applicable(map_id: str, cfg: dict | None = None) -> bool:
-    """Whether the mode can be played on the map: it has a geometry, it is not excluded, and its bonuses can meet the rules at all (enough bonuses for the columns and
-    rows asked, enough hexes to put them on)."""
+    """Whether the mode can be played on the map: it has a geometry, it is not excluded, and its bonuses can meet its rules at all (enough bonuses for the columns and rows asked, enough
+    hexes to put them on)."""
     cfg = cfg or config()
     if str(map_id) in {str(m) for m in cfg["excluded_maps"]} or str(map_id) in UNSUPPORTED_MAPS:
         return False
@@ -152,7 +159,8 @@ def shortfalls(map_id: str, cells: list, cfg: dict | None = None) -> dict:
     m = measure(map_id, cells, cfg)
     n = m["bonuses"]
     out = {"distinct x": lay["min_distinct_x"] - m["x"], "distinct y": lay["min_distinct_y"] - m["y"],
-           "adjacent pairs": m["adjacent_pairs"] - lay["max_adjacent_pairs"], "one-hex-apart pairs": m["one_hex_apart_pairs"] - lay["max_one_hex_apart_pairs"],
+           "adjacent pairs": m["adjacent_pairs"] - lay["max_adjacent_pairs"],
+           "one-hex-apart pairs": 0 if lay["max_one_hex_apart_pairs"] is None else m["one_hex_apart_pairs"] - lay["max_one_hex_apart_pairs"],
            "too few on the border": lay["min_border"] - m["border"], "too many on the border": m["border"] - lay["max_border"],
            "next to rock": _share(lay["min_next_to_rock_share"], n) - m["next_to_rock"], "next to water": _share(lay["min_next_to_water_share"], n) - m["next_to_water"]}
     return {k: v for k, v in out.items() if v > 0}
@@ -195,7 +203,7 @@ def _cost(map_id: str, n: int, cfg: dict):
                     apart += 1
         border = sum(1 for c in cells if c in bd.border)
         return (max(0, lay["min_distinct_x"] - len({c[0] for c in cells})) + max(0, lay["min_distinct_y"] - len({c[1] for c in cells}))
-                + max(0, adjacent - lay["max_adjacent_pairs"]) + max(0, apart - lay["max_one_hex_apart_pairs"])
+                + max(0, adjacent - lay["max_adjacent_pairs"]) + (0 if lay["max_one_hex_apart_pairs"] is None else max(0, apart - lay["max_one_hex_apart_pairs"]))
                 + max(0, lay["min_border"] - border) + max(0, border - lay["max_border"])
                 + max(0, need["rock"] - sum(1 for c in cells if c in near["rock"])) + max(0, need["water"] - sum(1 for c in cells if c in near["water"])))
     return cost

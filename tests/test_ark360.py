@@ -14,7 +14,7 @@ from ark_nova.engine.map_rules import kiosk_hexes_covered
 from ark_nova.engine.rng import Rng
 from ark_nova.engine.state import Building, GameState, PlayerState
 
-PLAYABLE = ["1", "1a", "2", "2a", "4", "4a", "5", "5a", "6", "6a", "7", "7a", "9", "10", "11", "12", "13", "14", "T1"]
+PLAYABLE = ["1", "1a", "2", "2a", "3", "3a", "4", "4a", "5", "5a", "6", "6a", "7", "7a", "8", "8a", "9", "10", "11", "12", "13", "14", "T1"]       # the whole roster: 1-14, the "a" versions, T1
 MARINE_WORLDS = {"10", "11", "12", "13", "14"}
 
 
@@ -22,13 +22,30 @@ def test_the_config_is_valid_and_names_the_playable_maps():
     ark360.check_config(ark360.config())
     on_offer = [m["id"] for m in data.maps() if m.get("geometry") and ark360.applicable(m["id"])]
     assert sorted(on_offer) == sorted(PLAYABLE)
-    for m in ("0", "A", "3", "3a", "8", "8a"):
-        assert not ark360.applicable(m)                       # (the maps the mode leaves out: excluded_maps)
+    for m in ("0", "A"):
+        assert not ark360.applicable(m)                       # (the beginner maps, the only ones the mode leaves out: excluded_maps)
     assert ark360.applicable("2a") and ark360.rules("2a")["min_distinct_y"] == 7          # (7 bonuses cannot be on 8 different rows: the map has its own number)
     assert ark360.rules("1")["min_distinct_y"] == 8
     cfg = copy.deepcopy(ark360.config())
     del cfg["map_overrides"]
     assert not ark360.applicable("2a", cfg)                   # without the override the map is out
+    assert not ark360.applicable("8", cfg)                    # (map 8 has 7 bonuses too: its provisional rules ask for 7 rows)
+
+
+def test_the_whole_roster_is_playable_and_the_maps_with_provisional_rules_say_so():
+    cfg = ark360.config()
+    every_map = [m["id"] for m in data.maps() if m.get("geometry")]
+    assert sorted(m for m in every_map if ark360.applicable(m)) == sorted(PLAYABLE)                         # 1-14, the "a" versions and T1: all but the beginner maps 0 and A
+    assert {m for m in every_map if not ark360.applicable(m)} == {"0", "A"}
+    assert set(cfg["rules_to_come"]) == {"3", "3a", "7", "7a", "8", "8a", "13"} and set(cfg["rules_to_come"]) <= set(PLAYABLE)
+    for m in ("3", "3a"):
+        assert ark360.rules(m)["max_adjacent_pairs"] == 99                                                  # provisional: no adjacent-pairs limit (the common one cannot be met with 18 / 19 bonuses)
+    assert ark360.rules("8")["min_distinct_y"] == 7 and all("hollywood_h" in ark360.rules(m)["forbidden_special_kinds"] for m in ("8", "8a"))
+    for m in ("3", "3a", "8", "8a"):                                                                        # (these four get a layout from the game's own draw too)
+        layout = ark360.layout_for(m, 11)
+        assert ark360.check_layout(m, layout) == []
+    h = {(s["x"], s["y"]) for s in data.map_by_id("8")["geometry"]["special_hexes"] if s["kind"] == "hollywood_h"}
+    assert h and not any((e["x"], e["y"]) in h for e in ark360.layout_for("8", 3))                          # no bonus on an H hex for now
 
 
 def test_a_bad_config_is_refused():
@@ -43,6 +60,10 @@ def test_a_bad_config_is_refused():
             ark360.check_config(cfg)
     cfg = copy.deepcopy(ark360.config())
     cfg["layout"]["min_border"], cfg["layout"]["max_border"] = 5, 2
+    with pytest.raises(ark360.Ark360Error):
+        ark360.check_config(cfg)
+    cfg = copy.deepcopy(ark360.config())
+    cfg["rules_to_come"]["3"] = 3
     with pytest.raises(ark360.Ark360Error):
         ark360.check_config(cfg)
     for over in ({"min_distinct_z": 3}, {}, {"max_border": -1}, {"one_hex_apart": "near"}):          # (an override names a rule of `layout` and keeps it valid)
@@ -224,3 +245,29 @@ def test_a_state_saved_before_the_mode_existed_still_loads():
         del p["bonus_layout"]
     back = GameState.from_dict(old)
     assert back.study is None and all(p.bonus_layout is None for p in back.players) and back.to_dict() == s.to_dict()
+
+
+def test_the_one_hex_apart_limit_is_off_for_every_map_and_a_number_brings_it_back():
+    cfg = ark360.config()
+    assert all(ark360.rules(m)["max_one_hex_apart_pairs"] is None for m in PLAYABLE)                    # (removed for all maps)
+    many = 0
+    for m in PLAYABLE:
+        for seed in range(12):
+            layout = ark360.layout_for(m, seed)
+            assert ark360.check_layout(m, layout) == []
+            many = max(many, ark360.measure(m, [(e["x"], e["y"]) for e in layout])["one_hex_apart_pairs"])
+    assert many > 2                                                                                     # (layouts do have more than the old limit of 2 such pairs now)
+    on = copy.deepcopy(cfg)
+    on["layout"]["max_one_hex_apart_pairs"] = 2
+    ark360.check_config(on)
+    layout = ark360.generate("1", Rng(4), on)
+    assert ark360.measure("1", [(e["x"], e["y"]) for e in layout], on)["one_hex_apart_pairs"] <= 2       # a number puts the rule back
+    crowded = copy.deepcopy(layout)
+    cells = [(1, 0), (1, 4), (1, 8), (1, 12), (3, 0), (3, 4), (3, 8), (3, 12), (5, 0)]                   # (straight gaps all over)
+    for e, (x, y) in zip(crowded, cells):
+        e["x"], e["y"] = x, y
+    assert "one-hex-apart pairs" in ark360.shortfalls("1", cells, on) and "one-hex-apart pairs" not in ark360.shortfalls("1", cells, cfg)
+    off = copy.deepcopy(cfg)
+    off["layout"]["max_one_hex_apart_pairs"] = -1
+    with pytest.raises(ark360.Ark360Error):
+        ark360.check_config(off)
