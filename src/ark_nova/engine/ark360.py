@@ -10,7 +10,8 @@ file is part of the rules fingerprint of `engine/version.py`):
 - `min_border` / `max_border`: bonuses on the border of the board (a hex with a neighbour off the board);
 - `min_next_to_rock_share` / `min_next_to_water_share`: the share of the bonuses that touch a rock / water hex;
 - `allowed_terrain`, `forbidden_special_kinds`: where a bonus may be put (the printed bonuses of the standard maps are on plain hexes only, none on a flag or a feature);
-- `search_steps`, `search_restarts`: the effort of the search; `excluded_maps`: maps that never get this mode; `study_seconds`, `time_control`: the format of the game.
+- `search_steps`, `search_restarts`: the effort of the search; `excluded_maps`: maps that never get this mode; `study_seconds`, `time_control`: the format of the game;
+- `map_overrides`: `{map id: {layout key: number}}`, rules of one map that differ from the ones above (map 2a has 7 bonuses, so it asks for 7 rows instead of 8).
 
 A layout is stored as a list of placement bonus entries (the format of `placement_bonuses` in the map geometry) in `PlayerState.bonus_layout`; `board.board_of(player)`
 reads it. The search uses `Rng` only and integers, so a layout is reproducible from the seed on any platform.
@@ -49,7 +50,19 @@ def config() -> dict:
 
 
 def check_config(cfg: dict) -> None:
-    lay = cfg.get("layout") or {}
+    check_rules(cfg.get("layout") or {})
+    for map_id, over in (cfg.get("map_overrides") or {}).items():
+        if not isinstance(over, dict) or not over or not set(over) <= set(cfg["layout"]):
+            raise Ark360Error(f"ark360.json: map_overrides[{map_id!r}] must name rules of `layout`")
+        check_rules({**cfg["layout"], **over})
+    if not isinstance(cfg.get("excluded_maps"), list) or not isinstance(cfg.get("study_seconds"), int) or cfg["study_seconds"] < 0:
+        raise Ark360Error("ark360.json: excluded_maps must be a list and study_seconds a number of seconds")
+    tc = cfg.get("time_control") or {}
+    if not isinstance(tc.get("start"), int) or not isinstance(tc.get("increment"), int):
+        raise Ark360Error("ark360.json: time_control needs start and increment, in seconds")
+
+
+def check_rules(lay: dict) -> None:
     for k in _NUMBERS:
         if not isinstance(lay.get(k), int) or lay[k] < 0:
             raise Ark360Error(f"ark360.json: layout.{k} must be a whole number of 0 or more")
@@ -62,11 +75,12 @@ def check_config(cfg: dict) -> None:
         raise Ark360Error('ark360.json: layout.one_hex_apart must be "straight" or "any"')
     if not lay.get("allowed_terrain") or not set(lay["allowed_terrain"]) <= {"plain", "rock", "water"}:
         raise Ark360Error("ark360.json: layout.allowed_terrain must list plain, rock and / or water")
-    if not isinstance(cfg.get("excluded_maps"), list) or not isinstance(cfg.get("study_seconds"), int) or cfg["study_seconds"] < 0:
-        raise Ark360Error("ark360.json: excluded_maps must be a list and study_seconds a number of seconds")
-    tc = cfg.get("time_control") or {}
-    if not isinstance(tc.get("start"), int) or not isinstance(tc.get("increment"), int):
-        raise Ark360Error("ark360.json: time_control needs start and increment, in seconds")
+
+
+def rules(map_id: str, cfg: dict | None = None) -> dict:
+    """The layout rules of one map: `layout`, with the `map_overrides` of the map on top."""
+    cfg = cfg or config()
+    return {**cfg["layout"], **(cfg.get("map_overrides") or {}).get(str(map_id), {})}
 
 
 def study_seconds(cfg: dict | None = None) -> int:
@@ -86,7 +100,7 @@ def base_entries(map_id: str) -> list:
 
 def candidates(map_id: str, cfg: dict | None = None) -> list:
     """The hexes that may hold a bonus: the allowed terrain, not a hex with a feature of the map (flag, tower, gate ...), not blocked."""
-    lay = (cfg or config())["layout"]
+    lay = rules(map_id, cfg)
     bd = board(map_id)
     special = {(s["x"], s["y"]) for s in data.map_by_id(map_id)["geometry"]["special_hexes"] if s["kind"] in lay["forbidden_special_kinds"] and not s.get("off_board")}
     return sorted(c for c in bd.cells if bd.terrain[c] in lay["allowed_terrain"] and c not in special and c not in bd.blocked)
@@ -105,7 +119,7 @@ def applicable(map_id: str, cfg: dict | None = None) -> bool:
     if not geo:
         return False
     n = len(geo["placement_bonuses"])
-    lay = cfg["layout"]
+    lay = rules(map_id, cfg)
     return n >= max(lay["min_distinct_x"], lay["min_distinct_y"], lay["min_border"]) and n <= len(candidates(map_id, cfg))
 
 
@@ -115,7 +129,7 @@ def _share(share: float, n: int) -> int:
 
 def measure(map_id: str, cells: list, cfg: dict | None = None) -> dict:
     """The numbers the rules are about, for the hexes of the bonuses."""
-    lay = (cfg or config())["layout"]
+    lay = rules(map_id, cfg)
     bd = board(map_id)
     cells = [tuple(c) for c in cells]
     adjacent = apart = 0
@@ -134,7 +148,7 @@ def measure(map_id: str, cells: list, cfg: dict | None = None) -> dict:
 def shortfalls(map_id: str, cells: list, cfg: dict | None = None) -> dict:
     """How far each rule is broken (nothing in the result = a valid layout), by name."""
     cfg = cfg or config()
-    lay = cfg["layout"]
+    lay = rules(map_id, cfg)
     m = measure(map_id, cells, cfg)
     n = m["bonuses"]
     out = {"distinct x": lay["min_distinct_x"] - m["x"], "distinct y": lay["min_distinct_y"] - m["y"],
@@ -164,7 +178,7 @@ def check_layout(map_id: str, entries: list, cfg: dict | None = None) -> list:
 # ---- the search -----------------------------------------------------------------------------------------------------------------------------
 
 def _cost(map_id: str, n: int, cfg: dict):
-    lay = cfg["layout"]
+    lay = rules(map_id, cfg)
     bd = board(map_id)
     near = {kind: {c for c in bd.cells if any(bd.terrain.get(k) == kind for k in neighbours(c))} for kind in ("rock", "water")}
     need = {"rock": _share(lay["min_next_to_rock_share"], n), "water": _share(lay["min_next_to_water_share"], n)}
@@ -193,7 +207,7 @@ def generate(map_id: str, rng: Rng, cfg: dict | None = None) -> list:
     cfg = cfg or config()
     if not applicable(map_id, cfg):
         raise Ark360Error(f"the mode cannot be played on map {map_id}")
-    lay = cfg["layout"]
+    lay = rules(map_id, cfg)
     entries = base_entries(map_id)
     n = len(entries)
     cost = _cost(map_id, n, cfg)

@@ -36,7 +36,7 @@ def with_overrides(cfg: dict, sets: list) -> dict:
 
 
 def why_not(map_id: str, cfg: dict) -> str:
-    lay = cfg["layout"]
+    lay = ark360.rules(map_id, cfg)
     if str(map_id) in {str(m) for m in cfg["excluded_maps"]}:
         return "excluded in the config"
     n = len(data.map_by_id(map_id)["geometry"]["placement_bonuses"])

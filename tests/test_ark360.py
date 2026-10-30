@@ -14,7 +14,7 @@ from ark_nova.engine.map_rules import kiosk_hexes_covered
 from ark_nova.engine.rng import Rng
 from ark_nova.engine.state import Building, GameState, PlayerState
 
-PLAYABLE = ["1", "1a", "2", "4", "4a", "5", "5a", "6", "6a", "7", "7a", "9", "10", "11", "12", "13", "14", "T1"]
+PLAYABLE = ["1", "1a", "2", "2a", "4", "4a", "5", "5a", "6", "6a", "7", "7a", "9", "10", "11", "12", "13", "14", "T1"]
 MARINE_WORLDS = {"10", "11", "12", "13", "14"}
 
 
@@ -24,7 +24,11 @@ def test_the_config_is_valid_and_names_the_playable_maps():
     assert sorted(on_offer) == sorted(PLAYABLE)
     for m in ("0", "A", "3", "3a", "8", "8a"):
         assert not ark360.applicable(m)                       # (the maps the mode leaves out: excluded_maps)
-    assert not ark360.applicable("2a")                        # 7 bonuses cannot be on 8 different rows
+    assert ark360.applicable("2a") and ark360.rules("2a")["min_distinct_y"] == 7          # (7 bonuses cannot be on 8 different rows: the map has its own number)
+    assert ark360.rules("1")["min_distinct_y"] == 8
+    cfg = copy.deepcopy(ark360.config())
+    del cfg["map_overrides"]
+    assert not ark360.applicable("2a", cfg)                   # without the override the map is out
 
 
 def test_a_bad_config_is_refused():
@@ -41,6 +45,11 @@ def test_a_bad_config_is_refused():
     cfg["layout"]["min_border"], cfg["layout"]["max_border"] = 5, 2
     with pytest.raises(ark360.Ark360Error):
         ark360.check_config(cfg)
+    for over in ({"min_distinct_z": 3}, {}, {"max_border": -1}, {"one_hex_apart": "near"}):          # (an override names a rule of `layout` and keeps it valid)
+        cfg = copy.deepcopy(ark360.config())
+        cfg["map_overrides"]["2a"] = over
+        with pytest.raises(ark360.Ark360Error):
+            ark360.check_config(cfg)
 
 
 @pytest.mark.parametrize("map_id", PLAYABLE)
@@ -50,6 +59,17 @@ def test_every_layout_meets_the_rules_and_keeps_the_bonuses_of_the_map(map_id):
         assert ark360.check_layout(map_id, layout) == [], (map_id, seed)
     assert ark360.layout_for(map_id, 5) == ark360.layout_for(map_id, 5)                       # reproducible from the seed
     assert len({json.dumps(ark360.layout_for(map_id, s)) for s in range(6)}) > 1             # and different with another one
+
+
+def test_a_map_can_have_rules_of_its_own():
+    cfg = copy.deepcopy(ark360.config())
+    cfg["map_overrides"] = {"1": {"max_adjacent_pairs": 0, "min_border": 4, "max_border": 4}}
+    layout = ark360.generate("1", Rng(2), cfg)
+    m = ark360.measure("1", [(e["x"], e["y"]) for e in layout], cfg)
+    assert m["adjacent_pairs"] == 0 and m["border"] == 4                                          # map 1 keeps its own numbers ...
+    assert ark360.rules("2", cfg)["max_adjacent_pairs"] == 1                                        # ... the others the common ones
+    other = ark360.generate("2", Rng(2), cfg)
+    assert ark360.check_layout("2", other, cfg) == []
 
 
 def test_the_layout_changes_the_places_only():

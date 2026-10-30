@@ -15,6 +15,9 @@
         "search_steps": 6000,
         "search_restarts": 40
     },
+    "map_overrides": {
+        "2a": {"min_distinct_y": 7}
+    },
     "study_seconds": 300,
     "time_control": {"start": 600, "increment": 30}
 }
