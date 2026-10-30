@@ -73,19 +73,43 @@ def test_the_study_time_ends_by_the_servers_clock_and_a_page_that_left_is_made_r
     assert client.post("/api/games/E99999/study/expire").status_code == 404
 
 
-def test_the_game_goes_on_after_the_study_time_with_the_cards_known_before_the_draft():
+def test_the_starting_hand_the_base_projects_and_the_track_rewards_are_revealed_after_the_draft():
     client, keeper, _ = _app()
     game_id, players = _table(client, marine_worlds=True)
     _join_both(client, game_id, players)
-    hand = players[0].state()["view"]["players"][0]["hand"]
-    assert hand and "?" not in hand                                                                             # the starting hand is known before the study time ends
+
+    def secret(p):                                                                                              # what a player knows about the cards and the board
+        v = p.state()["view"]
+        return v, p.c.get(f"/api/games/{game_id}/setup", headers=p.h).json()
+    for p in players:
+        v, setup = secret(p)
+        mine = v["players"][0]
+        assert mine["hand"] and set(mine["hand"]) == {"?"} and set(mine["endgame_hand"]) == {"?"}                     # the starting hand is dealt but face down: also for its owner
+        assert v["base_projects"] == [] and v["conservation_options"] == {} and setup["base_projects"] == []          # the base projects and the track rewards are not known either
+    spectator = client.get(f"/api/games/{game_id}/state").json()["view"]
+    assert spectator["base_projects"] == [] and spectator["conservation_options"] == {}
     for p in players:
         v = p.state()
         assert p.move(v["version"], next(a for a in v["decision"]["actions"] if a["kind"] == "study_ready")).status_code == 200
     v = players[0].state()
-    assert v["view"]["prompt"]["kind"] == "draft" and v["view"]["players"][0]["hand"] == hand
+    assert v["view"]["prompt"]["kind"] == "draft" and set(v["view"]["players"][0]["hand"]) == {"?"}               # (the draft: still hidden)
+    assert v["view"]["base_projects"] == [] and v["view"]["conservation_options"] == {}
     label = keeper.view(game_id, "spectator").get("label", "")
     assert "ready" in label.lower()
+    for _ in range(80):                                                                                         # the draft: both players pick the first thing they may
+        v = players[0].state()
+        if v["view"]["prompt"] is None or v["view"]["prompt"]["kind"] != "draft":
+            break
+        for p in players:
+            d = p.state().get("decision")
+            if d and d["actions"]:
+                p.move(p.state()["version"], d["actions"][0])
+    mine, theirs = (players[0].state()["view"], players[1].state()["view"])
+    assert mine["prompt"]["kind"] != "draft"
+    assert mine["players"][0]["hand"] and "?" not in mine["players"][0]["hand"] and "?" in mine["players"][1]["hand"]       # revealed to its owner only
+    assert len(mine["base_projects"]) == 3 and mine["conservation_options"] and theirs["base_projects"] == mine["base_projects"]
+    assert len(players[0].c.get(f"/api/games/{game_id}/setup", headers=players[0].h).json()["base_projects"]) == 3
+    assert client.get(f"/api/games/{game_id}/state").json()["view"]["base_projects"] == mine["base_projects"]            # (public from now on)
 
 
 def test_an_ark360_game_records_and_replays_with_its_layout():

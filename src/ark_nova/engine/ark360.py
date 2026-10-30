@@ -330,9 +330,21 @@ def layout_for(map_id: str, tail_seed: int, cfg: dict | None = None) -> list:
 
 # ---- the game: setup order and the study time --------------------------------------------------------------------------------------------------
 #
-# After the map is drawn (map_select) the starting hands and the endgame cards are dealt, so both are known for the action card draft; then both players study the map
+# After the map is drawn (map_select) the starting hands and the endgame cards are dealt (but kept face down: they, the base projects and the rewards of the conservation and reputation
+# tracks are revealed when the action card draft is over, `pre_draft`); then both players study the map
 # (`study`: `seconds` is what the clients count down; each player says `study_ready` and may take it back with `study_unready` until the other one is ready too: when both
 # are ready the study is over; the engine does not measure time), then the draft (Marine Worlds) and the initial discard.
+
+def pre_draft(state) -> bool:
+    """Whether the game is still before the end of the action card draft (the study time and the draft itself; without Marine Worlds there is no draft: the study time only). What the
+    players know then: the map and the action card offers; the starting hands, the base projects and the rewards of the conservation and reputation tracks are revealed when the
+    draft is over (`live/projection.py` hides them until then)."""
+    if state.config.game_mode != MODE or state.phase is not Phase.SETUP:
+        return False
+    if state.prompt is not None and state.prompt.kind == "study":
+        return True
+    return state.draft is not None and state.draft["stage"] != "done"
+
 
 def begin_study(state) -> None:
     state.study = {"seconds": study_seconds(), "ready": [False, False]}

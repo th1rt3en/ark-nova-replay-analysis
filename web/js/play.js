@@ -139,8 +139,15 @@ export async function playLoad() {
   P.started = P.status !== 'waiting';
   return { ...setup.body, table_id: P.id, result: [], setup_steps: 0, steps: [playStep(state.body, 0)] };
 }
+// Ark360 reveals the base projects and the rewards of the conservation / reputation tracks after the action card draft: the page learns them from the first view that has them
+function learnReveal(view) {
+  if (view.base_projects && view.base_projects.length && !(S.replay.base_projects || []).length) S.replay.base_projects = view.base_projects;
+  const first = S.replay.steps[0] && S.replay.steps[0].state;
+  if (first && view.conservation_options && Object.keys(view.conservation_options).length && !Object.keys(first.conservation_options || {}).length) first.conservation_options = view.conservation_options;
+}
 export function pushLive(p) {
   if (p.version <= P.version) return;
+  if (p.view) learnReveal(p.view);
   P.version = p.version;
   if (p.status) P.status = p.status;
   if (p.view && p.view.clock) setClock(p.view.clock);

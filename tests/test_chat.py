@@ -1,4 +1,4 @@
-﻿"""The chat of the tables and the lobbies (live/chat.py, api/chat.py): who may write, who may read, and that a spectator sees nothing but the public view of the game."""
+"""The chat of the tables and the lobbies (live/chat.py, api/chat.py): who may write, who may read, and that a spectator sees nothing but the public view of the game."""
 from test_rated_games import World
 
 

@@ -114,7 +114,8 @@ def _ark360_description() -> str:
     cfg = ark360.config()
     tc_ = cfg["time_control"]
     return (f"Both players play the same map with its placement bonuses at random places. The map is shown when the game starts: {cfg['study_seconds'] // 60} minutes to study it, "
-            f"then the action card draft (the starting hands are known). Time control {tc_['start'] // 60} min + {tc_['increment']} s per turn.")
+            f"then the action card draft. The starting hands, the base projects and the rewards of the conservation and reputation tracks are revealed after the draft. "
+            f"Time control {tc_['start'] // 60} min + {tc_['increment']} s per turn.")
 
 
 GAME_MODES = {
@@ -253,10 +254,11 @@ class LiveService:
             seat = self._seat_of(Cached(s["version"], None, [x["token_hash"] for x in s["seats"]], s["status"], []), token)
         ark = (s["config"].get("options") or {}).get("game_mode") == ark360.MODE
         hidden = ark and s["status"] == "waiting"                                # (Ark360: nobody sees the map before the game starts)
+        no_projects = hidden or (ark and s["status"] == "playing" and ark360.pre_draft(self._load(game_id).state))      # (nor the base projects before the end of the action card draft)
         study = {"seconds": ark360.study_seconds(), "started_at": s["config"].get("study_started_at"), "now": int(time.time() * 1000)} if ark else None
         return {"game_id": game_id, "study": study, "clock": tc.view(s["config"]["clock"], int(time.time() * 1000)) if s["config"].get("clock") else None, "status": s["status"], "version": s["version"], "seat": seat, "rated": bool(s["config"].get("rated")), "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
                 "first_player": 0, "players": [{"seat": i, "id": str(i + 1), "name": x["name"] or f"Seat {i + 1}", "color": (v.get("colors") or [None, None])[i]} for i, x in enumerate(s["seats"])],
-                "maps": [] if hidden else v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in card_data.maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") and not hidden else {}, "cards": v.get("cards"), "base_projects": v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
+                "maps": [] if hidden else v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in card_data.maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") and not hidden else {}, "cards": v.get("cards"), "base_projects": [] if no_projects else v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
                 "abandon": self.abandon_view(s["config"])}
 
     def _map_views(self) -> dict:

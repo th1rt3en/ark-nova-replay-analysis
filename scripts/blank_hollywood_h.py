@@ -1,4 +1,4 @@
-﻿"""Take the H letters of the Hollywood maps (8 and 8a) off the map pictures and cut one of them out as a sprite:
+"""Take the H letters of the Hollywood maps (8 and 8a) off the map pictures and cut one of them out as a sprite:
 
     python scripts/blank_hollywood_h.py [--check]       (run with the venv python: needs Pillow + numpy + scipy)
 

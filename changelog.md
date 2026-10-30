@@ -1931,3 +1931,6 @@ Scope: `web/js/play.js`, `web/js/fork.js`, `web/js/state.js`, `web/play.html`.
 
 ## 110. Lobbies and games are visible to everybody
 - `lobbies.html` lists the open lobbies and a new "Games in progress" table (Watch, or "Back to your game" for a player) without a login; `lobby.html` and the lobby chat can be read without one. "Take this seat", creating a lobby and writing a message ask to log in (the account dialog opens).
+
+## 111. Ark360: the starting hand, the base projects and the track rewards come after the draft
+- Until the action card draft is over a live Ark360 view has the hands, the endgame hands and the initial offers face down (`?`, also for the owner), `base_projects: []` and `conservation_options: {}`; the setup call hides `base_projects` too. `learnReveal` (`play.js`) fills `S.replay.base_projects` and the options of step 0 (what the conservation track draws as "dealt") from the first pushed view that has them. The mode's description in the lobby says so.

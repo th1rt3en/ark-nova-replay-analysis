@@ -15,7 +15,7 @@ The replay shows everything because the log does. A live viewer gets `state_view
 import copy
 from typing import Any
 
-from ark_nova.engine import gamestats
+from ark_nova.engine import ark360, gamestats
 from ark_nova.engine.game import legal_actions
 from ark_nova.engine.state import GameState, Phase
 from ark_nova.replay import fork
@@ -61,6 +61,13 @@ def project(state: GameState, role: str) -> dict:
             p["endgame_cards"] = None                                       # (the points of the hidden endgame cards would give them away)
             p["initial_offer"] = []
             p["under"] = _mask_deep(p.get("under") or {})
+    if ark360.pre_draft(state):                                             # Ark360, before the end of the action card draft: the cards that were dealt, the base projects and the track rewards are not known yet
+        for p in v["players"]:
+            for k in ("hand", "endgame_hand", "initial_offer"):
+                p[k] = _mask(p.get(k) or [])
+            p["endgame_cards"] = None
+        v["base_projects"] = []
+        v["conservation_options"] = {}
     pr = v.get("prompt")
     if pr:
         v["prompt"] = {"kind": pr["kind"], "player": pr["player"]}
