@@ -12,8 +12,8 @@ from itertools import combinations
 
 from ark_nova import data
 from ark_nova.data import map_quirks
-from ark_nova.engine import gamestats, turns, draft, map_select, map_rules, breaks, endgame, icons, marks, sponsor_variants, venom, animals_action, association, bonuses, build_action, card_programs, cards_action, effects, sponsors_action, tracks
-from ark_nova.engine.board import board, neighbours
+from ark_nova.engine import ark360, gamestats, turns, draft, map_select, map_rules, breaks, endgame, icons, marks, sponsor_variants, venom, animals_action, association, bonuses, build_action, card_programs, cards_action, effects, sponsors_action, tracks
+from ark_nova.engine.board import board, board_of, neighbours
 from ark_nova.engine.actions import Action
 from ark_nova.engine.cards import ensure_main_deck, search_deck
 from ark_nova.engine.rng import Rng, build_deck
@@ -125,8 +125,11 @@ def start_game(config: GameConfig, seed: SeedSpec) -> GameState:
 
 
 def continue_setup(state: GameState) -> None:
-    """The maps are known: the action card draft (Marine Worlds) or the initial deal comes next."""
-    if state.config.draft_action_cards:
+    """The maps are known: the action card draft (Marine Worlds) or the initial deal comes next. Ark360: the cards are dealt first, then the study time (`engine/ark360.py`)."""
+    if state.config.game_mode == ark360.MODE:
+        deal_cards(state)
+        ark360.begin_study(state)
+    elif state.config.draft_action_cards:
         draft.begin(state)
     else:
         deal_initial(state)
@@ -161,6 +164,19 @@ def new_game(options: dict, player_ids: list, tail_seed: int = 0) -> GameState:
 
 def deal_initial(state: GameState) -> None:
     """Initial deal (seat order: the first player gets the top cards), map start effects, then wait for the initial discards."""
+    deal_cards(state)
+    start_initial_discard(state)
+
+
+def after_draft(state: GameState) -> None:
+    """The action card draft is over: the initial deal, unless the cards were dealt before it (Ark360, `state.study`)."""
+    if state.study is not None:
+        start_initial_discard(state)
+    else:
+        deal_initial(state)
+
+
+def deal_cards(state: GameState) -> None:
     for p in state.players:
         p.hand = [state.main_deck.pop(0) for _ in range(HAND_DEAL)]
         p.endgame_hand = [state.endgame_deck.pop(0) for _ in range(ENDGAME_DEAL)]
@@ -171,6 +187,9 @@ def deal_initial(state: GameState) -> None:
                 p.hand.append(found)
     for p in state.players:                       # the whole hand (8 cards, 9 with a Map 14 sponsor) is offered for the discard
         p.initial_offer = list(p.hand)
+
+
+def start_initial_discard(state: GameState) -> None:
     state.phase = Phase.SETUP
     state.prompt = Prompt(kind="initial_discard", player=0, args={"count": INITIAL_DISCARD})
 
@@ -222,6 +241,8 @@ def legal_actions(state: GameState) -> list[Action]:
 def _prompt_actions(state: GameState) -> list[Action]:
     if state.phase is Phase.SETUP and state.map_select is not None and state.map_select["stage"] != "done":
         return map_select.legal(state)
+    if state.phase is Phase.SETUP and state.study is not None and not all(state.study["ready"]):
+        return ark360.legal_study(state)
     if state.phase is Phase.SETUP and state.draft is not None and state.draft["stage"] != "done":
         return draft.legal(state)
     if state.phase is Phase.SETUP:
@@ -319,7 +340,7 @@ def _engineer_cost(a, t: str) -> int:
 def _build_actions(state: GameState, p, only=None) -> list[Action]:
     """The building placements (and `finish_build`); `only` limits the types that are looked at (a quick check whether any move exists)."""
     a = state.prompt.args
-    bd = board(p.map_id)
+    bd = board_of(p)
     mine = [(b.type, b.x, b.y, b.rotation) for b in p.buildings]
     rules = _build_rules(p, a)
     variant = a.get("variant", 0)
@@ -389,6 +410,12 @@ def _apply(state: GameState, action: Action) -> GameState:
         try:
             map_select.apply(new, action)
         except map_select.MapSelectError as ex:
+            raise IllegalAction(str(ex)) from None
+        return new
+    if new.phase is Phase.SETUP and action.kind == "study_ready":
+        try:
+            ark360.apply_study(new, action)
+        except ark360.Ark360Error as ex:
             raise IllegalAction(str(ex)) from None
         return new
     if new.phase is Phase.SETUP and action.kind in ("draft_pick", "draft_keep"):
@@ -573,7 +600,7 @@ def _place_building(state: GameState, action: Action) -> None:
     for name, why in card_programs.UNSUPPORTED_IN_BUILD.items():
         if name in p.sponsors:
             raise NotImplementedError(f"Build action with {why}")
-    bd = board(p.map_id)
+    bd = board_of(p)
     variant = a.get("variant", 0)
     if action.args.get("extra"):                          # the additional pavilion / kiosk of Pavilion / Kiosk Build
         _pay(state, p, BUILD_EXTRA_COST[a["level"]])
@@ -665,7 +692,7 @@ def hydrologist_geologist(state: GameState, seat: int, cells) -> None:
     """Hydrologist / Geologist: 1 money for every space of a building just placed that is next to a water / rock space. A water / rock space that a
     building of an earlier turn covers is gone, except under an underwater tunnel (a building put back by Reconstruction pays too)."""
     p = state.players[seat]
-    bd = board(p.map_id)
+    bd = board_of(p)
     for sponsor, terrain in (("S241", "water"), ("S242", "rock")):
         if sponsor in p.sponsors:
             now = p.flags.get("built_now", [])
@@ -677,7 +704,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     """A building goes on the map (paid or free is decided by the caller): placement bonuses (twice with `double`), pavilion appeal,
     the Landscape Gardener's X token, the +7 for covering the whole map."""
     p = state.players[seat]
-    bd = board(p.map_id)
+    bd = board_of(p)
     cells = build_action.footprint(t, x, y, k)
     gains = [] if "S280" in p.sponsors else build_action.placement_bonuses(bd, cells) * (2 if double else 1)      # Reconstruction: no bonuses
     for b in gains:

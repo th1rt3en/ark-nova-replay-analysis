@@ -12,7 +12,7 @@ from itertools import combinations
 from ark_nova import data
 from ark_nova.engine import association, animal_abilities, bonuses, marks, project_effects, sponsor_extras, venom, build_action, card_programs as prog, cards_action
 from ark_nova.engine.actions import Action
-from ark_nova.engine.board import board
+from ark_nova.engine.board import board_of
 from ark_nova.engine.cards import ensure_main_deck
 from ark_nova.engine.icons import card_icons, icon_counts, requirement
 
@@ -51,7 +51,7 @@ def build_options(state, seat: int, t: str, rules: dict) -> list:
     level = max((c.level for c in p.action_cards if c.type == "build"), default=1)      # flagged spaces need the upgraded Build action
     if "S219" in p.sponsors:
         rules = {**rules, "overbuild": True}
-    return build_action.valid_placements(board(p.map_id), _buildings(p), t, level, rules)
+    return build_action.valid_placements(board_of(p), _buildings(p), t, level, rules)
 
 
 def can_play(state, seat: int, card_key: str) -> bool:

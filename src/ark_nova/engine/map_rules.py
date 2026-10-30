@@ -7,14 +7,14 @@ strength 3 and the spaces 4 and 5 strength 6).
 """
 from ark_nova import data
 from ark_nova.engine import build_action
-from ark_nova.engine.board import board, neighbours
+from ark_nova.engine.board import board, board_of, neighbours, placement_entries
 
 CONCEAL_ORDER = (1, 2, 4, 5)
 
 
 def conceal_markers(p) -> int:
     """Black squares the player has earned on map 12."""
-    bd = board(p.map_id)
+    bd = board_of(p)
     covered = {c for b in p.buildings if build_action.knows_shape(b.type) for c in build_action.footprint(b.type, b.x, b.y, b.rotation)}
     hexes = sum(1 for c, bonuses in bd.bonuses.items() if c in covered and any(b and b["type"] == "conceal" for b in bonuses))
     universities = sum(1 for t in p.tokens if t.location.startswith("university_"))
@@ -131,8 +131,7 @@ def quarter_bonus(state, seat: int, name: str) -> None:
 def kiosk_hexes_covered(p) -> bool:
     if p.map_id not in ("7", "7a"):
         return False
-    from ark_nova import data
-    hexes = [(pb["x"], pb["y"]) for pb in data.map_by_id(p.map_id)["geometry"]["placement_bonuses"] if "kiosk" in (pb.get("note") or "")]
+    hexes = [(pb["x"], pb["y"]) for pb in placement_entries(p) if "kiosk" in (pb.get("note") or "")]        # (a layout of Ark360 moves the kiosk hexes with their bonuses)
     return bool(hexes) and set(hexes) <= covered_cells(p)
 
 

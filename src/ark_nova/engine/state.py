@@ -116,6 +116,7 @@ class PlayerState:
     flags: dict[str, int] = field(default_factory=dict)         # once-per-turn/break markers, map- and card-specific counters
     initial_offer: list[str] = field(default_factory=list)      # the 8 dealt cards while the initial discard is pending
     icons: dict[str, int] = field(default_factory=dict)         # icon counters (icons.TRACKED), kept in step with the zoo by icons.sync_icons
+    bonus_layout: Optional[list[dict[str, Any]]] = None         # Ark360: the placement bonuses of the map at their new hexes (entries like the geometry's `placement_bonuses`); None = the map's own
 
 
 @dataclass
@@ -175,6 +176,7 @@ class GameState:
     result: Optional[Result] = None
     map_select: Optional[dict[str, Any]] = None                 # the map selection of a new game (engine/map_select.py); kept after it for the viewer
     draft: Optional[dict[str, Any]] = None                      # the action card draft of the setup (engine/draft.py); kept after it for the viewer
+    study: Optional[dict[str, Any]] = None                      # Ark360: the study time of the map before the draft (engine/ark360.py): `seconds` and `ready` per seat
 
     def to_dict(self) -> dict:
         return to_jsonable(self)

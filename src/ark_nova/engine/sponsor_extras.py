@@ -19,7 +19,7 @@ from itertools import combinations
 from ark_nova import data
 from ark_nova.engine import build_action, card_programs as prog
 from ark_nova.engine.actions import Action
-from ark_nova.engine.board import board, neighbours
+from ark_nova.engine.board import board_of, neighbours
 from ark_nova.engine.icons import icon_counts
 
 KINDS = ("waza", "reposition", "boost", "enlarge", "expedition")
@@ -56,7 +56,7 @@ def _covered(p) -> set:
 def _adjacent_free(state, seat: int, wanted) -> int:
     """Uncovered spaces of the map with `wanted(board, cell)` that touch a building of any type."""
     p = state.players[seat]
-    bd = board(p.map_id)
+    bd = board_of(p)
     cov = _covered(p)
     near = {n for c in cov for n in neighbours(c)}
     return sum(1 for c in near if c in bd.cells and c not in cov and wanted(bd, c))
@@ -124,7 +124,7 @@ def enlarge_options(state, seat: int, b) -> list:
     p = state.players[seat]
     if not re.fullmatch(r"size-[1-4]", b.type):
         return []
-    bd = board(p.map_id)
+    bd = board_of(p)
     new = f"size-{int(b.type[5:]) + 1}"
     old = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
     others = _covered(p) - old
@@ -193,7 +193,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if b is None or opt not in enlarge_options(state, action.player, b):
             raise fx.IllegalEffect("that enclosure cannot be enlarged like this")
         old = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
-        bd_ = g.board(p.map_id)
+        bd_ = g.board_of(p)
         full_before = build_action.covers_map(bd_, [(q.type, q.x, q.y, q.rotation) for q in p.buildings])
         b.type = f"size-{int(b.type[5:]) + 1}"
         b.x, b.y, b.rotation = opt
@@ -202,7 +202,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         g.hydrologist_geologist(state, p.seat, [c for c in build_action.footprint(b.type, b.x, b.y, b.rotation) if c not in old])      # (the new spaces pay the Hydrologist / Geologist)
         for c in build_action.footprint(b.type, b.x, b.y, b.rotation):
             if c not in old and "S280" not in p.sponsors:
-                for bon in board(p.map_id).bonuses.get(c, []):          # (the covered hex pays its placement bonus, a Marketing one included)
+                for bon in board_of(p).bonuses.get(c, []):          # (the covered hex pays its placement bonus, a Marketing one included)
                     g.apply_placement_bonus(state, action.player, bon)
         if b.animal:
             g._gain(state, action.player, appeal=2)

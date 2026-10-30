@@ -14,7 +14,7 @@ from collections import Counter
 
 from ark_nova import data
 from ark_nova.engine import build_action, gamestats, tracks
-from ark_nova.engine.board import board, neighbours
+from ark_nova.engine.board import board_of, neighbours
 from ark_nova.engine.icons import icon_counts
 from ark_nova.engine.state import Phase, Result
 
@@ -77,7 +77,7 @@ def _buildable(bd) -> set:
 
 def empty_spaces(state, seat: int) -> int:
     """Building spaces (plain terrain) without a building."""
-    bd = board(state.players[seat].map_id)
+    bd = board_of(state.players[seat])
     return len(_buildable(bd) - covered(state.players[seat]))
 
 
@@ -198,7 +198,7 @@ def card_points(state, seat: int, key: str) -> int:
     card = data.cards_by_key()[key]
     mw = state.config.marine_worlds
     p = state.players[seat]
-    bd = board(p.map_id)
+    bd = board_of(p)
     if key == "F004":
         con, cov = connected(state, seat), covered(p)
         return (all(c in con for c in _terrain(bd, "water")) + all(c in con for c in _terrain(bd, "rock"))
@@ -224,7 +224,7 @@ HIDDEN_ICON_TIERS = {"S243": ("Herbivore", [(6, 1)]), "S244": ("Bird", [(6, 1)])
 def sponsor_points(state, seat: int, key: str) -> dict:
     """{'conservation': n, 'appeal': n} of the endgame effect of one sponsor (not the two that compare appeal)."""
     p = state.players[seat]
-    bd = board(p.map_id)
+    bd = board_of(p)
     icons = icon_counts(state, seat)
     cov, con = covered(p), connected(state, seat)
     cons = appeal = 0

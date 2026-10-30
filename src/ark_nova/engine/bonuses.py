@@ -264,8 +264,8 @@ def tracks_module():
 
 
 def _board(p):
-    from ark_nova.engine.board import board
-    return board(p.map_id)
+    from ark_nova.engine.board import board_of
+    return board_of(p)
 
 
 def archaeologist_cells(state, p) -> list:

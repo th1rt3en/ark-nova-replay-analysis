@@ -1,0 +1,20 @@
+{
+    "excluded_maps": ["0", "A", "3", "3a", "8", "8a"],
+    "layout": {
+        "min_distinct_x": 6,
+        "min_distinct_y": 8,
+        "max_adjacent_pairs": 1,
+        "max_one_hex_apart_pairs": 2,
+        "one_hex_apart": "straight",
+        "min_border": 2,
+        "max_border": 4,
+        "min_next_to_rock_share": 0.4,
+        "min_next_to_water_share": 0.4,
+        "allowed_terrain": ["plain"],
+        "forbidden_special_kinds": ["upgrade_flag", "observation_tower", "gate", "restaurant", "map_center"],
+        "search_steps": 6000,
+        "search_restarts": 40
+    },
+    "study_seconds": 300,
+    "time_control": {"start": 600, "increment": 30}
+}

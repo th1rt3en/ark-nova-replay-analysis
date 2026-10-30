@@ -19,7 +19,7 @@ from ark_nova import data
 from ark_nova.data.map_quirks import base_map_id
 from ark_nova.engine import animal_abilities, bonuses, cards_action, gamestats, map_rules, marks, sponsor_extras
 from ark_nova.engine.actions import Action
-from ark_nova.engine.board import board, footprint_cells, neighbours
+from ark_nova.engine.board import board_of, footprint_cells, neighbours
 from ark_nova.engine.icons import icon_counts, requirement
 from ark_nova.engine.state import GameState
 
@@ -276,7 +276,7 @@ def hosts(state: GameState, seat: int, key: str, occupied: bool = False) -> list
     from ark_nova.engine.build_action import footprint, knows_shape
     p = state.players[seat]
     c = card(key)
-    bd = board(p.map_id)
+    bd = board_of(p)
     overbuild = "S219" in p.sponsors                          # Diversity Researcher ignores water and rock requirements
     out = []
 

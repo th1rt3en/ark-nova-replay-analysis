@@ -141,4 +141,4 @@ def _finish(state) -> None:
             types.insert(0, "animals")                            # the Animals card always starts at strength 1, the other four are shuffled
         p.action_cards = [ActionCardState(type=t, variant=number.get(t, 0)) for t in types]
     state.rng = rng.state
-    game.deal_initial(state)
+    game.after_draft(state)

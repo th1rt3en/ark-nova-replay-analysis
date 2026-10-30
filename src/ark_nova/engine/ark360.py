@@ -1,0 +1,259 @@
+"""Ark360, the first custom game mode: the placement bonuses of the map are at random places.
+
+Both players play on the same map (like `random-mirrored`) with the same layout: the bonuses of the map are moved to other hexes, their number and kinds stay, and the
+rock / water zones, the upgrade flags and everything else printed on the map stay where they are. The rules of a layout are in `data/ark360.json` (edit the numbers there; the
+file is part of the rules fingerprint of `engine/version.py`):
+
+- `min_distinct_x` / `min_distinct_y`: how many of the 9 columns (x 0..8) and of the 13 rows (y 0..12) hold a bonus at least;
+- `max_adjacent_pairs`: pairs of bonuses on neighbouring hexes; `max_one_hex_apart_pairs`: pairs with one hex between them (`one_hex_apart`: "straight" = the hex between
+  them is on the line through both, "any" = every pair at hex distance 2);
+- `min_border` / `max_border`: bonuses on the border of the board (a hex with a neighbour off the board);
+- `min_next_to_rock_share` / `min_next_to_water_share`: the share of the bonuses that touch a rock / water hex;
+- `allowed_terrain`, `forbidden_special_kinds`: where a bonus may be put (the printed bonuses of the standard maps are on plain hexes only, none on a flag or a feature);
+- `search_steps`, `search_restarts`: the effort of the search; `excluded_maps`: maps that never get this mode; `study_seconds`, `time_control`: the format of the game.
+
+A layout is stored as a list of placement bonus entries (the format of `placement_bonuses` in the map geometry) in `PlayerState.bonus_layout`; `board.board_of(player)`
+reads it. The search uses `Rng` only and integers, so a layout is reproducible from the seed on any platform.
+"""
+import copy
+import json
+import math
+from functools import lru_cache
+from pathlib import Path
+
+from ark_nova import data
+from ark_nova.data.map_support import UNSUPPORTED_MAPS
+from ark_nova.engine.actions import Action
+from ark_nova.engine.board import board, hex_distance, neighbours
+from ark_nova.engine.rng import Rng
+from ark_nova.engine.state import Phase, Prompt
+
+MODE = "ark360"
+CONFIG_PATH = Path(__file__).resolve().parents[1] / "data" / "ark360.json"
+SEED_OFFSET = 360360                                    # the layout has a stream of its own, so the decks keep their order
+STRAIGHT_GAPS = ((0, 4), (2, 2))                        # (|dx|, |dy|) of two hexes with exactly one hex between them on a straight line
+WORSE_ODDS = 12                                         # the search takes a move that is one worse in 1 of this many tries
+_NUMBERS = ("min_distinct_x", "min_distinct_y", "max_adjacent_pairs", "max_one_hex_apart_pairs", "min_border", "max_border", "search_steps", "search_restarts")
+
+
+class Ark360Error(ValueError):
+    pass
+
+
+@lru_cache(maxsize=None)
+def config() -> dict:
+    """`data/ark360.json`, checked."""
+    cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    check_config(cfg)
+    return cfg
+
+
+def check_config(cfg: dict) -> None:
+    lay = cfg.get("layout") or {}
+    for k in _NUMBERS:
+        if not isinstance(lay.get(k), int) or lay[k] < 0:
+            raise Ark360Error(f"ark360.json: layout.{k} must be a whole number of 0 or more")
+    for k in ("min_next_to_rock_share", "min_next_to_water_share"):
+        if not isinstance(lay.get(k), (int, float)) or not 0 <= lay[k] <= 1:
+            raise Ark360Error(f"ark360.json: layout.{k} must be a number from 0 to 1")
+    if lay["min_border"] > lay["max_border"]:
+        raise Ark360Error("ark360.json: layout.min_border is above layout.max_border")
+    if lay.get("one_hex_apart") not in ("straight", "any"):
+        raise Ark360Error('ark360.json: layout.one_hex_apart must be "straight" or "any"')
+    if not lay.get("allowed_terrain") or not set(lay["allowed_terrain"]) <= {"plain", "rock", "water"}:
+        raise Ark360Error("ark360.json: layout.allowed_terrain must list plain, rock and / or water")
+    if not isinstance(cfg.get("excluded_maps"), list) or not isinstance(cfg.get("study_seconds"), int) or cfg["study_seconds"] < 0:
+        raise Ark360Error("ark360.json: excluded_maps must be a list and study_seconds a number of seconds")
+    tc = cfg.get("time_control") or {}
+    if not isinstance(tc.get("start"), int) or not isinstance(tc.get("increment"), int):
+        raise Ark360Error("ark360.json: time_control needs start and increment, in seconds")
+
+
+def study_seconds(cfg: dict | None = None) -> int:
+    return (cfg or config())["study_seconds"]
+
+
+def time_control(cfg: dict | None = None) -> dict:
+    return dict((cfg or config())["time_control"])
+
+
+# ---- where a bonus may be and what makes a layout valid ---------------------------------------------------------------------------------------
+
+def base_entries(map_id: str) -> list:
+    """The placement bonuses as the map prints them (copies)."""
+    return copy.deepcopy(data.map_by_id(map_id)["geometry"]["placement_bonuses"])
+
+
+def candidates(map_id: str, cfg: dict | None = None) -> list:
+    """The hexes that may hold a bonus: the allowed terrain, not a hex with a feature of the map (flag, tower, gate ...), not blocked."""
+    lay = (cfg or config())["layout"]
+    bd = board(map_id)
+    special = {(s["x"], s["y"]) for s in data.map_by_id(map_id)["geometry"]["special_hexes"] if s["kind"] in lay["forbidden_special_kinds"] and not s.get("off_board")}
+    return sorted(c for c in bd.cells if bd.terrain[c] in lay["allowed_terrain"] and c not in special and c not in bd.blocked)
+
+
+def applicable(map_id: str, cfg: dict | None = None) -> bool:
+    """Whether the mode can be played on the map: it has a geometry, it is not excluded, and its bonuses can meet the rules at all (enough bonuses for the columns and
+    rows asked, enough hexes to put them on)."""
+    cfg = cfg or config()
+    if str(map_id) in {str(m) for m in cfg["excluded_maps"]} or str(map_id) in UNSUPPORTED_MAPS:
+        return False
+    try:
+        geo = data.map_by_id(map_id)["geometry"]
+    except KeyError:
+        return False
+    if not geo:
+        return False
+    n = len(geo["placement_bonuses"])
+    lay = cfg["layout"]
+    return n >= max(lay["min_distinct_x"], lay["min_distinct_y"], lay["min_border"]) and n <= len(candidates(map_id, cfg))
+
+
+def _share(share: float, n: int) -> int:
+    return math.ceil(round(share * n, 9))
+
+
+def measure(map_id: str, cells: list, cfg: dict | None = None) -> dict:
+    """The numbers the rules are about, for the hexes of the bonuses."""
+    lay = (cfg or config())["layout"]
+    bd = board(map_id)
+    cells = [tuple(c) for c in cells]
+    adjacent = apart = 0
+    for i, a in enumerate(cells):
+        for b in cells[i + 1:]:
+            d = hex_distance(a, b)
+            if d == 1:
+                adjacent += 1
+            elif d == 2 and (lay["one_hex_apart"] == "any" or (abs(a[0] - b[0]), abs(a[1] - b[1])) in STRAIGHT_GAPS):
+                apart += 1
+    touching = lambda kind: sum(1 for c in cells if any(bd.terrain.get(k) == kind for k in neighbours(c)))
+    return {"bonuses": len(cells), "x": len({c[0] for c in cells}), "y": len({c[1] for c in cells}), "adjacent_pairs": adjacent, "one_hex_apart_pairs": apart,
+            "border": sum(1 for c in cells if c in bd.border), "next_to_rock": touching("rock"), "next_to_water": touching("water")}
+
+
+def shortfalls(map_id: str, cells: list, cfg: dict | None = None) -> dict:
+    """How far each rule is broken (nothing in the result = a valid layout), by name."""
+    cfg = cfg or config()
+    lay = cfg["layout"]
+    m = measure(map_id, cells, cfg)
+    n = m["bonuses"]
+    out = {"distinct x": lay["min_distinct_x"] - m["x"], "distinct y": lay["min_distinct_y"] - m["y"],
+           "adjacent pairs": m["adjacent_pairs"] - lay["max_adjacent_pairs"], "one-hex-apart pairs": m["one_hex_apart_pairs"] - lay["max_one_hex_apart_pairs"],
+           "too few on the border": lay["min_border"] - m["border"], "too many on the border": m["border"] - lay["max_border"],
+           "next to rock": _share(lay["min_next_to_rock_share"], n) - m["next_to_rock"], "next to water": _share(lay["min_next_to_water_share"], n) - m["next_to_water"]}
+    return {k: v for k, v in out.items() if v > 0}
+
+
+def check_layout(map_id: str, entries: list, cfg: dict | None = None) -> list:
+    """What is wrong with a layout (a list of texts; empty = valid): the bonuses must be the map's own (same number, same kinds), on hexes that may hold one, one to a hex,
+    and the rules of the mode must hold."""
+    cfg = cfg or config()
+    problems = []
+    key = lambda e: json.dumps({"bonus": e["bonus"], "note": e.get("note")}, sort_keys=True)
+    if sorted(key(e) for e in entries) != sorted(key(e) for e in base_entries(map_id)):
+        problems.append("the bonuses are not the map's own")
+    cells = [(e["x"], e["y"]) for e in entries]
+    if len(set(cells)) != len(cells):
+        problems.append("two bonuses on one hex")
+    allowed = set(candidates(map_id, cfg))
+    problems += [f"a bonus on ({x}, {y}), which may not hold one" for x, y in cells if (x, y) not in allowed]
+    problems += [f"{name}: {v} too many / few" for name, v in shortfalls(map_id, cells, cfg).items()]
+    return problems
+
+
+# ---- the search -----------------------------------------------------------------------------------------------------------------------------
+
+def _cost(map_id: str, n: int, cfg: dict):
+    lay = cfg["layout"]
+    bd = board(map_id)
+    near = {kind: {c for c in bd.cells if any(bd.terrain.get(k) == kind for k in neighbours(c))} for kind in ("rock", "water")}
+    need = {"rock": _share(lay["min_next_to_rock_share"], n), "water": _share(lay["min_next_to_water_share"], n)}
+    straight = lay["one_hex_apart"] == "straight"
+
+    def cost(cells: list) -> int:
+        adjacent = apart = 0
+        for i, a in enumerate(cells):
+            for b in cells[i + 1:]:
+                d = hex_distance(a, b)
+                if d == 1:
+                    adjacent += 1
+                elif d == 2 and (not straight or (abs(a[0] - b[0]), abs(a[1] - b[1])) in STRAIGHT_GAPS):
+                    apart += 1
+        border = sum(1 for c in cells if c in bd.border)
+        return (max(0, lay["min_distinct_x"] - len({c[0] for c in cells})) + max(0, lay["min_distinct_y"] - len({c[1] for c in cells}))
+                + max(0, adjacent - lay["max_adjacent_pairs"]) + max(0, apart - lay["max_one_hex_apart_pairs"])
+                + max(0, lay["min_border"] - border) + max(0, border - lay["max_border"])
+                + max(0, need["rock"] - sum(1 for c in cells if c in near["rock"])) + max(0, need["water"] - sum(1 for c in cells if c in near["water"])))
+    return cost
+
+
+def generate(map_id: str, rng: Rng, cfg: dict | None = None) -> list:
+    """A layout of the map's own bonuses that meets the rules, from `rng` (its state moves on). Raises Ark360Error when the search finds none: the rules are too tight
+    for the map (see `scripts/check_ark360.py`)."""
+    cfg = cfg or config()
+    if not applicable(map_id, cfg):
+        raise Ark360Error(f"the mode cannot be played on map {map_id}")
+    lay = cfg["layout"]
+    entries = base_entries(map_id)
+    n = len(entries)
+    cost = _cost(map_id, n, cfg)
+    cand = candidates(map_id, cfg)
+    for _ in range(lay["search_restarts"]):
+        pool = list(cand)
+        rng.shuffle(pool)
+        cells, free = pool[:n], pool[n:]
+        c = cost(cells)
+        for _ in range(lay["search_steps"]):
+            if c == 0:
+                break
+            i, j = rng.randbelow(n), rng.randbelow(len(free))
+            old = cells[i]
+            cells[i] = free[j]
+            nc = cost(cells)
+            if nc <= c or (nc == c + 1 and rng.randbelow(WORSE_ODDS) == 0):
+                free[j], c = old, nc
+            else:
+                cells[i] = old
+        if c == 0:
+            rng.shuffle(entries)                          # which bonus lies where is drawn too
+            placed = [{**e, "x": x, "y": y} for e, (x, y) in zip(entries, cells)]
+            return sorted(placed, key=lambda e: (e["y"], e["x"]))
+    raise Ark360Error(f"no layout found for map {map_id}: the rules in data/ark360.json are too tight for it")
+
+
+def layout_for(map_id: str, tail_seed: int, cfg: dict | None = None) -> list:
+    """The layout of a game: drawn from the game's seed on a stream of its own."""
+    return generate(map_id, Rng(tail_seed + SEED_OFFSET), cfg)
+
+
+# ---- the game: setup order and the study time --------------------------------------------------------------------------------------------------
+#
+# After the map is drawn (map_select) the starting hands and the endgame cards are dealt, so both are known for the action card draft; then both players study the map
+# (`study`: `seconds` is what the clients count down, both press `study_ready`, the engine does not measure time), then the draft (Marine Worlds) and the initial discard.
+
+def begin_study(state) -> None:
+    state.study = {"seconds": study_seconds(), "ready": [False, False]}
+    state.phase = Phase.SETUP
+    state.prompt = Prompt(kind="study", player=0, args={})
+
+
+def legal_study(state) -> list:
+    d = state.study
+    if d is None or all(d["ready"]):
+        return []
+    return [Action(seat, "study_ready", {}) for seat in (0, 1) if not d["ready"][seat]]
+
+
+def apply_study(state, action) -> None:
+    d = state.study
+    if d is None or all(d["ready"]):
+        raise Ark360Error("no study time is going on")
+    if d["ready"][action.player]:
+        raise Ark360Error("this player is ready already")
+    d["ready"][action.player] = True
+    if all(d["ready"]):
+        from ark_nova.engine import draft, game
+        if state.config.draft_action_cards:
+            draft.begin(state)
+        else:
+            game.start_initial_discard(state)

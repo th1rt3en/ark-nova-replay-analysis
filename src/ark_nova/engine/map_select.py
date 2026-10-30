@@ -3,20 +3,24 @@
 `GameConfig.game_mode`:
 - `original`: each player is dealt 2 maps of the pool (4 different maps) and independently picks the one to play;
 - `random-mirrored` (default): both players play on the same map drawn at random from the pool, nothing to choose;
-- `free-select`: both players pick any map of the pool (the same one is allowed).
+- `free-select`: both players pick any map of the pool (the same one is allowed);
+- `ark360`: like `random-mirrored`, on the maps that `ark360.applicable` allows, and the placement bonuses are at random places (`engine/ark360.py`).
 The pool is every map with a geometry (the beginner maps 0 / A are left out unless enabled), the Marine Worlds maps 10-14 only in a Marine Worlds game,
 minus `GameConfig.maps_to_exclude`. A game that is given its `maps` (a replay, a test) skips all this.
 
 `GameState.map_select` (JSON): `mode`, `pool`, `offers` (per seat what it chooses from), `chosen`, `stage` (pick | done). The players pick at the same
 time with `choose_map {map}`.
 """
+import copy
+
 from ark_nova import data
 from ark_nova.data.map_support import UNSUPPORTED_MAPS
+from ark_nova.engine import ark360
 from ark_nova.engine.actions import Action
 from ark_nova.engine.rng import Rng
 from ark_nova.engine.state import Phase, Prompt
 
-MODES = ("original", "random-mirrored", "free-select")
+MODES = ("original", "random-mirrored", "free-select", "ark360")
 DEFAULT_MODE = "random-mirrored"
 MARINE_WORLDS_MAPS = frozenset({"10", "11", "12", "13", "14"})
 DEAL = 2
@@ -29,8 +33,9 @@ class MapSelectError(Exception):
 def pool(config) -> list:
     """The maps of a new game, in the order of the data (the variants 'a' follow the numbers)."""
     excluded = {str(m) for m in (config.maps_to_exclude or [])}
-    return [m["id"] for m in data.maps() if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS and m["id"] not in excluded
-            and (config.marine_worlds or m["id"] not in MARINE_WORLDS_MAPS)]
+    ids = [m["id"] for m in data.maps() if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS and m["id"] not in excluded
+           and (config.marine_worlds or m["id"] not in MARINE_WORLDS_MAPS)]
+    return [m for m in ids if ark360.applicable(m)] if getattr(config, "game_mode", None) == ark360.MODE else ids
 
 
 def begin(state) -> None:
@@ -44,7 +49,7 @@ def begin(state) -> None:
     if len(maps) < need:
         raise ValueError(f"the map pool has {len(maps)} maps, the game mode {mode!r} needs {need}")
     rng = Rng(state.rng)
-    if mode == "random-mirrored":
+    if mode in ("random-mirrored", ark360.MODE):
         drawn = list(maps)
         rng.shuffle(drawn)
         state.rng = rng.state
@@ -88,5 +93,10 @@ def apply(state, action: Action) -> None:
 
 def _finish(state) -> None:
     from ark_nova.engine import game
-    game.assign_maps(state, list(state.map_select["chosen"]))
+    chosen = list(state.map_select["chosen"])
+    game.assign_maps(state, chosen)
+    if state.config.game_mode == ark360.MODE:                  # the same layout for both players (the map is the same)
+        layout = ark360.layout_for(chosen[0], state.seed.tail_seed)
+        for p in state.players:
+            p.bonus_layout = copy.deepcopy(layout)
     game.continue_setup(state)

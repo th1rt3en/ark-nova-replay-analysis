@@ -3,6 +3,8 @@
 Cells are (x, y) with x + y odd, x in 0..8, y in 0..12 (58 cells, flat-top hexes, y is a doubled row). Shapes and rotations
 use axial coordinates (q, r) = (x, (y - x - 1) / 2); rotation k turns a shape k * 60 degrees clockwise around its anchor cell.
 """
+import dataclasses
+import json
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -69,3 +71,24 @@ def board(map_id: str) -> Board:
     for b in geo["placement_bonuses"]:
         bonuses.setdefault((b["x"], b["y"]), []).append(b["bonus"])
     return Board(map_id, cells, terrain, flags, border, centre, centre, bonuses)
+
+
+def placement_entries(p) -> list:
+    """The placement bonuses of a player's map as entries (`x`, `y`, `bonus`, `note`): the map's own, or the player's layout (Ark360, `engine/ark360.py`)."""
+    return p.bonus_layout or data.map_by_id(p.map_id)["geometry"]["placement_bonuses"]
+
+
+@lru_cache(maxsize=256)
+def _laid_out(map_id: str, key: tuple) -> Board:
+    bonuses: dict = {}
+    for x, y, bonus in key:
+        bonuses.setdefault((x, y), []).append(json.loads(bonus))
+    return dataclasses.replace(board(map_id), bonuses=bonuses)
+
+
+def board_of(p) -> Board:
+    """The board of a player (`PlayerState`): the map's own, or with the placement bonuses of the player's layout in place of the printed ones."""
+    if not p.bonus_layout:
+        return board(p.map_id)
+    return _laid_out(p.map_id, tuple((e["x"], e["y"], json.dumps(e["bonus"], sort_keys=True)) for e in p.bonus_layout))
+

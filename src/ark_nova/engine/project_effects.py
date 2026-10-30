@@ -127,9 +127,9 @@ def release_enclosures(state, seat: int, key: str, exclude=None) -> list:
     priority): a special enclosure that meets the water / rock needs, the smallest standard one that does, a special one that does not, the
     smallest standard one that does not. Empty list: no enclosure is emptied (they are all too small)."""
     from ark_nova.engine import animals_action
-    from ark_nova.engine.board import board
+    from ark_nova.engine.board import board_of
     p = state.players[seat]
-    bd = board(p.map_id)
+    bd = board_of(p)
     cands = [(b, ok) for b, ok in animals_action.hosts(state, seat, key, occupied=True) if b is not exclude]
     for want in (True, False):
         special = [b for b, ok in cands if ok == want and not b.type.startswith("size-")]

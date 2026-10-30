@@ -215,8 +215,8 @@ def map_ability_income(state, p) -> int:
     """Money from the printed ability of the zoo map: Park Restaurant (5): 1 per covered space next to the restaurant; Caves (11): 2 per
     stored card; Ice Cream Parlors (7 / 7a): 1 per kiosk once all kiosk hexes are covered. The Drawing Board (13) is paid in `_income` (`map_rules.quarter_bonus`)."""
     if p.map_id in ("5", "5a"):
-        from ark_nova.engine.board import board
-        bd = board(p.map_id)
+        from ark_nova.engine.board import board_of
+        bd = board_of(p)
         rest = next(s for s in data.map_by_id(p.map_id)["geometry"]["special_hexes"] if s["kind"] == "restaurant")
         covered = {c for b in p.buildings for c in footprint(b.type, b.x, b.y, b.rotation)}
         return sum(1 for n in neighbours((rest["x"], rest["y"])) if n in covered)
