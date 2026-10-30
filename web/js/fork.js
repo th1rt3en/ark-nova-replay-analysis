@@ -7,7 +7,7 @@ import { curState, orientParam, povParam } from './pov.js';
 import { cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
-import { firstPlayerText, playLive, playTurnButtons, playWaitingBar } from './play.js';
+import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
 import { render } from './main.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
@@ -191,6 +191,8 @@ export function forkBar() {
   if (PLAY && bar) {                                                       // a live game: the confirm / undo / restart are legal actions of their own
     for (const a of acts) if (['confirm_turn', 'undo_last', 'restart_turn'].includes(a.kind)) S.forkClaimed.add(a);
     if (!acts.length || S.play.status === 'waiting') { playWaitingBar(bar); return; }                 // (nothing is offered until both players have joined)
+    const study = acts.find((a) => a.kind === 'study_ready');
+    if (study) { S.forkClaimed.add(study); studyBar(bar, study); return; }                  // (Ark360: the viewer studies the map before the draft)
     const picks = acts.filter((a) => a.kind === 'choose_map');
     if (picks.length) {                                                    // the maps are chosen in the bar: click a map to see it, then confirm
       for (const a of picks) S.forkClaimed.add(a);

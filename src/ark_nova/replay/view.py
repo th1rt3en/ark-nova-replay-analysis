@@ -305,13 +305,14 @@ def _card_keys(obj: Any, out: set[str]) -> None:
             _card_keys(v, out)
 
 
-def map_view(map_id: str) -> dict:
+def map_view(map_id: str, layout: list | None = None) -> dict:
+    """The map as the viewer draws it. `layout`: the placement bonuses of a player's own layout (Ark360, `engine/ark360.py`) in place of the printed ones."""
     m = data.map_by_id(map_id)
     geo = m["geometry"] or {}
     base = map_quirks.base_map_id(map_id)
     return {"id": base, "name": m["name"], "image": f"/maps/map-{PICTURE_OF.get(base, base)}.jpg",
             "description": [t.strip() for t in (m.get("description") or []) if t and t.strip()],
-            "hexes": geo.get("hexes", []), "placement_bonuses": geo.get("placement_bonuses", []),
+            "hexes": geo.get("hexes", []), "placement_bonuses": layout or geo.get("placement_bonuses", []),
             "special_hexes": geo.get("special_hexes", []), "bonus_slots": geo.get("bonus_slots", []),
             "association_bonuses": association.map_bonuses(base)}
 

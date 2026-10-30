@@ -20,7 +20,7 @@ from typing import Any
 
 from ark_nova import data as card_data
 from ark_nova.accounts import rating as elo
-from ark_nova.engine import endgame, gamestats, map_select, turns
+from ark_nova.engine import ark360, endgame, gamestats, map_select, turns
 from ark_nova.engine.actions import Action
 from ark_nova.engine.game import IllegalAction, apply, legal_actions, new_game
 from ark_nova.engine.state import GameState, Phase
@@ -110,16 +110,26 @@ class Cached:
     clock: dict | None = None                                # the time control's clocks (live/clock.py; None = a table without one)
 
 
+def _ark360_description() -> str:
+    cfg = ark360.config()
+    tc_ = cfg["time_control"]
+    return (f"Both players play the same map with its placement bonuses at random places. The map is shown when the game starts: {cfg['study_seconds'] // 60} minutes to study it, "
+            f"then the action card draft (the starting hands are known). Time control {tc_['start'] // 60} min + {tc_['increment']} s per turn.")
+
+
 GAME_MODES = {
     "random-mirrored": ("Same random map", "Both players play on the same map, drawn at random: nothing to choose."),
     "original": ("Original: pick one of two", "Each player is dealt two maps and keeps the one they like better."),
     "free-select": ("Free choice", "Each player picks any map (the same one is allowed)."),
+    ark360.MODE: ("Ark360", _ark360_description()),
 }
 
 
 def options() -> dict:
     """The game modes of the engine (`engine/map_select.py` is the list), with a name and a line of text each."""
-    return {"default": map_select.DEFAULT_MODE, "time_control": tc.options(), "game_modes": [{"id": m, "label": GAME_MODES.get(m, (m, ""))[0], "description": GAME_MODES.get(m, (m, ""))[1]} for m in map_select.MODES]}
+    return {"default": map_select.DEFAULT_MODE, "time_control": tc.options(),
+            "game_modes": [{"id": m, "label": GAME_MODES.get(m, (m, ""))[0], "description": GAME_MODES.get(m, (m, ""))[1], **({"fixed_time_control": ark360.time_control()} if m == ark360.MODE else {})}
+                           for m in map_select.MODES]}
 
 
 def token_hash(token: str) -> str:
@@ -150,6 +160,8 @@ class LiveService:
         if mode not in map_select.MODES:
             raise IllegalMove(f"the game mode must be one of {list(map_select.MODES)}", 422)
         options = {"game_mode": mode, "marine_worlds_flag": bool(marine_worlds), "confirm_turns": True}
+        if mode == ark360.MODE:
+            time_control = ark360.time_control()                              # (the time control is part of the mode)
         try:
             clock0 = tc.create(time_control)
         except tc.ClockError as e:
@@ -184,6 +196,8 @@ class LiveService:
         names = self.keeper.seat(game_id, seat, name)
         c.names = list(names)
         if all(names) and c.status == "waiting":
+            if c.state.config.game_mode == ark360.MODE:                    # the map is shown from now on: the study time starts
+                self.keeper.update_config(game_id, {"study_started_at": int(time.time() * 1000)})
             if c.clock is not None:                                      # the clocks start when both players are in and the first choices (the maps) are open; stored before the status push
                 c.clock = tc.advance(c.clock, int(time.time() * 1000), self._to_act(c.state), self._turn_key(c.state), False)
                 self.keeper.update_config(game_id, {"clock": c.clock})
@@ -195,6 +209,25 @@ class LiveService:
     def lobby(self, game_id: str) -> dict:
         s = self.keeper.state(game_id)
         return {"game_id": game_id, "status": s["status"], "version": s["version"], "names": [x["name"] for x in s["seats"]], "rated": bool(s["config"].get("rated"))}
+
+    def study_expire(self, game_id: str) -> dict:
+        """Ark360: the study time is over (a page asks for it when its countdown ends). The server checks its own clock; then every seat that is not ready is made ready, so the game
+        goes on even when a player has left. Calling it early is refused, calling it twice does nothing."""
+        c = self._load(game_id, fresh=True)
+        d = c.state.study
+        if c.status != "playing" or d is None or all(d["ready"]):
+            return {"version": c.version, "status": c.status, "ready": list(d["ready"]) if d else None}
+        started = self.keeper.state(game_id)["config"].get("study_started_at")
+        if started is None or int(time.time() * 1000) < started + d["seconds"] * 1000:
+            raise NotStarted("the study time is not over", 409)
+        for seat in (0, 1):
+            if c.state.study is not None and not all(c.state.study["ready"]) and not c.state.study["ready"][seat]:
+                act = Action(seat, "study_ready", {})
+                try:
+                    self._commit(game_id, c, seat, act, apply(c.state, act), None)
+                except StaleVersion:                                          # (the other page asked at the same moment: its answer counts)
+                    c = self._load(game_id, fresh=True)
+        return {"version": c.version, "status": c.status, "ready": list(c.state.study["ready"]) if c.state.study else None}
 
     def _complete_header(self, game_id: str, state: GameState) -> bool:
         try:
@@ -218,9 +251,12 @@ class LiveService:
         seat = None
         if token:
             seat = self._seat_of(Cached(s["version"], None, [x["token_hash"] for x in s["seats"]], s["status"], []), token)
-        return {"game_id": game_id, "clock": tc.view(s["config"]["clock"], int(time.time() * 1000)) if s["config"].get("clock") else None, "status": s["status"], "version": s["version"], "seat": seat, "rated": bool(s["config"].get("rated")), "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
+        ark = (s["config"].get("options") or {}).get("game_mode") == ark360.MODE
+        hidden = ark and s["status"] == "waiting"                                # (Ark360: nobody sees the map before the game starts)
+        study = {"seconds": ark360.study_seconds(), "started_at": s["config"].get("study_started_at"), "now": int(time.time() * 1000)} if ark else None
+        return {"game_id": game_id, "study": study, "clock": tc.view(s["config"]["clock"], int(time.time() * 1000)) if s["config"].get("clock") else None, "status": s["status"], "version": s["version"], "seat": seat, "rated": bool(s["config"].get("rated")), "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
                 "first_player": 0, "players": [{"seat": i, "id": str(i + 1), "name": x["name"] or f"Seat {i + 1}", "color": (v.get("colors") or [None, None])[i]} for i, x in enumerate(s["seats"])],
-                "maps": v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in card_data.maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") else {}, "cards": v.get("cards"), "base_projects": v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
+                "maps": [] if hidden else v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in card_data.maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") and not hidden else {}, "cards": v.get("cards"), "base_projects": v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
                 "abandon": self.abandon_view(s["config"])}
 
     def _map_views(self) -> dict:
@@ -255,9 +291,12 @@ class LiveService:
     def view(self, game_id: str, token: str | None) -> dict:
         """The stored view of the token's seat (a spectator without a token) with its decision."""
         role = "spectator"
+        c = self._load(game_id)
         if token:
-            role = str(self._seat_of(self._load(game_id), token))
+            role = str(self._seat_of(c, token))
         out = self.keeper.view(game_id, role)
+        if c.status == "waiting" and c.state.config.game_mode == ark360.MODE and isinstance(out.get("view"), dict):       # (Ark360: the map is shown when the game starts)
+            out = {**out, "view": projection.hide_map(out["view"])}
         self._retry_wrap_up(game_id)
         return out
 
@@ -337,7 +376,7 @@ class LiveService:
         clock_now = None
         if c.clock is not None:                                            # the time used by this move comes off the clocks that ran; a new turn brings the increment
             now = int(time.time() * 1000)
-            clock_now = tc.advance(c.clock, now, all_views["spectator"]["view"].get("to_act") or [], self._turn_key(new), over)
+            clock_now = tc.advance(c.clock, now, [] if new.study is not None and new.prompt is not None and new.prompt.kind == "study" else all_views["spectator"]["view"].get("to_act") or [], self._turn_key(new), over)
             for item in all_views.values():
                 item["view"]["clock"] = tc.view(clock_now, now)
         if timeout and over:
@@ -366,6 +405,8 @@ class LiveService:
     # ---- the time control -------------------------------------------------------------------------------------------------------------
     @staticmethod
     def _to_act(state: GameState) -> list:
+        if state.study is not None and state.prompt is not None and state.prompt.kind == "study":      # (Ark360: the study time is not on the clocks)
+            return []
         return [s for s in (0, 1) if projection.decision(state, s) is not None]
 
     @staticmethod

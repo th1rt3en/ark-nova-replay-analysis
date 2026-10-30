@@ -1,0 +1,117 @@
+"""Ark360 on the live service: the map stays hidden until both players joined, one layout for both, the fixed time control, the study time (not on the clocks) and how it ends."""
+import random
+
+from ark_nova.engine import ark360
+from tests.test_live_service import Player, _app, _join_both
+
+
+def _table(client, **options):
+    g = client.post("/api/games", json={"game_mode": "ark360", **options}).json()
+    rng = random.Random(1)
+    return g["game_id"], [Player(client, g["game_id"], t, rng) for t in g["tokens"]]
+
+
+def test_the_mode_is_offered_with_its_time_control():
+    client, _, _ = _app()
+    opts = client.get("/api/live/options").json()
+    mode = next(m for m in opts["game_modes"] if m["id"] == "ark360")
+    assert mode["label"] == "Ark360" and mode["fixed_time_control"] == ark360.time_control() and "study" in mode["description"].lower()
+    assert all("fixed_time_control" not in m for m in opts["game_modes"] if m["id"] != "ark360")
+
+
+def test_nobody_sees_the_map_before_the_game_starts_and_both_do_after():
+    client, keeper, _ = _app()
+    game_id, players = _table(client)
+    spectator = client.get(f"/api/games/{game_id}/state").json()["view"]
+    for v in [players[0].state()["view"], players[1].state()["view"], spectator]:
+        assert [p["map_id"] for p in v["players"]] == ["", ""] and [p["bonus_layout"] for p in v["players"]] == [None, None] and v["config"]["maps"] == []
+    sk = client.get(f"/api/games/{game_id}/setup", headers=players[0].h).json()
+    assert sk["maps"] == [] and sk["map_views"] == {} and sk["study"]["started_at"] is None and sk["study"]["seconds"] == ark360.study_seconds()
+    _join_both(client, game_id, players)
+    sk = client.get(f"/api/games/{game_id}/setup", headers=players[0].h).json()
+    assert len(sk["maps"]) == 2 and sk["maps"][0]["id"] == sk["maps"][1]["id"] and sk["study"]["started_at"] is not None
+    v0, v1 = players[0].state()["view"], players[1].state()["view"]
+    layout = v0["players"][0]["bonus_layout"]
+    assert layout and v0["players"][1]["bonus_layout"] == layout == v1["players"][0]["bonus_layout"]
+    assert sk["maps"][0]["placement_bonuses"] == sk["maps"][1]["placement_bonuses"] == layout                    # the page draws the layout, not the printed bonuses
+    assert v0["players"][0]["map_id"] == sk["maps"][0]["id"] and v0["prompt"]["kind"] == "study"
+
+
+def test_the_time_control_is_the_modes_whatever_the_lobby_sent_and_the_study_is_not_on_the_clocks():
+    client, keeper, _ = _app()
+    game_id, players = _table(client, time_control={"speed": "fast"})
+    _join_both(client, game_id, players)
+    clock = client.get(f"/api/games/{game_id}/setup", headers=players[0].h).json()["clock"]
+    tcs = ark360.time_control()
+    assert clock["start"] == tcs["start"] * 1000 and clock["increment"] == tcs["increment"] * 1000 and clock["mode"] == "custom"
+    assert clock["running"] == [False, False]                                                                  # (the study time is not on the clocks)
+    v = players[0].state()
+    assert [a["kind"] for a in v["decision"]["actions"]] == ["study_ready"]
+    for p in players:
+        r = p.move(p.state()["version"], next(a for a in p.state()["decision"]["actions"] if a["kind"] == "study_ready"))
+        assert r.status_code == 200, r.text
+    after = players[0].state()
+    assert after["view"]["prompt"]["kind"] in ("initial_discard", "draft") and after["view"]["clock"]["running"] == [True, True]       # (the game's time runs from here)
+
+
+def test_the_study_time_ends_by_the_servers_clock_and_a_page_that_left_is_made_ready():
+    client, keeper, _ = _app()
+    game_id, players = _table(client)
+    _join_both(client, game_id, players)
+    early = client.post(f"/api/games/{game_id}/study/expire")
+    assert early.status_code == 409                                                                             # not over yet
+    v = players[0].state()
+    r = players[0].move(v["version"], next(a for a in v["decision"]["actions"] if a["kind"] == "study_ready"))
+    assert r.status_code == 200
+    keeper.update_config(game_id, {"study_started_at": 0})                                                      # (a long time ago)
+    done = client.post(f"/api/games/{game_id}/study/expire")
+    assert done.status_code == 200 and done.json()["ready"] == [True, True]
+    assert players[1].state()["view"]["prompt"]["kind"] in ("initial_discard", "draft")
+    again = client.post(f"/api/games/{game_id}/study/expire")                                                   # (a second page asking at the same time: nothing happens)
+    assert again.status_code == 200
+    assert client.post("/api/games/E99999/study/expire").status_code == 404
+
+
+def test_the_game_goes_on_after_the_study_time_with_the_cards_known_before_the_draft():
+    client, keeper, _ = _app()
+    game_id, players = _table(client, marine_worlds=True)
+    _join_both(client, game_id, players)
+    hand = players[0].state()["view"]["players"][0]["hand"]
+    assert hand and "?" not in hand                                                                             # the starting hand is known before the study time ends
+    for p in players:
+        v = p.state()
+        assert p.move(v["version"], next(a for a in v["decision"]["actions"] if a["kind"] == "study_ready")).status_code == 200
+    v = players[0].state()
+    assert v["view"]["prompt"]["kind"] == "draft" and v["view"]["players"][0]["hand"] == hand
+    label = keeper.view(game_id, "spectator").get("label", "")
+    assert "ready" in label.lower()
+
+
+def test_an_ark360_game_records_and_replays_with_its_layout():
+    import json
+    from ark_nova.engine.actions import Action
+    from ark_nova.engine.game import apply, new_game
+    from ark_nova.live import archive as arch
+    from ark_nova.replay import from_record
+    from ark_nova.replay.view import state_view
+    from test_record_replay import _same, _world
+    client, keeper, registry, archive, service = _world()
+    game_id, players = _table(client)
+    _join_both(client, game_id, players)
+    for p in players:                                                                                           # both ready, then some random play
+        v = p.state()
+        p.move(v["version"], next(a for a in v["decision"]["actions"] if a["kind"] == "study_ready"))
+    from test_live_service import _play
+    assert _play(players, 40, random.Random(3)) == 40
+    assert players[0].c.post(f"/api/games/{game_id}/concede", headers=players[0].h, json={}).status_code == 200
+    record = arch.decode(archive.read(registry.latest(game_id)["gcs_path"]))
+    body = from_record.replay_from_record(record)
+    layout = body["steps"][0]["state"]["players"][0]["bonus_layout"]
+    assert layout and body["maps"][0]["placement_bonuses"] == body["maps"][1]["placement_bonuses"] == layout       # the viewer draws the layout it was played with
+    st = new_game(record["options"], record["player_ids"], record["tail_seed"])
+    assert st.players[0].bonus_layout == layout                                                                 # (the seed makes it again)
+    kept = from_record.effective_steps(record["steps"])
+    for step, item in zip(body["steps"][1:], kept):
+        a = item["step"]["action"]
+        st = apply(st, Action(a["player"], a["kind"], a["args"]))
+        assert _same(step["state"], state_view(st)), step["index"]

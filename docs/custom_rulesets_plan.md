@@ -1,6 +1,6 @@
 # Custom game rulesets: plan and open questions
 
-Status: plan only, nothing is implemented. The questions at the end of each item (and the list at the bottom) have to be answered before the design of that item is final.
+Status: plan; the first custom game mode, **Ark360** (item 7 for one ruleset: random placement bonuses on a known map), is built, see `engine/ark360.py` and the section at the end of this file. The rest is a plan only. The questions at the end of each item (and the list at the bottom) have to be answered before the design of that item is final.
 
 The rulesets are any combination of:
 
@@ -109,6 +109,15 @@ Open questions:
 7. The variant registry refactor, then custom variants (item 5).
 
 Each step ships with unit tests, and the differential stays at 0 problems.
+
+## Built: Ark360 (a game mode, not yet a general ruleset)
+
+The first custom mode is a game mode (`game_mode: "ark360"`, `engine/map_select.MODES`) rather than a `Ruleset` block: it needs one thing the plan describes under items 7 and 8, a layout generated from the seed and kept in the state, and nothing else of the foundation.
+
+- **Layout**: `engine/ark360.py` generates it (an integer-only local search on `Rng`, so it is reproducible from the seed on any platform) from the rules in `data/ark360.json` and stores it as `PlayerState.bonus_layout` (a list of placement bonus entries; both players get the same one, the map is the same). `board.board_of(player)` replaces the plan's context variable: the call sites that had `board(p.map_id)` now ask the player, so no global state is needed. Rules that read the printed entries (the kiosk hexes of maps 7 / 7a) go through `board.placement_entries(player)`.
+- **Answers to the open questions above for this mode**: mirrored maps get the same layout; the bonuses of the map are shuffled (the number and the kinds stay, no new ones are drawn); a bonus never sits on rock or water (`allowed_terrain`, as on every printed map), on an upgrade flag or on a feature of the map; the map-bound bonuses are not fixed (the kiosk hexes move with their bonuses). The constraints are the ones of `data/ark360.json` (columns, rows, adjacent pairs, pairs with one hex between, border, next to rock / water).
+- **Tuning**: edit the numbers in `src/ark_nova/data/ark360.json` and run `python scripts/check_ark360.py [--set layout.max_one_hex_apart_pairs=4]`: it says for every map whether a layout is found, how often and how fast. The file is part of the rules fingerprint (`engine/version.py`): changing it after a release needs a new engine version.
+- **The format of the mode** (all in the config file and the engine): after the map is drawn the starting hands and the endgame cards are dealt (known for the draft), both players study the map (`study` prompt, `study_ready` action, `study_seconds`), then the action card draft (Marine Worlds), then the initial discard. The live service hides the map until both players have joined (`projection.hide_map`, the setup answer), starts the study countdown then (`study_started_at`), keeps it off the clocks, and ends it by its own clock when a page asks (`POST /api/games/{id}/study/expire`). The time control is the mode's (`time_control`: 10 min + 30 s).
 
 ## Questions to answer first
 

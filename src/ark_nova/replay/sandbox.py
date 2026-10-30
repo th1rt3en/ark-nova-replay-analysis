@@ -67,7 +67,7 @@ def skeleton(state: GameState) -> dict:
     keys = set(deck_cards("main", mw)) | set(deck_cards("endgame", mw)) | set(deck_cards("base_project", mw))
     return {"table_id": 0, "marine_worlds": bool(state.config.marine_worlds),
             "players": [{"seat": i, "id": pid, "name": n, "color": COLORS[i]} for i, (pid, n) in enumerate(zip(state.config.player_ids, state.config.player_names))],
-            "maps": [map_view(m) for m in state.config.maps], "base_projects": list(state.base_projects), "result": [], "setup_steps": 0,
+            "maps": [map_view(m, state.players[i].bonus_layout) for i, m in enumerate(state.config.maps)], "base_projects": list(state.base_projects), "result": [], "setup_steps": 0,
             "cards": card_catalog(keys, bool(state.config.marine_worlds)), "shapes": forking.shapes(), "base_pool": deck_cards("base_project", mw)}
 
 

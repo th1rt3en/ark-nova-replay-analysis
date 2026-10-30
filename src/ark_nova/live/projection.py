@@ -95,6 +95,15 @@ def _project_map_select(m: dict | None, seat: int | None) -> dict | None:
             "offers": [m["offers"][s] if s == seat else [] for s in (0, 1)]}
 
 
+def hide_map(view: dict) -> dict:
+    """The view of a table that has not started (Ark360: the map is shown when the game starts) without its map: no map ids, no layouts, no start buildings."""
+    v = dict(view)
+    v["players"] = [{**p, "map_id": "", "bonus_layout": None, "buildings": []} for p in v["players"]]
+    v["config"] = {**(v.get("config") or {}), "maps": []}
+    v["map_select"] = None
+    return v
+
+
 def decision(state: GameState, seat: int) -> dict | None:
     """What `seat` may do now: the summary the bar is drawn from and the encoded legal actions of that seat (None when it has nothing to decide)."""
     try:

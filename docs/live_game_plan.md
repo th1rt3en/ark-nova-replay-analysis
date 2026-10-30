@@ -166,7 +166,7 @@ These are the changes inside `src/ark_nova/engine/` (and the places that read it
 
 | Route | Purpose |
 |---|---|
-| `GET /api/live/options` | the game modes (`original`, `random-mirrored` default, `free-select`) and the time control presets with the limits of the custom setting |
+| `GET /api/live/options` | the game modes (`original`, `random-mirrored` default, `free-select`, `ark360`) and the time control presets with the limits of the custom setting |
 | `GET /api/live/config` | `{ws_base}`: the WebSocket base of the Worker (empty: the page polls) |
 | `POST /api/games` | `{marine_worlds, game_mode, time_control}`; `time_control` is `{speed: slow \| normal \| fast}` or `{start, increment}` in seconds; returns the game id, the two seat tokens and `creator_seat` |
 | `GET /api/games/{id}` | lobby info: status (`waiting` / `playing` / ...), version, names |
@@ -382,7 +382,7 @@ Taken:
 
 21. **Registry shape**: append-only status events (`live_table_events`) with a view `live_tables` that returns the latest event of each table (9.2); no `UPDATE`.
 
-22. **Game modes** (built): the map selection is `random-mirrored` (default: both on the same random map), `original` (each dealt two maps, keeps one) or `free-select` (each picks any map); the action card draft is played if and only if Marine Worlds is on (decision 16). The list is `engine/map_select.MODES`, served by `GET /api/live/options`.
+22. **Game modes** (built; `ark360` is the first custom mode, see `docs/custom_rulesets_plan.md`: random placement bonuses, a study time before the draft, the time control 10 min + 30 s fixed by the mode): the map selection is `random-mirrored` (default: both on the same random map), `original` (each dealt two maps, keeps one) or `free-select` (each picks any map); the action card draft is played if and only if Marine Worlds is on (decision 16). The list is `engine/map_select.MODES`, served by `GET /api/live/options`.
 23. **Abandon by agreement** (built): one player proposes, the other answers; a rejection costs the proposer a 10 minute cooldown; an agreed abandon ends the table as `abandoned` without a record (9).
 24. **Tail seed**: a new game's seed is 52 random bits (`secrets.randbits(52)`), the widest whole number a browser reads exactly; a 31 bit seed could be tried out one by one to learn the deck order (`tests/test_hardening.py`).
 

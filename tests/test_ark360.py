@@ -190,3 +190,13 @@ def test_the_kiosk_hexes_of_maps_7_and_7a_move_with_their_bonuses():
         p.buildings = [Building(id=i, type="size-1", x=x, y=y) for i, (x, y) in enumerate(printed)]
         assert not kiosk_hexes_covered(p)                                                          # the printed ones do not
         assert kiosk_hexes_covered(PlayerState(seat=0, map_id=map_id, buildings=p.buildings))      # (without a layout they do)
+
+
+def test_a_state_saved_before_the_mode_existed_still_loads():
+    s = new_game({"game_mode": "random-mirrored", "marine_worlds_flag": False}, ["1", "2"], 3)
+    old = json.loads(json.dumps(s.to_dict()))
+    del old["study"]
+    for p in old["players"]:
+        del p["bonus_layout"]
+    back = GameState.from_dict(old)
+    assert back.study is None and all(p.bonus_layout is None for p in back.players) and back.to_dict() == s.to_dict()

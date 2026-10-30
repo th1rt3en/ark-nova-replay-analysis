@@ -5,7 +5,7 @@ import { S, params } from './state.js';
 import { render } from './main.js';
 import { buildMoveList, go } from './playback.js';
 import { refreshBar } from './action-bar.js';
-import { renderForkMoves, warnIrreversible } from './fork.js';
+import { playFork, renderForkMoves, warnIrreversible } from './fork.js';
 
 const P = S.play;
 
@@ -39,6 +39,8 @@ export function tickClocks() {
     n.classList.toggle('low', ms !== null && ms < 30000);
     n.classList.toggle('negative', ms !== null && ms < 0);
   }
+  for (const n of document.querySelectorAll('.studyclock')) n.textContent = studyText();
+  studyExpiry();
   const claim = $('claimtime');                                              // the menu's button to win on overtime: enabled while the opponent's clock is not above zero
   if (claim) claim.disabled = !(P.seat !== null && P.clock && clockLeft(1 - P.seat) <= 0);
 }
@@ -49,6 +51,54 @@ export function clockBadge(seat) {
   b.title = 'Time left (' + (P.clock.mode === 'custom' ? 'custom' : P.clock.speed) + ' time control: ' + Math.round(P.clock.start / 60000 * 10) / 10 + ' min, +' + Math.round(P.clock.increment / 1000) + ' s per turn)';
   return b;
 }
+// ---- Ark360: the study time of the map before the draft ------------------------------------------------------------------------------------
+// The server says when the study time began (the moment both players had joined) and how long it is; the page counts down by itself. At zero a page asks the server to end it
+// (`/study/expire`: the server checks its own clock, then makes every seat that is not ready ready), so a player who left does not hold the game up.
+function setStudy(s) {
+  if (!s) return;
+  P.study = s;
+  P.studySkew = (s.now || Date.now()) - Date.now();
+}
+function studyLeft() {                                                      // milliseconds of study time left (null: not running)
+  if (!P.study || !P.study.started_at) return null;
+  return P.study.started_at + P.study.seconds * 1000 - (Date.now() + P.studySkew);
+}
+function studyText() {
+  const ms = studyLeft();
+  if (ms === null) return '';
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function studyExpiry() {
+  const left = studyLeft(), last = S.replay && S.replay.steps[S.replay.steps.length - 1], d = last && last.state.study;
+  if (left === null || left > 0 || P.studyAsked || P.seat === null || P.status !== 'playing' || !d || (d.ready || []).every(Boolean)) return;
+  P.studyAsked = true;
+  playApi('/study/expire', {}).then((r) => { if (!r.ok) setTimeout(() => { P.studyAsked = false; }, 2000); });       // (not over by the server's clock yet: ask again in a moment)
+}
+export function studyBar(bar, act) {                                        // the bar while the viewer studies the map: the time left and the button to say they are ready
+  bar.hidden = false;
+  bar.replaceChildren(el('b', '', 'Study your map. Time left: '), Object.assign(el('b', 'studyclock'), { textContent: studyText() }));
+  const ok = el('button', 'forkmove forkconfirm', "I'm ready");
+  ok.type = 'button'; ok.disabled = S.forkBusy; ok.title = 'Start as soon as both players are ready';
+  ok.onclick = () => playFork(act);
+  bar.append(ok);
+}
+async function reloadStart() {                                              // the game has just started: the map (hidden until now) and the state of the seat
+  const q = P.token ? '?s=' + encodeURIComponent(P.token) : '';
+  const [setup, state] = await Promise.all([playApi('/setup' + q), playApi('/state' + q)]).catch(() => [null, null]);
+  if (!setup || !state || !setup.ok || !state.ok) return;
+  setStudy(setup.body.study);
+  setClock(setup.body.clock);
+  if (setup.body.maps && setup.body.maps.length) Object.assign(S.replay, { maps: setup.body.maps, map_names: setup.body.map_names, map_images: setup.body.map_images, map_views: setup.body.map_views, cards: setup.body.cards, base_projects: setup.body.base_projects });
+  if (state.body.version >= P.version) {
+    P.version = state.body.version;
+    const last = S.replay.steps.length - 1;
+    S.replay.steps[last] = playStep(state.body, last);
+    go(last);
+  }
+  playHeadline();
+}
+const onStarted = () => { if (!P.started) { P.started = true; reloadStart(); } else refreshClock(); };
 async function refreshClock() {
   const r = await playApi('/setup' + (P.token ? '?s=' + encodeURIComponent(P.token) : '')).catch(() => null);
   if (r && r.ok && r.body.clock) setClock(r.body.clock);
@@ -80,6 +130,8 @@ export async function playLoad() {
   P.status = state.body.status || setup.body.status;
   setAbandon(setup.body.abandon);
   setClock(setup.body.clock);
+  setStudy(setup.body.study);
+  P.started = P.status !== 'waiting';
   return { ...setup.body, table_id: P.id, result: [], setup_steps: 0, steps: [playStep(state.body, 0)] };
 }
 export function pushLive(p) {
@@ -108,8 +160,8 @@ export function pushLive(p) {
 function playMessage(m) {
   if (m.type === 'abandon') setAbandon(m, true);
   else if (m.type === 'state') pushLive(m);
-  else if (m.type === 'lobby') { (m.names || []).forEach((n, i) => { if (n) S.replay.players[i].name = n; }); if (m.status) P.status = m.status; playHeadline(); render(); if (P.status === 'playing') refreshClock(); }
-  else if (m.type === 'status') { P.status = m.status; render(); playEndCheck(); if (P.status === 'playing') refreshClock(); }
+  else if (m.type === 'lobby') { (m.names || []).forEach((n, i) => { if (n) S.replay.players[i].name = n; }); if (m.status) P.status = m.status; playHeadline(); render(); if (P.status === 'playing') onStarted(); }
+  else if (m.type === 'status') { P.status = m.status; render(); playEndCheck(); if (P.status === 'playing') onStarted(); }
 }
 export async function playConnect() {
   let base = '';
@@ -125,12 +177,16 @@ export async function playConnect() {
   if (base) { open(); return; }
   P.poll = setInterval(async () => {                                      // (no socket server configured: ask every 2 seconds)
     const r = await playApi('/state' + (P.token ? '?s=' + encodeURIComponent(P.token) : '')).catch(() => null);
-    if (r && r.ok) { if (r.body.version > P.version) pushLive(r.body); else if (r.body.status && r.body.status !== P.status) { const was = P.status; P.status = r.body.status; render(); if (was === 'waiting') refreshClock(); } }
+    if (r && r.ok) { if (r.body.version > P.version) pushLive(r.body); else if (r.body.status && r.body.status !== P.status) { const was = P.status; P.status = r.body.status; render(); if (was === 'waiting') onStarted(); else if (P.status === 'playing') refreshClock(); } }
     const lobby = await playApi('').catch(() => null);                      // (and the names of the seats, which a socket would push)
     if (lobby && lobby.ok) {
       let changed = false;
       (lobby.body.names || []).forEach((n, i) => { if (n && S.replay.players[i] && S.replay.players[i].name !== n) { S.replay.players[i].name = n; changed = true; } });
       if (changed) { playHeadline(); render(); }
+      if (lobby.body.status && lobby.body.status !== P.status && ['waiting', 'playing'].includes(lobby.body.status)) {       // (the status comes with the names: the game has started)
+        const was = P.status; P.status = lobby.body.status; render();
+        if (was === 'waiting' && P.status === 'playing') onStarted();
+      }
     }
     if (r && r.ok && P.status === 'playing') {                            // (and the proposal to abandon, which a socket would push)
       const ab = await playApi('/abandon').catch(() => null);
@@ -322,9 +378,11 @@ export function playWaitingBar(bar) {
   }
   else if (['error'].includes(P.status)) text = 'The game is over (' + P.status + ').';
   else if (P.status === 'waiting') text = 'Waiting for the other player to join…';
+  else if (pr && pr.kind === 'study') text = 'Studying the map. Waiting for ' + [0, 1].filter((s) => !((st.study || {}).ready || [])[s] && s !== P.seat).map(name).join(' and ') + '. Time left: ';
   else if (P.seat === null) text = 'Watching: ' + (toAct.length ? toAct.map(name).join(' and ') : pr ? name(pr.player) : '…') + ' to play';
   else text = 'Waiting for ' + (toAct.length ? toAct.filter((s) => s !== P.seat).map(name).join(' and ') : pr && pr.player !== P.seat ? name(pr.player) : 'the other player') + '…';
   bar.append(el('b', '', text));
+  if (pr && pr.kind === 'study' && P.status === 'playing') bar.append(Object.assign(el('b', 'studyclock'), { textContent: studyText() }));
   if (['finished', 'conceded'].includes(P.status)) {
     const a = el('a', '', 'Open the replay');
     a.href = '/replay.html?table=' + encodeURIComponent(P.id);
