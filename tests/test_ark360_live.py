@@ -33,7 +33,8 @@ def test_nobody_sees_the_map_before_the_game_starts_and_both_do_after():
     v0, v1 = players[0].state()["view"], players[1].state()["view"]
     layout = v0["players"][0]["bonus_layout"]
     assert layout and v0["players"][1]["bonus_layout"] == layout == v1["players"][0]["bonus_layout"]
-    assert sk["maps"][0]["placement_bonuses"] == sk["maps"][1]["placement_bonuses"] == layout                    # the page draws the layout, not the printed bonuses
+    drawn = [e for e in layout if e["bonus"]["type"] != "hollywood_h"]                                          # (the H hexes of maps 8 / 8a are special hexes of the picture)
+    assert sk["maps"][0]["placement_bonuses"] == sk["maps"][1]["placement_bonuses"] == drawn                    # the page draws the layout, not the printed bonuses
     assert v0["players"][0]["map_id"] == sk["maps"][0]["id"] and v0["prompt"]["kind"] == "study"
 
 
@@ -107,7 +108,8 @@ def test_an_ark360_game_records_and_replays_with_its_layout():
     record = arch.decode(archive.read(registry.latest(game_id)["gcs_path"]))
     body = from_record.replay_from_record(record)
     layout = body["steps"][0]["state"]["players"][0]["bonus_layout"]
-    assert layout and body["maps"][0]["placement_bonuses"] == body["maps"][1]["placement_bonuses"] == layout       # the viewer draws the layout it was played with
+    drawn = [e for e in layout if e["bonus"]["type"] != "hollywood_h"]
+    assert layout and body["maps"][0]["placement_bonuses"] == body["maps"][1]["placement_bonuses"] == drawn        # the viewer draws the layout it was played with
     st = new_game(record["options"], record["player_ids"], record["tail_seed"])
     assert st.players[0].bonus_layout == layout                                                                 # (the seed makes it again)
     kept = from_record.effective_steps(record["steps"])

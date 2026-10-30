@@ -2,11 +2,15 @@
 //   /ws/E12?s=<seat token>            -> the Table Durable Object of E12 (WebSocket)
 //   /internal/table/E12/<route>       -> the same object's internal routes, only with a valid signature of Cloud Run
 //   /internal/counter/<next|ensure>   -> the id counter, same rule
+//   /internal/lobbies/<op>            -> the lobbies of the custom games (the Lobbies Durable Object), same rule
+//   /internal/chat/<L12|E7>/<post|list> -> the chat of a lobby or a table (the Chat Durable Object of the room), same rule
 //   /internal/store/<op>              -> the accounts and mini game tables in D1 (src/store.ts), same signature rule
 //   /api/*                            -> Cloud Run
 import { verify } from "./auth";
 export { Table } from "./table";
 export { Counter } from "./counter";
+export { Lobbies } from "./lobbies";
+export { Chat } from "./chat";
 import { runStoreOp } from "./store";
 import { rollover } from "./cron";
 
@@ -45,6 +49,20 @@ export default {
                 return json({ n: await counter.ensureAtLeast(n) });
             }
             return json({ status: "error", message: "wrong method" }, 405);
+        }
+
+        m = /^\/internal\/lobbies\/([a-z_]+)$/.exec(path);             // the lobbies of the custom games: one Durable Object (src/lobbies.ts)
+        if (m) {
+            if (request.method !== "POST") return json({ status: "error", message: "wrong method" }, 405);
+            if (!(await verify(env.INTERNAL_SECRET, request, path))) return json({ status: "error", message: "forbidden" }, 403);
+            return env.LOBBIES.get(env.LOBBIES.idFromName("lobbies")).fetch(rewrite(request, "/" + m[1], ""));
+        }
+
+        m = /^\/internal\/chat\/([EL]\d{1,9})\/(post|list)$/.exec(path);          // the chat of a lobby or a table: one Durable Object per room (src/chat.ts)
+        if (m) {
+            if (request.method !== "POST") return json({ status: "error", message: "wrong method" }, 405);
+            if (!(await verify(env.INTERNAL_SECRET, request, path))) return json({ status: "error", message: "forbidden" }, 403);
+            return env.CHAT.get(env.CHAT.idFromName(m[1])).fetch(rewrite(request, "/" + m[2], ""));
         }
 
         m = /^\/internal\/store\/([a-z_.]+)$/.exec(path);

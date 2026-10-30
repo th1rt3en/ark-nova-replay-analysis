@@ -3,15 +3,24 @@ import { $ } from './util.js';
 import { S, MINIGAME } from './state.js';
 
 const TAB_KEY = 'sidebarTab';
+let chatSeen = () => {};                                          // set by `chatTab` (the play page): the Chat tab was opened, the unread count goes
+/** The Chat tab of the play page: `onUnread(n)` of the chat shows the number on the tab; opening the tab clears it. Returns the function to give the chat as `onUnread`. */
+export function chatTab(chat) {
+  const badge = $('tabChat') && $('tabChat').querySelector('.badge');
+  chatSeen = () => chat() && chat().seen();
+  return (n) => { if (badge) { badge.textContent = n > 9 ? '9+' : String(n); badge.hidden = !n || S.sbTab === 'chat'; } };
+}
 function setTab(tab) {
-  S.sbTab = tab === 'log' ? 'log' : 'control';
-  for (const [id, name] of [['tabControl', 'control'], ['tabLog', 'log']]) {
+  S.sbTab = tab === 'log' || (tab === 'chat' && $('tabChat')) ? tab : 'control';                        // (the Chat tab exists on the play page only)
+  for (const [id, name] of [['tabControl', 'control'], ['tabLog', 'log'], ['tabChat', 'chat']]) {
     const b = $(id); if (!b) continue;
     b.classList.toggle('on', S.sbTab === name);
     b.setAttribute('aria-selected', String(S.sbTab === name));
   }
   $('paneControl').hidden = S.sbTab !== 'control';
   $('paneLog').hidden = S.sbTab !== 'log';
+  if ($('paneChat')) $('paneChat').hidden = S.sbTab !== 'chat';
+  if (S.sbTab === 'chat') chatSeen();
   try { localStorage.setItem(TAB_KEY, S.sbTab); } catch (e) { /* private window */ }
   fitSidebar();
   followLog(true);
@@ -19,6 +28,7 @@ function setTab(tab) {
 export function setupSidebar() {
   $('tabControl').onclick = () => setTab('control');
   $('tabLog').onclick = () => setTab('log');
+  if ($('tabChat')) $('tabChat').onclick = () => setTab('chat');
   let saved = 'control';
   try { saved = localStorage.getItem(TAB_KEY) || 'control'; } catch (e) { /* private window */ }
   setTab(saved);

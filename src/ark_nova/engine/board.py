@@ -13,6 +13,7 @@ from ark_nova import data
 Cell = tuple[int, int]
 _AXIAL_NEIGHBOURS = [(0, 1), (0, -1), (1, 0), (1, -1), (-1, 1), (-1, 0)]
 # on the map 13 board the first building must touch the centre marker instead of the border
+H_KIND = "hollywood_h"                      # the type of an H entry in an Ark360 layout (maps 8 / 8a)
 CENTRE_CELLS = {"13": frozenset({(4, 5), (4, 7)})}
 
 
@@ -82,7 +83,9 @@ def placement_entries(p) -> list:
 def _laid_out(map_id: str, key: tuple) -> Board:
     bonuses: dict = {}
     for x, y, bonus in key:
-        bonuses.setdefault((x, y), []).append(json.loads(bonus))
+        b = json.loads(bonus)
+        if b["type"] != H_KIND:                            # (the H hexes of a layout pay nothing: covering one is a rule of the map, `map_rules.hollywood_hexes`)
+            bonuses.setdefault((x, y), []).append(b)
     return dataclasses.replace(board(map_id), bonuses=bonuses)
 
 

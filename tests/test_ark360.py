@@ -7,10 +7,10 @@ import pytest
 from ark_nova import data
 from ark_nova.engine import ark360, map_select
 from ark_nova.engine.actions import Action
-from ark_nova.engine.board import board, board_of, placement_entries
+from ark_nova.engine.board import board, board_of, hex_distance, neighbours, placement_entries
 from ark_nova.engine.build_action import placement_bonuses
 from ark_nova.engine.game import IllegalAction, apply, legal_actions, new_game
-from ark_nova.engine.map_rules import kiosk_hexes_covered
+from ark_nova.engine.map_rules import hollywood_hexes, kiosk_hexes_covered
 from ark_nova.engine.rng import Rng
 from ark_nova.engine.state import Building, GameState, PlayerState
 
@@ -37,15 +37,14 @@ def test_the_whole_roster_is_playable_and_the_maps_with_provisional_rules_say_so
     every_map = [m["id"] for m in data.maps() if m.get("geometry")]
     assert sorted(m for m in every_map if ark360.applicable(m)) == sorted(PLAYABLE)                         # 1-14, the "a" versions and T1: all but the beginner maps 0 and A
     assert {m for m in every_map if not ark360.applicable(m)} == {"0", "A"}
-    assert set(cfg["rules_to_come"]) == {"3", "3a", "7", "7a", "8", "8a", "13"} and set(cfg["rules_to_come"]) <= set(PLAYABLE)
+    assert set(cfg["rules_to_come"]) == {"3", "3a", "7", "7a"} and set(cfg["rules_to_come"]) <= set(PLAYABLE)       # (8 / 8a: `map_special.h`, 12: `map_special.bonus_areas` are written)
+    assert set(cfg["map_special"]) == {"8", "8a", "12"}
     for m in ("3", "3a"):
         assert ark360.rules(m)["max_adjacent_pairs"] == 99                                                  # provisional: no adjacent-pairs limit (the common one cannot be met with 18 / 19 bonuses)
-    assert ark360.rules("8")["min_distinct_y"] == 7 and all("hollywood_h" in ark360.rules(m)["forbidden_special_kinds"] for m in ("8", "8a"))
+    assert ark360.rules("8")["min_distinct_y"] == 7
     for m in ("3", "3a", "8", "8a"):                                                                        # (these four get a layout from the game's own draw too)
         layout = ark360.layout_for(m, 11)
         assert ark360.check_layout(m, layout) == []
-    h = {(s["x"], s["y"]) for s in data.map_by_id("8")["geometry"]["special_hexes"] if s["kind"] == "hollywood_h"}
-    assert h and not any((e["x"], e["y"]) in h for e in ark360.layout_for("8", 3))                          # no bonus on an H hex for now
 
 
 def test_a_bad_config_is_refused():
@@ -271,3 +270,58 @@ def test_the_one_hex_apart_limit_is_off_for_every_map_and_a_number_brings_it_bac
     off["layout"]["max_one_hex_apart_pairs"] = -1
     with pytest.raises(ark360.Ark360Error):
         ark360.check_config(off)
+
+
+def _h(layout):
+    return [(e["x"], e["y"]) for e in layout if e["bonus"]["type"] == "hollywood_h"]
+
+
+@pytest.mark.parametrize("map_id", ["8", "8a"])
+def test_the_h_hexes_of_the_hollywood_maps_are_drawn_two_apart_and_pay_no_placement_bonus(map_id):
+    for seed in range(60):
+        layout = ark360.layout_for(map_id, seed)
+        h = _h(layout)
+        assert len(h) == 3 and ark360.check_layout(map_id, layout) == []
+        assert all(hex_distance(a, b) >= 2 for i, a in enumerate(h) for b in h[i + 1:])
+        assert len({(e["x"], e["y"]) for e in layout}) == len(layout)                                   # (an H does not share a hex with a bonus)
+        p = PlayerState(seat=0, map_id=map_id, bonus_layout=layout)
+        assert hollywood_hexes(p) == h and not any(c in board_of(p).bonuses for c in h)                 # the board pays nothing for them
+    assert len({tuple(_h(ark360.layout_for(map_id, s))) for s in range(20)}) > 5                         # (they move)
+    # an H has no pentagon: it is not among the bonus hexes that Excavation Site (S271, all covered) and the other endgame cards count, and it does not make
+    # a border hex a bonus hex for the Archaeologist (S221): both read `board.bonuses`, which holds no H (printed or in a layout)
+    assert not any(c in board(map_id).bonuses for c in hollywood_hexes(PlayerState(seat=0, map_id=map_id)))
+    printed = PlayerState(seat=0, map_id=map_id)
+    assert len(hollywood_hexes(printed)) == 3 and hollywood_hexes(printed) != h                         # the printed ones without a layout
+    crowded = copy.deepcopy(layout)
+    near = next(c for c in neighbours(h[0]) if c in board(map_id).cells)
+    next(e for e in crowded if (e["x"], e["y"]) == h[1]).update(x=near[0], y=near[1])
+    assert any("closer than 2" in p for p in ark360.check_layout(map_id, crowded))
+
+
+def test_the_binder_of_map_12_lies_in_the_northwest_and_southeast_or_the_northeast_and_southwest():
+    areas = ark360.special("12")["bonus_areas"]["areas"]
+    where = lambda c: next(n for n, cs in areas.items() if list(c) in cs)
+    seen = set()
+    for seed in range(80):
+        layout = ark360.layout_for("12", seed)
+        assert ark360.check_layout("12", layout) == []
+        pair = tuple(sorted(where((e["x"], e["y"])) for e in layout if e["bonus"]["type"] == "conceal"))
+        assert pair in {("NW", "SE"), ("NE", "SW")}
+        assert all(board("12").terrain[(e["x"], e["y"])] == "plain" for e in layout)                    # (no bonus on rock or water)
+        seen.add(pair)
+    assert len(seen) == 2
+    wrong = ark360.layout_for("12", 1)
+    marks = [e for e in wrong if e["bonus"]["type"] == "conceal"]
+    marks[0].update(x=1, y=0)                                                                           # both in the northwest
+    marks[1].update(x=1, y=2)
+    assert any("not one of the allowed pairs" in p for p in ark360.check_layout("12", wrong))
+
+
+def test_the_view_of_a_layout_draws_the_h_hexes_as_special_hexes():
+    from ark_nova.replay.view import map_view
+    layout = ark360.layout_for("8", 3)
+    v = map_view("8", layout)
+    assert [(s["x"], s["y"]) for s in v["special_hexes"] if s["kind"] == "hollywood_h"] == _h(layout)
+    assert all(e["bonus"]["type"] != "hollywood_h" for e in v["placement_bonuses"]) and len(v["placement_bonuses"]) == 7
+    printed = [(s["x"], s["y"]) for s in map_view("8")["special_hexes"] if s["kind"] == "hollywood_h"]
+    assert printed == [(1, 10), (4, 11), (6, 9)]

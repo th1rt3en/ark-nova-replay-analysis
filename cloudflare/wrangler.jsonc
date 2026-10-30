@@ -6,7 +6,9 @@
     "durable_objects": {
         "bindings": [
             { "name": "TABLE", "class_name": "Table" },
-            { "name": "COUNTER", "class_name": "Counter" }
+            { "name": "COUNTER", "class_name": "Counter" },
+            { "name": "LOBBIES", "class_name": "Lobbies" },
+            { "name": "CHAT", "class_name": "Chat" }          // the chat of a lobby or a table (src/chat.ts)
         ]
     },
     "triggers": { "crons": ["0 0 * * *", "10 0 * * *"] },       // the daily mini game rollover (src/cron.ts)
@@ -15,7 +17,9 @@
         { "binding": "DB", "database_name": "ark-nova-accounts", "database_id": "59488c33-2727-4dfd-8626-af769ac40730", "migrations_dir": "migrations" }
     ],
     "migrations": [
-        { "tag": "v1", "new_sqlite_classes": ["Table", "Counter"] }
+        { "tag": "v1", "new_sqlite_classes": ["Table", "Counter"] },
+        { "tag": "v2", "new_sqlite_classes": ["Lobbies"] },
+        { "tag": "v3", "new_sqlite_classes": ["Chat"] }
     ],
     "vars": {
         // the Cloud Run service behind /api/* (empty: /api/* answers 502)

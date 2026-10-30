@@ -33,6 +33,8 @@ def load_env() -> dict:
 PRODUCTION_BRANCH = "main"
 COMING_SOON = {                                             # standalone page -> (title, text)
     "play.html": ("Play a live game", "Playing a live game against a friend is coming soon."),
+    "lobbies.html": ("Custom games", "Custom games and their lobbies are coming soon."),
+    "lobby.html": ("Custom game lobby", "Custom games and their lobbies are coming soon."),
     "sandbox.html": ("Sandbox mode", "The sandbox is coming soon."),
     "minigames/index.html": ("Mini games", "The daily mini games are coming soon."),
     "minigames/daily_hand.html": ("Daily starting hand", "The daily starting hand puzzle is coming soon."),

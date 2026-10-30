@@ -12,8 +12,11 @@ file is part of the rules fingerprint of `engine/version.py`):
 - `allowed_terrain`, `forbidden_special_kinds`: where a bonus may be put (the printed bonuses of the standard maps are on plain hexes only, none on a flag or a feature);
 - `search_steps`, `search_restarts`: the effort of the search; `excluded_maps`: maps that never get this mode; `study_seconds`, `time_control`: the format of the game;
 - `map_overrides`: `{map id: {layout key: number}}`, rules of one map that differ from the ones above (map 2a has 7 bonuses, so it asks for 7 rows instead of 8);
-- `rules_to_come`: `{map id: text}`, the maps whose own rules are not written yet (3 / 3a / 7 / 7a: their own bonus rules; 8 / 8a: the H hexes; 13: the binder bonus). They are all drawn: with the common
-  rules or, where those cannot lay out the map, with the provisional rules of `map_overrides` (3 / 3a: no pair limits, 8: 7 rows, 8 / 8a: no bonus on an H hex). The text says which.
+- `rules_to_come`: `{map id: text}`, the maps whose own rules are not written yet (3 / 3a / 7 / 7a: their own bonus rules). They are all drawn: with the common
+  rules or, where those cannot lay out the map, with the provisional rules of `map_overrides` (3 / 3a: no adjacent-pairs limit). The text says which;
+- `map_special`: `{map id: {...}}`, bonuses that follow rules of their own. `h`: the H hexes of the Hollywood maps (8 / 8a: `hollywood_h` entries of the layout, not placement bonuses of the board:
+  they pay nothing, covering one reveals cards) are at least `min_distance` hexes from each other and may lie next to any other bonus; the rules above count the other bonuses only.
+  `bonus_areas` (map 12): the bonus `bonus` (the binder, `conceal`) lies in the areas of one of the `options` (a list of area pairs), one in each area, on a hex of the area's list that may hold a bonus.
 
 A layout is stored as a list of placement bonus entries (the format of `placement_bonuses` in the map geometry) in `PlayerState.bonus_layout`; `board.board_of(player)`
 reads it. The search uses `Rng` only and integers, so a layout is reproducible from the seed on any platform.
@@ -32,6 +35,8 @@ from ark_nova.engine.rng import Rng
 from ark_nova.engine.state import Phase, Prompt
 
 MODE = "ark360"
+H_KIND = "hollywood_h"                                  # the bonus type of an H entry of a layout (maps 8 / 8a)
+H_MAX_TRIES = 400
 CONFIG_PATH = Path(__file__).resolve().parents[1] / "data" / "ark360.json"
 SEED_OFFSET = 360360                                    # the layout has a stream of its own, so the decks keep their order
 STRAIGHT_GAPS = ((0, 4), (2, 2))                        # (|dx|, |dy|) of two hexes with exactly one hex between them on a straight line
@@ -61,6 +66,15 @@ def check_config(cfg: dict) -> None:
         raise Ark360Error("ark360.json: excluded_maps must be a list and study_seconds a number of seconds")
     if not all(isinstance(k, str) and isinstance(v, str) for k, v in (cfg.get("rules_to_come") or {}).items()):
         raise Ark360Error("ark360.json: rules_to_come maps a map id to a text")
+    for map_id, sp in (cfg.get("map_special") or {}).items():
+        h, areas = sp.get("h"), sp.get("bonus_areas")
+        if not set(sp) <= {"h", "bonus_areas"} or (h is None and areas is None):
+            raise Ark360Error(f"ark360.json: map_special[{map_id!r}] may have `h` and `bonus_areas`")
+        if h is not None and (not isinstance(h.get("min_distance"), int) or h["min_distance"] < 1):
+            raise Ark360Error(f"ark360.json: map_special[{map_id!r}].h.min_distance must be a whole number of 1 or more")
+        if areas is not None and not (isinstance(areas.get("bonus"), str) and isinstance(areas.get("areas"), dict) and isinstance(areas.get("options"), list)
+                                      and all(isinstance(o, list) and len(o) == 2 and set(o) <= set(areas["areas"]) for o in areas["options"]) and areas["options"]):
+            raise Ark360Error(f"ark360.json: map_special[{map_id!r}].bonus_areas needs `bonus`, `areas` ({{name: [[x, y], ...]}}) and `options` (pairs of area names)")
     tc = cfg.get("time_control") or {}
     if not isinstance(tc.get("start"), int) or not isinstance(tc.get("increment"), int):
         raise Ark360Error("ark360.json: time_control needs start and increment, in seconds")
@@ -90,6 +104,11 @@ def rules(map_id: str, cfg: dict | None = None) -> dict:
     return {**cfg["layout"], **(cfg.get("map_overrides") or {}).get(str(map_id), {})}
 
 
+def special(map_id: str, cfg: dict | None = None) -> dict:
+    """The special rules of one map (`map_special`): `h`, `bonus_areas`."""
+    return ((cfg or config()).get("map_special") or {}).get(str(map_id), {})
+
+
 def study_seconds(cfg: dict | None = None) -> int:
     return (cfg or config())["study_seconds"]
 
@@ -100,9 +119,19 @@ def time_control(cfg: dict | None = None) -> dict:
 
 # ---- where a bonus may be and what makes a layout valid ---------------------------------------------------------------------------------------
 
-def base_entries(map_id: str) -> list:
-    """The placement bonuses as the map prints them (copies)."""
-    return copy.deepcopy(data.map_by_id(map_id)["geometry"]["placement_bonuses"])
+def is_h(entry: dict) -> bool:
+    return entry["bonus"]["type"] == H_KIND
+
+
+def base_h(map_id: str) -> list:
+    """The H hexes the map prints (maps 8 / 8a) as layout entries."""
+    return [{"x": s["x"], "y": s["y"], "bonus": {"type": H_KIND, "value": 1}, "note": "H"}
+            for s in data.map_by_id(map_id)["geometry"]["special_hexes"] if s["kind"] == H_KIND]
+
+
+def base_entries(map_id: str, with_h: bool = False) -> list:
+    """The placement bonuses as the map prints them (copies); `with_h`: the H hexes of the map too."""
+    return copy.deepcopy(data.map_by_id(map_id)["geometry"]["placement_bonuses"]) + (base_h(map_id) if with_h else [])
 
 
 def candidates(map_id: str, cfg: dict | None = None) -> list:
@@ -166,20 +195,40 @@ def shortfalls(map_id: str, cells: list, cfg: dict | None = None) -> dict:
     return {k: v for k, v in out.items() if v > 0}
 
 
+def _area_cells(map_id: str, cfg: dict | None = None) -> dict:
+    """map 12: `{area name: [hexes of the area that may hold a bonus]}`."""
+    areas = special(map_id, cfg).get("bonus_areas")
+    if not areas:
+        return {}
+    ok = set(candidates(map_id, cfg))
+    return {name: [tuple(c) for c in cells if tuple(c) in ok] for name, cells in areas["areas"].items()}
+
+
 def check_layout(map_id: str, entries: list, cfg: dict | None = None) -> list:
-    """What is wrong with a layout (a list of texts; empty = valid): the bonuses must be the map's own (same number, same kinds), on hexes that may hold one, one to a hex,
-    and the rules of the mode must hold."""
+    """What is wrong with a layout (a list of texts; empty = valid): the bonuses must be the map's own (same number, same kinds, the H hexes of maps 8 / 8a among them), on hexes that
+    may hold one, one to a hex, and the rules of the mode must hold (the H hexes and the binder have rules of their own)."""
     cfg = cfg or config()
     problems = []
     key = lambda e: json.dumps({"bonus": e["bonus"], "note": e.get("note")}, sort_keys=True)
-    if sorted(key(e) for e in entries) != sorted(key(e) for e in base_entries(map_id)):
+    if sorted(key(e) for e in entries) != sorted(key(e) for e in base_entries(map_id, with_h=True)):
         problems.append("the bonuses are not the map's own")
     cells = [(e["x"], e["y"]) for e in entries]
     if len(set(cells)) != len(cells):
         problems.append("two bonuses on one hex")
     allowed = set(candidates(map_id, cfg))
     problems += [f"a bonus on ({x}, {y}), which may not hold one" for x, y in cells if (x, y) not in allowed]
-    problems += [f"{name}: {v} too many / few" for name, v in shortfalls(map_id, cells, cfg).items()]
+    normal = [(e["x"], e["y"]) for e in entries if not is_h(e)]
+    problems += [f"{name}: {v} too many / few" for name, v in shortfalls(map_id, normal, cfg).items()]
+    h = [(e["x"], e["y"]) for e in entries if is_h(e)]
+    rule = special(map_id, cfg).get("h")
+    if rule:
+        problems += [f"the H hexes {a} and {b} are closer than {rule['min_distance']}" for k, a in enumerate(h) for b in h[k + 1:] if hex_distance(a, b) < rule["min_distance"]]
+    areas = special(map_id, cfg).get("bonus_areas")
+    if areas:
+        where = _area_cells(map_id, cfg)
+        found = sorted(next((n for n, cs in where.items() if (e["x"], e["y"]) in cs), "?") for e in entries if e["bonus"]["type"] == areas["bonus"])
+        if not any(found == sorted(o) for o in areas["options"]):
+            problems.append(f"the {areas['bonus']} bonuses are in the areas {found}, which is not one of the allowed pairs")
     return problems
 
 
@@ -209,36 +258,67 @@ def _cost(map_id: str, n: int, cfg: dict):
     return cost
 
 
+def _draw_h(map_id: str, rng: Rng, taken: set, cand: list, cfg: dict) -> list:
+    """The cells of the H hexes: on free hexes that may hold a bonus, at least `min_distance` from each other (any distance to the other bonuses)."""
+    count = len(base_h(map_id))
+    rule = special(map_id, cfg).get("h")
+    if not count:
+        return []
+    far = rule["min_distance"] if rule else 1
+    free = [c for c in cand if c not in taken]
+    for _ in range(H_MAX_TRIES):
+        rng.shuffle(free)
+        chosen: list = []
+        for c in free:
+            if all(hex_distance(c, o) >= far for o in chosen):
+                chosen.append(c)
+                if len(chosen) == count:
+                    return chosen
+    raise Ark360Error(f"no places found for the H hexes of map {map_id}")
+
+
 def generate(map_id: str, rng: Rng, cfg: dict | None = None) -> list:
     """A layout of the map's own bonuses that meets the rules, from `rng` (its state moves on). Raises Ark360Error when the search finds none: the rules are too tight
-    for the map (see `scripts/check_ark360.py`)."""
+    for the map (see `scripts/check_ark360.py`). The H hexes of maps 8 / 8a come last, drawn on the hexes the bonuses left; the binder of map 12 lies in two areas first."""
     cfg = cfg or config()
     if not applicable(map_id, cfg):
         raise Ark360Error(f"the mode cannot be played on map {map_id}")
     lay = rules(map_id, cfg)
+    areas = special(map_id, cfg).get("bonus_areas")
     entries = base_entries(map_id)
     n = len(entries)
     cost = _cost(map_id, n, cfg)
     cand = candidates(map_id, cfg)
+    pinned = [e for e in entries if areas and e["bonus"]["type"] == areas["bonus"]]                # (the binders: their hexes are drawn from the areas and stay)
+    loose = [e for e in entries if e not in pinned]
+    where = _area_cells(map_id, cfg) if areas else {}
     for _ in range(lay["search_restarts"]):
-        pool = list(cand)
+        fixed: list = []
+        if areas:
+            pair = areas["options"][rng.randbelow(len(areas["options"]))]
+            if len(pair) != len(pinned) or any(not where[a] for a in pair):
+                raise Ark360Error(f"map {map_id}: the binder areas do not fit the map")
+            fixed = [where[a][rng.randbelow(len(where[a]))] for a in pair]
+        pool = [c for c in cand if c not in fixed]
         rng.shuffle(pool)
-        cells, free = pool[:n], pool[n:]
-        c = cost(cells)
+        k = len(loose)
+        cells, free = pool[:k], pool[k:]
+        c = cost(fixed + cells)
         for _ in range(lay["search_steps"]):
             if c == 0:
                 break
-            i, j = rng.randbelow(n), rng.randbelow(len(free))
+            i, j = rng.randbelow(k), rng.randbelow(len(free))
             old = cells[i]
             cells[i] = free[j]
-            nc = cost(cells)
+            nc = cost(fixed + cells)
             if nc <= c or (nc == c + 1 and rng.randbelow(WORSE_ODDS) == 0):
                 free[j], c = old, nc
             else:
                 cells[i] = old
         if c == 0:
-            rng.shuffle(entries)                          # which bonus lies where is drawn too
-            placed = [{**e, "x": x, "y": y} for e, (x, y) in zip(entries, cells)]
+            rng.shuffle(loose)                            # which bonus lies where is drawn too
+            placed = [{**e, "x": x, "y": y} for e, (x, y) in zip(loose, cells)] + [{**e, "x": x, "y": y} for e, (x, y) in zip(pinned, fixed)]
+            placed += [{**h, "x": x, "y": y} for h, (x, y) in zip(base_h(map_id), _draw_h(map_id, rng, set(cells) | set(fixed), cand, cfg))]
             return sorted(placed, key=lambda e: (e["y"], e["x"]))
     raise Ark360Error(f"no layout found for map {map_id}: the rules in data/ark360.json are too tight for it")
 

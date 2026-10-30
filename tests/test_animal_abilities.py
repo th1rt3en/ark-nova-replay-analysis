@@ -1,8 +1,10 @@
 """Animal abilities (engine/animal_abilities.py), each one on a constructed zoo. The logs check the same rules in test_engine_turn."""
+import pytest
+
 from ark_nova import data
 from ark_nova.engine import animal_abilities as ab, animals_action as aa
 from ark_nova.engine.actions import Action
-from ark_nova.engine.game import apply, legal_actions
+from ark_nova.engine.game import IllegalAction, apply, legal_actions
 from ark_nova.engine.state import Building, Phase, Token
 
 from tests.test_engine_turn import _animals_state
@@ -385,6 +387,50 @@ def test_hypnosis_lets_the_player_take_a_card_of_the_opponent_at_strength_1_to_3
     s2 = _play(_start(s2), "A485", 6, 5)
     s2 = _resolve(s2, **{"apply": "hypnosis"})
     assert "extra" not in s2.current_action or not s2.current_action.get("extra")
+
+
+def _at_hypnosis(appeal=5, x_tokens=0):
+    s = _zoo("A485")
+    s.players[0].buildings.append(Building(id=3, type="reptile-house", x=6, y=5))
+    s.players[1].appeal = appeal
+    s.players[0].x_tokens = x_tokens
+    s = _play(_start(s), "A485", 6, 5)
+    s = _resolve(s, **{"apply": "hypnosis"})
+    while s.prompt.kind == "effects":
+        s = apply(s, Action(0, "skip_effect", {"index": 0}))
+    return apply(s, Action(0, "finish_animals", {})) if s.prompt.kind == "animals_play" else s
+
+
+def test_hypnosis_card_can_be_put_back_for_an_x_token_only_for_the_first_three_cards():
+    s = _at_hypnosis(x_tokens=2)
+    cards = [c.type for c in s.players[1].action_cards]
+    puts = [a for a in legal_actions(s) if a.kind == "skip_action"]
+    assert {a.args["type"] for a in puts} == set(cards[:3]) and all(a.args["hypnosis"] for a in puts) and len(puts) == 3
+    mine = [c.type for c in s.players[0].action_cards]
+    s = apply(s, Action(0, "skip_action", {"type": cards[2], "hypnosis": True}))
+    assert s.players[0].x_tokens == 3 and [c.type for c in s.players[0].action_cards] == mine                # the own cards stay as they are
+    assert [c.type for c in s.players[1].action_cards] == [cards[2], cards[0], cards[1], cards[3], cards[4]]
+    assert s.current_action is None and s.active_player == 1                                                # the turn is over
+    s = _at_hypnosis(x_tokens=2)
+    with pytest.raises(IllegalAction):
+        apply(s, Action(0, "skip_action", {"type": cards[3], "hypnosis": True}))                           # the fourth card is out of reach
+
+
+def test_hypnosis_put_back_gives_no_x_token_above_five_and_clears_venom_and_constriction_but_not_multiplier():
+    s = _at_hypnosis(x_tokens=5)
+    card = s.players[1].action_cards[1]
+    card.tokens = ["Venom", "Constriction", "Multiplier"]
+    s = apply(s, Action(0, "skip_action", {"type": card.type, "hypnosis": True}))
+    assert s.players[0].x_tokens == 5
+    back = s.players[1].action_cards[0]
+    assert back.type == card.type and back.tokens == ["Multiplier"]                                           # the Multiplier token is not used
+
+
+def test_hypnosis_put_back_is_offered_only_where_hypnosis_is():
+    s = _at_hypnosis(appeal=0)                                                                              # the opponent is protected: no Hypnosis prompt
+    assert not any(a.kind == "skip_action" and a.args.get("hypnosis") for a in legal_actions(s))
+    with pytest.raises(IllegalAction):
+        apply(s, Action(0, "skip_action", {"type": s.players[1].action_cards[0].type, "hypnosis": True}))
 
 
 def test_mark_puts_a_cube_on_a_display_animal_with_payment_and_handover():

@@ -262,8 +262,9 @@ def _prompt_actions(state: GameState) -> list[Action]:
         if pr.args.get("hypnosis"):                              # one of the first 3 cards of the other player
             return ([Action(p.seat, "choose_action_card", {"type": c.type, "spend": k, "hypnosis": True})
                      for c in state.players[1 - p.seat].action_cards[:3] for k in range(0, p.x_tokens + 1)]
+                    + [Action(p.seat, "skip_action", {"type": c.type, "hypnosis": True}) for c in state.players[1 - p.seat].action_cards[:3]]       # (put it back on slot 1 for an X token)
                     + [Action(p.seat, "skip_extra", {})])
-        chosen = [Action(p.seat, "choose_action_card", {"type": c.type, "spend": k})
+        chosen =[Action(p.seat, "choose_action_card", {"type": c.type, "spend": k})
                   for c in p.action_cards if only is None or c.type in only for k in range(0, p.x_tokens + 1)]
         if map_rules.t1_discard_possible(p):                      # map T1: once a turn a hand card is discarded for +1 strength
             chosen += [Action(p.seat, "choose_action_card", {"type": c.type, "spend": k, "t1": h})
@@ -723,7 +724,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     else:
         for b in gains:
             apply_placement_bonus(state, seat, b)
-    for _ in range(sum(1 for c in cells if c in map_rules.hollywood_hexes(p.map_id))):      # maps 8 / 8a: covering an H reveals cards until the first sponsor, which joins the hand (an effect of its own: the order with the other draws is the player's)
+    for _ in range(sum(1 for c in cells if c in map_rules.hollywood_hexes(p))):      # maps 8 / 8a: covering an H reveals cards until the first sponsor, which joins the hand (an effect of its own: the order with the other draws is the player's)
         bonuses.defer(state, {"kind": "search_sponsor", "optional": False, "player": seat})
     if "S221" in p.sponsors and "S280" not in p.sponsors:               # Archeologist: every border space with a bonus that is gained gives one more free placement bonus of the player's choice
         for _ in range(sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) * (2 if double else 1)):
@@ -944,11 +945,14 @@ def _has_moves(state: GameState, action: Action) -> bool:
 def _skip_action(state: GameState, action: Action) -> None:
     """Decline to perform an action: the chosen card still goes to slot 1 and the player gets 1 X token (at most 5)."""
     p = state.players[action.player]
+    if action.args.get("hypnosis"):
+        _put_back_hypnotised(state, action)
+        return
     idx = next((i for i, c in enumerate(p.action_cards) if c.type == action.args["type"]), None)
     if idx is None:
         raise IllegalAction("no such action card")
     card = p.action_cards[idx]
-    again = int(action.args.get("repeat", 0))                    # Multiplier: put the card back once more per token, an X token each
+    again =int(action.args.get("repeat", 0))                    # Multiplier: put the card back once more per token, an X token each
     if not 0 <= again <= card.tokens.count("Multiplier"):
         raise IllegalAction("not that many Multiplier tokens on the card")
     for _ in range(again):
@@ -960,6 +964,30 @@ def _skip_action(state: GameState, action: Action) -> None:
     venom.remove_tokens(p, card, state=state)
     state.current_action = {"seat": p.seat, "type": card.type, "slot": idx + 1, "strength": 0, "skipped": True}
     _end_turn(state)
+
+
+def _put_back_hypnotised(state: GameState, action: Action) -> None:
+    """Hypnosis, declined: the opponent's card (one of the first 3) goes to its owner's slot 1 without being performed, its Venom / Constriction
+    tokens go, and the hypnotiser gets 1 X token (at most 5). No Multiplier token is used. The turn goes on as after an extra action."""
+    args = state.prompt.args
+    if not args.get("hypnosis"):
+        raise IllegalAction("no hypnosis now")
+    p = state.players[action.player]
+    owner = state.players[1 - p.seat]
+    idx = next((i for i, c in enumerate(owner.action_cards[:3]) if c.type == action.args["type"]), None)
+    if idx is None:
+        raise IllegalAction("no such action card")
+    x_before = p.x_tokens
+    p.x_tokens = min(MAX_X_TOKENS, p.x_tokens + 1)
+    gamestats.xtokens(state, p.seat, p.x_tokens - x_before)
+    gamestats.count(state, p.seat, "passes")
+    _to_slot_1(owner, idx, hypnosis=True)
+    carry = args.get("carry") or {}
+    state.current_action = None
+    if carry.get("after"):                                       # the Clever of the first action is still to come
+        effects.open_prompt(state, p.seat, list(carry["after"]), {"kind": "end", "seat": p.seat, "extra": carry.get("extra")})
+        return
+    _after_action(state, p.seat, carry.get("extra"))
 
 
 def _take_cards(state: GameState, action: Action) -> None:
@@ -1093,11 +1121,17 @@ def _end_turn(state: GameState) -> None:
     _complete(state, seat, owner, card.type, after, extra)
 
 
+def _to_slot_1(owner, i: int, hypnosis: bool) -> None:
+    """The card at index i goes to slot 1 (the cards before it move down). A hypnotised card of the other player loses its Venom / Constriction
+    tokens too, without counting as the owner's Venom removal."""
+    if hypnosis:
+        venom.remove_tokens(owner, owner.action_cards[i], owner_paid=False)
+    owner.action_cards = [owner.action_cards[i]] + owner.action_cards[:i] + owner.action_cards[i + 1:]
+
+
 def _complete(state: GameState, seat: int, owner, card_type: str, after: list, extra) -> None:
     i = next(i for i, c in enumerate(owner.action_cards) if c.type == card_type)
-    if state.current_action is not None and state.current_action.get("hypnosis"):
-        venom.remove_tokens(owner, owner.action_cards[i], owner_paid=False)            # the Venom / Constriction tokens of the hypnotised card go at the end
-    owner.action_cards = [owner.action_cards[i]] + owner.action_cards[:i] + owner.action_cards[i + 1:]
+    _to_slot_1(owner, i, bool(state.current_action is not None and state.current_action.get("hypnosis")))
     state.current_action = None
     venom.end_of_action(state, seat)
     if after:                                        # effects that wait for the end of the action (Expert on Africa, marks)

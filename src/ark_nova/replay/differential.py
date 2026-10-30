@@ -906,7 +906,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 continue
             rep.turns += 1
             actor = next((str(e.args["player_id"]) for e in events if e.type in ("chooseActionCard", "actionCardCleanup")), markers[k][1])
-            if actor != markers[k][1]:           # e.g. a turn where BGA logs the other player's card (odd skipped turns)
+            if actor != markers[k][1] and not any(e.type == "chooseActionCard" for e in events):          # Hypnosis put back for an X token: only the cleanup of the opponent's card (`turn_actions` checks the X token)
+                actor = markers[k][1]
+            if actor != markers[k][1]:         # e.g. a turn where BGA logs the other player's card (odd skipped turns)
                 rep.skipped["actor differs from the turn marker"] += 1
                 continue
             seat = seat_of[actor]
@@ -922,6 +924,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             acts = plan.actions
             state = copy.deepcopy(carry[1] if carry[0] == k else snaps[k])
             _fit_income_slots(state, events, seat_of)
+            if any(a_.kind == "skip_action" and a_.args.get("hypnosis") for a_ in acts) and not (
+                    state.prompt is not None and state.prompt.kind == "choose_action_card" and state.prompt.args.get("hypnosis") and state.prompt.player == seat):
+                rep.skipped["actor differs from the turn marker"] += 1          # (the engine is not waiting at a Hypnosis prompt: the old reason for these turns)
+                continue
             if any(a_.kind == "choose_action_card" and a_.args.get("t1") for a_ in acts) and state.players[seat].map_id == "T1":
                 state.players[seat].flags["bonus_used"] = state.players[seat].flags.get("bonus_used", 0) | 1          # (the T1 discard needs the card space of the notepad)
             if any(a.kind == "choose_action_card" and a.args["type"] == "build" for a in acts) and not state.config.map_known[seat]:

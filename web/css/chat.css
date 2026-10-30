@@ -1,0 +1,19 @@
+/* The chat (js/chat.js): in the sidebar of the play page (pane "Chat") and under the seats of a lobby. */
+.chatwrap { display: flex; flex-direction: column; gap: .4rem; min-height: 0; flex: 1 1 auto; }
+.chatlist { flex: 1 1 auto; min-height: 9rem; max-height: 60vh; overflow-y: auto; border: 1px solid rgba(0,0,0,.25); border-radius: 8px; padding: .4rem .5rem; background: rgba(255,255,255,.7); color: #2b1d12; font-size: .9rem; line-height: 1.35; overflow-wrap: anywhere; }
+.chatmsg { padding: .1rem 0; }
+.chattime { opacity: .55; font-size: .75rem; }
+.chatname { font-weight: 700; }
+.chatmsg.seat0 .chatname { color: #b3261e; }
+.chatmsg.seat1 .chatname { color: #1a5fb4; }
+.chatmsg.spectator .chatname { color: #5d4a1f; font-weight: 600; }
+.chattag { opacity: .6; font-size: .8rem; }
+.chatform { display: flex; gap: .4rem; }
+.chatinput { flex: 1 1 auto; min-width: 0; font: inherit; padding: .35rem .5rem; border: 1px solid #2b1d12; border-radius: 6px; }
+.chatsend { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #2e7d32; background: #2e7d32; color: #fff; padding: .35rem .8rem; }
+.chatsend:disabled { opacity: .5; cursor: default; }
+.chatnote { margin: 0; color: #b3261e; font-size: .85rem; }
+.chatnote[hidden] { display: none; }
+.chatnote .linkbtn { background: none; border: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+#tabChat .badge { display: inline-block; min-width: 1.1em; padding: 0 .3em; margin-left: .3em; border-radius: 999px; background: #e9662a; color: #fff; font-size: .75em; line-height: 1.4; text-align: center; }
+#tabChat .badge[hidden] { display: none; }

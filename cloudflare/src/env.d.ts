@@ -3,6 +3,8 @@ declare namespace Cloudflare {
     interface Env {
         TABLE: DurableObjectNamespace<import("./table").Table>;
         COUNTER: DurableObjectNamespace<import("./counter").Counter>;
+        LOBBIES: DurableObjectNamespace<import("./lobbies").Lobbies>;
+        CHAT: DurableObjectNamespace<import("./chat").Chat>;
         DB: D1Database;
         INTERNAL_SECRET: string;
         CLOUD_RUN_URL: string;

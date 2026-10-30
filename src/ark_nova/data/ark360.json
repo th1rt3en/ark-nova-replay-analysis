@@ -19,17 +19,29 @@
         "2a": {"min_distinct_y": 7},
         "3": {"max_adjacent_pairs": 99},
         "3a": {"max_adjacent_pairs": 99},
-        "8": {"min_distinct_y": 7, "forbidden_special_kinds": ["upgrade_flag", "observation_tower", "gate", "restaurant", "map_center", "hollywood_h"]},
-        "8a": {"forbidden_special_kinds": ["upgrade_flag", "observation_tower", "gate", "restaurant", "map_center", "hollywood_h"]}
+        "8": {"min_distinct_y": 7}
+    },
+    "map_special": {
+        "8": {"h": {"min_distance": 2}},
+        "8a": {"h": {"min_distance": 2}},
+        "12": {
+            "bonus_areas": {
+                "bonus": "conceal",
+                "areas": {
+                    "NW": [[0, 1], [0, 3], [1, 0], [1, 2], [1, 4], [2, 1], [2, 3]],
+                    "NE": [[6, 1], [6, 3], [7, 0], [7, 2], [7, 4], [8, 1], [8, 3]],
+                    "SW": [[0, 9], [0, 11], [1, 8], [1, 10], [1, 12]],
+                    "SE": [[6, 9], [6, 11], [7, 8], [7, 10], [7, 12], [8, 9], [8, 11]]
+                },
+                "options": [["NW", "SE"], ["NE", "SW"]]
+            }
+        }
     },
     "rules_to_come": {
         "3": "provisional: the common rules without the adjacent-pairs limit (19 bonuses); its own bonus rules to come",
         "3a": "provisional: the common rules without the adjacent-pairs limit (18 bonuses); its own bonus rules to come",
         "7": "common rules for now; its own bonus rules (13 bonuses) to come",
-        "7a": "common rules for now; its own bonus rules (12 bonuses) to come",
-        "8": "provisional: 7 rows, no bonus on an H hex; special rules for the H hexes to come",
-        "8a": "provisional: no bonus on an H hex; special rules for the H hexes to come",
-        "13": "common rules for now; special rules for the binder bonus to come"
+        "7a": "common rules for now; its own bonus rules (12 bonuses) to come"
     },
     "study_seconds": 300,
     "time_control": {"start": 600, "increment": 30}

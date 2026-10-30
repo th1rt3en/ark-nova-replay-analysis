@@ -30,7 +30,7 @@ const hexPts = (cx, cy, r, start = 30) => [0, 1, 2, 3, 4, 5].map((i) => { const 
 /* ================= the five options ================= */
 const OPTS = [
   { id: 'replay', name: 'Replay', c: '#1D8AA1', d: '#12667A', short: 'Step through a finished BGA game', desc: 'Step through a finished 2-player BGA game move by move, and fork it at any point to try another line.', cta: 'Open', href: '/replay.html', pin: [650, 530], s: 1.28, lab: [650, 776], card: [150, 512] },
-  { id: 'custom', name: 'Custom game', c: '#E9662A', d: '#B44A19', short: 'Play a game with a friend', desc: 'Play a real game against a friend on the engine: a link for each seat, hidden cards stay hidden, and every game is recorded for a replay.', cta: 'Create a game', href: '/play.html', note: '2 players', pin: [960, 264], s: 1.4, lab: [960, 606], card: [1100, 118] },
+  { id: 'custom', name: 'Custom game', c: '#E9662A', d: '#B44A19', short: 'Open a lobby or join one', desc: 'Play a real game against another player on the engine: open a lobby or join one from the list, invite a friend who is online, hidden cards stay hidden and every game is recorded for a replay.', cta: 'Open the lobbies', href: '/lobbies.html', note: 'Needs an account · 2 players', pin: [960, 264], s: 1.4, lab: [960, 606], card: [1100, 118] },
   { id: 'sandbox', name: 'Sandbox', c: '#E0A02A', d: '#A9740F', short: 'Set up and edit any board', desc: 'Set up any board and edit the game whenever you like: cards, money, partner zoos, workers. The other seat only passes.', cta: 'Start a sandbox', href: '/sandbox.html', pin: [1270, 530], s: 1.28, lab: [1270, 776], card: [1398, 470] },
   { id: 'mini', name: 'Mini games', c: '#8058C4', d: '#5C3B98', short: 'Daily puzzles on real games', desc: 'Short daily puzzles on real finished games: guess what a player kept, or who is ahead.', cta: "Play today's puzzles", href: '/minigames/', note: 'New every day', pin: [318, 786], s: 1.28, lab: [318, 1000], card: [452, 806] },
   { id: 'editor', name: 'Map editor', c: '#3E9A55', d: '#2A6E3C', short: 'Design your own zoo map', desc: 'Design a zoo map: place rock and water hexes, placement bonuses and upgrade spaces on a blank board.', cta: 'Open the map editor', href: '/map_editor.html', pin: [1585, 806], s: 1.28, lab: [1585, 1000], card: [1410, 492] },
@@ -1489,11 +1489,8 @@ rose.addEventListener('click', () => {
 
 /* ================= the live game switch (as on the old start page) ================= */
 // The live game (Custom game) is switched off for now. Whoever knows the word can open it for this browser: type it where a table id goes and click Open.
-const LIVE_KEY = 'liveUnlocked', LIVE_WORD = 'ilovejdansp';
-let liveOpen = false;
 // the options that are coming soon (the production site sets the list before this script: window.ARK_COMING_SOON); the live game stays shut until its word is typed
-const off = (id) => (window.ARK_COMING_SOON || []).includes(id) || (id === 'custom' && !liveOpen);
-try { liveOpen = localStorage.getItem(LIVE_KEY) === '1'; } catch (e) { /* no storage */ }
+const off = (id) => (window.ARK_COMING_SOON || []).includes(id);       // (everywhere but the production site every option is open)
 
 /* ================= the ticket of the hovered / chosen option ================= */
 const ticket = document.getElementById('ticket');
@@ -1517,11 +1514,6 @@ function say(text, kind) { const m = document.getElementById('tkmsg'); if (!m) r
 async function lookup(e) {
   e.preventDefault();
   const q = document.getElementById('tki'), go = document.getElementById('tkgo');
-  if (q.value.trim().toLowerCase() === LIVE_WORD) {
-    try { localStorage.setItem(LIVE_KEY, '1'); } catch (err) { /* no storage */ }
-    liveOpen = true; q.value = ''; say('');
-    return;
-  }
   go.disabled = true; say('Checking the table…', 'loading');
   try {
     const res = await fetch('/api/lookup?q=' + encodeURIComponent(q.value));

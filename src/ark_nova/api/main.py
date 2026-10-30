@@ -149,7 +149,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.middleware("http")(rate_limit_middleware)
     # Features switched off (DISABLED_FEATURES): their public routes answer "coming soon". The replay and the fork stay; the internal routes (the daily rollover) keep working.
-    gated = {"live": ("/api/games", "/api/live"), "accounts": ("/api/auth", "/api/players", "/api/leaderboard"), "minigames": ("/api/minigames",), "sandbox": ("/api/sandbox",)}
+    gated = {"live": ("/api/games", "/api/live", "/api/lobbies", "/api/chat"), "accounts": ("/api/auth", "/api/players", "/api/leaderboard"), "minigames": ("/api/minigames",), "sandbox": ("/api/sandbox",)}
     blocked = tuple(path for name, paths in gated.items() if name in st.disabled_features for path in paths)
     if blocked:
         @app.middleware("http")
@@ -181,6 +181,17 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         from ark_nova.api.accounts import add_routes as add_account_routes
         from ark_nova.api.accounts import turnstile_verifier
         add_account_routes(app, accounts, [o.strip().rstrip("/") for o in st.allowed_origins.split(",") if o.strip()], st.turnstile_site_key, turnstile_verifier(st.turnstile_secret) if st.turnstile_secret and st.turnstile_site_key else None)
+    if live is not None and accounts is not None:                                  # the lobbies of the custom games need both the tables and the accounts
+        from ark_nova.api.lobbies import add_routes as add_lobby_routes
+        from ark_nova.live.lobbies import HttpLobbies, LobbyService, MemoryLobbies
+        # the lobbies live in the Worker's `Lobbies` Durable Object when the keeper is configured; otherwise (tests, the dev server) in memory
+        app.state.lobbies = LobbyService(live, HttpLobbies(st.live_keeper_url, st.internal_secret) if st.live_keeper_url and st.internal_secret else MemoryLobbies())
+        add_lobby_routes(app, app.state.lobbies, [o.strip().rstrip("/") for o in st.allowed_origins.split(",") if o.strip()])
+    if live is not None:                                                            # the chat of the tables (and, with the accounts, of the lobbies)
+        from ark_nova.api.chat import add_routes as add_chat_routes
+        from ark_nova.live.chat import ChatService, HttpChat, MemoryChat
+        app.state.chat = ChatService(live, getattr(app.state, "lobbies", None), HttpChat(st.live_keeper_url, st.internal_secret) if st.live_keeper_url and st.internal_secret else MemoryChat())
+        add_chat_routes(app, app.state.chat, [o.strip().rstrip("/") for o in st.allowed_origins.split(",") if o.strip()])
     if minigames is None:
         minigames = _default_minigames(app)
     app.state.minigames = minigames

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom games - Ark Nova Park</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/lobbies.css">
+</head>
+<body class="landing">
+<p class="small"><a href="/">&larr; Ark Nova Park</a></p>
+<main class="lobbies">
+<h1>Custom games</h1>
+<p class="muted">Open lobbies of games against another player. Joining or opening a lobby needs an account.</p>
+<div id="login" hidden class="banner"><span>Log in or sign up to open or join a lobby.</span><button type="button" class="go" id="loginbtn">Log in / Sign up</button></div>
+<div id="mine" hidden class="banner"><span>You are in a lobby.</span><button type="button" class="go" id="minebtn">Go to your lobby</button></div>
+
+<section id="listing">
+  <h2>Open lobbies</h2>
+  <div id="rows" aria-live="polite">Loading…</div>
+</section>
+
+<section id="creating">
+  <h2>Create your own lobby</h2>
+  <form class="create" id="createform">
+    <label>Game mode <select id="mode"></select></label>
+    <p class="hint" id="modehint"></p>
+    <label><input type="checkbox" id="mw" checked> Marine Worlds</label>
+    <label><input type="radio" name="kind" id="friendly" checked> Friendly</label>
+    <label><input type="radio" name="kind" id="rated"> Rated (counts for the ratings)</label>
+    <div><button type="submit" class="go" id="createbtn">Create lobby</button></div>
+  </form>
+  <p class="msg" id="msg" role="alert"></p>
+</section>
+</main>
+<script type="module" src="/js/lobbies.js"></script>
+<script type="module" src="/js/account.js"></script>
+<script type="module" src="/js/notify.js"></script>
+</body>
+</html>

@@ -133,7 +133,8 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
             if a.kind == "choose_action_card":
                 cards.setdefault(a.args["type"], []).append(a.args.get("spend", 0))
         out["cards"] = {t: sorted(set(v)) for t, v in cards.items()}
-        out["skip"] = sorted({a.args["type"] for a in acts if a.kind == "skip_action"})
+        out["skip"] = sorted({a.args["type"] for a in acts if a.kind == "skip_action" and not a.args.get("hypnosis")})
+        out["skip_hypnosis"] = sorted({a.args["type"] for a in acts if a.kind == "skip_action" and a.args.get("hypnosis")})      # (the opponent's card: not the same as the own put-back)
         if pr.args.get("only"):
             out["only"] = list(pr.args["only"])
         if pr.args.get("hypnosis"):

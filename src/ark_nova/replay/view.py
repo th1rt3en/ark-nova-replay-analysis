@@ -310,10 +310,15 @@ def map_view(map_id: str, layout: list | None = None) -> dict:
     m = data.map_by_id(map_id)
     geo = m["geometry"] or {}
     base = map_quirks.base_map_id(map_id)
+    special = geo.get("special_hexes", [])
+    if layout:                                                                  # (an Ark360 layout carries the H hexes of maps 8 / 8a too: they are special hexes of the picture)
+        special = [s for s in special if s["kind"] != "hollywood_h"] + [{"x": e["x"], "y": e["y"], "kind": "hollywood_h", "off_board": False, "note": e.get("note", "")}
+                                                                         for e in layout if e["bonus"]["type"] == "hollywood_h"]
+        layout = [e for e in layout if e["bonus"]["type"] != "hollywood_h"]
     return {"id": base, "name": m["name"], "image": f"/maps/map-{PICTURE_OF.get(base, base)}.jpg",
             "description": [t.strip() for t in (m.get("description") or []) if t and t.strip()],
             "hexes": geo.get("hexes", []), "placement_bonuses": layout or geo.get("placement_bonuses", []),
-            "special_hexes": geo.get("special_hexes", []), "bonus_slots": geo.get("bonus_slots", []),
+            "special_hexes": special, "bonus_slots": geo.get("bonus_slots", []),
             "association_bonuses": association.map_bonuses(base)}
 
 

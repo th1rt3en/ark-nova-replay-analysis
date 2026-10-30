@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="/css/table.css">
 <link rel="stylesheet" href="/css/parkposter.css">
 <link rel="stylesheet" href="/css/endstats.css">
+<link rel="stylesheet" href="/css/chat.css">
 </head>
 <body class="viewer">
 <section id="lobby" class="lobby" hidden>
@@ -46,6 +47,7 @@
       <div class="sbtabs" role="tablist">
         <button id="tabControl" class="sbtab on" type="button" role="tab" aria-selected="true">Control</button>
         <button id="tabLog" class="sbtab" type="button" role="tab" aria-selected="false">Log</button>
+        <button id="tabChat" class="sbtab" type="button" role="tab" aria-selected="false">Chat<span class="badge" hidden></span></button>
       </div>
       <div id="paneControl" class="sbpane">
       <header class="bar">
@@ -68,6 +70,9 @@
       </div>
       <div id="paneLog" class="sbpane" hidden>
         <ol id="moves" class="moves"></ol>
+      </div>
+      <div id="paneChat" class="sbpane" hidden>
+        <div id="chatroot" class="chatwrap"></div>
       </div>
     </aside>
   </div>
@@ -136,12 +141,6 @@
     return { node: stack('Kind of game', box), isRated: () => rated.checked && !rated.disabled };
   }
 
-  if (!game && store('liveUnlocked') !== '1') {                      // no game yet and the live mode is not open for this browser (seat links of a running game still work)
-    $('lobbytitle').textContent = 'Live games are coming soon';
-    $('lobbytext').textContent = 'This mode is not open yet.';
-    show();
-    return;
-  }
   if (!game) {                                                       // no game yet: make one
     $('lobbytext').textContent = 'Play a game against a friend. You get two links: keep one, send the other.';
     const mw = document.createElement('input'); mw.type = 'checkbox';
@@ -251,5 +250,6 @@
 })();
 </script>
 <script type="module" src="/js/account.js"></script>
+<script type="module" src="/js/notify.js"></script>
 </body>
 </html>

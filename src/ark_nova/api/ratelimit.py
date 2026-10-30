@@ -46,6 +46,6 @@ async def rate_limit_middleware(request: Request, call_next):
             return JSONResponse(status_code=413, content={"status": "too_large", "message": "That request is too large."})
     # only the API is limited (pages and pictures are static files); the health check and the socket-less polling of a live game are cheap but frequent, so they are exempt too
     path = request.url.path
-    if settings.rate_limit_enabled and path.startswith("/api/") and not path.startswith("/api/games/") and _limited(client_key(request), settings.rate_limit_per_minute):
+    if settings.rate_limit_enabled and path.startswith("/api/") and not path.startswith(("/api/games/", "/api/lobbies", "/api/chat")) and _limited(client_key(request), settings.rate_limit_per_minute):
         return JSONResponse(status_code=429, content={"status": "rate_limited", "message": "Too many requests: wait a moment."}, headers={"Retry-After": "30"})
     return await call_next(request)

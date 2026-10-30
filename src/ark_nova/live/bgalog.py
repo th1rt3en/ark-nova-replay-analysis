@@ -195,6 +195,11 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
             L.add(f"{who} pays {x} xtoken for increasing card strength")
         L.add(f"{who} chooses action card {ACTION_NAMES.get(c.type, c.type)}{LEVEL.get(c.level, '')} with strength {slot + 1 + x}")
         return
+    if k == "skip_action" and a.get("hypnosis"):
+        t = ACTION_NAMES.get(a.get("type"), str(a.get("type")))
+        L.add(f"{who} gains 1 xtoken (skipping a turn)")
+        L.add(f"{who} places action card {t} of the opponent at position 1 (finishing action)")
+        return
     if k == "skip_action":
         t = ACTION_NAMES.get(a.get("type"), str(a.get("type")))
         L.add(f"{who} gains 1 xtoken (skipping a turn)")

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lobby - Ark Nova Park</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/lobbies.css">
+<link rel="stylesheet" href="/css/chat.css">
+</head>
+<body class="landing">
+<p class="small"><a href="/lobbies.html">&larr; All lobbies</a></p>
+<main class="lobbies">
+<h1 id="title">Lobby</h1>
+<p class="muted" id="sub">Loading…</p>
+<div class="seats" id="seats"></div>
+<p class="declined" id="declined" hidden></p>
+<div class="actions" id="actions"></div>
+<p class="msg" id="msg" role="alert"></p>
+<section id="chatbox" hidden>
+  <h2>Chat</h2>
+  <div id="chat" class="chatwrap"></div>
+</section>
+</main>
+<script type="module" src="/js/lobby.js"></script>
+<script type="module" src="/js/account.js"></script>
+<script type="module" src="/js/notify.js"></script>
+</body>
+</html>

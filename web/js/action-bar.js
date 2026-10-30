@@ -274,13 +274,15 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     spent += +m[1];
   }
   const fa = FORK ? (cur.actions || []) : [];                           // the fork: the bar is the way to play (the engine's legal actions are compiled from the clicks)
-  const mayChoose = (type) => fa.some((x) => x.kind === 'choose_action_card' && x.args.spend === S.forkSpend && x.args.type === type);
-  const maySkip = (type) => fa.some((x) => x.kind === 'skip_action' && x.args.type === type);
+  const hyp = !!(o && o.hypnosis);                                       // Hypnosis: the cards to choose from (or to put back for an X token) are the first 3 of the other player
+  const cardsShown = hyp ? st.players[1 - seat].action_cards.slice(0, 3) : p.action_cards;
+  const mayChoose = (type) => fa.some((x) => x.kind === 'choose_action_card' && x.args.spend === S.forkSpend && x.args.type === type && !!x.args.hypnosis === hyp);
+  const maySkip = (type) => fa.some((x) => x.kind === 'skip_action' && x.args.type === type && !!x.args.hypnosis === hyp);
   if (FORK) spent += S.forkSpend;
   const who = el('span', 'who', S.replay.players[seat].name);
   who.style.color = seatText(seat);
-  bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : ' must choose an action card'));
-  p.action_cards.forEach((a, i) => {
+  bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : hyp ? " may use one of the opponent's first three action cards" : ' must choose an action card'));
+  cardsShown.forEach((a, i) => {
     const b = el('span', 'abtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
     b.title = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + ', strength ' + (i + 1 + spent) + ' (up to ' + (i + 1 + spent + p.x_tokens) + ' with X tokens)';
     b.append(pic(ACTION_ICON[a.type], 26), el('b', '', i + 1 + spent));
@@ -288,8 +290,8 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       b.classList.add('choosable');
       b.title = S.skipMode ? 'Put ' + ACTION_NAMES[a.type] + ' back to slot 1 and gain an X token' : 'Choose ' + ACTION_NAMES[a.type] + (S.forkSpend ? ', spending ' + S.forkSpend + ' X token' + (S.forkSpend === 1 ? '' : 's') : '');
       b.onclick = () => {
-        const pool = fa.filter((x) => (S.skipMode ? x.kind === 'skip_action' && x.args.type === a.type && !x.args.repeat
-                                                : x.kind === 'choose_action_card' && x.args.type === a.type && x.args.spend === S.forkSpend && !x.args.hypnosis && !x.args.t1));
+        const pool = fa.filter((x) => (S.skipMode ? x.kind === 'skip_action' && x.args.type === a.type && !x.args.repeat && !!x.args.hypnosis === hyp
+                                                : x.kind === 'choose_action_card' && x.args.type === a.type && x.args.spend === S.forkSpend && !!x.args.hypnosis === hyp && !x.args.t1));
         if (pool.length && !S.forkBusy) playFork(pool[0]);
       };
     } else if (FORK) b.classList.add('off');
@@ -319,7 +321,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   }
   bar.append(minus, x, plus);
   // or put one of the action cards back to slot 1 and gain an X token (not possible at the maximum of 5)
-  const canGain = FORK ? fa.some((x) => x.kind === 'skip_action') : o ? o.skip.length > 0 : p.x_tokens < 5;
+  const canGain = FORK ? fa.some((x) => x.kind === 'skip_action' && !!x.args.hypnosis === hyp) : o ? (hyp ? (o.skip_hypnosis || []).length > 0 : o.skip.length > 0) : p.x_tokens < 5;
   const gain = el('span', 'abtn gainx' + (canGain ? '' : ' off') + (FORK && S.skipMode ? ' on' : ''));
   if (FORK && canGain) {
     gain.classList.add('choosable');

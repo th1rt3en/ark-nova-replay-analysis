@@ -6,6 +6,8 @@ import { render } from './main.js';
 import { buildMoveList, go } from './playback.js';
 import { refreshBar } from './action-bar.js';
 import { playFork, renderForkMoves, warnIrreversible } from './fork.js';
+import { mountChat } from './chat.js';
+import { chatTab } from './sidebar.js';
 
 const P = S.play;
 
@@ -457,6 +459,11 @@ export function playHeadline() {                                             // 
 }
 export function initPlay() {
   document.title = 'Play ' + P.id + ' - Ark Nova Park';
+  if ($('chatroot') && !P.chat) {                                              // the chat of the table: the players write with their seat token, a spectator needs an account
+    let chat = null;
+    const onUnread = chatTab(() => chat);
+    chat = P.chat = mountChat($('chatroot'), { kind: 'tables', id: P.id, token: P.token, onUnread });
+  }
   const box = $('forkinfo');
   box.hidden = false;
   box.replaceChildren();

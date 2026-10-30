@@ -863,8 +863,13 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
     if not chose:                                       # the action was skipped: the card goes to slot 1 and gives an X token
         if xdelta not in (0, 1):
             return "unexplained X token change"
-        cleanup_order = next(e for e in events if e.type == "actionCardCleanup").order
-        return TurnPlan([Action(seat, "skip_action", {"type": cleanup_type})], [move_of[cleanup_order]], False, orders=[cleanup_order])
+        cleanup_event = next(e for e in events if e.type == "actionCardCleanup")
+        cleanup_order = cleanup_event.order
+        mine = {s: pid for pid, s in seat_of.items()}[seat]
+        hypnosis = str(cleanup_event.args.get("player_id")) != mine                  # Hypnosis, declined: the card of the other player goes to its slot 1 and the hypnotiser gets the X token
+        if hypnosis and xdelta != 1:
+            return "unexplained X token change"
+        return TurnPlan([Action(seat, "skip_action", {"type": cleanup_type, **({"hypnosis": True} if hypnosis else {})})], [move_of[cleanup_order]], False, orders=[cleanup_order])
     for sup in assoc.all_supports:                                           # a notepad bonus that leaves no trace: the keyword space (3) of the map (Clever, Pouch, Determination, Marketing ...), which is only
         if sup.args.get("bonus") is None:                                   # visible when it is used
             sup.args["bonus"] = {"slot": 3}

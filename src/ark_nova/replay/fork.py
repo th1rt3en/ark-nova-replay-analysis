@@ -81,6 +81,9 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         spend = args.pop("spend", 0)
         text = f"Choose {args.pop('type', '?').capitalize()}" + (f", spend {spend} X token{'s' if spend != 1 else ''}" if spend else "")
         return text + (", hypnosis" if args.pop("hypnosis", False) else "")
+    if k == "skip_action" and args.get("hypnosis"):
+        args.pop("hypnosis")
+        return f"Hypnosis: put the opponent's {str(args.pop('type', '?')).capitalize()} card back on slot 1 and gain an X token"
     if k == "skip_action":
         return f"Skip {str(args.pop('type', '?')).capitalize()}: put it on slot 1 and gain an X token" + (f" (repeat {args.pop('repeat')})" if "repeat" in args else "")
     if k == "place_building":
@@ -180,6 +183,9 @@ def narrate(before: GameState, action: Action, after: GameState, who: str) -> st
         slot = next((i for i, c in enumerate(p0.action_cards) if c.type == args.get("type")), 0)
         x = args.get("spend", 0)
         text = f"chose the {args.get('type', '?').capitalize()} card (strength {slot + 1 + x}" + (f", spending {_plural(x, 'X token')}" if x else "") + ")"
+        skip = {"x_tokens"}
+    elif k == "skip_action" and args.get("hypnosis"):
+        text = f"put the opponent's {args.get('type', '?').capitalize()} card back on slot 1 (Hypnosis) and gained an X token"
         skip = {"x_tokens"}
     elif k == "skip_action":
         text = f"put the {args.get('type', '?').capitalize()} card back on slot 1 and gained an X token"

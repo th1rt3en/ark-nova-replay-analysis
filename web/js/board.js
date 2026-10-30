@@ -81,6 +81,14 @@ export function zooBoard(map, player, seat) {
     if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : ''), ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
     s.lastChild.append(tip);
   }
+  for (const sh of map.special_hexes) {            // maps 8 / 8a: the H hexes (a special placement bonus without the pentagon; the picture has empty hexes there, Ark360 moves them)
+    if (sh.kind !== 'hollywood_h' || covered.has(sh.x + ',' + sh.y)) continue;
+    const [cx, cy] = cellCentre(sh.x, sh.y);
+    put('image', { href: '/bonus/hollywood_h.webp', x: cx - 34, y: cy - 46, width: 69, height: 82, class: 'hollywood-h' });
+    const tip = svg('title');
+    tip.textContent = 'H: covering it reveals cards from the deck and adds the first sponsor to your hand';
+    s.lastChild.append(tip);
+  }
   for (const sh of map.special_hexes) {            // hex that needs the upgraded Build action, as on BGA: a red parallelogram over the upper left of the hex, BGA's own Build II badge (web/badges/BuildII.webp) in a white ring over its right end
     if (sh.kind !== 'upgrade_flag' || covered.has(sh.x + ',' + sh.y)) continue;
     const [cx, cy] = cellCentre(sh.x, sh.y);

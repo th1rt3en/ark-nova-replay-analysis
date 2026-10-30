@@ -1,0 +1,42 @@
+/* The lobby list (lobbies.html) and the lobby (lobby.html) of the custom games. */
+body.landing { max-width: 56rem; }
+.lobbies [hidden] { display: none !important; }
+.lobbies .msg:empty { display: none; }
+.lobbies h2 { margin: 1.6rem 0 .5rem; }
+.lobbies table { width: 100%; border-collapse: collapse; }
+.lobbies th, .lobbies td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--border, #d9cfb5); vertical-align: middle; }
+.lobbies td.count { font-variant-numeric: tabular-nums; }
+.lobbies .tag { display: inline-block; border: 1px solid currentColor; border-radius: 999px; padding: 0 .5rem; font-size: .8rem; margin-right: .3rem; opacity: .8; }
+.lobbies .banner { border: 2px solid #e9662a; border-radius: 10px; padding: .6rem .9rem; margin: .8rem 0; display: flex; gap: .8rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.lobbies .empty { padding: 1rem 0; opacity: .8; }
+.lobbies .create { border: 2px solid #2e7d32; border-radius: 10px; padding: .8rem 1rem; display: grid; gap: .7rem; max-width: 34rem; }
+.lobbies .create label { display: flex; gap: .5rem; align-items: center; }
+.lobbies .create .hint { font-size: .85rem; opacity: .75; margin: 0; }
+.lobbies .msg { color: #b3261e; min-height: 1.3rem; margin: .4rem 0 0; }
+.lobbies button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #2b1d12; padding: .35rem .9rem; background: #fff; color: #2b1d12; }
+.lobbies a.btnlink { display: inline-block; padding: .35rem .9rem; border-radius: 6px; background: #2e7d32; color: #fff; text-decoration: none; }
+.lobbies button.go { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+.lobbies button.danger { border-color: #b3261e; color: #b3261e; }
+.lobbies button:disabled { opacity: .5; cursor: default; }
+.lobbies input[type=text] { font: inherit; padding: .3rem .5rem; border: 1px solid #2b1d12; border-radius: 6px; }
+
+.lobbies .seats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+@media (max-width: 600px) { .lobbies .seats { grid-template-columns: 1fr; } }
+.lobbies .seat { border: 2px solid #2b1d12; border-radius: 12px; padding: .8rem 1rem; min-height: 8.5rem; display: flex; flex-direction: column; gap: .4rem; background: #fffaf0; }
+.lobbies .seat > * { flex: none; }
+.lobbies .seat.pending { position: relative; border-style: solid; }                         /* an invited player who has not answered yet: the seat looks taken, behind a white / grey filter */
+.lobbies .seat.pending::after { content: ""; position: absolute; inset: 0; border-radius: 10px; background: rgba(240, 240, 240, .62); pointer-events: none; }
+.lobbies .seat.pending .row { position: relative; z-index: 1; }                             /* (the host's Cancel button stays above the filter) */
+.lobbies .chatlist { max-height: 22rem; }
+.lobbies .seat input[type=text] { width: 100%; box-sizing: border-box; height: auto; }
+.lobbies .seat.empty { border-style: dashed; opacity: .95; }
+.lobbies .seat .role { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; opacity: .7; }
+.lobbies .seat .name { font-size: 1.25rem; font-weight: 700; }
+.lobbies .seat .dot { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; background: #9e9e9e; margin-right: .4rem; }
+.lobbies .seat .dot.on { background: #2e7d32; }
+.lobbies .seat .row { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: auto; }
+.lobbies .suggest { display: flex; flex-direction: column; border: 1px solid #2b1d12; border-radius: 6px; background: #fff; max-height: 10rem; overflow: auto; }
+.lobbies .suggest button { border: 0; border-radius: 0; text-align: left; border-bottom: 1px solid #eee; }
+.lobbies .note { opacity: .8; font-size: .9rem; }
+.lobbies .declined { color: #b3261e; font-size: .9rem; }
+.lobbies .actions { display: flex; gap: .7rem; flex-wrap: wrap; align-items: center; }

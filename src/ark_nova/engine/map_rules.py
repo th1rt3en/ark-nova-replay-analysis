@@ -137,14 +137,17 @@ def kiosk_hexes_covered(p) -> bool:
 
 # ---- maps 8 / 8a (Hollywood): the H spaces ---------------------------------------------------------------------------------------------
 
-def hollywood_hexes(map_id: str) -> list:
+def hollywood_hexes(p) -> list:
+    """The H hexes of a player's map: the printed ones, or the ones of the player's layout (Ark360)."""
     from ark_nova import data
-    if map_id not in ("8", "8a"):
+    if p.map_id not in ("8", "8a"):
         return []
-    return [(sp["x"], sp["y"]) for sp in data.map_by_id(map_id)["geometry"]["special_hexes"] if sp["kind"] == "hollywood_h"]
+    if p.bonus_layout:
+        return [(e["x"], e["y"]) for e in p.bonus_layout if e["bonus"]["type"] == "hollywood_h"]
+    return [(sp["x"], sp["y"]) for sp in data.map_by_id(p.map_id)["geometry"]["special_hexes"] if sp["kind"] == "hollywood_h"]
 
 
 def hollywood_complete(p) -> bool:
     """Every H is covered: each sponsor card has strength -1 when played."""
-    hexes = hollywood_hexes(p.map_id)
+    hexes = hollywood_hexes(p)
     return bool(hexes) and set(hexes) <= covered_cells(p)
