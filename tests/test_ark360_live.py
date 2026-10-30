@@ -115,3 +115,33 @@ def test_an_ark360_game_records_and_replays_with_its_layout():
         a = item["step"]["action"]
         st = apply(st, Action(a["player"], a["kind"], a["args"]))
         assert _same(step["state"], state_view(st)), step["index"]
+
+
+import pytest
+
+
+@pytest.mark.parametrize("mw", [False, True])
+@pytest.mark.parametrize("rated", [False, True])
+def test_the_usual_lobby_settings_apply_to_ark360(rated, mw, monkeypatch):
+    """Friendly or rated, base game or Marine Worlds: a custom mode is created and played like every other, and only a rated game moves the ratings."""
+    from ark_nova.accounts import rating as elo
+    from test_rated_games import World
+    monkeypatch.setattr(elo, "MIN_RATED_TURNS", 0)
+    w = World()
+    alice, bob = w.browser("Alice"), w.browser("Bob")
+    g = alice.post("/api/games", json={"game_mode": "ark360", "marine_worlds": mw, "rated": rated}).json()
+    gid, tokens, seat_a = g["game_id"], g["tokens"], g["creator_seat"]
+    browsers = [alice if i == seat_a else bob for i in range(2)]
+    for i, c in enumerate(browsers):
+        assert c.post(f"/api/games/{gid}/join", headers={"X-Seat-Token": tokens[i]}, json={"name": f"P{i}"}).status_code == 200
+    rng = random.Random(1)
+    players = [Player(browsers[i], gid, tokens[i], rng) for i in range(2)]
+    assert alice.get(f"/api/games/{gid}").json()["rated"] is rated
+    sk = alice.get(f"/api/games/{gid}/setup", headers={"X-Seat-Token": tokens[seat_a]}).json()
+    assert sk["marine_worlds"] is mw and sk["maps"][0]["id"] == sk["maps"][1]["id"] and sk["clock"]["start"] == ark360.time_control()["start"] * 1000
+    for p in players:
+        v = p.state()
+        assert p.move(v["version"], next(a for a in v["decision"]["actions"] if a["kind"] == "study_ready")).status_code == 200
+    assert players[0].state()["view"]["prompt"]["kind"] == ("draft" if mw else "initial_discard")                # (the draft is the Marine Worlds game's)
+    assert players[1].c.post(f"/api/games/{gid}/concede", headers=players[1].h, json={}).json()["status"] == "conceded"
+    assert (w.ratings("Alice", "Bob") != [0.0, 0.0]) is rated                                                      # (two new accounts: the winner gains 20)
