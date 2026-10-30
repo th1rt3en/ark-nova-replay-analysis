@@ -28,12 +28,35 @@ def _lobby(host, **settings):
     return r.json()
 
 
-def test_every_route_needs_an_account():
+def test_acting_needs_an_account_but_anybody_can_look():
     w = World()
-    anon = w.browser()
-    for r in (anon.get("/api/lobbies"), anon.get("/api/lobbies/inbox"), anon.post("/api/lobbies", json={}), anon.post("/api/lobbies/L1/join", json={}),
-              anon.post("/api/lobbies/invites/x/answer", json={"accept": True})):
+    anon, alice = w.browser(), w.browser("Alice")
+    for r in (anon.get("/api/lobbies/inbox"), anon.post("/api/lobbies", json={}), anon.post("/api/lobbies/L1/join", json={}), anon.post("/api/lobbies/L1/start", json={}),
+              anon.post("/api/lobbies/invites/x/answer", json={"accept": True}), anon.get("/api/lobbies/online")):
         assert r.status_code == 401 and r.json()["status"] == "login_needed"
+    assert anon.get("/api/lobbies").json()["lobbies"] == []                                           # (the list and a lobby are public)
+    lob = _lobby(alice)
+    seen = anon.get("/api/lobbies").json()
+    assert [r["host"] for r in seen["lobbies"]] == ["Alice"] and seen["mine"] is None
+    look = anon.get(f"/api/lobbies/{lob['id']}").json()
+    assert (look["is_member"], look["is_host"], look["my_seat"], look["you"], look["can_start"]) == (False, False, None, None, False) and "invites" not in look
+    assert anon.get("/api/lobbies/L999").status_code == 404
+    assert anon.post(f"/api/lobbies/{lob['id']}/join", json={"seat": 1}).status_code == 401           # (taking a seat needs an account)
+
+
+def test_the_games_in_progress_are_listed_for_everybody_and_a_player_gets_the_way_back():
+    w = World()
+    alice, bob, anon = w.browser("Alice"), w.browser("Bob"), w.browser()
+    lob = _lobby(alice)
+    bob.post(f"/api/lobbies/{lob['id']}/join", json={"seat": 1})
+    started = alice.post(f"/api/lobbies/{lob['id']}/start", json={}).json()["game"]
+    games = anon.get("/api/lobbies").json()["games"]
+    assert len(games) == 1 and games[0]["game_id"] == started["game_id"] and sorted(games[0]["players"]) == ["Alice", "Bob"] and "token" not in games[0]
+    mine = alice.get("/api/lobbies").json()["games"][0]
+    assert mine["token"] == started["token"]                                                           # (a player can go back to their game)
+    assert anon.get(f"/api/games/{started['game_id']}/state").status_code == 200                       # and anybody can watch it
+    w.service.concede(started["game_id"], started["token"])                                            # the game ends: it leaves the list
+    assert anon.get("/api/lobbies").json()["games"] == []
 
 
 def test_a_lobby_is_listed_with_its_host_players_and_mode_and_only_ark360_can_be_made():

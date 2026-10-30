@@ -73,7 +73,9 @@ def test_a_lobby_chat_is_for_the_players_and_the_visitors_of_the_lobby():
     alice, bob, carol = w.browser("Alice"), w.browser("Bob"), w.browser("Carol")
     lobby = alice.post("/api/lobbies", json={}).json()["id"]
     url = f"/api/chat/lobbies/{lobby}"
-    assert w.browser().get(url).status_code == 401
+    assert w.browser().get(url).json() == {"messages": [], "last": 0}                                  # (anybody reads the chat of a lobby)
+    anon_post = w.browser().post(url, json={"text": "hi"})
+    assert anon_post.status_code == 401 and anon_post.json()["status"] == "login_needed"                # (writing needs an account)
     assert alice.post(url, json={"text": "welcome"}).status_code == 200
     bob.post(f"/api/lobbies/{lobby}/join", json={"seat": 1})
     reply = bob.post(url, json={"text": "thanks"}).json()["message"]

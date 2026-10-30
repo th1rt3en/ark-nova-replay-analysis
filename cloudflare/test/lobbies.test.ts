@@ -20,7 +20,30 @@ describe("the signature", () => {
         expect((await fetchWorker(path, { method: "POST", body })).status).toBe(403);
         expect((await fetchWorker(path, { method: "GET" })).status).toBe(405);
         expect((await call("nothing", { account: A })).status).toBe(404);
-        expect((await call("list", {})).status).toBe(422);
+        expect((await call("inbox", {})).status).toBe(422);                                         // (acting needs an account; only `list` and `get` are open to a visitor)
+    });
+});
+
+describe("looking", () => {
+    it("is open to a visitor who is not logged in, who sees the lobbies and the games in progress but cannot act", async () => {
+        const { A: a, B: b } = fresh("v1");
+        const lob = await ok("create", { account: a, settings: {} });
+        await ok("join", { account: b, lobby_id: lob.id, seat: 1 });
+        const seen = await ok("list", { account: null });
+        expect(seen.lobbies.some((l: any) => l.id === lob.id)).toBe(true);
+        expect(seen.mine).toBeNull();
+        const look = await ok("get", { account: null, lobby_id: lob.id });
+        expect(look).toMatchObject({ is_member: false, is_host: false, my_seat: null, you: null, can_start: false, players: 2 });
+        expect(look.invites).toBeUndefined();
+        expect((await call("get", { lobby_id: "L999999" })).status).toBe(404);
+        expect((await call("join", { account: null, lobby_id: lob.id, seat: 1 })).status).toBe(422);        // (acting needs an account)
+        await ok("begin_start", { account: a, lobby_id: lob.id });
+        await ok("finish_start", { lobby_id: lob.id, game_id: "E8", tokens: { [a.id]: "ta", [b.id]: "tb" } });
+        const game = (await ok("list", { account: null })).games.find((g: any) => g.game_id === "E8");
+        expect(game).toMatchObject({ lobby: lob.id, players: [a.username, b.username] });
+        expect(game.token).toBeUndefined();
+        expect((await ok("list", { account: a })).games.find((g: any) => g.game_id === "E8").token).toBe("ta");      // a player gets the way back
+        expect((await ok("get", { account: null, lobby_id: lob.id })).game).toEqual({ game_id: "E8" });
     });
 });
 

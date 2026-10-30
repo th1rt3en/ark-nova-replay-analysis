@@ -64,8 +64,8 @@ function seatCard(s) {
     if (declined.length) seat.append(el('span', { className: 'declined' }, declined.map((d) => d.username + ' declined the invitation.').join(' ')));
   } else if (!view.is_member) {                                         // a visitor takes the seat by clicking it
     const take = el('button', { type: 'button', className: 'go' }, 'Take this seat');
-    take.onclick = () => act('/' + id + '/join', { seat: s.index });
-    seat.append(el('span', { className: 'note' }, 'Click to join the game in this seat.'), el('div', { className: 'row' }, take));
+    take.onclick = () => { if (!window.arkAccount) { say('Log in to join a lobby.'); const b = document.querySelector('#acctbar button'); if (b) b.click(); return; } act('/' + id + '/join', { seat: s.index }); };
+    seat.append(el('span', { className: 'note' }, window.arkAccount ? 'Click to join the game in this seat.' : 'Log in to join the game in this seat.'), el('div', { className: 'row' }, take));
   } else seat.append(el('span', { className: 'note' }, 'Waiting for a player to join.'));
   return seat;
 }
@@ -127,7 +127,6 @@ async function refresh() {
     const sig = (x) => JSON.stringify([x.status, x.players, x.is_member, x.seats_detail.map((s) => [s.account_id, s.username, s.pending]), x.invites]);
     if (!keep || !view || sig(v) !== sig(view)) { view = v; draw(); } else view = v;
   } catch (e) {
-    if (e.status === 401) { over('Log in to see this lobby.'); return; }
     if (e.status === 404) { over('This lobby is closed.'); return; }
   }
   timer = setTimeout(refresh, POLL_MS);

@@ -40,14 +40,14 @@ def add_routes(app: FastAPI, board: LobbyService, allowed_origins: list[str]) ->
             raise LobbyError("The body must be a JSON object.", 422, "bad_json")
         return data
 
-    async def call(request: Request, fn, *args, post: bool = True, lobby_id: str | None = None):
-        """Check the account (and the body of a POST), then run `fn(account, ...)` in a thread."""
+    async def call(request: Request, fn, *args, post: bool = True, lobby_id: str | None = None, anonymous: bool = False):
+        """Check the account (and the body of a POST), then run `fn(account, ...)` in a thread. `anonymous`: a visitor who is not logged in may call it (the account is None)."""
         try:
             if lobby_id is not None and not valid.match(lobby_id):
                 raise LobbyError("No such lobby.", 404, "no_lobby")
             body = await body_of(request) if post else {}
             account = account_of(request)
-            if account is None:
+            if account is None and not anonymous:
                 raise LobbyError("Log in to use the lobbies.", 401, "login_needed")
             return JSONResponse(await run_in_threadpool(fn, account, body))
         except RatedRefused as e:
@@ -61,7 +61,7 @@ def add_routes(app: FastAPI, board: LobbyService, allowed_origins: list[str]) ->
 
     @app.get("/api/lobbies")
     async def listing(request: Request):
-        return await call(request, lambda a, b: board.list_open(a), post=False)
+        return await call(request, lambda a, b: board.list_open(a), post=False, anonymous=True)
 
     @app.get("/api/lobbies/inbox")
     async def inbox(request: Request):
@@ -89,7 +89,7 @@ def add_routes(app: FastAPI, board: LobbyService, allowed_origins: list[str]) ->
 
     @app.get("/api/lobbies/{lobby_id}")
     async def get(lobby_id: str, request: Request):
-        return await call(request, lambda a, b: board.get(lobby_id, a), post=False, lobby_id=lobby_id)
+        return await call(request, lambda a, b: board.get(lobby_id, a), post=False, lobby_id=lobby_id, anonymous=True)
 
     @app.post("/api/lobbies/{lobby_id}/join")
     async def join(lobby_id: str, request: Request):

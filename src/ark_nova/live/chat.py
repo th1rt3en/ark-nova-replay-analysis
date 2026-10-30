@@ -1,7 +1,7 @@
 """The chat of a lobby (`L12`) and of a table (`E7`): the players and the spectators write in one public room.
 
 Who may write. A table: a player with a valid seat token (friendly games need no account), or a spectator who is logged in; anybody may read (a spectator already sees the public
-view of the game only, `live/projection.py`: the chat is as public as that). A lobby: any logged-in player who looks at it (lobbies need an account); the ones who have not taken a seat are shown as spectators. The text is 1 to `MAX_TEXT`
+view of the game only, `live/projection.py`: the chat is as public as that). A lobby: anybody may read it; writing needs an account, and the ones who have not taken a seat are shown as spectators. The text is 1 to `MAX_TEXT`
 characters, one sender writes at most one message every `MIN_GAP_MS`.
 
 The messages are kept by the `Chat` Durable Object of the Cloudflare Worker (`cloudflare/src/chat.ts`, one object per room, the last 300 messages, deleted a day after the last one);
@@ -122,7 +122,7 @@ class ChatService:
 
     # ---- a lobby ----------------------------------------------------------------------------------------------------------------------
     def read_lobby(self, lobby_id: str, account, since: int) -> dict:
-        self.lobbies.get(lobby_id, account)                                # (any logged-in player who can see the lobby; a lobby that is gone raises)
+        self.lobbies.get(lobby_id, account)                                # (anybody who can see the lobby, logged in or not; a lobby that is gone raises)
         return self.store.call(lobby_id, "list", since=since)
 
     def post_lobby(self, lobby_id: str, account, text) -> dict:

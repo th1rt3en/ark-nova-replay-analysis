@@ -22,14 +22,14 @@ import uuid
 from types import SimpleNamespace
 
 from ark_nova.engine import ark360
-from ark_nova.live.keeper import USER_AGENT, LiveError, sign
+from ark_nova.live.keeper import USER_AGENT, LiveError, NoSuchTable, sign
 
 MODES = (ark360.MODE,)                       # the game modes that can be played from a lobby (the other modes are for a table made by link)
 SEATS = 2
 ONLINE_SECONDS = 45                          # a player who asked for the inbox this recently is online (the pages ask every few seconds)
 IDLE_SECONDS = 90                            # a lobby whose host (a member) has not been seen for this long is closed (the member is taken out)
 INVITE_SECONDS = 600                         # an invitation that nobody answered is dropped after this long
-STARTED_KEEP_SECONDS = 600                   # a started lobby stays (members are sent to the table by it) this long
+STARTED_KEEP_SECONDS = 12 * 3600             # a started lobby stays (members are sent to the table by it, everybody finds the game in the list of the games in progress) this long
 NOTICE_KEEP = 20
 OPS = ("create", "list", "get", "join", "leave", "kick", "invite", "cancel_invite", "answer", "inbox", "online", "begin_start", "finish_start", "abort_start")
 
@@ -147,28 +147,36 @@ class MemoryLobbies:
         self._lobbies[lob["id"]] = lob
         return self._view(lob, account)
 
-    def op_list(self, account) -> dict:
+    def op_list(self, account=None) -> dict:
+        """The open lobbies and the games in progress; anybody may look (`account` None = a visitor who is not logged in)."""
         self._sweep()
-        self._heartbeat(account)
+        if account:
+            self._heartbeat(account)
         rows = [self._row(lob) for lob in self._lobbies.values() if lob["status"] == "open"]
-        mine = self._lobby_of(account["id"])
-        started = next((lob for lob in self._lobbies.values() if lob["status"] == "started" and any(m and m["id"] == account["id"] for m in lob["seats"])), None)
-        return {"lobbies": sorted(rows, key=lambda r: -r["created_at"]), "mine": mine["id"] if mine else (started["id"] if started else None), "modes": list(MODES)}
+        mine = self._lobby_of(account["id"]) if account else None
+        games = []
+        for lob in sorted(self._lobbies.values(), key=lambda x: -x.get("started_at", 0)):
+            if lob["status"] == "started" and lob["game"]:
+                me = lob["game"]["tokens"].get(account["id"]) if account else None
+                games.append({"lobby": lob["id"], "game_id": lob["game"]["game_id"], "players": [m["username"] for m in lob["seats"]], "mode_label": _label(lob["mode"]), "marine_worlds": lob["marine_worlds"],
+                              "rated": lob["rated"], "started_at": lob["started_at"], **({"token": me} if me else {})})        # (a player of the game gets the token to go back to it)
+        return {"lobbies": sorted(rows, key=lambda r: -r["created_at"]), "games": games, "mine": mine["id"] if mine else None, "modes": list(MODES)}
 
     def _row(self, lob: dict) -> dict:
         players = sum(1 for m in lob["seats"] if m)
         return {"id": lob["id"], "host": lob["seats"][0]["username"], "players": players, "seats": SEATS, "mode": lob["mode"], "mode_label": _label(lob["mode"]),
                 "marine_worlds": lob["marine_worlds"], "rated": lob["rated"], "full": players >= SEATS, "created_at": lob["created_at"]}
 
-    def op_get(self, account, lobby_id) -> dict:
-        """Any logged-in player may look at a lobby (a link to it does not seat them: they take an empty seat, `join`)."""
+    def op_get(self, lobby_id, account=None) -> dict:
+        """Anybody may look at a lobby, logged in or not (a link to it does not seat them: a logged-in player takes an empty seat, `join`)."""
         self._sweep()
-        self._heartbeat(account)
+        if account:
+            self._heartbeat(account)
         return self._view(self._get(lobby_id), account)
 
     @staticmethod
     def _index(lob: dict, account):
-        return next((k for k, m in enumerate(lob["seats"]) if m and m["id"] == account["id"]), None)
+        return next((k for k, m in enumerate(lob["seats"]) if m and m["id"] == account["id"]), None) if account else None
 
     @staticmethod
     def _pending_on(lob: dict, seat: int):
@@ -181,7 +189,7 @@ class MemoryLobbies:
             inv = None if m else self._pending_on(lob, i)
             detail.append({"index": i, "account_id": m["id"] if m else None, "username": m["username"] if m else (inv["to_name"] if inv else None), "host": i == 0,
                            "online": bool(m) and self._is_online(m["id"]), "pending": bool(inv)})        # (a pending seat shows the invited player, not yet seated)
-        out = {**self._row(lob), "status": lob["status"], "is_host": k == 0, "is_member": k is not None, "my_seat": k, "you": account["id"],
+        out = {**self._row(lob), "status": lob["status"], "is_host": k == 0, "is_member": k is not None, "my_seat": k, "you": account["id"] if account else None,
                "can_start": k == 0 and all(lob["seats"]) and lob["status"] == "open", "seats_detail": detail}
         if k == 0:
             out["invites"] = [{"id": i["id"], "username": i["to_name"], "status": i["status"], "seat": i["seat"]} for i in lob["invites"] if i["status"] in ("pending", "declined")]
@@ -350,8 +358,8 @@ class HttpLobbies:
             raise LiveError(f"the lobbies did not answer: {e}", 502)
 
 
-def _who(account) -> dict:
-    return {"id": account.id, "username": account.username}
+def _who(account) -> dict | None:
+    return {"id": account.id, "username": account.username} if account is not None else None
 
 
 class LobbyService:
@@ -366,10 +374,20 @@ class LobbyService:
             raise LobbyError("Rated games are not available here.", 503, "no_ratings")
         return self.store.call("create", account=_who(account), settings={"game_mode": settings.get("game_mode"), "marine_worlds": bool(settings.get("marine_worlds")), "rated": bool(settings.get("rated"))})
 
-    def list_open(self, account) -> dict:
-        return self.store.call("list", account=_who(account))
+    def list_open(self, account=None) -> dict:
+        out = self.store.call("list", account=_who(account))
+        out["games"] = [g for g in out.get("games", []) if self._alive(g["game_id"])]            # (a game that has ended is gone from the keeper)
+        return out
 
-    def get(self, lobby_id: str, account) -> dict:
+    def _alive(self, game_id: str) -> bool:
+        try:
+            return self.live.lobby(game_id)["status"] in ("waiting", "playing")
+        except NoSuchTable:
+            return False
+        except LiveError:
+            return True
+
+    def get(self, lobby_id: str, account=None) -> dict:
         return self.store.call("get", account=_who(account), lobby_id=lobby_id)
 
     def join(self, lobby_id: str, account, seat=None) -> dict:

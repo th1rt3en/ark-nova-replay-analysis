@@ -10,7 +10,7 @@ export const SEATS = 2;
 export const ONLINE_SECONDS = 45;          // a player whose page asked for the inbox this recently is online
 export const IDLE_SECONDS = 90;            // a lobby whose host (a member) has not been seen for this long is closed (the member is taken out)
 export const INVITE_SECONDS = 600;
-export const STARTED_KEEP_SECONDS = 600;
+export const STARTED_KEEP_SECONDS = 12 * 3600;      // a started lobby stays (members are sent to the table by it, everybody finds the game in the list of the games in progress)
 const NOTICE_KEEP = 20;
 
 type Account = { id: string; username: string };
@@ -79,7 +79,8 @@ export class Lobbies extends DurableObject<Env> {
             online: (x) => this.online(x.account, x.q ?? ""), begin_start: (x) => this.beginStart(x.account, x.lobby_id), finish_start: (x) => this.finishStart(x.lobby_id, x.game_id, x.tokens),
             abort_start: (x) => this.abortStart(x.lobby_id),
         };
-        if (op !== "finish_start" && op !== "abort_start" && !(a.account && typeof a.account.id === "string" && typeof a.account.username === "string")) throw new LobbyError("send {account}", 422, "bad_request");
+        const anonymousOk = op === "list" || op === "get";                                    // (anybody may look: `account` is null for a visitor who is not logged in)
+        if (op !== "finish_start" && op !== "abort_start" && !(a.account && typeof a.account.id === "string" && typeof a.account.username === "string") && !(anonymousOk && !a.account)) throw new LobbyError("send {account}", 422, "bad_request");
         const before = JSON.stringify([...this.lobbies.values()]) + this.next;
         const out = m[op](a);
         if (JSON.stringify([...this.lobbies.values()]) + this.next !== before) this.dirty = true;
@@ -147,33 +148,38 @@ export class Lobbies extends DurableObject<Env> {
         return { id: lob.id, host: lob.seats[0]!.username, players, seats: SEATS, mode: lob.mode, mode_label: MODE_LABELS[lob.mode] ?? lob.mode, marine_worlds: lob.marine_worlds, rated: lob.rated, full: players >= SEATS, created_at: lob.created_at };
     }
 
-    private list(a: Account): any {
-        this.sweep(); this.heartbeat(a);
+    /** The open lobbies and the games in progress; anybody may look (`a` null = a visitor who is not logged in). */
+    private list(a: Account | null): any {
+        this.sweep(); if (a) this.heartbeat(a);
         const rows = [...this.lobbies.values()].filter((l) => l.status === "open").map((l) => this.row(l)).sort((x, y) => y.created_at - x.created_at);
-        const mine = this.lobbyOf(a.id) ?? [...this.lobbies.values()].find((l) => l.status === "started" && l.seats.some((m) => m && m.id === a.id));
-        return { lobbies: rows, mine: mine ? mine.id : null, modes: MODES };
+        const mine = a ? this.lobbyOf(a.id) : undefined;
+        const games = [...this.lobbies.values()].filter((l) => l.status === "started" && l.game).sort((x, y) => (y.started_at ?? 0) - (x.started_at ?? 0)).map((l) => {
+            const token = a ? l.game!.tokens[a.id] : undefined;                          // (a player of the game gets the token to go back to it)
+            return { lobby: l.id, game_id: l.game!.game_id, players: l.seats.map((m) => m!.username), mode_label: MODE_LABELS[l.mode] ?? l.mode, marine_worlds: l.marine_worlds, rated: l.rated, started_at: l.started_at, ...(token ? { token } : {}) };
+        });
+        return { lobbies: rows, games, mine: mine ? mine.id : null, modes: MODES };
     }
 
-    /** Any logged-in player may look at a lobby (a link to it does not seat them: they take an empty seat, `join`). */
-    private getView(a: Account, id: string): any {
-        this.sweep(); this.heartbeat(a);
+    /** Anybody may look at a lobby, logged in or not (a link to it does not seat them: a logged-in player takes an empty seat, `join`). */
+    private getView(a: Account | null, id: string): any {
+        this.sweep(); if (a) this.heartbeat(a);
         return this.view(this.get(id), a);
     }
 
     private pendingOn(lob: Lobby, seat: number): Invite | undefined { return lob.invites.find((i) => i.status === "pending" && i.seat === seat); }
 
-    private view(lob: Lobby, a: Account): any {
-        const idx = lob.seats.findIndex((m) => m && m.id === a.id);
+    private view(lob: Lobby, a: Account | null): any {
+        const idx = a ? lob.seats.findIndex((m) => m && m.id === a.id) : -1;
         const k = idx < 0 ? null : idx;
         const out: any = {
-            ...this.row(lob), status: lob.status, is_host: k === 0, is_member: k !== null, my_seat: k, you: a.id, can_start: k === 0 && lob.seats.every((m) => m) && lob.status === "open",
+            ...this.row(lob), status: lob.status, is_host: k === 0, is_member: k !== null, my_seat: k, you: a ? a.id : null, can_start: k === 0 && lob.seats.every((m) => m) && lob.status === "open",
             seats_detail: lob.seats.map((m, i) => {
                 const inv = m ? undefined : this.pendingOn(lob, i);                      // (a pending seat shows the invited player, not yet seated)
                 return { index: i, account_id: m ? m.id : null, username: m ? m.username : (inv ? inv.to_name : null), host: i === 0, online: !!m && this.isOnline(m.id), pending: !!inv };
             }),
         };
         if (k === 0) out.invites = lob.invites.filter((i) => i.status === "pending" || i.status === "declined").map((i) => ({ id: i.id, username: i.to_name, status: i.status, seat: i.seat }));
-        if (lob.status === "started" && lob.game) out.game = { game_id: lob.game.game_id, ...(k !== null ? { token: lob.game.tokens[a.id] } : {}) };      // (the others may watch the table)
+        if (lob.status === "started" && lob.game) out.game = { game_id: lob.game.game_id, ...(k !== null && a ? { token: lob.game.tokens[a.id] } : {}) };      // (the others may watch the table)
         return out;
     }
 

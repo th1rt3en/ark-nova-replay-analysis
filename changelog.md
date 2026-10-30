@@ -1928,3 +1928,6 @@ Scope: `web/js/play.js`, `web/js/fork.js`, `web/js/state.js`, `web/play.html`.
 
 ## 109. Chat of the lobbies and the tables
 - `js/chat.js` + `css/chat.css`: `mountChat(root, { kind: 'tables' | 'lobbies', id, token, onUnread })`: the messages (name, time, text as plain text; spectators are marked), a line to write, polling every 3 s. The lobby page shows it under the seats; the play page has a third sidebar tab, Chat (`#tabChat` / `#paneChat` in `play.html`, `chatTab` in `sidebar.js`: an unread badge on the tab). A spectator who is not logged in is told to log in when they try to write.
+
+## 110. Lobbies and games are visible to everybody
+- `lobbies.html` lists the open lobbies and a new "Games in progress" table (Watch, or "Back to your game" for a player) without a login; `lobby.html` and the lobby chat can be read without one. "Take this seat", creating a lobby and writing a message ask to log in (the account dialog opens).

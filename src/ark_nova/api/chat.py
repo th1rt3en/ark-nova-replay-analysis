@@ -89,7 +89,7 @@ def add_routes(app: FastAPI, chat: ChatService, allowed_origins: list[str]) -> N
         if not lobby_id.match(lobby):
             return _error(404, "no_lobby", "No such lobby.")
         since = since_of(request)
-        return await run(lambda: chat.read_lobby(lobby, need_account(request), since))
+        return await run(lambda: chat.read_lobby(lobby, account_of(request), since))              # (anybody reads)
 
     @app.post("/api/chat/lobbies/{lobby}")
     async def post_lobby(lobby: str, request: Request):

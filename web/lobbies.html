@@ -11,13 +11,18 @@
 <p class="small"><a href="/">&larr; Ark Nova Park</a></p>
 <main class="lobbies">
 <h1>Custom games</h1>
-<p class="muted">Open lobbies of games against another player. Joining or opening a lobby needs an account.</p>
+<p class="muted">Open lobbies of games against another player. Anybody can look at the lobbies and watch the games; opening or joining a lobby, and writing in a chat, needs an account.</p>
 <div id="login" hidden class="banner"><span>Log in or sign up to open or join a lobby.</span><button type="button" class="go" id="loginbtn">Log in / Sign up</button></div>
 <div id="mine" hidden class="banner"><span>You are in a lobby.</span><button type="button" class="go" id="minebtn">Go to your lobby</button></div>
 
 <section id="listing">
   <h2>Open lobbies</h2>
   <div id="rows" aria-live="polite">Loading…</div>
+</section>
+
+<section id="gamessection" hidden>
+  <h2>Games in progress</h2>
+  <div id="games"></div>
 </section>
 
 <section id="creating">
