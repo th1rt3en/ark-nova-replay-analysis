@@ -156,10 +156,14 @@ def test_the_cards_are_dealt_before_the_study_time_and_the_draft():
     assert all(len(h) == 8 or len(h) == 9 for h in hands) and all(len(e) == 2 for e in ends)    # the starting hand and the endgame cards are known now
     assert {(a.player, a.kind) for a in legal_actions(s)} == {(0, "study_ready"), (1, "study_ready")}
     s = apply(s, Action(1, "study_ready", {}))
-    assert [(a.player, a.kind) for a in legal_actions(s)] == [(0, "study_ready")] and s.prompt.kind == "study"
+    assert {(a.player, a.kind) for a in legal_actions(s)} == {(0, "study_ready"), (1, "study_unready")} and s.prompt.kind == "study"       # (a ready player may take it back)
     with pytest.raises(IllegalAction):
         apply(s, Action(1, "study_ready", {}))                                                    # once is enough
-    s = apply(s, Action(0, "study_ready", {}))
+    with pytest.raises(IllegalAction):
+        apply(s, Action(0, "study_unready", {}))                                                  # (and one that is not ready cannot take it back)
+    s = apply(s, Action(1, "study_unready", {}))
+    assert s.study["ready"] == [False, False] and {(a.player, a.kind) for a in legal_actions(s)} == {(0, "study_ready"), (1, "study_ready")}
+    s = apply(apply(s, Action(1, "study_ready", {})), Action(0, "study_ready", {}))                # both ready at the same time: the study is over
     assert s.prompt.kind == "draft" and s.draft["stage"] == "pick1"                              # the draft follows (Marine Worlds)
     while s.prompt is not None and s.prompt.kind == "draft":                                      # (both players pick at the same time: the first legal move of each)
         for seat in (0, 1):

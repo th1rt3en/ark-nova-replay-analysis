@@ -75,11 +75,14 @@ function studyExpiry() {
   P.studyAsked = true;
   playApi('/study/expire', {}).then((r) => { if (!r.ok) setTimeout(() => { P.studyAsked = false; }, 2000); });       // (not over by the server's clock yet: ask again in a moment)
 }
-export function studyBar(bar, act) {                                        // the bar while the viewer studies the map: the time left and the button to say they are ready
+export function studyBar(bar, act) {                                        // the bar while the viewer studies the map: the time left, and the button to say they are ready (or not any more)
+  const ready = act.kind === 'study_unready';                               // (the legal action of a ready player is to take it back)
+  const them = S.replay.players[1 - act.player], theirs = ((S.replay.steps[S.step].state.study || {}).ready || [])[1 - act.player];
   bar.hidden = false;
-  bar.replaceChildren(el('b', '', 'Study your map. Time left: '), Object.assign(el('b', 'studyclock'), { textContent: studyText() }));
-  const ok = el('button', 'forkmove forkconfirm', "I'm ready");
-  ok.type = 'button'; ok.disabled = S.forkBusy; ok.title = 'Start as soon as both players are ready';
+  bar.replaceChildren(el('b', '', 'Study your map. Time left: '), Object.assign(el('b', 'studyclock'), { textContent: studyText() }),
+                      el('span', 'studystate', ' ' + (ready ? 'You are ready.' : '') + (them ? ' ' + them.name + (theirs ? ' is ready.' : ' is not ready yet.') : '') + ' '));
+  const ok = el('button', 'forkmove' + (ready ? '' : ' forkconfirm'), ready ? 'Not ready' : "I'm ready");
+  ok.type = 'button'; ok.disabled = S.forkBusy; ok.title = ready ? 'Take your "ready" back' : 'The game starts as soon as both players are ready';
   ok.onclick = () => playFork(act);
   bar.append(ok);
 }

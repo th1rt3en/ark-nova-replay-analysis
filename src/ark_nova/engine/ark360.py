@@ -243,7 +243,8 @@ def layout_for(map_id: str, tail_seed: int, cfg: dict | None = None) -> list:
 # ---- the game: setup order and the study time --------------------------------------------------------------------------------------------------
 #
 # After the map is drawn (map_select) the starting hands and the endgame cards are dealt, so both are known for the action card draft; then both players study the map
-# (`study`: `seconds` is what the clients count down, both press `study_ready`, the engine does not measure time), then the draft (Marine Worlds) and the initial discard.
+# (`study`: `seconds` is what the clients count down; each player says `study_ready` and may take it back with `study_unready` until the other one is ready too: when both
+# are ready the study is over; the engine does not measure time), then the draft (Marine Worlds) and the initial discard.
 
 def begin_study(state) -> None:
     state.study = {"seconds": study_seconds(), "ready": [False, False]}
@@ -255,13 +256,18 @@ def legal_study(state) -> list:
     d = state.study
     if d is None or all(d["ready"]):
         return []
-    return [Action(seat, "study_ready", {}) for seat in (0, 1) if not d["ready"][seat]]
+    return [Action(seat, "study_unready" if d["ready"][seat] else "study_ready", {}) for seat in (0, 1)]
 
 
 def apply_study(state, action) -> None:
     d = state.study
     if d is None or all(d["ready"]):
         raise Ark360Error("no study time is going on")
+    if action.kind == "study_unready":
+        if not d["ready"][action.player]:
+            raise Ark360Error("this player is not ready")
+        d["ready"][action.player] = False
+        return
     if d["ready"][action.player]:
         raise Ark360Error("this player is ready already")
     d["ready"][action.player] = True

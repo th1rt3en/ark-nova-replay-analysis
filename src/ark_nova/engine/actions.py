@@ -41,7 +41,8 @@ def _s(kind: str, summary: str, args: str, *log_events: str) -> tuple[str, Actio
 ACTION_SPECS: dict[str, ActionSpec] = dict([
     # setup
     _s("choose_map", "pick a map (only when the game lets players choose)", "map", "updateInitialMapSelection", "setupPlayer"),
-    _s("study_ready", "Ark360: finished studying the map (both players, at the same time; the clients count the study time)", ""),
+    _s("study_ready", "Ark360: finished studying the map (both players, at the same time; when both are ready the game goes on; the clients count the study time)", ""),
+    _s("study_unready", "Ark360: not ready after all (until the other player is ready too)", ""),
     _s("draft_pick", "action card draft, rounds 1 and 2: pick one of the offered variants (both players at the same time; the rest goes to the opponent)", "variant",
        "updateInitialActionCardSelection"),
     _s("draft_keep", "action card draft, last round: keep 2 of the 3 variants, of 2 different action cards", "keep", "updateInitialActionCardsKeep", "setupActionCards"),

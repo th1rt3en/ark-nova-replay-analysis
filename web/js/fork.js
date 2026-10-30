@@ -191,7 +191,7 @@ export function forkBar() {
   if (PLAY && bar) {                                                       // a live game: the confirm / undo / restart are legal actions of their own
     for (const a of acts) if (['confirm_turn', 'undo_last', 'restart_turn'].includes(a.kind)) S.forkClaimed.add(a);
     if (!acts.length || S.play.status === 'waiting') { playWaitingBar(bar); return; }                 // (nothing is offered until both players have joined)
-    const study = acts.find((a) => a.kind === 'study_ready');
+    const study = acts.find((a) => a.kind === 'study_ready' || a.kind === 'study_unready');
     if (study) { S.forkClaimed.add(study); studyBar(bar, study); return; }                  // (Ark360: the viewer studies the map before the draft)
     const picks = acts.filter((a) => a.kind === 'choose_map');
     if (picks.length) {                                                    // the maps are chosen in the bar: click a map to see it, then confirm

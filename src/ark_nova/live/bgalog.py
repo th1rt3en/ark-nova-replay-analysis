@@ -174,8 +174,8 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
             for i, p in enumerate(new.players):
                 L.add(f"{names[i] if i < len(names) else 'Player ' + str(i + 1)} will play on map {p.map_id}")
         return
-    if k == "study_ready":
-        L.add(f"{who} is ready to start")
+    if k in ("study_ready", "study_unready"):
+        L.add(f"{who} is ready to start" if k == "study_ready" else f"{who} is not ready yet")
         return
     if k == "draft_pick":
         L.secret(f"{who} picks {a.get('variant')} (action card draft)", f"{who} chooses action cards (action card draft)")

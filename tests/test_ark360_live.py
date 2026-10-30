@@ -145,3 +145,21 @@ def test_the_usual_lobby_settings_apply_to_ark360(rated, mw, monkeypatch):
     assert players[0].state()["view"]["prompt"]["kind"] == ("draft" if mw else "initial_discard")                # (the draft is the Marine Worlds game's)
     assert players[1].c.post(f"/api/games/{gid}/concede", headers=players[1].h, json={}).json()["status"] == "conceded"
     assert (w.ratings("Alice", "Bob") != [0.0, 0.0]) is rated                                                      # (two new accounts: the winner gains 20)
+
+
+def test_a_player_can_take_ready_back_until_both_are_ready():
+    client, keeper, _ = _app()
+    game_id, players = _table(client)
+    _join_both(client, game_id, players)
+
+    def act(p, kind):
+        v = p.state()
+        return p.move(v["version"], next(a for a in v["decision"]["actions"] if a["kind"] == kind))
+    assert act(players[0], "study_ready").status_code == 200
+    assert [a["kind"] for a in players[0].state()["decision"]["actions"]] == ["study_unready"] and [a["kind"] for a in players[1].state()["decision"]["actions"]] == ["study_ready"]
+    assert players[1].state()["view"]["study"]["ready"] == [True, False]                                      # (the other player sees it)
+    assert act(players[0], "study_unready").status_code == 200
+    assert players[1].state()["view"]["study"]["ready"] == [False, False]
+    assert "not ready" in keeper.view(game_id, "spectator")["label"].lower()
+    assert act(players[0], "study_ready").status_code == 200 and act(players[1], "study_ready").status_code == 200
+    assert players[0].state()["view"]["prompt"]["kind"] in ("draft", "initial_discard")                         # both were ready: the game goes on

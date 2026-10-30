@@ -412,7 +412,7 @@ def _apply(state: GameState, action: Action) -> GameState:
         except map_select.MapSelectError as ex:
             raise IllegalAction(str(ex)) from None
         return new
-    if new.phase is Phase.SETUP and action.kind == "study_ready":
+    if new.phase is Phase.SETUP and action.kind in ("study_ready", "study_unready"):
         try:
             ark360.apply_study(new, action)
         except ark360.Ark360Error as ex:
