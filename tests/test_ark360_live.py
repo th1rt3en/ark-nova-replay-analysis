@@ -163,3 +163,20 @@ def test_a_player_can_take_ready_back_until_both_are_ready():
     assert "not ready" in keeper.view(game_id, "spectator")["label"].lower()
     assert act(players[0], "study_ready").status_code == 200 and act(players[1], "study_ready").status_code == 200
     assert players[0].state()["view"]["prompt"]["kind"] in ("draft", "initial_discard")                         # both were ready: the game goes on
+
+
+def test_a_ready_made_a_moment_after_the_other_players_is_previewed_and_played():
+    """Both players press ready at nearly the same time: the page of the second one still has the older position. The preview and the move must both accept it."""
+    client, keeper, _ = _app()
+    game_id, players = _table(client)
+    _join_both(client, game_id, players)
+    old = players[1].state()                                                                                    # (what the second page knows)
+    first = players[0].state()
+    assert players[0].move(first["version"], next(a for a in first["decision"]["actions"] if a["kind"] == "study_ready")).status_code == 200
+    act = next(a for a in old["decision"]["actions"] if a["kind"] == "study_ready")
+    pre = client.post(f"/api/games/{game_id}/preview", headers=players[1].h, json={"version": old["version"], "action": act})
+    assert pre.status_code == 200, pre.text                                                                     # (it was 409 "stale version": the page said "Another move got in first")
+    assert players[1].move(old["version"], act).status_code == 200
+    assert players[0].state()["view"]["prompt"]["kind"] in ("draft", "initial_discard")                         # both were ready: the game goes on
+    stale = client.post(f"/api/games/{game_id}/preview", headers=players[1].h, json={"version": old["version"], "action": {"player": 1, "kind": "initial_discard", "args": {"cards": []}}})
+    assert stale.status_code in (409, 422)                                                                      # (a move that is not the one still legal is refused as before)

@@ -271,9 +271,12 @@ class LiveService:
         seat = self._seat_of(c, token)
         if c.version != version:
             c = self._load(game_id, fresh=True)
-        if c.version != version:
-            raise StaleVersion("stale version", c.version)
         act = Action(int(action.get("player", -1)), str(action.get("kind", "")), dict(action.get("args") or {}))
+        if c.version != version:
+            same = simultaneous_match(c.state, act) if act.player == seat else None            # (both players decide at once: the other one's move may have come first, as in `move`)
+            if same is None:
+                raise StaleVersion("stale version", c.version)
+            act = same
         if act.player != seat:
             raise NotYourSeat("that move is not yours", 403)
         if fork._canon(act) not in {fork._canon(a) for a in legal_actions(c.state)}:
