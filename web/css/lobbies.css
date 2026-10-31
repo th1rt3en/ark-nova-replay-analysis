@@ -40,3 +40,6 @@ body.landing { max-width: 56rem; }
 .lobbies .note { opacity: .8; font-size: .9rem; }
 .lobbies .declined { color: #b3261e; font-size: .9rem; }
 .lobbies .actions { display: flex; gap: .7rem; flex-wrap: wrap; align-items: center; }
+.lobbies button.busy { display: inline-flex; align-items: center; gap: 8px; opacity: .85; cursor: progress; }
+.lobbies .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: lobby-spin .8s linear infinite; }
+@keyframes lobby-spin { to { transform: rotate(360deg); } }

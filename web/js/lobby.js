@@ -7,8 +7,8 @@ import { mountChat } from './chat.js';
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 const id = new URLSearchParams(location.search).get('id') || '';
-const POLL_MS = 2500;
-let timer = 0, view = null, invitingSeat = null, searchBox = null, gone = false, chatMounted = false;
+const POLL_MS = 1000, POLL_HIDDEN_MS = 5000;             // (a member sees a change of the other seat within about a second)
+let timer = 0, view = null, invitingSeat = null, searchBox = null, gone = false, chatMounted = false, starting = false;
 
 async function call(path, body) {
   const res = await fetch('/api/lobbies' + path, { method: body === undefined ? 'GET' : 'POST', headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
@@ -102,10 +102,11 @@ function draw() {
   $('seats').replaceChildren(...view.seats_detail.map(seatCard));
   const actions = [];
   if (view.is_host) {
-    const start = el('button', { type: 'button', className: 'go', disabled: !view.can_start }, 'Start game');
-    start.onclick = () => { start.disabled = true; act('/' + id + '/start', {}); };
-    actions.push(start, el('span', { className: 'note' }, view.can_start ? 'Both seats are taken: start when you are ready.' : 'The game can start when both seats are taken.'));
-  } else if (view.is_member) actions.push(el('span', { className: 'note' }, 'Waiting for the host to start the game…'));
+    const busy = starting || view.status === 'starting';
+    const start = el('button', { type: 'button', className: 'go' + (busy ? ' busy' : ''), disabled: busy || !view.can_start }, busy ? el('span', { className: 'spinner', 'aria-hidden': 'true' }) : '', busy ? 'Starting the game…' : 'Start game');
+    start.onclick = async () => { starting = true; draw(); await act('/' + id + '/start', {}); if (!(view.status === 'started' && view.game)) { starting = false; draw(); } };
+    actions.push(start, el('span', { className: 'note' }, busy ? 'Setting up the table: you will be taken to it in a moment.' : view.can_start ? 'Both seats are taken: start when you are ready.' : 'The game can start when both seats are taken.'));
+  } else if (view.is_member) actions.push(el('span', { className: 'note' }, view.status === 'starting' ? 'The host started the game: setting up the table…' : 'Waiting for the host to start the game…'));
   if (view.is_member) {
     const leave = el('button', { type: 'button' }, view.is_host ? 'Close lobby' : 'Leave lobby');
     leave.onclick = async () => { await call('/leave', {}).catch(() => {}); location.href = '/lobbies.html'; };
@@ -124,12 +125,12 @@ async function refresh() {
   try {
     const keep = searchBox && document.activeElement === searchBox;
     const v = await call('/' + id);
-    const sig = (x) => JSON.stringify([x.status, x.players, x.is_member, x.seats_detail.map((s) => [s.account_id, s.username, s.pending]), x.invites]);
+    const sig = (x) => JSON.stringify([x.status, x.players, x.is_member, x.seats_detail.map((s) => [s.account_id, s.username, s.pending]), x.invites, x.can_start]);
     if (!keep || !view || sig(v) !== sig(view)) { view = v; draw(); } else view = v;
   } catch (e) {
     if (e.status === 404) { over('This lobby is closed.'); return; }
   }
-  timer = setTimeout(refresh, POLL_MS);
+  timer = setTimeout(refresh, document.hidden ? POLL_HIDDEN_MS : POLL_MS);
 }
 
 if (!/^L\d+$/.test(id)) over('There is no such lobby.');
