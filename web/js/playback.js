@@ -101,7 +101,7 @@ export function go(n, phase = 0) {
   S.results = false;                                                     // (going to any step, the last one included, leaves the results)
   S.step = Math.max(0, Math.min(S.replay.steps.length - 1, n));
   S.phase = Math.max(0, Math.min(framesOf(S.step).length - 1, phase));
-  if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
+  if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.multiplierMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
   render();
 }
 export function buildMoveList() {

@@ -154,8 +154,8 @@ export class Lobbies extends DurableObject<Env> {
         const rows = [...this.lobbies.values()].filter((l) => l.status === "open").map((l) => this.row(l)).sort((x, y) => y.created_at - x.created_at);
         const mine = a ? this.lobbyOf(a.id) : undefined;
         const games = [...this.lobbies.values()].filter((l) => l.status === "started" && l.game).sort((x, y) => (y.started_at ?? 0) - (x.started_at ?? 0)).map((l) => {
-            const token = a ? l.game!.tokens[a.id] : undefined;                          // (a player of the game gets the token to go back to it)
-            return { lobby: l.id, game_id: l.game!.game_id, players: l.seats.map((m) => m!.username), mode_label: MODE_LABELS[l.mode] ?? l.mode, marine_worlds: l.marine_worlds, rated: l.rated, started_at: l.started_at, ...(token ? { token } : {}) };
+            const mineGame = !!a && l.seats.some((m) => m && m.id === a.id);             // (a player of the game goes back to it with their account)
+            return { lobby: l.id, game_id: l.game!.game_id, players: l.seats.map((m) => m!.username), mode_label: MODE_LABELS[l.mode] ?? l.mode, marine_worlds: l.marine_worlds, rated: l.rated, started_at: l.started_at, mine: mineGame };
         });
         return { lobbies: rows, games, mine: mine ? mine.id : null, modes: MODES };
     }
@@ -179,7 +179,7 @@ export class Lobbies extends DurableObject<Env> {
             }),
         };
         if (k === 0) out.invites = lob.invites.filter((i) => i.status === "pending" || i.status === "declined").map((i) => ({ id: i.id, username: i.to_name, status: i.status, seat: i.seat }));
-        if (lob.status === "started" && lob.game) out.game = { game_id: lob.game.game_id, ...(k !== null && a ? { token: lob.game.tokens[a.id] } : {}) };      // (the others may watch the table)
+        if (lob.status === "started" && lob.game) out.game = { game_id: lob.game.game_id };      // (a member's page asks for its seat with its account; the others may watch the table)
         return out;
     }
 

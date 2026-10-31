@@ -484,10 +484,17 @@ function effectButton(e) {
     const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = 28;
     b.append(el('b', '', 'Find a ' + label.toLowerCase()), i);
     b.title = 'Search the deck for the first ' + label.toLowerCase() + ' card';
+  } else if (e.kind === 'multiplier') {                                          // the Multiplier icon, not the word
+    const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS['bonus:Multiplier']); i.alt = 'Multiplier'; i.height = 28;
+    b.append(i);
+    b.title = 'Multiplier: put a Multiplier token on one of the action cards' + (src ? ' (' + src + ')' : '');
   } else {
     b.append(el('b', '', e.name || EFFECT_TEXT[e.kind] || e.kind.replace(/_/g, ' ')));
   }
-  if (FORK && (e.kind === 'threshold2' || e.kind === 'upgrade') && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && (a.args.upgrade || a.args.hire)).length) {
+  if (FORK && e.kind === 'multiplier' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.multiplier === 'string').length) {
+    b.classList.add('choosable');                                      // (click it: the action cards to put the token on, see forkBar)
+    b.onclick = () => { S.multiplierMode = e.index; refreshBar(); };
+  } else if (FORK && (e.kind === 'threshold2' || e.kind === 'upgrade') && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && (a.args.upgrade || a.args.hire)).length) {
     b.classList.add('choosable');                                      // (click it: gain a worker or an upgrade, see forkBar)
     b.onclick = () => { S.thresholdMode = { index: e.index, stage: e.kind === 'upgrade' ? 'upgrade' : 'choose' }; refreshBar(); };
   } else if (FORK && e.kind === 'marketing' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && typeof a.args.card === 'string').length) {

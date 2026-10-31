@@ -52,6 +52,7 @@ export const S = {
   forkBonus: null,   // fork: the bonus slot of the player board the viewer picked to unlock
   thresholdMode: null,   // fork: the upgrade / worker choice the viewer opened ({index, stage: 'choose' | 'upgrade'})
   marketMode: null,
+  multiplierMode: null,   // fork: the Multiplier effect (its index) whose action card the viewer is choosing
   assocSpecies: null,   // fork: the Marketing effect the viewer opened (its index) / the generic university whose species is being chosen
   assocMode: null,   // fork: 'partner' | 'university' once the viewer clicked that task of the Association action
   dockHandStep: -1,   // fork: the last step whose changed hand the dock was pointed at

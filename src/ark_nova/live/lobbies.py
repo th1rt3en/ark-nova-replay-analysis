@@ -14,6 +14,7 @@ Worker's tests (`cloudflare/test/lobbies.test.ts`) and `tests/test_lobbies.py` c
 The host's lobby disappears when the host has not been seen for `IDLE_SECONDS`; a member that is not seen for that long is taken out of the lobby.
 """
 import json
+import secrets
 import threading
 import time
 import urllib.error
@@ -157,9 +158,9 @@ class MemoryLobbies:
         games = []
         for lob in sorted(self._lobbies.values(), key=lambda x: -x.get("started_at", 0)):
             if lob["status"] == "started" and lob["game"]:
-                me = lob["game"]["tokens"].get(account["id"]) if account else None
+                is_mine = bool(account) and any(m and m["id"] == account["id"] for m in lob["seats"])
                 games.append({"lobby": lob["id"], "game_id": lob["game"]["game_id"], "players": [m["username"] for m in lob["seats"]], "mode_label": _label(lob["mode"]), "marine_worlds": lob["marine_worlds"],
-                              "rated": lob["rated"], "started_at": lob["started_at"], **({"token": me} if me else {})})        # (a player of the game gets the token to go back to it)
+                              "rated": lob["rated"], "started_at": lob["started_at"], "mine": is_mine})        # (a player of the game goes back to it with their account)
         return {"lobbies": sorted(rows, key=lambda r: -r["created_at"]), "games": games, "mine": mine["id"] if mine else None, "modes": list(MODES)}
 
     def _row(self, lob: dict) -> dict:
@@ -194,7 +195,7 @@ class MemoryLobbies:
         if k == 0:
             out["invites"] = [{"id": i["id"], "username": i["to_name"], "status": i["status"], "seat": i["seat"]} for i in lob["invites"] if i["status"] in ("pending", "declined")]
         if lob["status"] == "started" and lob["game"]:
-            out["game"] = {"game_id": lob["game"]["game_id"], **({"token": lob["game"]["tokens"][account["id"]]} if k is not None else {})}      # (the others may watch the table)
+            out["game"] = {"game_id": lob["game"]["game_id"]}                      # (a member's page asks for its seat with its account, `GET /api/games/{id}/seat`; the others may watch the table)
         return out
 
     def op_join(self, account, lobby_id, seat=None) -> dict:
@@ -418,13 +419,15 @@ class LobbyService:
         """The lobby is locked (`begin_start`), the table is made and both accounts are seated, then the lobby keeps the tokens (`finish_start`); a failure opens the lobby again."""
         info = self.store.call("begin_start", account=_who(account), lobby_id=lobby_id)
         try:
-            made = self.live.create(marine_worlds=info["marine_worlds"], game_mode=info["mode"], rated=info["rated"], account=account)
-            tokens = {}
-            for k, m in enumerate(info["seats"]):                              # the host takes the seat that the creation drew for the creator, the guest the other one
-                seat = made["creator_seat"] if k == 0 else 1 - made["creator_seat"]
-                tokens[m["id"]] = made["tokens"][seat]
+            host_seat = secrets.randbelow(2)                                    # the host takes a seat by chance, the guest the other one
+            by_seat = [None, None]
+            for k, m in enumerate(info["seats"]):
+                by_seat[host_seat if k == 0 else 1 - host_seat] = m
+            made = self.live.create(marine_worlds=info["marine_worlds"], game_mode=info["mode"], rated=info["rated"], account=account,
+                                    seat_accounts=[m["id"] for m in by_seat], creator_seat=host_seat)
+            for seat, m in enumerate(by_seat):                                  # the seats belong to the accounts: no key goes into a link or into the lobby (`LiveService.seat_for`)
                 self.live.join(made["game_id"], made["tokens"][seat], m["username"], SimpleNamespace(id=m["id"], username=m["username"]))
-            self.store.call("finish_start", lobby_id=lobby_id, game_id=made["game_id"], tokens=tokens)
+            self.store.call("finish_start", lobby_id=lobby_id, game_id=made["game_id"], tokens={})
         except Exception:
             self.store.call("abort_start", lobby_id=lobby_id)
             raise

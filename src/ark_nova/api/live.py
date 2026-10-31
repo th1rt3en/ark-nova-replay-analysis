@@ -158,6 +158,14 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
             return bad
         return await run(service.timeout, game_id, token_of(request) or "")
 
+    @app.get("/api/games/{game_id}/seat")
+    async def my_seat(game_id: str, request: Request):
+        """The seat of the logged-in account in a game between accounts (a lobby's game) and its key: the page keeps it in memory, no link carries it. 404 when the account has no seat."""
+        if (bad := game_or_404(game_id)):
+            return bad
+        seat = await run_in_threadpool(service.seat_for, game_id, account_of(request))
+        return JSONResponse(seat) if seat else _error(404, "no_seat", "This account has no seat in this game.")
+
     @app.get("/api/games/{game_id}/abandon")
     async def abandon_state(game_id: str):
         return game_or_404(game_id) or await run(service.abandon_status, game_id)

@@ -95,7 +95,7 @@ function inviteForm(index) {
 
 function draw() {
   if (!view || gone) return;
-  if (view.status === 'started' && view.game && view.game.token) { location.href = '/play.html?game=' + encodeURIComponent(view.game.game_id) + '&s=' + encodeURIComponent(view.game.token); return; }
+  if (view.status === 'started' && view.game && view.is_member) { location.href = '/play.html?game=' + encodeURIComponent(view.game.game_id); return; }      // (the seat belongs to the account: no key in the link)
   $('title').textContent = `${view.host}'s lobby`;
   $('sub').replaceChildren(el('span', { className: 'tag' }, view.mode_label), el('span', { className: 'tag' }, view.marine_worlds ? 'Marine Worlds' : 'Base'), el('span', { className: 'tag' }, view.rated ? 'Rated' : 'Friendly'), ` ${view.players}/${view.seats} players`,
     !view.is_member && view.status === 'open' ? el('span', { className: 'note' }, ' · You are looking at this lobby: click an empty seat to join.') : '');

@@ -38,11 +38,11 @@ describe("looking", () => {
         expect((await call("get", { lobby_id: "L999999" })).status).toBe(404);
         expect((await call("join", { account: null, lobby_id: lob.id, seat: 1 })).status).toBe(422);        // (acting needs an account)
         await ok("begin_start", { account: a, lobby_id: lob.id });
-        await ok("finish_start", { lobby_id: lob.id, game_id: "E8", tokens: { [a.id]: "ta", [b.id]: "tb" } });
+        await ok("finish_start", { lobby_id: lob.id, game_id: "E8", tokens: {} });
         const game = (await ok("list", { account: null })).games.find((g: any) => g.game_id === "E8");
-        expect(game).toMatchObject({ lobby: lob.id, players: [a.username, b.username] });
+        expect(game).toMatchObject({ lobby: lob.id, players: [a.username, b.username], mine: false });
         expect(game.token).toBeUndefined();
-        expect((await ok("list", { account: a })).games.find((g: any) => g.game_id === "E8").token).toBe("ta");      // a player gets the way back
+        expect((await ok("list", { account: a })).games.find((g: any) => g.game_id === "E8")).toMatchObject({ mine: true });      // a player's way back is their account
         expect((await ok("get", { account: null, lobby_id: lob.id })).game).toEqual({ game_id: "E8" });
     });
 });
@@ -76,9 +76,9 @@ describe("lobbies", () => {
         await ok("abort_start", { lobby_id: lob.id });
         expect((await ok("get", { account: a, lobby_id: lob.id })).status).toBe("open");
         await ok("begin_start", { account: a, lobby_id: lob.id });
-        await ok("finish_start", { lobby_id: lob.id, game_id: "E7", tokens: { [a.id]: "ta", [b.id]: "tb" } });
-        expect((await ok("get", { account: a, lobby_id: lob.id })).game).toEqual({ game_id: "E7", token: "ta" });
-        expect((await ok("get", { account: b, lobby_id: lob.id })).game).toEqual({ game_id: "E7", token: "tb" });
+        await ok("finish_start", { lobby_id: lob.id, game_id: "E7", tokens: {} });
+        expect((await ok("get", { account: a, lobby_id: lob.id })).game).toEqual({ game_id: "E7" });          // (no key in the lobby: a member's page asks for its seat with its account)
+        expect((await ok("get", { account: b, lobby_id: lob.id })).game).toEqual({ game_id: "E7" });
         expect((await ok("list", { account: c })).lobbies.some((l: any) => l.id === lob.id)).toBe(false);
         expect((await ok("get", { account: c, lobby_id: lob.id })).game).toEqual({ game_id: "E7" });      // (a visitor may watch the table, without a token)
     });

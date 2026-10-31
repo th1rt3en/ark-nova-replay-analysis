@@ -51,11 +51,11 @@ def test_the_games_in_progress_are_listed_for_everybody_and_a_player_gets_the_wa
     bob.post(f"/api/lobbies/{lob['id']}/join", json={"seat": 1})
     started = alice.post(f"/api/lobbies/{lob['id']}/start", json={}).json()["game"]
     games = anon.get("/api/lobbies").json()["games"]
-    assert len(games) == 1 and games[0]["game_id"] == started["game_id"] and sorted(games[0]["players"]) == ["Alice", "Bob"] and "token" not in games[0]
-    mine = alice.get("/api/lobbies").json()["games"][0]
-    assert mine["token"] == started["token"]                                                           # (a player can go back to their game)
+    assert len(games) == 1 and games[0]["game_id"] == started["game_id"] and sorted(games[0]["players"]) == ["Alice", "Bob"] and "token" not in games[0] and games[0]["mine"] is False
+    assert alice.get("/api/lobbies").json()["games"][0]["mine"] is True                                # (a player goes back to their game with their account)
     assert anon.get(f"/api/games/{started['game_id']}/state").status_code == 200                       # and anybody can watch it
-    w.service.concede(started["game_id"], started["token"])                                            # the game ends: it leaves the list
+    key = alice.get(f"/api/games/{started['game_id']}/seat").json()["token"]
+    w.service.concede(started["game_id"], key)                                                          # the game ends: it leaves the list
     assert anon.get("/api/lobbies").json()["games"] == []
 
 
@@ -90,11 +90,15 @@ def test_join_start_and_the_game_is_made_with_both_accounts():
     assert started.status_code == 200, started.text
     ga = started.json()["game"]
     gb = bob.get(f"/api/lobbies/{lob['id']}").json()["game"]
-    assert ga["game_id"] == gb["game_id"] and ga["token"] != gb["token"]
+    assert ga == gb == {"game_id": ga["game_id"]}                                                      # (no key in the lobby)
+    sa, sb = alice.get(f"/api/games/{ga['game_id']}/seat").json(), bob.get(f"/api/games/{ga['game_id']}/seat").json()
+    assert {sa["seat"], sb["seat"]} == {0, 1} and sa["token"] != sb["token"]                           # (each account gets the key of its own seat)
+    assert carol.get(f"/api/games/{ga['game_id']}/seat").status_code == 404 and w.browser().get(f"/api/games/{ga['game_id']}/seat").status_code == 404
     table = alice.get(f"/api/games/{ga['game_id']}").json()
     assert table["status"] == "playing" and sorted(table["names"]) == ["Alice", "Bob"] and table["rated"] is True
     assert alice.get("/api/lobbies").json()["lobbies"] == []                                         # (a started lobby is not on the list)
-    assert alice.get(f"/api/games/{ga['game_id']}/setup", headers={"X-Seat-Token": ga["token"]}).json()["seat"] in (0, 1)
+    assert alice.get(f"/api/games/{ga['game_id']}/setup", headers={"X-Seat-Token": sa["token"]}).json()["seat"] == sa["seat"]
+    assert alice.get(f"/api/games/{ga['game_id']}/setup", headers={"X-Seat-Token": sb["token"]}).json()["seat"] == sb["seat"]        # (the key works for whoever holds it: it is only handed to the owner)
     seen = carol.get(f"/api/lobbies/{lob['id']}").json()                                              # (a visitor of a started lobby may watch the table, without a token)
     assert seen["game"] == {"game_id": ga["game_id"]}
 

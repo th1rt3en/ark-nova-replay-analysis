@@ -7,6 +7,7 @@ small cache; a cache that is behind is rebuilt from the keeper.
 """
 import dataclasses
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -138,8 +139,9 @@ def token_hash(token: str) -> str:
 
 
 class LiveService:
-    def __init__(self, keeper: Keeper, engine_version: str = ENGINE_VERSION, registry=None, archive=None, ratings=None):
+    def __init__(self, keeper: Keeper, engine_version: str = ENGINE_VERSION, registry=None, archive=None, ratings=None, seat_secret: str | None = None):
         self.keeper, self.engine_version = keeper, engine_version
+        self.seat_secret = (seat_secret or secrets.token_hex(32)).encode()       # the seats of a game between accounts get a key derived from the account (`seat_token`); the same on every instance only with a configured secret
         self.ratings = ratings                                      # the account store (accounts/store.py): the ratings of rated games; None = no rated games
         self.registry, self.archive = registry, archive            # (None: the registry rows stay in the table's keeper; nothing is exported or deleted)
         self._cache: OrderedDict[str, Cached] = OrderedDict()
@@ -150,8 +152,24 @@ class LiveService:
         self._wrapping: set = set()                                 # the games whose wrap-up is running
 
     # ---- creating and joining -----------------------------------------------------------------------------------------------------------
-    def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None, rated: bool = False, account=None) -> dict:
-        """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`)."""
+    def seat_token(self, game_id: str, seat: int, account_id: str) -> str:
+        """The key of a seat that belongs to an account: derived, so nobody has to be given it (or keep it in a link): `seat_for` hands it to the account that owns the seat."""
+        return hmac.new(self.seat_secret, f"seat|{game_id}|{seat}|{account_id}".encode(), hashlib.sha256).hexdigest()[:40]
+
+    def seat_for(self, game_id: str, account) -> dict | None:
+        """The seat of a logged-in account in a game between accounts (`seat_accounts` of `create`) with its key, or None (a visitor who watches)."""
+        cfg = self.keeper.state(game_id)["config"]
+        if account is None or not cfg.get("account_bound"):
+            return None
+        for seat in (0, 1):
+            if cfg.get(f"account_{seat}") == account.id:
+                return {"seat": seat, "token": self.seat_token(game_id, seat, account.id)}
+        return None
+
+    def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None, rated: bool = False, account=None,
+               seat_accounts: list | None = None, creator_seat: int | None = None) -> dict:
+        """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`).
+        With `seat_accounts` (the account ids by seat, from a lobby) the seats belong to those accounts: their keys are derived from them and no link carries a key."""
         if rated and self.ratings is None:
             raise RatedRefused("rated games are not available here", 503)
         if rated and account is None:
@@ -169,14 +187,18 @@ class LiveService:
             raise IllegalMove(str(e), 422)
         state = new_game(options, ["1", "2"], seed)
         table_id = f"E{self.keeper.next_number()}"
-        tokens = [secrets.token_urlsafe(24), secrets.token_urlsafe(24)]
+        if seat_accounts:
+            tokens = [self.seat_token(table_id, s, str(seat_accounts[s])) for s in (0, 1)]
+        else:
+            tokens = [secrets.token_urlsafe(24), secrets.token_urlsafe(24)]
         config = {"game_id": table_id, "options": options, "tail_seed": seed, "player_ids": ["1", "2"], "maps": list(state.config.maps), **fingerprint(), "engine_version": self.engine_version,
-                  "viewer": stepdata.viewer_header(state), "clock": clock0, "rated": bool(rated)}
+                  "viewer": stepdata.viewer_header(state), "clock": clock0, "rated": bool(rated),
+                  **({"account_bound": True, "account_0": str(seat_accounts[0]), "account_1": str(seat_accounts[1])} if seat_accounts else {})}
         self.keeper.init(table_id, config, self.engine_version, [token_hash(t) for t in tokens], views=projection.views(state, {r: "The game starts" for r in projection.ROLES}), snapshot={"engine": state.to_dict(), "eff": []},
                          registry_event={"status": "waiting", "n_actions": 0})
         self._remember(table_id, Cached(0, state, [token_hash(t) for t in tokens], "waiting", [None, None], clock=clock0))
         self.sync_registry(table_id)
-        return {"game_id": table_id, "tokens": tokens, "creator_seat": secrets.randbelow(2)}
+        return {"game_id": table_id, "tokens": tokens, "creator_seat": secrets.randbelow(2) if creator_seat is None else creator_seat}
 
     def join(self, game_id: str, token: str, name: str, account=None) -> dict:
         """The holder of a seat link gives their name; the game starts when both seats have one. A rated game needs a logged-in account on each seat (two different ones): its name is the account's."""

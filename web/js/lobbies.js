@@ -31,10 +31,10 @@ function renderGames(games) {                                                   
   const t = el('table');
   t.append(el('tr', {}, ...['Players', 'Game mode', 'Options', ''].map((h) => el('th', {}, h))));
   for (const g of games) {
-    const href = '/play.html?game=' + encodeURIComponent(g.game_id) + (g.token ? '&s=' + encodeURIComponent(g.token) : '');
+    const href = '/play.html?game=' + encodeURIComponent(g.game_id);
     t.append(el('tr', {}, el('td', {}, g.players.join(' vs ')), el('td', {}, g.mode_label),
       el('td', {}, el('span', { className: 'tag' }, g.marine_worlds ? 'Marine Worlds' : 'Base'), el('span', { className: 'tag' }, g.rated ? 'Rated' : 'Friendly')),
-      el('td', {}, el('a', { href, className: 'btnlink' }, g.token ? 'Back to your game' : 'Watch'))));
+      el('td', {}, el('a', { href, className: 'btnlink' }, g.mine ? 'Back to your game' : 'Watch'))));
   }
   $('games').replaceChildren(t);
 }

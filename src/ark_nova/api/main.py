@@ -171,7 +171,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
                 archive = GcsArchive(st.live_gcs_bucket)
         except Exception:                                                           # noqa: BLE001
             log.exception("the live registry / archive are not available")
-        live = LiveService(HttpKeeper(st.live_keeper_url, st.internal_secret), registry=registry, archive=archive, ratings=accounts.store if accounts is not None else None)
+        live = LiveService(HttpKeeper(st.live_keeper_url, st.internal_secret), registry=registry, archive=archive, ratings=accounts.store if accounts is not None else None, seat_secret=st.internal_secret)
     if live is not None:
         from ark_nova.api.live import add_routes
         add_routes(app, live, st.live_keeper_url.replace("https://", "wss://").replace("http://", "ws://") if st.live_keeper_url else "")

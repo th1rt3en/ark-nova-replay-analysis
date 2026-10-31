@@ -321,6 +321,31 @@ export function forkBar() {
       if (ups.length) bar.append(withIcon('Gain an upgrade', ICON_IDS['bonus:upgrade-card'] || 'r10c5', () => { if (ups.length === 1) playFork(ups[0]); else { S.thresholdMode.stage = 'upgrade'; refreshBar(); } }));
     }
   }
+  const mulActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.multiplier === 'string' && ((cur.options && cur.options.effects) || []).some((e) => e.index === a.args.index && e.kind === 'multiplier'));
+  for (const a of mulActs) S.forkClaimed.add(a);
+  if (mulActs.length) {                                                             // a Multiplier token: the player's action cards are shown in their order, click the one that gets the token
+    const effs = (cur.options && cur.options.effects) || [], p0 = mulActs[0].player;
+    const others = effs.filter((e) => e.kind !== 'multiplier' && !(e.kind === 'gain' && (e.res === 'money' || e.res === 'xtoken')) && !/^income_/.test(e.kind));
+    const idx = S.multiplierMode !== null && mulActs.some((a) => a.args.index === S.multiplierMode) ? S.multiplierMode : !others.length ? mulActs[0].args.index : null;     // (the only effect left: no need to click its button first)
+    if (idx !== null) {
+      const mine = mulActs.filter((a) => a.args.index === idx);
+      bar.replaceChildren();
+      const you = PLAY && S.play && S.play.seat === p0;
+      const who0 = el('span', 'who', you ? 'You' : S.replay.players[p0].name);
+      who0.style.color = seatText(p0);
+      bar.append(who0, el('b', '', ' must choose an action to put a multiplier token on'));
+      (st.players[p0].action_cards || []).forEach((c, i) => {
+        const a = mine.find((x) => x.args.multiplier === c.type);
+        const b = el('span', 'abtn' + (c.level === 2 ? ' lvl2' : '') + (a ? ' choosable' : ' off'));
+        b.title = a ? 'Put the Multiplier token on ' + ACTION_NAMES[c.type] + (c.level === 2 ? ' II' : '') : ACTION_NAMES[c.type] + ' cannot take it';
+        b.append(pic(ACTION_ICON[c.type], 26), el('b', '', i + 1));
+        if (S.replay.marine_worlds && c.variant) { const v = el('img', 'variant'); v.src = '/action_icons/' + c.type + '_' + c.variant + '_' + (c.level === 2 ? 2 : 1) + '.webp'; v.alt = 'Variant ' + c.variant; b.append(v); }
+        if (a) b.onclick = () => { if (!S.forkBusy) playFork(a); };
+        bar.append(b);
+      });
+      if (others.length) { const back = el('button', 'forkmove', 'Back'); back.type = 'button'; back.onclick = () => { S.multiplierMode = null; refreshBar(); }; bar.append(back); }
+    }
+  }
   const cardEff = acts.filter((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards));      // an effect that takes cards of the hand (sunbathing)
   for (const a of [...handActs, ...dispActs, ...discardActs, ...cardEff]) S.forkClaimed.add(a);
   const pickGroups = [];                                                            // an effect that takes one card of the hand or the display: select it, then confirm

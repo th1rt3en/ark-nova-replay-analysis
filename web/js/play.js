@@ -123,7 +123,12 @@ export async function playLoad() {
   P.id = params.get('game');
   if (!/^E\d+$/.test(P.id || '')) { location.replace('/play.html'); return null; }
   P.token = params.get('s');
-  try { if (P.token) localStorage.setItem('playToken.' + P.id, P.token); else P.token = localStorage.getItem('playToken.' + P.id); } catch (e) { /* no storage */ }
+  if (!P.token) {                                                      // a game between accounts: the seat belongs to the logged-in account, whose page asks the server for the key (kept in memory only)
+    const mine = await fetch('/api/games/' + P.id + '/seat', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    if (mine && mine.token) P.token = mine.token;
+  }
+  else try { localStorage.setItem('playToken.' + P.id, P.token); } catch (e) { /* no storage */ }
+  if (!P.token) try { P.token = localStorage.getItem('playToken.' + P.id); } catch (e) { /* no storage */ }       // (a seat link of an older game, opened before)
   const setup = await playApi('/setup' + (P.token ? '?s=' + encodeURIComponent(P.token) : ''));
   if (!setup.ok && setup.status === 404) { location.replace('/end.html?game=' + encodeURIComponent(P.id)); return null; }       // the table is gone: it ended and was exported
   if (!setup.ok) throw new Error(setup.body.message || 'no such game');
@@ -272,7 +277,7 @@ async function abandonCall(path, body) {
   const r = await playApi('/abandon' + path, body || {});
   if (r.ok && r.body.status === 'abandoned') { P.status = 'abandoned'; setAbandon({ proposal: null, cooldown: {} }); render(); playEndCheck(); }       // (answered yes, or both players proposed: the table is closed)
   else if (r.ok && r.body.proposal !== undefined) setAbandon(r.body);
-  else if (!r.ok) renderForkMoves(r.body.message || 'that did not work');
+  else if (!r.ok) renderForkMoves(r.body.message || 'The game server did not answer (HTTP ' + r.status + '): try again in a moment.');
   return r;
 }
 function abandonButton() {
@@ -394,6 +399,7 @@ export function playWaitingBar(bar) {
   else if (P.seat === null) text = 'Watching: ' + (toAct.length ? toAct.map(name).join(' and ') : pr ? name(pr.player) : '…') + ' to play';
   else text = 'Waiting for ' + (toAct.length ? toAct.filter((s) => s !== P.seat).map(name).join(' and ') : pr && pr.player !== P.seat ? name(pr.player) : 'the other player') + '…';
   bar.append(el('b', '', text));
+  if (S.forkError) bar.append(el('span', 'forkerror', S.forkError));        // (a refused proposal to abandon, a concession...: the player who waits has no other place to read it)
   if (pr && pr.kind === 'study' && P.status === 'playing') bar.append(Object.assign(el('b', 'studyclock'), { textContent: studyText() }));
   if (['finished', 'conceded'].includes(P.status)) {
     const a = el('a', '', 'Open the replay');
