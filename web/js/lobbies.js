@@ -2,7 +2,8 @@
 // opening a lobby and, in a lobby, taking a seat or writing in the chat need an account: without one the page asks to log in.
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
-const POLL_MS = 5000;
+import { onPush, pushReady } from './push.js';
+const POLL_MS = 5000, SAFETY_MS = 30000;
 let account = null, options = { game_modes: [] }, timer = 0, mine = null;
 
 async function call(path, body) {
@@ -49,8 +50,9 @@ async function refresh() {
     render(d.lobbies);
     renderGames(d.games || []);
   } catch (e) { $('rows').textContent = e.status === 404 ? 'Custom games are not available here.' : e.message; }
-  if (!document.hidden) timer = setTimeout(refresh, POLL_MS);                      // (a tab in the background does not ask: it asks at once when it is looked at again)
+  if (!document.hidden) timer = setTimeout(refresh, pushReady() ? SAFETY_MS : POLL_MS);       // (with the push socket the hub says when the list changed)
 }
+onPush('list', () => refresh());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 
 function setAccount(a) {

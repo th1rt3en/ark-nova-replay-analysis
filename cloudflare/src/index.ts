@@ -2,11 +2,12 @@
 //   /ws/E12?s=<seat token>            -> the Table Durable Object of E12 (WebSocket)
 //   /internal/table/E12/<route>       -> the same object's internal routes, only with a valid signature of Cloud Run
 //   /internal/counter/<next|ensure>   -> the id counter, same rule
+//   /lobbies-ws?ticket=<ticket>       -> the Lobbies Durable Object's WebSocket (pushes; the ticket is made by Cloud Run, see auth.ts verifyTicket)
 //   /internal/lobbies/<op>            -> the lobbies of the custom games (the Lobbies Durable Object), same rule
 //   /internal/chat/<L12|E7>/<post|list> -> the chat of a lobby or a table (the Chat Durable Object of the room), same rule
 //   /internal/store/<op>              -> the accounts and mini game tables in D1 (src/store.ts), same signature rule
 //   /api/*                            -> Cloud Run
-import { verify } from "./auth";
+import { verify, verifyTicket } from "./auth";
 export { Table } from "./table";
 export { Counter } from "./counter";
 export { Lobbies } from "./lobbies";
@@ -29,6 +30,13 @@ export default {
             if (!TABLE_ID.test(m[1])) return json({ status: "error", message: "no such table" }, 404);
             if (request.headers.get("Upgrade") !== "websocket") return json({ status: "error", message: "a WebSocket is expected here" }, 426);
             return env.TABLE.get(env.TABLE.idFromName(m[1])).fetch(rewrite(request, "/ws", url.search));
+        }
+
+        if (path === "/lobbies-ws") {                                  // the socket of a page: lobbies, invitations and chat messages are pushed to it (src/lobbies.ts)
+            if (request.headers.get("Upgrade") !== "websocket") return json({ status: "error", message: "a WebSocket is expected here" }, 426);
+            const who = await verifyTicket(env.INTERNAL_SECRET, url.searchParams.get("ticket"));
+            const qs = new URLSearchParams(who ? { a: who.id, n: who.name } : {}).toString();
+            return env.LOBBIES.get(env.LOBBIES.idFromName("lobbies")).fetch(rewrite(request, "/ws", qs ? "?" + qs : ""));
         }
 
         m = /^\/internal\/table\/([^/]+)(\/.+)$/.exec(path);

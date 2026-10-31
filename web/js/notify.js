@@ -1,7 +1,8 @@
 // [module] Notifications of the custom games, on every page of the site for a logged-in player: it asks GET /api/lobbies/inbox every few seconds (which also tells the server that the
 // player is online, so others can invite them) and shows, at the bottom right, the invitations to a lobby (Accept / Decline) and the messages (an invitation was declined, you were
 // removed from a lobby, a lobby was closed). Nothing happens without an account or when the lobbies are switched off (404).
-const POLL_MS = 10000;                                                   // (every request is a call of the Lobbies Durable Object: a few thousand an hour from an open tab was too many)
+import { onPush, pushReady } from './push.js';
+const POLL_MS = 10000, SAFETY_MS = 120000;                                                 // (every request is a call of the Lobbies Durable Object: a few thousand an hour from an open tab was too many)
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 
 const css = el('style', {}, `
@@ -57,6 +58,7 @@ function inviteToast(inv) {
 }
 
 async function poll() {
+  clearTimeout(timer);
   try {
     const res = await fetch('/api/lobbies/inbox', { cache: 'no-store' });
     if (res.status === 404) { stop(); return; }                  // (the lobbies are not on this site)
@@ -70,11 +72,12 @@ async function poll() {
       document.dispatchEvent(new CustomEvent('lobby-notice', { detail: n }));
     }
   } catch (e) { /* offline: try again */ }
-  if (running && !document.hidden) timer = setTimeout(poll, POLL_MS);              // (a tab in the background does not ask: it asks at once when it is looked at again)
+  if (running && !document.hidden) timer = setTimeout(poll, pushReady() ? SAFETY_MS : POLL_MS);       // (with the push socket: the hub says when there is something; a tab in the background does not ask on its own)
 }
+let offInbox = null;                                              // (the socket is opened only for a logged-in player: a visitor of another page has none)
 
-function start() { if (running) return; running = true; poll(); }
-function stop() { running = false; clearTimeout(timer); for (const t of invites.values()) t.remove(); invites.clear(); }
+function start() { if (running) return; running = true; if (!offInbox) offInbox = onPush('inbox', () => { if (running) poll(); }); poll(); }
+function stop() { running = false; clearTimeout(timer); if (offInbox) { offInbox(); offInbox = null; } for (const t of invites.values()) t.remove(); invites.clear(); }
 
 document.addEventListener('account-changed', (e) => { if (e.detail) start(); else stop(); });
 document.addEventListener('visibilitychange', () => { if (running && !document.hidden) { clearTimeout(timer); poll(); } });

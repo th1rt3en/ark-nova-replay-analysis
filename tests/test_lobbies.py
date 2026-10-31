@@ -201,3 +201,22 @@ def test_a_visitor_takes_an_empty_seat_by_choosing_it_and_a_seat_with_an_invitat
     after = alice.get(url).json()
     assert after["players"] == 2 and after["can_start"] and after["seats_detail"][1]["pending"] is False and after["seats_detail"][1]["account_id"] is not None   # the filter is gone
     assert carol.post(f"{url}/join", json={"seat": 1}).status_code == 409                             # (taken now)
+
+
+def test_the_socket_route_gives_a_ticket_to_an_account_and_none_to_a_visitor_and_no_url_without_a_keeper():
+    import base64
+    import hashlib
+    import hmac
+    import json as _json
+    from types import SimpleNamespace
+    from ark_nova.live.lobbies import LobbyService, make_ticket
+    w = World()
+    assert w.browser("Alice").get("/api/lobbies/socket").json() == {"url": None, "ticket": None, "account": None}          # (the twin in memory has no sockets: the pages ask)
+    svc = LobbyService(w.service, ws_url="wss://worker.example/lobbies-ws", secret="s3cret")
+    assert svc.socket(None) == {"url": "wss://worker.example/lobbies-ws", "ticket": None, "account": None}
+    t = svc.socket(SimpleNamespace(id="P7", username="Zed"))["ticket"]
+    payload, sig = t.split(".")
+    assert hmac.compare_digest(sig, hmac.new(b"s3cret", f"lobbyws|{payload}".encode(), hashlib.sha256).hexdigest())      # (what auth.ts verifyTicket checks)
+    data = _json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+    assert data["a"] == "P7" and data["n"] == "Zed" and data["e"] > 0
+    assert svc.notify("chat:L1") is None and make_ticket("a", SimpleNamespace(id="1", username="x")) != make_ticket("b", SimpleNamespace(id="1", username="x"))

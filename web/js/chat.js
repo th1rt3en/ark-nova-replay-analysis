@@ -2,7 +2,8 @@
 // `GET /api/chat/<kind>/<id>?since=<seq>` every few seconds and sends with `POST`. A player of a table writes with the seat token; a spectator must be logged in (the server says so,
 // the page then offers the log-in button of the account widget); the messages of spectators are marked. Texts are shown as plain text, never as HTML.
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
-const POLL_MS = 3000;
+import { onPush, pushReady } from './push.js';
+const POLL_MS = 3000, SAFETY_MS = 30000;                          // (asked every 3 s without a push socket; with one the hub says when there is a message and the page asks only as a safety net)
 const hhmm = (ms) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 export function mountChat(root, { kind, id, token = null, onUnread = () => {} }) {
@@ -43,7 +44,7 @@ export function mountChat(root, { kind, id, token = null, onUnread = () => {} })
         if (!note.dataset.keep) say('');
       }
     } catch (e) { /* offline: try again */ }
-    if (!gone && !document.hidden) timer = setTimeout(poll, POLL_MS);              // (a tab in the background does not ask: the visibilitychange below asks at once)
+    if (!gone && !document.hidden) timer = setTimeout(poll, pushReady() ? SAFETY_MS : POLL_MS);              // (a tab in the background does not ask: the visibilitychange below asks at once)
   }
   form.onsubmit = async (e) => {
     e.preventDefault();
@@ -58,8 +59,9 @@ export function mountChat(root, { kind, id, token = null, onUnread = () => {} })
     } catch (err) { say('The message could not be sent.'); }
     send.disabled = false; input.focus();
   };
+  const off = onPush('chat:' + id, () => { if (!gone) poll(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
   document.addEventListener('account-changed', () => { say(''); poll(); });
   poll();
-  return { refresh: poll, seen: () => { unread = 0; onUnread(0); }, stop: () => { gone = true; clearTimeout(timer); } };
+  return { refresh: poll, seen: () => { unread = 0; onUnread(0); }, stop: () => { gone = true; clearTimeout(timer); off(); } };
 }

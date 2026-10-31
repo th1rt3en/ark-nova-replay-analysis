@@ -63,6 +63,11 @@ def add_routes(app: FastAPI, board: LobbyService, allowed_origins: list[str]) ->
     async def listing(request: Request):
         return await call(request, lambda a, b: board.list_open(a), post=False, anonymous=True)
 
+    @app.get("/api/lobbies/socket")
+    async def socket(request: Request):
+        """Where this page opens its push socket and the ticket that says who it is (a visitor has no ticket; `url` null = no push here: the page asks)."""
+        return await call(request, lambda a, b: board.socket(a), post=False, anonymous=True)
+
     @app.get("/api/lobbies/inbox")
     async def inbox(request: Request):
         return await call(request, lambda a, b: board.inbox(a), post=False)

@@ -185,7 +185,9 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         from ark_nova.api.lobbies import add_routes as add_lobby_routes
         from ark_nova.live.lobbies import HttpLobbies, LobbyService, MemoryLobbies
         # the lobbies live in the Worker's `Lobbies` Durable Object when the keeper is configured; otherwise (tests, the dev server) in memory
-        app.state.lobbies = LobbyService(live, HttpLobbies(st.live_keeper_url, st.internal_secret) if st.live_keeper_url and st.internal_secret else MemoryLobbies())
+        keeper_on = bool(st.live_keeper_url and st.internal_secret)
+        app.state.lobbies = LobbyService(live, HttpLobbies(st.live_keeper_url, st.internal_secret) if keeper_on else MemoryLobbies(),
+                                         ws_url=st.live_keeper_url.replace("https://", "wss://").replace("http://", "ws://").rstrip("/") + "/lobbies-ws" if keeper_on else None, secret=st.internal_secret if keeper_on else None)       # (the pages' push socket: the Worker's /lobbies-ws)
         add_lobby_routes(app, app.state.lobbies, [o.strip().rstrip("/") for o in st.allowed_origins.split(",") if o.strip()])
     if live is not None:                                                            # the chat of the tables (and, with the accounts, of the lobbies)
         from ark_nova.api.chat import add_routes as add_chat_routes

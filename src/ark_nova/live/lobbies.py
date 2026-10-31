@@ -13,6 +13,9 @@ Worker's tests (`cloudflare/test/lobbies.test.ts`) and `tests/test_lobbies.py` c
 
 The host's lobby disappears when the host has not been seen for `IDLE_SECONDS`; a member that is not seen for that long is taken out of the lobby.
 """
+import base64
+import hashlib
+import hmac
 import json
 import secrets
 import threading
@@ -32,7 +35,8 @@ IDLE_SECONDS = 90                            # a lobby whose host (a member) has
 INVITE_SECONDS = 600                         # an invitation that nobody answered is dropped after this long
 STARTED_KEEP_SECONDS = 12 * 3600             # a started lobby stays (members are sent to the table by it, everybody finds the game in the list of the games in progress) this long
 NOTICE_KEEP = 20
-OPS = ("create", "list", "get", "join", "leave", "kick", "invite", "cancel_invite", "answer", "inbox", "online", "begin_start", "finish_start", "abort_start")
+OPS = ("create", "list", "get", "join", "leave", "kick", "invite", "cancel_invite", "answer", "inbox", "online", "begin_start", "finish_start", "abort_start", "notify")
+TICKET_SECONDS = 300                         # a ticket for a page's WebSocket (see `make_ticket`) is good for this long
 
 
 class LobbyError(LiveError):
@@ -76,6 +80,9 @@ class MemoryLobbies:
         now = self.clock()
         names = sorted(n for i, (n, t) in self._seen.items() if i != account["id"] and now - t <= ONLINE_SECONDS and n.lower().startswith(query))
         return {"names": names[:8]}
+
+    def op_notify(self, topic) -> dict:
+        return {"ok": True}                      # (the twin has no sockets: its pages ask)
 
     # ---- lobbies --------------------------------------------------------------------------------------------------------------------
     def _sweep(self) -> None:
@@ -363,12 +370,29 @@ def _who(account) -> dict | None:
     return {"id": account.id, "username": account.username} if account is not None else None
 
 
-class LobbyService:
-    """What the routes call: the lobby store (the Worker, or the twin in memory) and the live service that makes the table."""
+def make_ticket(secret: str, account, now: float | None = None) -> str:
+    """The pass of a logged-in page's WebSocket to the Worker (`cloudflare/src/auth.ts` `verifyTicket`): `<base64url JSON {a, n, e}>.<hex HMAC-SHA256(secret, "lobbyws|" + that)>`."""
+    payload = base64.urlsafe_b64encode(json.dumps({"a": account.id, "n": account.username, "e": int((now if now is not None else time.time()) + TICKET_SECONDS)}, separators=(",", ":")).encode()).rstrip(b"=").decode()
+    return payload + "." + hmac.new(secret.encode(), ("lobbyws|" + payload).encode(), hashlib.sha256).hexdigest()
 
-    def __init__(self, live, store=None):
+
+class LobbyService:
+    """What the routes call: the lobby store (the Worker, or the twin in memory) and the live service that makes the table. `ws_url` + `secret`: where the pages open their
+    WebSocket (the Worker's `/lobbies-ws`) and what signs their ticket; without them (the dev server, the tests) the pages poll."""
+
+    def __init__(self, live, store=None, ws_url: str | None = None, secret: str | None = None):
         self.live = live
         self.store = store or MemoryLobbies()
+        self.ws_url, self.secret = ws_url, secret
+
+    def socket(self, account) -> dict:
+        """Where a page opens its push socket and with which ticket (a visitor gets none: they listen to the public topics only). `url` None: no push here."""
+        if not self.ws_url or not self.secret:
+            return {"url": None, "ticket": None, "account": None}
+        return {"url": self.ws_url, "ticket": make_ticket(self.secret, account) if account is not None else None, "account": account.id if account is not None else None}
+
+    def notify(self, topic: str) -> None:
+        self.store.call("notify", topic=topic)
 
     def create(self, account, settings: dict) -> dict:
         if bool(settings.get("rated")) and getattr(self.live, "ratings", None) is None:

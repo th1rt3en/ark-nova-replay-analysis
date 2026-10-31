@@ -26,11 +26,17 @@ export class LobbyError extends Error {
     constructor(message: string, public status = 409, public code = "lobby") { super(message); }
 }
 
-export const OPS = ["create", "list", "get", "join", "leave", "kick", "invite", "cancel_invite", "answer", "inbox", "online", "begin_start", "finish_start", "abort_start"];
+export const OPS = ["create", "list", "get", "join", "leave", "kick", "invite", "cancel_invite", "answer", "inbox", "online", "begin_start", "finish_start", "abort_start", "notify"];
+const SWEEP_MS = 30_000;                   // while a lobby is open the object wakes this often to close the lobbies whose host left
 
+/** What a socket of a page says about itself: who (a visitor has no account) and the topics it wants to hear about (`list`, `lobby:L3`, `chat:E7`; `inbox` is its account's own). */
+type Attachment = { id: string | null; name: string | null; topics: string[] };
+
+// The pages hold a WebSocket to this object (`/lobbies-ws`, `index.ts`) and are told *that* something changed ({type: "changed", topic}), then they ask Cloud Run for the view, which
+// stays per viewer. A player is online while a socket of theirs is open (the older way, a page that asks for the inbox every few seconds, still counts: `seen`).
 export class Lobbies extends DurableObject<Env> {
     private lobbies = new Map<string, Lobby>();
-    private seen = new Map<string, { name: string; at: number }>();       // account id -> the last time its page asked (presence is not stored: a page asks again within seconds)
+    private seen = new Map<string, { name: string; at: number }>();       // account id -> the last time its page asked (presence of a page that polls; not stored: a page asks again within seconds)
     private notices = new Map<string, any[]>();                          // one-shot messages for the pages
     private next = 0;
     private dirty = false;
@@ -40,12 +46,14 @@ export class Lobbies extends DurableObject<Env> {
     constructor(ctx: DurableObjectState, env: Env) {
         super(ctx, env);
         ctx.blockConcurrencyWhile(async () => {
-            const saved = await ctx.storage.get<{ lobbies: Lobby[]; next: number }>("state");
+            const saved = await ctx.storage.get<{ lobbies: Lobby[]; next: number; notices?: [string, any[]][] }>("state");
             if (saved) {
                 this.next = saved.next;
                 for (const l of saved.lobbies) this.lobbies.set(l.id, l);
+                for (const [id, box] of saved.notices ?? []) this.notices.set(id, box);
             }
         });
+        ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));          // (the pages' keep-alive does not wake the object)
     }
 
     private now(): number { return Date.now() / 1000 + this.clockOffset; }
@@ -54,12 +62,15 @@ export class Lobbies extends DurableObject<Env> {
     async advance(seconds: number): Promise<void> { this.clockOffset += seconds; }
 
     async fetch(request: Request): Promise<Response> {
-        const op = new URL(request.url).pathname.replace(/^\//, "");
+        const url = new URL(request.url);
+        const op = url.pathname.replace(/^\//, "");
+        if (op === "ws") return this.openSocket(request, url);
         if (request.method !== "POST" || !OPS.includes(op)) return Response.json({ error: { status: 404, code: "no_op", message: "no such operation" } }, { status: 404 });
         const args = (await request.json<Args>().catch(() => null)) ?? {};
         try {
             const result = this.run(op, args);
             if (this.dirty) { this.dirty = false; await this.save(); }
+            await this.schedule();
             return Response.json({ result });
         } catch (e) {
             if (e instanceof LobbyError) return Response.json({ error: { status: e.status, code: e.code, message: e.message } }, { status: e.status });
@@ -68,31 +79,134 @@ export class Lobbies extends DurableObject<Env> {
     }
 
     private async save(): Promise<void> {
-        await this.ctx.storage.put("state", { lobbies: [...this.lobbies.values()], next: this.next });
+        await this.ctx.storage.put("state", { lobbies: [...this.lobbies.values()], next: this.next, notices: [...this.notices] });
     }
 
+    // ---- the sockets of the pages ----
+    private openSocket(request: Request, url: URL): Response {
+        if (request.headers.get("Upgrade") !== "websocket") return new Response("a WebSocket is expected here", { status: 426 });
+        const pair = new WebSocketPair();
+        const [client, server] = Object.values(pair);
+        this.ctx.acceptWebSocket(server);
+        server.serializeAttachment({ id: url.searchParams.get("a") || null, name: url.searchParams.get("n") || null, topics: [] } satisfies Attachment);
+        const who = url.searchParams.get("a");
+        if (who) this.presenceChanged(who);
+        return new Response(null, { status: 101, webSocket: client });
+    }
+    private sockets(): { ws: WebSocket; at: Attachment }[] {
+        return this.ctx.getWebSockets().filter((ws) => ws.readyState === WebSocket.OPEN).map((ws) => ({ ws, at: (ws.deserializeAttachment() ?? { id: null, name: null, topics: [] }) as Attachment }));
+    }
+    async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+        let data: any = null;
+        try { data = JSON.parse(typeof message === "string" ? message : new TextDecoder().decode(message)); } catch { return; }
+        if (data && Array.isArray(data.sub)) {                                                    // {sub: ["list", "lobby:L3", "chat:L3"]}: what this page wants to hear about
+            const at = (ws.deserializeAttachment() ?? { id: null, name: null, topics: [] }) as Attachment;
+            at.topics = data.sub.filter((t: unknown) => typeof t === "string" && /^[a-z]+(:[EL]\d{1,9})?$/.test(t)).slice(0, 10);
+            ws.serializeAttachment(at);
+        }
+    }
+    async webSocketClose(ws: WebSocket): Promise<void> { await this.socketGone(ws); }
+    async webSocketError(ws: WebSocket): Promise<void> { await this.socketGone(ws); }
+    private async socketGone(ws: WebSocket): Promise<void> {
+        const at = (ws.deserializeAttachment() ?? null) as Attachment | null;
+        try { ws.close(); } catch { /* closed already */ }
+        if (at && at.id) { this.seen.set(at.id, { name: at.name ?? "", at: this.now() }); this.presenceChanged(at.id); }       // (it is online for another 45 s: a page that moves to another page reconnects within seconds)
+        await this.schedule();
+    }
+    /** Somebody went online or away: the lobby they sit in shows their dot. */
+    private presenceChanged(id: string): void {
+        const lob = this.lobbyOf(id);
+        if (lob) this.push(`lobby:${lob.id}`);
+    }
+    /** Tell every socket that listens to `topic` that it changed; `inbox` goes to the sockets of the account only. */
+    private push(topic: string, account?: string): void {
+        const msg = JSON.stringify({ type: "changed", topic });
+        for (const { ws, at } of this.sockets()) {
+            if (account !== undefined ? at.id === account : at.topics.includes(topic)) { try { ws.send(msg); } catch { /* going away */ } }
+        }
+    }
+    /** After a change: the sockets of the lobbies that changed and of the list hear about it; the accounts concerned (members, invited, a notice for them) get an `inbox` poke. */
+    private announce(before: Map<string, string>, noticesBefore: Map<string, number>): void {
+        const changed: string[] = [];
+        for (const [id, lob] of this.lobbies) if (before.get(id) !== JSON.stringify(lob)) changed.push(id);
+        for (const id of before.keys()) if (!this.lobbies.has(id)) changed.push(id);
+        const touched = new Set<string>();
+        for (const id of changed) {
+            const lob = this.lobbies.get(id) ?? (JSON.parse(before.get(id)!) as Lobby);
+            for (const m of lob.seats) if (m) touched.add(m.id);
+            for (const i of lob.invites) touched.add(i.to_id);
+            const was = before.get(id) ? (JSON.parse(before.get(id)!) as Lobby) : null;
+            if (was) { for (const m of was.seats) if (m) touched.add(m.id); for (const i of was.invites) touched.add(i.to_id); }
+            this.push(`lobby:${id}`);
+        }
+        if (changed.length) this.push("list");
+        for (const [acc, box] of this.notices) if (noticesBefore.get(acc) !== box.length) touched.add(acc);
+        for (const acc of touched) this.push("inbox", acc);
+    }
+    /** The lobbies that wait for their host are checked every 30 s (a host who left is noticed without anybody asking). */
+    private async schedule(): Promise<void> {
+        const open = [...this.lobbies.values()].some((l) => l.status !== "started");
+        const set = await this.ctx.storage.getAlarm();
+        if (open && set === null) await this.ctx.storage.setAlarm(Date.now() + SWEEP_MS);
+    }
+    async alarm(): Promise<void> {
+        const before = this.snapshot(), nb = this.noticeCounts();
+        this.sweep();
+        this.announce(before, nb);
+        if (JSON.stringify([...this.snapshot()]) !== JSON.stringify([...before])) this.dirty = true;
+        if (this.dirty) { this.dirty = false; await this.save(); }
+        await this.schedule();
+    }
+    private snapshot(): Map<string, string> { return new Map([...this.lobbies].map(([id, l]) => [id, JSON.stringify(l)])); }
+    private noticeCounts(): Map<string, number> { return new Map([...this.notices].map(([id, box]) => [id, box.length])); }
+
     run(op: string, a: Args): any {
+        const before = this.snapshot(), nb = this.noticeCounts();
+        try {
+            return this.runOp(op, a);
+        } finally {
+            this.announce(before, nb);
+        }
+    }
+
+    private runOp(op: string, a: Args): any {
         const m: Record<string, (a: Args) => any> = {
             create: (x) => this.create(x.account, x.settings ?? {}), list: (x) => this.list(x.account), get: (x) => this.getView(x.account, x.lobby_id), join: (x) => this.join(x.account, x.lobby_id, x.seat),
             leave: (x) => this.leave(x.account), kick: (x) => this.kick(x.account, x.lobby_id, x.target_id), invite: (x) => this.invite(x.account, x.lobby_id, x.username, x.seat),
             cancel_invite: (x) => this.cancelInvite(x.account, x.lobby_id, x.invite_id), answer: (x) => this.answer(x.account, x.invite_id, x.accept), inbox: (x) => this.inbox(x.account),
             online: (x) => this.online(x.account, x.q ?? ""), begin_start: (x) => this.beginStart(x.account, x.lobby_id), finish_start: (x) => this.finishStart(x.lobby_id, x.game_id, x.tokens),
-            abort_start: (x) => this.abortStart(x.lobby_id),
+            abort_start: (x) => this.abortStart(x.lobby_id), notify: (x) => this.notify(x.topic),
         };
         const anonymousOk = op === "list" || op === "get";                                    // (anybody may look: `account` is null for a visitor who is not logged in)
-        if (op !== "finish_start" && op !== "abort_start" && !(a.account && typeof a.account.id === "string" && typeof a.account.username === "string") && !(anonymousOk && !a.account)) throw new LobbyError("send {account}", 422, "bad_request");
+        if (op !== "finish_start" && op !== "abort_start" && op !== "notify" && !(a.account && typeof a.account.id === "string" && typeof a.account.username === "string") && !(anonymousOk && !a.account)) throw new LobbyError("send {account}", 422, "bad_request");
         const before = JSON.stringify([...this.lobbies.values()]) + this.next;
         const out = m[op](a);
         if (JSON.stringify([...this.lobbies.values()]) + this.next !== before) this.dirty = true;
         return out;
     }
 
-    // ---- presence ----
+    /** Somebody else's page wants the topic's sockets woken (Cloud Run tells it that a chat message was written). */
+    private notify(topic: string): any {
+        if (typeof topic === "string" && /^[a-z]+:[EL]\d{1,9}$/.test(topic)) this.push(topic);
+        return { ok: true };
+    }
+
+    // ---- presence: an open socket, or (a page that polls) a recent call ----
     private heartbeat(a: Account): void { this.seen.set(a.id, { name: a.username, at: this.now() }); }
-    private isOnline(id: string): boolean { const s = this.seen.get(id); return !!s && this.now() - s.at <= ONLINE_SECONDS; }
+    private hasSocket(id: string): boolean { return this.sockets().some(({ at }) => at.id === id); }
+    private lastSeen(id: string): number { return this.hasSocket(id) ? this.now() : (this.seen.get(id)?.at ?? 0); }
+    private isOnline(id: string): boolean { return this.now() - this.lastSeen(id) <= ONLINE_SECONDS; }
+    /** Everybody who is online: id -> name. */
+    private presence(): Map<string, string> {
+        const out = new Map<string, string>();
+        const now = this.now();
+        for (const [id, s] of this.seen) if (now - s.at <= ONLINE_SECONDS) out.set(id, s.name);
+        for (const { at } of this.sockets()) if (at.id && at.name) out.set(at.id, at.name);
+        return out;
+    }
     private online(a: Account, q: string): any {
-        const query = q.trim().toLowerCase(), now = this.now();
-        const names = [...this.seen].filter(([id, s]) => id !== a.id && now - s.at <= ONLINE_SECONDS && s.name.toLowerCase().startsWith(query)).map(([, s]) => s.name).sort();
+        const query = q.trim().toLowerCase();
+        const names = [...this.presence()].filter(([id, n]) => id !== a.id && n.toLowerCase().startsWith(query)).map(([, n]) => n).sort();
         return { names: names.slice(0, 8) };
     }
 
@@ -103,8 +217,8 @@ export class Lobbies extends DurableObject<Env> {
             if (lob.status === "started") { if (now - (lob.started_at ?? 0) > STARTED_KEEP_SECONDS) this.lobbies.delete(id); continue; }
             lob.invites = lob.invites.filter((i) => i.status !== "pending" || now - i.at <= INVITE_SECONDS);
             const host = lob.seats[0]!;
-            if (now - (this.seen.get(host.id)?.at ?? 0) > IDLE_SECONDS) { this.close(lob, "its host left"); continue; }
-            for (let k = 1; k < SEATS; k++) { const s = lob.seats[k]; if (s && now - (this.seen.get(s.id)?.at ?? 0) > IDLE_SECONDS) lob.seats[k] = null; }
+            if (now - this.lastSeen(host.id) > IDLE_SECONDS) { this.close(lob, "its host left"); continue; }
+            for (let k = 1; k < SEATS; k++) { const s = lob.seats[k]; if (s && now - this.lastSeen(s.id) > IDLE_SECONDS) lob.seats[k] = null; }
         }
     }
     private close(lob: Lobby, why: string): void {
@@ -115,6 +229,7 @@ export class Lobbies extends DurableObject<Env> {
         const box = this.notices.get(id) ?? [];
         box.push({ ...notice, at: this.now() });
         this.notices.set(id, box.slice(-NOTICE_KEEP));
+        this.dirty = true;                                          // (kept in the storage: the object may sleep between the notice and the page's call)
     }
     private lobbyOf(id: string): Lobby | undefined {
         return [...this.lobbies.values()].find((l) => (l.status === "open" || l.status === "starting") && l.seats.some((m) => m && m.id === id));
@@ -230,15 +345,15 @@ export class Lobbies extends DurableObject<Env> {
         const lob = this.get(id);
         this.needHost(lob, a); this.needOpen(lob);
         const name = (username ?? "").trim().toLowerCase();
-        const target = [...this.seen].find(([tid, s]) => name && s.name.toLowerCase() === name && this.isOnline(tid));
+        const target = [...this.presence()].find(([, n]) => name && n.toLowerCase() === name);
         if (!target) throw new LobbyError("That player is not online (only players who are logged in and on the site can be invited).", 404, "not_online");
-        const [tid, ts] = target;
+        const [tid, tname] = target;
         if (tid === a.id || lob.seats.some((m) => m && m.id === tid)) throw new LobbyError("That player is in the lobby already.", 409, "in_lobby");
         if (lob.invites.some((i) => i.status === "pending" && i.to_id === tid)) throw new LobbyError("That player has been invited already.", 409, "invited");
         if (seat === undefined || seat === null) seat = lob.seats.findIndex((m, k) => m === null && !this.pendingOn(lob, k));           // (no seat named: the first empty seat without an invitation)
         if (!Number.isInteger(seat) || (seat as number) < 1 || (seat as number) >= SEATS || lob.seats[seat as number] !== null) throw new LobbyError("There is no empty seat to invite a player to.", 409, "no_empty_seat");
         if (this.pendingOn(lob, seat as number)) throw new LobbyError("That seat has an invitation out: wait for the answer or cancel it.", 409, "no_empty_seat");
-        lob.invites.push({ id: crypto.randomUUID().replace(/-/g, "").slice(0, 12), to_id: tid, to_name: ts.name, seat: seat as number, status: "pending", at: this.now() });
+        lob.invites.push({ id: crypto.randomUUID().replace(/-/g, "").slice(0, 12), to_id: tid, to_name: tname, seat: seat as number, status: "pending", at: this.now() });
         return this.view(lob, a);
     }
 

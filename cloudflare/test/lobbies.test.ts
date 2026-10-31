@@ -151,3 +151,68 @@ describe("invitations", () => {
         expect((await ok("list", { account: c })).lobbies.some((l: any) => l.id === lob.id)).toBe(false);
     });
 });
+
+// ---- the sockets of the pages: they are told that something changed, and an open socket is presence ----
+async function ticketFor(a: { id: string; username: string }, secret = "test-secret", exp = Math.floor(Date.now() / 1000) + 300): Promise<string> {
+    const payload = btoa(JSON.stringify({ a: a.id, n: a.username, e: exp })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const sig = [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode("lobbyws|" + payload)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    return payload + "." + sig;
+}
+async function openSocket(account: { id: string; username: string } | null, topics: string[], secret = "test-secret"): Promise<{ ws: WebSocket; got: any[] }> {
+    const res = await fetchWorker("/lobbies-ws" + (account ? "?ticket=" + encodeURIComponent(await ticketFor(account, secret)) : ""), { headers: { Upgrade: "websocket" } });
+    expect(res.status).toBe(101);
+    const ws = res.webSocket as WebSocket;
+    const got: any[] = [];
+    ws.accept();
+    ws.addEventListener("message", (e: MessageEvent) => { got.push(JSON.parse(e.data as string)); });
+    ws.send(JSON.stringify({ sub: topics }));
+    await new Promise((r) => setTimeout(r, 30));
+    return { ws, got };
+}
+const settle = () => new Promise((r) => setTimeout(r, 60));
+
+describe("the push", () => {
+    it("wants a WebSocket and a good ticket makes the account, a bad one a visitor", async () => {
+        expect((await fetchWorker("/lobbies-ws")).status).toBe(426);
+        const { A: a, B: b } = fresh("w0");
+        const lob = await ok("create", { account: a, settings: {} });
+        const forged = await openSocket(null, ["inbox"]);                                   // (a visitor: no account, so no presence and no inbox)
+        const bad = await fetchWorker("/lobbies-ws?ticket=" + encodeURIComponent(await ticketFor(b, "other-secret")), { headers: { Upgrade: "websocket" } });
+        expect(bad.status).toBe(101);
+        (bad.webSocket as WebSocket).accept();
+        expect((await call("invite", { account: a, lobby_id: lob.id, username: b.username, seat: 1 })).status).toBe(404);          // (not online: the forged ticket did not make Bob)
+        forged.ws.close();
+    });
+
+    it("tells the sockets of a lobby, of the list and of the invited account what changed, and an open socket is presence", async () => {
+        const { A: a, B: b, C: c } = fresh("w1");
+        const list = await openSocket(null, ["list"]);
+        const lob = await ok("create", { account: a, settings: {} });
+        await settle();
+        expect(list.got).toContainEqual({ type: "changed", topic: "list" });
+        const watcher = await openSocket(null, [`lobby:${lob.id}`]);
+        const bob = await openSocket(b, ["list"]);                                          // (Bob's page: presence without a single call to the inbox)
+        await settle();
+        const invited = await ok("invite", { account: a, lobby_id: lob.id, username: b.username, seat: 1 });
+        expect(invited.seats_detail[1]).toMatchObject({ pending: true, username: b.username });
+        await settle();
+        expect(bob.got.filter((m) => m.topic === "inbox").length).toBe(1);                  // (the invited account is told, and only its own sockets)
+        expect(watcher.got).toContainEqual({ type: "changed", topic: `lobby:${lob.id}` });
+        const carol = await openSocket(c, []);
+        await settle();
+        expect(carol.got.filter((m) => m.topic === "inbox").length).toBe(0);
+        expect((await ok("online", { account: a, q: "Bob" })).names).toEqual([b.username]);
+        bob.ws.close(); watcher.ws.close(); carol.ws.close(); list.ws.close();
+    });
+
+    it("a chat message is announced to the sockets of its room only", async () => {
+        const s1 = await openSocket(null, ["chat:L91"]), s2 = await openSocket(null, ["chat:L92"]);
+        await ok("notify", { topic: "chat:L91" });
+        await settle();
+        expect(s1.got).toEqual([{ type: "changed", topic: "chat:L91" }]);
+        expect(s2.got).toEqual([]);
+        expect((await call("notify", { topic: "x" })).status).toBe(200);                      // (a topic that is not a room is ignored)
+        s1.ws.close(); s2.ws.close();
+    });
+});

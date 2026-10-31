@@ -34,6 +34,19 @@ export async function verify(secret: string | undefined, request: Request, path:
     return timingSafeEqual(want, sig);
 }
 
+/** A page's WebSocket to the lobbies says who it is with a ticket that Cloud Run made after checking the session: `<base64url(JSON {a: account id, n: name, e: expiry in seconds})>.<hex HMAC-SHA256(secret, "lobbyws|" + that)>`.
+ *  Returns the account, or null (a visitor has no ticket; a bad or old ticket is a visitor too). */
+export async function verifyTicket(secret: string | undefined, ticket: string | null, nowS = Math.floor(Date.now() / 1000)): Promise<{ id: string; name: string } | null> {
+    if (!secret || !ticket) return null;
+    const [payload, sig] = ticket.split(".");
+    if (!payload || !sig || !timingSafeEqual(await hmacHex(secret, "lobbyws|" + payload), sig)) return null;
+    try {
+        const data = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+        if (typeof data.a !== "string" || typeof data.n !== "string" || typeof data.e !== "number" || data.e < nowS) return null;
+        return { id: data.a, name: data.n };
+    } catch { return null; }
+}
+
 export function timingSafeEqual(a: string, b: string): boolean {
     if (a.length !== b.length) return false;
     let diff = 0;

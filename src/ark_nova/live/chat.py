@@ -118,7 +118,9 @@ class ChatService:
             who = {"sender": f"acct{account.id}", "name": account.username, "kind": "spectator", "seat": None}
         else:
             raise ChatError("Log in to write in the chat of a game you are watching.", 401, "login_needed")
-        return self.store.call(game_id, "post", text=text, **who)
+        out = self.store.call(game_id, "post", text=text, **who)
+        self._announce(game_id)
+        return out
 
     # ---- a lobby ----------------------------------------------------------------------------------------------------------------------
     def read_lobby(self, lobby_id: str, account, since: int) -> dict:
@@ -129,4 +131,14 @@ class ChatService:
         text = self._clean(text)
         view = self.lobbies.get(lobby_id, account)
         kind = "player" if view["is_member"] else "spectator"             # (a visitor of the lobby who has not taken a seat is a spectator)
-        return self.store.call(lobby_id, "post", text=text, sender=f"acct{account.id}", name=account.username, kind=kind, seat=view["my_seat"])
+        out = self.store.call(lobby_id, "post", text=text, sender=f"acct{account.id}", name=account.username, kind=kind, seat=view["my_seat"])
+        self._announce(lobby_id)
+        return out
+
+    def _announce(self, room: str) -> None:
+        """The pages that have the room open are told by the lobbies' socket hub that there is something new to read (they fetch it: `chat.js`). Never raises."""
+        try:
+            if self.lobbies is not None:
+                self.lobbies.notify("chat:" + room)
+        except Exception:                                                    # noqa: BLE001 (a page that is not told still asks again within the minute)
+            pass

@@ -3,11 +3,12 @@
 // accept; if they decline it looks empty again) and start the game once both seats are taken. When the host has started it every member goes to the table (play.html) by itself,
 // the others get a link to watch it. The page polls the lobby.
 import { mountChat } from './chat.js';
+import { onPush, pushReady } from './push.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 const id = new URLSearchParams(location.search).get('id') || '';
-const POLL_MS = 2000;                                     // (a member sees a change of the other seat within about two seconds; every request is a call of the Lobbies Durable Object)
+const POLL_MS = 2000, SAFETY_MS = 30000;                  // (without a push socket a member sees a change within about two seconds; with one the page asks only as a safety net)
 let timer = 0, view = null, invitingSeat = null, searchBox = null, gone = false, chatMounted = false, starting = false;
 
 async function call(path, body) {
@@ -130,12 +131,13 @@ async function refresh() {
   } catch (e) {
     if (e.status === 404) { over('This lobby is closed.'); return; }
   }
-  if (!document.hidden) timer = setTimeout(refresh, POLL_MS);                      // (a tab in the background does not ask: it asks at once when it is looked at again)
+  if (!document.hidden) timer = setTimeout(refresh, pushReady() ? SAFETY_MS : POLL_MS);       // (with the push socket the hub says when the lobby changed; a tab in the background does not ask on its own)
 }
 
 if (!/^L\d+$/.test(id)) over('There is no such lobby.');
 else {
   refresh();
+  onPush('lobby:' + id, () => refresh());                                            // (the hub says that this lobby changed, or that somebody in it went online / away)
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
   document.addEventListener('lobby-notice', () => refresh());                        // (a message, e.g. "you were removed", arrives: look at the lobby at once)
   document.addEventListener('account-changed', () => { chatMounted = false; refresh(); });
