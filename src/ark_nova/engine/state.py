@@ -179,10 +179,14 @@ class GameState:
     study: Optional[dict[str, Any]] = None                      # Ark360: the study time of the map before the draft (engine/ark360.py): `seconds` and `ready` per seat
 
     def to_dict(self) -> dict:
-        return to_jsonable(self)
+        d = to_jsonable(self)
+        d["rng"] = str(d["rng"])                # (a 64-bit number: JavaScript, which the keeper and the browser are, rounds it to 53 bits, and every draw after a reload would differ)
+        return d
 
     @classmethod
     def from_dict(cls, data: dict) -> "GameState":
+        if isinstance(data.get("rng"), str):
+            data = {**data, "rng": int(data["rng"])}
         return from_jsonable(cls, data)
 
     def other(self, seat: int) -> int:

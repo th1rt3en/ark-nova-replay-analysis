@@ -1,7 +1,7 @@
 // [module] Notifications of the custom games, on every page of the site for a logged-in player: it asks GET /api/lobbies/inbox every few seconds (which also tells the server that the
 // player is online, so others can invite them) and shows, at the bottom right, the invitations to a lobby (Accept / Decline) and the messages (an invitation was declined, you were
 // removed from a lobby, a lobby was closed). Nothing happens without an account or when the lobbies are switched off (404).
-const POLL_MS = 4000;
+const POLL_MS = 10000;                                                   // (every request is a call of the Lobbies Durable Object: a few thousand an hour from an open tab was too many)
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 
 const css = el('style', {}, `
@@ -70,7 +70,7 @@ async function poll() {
       document.dispatchEvent(new CustomEvent('lobby-notice', { detail: n }));
     }
   } catch (e) { /* offline: try again */ }
-  if (running) timer = setTimeout(poll, POLL_MS);
+  if (running && !document.hidden) timer = setTimeout(poll, POLL_MS);              // (a tab in the background does not ask: it asks at once when it is looked at again)
 }
 
 function start() { if (running) return; running = true; poll(); }

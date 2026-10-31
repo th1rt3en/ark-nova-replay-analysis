@@ -43,7 +43,7 @@ export function mountChat(root, { kind, id, token = null, onUnread = () => {} })
         if (!note.dataset.keep) say('');
       }
     } catch (e) { /* offline: try again */ }
-    if (!gone) timer = setTimeout(poll, POLL_MS);
+    if (!gone && !document.hidden) timer = setTimeout(poll, POLL_MS);              // (a tab in the background does not ask: the visibilitychange below asks at once)
   }
   form.onsubmit = async (e) => {
     e.preventDefault();
