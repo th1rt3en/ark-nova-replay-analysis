@@ -232,7 +232,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       wrap.append(draftNav(-1), pop, draftNav(1));
       const hide = el('button', 'drafthide');                                 // the lightbox dims the whole page, the Fork button included: this hides it (and brings it back) without leaving the step
       hide.type = 'button';
-      const sync = () => { popup.classList.toggle('lbhide', !!S.draftHidden); hide.textContent = S.draftHidden ? 'Show the action card draft' : 'Hide the draft (to use Fork)'; hide.setAttribute('aria-pressed', String(!!S.draftHidden)); };
+      const sync = () => { popup.classList.toggle('lbhide', !!S.draftHidden); hide.textContent = S.draftHidden ? 'Show Draft' : 'Hide Draft'; hide.setAttribute('aria-pressed', String(!!S.draftHidden)); };
       hide.onclick = () => { S.draftHidden = !S.draftHidden; sync(); };
       sync();
       popup.append(wrap, hide); popup.hidden = false; bar.hidden = true;
