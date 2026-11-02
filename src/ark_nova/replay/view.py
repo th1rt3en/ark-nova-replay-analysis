@@ -4,6 +4,7 @@ A step is one kept `move_id` of the log; its state is the replay builder's state
 decks (only their sizes) and with the cells every building covers, so the browser needs no board geometry code.
 """
 import os
+import copy
 import dataclasses
 import functools
 import re
@@ -12,17 +13,20 @@ from typing import Any
 
 from ark_nova import data
 from ark_nova.data import map_quirks
-from ark_nova.engine import association, endgame, sponsor_extras, tracks
+from ark_nova.engine import association, endgame, tracks
 from ark_nova.engine.breaks import hand_limit, kiosk_income, map_ability_income, map_income, sponsor_income
 from ark_nova.engine.board import footprint_cells
 from ark_nova.engine.build_action import knows_shape, shape_of
-from ark_nova.engine.state import GameState
+from ark_nova.engine.state import GameState, Phase
 from ark_nova.parser.log import parse_log
 from ark_nova.parser.model import Move, ParsedLog
 from ark_nova.replay.builder import Replay, build_replay
 from ark_nova.replay.config import game_from_log, infer_maps
 from ark_nova.replay.engine_replay import build_engine_replay
 from ark_nova.replay.options import step_options
+from ark_nova.replay.variant_stats import logged_variant_gains
+from ark_nova.replay.sponsor_sources import sponsor_event_gains
+from ark_nova.replay.sponsor_stats import SponsorLogStats, diversity_gains, sponsor_source_hints, sponsor_state_gains, tracked_sponsors as _tracked_sponsors
 from ark_nova.storage.index import TableRecord
 
 _PLACEHOLDER = re.compile(r"\$\{(\w+)\}")
@@ -32,7 +36,7 @@ LARGE_DIR = WEB_DIR / "cards_large"      # full size cards (745 x 1040) for the 
 CARD_DIR = WEB_DIR / "cards"    # card images (360 x 503) made by scripts/build_cards.py
 TIMED_BY_LOG = ("break_position", "round", "display", "main_deck_size", "main_deck", "main_discard_size", "main_discard", "endgame_deck", "endgame_deck_size", "current_action", "active_player", "turn")      # shown as the log has them at each step (the refill comes later than the engine's); likewise the order of the action cards
 GAIN_FIELDS = ("reputation", "appeal", "conservation")
-LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "income_total", "income_parts", "hand_limit")      # per player, same reason
+LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "income_total", "income_parts", "income_lines", "hand_limit")      # per player, same reason
 PICTURE_OF = {"6a": "6"}              # map 6a has the same board as map 6; its own picture has the placement bonuses baked in (bugged)
 STATE_DROP = ("endgame_discard", "seed", "config", "rng", "base_projects_unused", "version", "checkpoint")
 
@@ -53,11 +57,17 @@ def render_log(template: str, args: Any, depth: int = 0) -> str:
     return re.sub(r"\s+", " ", _PLACEHOLDER.sub(sub, template or "")).strip()
 
 
+@functools.lru_cache(maxsize=1)
+def _action_card_names() -> dict:
+    """The name of each action card variant, "sponsors2" -> "Money Sponsors" (the names of the viewer: web/js/cards.js VARIANT_NAME)."""
+    return {f"{c['category']}{c['variant']}": str(c["name"]).replace("Pavillion", "Pavilion") for c in data._load("action_cards")}
+
+
 def _draft_text(e, names: dict[str, str]) -> str:
-    """The private action card draft events have no log text: say what the player picked / kept (and from what)."""
+    """The private action card draft events have no log text: say what the player picked / kept (a keep: "X keeps Money Sponsors and Terrain Build")."""
     def pretty(v) -> str:
         v = str(v)
-        return f"{v[:-1].capitalize()} {v[-1]}" if v[-1:].isdigit() else v
+        return _action_card_names().get(v.lower()) or (f"{v[:-1].capitalize()} {v[-1]}" if v[-1:].isdigit() else v)
     a = e.args if isinstance(e.args, dict) else {}
     pv = (a.get("args") or {}).get("_private") or a
     who = names.get(str(e.player), "A player")
@@ -66,18 +76,27 @@ def _draft_text(e, names: dict[str, str]) -> str:
         rnd = "first" if not pv.get("previous") else "second"
         return f"{who} picks {pretty(pv['selection'])} from {', '.join(pretty(c) for c in cards)} (action card draft, {rnd} pick)"
     if e.type == "updateInitialActionCardsKeep" and pv.get("selection"):
-        return f"{who} keeps {' and '.join(pretty(v) for v in pv['selection'])} of {', '.join(pretty(c) for c in cards)} (action card draft)"
+        return f"{who} keeps {' and '.join(pretty(v) for v in pv['selection'])}"
     return ""
 
 
 # What an opponent does not see in the physical game: the cards drawn from the deck (and the scoring cards), cards stored or pouched face down. The cards that are revealed
 # (Hunter, Perception, Scuba Dive, a search of the deck, the discard pile) and everything that goes to the open discard pile are public (planning sheet "visibility").
-_PUBLIC_DRAW = re.compile(r"hunter effect|perception effect|scuba dive effect|resistance effect|for gaining a new university|from discard|Assertion|Dominance|Pilfering|with <")
-_SECRET_DISCARD = re.compile(r"scoring card|adapt effect|pouch")
+_PUBLIC_DRAW = re.compile(r"resistance effect|for gaining a new university|from discard|Dominance|Pilfering|with <")
+# (hidden from the other player: the scoring cards, Adapt, pouched cards, the discards of Hunter / Scuba Dive without a pick, Glide, a card dug from the hand;
+# the break discards (see `_break_move`) and the keep / discard line of Perception (no suffix) are too)
+_SECRET_DISCARD = re.compile(r"scoring card|adapt effect|pouch|\(no animal\)|\(no sponsor\)|Glide effect|dig .* from your hand")
+_PLAIN_DISCARD = re.compile(r"^You discard \$\{card_names\}$")                    # (the discard of the Cards action: the other player does not read the card)
+_PERCEPTION_KEEP = re.compile(r"^You keep \$\{card_names2\} and discard \$\{card_names\}$")
+
+
+def _break_move(move) -> bool:
+    """Is this move a break (its discards down to the hand limit are made face down: the other player does not read the cards)?"""
+    return any(e.type == "updateBreakDiscardSelection" for e in move.events)
 
 
 # the reveals (Hunter, Scuba Dive, Scavenging, Perception): what the player draws and keeps is not named for the other player
-REVEAL_EFFECT = re.compile(r"for (hunter|scuba dive|scavenging|perception) effect")
+REVEAL_EFFECT = re.compile(r"for (hunter|scuba dive|scavenging|perception|resistance) effect")
 
 
 def _reveal(e) -> str | None:
@@ -85,7 +104,9 @@ def _reveal(e) -> str | None:
     if e.type not in ("pDrawCards", "pDiscardCards"):
         return None
     m = REVEAL_EFFECT.search(e.log or "")
-    return m.group(1) if m else None
+    if m:
+        return None if m.group(1) == "resistance" and e.type == "pDrawCards" else m.group(1)          # (the endgame cards drawn by Resistance are public, the keep / discard line is not)
+    return "perception" if e.type == "pDiscardCards" and _PERCEPTION_KEEP.search(e.log or "") else None
 
 
 def _reveal_hidden(e, effect: str) -> str:
@@ -101,20 +122,23 @@ def _reveal_hidden(e, effect: str) -> str:
             text = None
         if text:
             return text.replace("You keep ", "You keeps ", 1).replace(f" for {effect} effect", f" for the {effect} effect")
-    return f"You keeps 1 card for the {effect} effect"
+    n = len(a.get("cards2") or []) or 1
+    return f"You keeps {n} card{'' if n == 1 else 's'} for the {effect} effect"
 
 
-def _secret(e) -> bool:
-    """Is this private event (written for one player) something that the other player must not read?"""
+def _secret(e, brk: bool = False) -> bool:
+    """Is this private event (written for one player) something that the other player must not read? `brk`: the event is in a break move."""
     if e.player is None:
         return False
     if _reveal(e):
         return True
     log = e.log or ""
+    if brk and e.type == "pDiscardCards":
+        return True
     if e.type == "pDrawCards":
         return not _PUBLIC_DRAW.search(log)
     if e.type == "pDiscardCards":
-        return bool(_SECRET_DISCARD.search(log))
+        return bool(_SECRET_DISCARD.search(log) or _PLAIN_DISCARD.search(log))
     return e.type in ("pStoreCard", "pUnstoreCard")
 
 
@@ -129,49 +153,116 @@ def _hidden_text(e) -> str:
     if "${card_names} cards" in (e.log or ""):                         # ("You pouch ${card_names} cards for ...": the word is already there)
         word = str(n)
     hidden = {**a, "card_names": word, "card_name": word, "card_names2": word}
-    return render_log(e.log, hidden)
+    return render_log(e.log, hidden).replace(" from your hand", " from their hand")
 
 
-def _event_text_pov(e, names: dict[str, str], pov, initial_discard: bool = False) -> str:
+def _fix_grammar(t: str) -> str:
+    """BGA's public template "${player_name} increase the size of a ${building_name}" has no -s and the building name already starts with "a"."""
+    return re.sub(r"^(.+?) increase the size of (?:a )?(an? )", r"\1 increases the size of \2", t)
+
+
+_ANNOUNCES_TAKE = re.compile(r"^[^\n]* gets \d+ x (?:take-in-range-or-deck|upgrade-card)(?: \([^)]*\))?$")      # (the upgrade-card line only announces the "X upgrades <card>" that follows; its state is the one of the step before)
+
+
+def _you_to_name(t: str, name: str) -> str:
+    """"You draw A" (the private line of the log) as the other players read it: "X draws A" (the verb takes the 3rd person singular -s)."""
+    m = re.match(r"^You (\w+)", t)
+    if not m:
+        return t
+    verb = m.group(1)
+    if not verb.endswith("s"):                                  # (BGA wrote "You takes" once: already right)
+        verb += "es" if re.search(r"(sh|ch|x|z|o)$", verb) else "s"
+    return f"{name} {verb}" + t[m.end():]
+
+
+def _event_text_pov(e, names: dict[str, str], pov, initial_discard: bool = False, brk: bool = False) -> str:
     """The line of an event as the viewer at `pov` (a player id, None = sees everything) reads it. `initial_discard`: the event is in the move of the initial discards,
     which the other player does not see (the cards go to the pile face down)."""
-    secret = e.player is not None and (_secret(e) or (initial_discard and e.type == "pDiscardCards"))
+    if initial_discard and e.type == "pDiscardCards" and e.player:         # the opening discard is short for everyone: "X discards 4 cards" (the cards are no use to the reader)
+        cards = (e.args or {}).get("cards") if isinstance(e.args, dict) else None
+        n = len(cards) if isinstance(cards, list) and cards else 1
+        return f"{names.get(e.player) or 'A player'} discards {n} card{'' if n == 1 else 's'}"
+    secret = e.player is not None and (_secret(e, brk) or (initial_discard and e.type == "pDiscardCards"))
     t = _hidden_text(e) if pov is not None and str(e.player) != str(pov) and secret else render_log(e.log, e.args)
     if e.player and names.get(e.player):          # private events are written for the player: "You draw ..."
-        t = re.sub(r"^You", names[e.player], t)
-    return t
+        t = _you_to_name(t, names[e.player])
+    if initial_discard:                           # (the first display is not named either)
+        t = re.sub(r"^(The display is replenished) with .*$", r"\1", t)
+    return _fix_grammar(t)
 
 
 def step_label(move: Move, names: dict[str, str], pov=None, initial_discard: bool = False) -> str:
     texts = []
+    brk = _break_move(move)
     for e in move.events:
         if e.type in ("updateInitialActionCardSelection", "updateInitialActionCardsKeep"):
             t = _draft_text(e, names)
             if pov is not None and e.player is not None and str(e.player) != str(pov):          # the other player's choices stay hidden
                 t = f"{names.get(str(e.player), 'A player')} chooses action cards (action card draft)" if t else ""
         else:
-            t = _event_text_pov(e, names, pov, initial_discard)
+            t = _event_text_pov(e, names, pov, initial_discard, brk)
         if t and t not in texts:
             texts.append(t)
     return " · ".join(texts[:3])
 
 
+def _split_keep_and_draw(mv: Move, step: dict, before: dict | None, names: dict[str, str], pids: list) -> list | None:
+    """The last keep of the action card draft and the starting hands are three steps: "X keeps Money Sponsors and Terrain Build", then one step per player, in seat order:
+    "X draws 8 cards and 2 endgame cards" (9 cards with the map of Lagoon, counted from the log). The first step has the state of the step before with the draft finished;
+    the step of the first player to draw has the second player's hand, endgame cards and the cards of the decks still as before."""
+    keeps = [e for e in mv.events if e.type == "updateInitialActionCardsKeep"]
+    draws = [e for e in mv.events if e.type == "pDrawCards" and e.player]
+    if len(keeps) != 1 or not draws or before is None or "draft" not in step["state"] or len(pids) != 2:
+        return None
+    cards = {str(pid): [0, 0] for pid in pids}                       # per player: [starting cards, endgame cards]
+    for e in draws:
+        if str(e.player) in cards and isinstance(e.args, dict):
+            cards[str(e.player)][1 if "(scoring cards)" in (e.log or "") else 0] += len(e.args.get("cards") or [])
+    if not all(sum(c) for c in cards.values()):
+        return None
+
+    def keep_label(pov) -> str:
+        t = _draft_text(keeps[0], names)
+        if pov is not None and str(keeps[0].player) != str(pov):
+            t = f"{names.get(str(keeps[0].player), 'A player')} chooses action cards (action card draft)"
+        return t
+
+    def draw_label(pid) -> str:
+        n, m = cards[str(pid)]
+        return f"{names.get(str(pid), 'A player')} draws {n} card{'' if n == 1 else 's'}" + (f" and {m} endgame card{'' if m == 1 else 's'}" if m else "")
+
+    keep_text = keep_label(None)
+    lp = [keep_label(pid) for pid in pids]
+    first = {**step, "label": keep_text, "label_pov": [t if t != keep_text else None for t in lp] if any(t != keep_text for t in lp) else None,
+             "state": {**copy.deepcopy(before), "draft": step["state"]["draft"]}, "options": None, "actor": None, "_obj": None}
+    mid_state = copy.deepcopy(step["state"])                          # after the first player's draw only
+    n0, m0 = cards[str(pids[0])]
+    for k in ("hand", "endgame_hand", "initial_offer"):
+        mid_state["players"][1][k] = copy.deepcopy(before["players"][1][k])
+    mid_state["main_deck"], mid_state["endgame_deck"] = list(before["main_deck"][n0:]), list(before["endgame_deck"][m0:])
+    mid_state["main_deck_size"], mid_state["endgame_deck_size"] = len(mid_state["main_deck"]), len(mid_state["endgame_deck"])
+    middle = {**step, "label": draw_label(pids[0]), "label_pov": None, "state": mid_state, "options": None, "actor": None, "_obj": None}
+    last = {**step, "label": draw_label(pids[1]), "label_pov": None}
+    return [first, middle, last]
+
+
 def _event_text(e, names: dict[str, str]) -> str:
     t = render_log(e.log, e.args)
     if e.player and names.get(e.player):
-        t = re.sub(r"^You", names[e.player], t)
-    return t
+        t = _you_to_name(t, names[e.player])
+    return _fix_grammar(t)
 
 
 def group_labels(move: Move, names: dict[str, str], pov, initial_discard: bool = False) -> list[str]:
     """`move_groups` labels as the viewer at `pov` reads them (the same groups: they are cut by the unredacted text)."""
     groups: list[list] = []
+    brk = _break_move(move)
     for e in move.events:
         t = _event_text(e, names)
         if not t:
             continue
         if not groups or t != groups[-1][0]:
-            groups.append([t, _event_text_pov(e, names, pov, initial_discard)])
+            groups.append([t, _event_text_pov(e, names, pov, initial_discard, brk)])
     return [g[1] for g in groups]
 
 
@@ -250,21 +341,74 @@ def income_parts(state: GameState, ps) -> dict:
     return {k: v for k, v in parts.items() if v or k == "appeal"}
 
 
+def income_lines(state: GameState, ps) -> list:
+    """The same money by single source for the income pop-up: [category, label, amount, card key or None]; category 0 appeal track, 1 zoo (kiosks, map ability), 2 one line per sponsor, 3 map bonuses."""
+    lines = [[0, "Appeal track", tracks.income_from_appeal(ps.appeal), None]]
+    try:
+        lines.append([1, "Kiosks", kiosk_income(ps), None])
+        lines.append([1, data.map_by_id(ps.map_id)["name"], map_ability_income(state, ps), None])
+        for k in ps.sponsors:
+            lines.append([2, k, sponsor_income(state, ps, only=[k])["money"], k])
+        lines.append([3, "Map bonuses", sum(b["value"] for b in map_income(state, ps) if b.get("type") == "money"), None])
+    except Exception:
+        lines = lines[:1]
+    return [l for l in lines if l[2] or l[0] == 0]
+
+
+def endgame_lines(state: GameState, ps) -> tuple:
+    """The conservation points of the endgame for the pop-up: ([[sponsor key, n]], [[endgame card key, n]]), biggest first. The cards are private (the live projection takes them out)."""
+    try:
+        if state.phase in (Phase.OVER, Phase.SCORING):
+            return [], []
+        sp = [[k, endgame.sponsor_points(state, ps.seat, k)["conservation"]] for k in ps.sponsors]
+        cd = [[c, endgame.card_points(state, ps.seat, c)] for c in endgame.kept_endgame_cards(state, ps.seat)]
+        key = lambda x: (-x[1], x[0])
+        return sorted([x for x in sp if x[1]], key=key), sorted([x for x in cd if x[1]], key=key)
+    except Exception:
+        return [], []
+
+
+def endgame_appeal_lines(state: GameState) -> list:
+    """Per seat the appeal points of the endgame for the pop-up, [[sponsor key, n]] biggest first: the same sums as `endgame.live_scoring` (Arcade first, Mascot Statue last)."""
+    seats = range(len(state.players))
+    try:
+        if state.phase in (Phase.OVER, Phase.SCORING):
+            return [[] for _ in seats]
+        base = {s: state.players[s].appeal for s in seats}
+        out = {s: [] for s in seats}
+        for s in seats:
+            if "S281" in state.players[s].sponsors:
+                out[s].append(["S281", 2 * sum(base[o] < base[s] for o in seats if o != s)])
+            for k in state.players[s].sponsors:
+                out[s].append([k, endgame.sponsor_points(state, s, k)["appeal"]])
+        final = {s: base[s] + sum(n for _, n in out[s]) for s in seats}
+        for s in seats:
+            if "S274" in state.players[s].sponsors:
+                out[s].append(["S274", 2 * sum(final[o] > final[s] for o in seats if o != s)])
+        return [sorted([x for x in out[s] if x[1]], key=lambda x: (-x[1], x[0])) for s in seats]
+    except Exception:
+        return [[] for _ in seats]
+
+
 def state_view(state: GameState) -> dict:
     s = state.to_dict()
     s["main_deck_size"], s["endgame_deck_size"] = len(s["main_deck"]), len(s["endgame_deck"])
     s["main_discard_size"] = len(s["main_discard"])
     for k in STATE_DROP:
         s.pop(k, None)
+    appeal_lines = endgame_appeal_lines(state)
     live = endgame.live_scoring(state)                          # what the final scoring would add now (the viewers' "Endgame live count")
-    for p, ps, lv in zip(s["players"], state.players, live):
+    for p, ps, lv, al in zip(s["players"], state.players, live, appeal_lines):
         p["endgame_live"] = {"appeal": lv["appeal"], "conservation": lv["conservation"]} if lv else None      # (public: sponsors in the zoo)
+        p["endgame_sponsor_lines"], p["endgame_card_lines"] = endgame_lines(state, ps)       # (conservation by sponsor / by endgame card; the card lines are private like endgame_cards)
+        p["endgame_appeal_lines"] = al                          # (appeal by sponsor; the endgame cards give no appeal yet, a future card would come as endgame_card_appeal_lines)
         p["endgame_cards"] = lv["cards"] if lv else None        # (private: the endgame cards of the seat; the live projection takes it out for the other viewers)
         p["score"] = tracks.score(ps.appeal, ps.conservation)
         p["hand_limit"] = hand_limit(ps)
         p["income"] = tracks.income_from_appeal(ps.appeal) + (map_ability_income(state, ps) if ps.map_id in ("5", "5a") else 0)       # the money at a break: the appeal track, and Park Restaurant's 1 per covered space next to the restaurant
         p["income_parts"] = income_parts(state, ps)
         p["income_total"] = sum(p["income_parts"].values())
+        p["income_lines"] = income_lines(state, ps)
         for b in p["buildings"]:
             b["cells"] = building_cells(b)
     return s
@@ -344,6 +488,7 @@ def _join_labels(step: dict, folded: list) -> None:
     joined = [" · ".join(t) for t in texts]
     step["label"] = label
     step["label_pov"] = [j if j != label else None for j in joined] if any(j != label for j in joined) else None
+    step["move_from"] = min(x.get("move_from", x["move_id"]) for x in group)       # (BGA's first move of the group: the number the move list shows)
 
 
 _BARE_XTOKEN = re.compile(r"^.+ gains \d+ xtoken$")
@@ -408,7 +553,7 @@ def _combine_action(steps: list, keep: list) -> list:
 
     for i in (i for i, k in enumerate(keep) if k):
         parts = _parts(steps[i])
-        if run and _follows(steps[i]):
+        if run and steps[run[-1]]["state"].get("turn_context") == steps[i]["state"].get("turn_context") and _follows(steps[i]):
             run.append(i)
             continue
         flush()
@@ -425,6 +570,8 @@ def _combine_runs(steps: list, keep: list) -> list:
     order = [i for i, k in enumerate(keep) if k]
 
     def merge(run: list) -> None:
+        if run and any(steps[i]["state"].get("turn_context") != steps[run[0]]["state"].get("turn_context") for i in run):
+            return
         if len(run) < 2 or run[0] == 0:
             return
         _join_labels(steps[run[-1]], [steps[i] for i in run[:-1]])
@@ -460,11 +607,38 @@ def _combine_runs(steps: list, keep: list) -> list:
             if any(p.startswith("The display is replenished") for p in parts):
                 wave = []
             continue
-        if _animal_gain(steps[i]):
-            gains.append(i)
-        else:
-            merge(gains); gains = []
+        merge(gains); gains = []                                 # (the gains of an animal are steps of their own: see `_combine_action`)
     merge(gains)
+    return out
+
+
+_WORKER_BONUS = re.compile(r"^(.+) gets 1 x add-worker \((.+)\)$")
+_WORKER_GAIN = re.compile(r"^(.+) gains a new Association worker$")
+_SPONSOR_BUY = re.compile(r"^(.+) buys (.+) from display$")
+_SPONSOR_PAY = re.compile(r"^(.+) pays (\d+) (?:money )?for playing sponsor from reputation range$")
+
+
+def _merge_pairs(steps: list, keep: list) -> list:
+    """Two steps that say one thing are one step, with one text: "X gets 1 x add-worker (reputation track bonus)" + "X gains a new Association worker" -> "X gains a new Association
+    worker (reputation track bonus)"; "X buys A from display" + "X pays 5 money for playing sponsor from reputation range" -> "X pays 5 to buy A from display". The step that stays is the
+    second one (its state)."""
+    out = list(keep)
+    order = [i for i, k in enumerate(keep) if k]
+    for i, j in zip(order, order[1:]):
+        if i == 0 or steps[i].get("label_pov") or steps[j].get("label_pov") or steps[i]["state"].get("turn_context") != steps[j]["state"].get("turn_context"):
+            continue
+        a, b = steps[i]["label"].strip(), steps[j]["label"].strip()
+        label = None
+        m, n = _WORKER_BONUS.match(a), _WORKER_GAIN.match(b)
+        if m and n and m.group(1) == n.group(1):
+            label = f"{m.group(1)} gains a new Association worker ({m.group(2)})"
+        m, n = _SPONSOR_BUY.match(a), _SPONSOR_PAY.match(b)
+        if m and n and m.group(1) == n.group(1):
+            label = f"{m.group(1)} pays {n.group(2)} to buy {m.group(2)} from display"
+        if label:
+            _join_labels(steps[j], [steps[i]])
+            steps[j]["label"], steps[j]["label_pov"] = label, None
+            out[i] = False
     return out
 
 
@@ -489,55 +663,112 @@ def _fold_unchanged(steps: list, keep: list) -> list:
     return out
 
 
-# What a sponsor has given its owner (the replay only): the gains that the log names after the card ("X gains 2 appeal (Expert On Europe)"), added up per card and resource. Only the
-# sponsors with a passive effect (triggers, markers) are followed: the viewer shows the totals next to the enlarged card.
-@functools.lru_cache(maxsize=1)
-def _tracked_sponsors() -> dict:
-    """Lower-case card name -> key of every sponsor that has a passive effect."""
-    return {str(c["name"]).lower(): c["key"] for c in data.cards_by_key().values()
-            if c.get("card_type") == "sponsor" and c["key"] not in NO_STATS
-            and (c["key"] in EXTRA_TRACKED or any(e.get("effectType") == "passive" for e in c.get("effects") or []))}
-
-
-# The sponsors whose gains in the log are only the instant gain of playing them: what they do afterwards is counted from the engine's effects (`differential.observe_sponsors`:
-# Clever of Expert On Africa, pavilions of Asia, pouches of Australia, the enlargements of Conference On Australia, the snaps and the third animal of Waza Small Animal Program)
-# or from the animals played (the experts in small / large animals save 3 / 4 money per animal).
-OWN_STATS = {"S210", "S211", "S212", "S213", "S214", "S228", "S229", "S230"}
-NO_STATS = {"S215", "S218", "S225", "S272"}                       # Breeding Cooperation / Program (the cubes are on the card), Quarantine Lab, Expansion Area
-EXTRA_TRACKED = {"S209"}                                          # Technology Institute: the X tokens it gave
-ONLY = {"S209": {"xtoken"}, "S224": {"conservation"}}            # of the gains named after the card, only these are shown
-SAVES = {"S229": ("small", 3), "S230": ("large", 4)}
-
-
-def _sponsor_gains(move: Move, in_play: dict, seat_of: dict) -> list:
-    """[(order, sponsor key, statistic, amount)] of one move: the gains that the log names after a tracked sponsor, and what the experts in small / large animals saved. `in_play`:
-    player id -> the keys of the experts in play (kept from move to move)."""
+def _cp_bonuses(parsed: ParsedLog, seat_of: dict) -> list:
+    """The bonuses taken for 5 or 8 conservation points (a `takeBonus` without a source whose `remove` is "5-n" / "8-n"): [{move_id, seat, threshold, type}].
+    The text of the step ("X gets 1 x Fac") does not say which threshold it was, the viewer's Key events graph marks the gifts with it."""
     out = []
-    tracked = _tracked_sponsors()
-    cards = data.cards_by_key()
-    for e in move.events:
-        a = e.args if isinstance(e.args, dict) else {}
-        if e.type == "playSponsor" and isinstance(a.get("card"), dict):
-            key = str(a["card"].get("id", ""))[:4]
-            if key in SAVES:
-                in_play.setdefault(str(a.get("player_id")), set()).add(key)
-        elif e.type == "buyAnimal" and isinstance(a.get("card"), dict):
-            card = cards.get(str(a["card"].get("id", ""))[:4])
-            kind = sponsor_extras.size_class(card) if card and "size" in card else None
-            for key in in_play.get(str(a.get("player_id")), ()):
-                if kind == SAVES[key][0]:
-                    out.append((e.order, key, "saved", SAVES[key][1]))
-        elif e.type == "getBonuses":
-            src = a.get("card_name") or a.get("source")
-            key = tracked.get(src.lower()) if isinstance(src, str) else None
-            bonuses = a.get("bonuses")
-            if src == "Sponsors2 effect" and isinstance(bonuses, dict) and str(a.get("player_id")) in seat_of:        # Money Sponsors (variant 2): the extra money of its ability
-                out.append((e.order, f"{seat_of[str(a['player_id'])]}:sponsors", "money", int(bonuses.get("money") or 0)))
-            if key and key not in OWN_STATS and isinstance(bonuses, dict):
-                for res, n in bonuses.items():
-                    if isinstance(n, (int, float)) and n and res in ONLY.get(key, {res}):
-                        out.append((e.order, key, res, int(n)))
-    return sorted(out)
+    for mv in parsed.moves:
+        for e in mv.events:
+            try:
+                a = e.args
+                if e.type != "takeBonus" or not isinstance(a, dict) or a.get("source"):
+                    continue
+                m = re.match(r"^(5|8)-\d+$", str(a.get("remove") or ""))
+                seat = seat_of.get(str(a.get("player_id", e.player)))
+                if not m or seat is None:
+                    continue
+                bd = a.get("bonus_desc")
+                ba = bd.get("args") if isinstance(bd, dict) else None
+                out.append({"move_id": mv.move_id, "seat": seat, "threshold": int(m.group(1)), "type": ba.get("bonus_type") if isinstance(ba, dict) else None})
+            except Exception:                                                  # (a log line of an unexpected shape never breaks the replay)
+                continue
+    return out
+
+
+
+
+def _break_markers(parsed: ParsedLog, seat_of: dict[str, int]) -> list[dict]:
+    """Graph markers from accepted notifications, independent of display wording.
+
+    `seat` identifies the player awarded the structured triggering-break bonus,
+    solely for the marker colour. The Break itself is a neutral game phase.
+    Missing completion stays null; no terminal event manufactures a finish.
+    """
+    markers, opened, trigger = [], None, None
+    for move in parsed.moves:
+        for event in move.events:
+            args = event.args if isinstance(event.args, dict) else {}
+            if event.type == "getBonuses" and args.get("source") == "triggering break":
+                trigger = seat_of.get(str(args.get("player_id")))
+            elif event.type == "startBreak":
+                context = parsed.normal_turns.context(event.order)
+                opened = {"start_move": move.move_id, "end_move": None,
+                          "turn": context["display"] + .5, "seat": trigger}
+                markers.append(opened)
+                trigger = None
+            elif event.type == "finishBreak" and opened is not None:
+                opened["end_move"] = move.move_id
+                opened = None
+    return markers
+
+
+def _normal_history(parsed, replay, steps, seat_of, names):
+    """Decorate display steps and expose samples at actual lifecycle boundaries.
+
+    The engine's `turn`/action markers retain their existing meaning. A normal
+    start gets a small explicit replay step, including starts in state-only moves.
+    Graph samples are captured before neutral phases, never from a later bucket.
+    """
+    timeline = parsed.normal_turns
+    if not timeline.turns:
+        for step in steps:
+            step.pop("_history_order", None)
+        return {}
+
+    def context(raw):
+        return {"phase": raw["phase"], "index": raw["index"], "seat": seat_of.get(raw["player"]),
+                "number": raw["number"], "display": raw["display"],
+                "counts": [raw["counts"].get(pid, 0) for pid in seat_of]}
+
+    def metrics(state):
+        # state_view computes the same score (appeal + conservation) as the board.
+        return [{k: p[k] for k in ("score", "appeal", "conservation", "reputation", "money", "x_tokens")} for p in state_view(state)["players"]]
+
+    endpoints, opening, starts = {}, None, []
+    for boundary, state in replay.history_frames:
+        if boundary["closed"] is not None:
+            endpoints[boundary["closed"]] = metrics(state)
+        if boundary["reason"] != "turn":
+            continue
+        if opening is None:
+            opening = metrics(state)
+        raw = boundary["context"]
+        view = state_view(state)
+        view["current_action"] = None
+        view["active_player"] = seat_of[raw["player"]]
+        view["turn_context"] = context(raw)
+        starts.append({"move_id": boundary["move_id"], "label": f'{names.get(raw["player"], raw["player"])} starts turn {raw["number"]}',
+                      "state": view, "engine": {"source": "log", "status": "log", "detail": "Normal turn starts (backend state 7)"},
+                      "options": None, "actor": seat_of[raw["player"]], "label_pov": None, "_obj": None,
+                      "_history_order": boundary["order"]})
+    # (the "X starts turn N" boundaries are not shown as steps of their own: the turn number rides on the steps through `turn_context`, and `normal_turns` keeps the turn rows)
+    inherited = {}
+    for step in steps:
+        for key in ("sponsor_stats", "variant_stats", "initial_discard"):
+            if key in step["state"]:
+                inherited[key] = step["state"][key]
+            elif key in inherited:
+                step["state"][key] = inherited[key]
+        step.pop("_history_order", None)
+    rows = []
+    for turn in timeline.turns:
+        endpoint = endpoints.get(turn.index)
+        if endpoint is None and turn.close_order is None and replay.states:
+            endpoint = metrics(replay.states[-1])
+        if endpoint is not None:
+            rows.append({"index": turn.index, "seat": seat_of[turn.player], "number": turn.number,
+                         "start_move": turn.start_move, "end_move": turn.end_move, "players": endpoint})
+    return {"normal_turns": rows, "turn_start": opening}
 
 
 def _cp_bonuses(parsed: ParsedLog, seat_of: dict) -> list:
@@ -580,7 +811,14 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         maps = config.maps
     names = {str(p.id): p.name for p in parsed.players}
     if first_moves is not None:
-        parsed = dataclasses.replace(parsed, moves=parsed.moves[:first_moves])
+        selected = parsed.moves[:first_moves]
+        cap = max((e.order for m in selected for e in m.events), default=0)
+        timeline = copy.deepcopy(parsed.normal_turns)
+        timeline.transitions = [t for t in timeline.transitions if t["order"] <= cap]
+        timeline._orders = [t["order"] for t in timeline.transitions]
+        timeline.turns = [t for t in timeline.turns if t.start_order <= cap]
+        timeline.last_order = cap
+        parsed = dataclasses.replace(parsed, moves=selected, normal_turns=timeline)
     groups = [move_groups(mv, names) for mv in parsed.moves]
     split = frozenset(order for g in groups for _, order in g[1:])         # every effect (log line) of a move is a step of its own
     rep: Replay = build_replay(parsed, setup, config, seed, split)
@@ -597,17 +835,20 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     sponsor_stats: dict = {}                                                  # sponsor key -> {statistic: amount} so far
     variant_stats: dict = {}                                                  # seat -> action -> {statistic: amount} so far (the action card variants)
     seat_of_pid = {str(pid): i for i, pid in enumerate(config.player_ids)}
-    in_play: dict = {}                                                        # player id -> the experts in small / large animals that they have played
+    known_maps = {str(pid): config.map_known[i] for i, pid in enumerate(config.player_ids)}
+    sponsor_log = SponsorLogStats(parsed.normal_turns, seat_of_pid, sponsor_source_hints(raw_log, parsed), config.maps,
+                                  sponsor_event_gains(raw_log, parsed, known_maps))
     first_discard = next((m.index for m in parsed.moves if any(e.type == "pDiscardCards" for e in m.events)), None)       # the move of the initial discards
     initial_discard = [list(setup.discarded.get(pid, [])) for pid in config.player_ids]
+    split_extra = 0                                                          # (steps added by splitting a move in two, they count as setup steps)
     for mv, final, g in zip(rep.moves, rep.states, groups):
         me = eng.moves[mv.index]
         hide_discard = mv.index == first_discard
         views = [state_view(s) for s in rep.substates.get(mv.index, [])] + [state_view(final)]
-        labels = [label for label, _ in g]
+        labels = [label for label, _ in g] if not hide_discard else group_labels(mv, names, None, True)
         labels_pov = [group_labels(mv, names, pid, hide_discard) for pid in config.player_ids]
         if len(labels) != len(views):                                       # setup moves, or a move without effects: one step
-            views, labels = views[-1:], [step_label(mv, names)]
+            views, labels = views[-1:], [step_label(mv, names, None, hide_discard)]
             labels_pov = [[step_label(mv, names, pid, hide_discard)] for pid in config.player_ids]
         source = ["log"] * len(views)
         objs: list = [None] * len(views)                                   # the engine state of each step (forking starts from it)
@@ -656,7 +897,18 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                 options[i] = None                                          # the engine is a step ahead of the log here (it ends the turn inside the last action)
         actors = group_actors(mv, g, {pid: i for i, pid in enumerate(config.player_ids)}) if len(g) == len(views) else [None] * len(views)
         ends = [start for _, start in g[1:]] + [10 ** 12] if len(g) == len(views) else [10 ** 12] * len(views)
-        pending = sorted(_sponsor_gains(mv, in_play, seat_of_pid) + [(o, key, stat, n) for o, key, stat, n in me.obs])
+        logged_gains = sponsor_log.gains(mv) + logged_variant_gains(parsed, mv, seat_of_pid)
+        before_move = rep.states[mv.index - 1] if mv.index else rep.states[0]
+        before_groups = [before_move] + rep.substates.get(mv.index, [])
+        for event in mv.events:
+            if event.type not in ("buyBuilding", "buyAnimal", "donation"):
+                continue
+            gi = sum(1 for _, start in g if start is not None and start <= event.order)
+            before_event = before_groups[gi] if len(before_groups) == len(g) else before_move
+            action = sponsor_log.geometry_actions.get(event.order)
+            logged_gains += diversity_gains(event, before_event, seat_of_pid, action)
+            logged_gains += sponsor_state_gains(event, before_event, seat_of_pid, action, sponsor_log.source_hints.get(event.order))
+        pending = sorted(logged_gains + [(o, key, stat, n) for o, key, stat, n in me.obs])
         for i, v in enumerate(views):                                           # the totals after each step of the move
             while pending and pending[0][0] < ends[i]:
                 _, key, res, n = pending.pop(0)
@@ -671,21 +923,42 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         if first_discard is not None and mv.index >= first_discard:
             for v in views:
                 v["initial_discard"] = initial_discard                          # (the viewer hides the other player's cards in the discard pile, pov.js)
-        steps += [{"move_id": mv.move_id, "label": lb, "state": v, "engine": {"source": src, "status": me.status, "detail": me.detail[:300]}, "options": o, "actor": ac,
+        move_steps = [{"move_id": mv.move_id, "label": lb, "state": v, "engine": {"source": src, "status": me.status, "detail": me.detail[:300]}, "options": o, "actor": ac,
                    "label_pov": [lp[i] if lp[i] != lb else None for lp in labels_pov] if any(lp[i] != lb for lp in labels_pov) else None,
                    "_obj": objs[i]}
                   for i, (lb, v, src, o, ac) in enumerate(zip(labels, views, source, options, actors))]
+        for i, step in enumerate(move_steps):
+            lo = g[i][1] if i and len(g) == len(move_steps) else -1
+            hi = g[i + 1][1] if i + 1 < len(g) and len(g) == len(move_steps) else 10 ** 12
+            events = [e for e in mv.events if lo <= e.order < hi]
+            orders = [parsed.normal_turns.order_of(e) for e in events]
+            # Private selector arguments may precede the public Break entry.
+            # They do not own the following, public "Starting a new break" line.
+            owned = [parsed.normal_turns.order_of(e) for e in events if e.type != "gameStateChangePrivateArg"]
+            raw_context = parsed.normal_turns.context(min(owned or orders, default=0))
+            step["state"]["turn_context"] = {"phase": raw_context["phase"], "index": raw_context["index"],
+                "seat": seat_of_pid.get(raw_context["player"]), "number": raw_context["number"], "display": raw_context["display"],
+                "counts": [raw_context["counts"].get(pid, 0) for pid in seat_of_pid]}
+            step["_history_order"] = max(orders, default=0)
+        if len(move_steps) == 1:
+            halves = _split_keep_and_draw(mv, move_steps[0], steps[-1]["state"] if steps else None, names, config.player_ids)
+            if halves is not None:
+                move_steps = halves
+                split_extra += 2
+        steps.extend(move_steps)
+    normal_history = _normal_history(parsed, rep, steps, seat_of_pid, names)
     # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step. The first step stays.
     keep = [i == 0 or bool(st["label"].strip()) for i, st in enumerate(steps)]
-    keep = _combine_action(steps, keep)
-    keep = _combine_runs(steps, keep)
-    keep = _fold_unchanged(steps, keep)
+    keep = [k and not (i > 0 and _ANNOUNCES_TAKE.search(st["label"] or "")) for i, (st, k) in enumerate(zip(steps, keep))]       # ("X gets 1 x take-in-range-or-deck": the announcement of the card the next step takes)
+    # (what a play / purchase / building brings is NOT joined to it any more: the cost, every gain and every placement bonus is its own step, as when the engine plays it; `_combine_action`)
+    keep = _merge_pairs(steps, keep)
+    # (no step is joined to another any more: every effect / log line is a step of its own, like when the engine plays it; `_combine_runs` and `_fold_unchanged` are not called)
     setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])
     steps = [st for st, k in zip(steps, keep) if k]
     for st in steps:
         st["state"]["main_deck_known"] = max(0, min(len(st["state"]["main_deck"]), known_prefix - (full_deck - len(st["state"]["main_deck"]))))
     steps, extra = _draft_option_steps(steps, rep.draft_engine and rep.draft_rounds or {})
-    setup_steps += extra
+    setup_steps += extra + split_extra
     objs_by_step = [st.pop("_obj", None) for st in steps]
     for i, st in enumerate(steps):
         st["index"] = i
@@ -708,5 +981,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         "engine": eng.summary(),
         "steps": steps,
         "cp_bonuses": _cp_bonuses(parsed, seat_of_pid),
+        "break_markers": _break_markers(parsed, seat_of_pid),
+        **normal_history,
     }
     return (view, objs_by_step) if with_states else view

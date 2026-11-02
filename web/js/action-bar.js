@@ -4,11 +4,14 @@ import { FORK, PLAY, S } from './state.js';
 import { curState, seatOrder } from './pov.js';
 import { bindPreview, cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
+import { placementBonusName } from './bonus-names.js';
+import { amountIcon } from './log-labels.js';
 import { renderDock } from './dock.js';
 import { forkBar, keepSel, playFork } from './fork.js';
 import { render } from './main.js';
 import { atEnd, atStart, go, stepBy } from './playback.js';
 import { frameKind } from './frames.js';
+import { clearReveal, forkReveal, noteLightbox, openFx, revealAt, showReveal } from './reveal.js';
 
 
 // the bar above the boards, like BGA's: what the active player can do now. Before an action card is chosen: the five action cards (the number is the
@@ -130,12 +133,8 @@ function draftBar(bar, d) {
     const mine = FORK ? (S.replay.steps[S.step].actions || []).filter((a) => a.player === seat && (a.kind === 'draft_pick' || a.kind === 'draft_keep')) : [];       // the fork lets the viewer choose
     const sel = mine.length ? (keepSel.get('d' + seat) || []) : [];
     if (mine.length) keepSel.set('d' + seat, sel);
-    const who = el('span', 'who', S.replay.players[seat].name);
-    who.style.color = seatText(seat);
-    const head = el('div', 'drafthead');
-    const done = !FORK && chosen.length >= need;                              // (the replay shows the draft as it goes: a player who has chosen no longer "must" choose)
-    head.append(who, el('b', '', done ? (need === 1 ? ' selected this action card' : ' selected these 2 action cards')
-      : need === 1 ? ' must select the action card you want to keep' : ' must select the 2 action cards you want to keep'));
+    const head = el('div', 'drafthead actionhead', 'Action card draft');       // (always this text, in the teal ribbon of parkposter.css; the player is only in the tooltip)
+    head.title = S.replay.players[seat].name;
     const row = el('div', 'draftcards');
     if (d.stage === 'pick2' && (d.picked[seat] || []).length) {          // the second pick: the card picked in the first round stays in a green zone to the left
       const zone = el('div', 'draftkept');
@@ -213,10 +212,16 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   S.forkGate = false;
   bar.replaceChildren();
   bar.classList.remove('draftbar');
+  if (bar === $('actionbar')) { noteLightbox(); clearReveal(); }                                  // (the lightbox of a Perception / Scavenging / Hunter / Scuba Dive reveal, reveal.js: drawn again below when it is still on show)
   const popup = bar === $('actionbar') && !FORK ? draftPopup() : null;       // replay: the action card draft is not drawn into the move bar (the cards are far too high for it) but into a lightbox over the boards
   if (popup) { popup.hidden = true; popup.replaceChildren(); }
   const cur = S.replay.steps[S.step], o = cur.options;
   if (kind === 'text') { bar.hidden = true; return; }
+  if (popup && kind === 'reveal') {                                              // replay: the cards of a reveal-and-keep effect in a lightbox (like the action card draft), the step text stays in the bar above
+    const r = revealAt(S.step);
+    if (r) { showReveal(r, draftNav); bar.hidden = true; return; }
+  }
+  if (FORK && bar === $('actionbar') && o) forkReveal(o, cur.actions || [], (a) => { if (!S.forkBusy) playFork(a); });       // fork / live game: choose the cards to keep in the lightbox
   // The action card draft (a Marine Worlds mechanism) has its own frame in the replay, 'draft': the bar alone, without step text, with the cards on offer and what each
   // player picked / kept so far (point of view: only the viewer's own offers). The fork shows it together with the step text, like every bar.
   if (popup && kind === 'draft' && draftOpen(st)) {
@@ -226,6 +231,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       const wrap = el('div', 'draftwrap');
       wrap.append(draftNav(-1), pop, draftNav(1));
       popup.append(wrap); popup.hidden = false; bar.hidden = true;
+      openFx(popup);
       return;
     }
   }
@@ -274,15 +280,13 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     spent += +m[1];
   }
   const fa = FORK ? (cur.actions || []) : [];                           // the fork: the bar is the way to play (the engine's legal actions are compiled from the clicks)
-  const hyp = !!(o && o.hypnosis);                                       // Hypnosis: the cards to choose from (or to put back for an X token) are the first 3 of the other player
-  const cardsShown = hyp ? st.players[1 - seat].action_cards.slice(0, 3) : p.action_cards;
-  const mayChoose = (type) => fa.some((x) => x.kind === 'choose_action_card' && x.args.spend === S.forkSpend && x.args.type === type && !!x.args.hypnosis === hyp);
-  const maySkip = (type) => fa.some((x) => x.kind === 'skip_action' && x.args.type === type && !!x.args.hypnosis === hyp);
+  const mayChoose = (type) => fa.some((x) => x.kind === 'choose_action_card' && x.args.spend === S.forkSpend && x.args.type === type);
+  const maySkip = (type) => fa.some((x) => x.kind === 'skip_action' && x.args.type === type);
   if (FORK) spent += S.forkSpend;
   const who = el('span', 'who', S.replay.players[seat].name);
   who.style.color = seatText(seat);
-  bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : hyp ? " may use one of the opponent's first three action cards" : ' must choose an action card'));
-  cardsShown.forEach((a, i) => {
+  bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : ' must choose an action card'));
+  p.action_cards.forEach((a, i) => {
     const b = el('span', 'abtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
     b.title = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + ', strength ' + (i + 1 + spent) + ' (up to ' + (i + 1 + spent + p.x_tokens) + ' with X tokens)';
     b.append(pic(ACTION_ICON[a.type], 26), el('b', '', i + 1 + spent));
@@ -290,8 +294,8 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       b.classList.add('choosable');
       b.title = S.skipMode ? 'Put ' + ACTION_NAMES[a.type] + ' back to slot 1 and gain an X token' : 'Choose ' + ACTION_NAMES[a.type] + (S.forkSpend ? ', spending ' + S.forkSpend + ' X token' + (S.forkSpend === 1 ? '' : 's') : '');
       b.onclick = () => {
-        const pool = fa.filter((x) => (S.skipMode ? x.kind === 'skip_action' && x.args.type === a.type && !x.args.repeat && !!x.args.hypnosis === hyp
-                                                : x.kind === 'choose_action_card' && x.args.type === a.type && x.args.spend === S.forkSpend && !!x.args.hypnosis === hyp && !x.args.t1));
+        const pool = fa.filter((x) => (S.skipMode ? x.kind === 'skip_action' && x.args.type === a.type && !x.args.repeat
+                                                : x.kind === 'choose_action_card' && x.args.type === a.type && x.args.spend === S.forkSpend && !x.args.hypnosis && !x.args.t1));
         if (pool.length && !S.forkBusy) playFork(pool[0]);
       };
     } else if (FORK) b.classList.add('off');
@@ -312,7 +316,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   const maxSpend = o ? Math.max(0, ...Object.values(o.cards).flat()) : p.x_tokens;       // the most X tokens the engine lets the player spend
   const x = el('span', 'abtn xbtn');
   x.title = 'X tokens that can raise the strength of the chosen card';
-  x.append(el('b', '', p.x_tokens), pic('xtoken', 26));
+  x.append(el('b', '', p.x_tokens), pic('xtoken_ns', 26));
   const minus = xs('−', 'Spend one X token less', FORK ? S.forkSpend === 0 : spent === 0);
   const plus = xs('+', 'Spend one more X token to raise the strength', FORK ? !fa.some((x) => x.kind === 'choose_action_card' && x.args.spend > S.forkSpend) : o ? maxSpend - spent <= 0 : p.x_tokens === 0);
   if (FORK) {
@@ -321,7 +325,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   }
   bar.append(minus, x, plus);
   // or put one of the action cards back to slot 1 and gain an X token (not possible at the maximum of 5)
-  const canGain = FORK ? fa.some((x) => x.kind === 'skip_action' && !!x.args.hypnosis === hyp) : o ? (hyp ? (o.skip_hypnosis || []).length > 0 : o.skip.length > 0) : p.x_tokens < 5;
+  const canGain = FORK ? fa.some((x) => x.kind === 'skip_action') : o ? o.skip.length > 0 : p.x_tokens < 5;
   const gain = el('span', 'abtn gainx' + (canGain ? '' : ' off') + (FORK && S.skipMode ? ' on' : ''));
   if (FORK && canGain) {
     gain.classList.add('choosable');
@@ -342,7 +346,8 @@ function actionBadge(st) {
   const type = ca.type || card.type, level = ca.level || card.level;
   const b = el('span', 'abtn' + (level === 2 ? ' lvl2' : ''));
   b.title = (ACTION_NAMES[type] || '') + (level === 2 ? ' II' : '') + ', strength ' + ca.strength;
-  if (type) b.append(pic(ACTION_ICON[type], 26), el('b', '', ca.strength));
+  if (!type) return document.createTextNode('');                  // (a build from a bonus / effect has no action card: no empty chip)
+  b.append(pic(ACTION_ICON[type], 26), el('b', '', ca.strength));
   return b;
 }
 // the Association action: one button per kind of task that can be done now (not one per partner zoo / university)
@@ -458,51 +463,50 @@ function takeBar(bar, o, seat) {
 // the buttons of the pending effects. Reputation, appeal and conservation gains, project rewards, placement bonuses and animal abilities are choices of the
 // player; money and X token gains happen by themselves (no button).
 const EFFECT_TEXT = {
-  build: 'Build', take: 'Take a card', reveal: 'Reveal cards', sell: 'Sell cards', mark: 'Mark an animal', marketing: 'Marketing', donation: 'Donate', digging: 'Dig',
-  scavenge: 'Scavenge', glide: 'Glide', glide_gain: 'Glide', shark: 'Shark attack', symbiosis: 'Symbiosis', cut_down: 'Cut down', trade: 'Trade', extra_shift: 'Extra shift',
+  build: 'Build', take: 'Take a card', reveal: 'Reveal cards', sell: 'Sell cards', mark: 'Mark', marketing: 'Marketing', donation: 'Donate', digging: 'Dig',
+  scavenge: 'Scavenge', glide: 'Glide', glide_gain: 'Glide', shark: 'Shark attack', symbiosis: 'Symbiosis', cut_down: 'Cut down', trade: 'Trade', extra_shift: 'Extra Shift',
   assertion: 'Assertion', pilfer: 'Pilfer', venom: 'Venom', constrict: 'Constriction', hypnosis: 'Hypnosis', pay_appeal: 'Pay appeal', slot1: 'Card to slot 1', boost: 'Boost',
   waza: 'Waza', reposition: 'Reposition', pouch: 'Pouch a card', search_discard: 'Search the discard pile', upgrade: 'Upgrade an action card', threshold2: 'Upgrade or worker',
   threshold_bonus: 'Choose a bonus', endgame_discard: 'Discard an endgame card', adapt: 'Adapt', break_discard: 'Discard to the hand limit', take_tile: 'Take a tile',
   archaeologist: 'Archaeologist', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', reef: 'Reef', ability: 'Animal ability',
 };
 const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
-// the option of an effect with several buttons (Marine Research Expedition: "send" a person sponsor away, or "scuba" Scuba Dive 3)
-const effectOption = (a, e) => (e.option === 'send' ? a.args.send !== undefined : e.option === 'scuba' ? !!a.args.scuba : true);
 function effectButton(e) {
   if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res)) return null;
   if (e.kind === 'take' || e.kind === 'build') return null;                      // shown as the deck button / the pieces
   if (/^income_/.test(e.kind)) return null;                                       // the incomes of a break are paid by themselves (BGA shows them as log lines, not as a choice)
-  if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
-  const b = el('span', 'abtn deckbtn' + (e.enabled === false ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)
+  if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
+  const b = el('span', 'abtn deckbtn');
   const src = e.source && /^[ASPF]\d{3}$/.test(e.source) ? cardName(e.source) : '';
-  b.title = (e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
+  const pbName = e.kind === 'pbonus' ? placementBonusName(e.bonus) : '';                // (one of several placement bonuses of the building just placed)
+  b.title = (pbName ? 'Placement bonus: ' + pbName : e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
   const SEARCH_ICON = { bird: ['Bird', 'r2c3'], herbivore: ['Herbivore', 'r2c4'], predator: ['Predator', 'r2c5'], primate: ['Primate', 'r2c6'], reptile: ['Reptile', 'r2c7'], marine: ['Sea animal', 'r2c8'] };
   if (e.kind === 'gain') {
-    b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
+    const ai = amountIcon(e.res, e.n || 1);                                  // ("Gain" + the counter's icon with the amount inside)
+    if (ai) b.append(el('b', '', 'Gain'), ai); else b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
   } else if (e.kind === 'search_category' && SEARCH_ICON[e.category]) {        // a targeted search: "Find a {species}" with the species' search icon
     const [label, id] = SEARCH_ICON[e.category];
     const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = 28;
     b.append(el('b', '', 'Find a ' + label.toLowerCase()), i);
     b.title = 'Search the deck for the first ' + label.toLowerCase() + ' card';
-  } else if (e.kind === 'multiplier') {                                          // the Multiplier icon, not the word
-    const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS['bonus:Multiplier']); i.alt = 'Multiplier'; i.height = 28;
-    b.append(i);
-    b.title = 'Multiplier: put a Multiplier token on one of the action cards' + (src ? ' (' + src + ')' : '');
+  } else if (pbName && e.bonus && amountIcon(e.bonus.type, e.bonus.value)) {            // money / X-token / reputation / appeal: "Gain" + the icon with the amount
+    b.append(el('b', '', 'Gain'), amountIcon(e.bonus.type, e.bonus.value));
+  } else if (pbName) {
+    const id = e.bonus && ICON_IDS['bonus:' + e.bonus.type];
+    if (id) { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
+    b.append(el('b', '', pbName));
   } else {
     b.append(el('b', '', e.name || EFFECT_TEXT[e.kind] || e.kind.replace(/_/g, ' ')));
   }
-  if (FORK && e.kind === 'multiplier' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.multiplier === 'string').length) {
-    b.classList.add('choosable');                                      // (click it: the action cards to put the token on, see forkBar)
-    b.onclick = () => { S.multiplierMode = e.index; refreshBar(); };
-  } else if (FORK && (e.kind === 'threshold2' || e.kind === 'upgrade') && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && (a.args.upgrade || a.args.hire)).length) {
+  if (FORK && (e.kind === 'threshold2' || e.kind === 'upgrade') && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && (a.args.upgrade || a.args.hire)).length) {
     b.classList.add('choosable');                                      // (click it: gain a worker or an upgrade, see forkBar)
     b.onclick = () => { S.thresholdMode = { index: e.index, stage: e.kind === 'upgrade' ? 'upgrade' : 'choose' }; refreshBar(); };
-  } else if (FORK && e.kind === 'marketing' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && typeof a.args.card === 'string').length) {
+  } else if (FORK && e.kind === 'marketing' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.card === 'string').length) {
     b.classList.add('choosable');                                      // (click it, then choose the sponsor in the hand: see forkBar)
     b.onclick = () => { S.marketMode = e.index; S.forkDockStep = -1; refreshBar(); renderDock(curState()); };
-  } else if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)).length && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)).every(cardPickAct)) {
+  } else if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).every(cardPickAct)) {
     b.classList.add('choosable');                                      // (select the card in the hand / display, then confirm: see forkBar)
-  } else bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)));
+  } else bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index));
   return b;
 }
 

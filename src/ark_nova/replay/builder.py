@@ -34,6 +34,7 @@ class Replay:
     mismatches: list[tuple[int, str]] = field(default_factory=list)    # (move index, description)
     substates: dict = field(default_factory=dict)        # move index -> states after each sub-step but the last (see build_replay)
     turn_snapshots: list[GameState] = field(default_factory=list)      # state at each turn marker (start of every player turn)
+    history_frames: list = field(default_factory=list)  # (normal lifecycle transition, state immediately before it)
     notes: list[tuple[int, str]] = field(default_factory=list)         # known-imprecise oracles (strength modifiers of Venom/Constriction/hypnosis)
     draft_engine: dict = field(default_factory=dict)       # setup move index -> the engine state of the action card draft after it (engine/draft.py fed with the log's offers and choices)
     draft_rounds: dict = field(default_factory=dict)       # draft stage (pick1 | pick2 | keep) -> the engine state when that round starts (nothing chosen yet)
@@ -56,6 +57,7 @@ class _Ctx:
         self.threshold_snaps = 0                                  # snaps that belong to a conservation bonus (extra hand size), not to the notepad
         self.support = None                                        # player id whose supported project is still waiting for its notepad bonus
         self.rep_task = False                                      # a reputation task was counted at its worker move; newer logs add a getBonuses for it
+        self.timeline = None                                    # normal turn owner, separate from borrowed card owner
         self.markers: list = []                                    # (order, player id) of every turn marker
         self.mismatches: list[str] = []
         self.money_checks: dict[int, tuple[int, int, int]] = {}
@@ -159,7 +161,8 @@ def h_action_card_cleanup(ctx: _Ctx, e: Event) -> None:
         p.action_cards.append(c)
     if "action card" not in e.log and s.current_action is None:      # a card placed on slot 1 by an effect (Expert on Africa), not a turn end
         return
-    actor = (s.current_action or {}).get("seat", seat)           # (Hypnosis: the card that is placed belongs to the other player)
+    owner = ctx.timeline.context(e.order).get("player") if ctx.timeline else None
+    actor = ctx.seat(owner) if owner in ctx.seat_of else (s.current_action or {}).get("seat", seat)           # (Hypnosis: the card that is placed belongs to the other player)
     s.current_action = None
     nxt = next((pid for order, pid in ctx.markers if order > e.order), None)
     if nxt is not None and ctx.seat(nxt) == actor:               # a second action of the same player (Determination, Action: X)
@@ -614,7 +617,7 @@ HANDLERS: dict[str, Callable[[_Ctx, Event], None]] = {
     "reconstructionRemove": h_reconstruction_remove, "reconstructionPlaceBack": h_reconstruction_place_back,
 }
 # events that carry no state change the builder needs
-IGNORED = {"startBreak", "updateBreakDiscardSelection", "enableMultiplier",
+IGNORED = {"midmessage", "startBreak", "updateBreakDiscardSelection", "enableMultiplier",
            "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame", "gameStateChangePrivateArg", "timeJokerUsed",
            "skipTurnOfPlayer", "gameResultNeutralized"}         # a player timed out (the turn is skipped, nothing to show) / quit (the game is lost for them)
 
@@ -794,6 +797,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
         state = apply(state, Action(setup.seats.index(pid), "initial_discard", {"cards": setup.discarded[pid]}))
     ctx = _Ctx(state, setup)
     ctx.markers = parsed.turn_markers
+    ctx.timeline = parsed.normal_turns
     markers = parsed.turn_markers
     first_order = markers[0][0] if markers else 10 ** 12
     first_turn = next((m.index for m in parsed.moves if any(e.order > first_order for e in m.events)), len(parsed.moves))
@@ -808,9 +812,20 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
     rep.draft_engine, rep.draft_rounds = engine_draft(parsed, config, seed, [str(s) for s in setup.seats], first_turn)
     rep.substates = {}
     next_marker = 0
+    lifecycle = iter(parsed.normal_turns.transitions)
+    next_boundary = next(lifecycle, None)
+
+    def history_before(order):
+        nonlocal next_boundary
+        while next_boundary is not None and next_boundary["order"] <= order:
+            _sync(ctx)
+            rep.history_frames.append((next_boundary, copy.deepcopy(ctx.state)))
+            next_boundary = next(lifecycle, None)
+
     for m in parsed.moves:
         if m.index >= first_turn:
             for e in m.events:
+                history_before(e.order)
                 while next_marker < len(markers) and markers[next_marker][0] < e.order:
                     _sync(ctx)
                     rep.turn_snapshots.append(copy.deepcopy(ctx.state))     # the state when this turn started
@@ -833,6 +848,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
             _check_oracles(ctx, m, rep)
         rep.states.append(_setup_state(parsed, first_turn, m.index, dealt, ctx.state, drafts) if m.index < first_turn else copy.deepcopy(ctx.state))
     _sync(ctx)
+    history_before(getattr(parsed.normal_turns, "last_order", 0))
     while next_marker < len(markers):                                   # markers after the last event: the final state
         rep.turn_snapshots.append(copy.deepcopy(ctx.state))
         next_marker += 1

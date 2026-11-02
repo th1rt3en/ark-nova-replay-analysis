@@ -2,7 +2,7 @@
 import { FORK, S, params } from './state.js';
 import { endPreview, turnPreview } from './bpreview.js';
 import { cardName, zoneNew } from './cards.js';
-import { ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, pieceUrl } from './icons.js';
+import { ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, moneyTwo, pieceUrl } from './icons.js';
 import { seatRawColor, svg } from './util.js';
 import { render } from './main.js';
 import { playFork } from './fork.js';
@@ -29,6 +29,9 @@ export function legalPlacement(p) {
 
 // BGA's zoo map pictures (web/maps, 1122x976): hex (x, y) is centred at (MAP.x0 + x*MAP.dx, MAP.y0 + y*MAP.dy), see scripts/download_bga_maps.py
 const MAP = { x0: 96, y0: 88, dx: 115, dy: 66.5 };
+// with the setting "Show enclosure borders" (S.encBorders) the buildings are drawn with a thin gap between neighbours (ENC_GAP px cut off the outside of each outline) and a BGA-like border (ENC_BORDER px inside the outline); without it they are drawn as before
+let maskCount = 0;                                  // (mask / clip ids must be unique in the whole page, not per map)
+const ENC_GAP = 3, ENC_BORDER = 8, ENC_BORDER_COLOUR = '#A68731';
 const SPRITE_SCALE = (MAP.dx / 1.5) / 136;      // the building sprites are drawn with hexes of circumradius 136 px
 const cellCentre = (x, y) => [MAP.x0 + x * MAP.dx, MAP.y0 + y * MAP.dy];
 
@@ -78,15 +81,8 @@ export function zooBoard(map, player, seat) {
     }
     else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)
     if (bn.type === 'appeal' && !icon) put('text', { x: cx, y: cy + 6, class: 'bonus-label' }, '★');      // a bonus nobody has identified yet is just the empty pentagon
-    if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : ''), ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
-    s.lastChild.append(tip);
-  }
-  for (const sh of map.special_hexes) {            // maps 8 / 8a: the H hexes (a special placement bonus without the pentagon; the picture has empty hexes there, Ark360 moves them)
-    if (sh.kind !== 'hollywood_h' || covered.has(sh.x + ',' + sh.y)) continue;
-    const [cx, cy] = cellCentre(sh.x, sh.y);
-    put('image', { href: '/bonus/hollywood_h.webp', x: cx - 34, y: cy - 46, width: 69, height: 82, class: 'hollywood-h' });
-    const tip = svg('title');
-    tip.textContent = 'H: covering it reveals cards from the deck and adds the first sponsor to your hand';
+    if (bn.type === 'money' && String(bn.value).length > 1) put('text', { ...moneyTwo(bn.value, cx, cy + 3, 36, 7), class: 'bonus-number two' }, bn.value);       // (two digits: smaller, tighter and centred on the tile, `moneyTwo`)
+    else if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : ''), ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
     s.lastChild.append(tip);
   }
   for (const sh of map.special_hexes) {            // hex that needs the upgraded Build action, as on BGA: a red parallelogram over the upper left of the hex, BGA's own Build II badge (web/badges/BuildII.webp) in a white ring over its right end
@@ -135,7 +131,8 @@ export function zooBoard(map, player, seat) {
       put('text', { x: cx - 21, y: cy + 16, class: 'bonus-number' }, bn.value);            // white with a black border, near the left edge
     } else if (bn.type === 'money') {
       moneyTile(s, cx, cy + 3, 48);
-      put('text', { x: cx, y: cy + 16, class: 'bonus-number' }, bn.value);
+      if (String(bn.value).length > 1) put('text', { ...moneyTwo(bn.value, cx, cy + 3, 36, 8), class: 'bonus-number two' }, bn.value);
+      else put('text', { x: cx, y: cy + 16, class: 'bonus-number' }, bn.value);
     } else {
       const icon = ICON_IDS['bonus:' + bn.type];
       if (icon) iconBox(icon, cx, cy + 3, 48);
@@ -185,7 +182,25 @@ export function zooBoard(map, player, seat) {
         transform: 'rotate(' + (b.rotation * 60) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')',
       });
       img.append(title);
-      g.append(img);
+      const gap = S.encBorders ? ENC_GAP : 0, bw = S.encBorders ? ENC_BORDER : 0;
+      if (gap > 0 || bw > 0) {                  // a thin gap between neighbouring buildings (the outer band of the building's outline is cut off) and / or a border inside it
+        const id = 'bm' + (++maskCount), od = outlinePath(b.cells);
+        const mask = svg('mask', { id, maskUnits: 'userSpaceOnUse', x: -400, y: -400, width: 3000, height: 3000 });
+        const cp = svg('clipPath', { id: id + 'c' });
+        for (const [x, y] of b.cells) {
+          mask.append(svg('polygon', { points: hexPoints(x, y), fill: '#fff', stroke: '#fff', 'stroke-width': 1.5 }));
+          cp.append(svg('polygon', { points: hexPoints(x, y) }));
+        }
+        if (gap > 0) mask.append(svg('path', { d: od, fill: 'none', stroke: '#000', 'stroke-width': 2 * gap, 'stroke-linecap': 'round' }));
+        const inner = svg('g', { mask: 'url(#' + id + ')' });
+        inner.append(img);
+        if (bw > 0) {
+          const bg = svg('g', { 'clip-path': 'url(#' + id + 'c)' });
+          bg.append(svg('path', { d: od, fill: 'none', stroke: ENC_BORDER_COLOUR, 'stroke-width': 2 * (gap + bw), 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+          inner.append(bg);
+        }
+        g.append(mask, cp, inner);
+      } else g.append(img);
     }
     if (animals && animals.length && SPECIAL_ENCLOSURE.test(b.type)) {         // a special enclosure is filled with the player's cubes (the cubes of the projects and the donations): one per animal, on its hexes in turn
       const cells = b.cells.slice().sort((p, q) => p[0] - q[0] || p[1] - q[1]), size = 66;

@@ -401,10 +401,12 @@ def play(state: GameState, action: Action) -> None:
             need -= 1
             if name == "ignore":
                 a["capped"] = True                           # Ignore Animals: that was the only animal of the action
-            elif name == "camouflage":
-                state.current_action.pop("camouflage")       # the Camouflage credit is used
         if need > 0:                                         # the bonus token that ignores the conditions is used up
             p.tokens.remove(next(t for t in p.tokens if t.type == "bonus-ignore-conditions"))
+    # The next actual animal consumes pending Camouflage even if it needs no bypass,
+    # or another credit covers its requirements. Its own abilities may activate it anew below.
+    if state.current_action is not None:
+        state.current_action.pop("camouflage", None)
     c = card(k)
     price = cost(state, p.seat, k, state.display.index(k) + 1 if from_display else 0)
     if from_display:

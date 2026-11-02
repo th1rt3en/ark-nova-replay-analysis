@@ -212,6 +212,8 @@ def narrate(before: GameState, action: Action, after: GameState, who: str) -> st
             text = f"drew {_plural(args.get('count', 1), 'card')} from the deck"
         else:
             text = ("snapped " if mode == "snap" else "took ") + _name(args.get("card", "?")) + " from the display"
+    elif k == "initial_discard":                                           # (the opening discard: the same short line as in the replay and the live games)
+        text = f"discards {_plural(len(args.get('cards', [])), 'card')}"
     elif k == "discard_cards":
         text = f"discarded {_plural(len(args.get('cards', [])), 'card')}" + (f" ({args['mode']})" if args.get("mode") else "")
     elif k == "choose_effect" and "cards" in args and describe_action(action, before).startswith("Sun"):

@@ -1,3 +1,4 @@
+@font-face{font-family:'Barlow';font-style:normal;font-weight:600;src:url(/img/fonts/barlow-latin-600-normal.woff2) format('woff2')}   /* (the winner row of S274_VC: Barlow, the champion's name in Espera, the card's title font) */
 /* Marine Worlds projects P133-P139 (missing upstream): photo cut from our own card image, plan layout added to the upstream project template */
 .ark-card.zoo-card.project-card[data-id^="P133_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P133.jpg);background-size:100% 100%;background-position:0 0}
 .ark-card.zoo-card.project-card[data-id^="P134_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P134.jpg);background-size:100% 100%;background-position:0 0}
@@ -8,29 +9,76 @@
 .ark-card.zoo-card.project-card[data-id^="P139_"] .ark-card-wrapper .ark-card-top{background-image:url(/art/P139.jpg);background-size:100% 100%;background-position:0 0}
 
 .mw-plan .project-card-top-left-icon.mw-two{gap:0}
-.mw-plan .project-card-description{text-align:center;font-size:19px;margin:2px 0 8px}
-.mw-plan .ark-card-title{font-size:19px;line-height:1.05}
-.mw-plan .project-card-slots-container.mw{display:flex;justify-content:flex-start;gap:6px;padding:0 4px;width:300px}
-.mw-plan .project-card-slots-container.mw .project-card-slot{flex:1;display:flex;flex-direction:column;align-items:center}
-.mw-plan .mw-reward{display:flex;flex-direction:column;align-items:center;gap:4px}
-.mw-plan .mw-b{display:flex;align-items:center;justify-content:center;min-height:44px}
+/* Management Plans P134-P139 (Marine Worlds), modelled on the printed card: three slots in a row (the outer two on a lighter panel), each a green cube square with the conservation shield over its lower edge and the reward below; the placement bonus on a grey tab at the bottom right */
+.mw-plan .project-card-description{text-align:center;font-size:19px;margin:0 0 6px}
+.mw-plan .project-card-slots-container.mw{display:flex!important;justify-content:flex-start!important;gap:16px!important;padding:0!important;margin:0!important;width:auto!important;height:auto!important}
+.mw-plan .mwp-slot{flex:0 0 82px;width:82px;min-width:0;height:140px;display:flex;flex-direction:column;align-items:center;box-sizing:border-box}
+.mw-plan .mwp-panel{background:rgba(255,255,255,.38)}
+.mw-plan .mwp-cube{width:52px!important;height:46px!important;margin-top:6px;box-sizing:border-box;background:#528b43;border:3px solid #1f5c21;border-radius:5px;flex:none}
+body.bare .mw-plan .mwp-panel{background:none!important}   /* (the project strips, scripts/build_cards.py build_strips: the slots without the lighter panels) */
+.mw-plan .mwp-shield{margin-top:-22px;position:relative;z-index:1;flex:none;font-size:36px;line-height:1}
+.mw-plan .mwp-rest{flex:1;display:flex;align-items:center;justify-content:center;width:100%}
+.mw-plan .mwp-rest > .icon-container,.mw-plan .mwp-rest > div:not([class]){zoom:2.2}
+.mw-plan .mwp-rest > .mw-rep .icon-container-reputation{font-size:34px}
+.mw-plan .mwp-rest > .icon-container:has(.mw-reef){zoom:1.25}
+
 .mw-plan .mw-reef{width:56px;height:40px}
-.mw-plan .mw-rep{display:flex;align-items:center;gap:3px}
+.mw-plan .mw-rep{display:flex;align-items:center;gap:2px}
 .mw-plan .mw-sci{display:flex;flex-direction:column;gap:2px}
-.mw-plan .mw-sci .badge-icon{width:22px;height:22px;border-width:1px}
-.mw-plan .mw-colon{font-family:MyriadPro-Bold;font-size:22px}
-.mw-plan .mw-tutor{position:relative}
-.mw-plan .mw-tutor .badge-icon{width:40px;height:40px;box-shadow:0 0 0 3px #4a1313;border-radius:50%}
-.mw-plan .mw-tutor i{position:absolute;right:-9px;bottom:-12px;width:7px;height:20px;background:#1a1a1a;border-radius:3px;transform:rotate(-45deg)}
-.mw-plan .zoo-card-bonuses.mw-place{position:absolute!important;right:12px!important;bottom:6px!important;top:auto!important;left:auto!important;width:54px!important;height:76px!important;float:none!important;display:flex!important;align-items:center!important;justify-content:center!important;background:#b9b9b4;border-radius:8px 8px 0 0;box-shadow:inset 0 0 4px #777;shape-outside:none}
-.mw-plan .mw-place-in{transform:scale(1.15);display:flex;align-items:center;justify-content:center}
+.mw-plan .mw-sci .badge-icon{width:27px;height:27px;border-width:1px}
+.mw-plan .mw-colon{display:flex;flex-direction:column;gap:5px;margin:0 2px}
+.mw-plan .mw-colon i{display:block;width:5px;height:5px;border-radius:50%;background:#111}
+.mw-plan .mw-tutor{position:relative;margin:-4px 6px 0 0}
+.mw-plan .mw-tutor .badge-icon{width:40px;height:40px;box-shadow:0 0 0 3.5px #111;border-radius:50%}
+.mw-plan .mw-tutor i{position:absolute;right:-12px;bottom:-12px;width:7px;height:19px;background:#111;border-radius:3px;transform:rotate(-45deg)}
+.mw-plan .zoo-card-bonuses.mw-place{position:absolute!important;right:10px!important;bottom:0!important;top:auto!important;left:auto!important;width:58px!important;height:70px!important;float:none!important;display:flex!important;align-items:center!important;justify-content:center!important;background:url(/img/mwp_stone.jpg) center/cover;border-radius:9px 9px 0 0;box-shadow:inset 0 0 7px 2px rgba(70,60,48,.6),4px 1px 5px rgba(0,0,0,.4);shape-outside:none}   /* (like the printed card: warm grey, darker towards its edges, a shadow to the right; the faint texture is the plain lower part of the grey tab of img/zoo-card-bonuses.png, softened: img/mwp_stone.jpg) */
+.mw-plan .mw-place-in{transform:scale(1.9);display:flex;align-items:center;justify-content:center}
 .ark-card.zoo-card.project-card.mw-plan .ark-card-wrapper .ark-card-middle .ark-card-title-wrapper .ark-card-title{font-size:17px;line-height:1}
 
 /* S274_VC: the Mascot Statue shown as the Victory Column with the picture of the Emu Cup winner (scripts/build_victory_column_art.py makes art/S274_VC.jpg; entry.tsx gives this card the data-id S274_EmuCup) */
 .zoo-card.sponsor-card[data-id="S274_EmuCup"] .ark-card-wrapper{background-image:url(/art/S274_VC.jpg);background-size:100% 100%}
-/* the caption on the photo of S274_VC (harness/entry.tsx): across the bottom of the photo, which now ends at 50 % of the card height (uniform layout, scripts/cardgen/layout.mjs) */
+/* the caption on the photo of S274_VC (harness/entry.tsx): across the bottom of the photo, which now ends at 50 % of the card height (uniform layout, scripts/cardgen/layout.mjs); on the ENLARGED card the winner row is its own 5 % row under the photo (below) */
 .zoo-card.sponsor-card[data-id="S274_EmuCup"] .ark-card-wrapper{position:relative}
-.emu-caption{position:absolute;left:0;right:0;top:45.2%;height:4.8%;z-index:3;display:flex;align-items:center;gap:6px;padding:0 9px;box-sizing:border-box;background:rgba(248,237,203,.93);color:#17262B;font:15px/1 MyriadPro-Cond,MyriadPro-Regular,sans-serif;white-space:nowrap;overflow:hidden}
+.emu-caption{position:absolute;left:0;right:0;top:50%;height:5%;z-index:3;display:flex;align-items:center;gap:6px;padding:0 9px;box-sizing:border-box;background:rgba(248,237,203,.93);color:#17262B;font:600 15px/1 Barlow,sans-serif;white-space:nowrap;overflow:hidden}
 .emu-caption svg{height:17px;width:auto;flex:none}
-.emu-caption b{font-family:MyriadPro-Bold,sans-serif;color:#8a4a2a}
+.emu-caption b{font:700 15px/1 Espera,sans-serif;color:#8a4a2a}
 .emu-caption i{font-style:normal;opacity:.65}
+/* the ENLARGED Victory Column only (not body.compact): photo 50 % + winner row 5 % (the photo element is 55 % = 286 of 520 design px) + name stripe 10 % + description 35 % (182 px; the other cards: 50 / 10 / 40) */
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S274_EmuCup"] .ark-card-wrapper .ark-card-top{height:286px!important}
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S274_EmuCup"] .ark-card-wrapper .ark-card-bottom{height:182px!important}
+/* S227 Waza Special Assignment, enlarged card: two columns like on BGA: the instant effect in a yellow panel at the left (with the bolt instead of the bullet, the two card kinds as icons), the passive effect at the right; the printed chip with the marking icons is not shown (the small card keeps it) */
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S227_WazaSpecialAssignment"] .sponsor-strip{display:none}
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S227_WazaSpecialAssignment"] .ark-card-wrapper .ark-card-bottom{position:relative;padding:0!important}
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S227_WazaSpecialAssignment"] .ark-card-wrapper .ark-card-bottom > .dijitTooltipContainer:nth-child(1){position:absolute;left:0;top:5px;bottom:0;width:49%;box-sizing:border-box;padding:8px 8px 6px 8px;background:url(/img/waza_yellow.jpg);border-top-right-radius:20px}
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S227_WazaSpecialAssignment"] .ark-card-wrapper .ark-card-bottom > .dijitTooltipContainer:nth-child(1) ul{margin:0;padding:0}
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S227_WazaSpecialAssignment"] .ark-card-wrapper .ark-card-bottom > .dijitTooltipContainer:nth-child(1) li{display:block;list-style:none;font-size:17px!important;line-height:25.5px!important}
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S227_WazaSpecialAssignment"] .ark-card-wrapper .ark-card-bottom > .dijitTooltipContainer:nth-child(1) li:before{content:"";border:0;border-radius:0;background:url(/img/waza_bolt.png) center/contain no-repeat;float:left;width:14px;height:24px;margin:1px 5px 0 0}
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S227_WazaSpecialAssignment"] .ark-card-wrapper .ark-card-bottom > .dijitTooltipContainer:nth-child(2){margin-left:51%;padding:8px 10px 0 4px}
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S227_WazaSpecialAssignment"] .ark-card-wrapper .ark-card-bottom > .dijitTooltipContainer:nth-child(2) li{font-size:17px!important;line-height:25.5px!important}
+.waza-card{display:inline-block!important;float:none!important;height:21px;width:auto;vertical-align:middle;position:relative;top:-1.5px;margin:0 1px}
+
+/* S215 Breeding Cooperation / S218 Breeding Program, enlarged card: the normal 17 px (the card data says md, which the build had shrunk to 0.79 because of hard line breaks, now removed from the site copy of common.json), lines a little tighter so the endgame text's first line stays above the printed chip and its last line sits left of it */
+body:not(.compact) .ark-card.zoo-card.sponsor-card:is([data-id="S215_BreedingCooperation"],[data-id="S218_BreedingProgram"]) .ark-card-bottom .sponsor-effects-list li{line-height:22px!important}
+body:not(.compact) .ark-card.zoo-card.sponsor-card:is([data-id="S215_BreedingCooperation"],[data-id="S218_BreedingProgram"]) .ark-card-bottom .sponsor-effects-list li.effect-passive{text-wrap:pretty}
+body:not(.compact) .ark-card.zoo-card.sponsor-card:is([data-id="S215_BreedingCooperation"],[data-id="S218_BreedingProgram"]) .ark-card-bottom > .dijitTooltipContainer:first-child{margin-top:1px}   /* (the tighter 22 px lines start 1 px higher (measured on the ink): put the first letters back 12 px under the stripe) */
+/* S222 Release of Patents, enlarged card: the card data says sm (14 px / 20 px lines); as large as fits above the tall printed chip without the text flowing around it */
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S222_ReleaseOfPatents"] .ark-card-bottom .sponsor-effects-list li{font-size:15.5px!important;line-height:25.5px!important}
+/* S270 Marine Research Expedition, enlarged card: its printed strip has no chip (an opaque scan that hid the text): not shown; the text keeps the normal size (exempt from the shrink step of shoot.mjs) */
+body:not(.compact) .ark-card.zoo-card.sponsor-card[data-id="S270_MarineResearchExpedition"] .sponsor-strip{display:none}
+/* two-digit numbers in the appeal ticket (Arcade's 10): a little smaller so they fit the ticket */
+.ark-card.zoo-card.sponsor-card .icon-container .icon-appeal .icon-num-2{font-size:0.8em;letter-spacing:-1px;position:relative;top:-1px}
+/* F015 Catered Picnic Areas: the kiosk + pavilion pair in the score table's top left cell like on the printed card (the fan site's component relies on Tailwind margins / scales that are not in our build): kiosk top left, a bold plus in the middle, pavilion bottom right */
+.ark-card.zoo-card.scoring-card[data-id^="F015_"] .score-map th .flex.items-start{display:block!important;position:relative;width:88px;height:68px;margin:0 auto}
+.ark-card.zoo-card.scoring-card[data-id^="F015_"] .score-map th .flex.items-start > div{position:absolute;margin:0!important;transform:none!important;scale:none!important;font-size:21px;line-height:1}
+.ark-card.zoo-card.scoring-card[data-id^="F015_"] .score-map th .flex.items-start > div:first-child{left:0;top:0}
+.ark-card.zoo-card.scoring-card[data-id^="F015_"] .score-map th .flex.items-start > div:last-child{right:0;bottom:0}
+.ark-card.zoo-card.scoring-card[data-id^="F015_"] .score-map th .flex.items-start > .text-md{left:36px;top:26px;width:16px;height:16px;font-size:0;background:linear-gradient(#111,#111) center/100% 3.5px no-repeat,linear-gradient(#111,#111) center/3.5px 100% no-repeat}
+/* endgame cards: the fan site's description of the cards without a score table starts with empty spacer elements (div.mb-4, div.text-sm) that push the content down (only these leading ones: on Architectural Zoo the mb-4 is the gap between the sentence and the list); without them the icon + text of Diverse Species Zoo / International Zoo (and every other endgame body) is centred in the free space */
+.ark-card.zoo-card.scoring-card .project-card-description > .mb-4:empty:first-child,.ark-card.zoo-card.scoring-card .project-card-description > .mb-4:empty:first-child + .text-sm:empty,.ark-card.zoo-card.scoring-card .ark-card-bottom > .text-sm:empty,.ark-card.zoo-card.scoring-card .ark-card-bottom > table:empty{display:none!important}
+/* endgame cards: the conservation icons in the description text sat 1.75 design px low against the text (measured on the ink: icon middle vs the middle between cap top and baseline) */
+.ark-card.zoo-card.scoring-card .project-card-description .icon-container-conservation{position:relative;top:-1.75px}
+/* cards that exist only in Marine Worlds (source "Marine World" in the fan site's data, and P133-P139): a pale seahorse at the left of the name stripe, like the printed cards (img/mw_seahorse.png: BGA's own seahorse cut from img/icons-2.webp, made white at 80 % opacity; on the large card only, like on BGA) */
+.ark-card.zoo-card.mw-only .ark-card-wrapper .ark-card-middle{position:relative}
+.ark-card.zoo-card.mw-only .ark-card-wrapper .ark-card-middle::before{content:"";position:absolute;left:15px;top:50%;width:16px;height:28px;transform:translateY(-50%);background:url(/img/mw_seahorse.png) center/contain no-repeat;z-index:2;pointer-events:none}
+body.compact .ark-card.zoo-card.mw-only .ark-card-wrapper .ark-card-middle::before{display:none}
+

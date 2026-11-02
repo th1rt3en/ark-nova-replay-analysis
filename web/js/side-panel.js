@@ -5,6 +5,7 @@ import { hides, seatOrder } from './pov.js';
 import { bindPreview, variantStatsBox, zoneNew } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, inkDxEm, pic, workerUrl } from './icons.js';
 import { clockBadge, gameMenu } from './play.js';
+import { hideIncome, showEndgame, showIncome } from './incomepop.js';
 
 // score = appeal + conservation points (-14 at 0, +2 per step to 10, then +3): same rule as engine/tracks.py, used when the server did not send it
 const trackScore = (p) => Math.max(0, Math.min(113, p.appeal)) + (p.conservation <= 10 ? 2 * p.conservation - 14 : 3 * Math.min(41, p.conservation) - 24);
@@ -56,17 +57,20 @@ function flipScore(value, from, elapsed) {
 function tile(cls, title, img, value, sub) {
   const t = el('span', 'rt ' + cls);
   t.title = title;
-  const b = el('b', '', value);
+  const b = el('b', String(value).length >= 3 ? 'd3' : '', value);          // (three digits, very rare: tightened in the CSS so they fit the tile)
   if (/\bov\b/.test(cls) && !/\b(xo|money)\b/.test(cls) && String(value).length > 1) b.style.transform = 'translateX(' + inkDxEm(value, 0) + 'em)';          // appeal, conservation, reputation: several digits keep Park Num's own spacing (it is already narrow), centred by their ink
   t.append(img, b);
   if (sub !== undefined) t.append(el('small', '', sub));
   return t;
 }
 // the live count of the endgame points (engine/endgame.py `live_scoring`): a violet "+X" pill under the tile; `n` 0 / undefined = no pill
-function egPill(tileEl, n, what) {
+// the endgame cards that will count for a player (before the discard at 10 conservation one of two is thrown away)
+const nEgNow = (p) => (p.endgame_hand.length >= 2 && p.conservation < 10 ? p.endgame_hand.length - 1 : p.endgame_hand.length);
+function egPill(tileEl, n, what, slip) {
   if (!(n > 0)) return tileEl;
   const s = el('small', 'eg', '+' + n);
-  s.title = 'Endgame live count: ' + what + ' would give +' + n + ' now';
+  if (slip) { s.onmouseenter = () => slip(s); s.onmouseleave = hideIncome; }          // (hover: the slip with one line per source)
+  else s.title = 'Endgame live count: ' + what + ' would give +' + n + ' now';
   tileEl.append(s);
   return tileEl;
 }
@@ -84,11 +88,11 @@ function egCardIcon(n) {
 }
 const plainIcon = (id, h) => { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = h; return i; };
 // The number is centred by its ink, not by its advance width: the digits of Bowlby One have uneven side bearings (a 1 sat 1.6 px left of the middle, a 10 1.2 px right).
-// The Turn number of the Round | Turn element: the turn of the player who is acting, counted per player (both players' first turns are turn 1). The action card draft and the choice of the
-// starting hand are no turns (0 until the first player chooses an action card). `st.turn` counts the finished turns of both players (a second action of the same turn does not count, see
-// replay/builder.py), the players alternate, so the first player is `active_player` xor (turn odd). A turn begins with "chooses action card" (`current_action` is set); between two turns the
-// number of the player who has just finished stays.
+// BGA replays provide the accepted normal-turn ordinal directly. The engine's
+// completed-turn counter below remains the compatibility path for live games,
+// forks, sandbox positions and older archived replay payloads.
 function turnNumber(st) {
+  if (st.turn_context) return st.turn_context.display;  // accepted normal starts, including interrupted turns; neutral phases retain the last number
   const t = st.turn || 0, a = st.active_player || 0, first = a ^ (t & 1);
   const done = (seat) => Math.floor((t + (seat === first ? 1 : 0)) / 2);        // (the finished turns of a seat)
   if (st.current_action) return done(a) + 1;
@@ -140,7 +144,7 @@ function headerStats(st, flash) {
   if (!root) return;
   root.replaceChildren();
   const rnd = flash('round', st.round, el('div', 'pill rnd'));
-  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends. Turn: the number of turns the player who is acting has had in this game (the action card draft and the starting hand do not count)';
+  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends. Turn: the acting player’s normal turn number, counted when the turn starts. During a break or after play ends, the last turn number stays visible. Setup does not count';
   const rn = el('b', 'rn', st.round), tn = el('b', 'tn', turnNumber(st));
   const rh = el('div', 'half'), th = el('div', 'half');          // (two equal halves, the word small above the number, a dashed divider between them)
   rh.append(el('span', 'lab', 'Round'), rn);
@@ -202,15 +206,15 @@ export function sidePanel(st) {
     const res = el('div', 'ppres');                                        // the five tiles: money (and income), X tokens, reputation, appeal, conservation points
     const inc = p.income_total !== undefined ? p.income_total : p.income !== undefined ? p.income : trackIncome(p.appeal);
     const mo = flash(seat + ':money', p.money, tile('ov money', 'Money', pic('money', 48), p.money, '+' + inc));          // (the total income paid at the next break sits on the money tile)
-    const IN = { appeal: 'appeal track', kiosks: 'kiosks', map: 'map ability', sponsors: 'sponsors', map_bonuses: 'map bonuses' };
-    mo.querySelector('small').title = 'Income at the next break: ' + (p.income_parts ? Object.entries(p.income_parts).map(([k, v]) => v + ' ' + IN[k]).join(', ') : 'from the appeal track');
+    const chip = mo.querySelector('small');                                   // (hover: the income slip, one line per source and per sponsor)
+    chip.onmouseenter = () => showIncome(chip, p); chip.onmouseleave = hideIncome;
     res.append(mo);
-    res.append(flash(seat + ':x', p.x_tokens, tile('ov xo', 'X tokens', pic('xtoken', 46), p.x_tokens)));          // (the number lies on the X, white with a black outline)
+    res.append(flash(seat + ':x', p.x_tokens, tile('ov xo', 'X tokens', pic('xtoken_ns', 46), p.x_tokens)));          // (the number lies on the X, white with a black outline)
     res.append(flash(seat + ':reputation', p.reputation, tile('ov', 'Reputation', pic('reputation', 48), p.reputation)));
     const lv = S.endgameLive && p.endgame_live ? p.endgame_live : null;                // sponsors: both players; endgame cards: only for a player whose hand is shown (the eye is open / the own seat)
     const cardCp = lv && !hides(seat) && p.endgame_cards ? p.endgame_cards : 0;
-    res.append(flash(seat + ':appeal', p.appeal, egPill(tile('ov dk', 'Appeal', pic('appeal', 48), p.appeal), lv && lv.appeal, 'the sponsors')));
-    res.append(flash(seat + ':conservation', p.conservation, egPill(tile('ov dk', 'Conservation points', pic('conservation', 48), p.conservation), lv && lv.conservation + cardCp, cardCp ? 'the sponsors and the endgame cards' : 'the sponsors')));
+    res.append(flash(seat + ':appeal', p.appeal, egPill(tile('ov dk', 'Appeal', pic('appeal', 48), p.appeal), lv && lv.appeal, 'the sponsors', (chipEl) => showEndgame(chipEl, p, 'appeal', !hides(seat), hides(seat) ? Math.max(0, nEgNow(p)) : 0))));
+    res.append(flash(seat + ':conservation', p.conservation, egPill(tile('ov dk', 'Conservation points', pic('conservation', 48), p.conservation), lv && lv.conservation + cardCp, cardCp ? 'the sponsors and the endgame cards' : 'the sponsors', (chipEl) => showEndgame(chipEl, p, 'conservation', !!cardCp, hides(seat) ? Math.max(0, nEgNow(p)) : 0))));
     const nEg = p.endgame_hand.length >= 2 && p.conservation < 10 ? p.endgame_hand.length - 1 : p.endgame_hand.length;          // (before the discard at 10 conservation one of the cards is going to be thrown away)
     if (nEg > 0 && hides(seat)) res.children[4].append(egCardIcon(nEg));          // (only where the cards are hidden)
     box.append(res);

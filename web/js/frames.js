@@ -7,11 +7,13 @@
 //   'both'      fork / sandbox only (the bar is the way to play, so it stays with the step text)
 // Simultaneous actions (the starting hand): the move bar follows one player, the point of view's, else the one whose zoo is on the left (seat 0): only that player's
 // decision frame exists and only that player's lines of a merged text are shown. (The draft shows everything: both players' offers, with a point of view only its own.)
+// In a replay (not a live game) the decision frame exists only at the start of a turn ("X must choose an action card"): any other decision has already been taken, the next step shows it.
 // A decision frame exists only if the bar has something to show, and it is left out when the previous step of the same BGA move (`move_id`) already showed the same decision
 // (the engine keeps a pending decision attached to every line of a move: a break, a run of effects).
 import { FORK, PLAY, SANDBOX, S } from './state.js';
 import { labelOf, povState } from './pov.js';
 import { actionBar, draftOpen, prioritySeat, turnEnds } from './action-bar.js';
+import { revealAt } from './reveal.js';
 
 let cache = new Map(), cachePov = null, cacheReplay = null;
 const virt = new Map();
@@ -28,12 +30,10 @@ function textParts(i) {
   const label = String(labelOf(S.replay.steps[i]) || '(state update)'), parts = label.split(' · ');
   if (parts.length < 2 || S.replay.steps[i].state.phase !== 'setup') return [label];       // (outside the setup, " · " joins the steps that `view.py` folded into this one because nothing visible changed: one frame, the whole text)
   const names = S.replay.players.map((p) => p.name), owner = (p) => names.findIndex((n) => p.startsWith(n + ' '));
-  // the verb of a line ("draw", "keeps", ...): after the player's name, which may have several words ("Papa Emeritus V draw ...")
-  const verb = (p) => { const n = names.find((x) => p.startsWith(x + ' ')); return ((n ? p.slice(n.length + 1) : p).split(' ')[0]) || ''; };
   const groups = [];
   for (const p of parts) {
     const last = groups[groups.length - 1];
-    if (last && verb(last[0]) === verb(p)) last.push(p); else groups.push([p]);
+    if (last && (last[0].split(' ')[1] || '') === (p.split(' ')[1] || '')) last.push(p); else groups.push([p]);
   }
   return groups.map((g) => {
     const owners = [...new Set(g.map(owner).filter((o) => o >= 0))];
@@ -57,12 +57,15 @@ export function framesOf(i) {
   const steps = S.replay.steps;
   f = textParts(i).map((_, k) => 'text' + (k || ''));
   const st = steps[i].state;
-  if (draftOpen(st, i) && probe(i, 'draft')) f[0] = 'draft';       // (the first group of lines of a merged step is the draft's keep)
+  if (draftOpen(st, i) && probe(i, 'draft')) f[0] = 'draft';
+  else if (revealAt(i)) f[0] = 'reveal';                   // (Perception / Scavenging / Hunter / Scuba Dive: the cards of the effect in a lightbox, on the step that draws them and on the one that keeps some)       // (the first group of lines of a merged step is the draft's keep)
   if (PLAY && turnEnds(i)) f.push('gate');                  // (a live game only: a replay has nothing to confirm, the frame is skipped)
   const sig = probe(i, 'decision');
   const again = i > 0 && probe(i - 1, 'decision') === sig && (steps[i - 1].move_id === steps[i].move_id || JSON.stringify(steps[i - 1].options) === JSON.stringify(steps[i].options));       // (the decision of the step before, still pending in the engine's state while the log resolves it: nothing new to show)
-  const chose = !PLAY && /chooses action card [^(]*with strength/.test(String(labelOf(steps[i]) || ''));       // (the choice of an action card, not the draft's "chooses action cards (action card draft)")         // (the replay: what the player has to do inside the action card just chosen is the next step, not a frame of its own)
-  if (sig && !again && !chose) f.push('decision');
+  const chose = !PLAY && /chooses action card/.test(String(labelOf(steps[i]) || ''));         // (the replay: what the player has to do inside the action card just chosen is the next step, not a frame of its own)
+  const o = steps[i].options, turnStart = o ? o.prompt === 'choose_action_card' && !o.only : st.phase === 'turn' || st.phase === 'final_turns';       // (the replay: only the start of a turn keeps its decision frame, "X must choose an action card"; every other choice is already made in the next step)
+  const lastOfRun = i + 1 >= steps.length || probe(i + 1, 'decision') !== sig || !(steps[i + 1].move_id === steps[i].move_id || JSON.stringify(steps[i + 1].options) === JSON.stringify(steps[i].options));       // (the replay shows the turn start on the last step that still has it: the display refill of BGA's next move comes before "X must choose an action card", as in a live game)
+  if (sig && !chose && (PLAY ? !again : turnStart && lastOfRun)) f.push('decision');
   cache.set(i, f);
   return f;
 }
@@ -89,6 +92,21 @@ export function frameState() {
       delete v.__id; virt.set(key, v);
     }
     return v;
+  }
+  // Perception / Scavenging / Hunter / Scuba Dive: while the lightbox shows the cards of the effect they are not in the hand yet (the hand, its counter in the player's box and the dock show
+  // the hand without them); the data (and the engine, as on BGA) counts them as drawn at once, the next frame has them in the hand
+  if (frameKind() === 'reveal') {
+    const r = revealAt(S.step);
+    if (r) {
+      const key = S.step + 'r';
+      let v = virt.get(key);
+      if (!v) {
+        const out = (r.kept === null ? r.cards : r.kept).slice(), hand = base.players[r.seat].hand.filter((k) => { const j = out.indexOf(k); if (j >= 0) { out.splice(j, 1); return false; } return true; });
+        v = { ...base, players: base.players.map((q, i) => (i === r.seat ? { ...q, hand } : q)) };
+        delete v.__id; virt.set(key, v);
+      }
+      return v;
+    }
   }
   return base;
 }

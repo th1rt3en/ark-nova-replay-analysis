@@ -57,7 +57,7 @@ function drawBonus(g, bn) {                                              // as z
   else if (bn.type === 'money') moneyTile(g, 0, 3, 48);
   else if (bn.type === 'special-enclosure') { iconBox(g, 'r9c9', -17, 3, 30); iconBox(g, 'r9c11', 17, 3, 30); }
   else if ((bn.type === 'Scavenging' || bn.type === 'Pouch' || bn.type === 'perception' || ((bn.type === 'Clever' || bn.type === 'xtoken') && bn.value > 1)) && icon) {          // the number to the left of the icon, overlapping it a little
-    iconBox(g, icon, bn.value > 1 ? 9 : 0, 3, 44);
+    iconBox(g, bn.type === 'xtoken' && bn.value > 1 ? (ICON_IDS['bonus:xtoken_num'] || icon) : icon, bn.value > 1 ? 9 : 0, 3, 44);
     if (bn.value > 1 || bn.type === 'perception' || bn.type === 'Pouch') put(g, 'text', { x: -15, y: 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
   }
   else if (bn.type === 'pavilion') put(g, 'image', { href: '/enclosures/pavilion.webp', x: -23, y: -16, width: 46, height: 40 });

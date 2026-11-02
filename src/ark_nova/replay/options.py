@@ -69,6 +69,15 @@ def _expedition_buttons(state: GameState, pending: list, entry: dict) -> list:
             {**entry, "name": "Scuba Dive 3", "option": "scuba", "enabled": True}]
 
 
+def _revealed_cards(state: GameState, e: dict) -> dict:
+    """The cards of a reveal-and-keep effect, for the lightbox of the page: the topmost cards of the deck (Perception / Hunter / Scuba Dive) or the cards drawn from the discard pile (Scavenging)."""
+    if e.get("kind") == "reveal" and isinstance(e.get("x"), int):
+        return {"cards": list(state.main_deck[:e["x"]])}
+    if e.get("kind") == "scavenge" and e.get("cards"):
+        return {"cards": list(e["cards"])}
+    return {}
+
+
 def step_options(state: GameState, seat: int | None = None) -> dict | None:
     """What the bar is drawn from. `seat`: a live game gives each player their own (both discard at once in a break: each one sees their own discard); None = the player of the prompt."""
     pr = state.prompt
@@ -142,7 +151,8 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
     elif pr.kind == "effects":
         pending = pr.args.get("pending", [])
         out["pending"] = [e.get("kind") for e in pending][:12]
-        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile") if k in e and isinstance(e[k], (str, int, bool))},
+        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter") if k in e and isinstance(e[k], (str, int, bool))},
+                           **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}), "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
         out["effects"] = [b for entry in out["effects"] for b in _expedition_buttons(state, pending, entry)]

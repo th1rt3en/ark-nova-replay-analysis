@@ -9,11 +9,12 @@ import { renderShared } from './shared.js';
 import { actionBar } from './action-bar.js';
 import { sidePanel } from './side-panel.js';
 import { renderDock, toggleDock } from './dock.js';
+import { afterRender } from './handfly.js';
 import { fitPlayed, renderCards, renderZoo } from './zoo.js';
 import { engineBadge, labelNode } from './log-labels.js';
 import { fitDisplay, fitScale } from './layout.js';
 import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
-import { atEnd, atStart, buildMoveList, buildTimeline, go, setPlaying, stepBy, updateTimeline } from './playback.js';
+import { atEnd, atStart, buildMoveList, buildTimeline, go, moveHash, moveNumbers, setPlaying, stepBy, stepOfHash, stepOfMove, updateTimeline } from './playback.js';
 import { settingsOpen, setupSettings, toggleSettings } from './settings.js';
 import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
@@ -23,6 +24,7 @@ import './thin-numbers.js';
 import './bpreview.js';
 import { frameKind, frameState, frameText } from './frames.js';
 import { resultsAvailable, syncResults } from './results.js';
+import { initFullscreen } from './fullscreen.js';
 
 
 // The players' boards by the layout setting (settings.js): side by side, one at a time with arrows (the seats go round in the order of the tracker), or one above the other
@@ -40,6 +42,7 @@ function zooBoards(st) {
 // the arrows beside the player's name (zoo.js) go round the seats in the order of the tracker
 export function zooStep(d) { const o = seatOrder(), at = Math.max(0, o.indexOf(S.zooTab)); S.zooTab = o[(at + d + o.length) % o.length]; S.lastBoard = null; render(); }
 document.addEventListener('zoolayout', () => { S.lastBoard = null; render(); });
+document.addEventListener('encborders', () => { S.lastBoard = null; render(); });
 document.addEventListener('eglive', () => { S.lastBoard = null; render(); });                  // (the live count of the endgame points is switched on or off)
 document.addEventListener('playedmode', () => { S.lastBoard = null; render(); });          // (where the played cards are shown: the boards and the dock are drawn again)
 
@@ -69,12 +72,12 @@ export function render() {
   const s = S.replay.steps[S.step], st = povState(frameState());
   const cur = $('current'), kind = frameKind();
   cur.replaceChildren();
-  cur.hidden = kind !== 'text' && kind !== 'both' && (FORK || kind !== 'draft');       // (the replay's draft frame shows the step text in the bar: the cards are in a lightbox)                 // replay: the step text and the bar are never shown together (frames.js)
+  cur.hidden = kind !== 'text' && kind !== 'both' && (FORK || (kind !== 'draft' && kind !== 'reveal'));       // (the replay's draft frame shows the step text in the bar: the cards are in a lightbox)                 // replay: the step text and the bar are never shown together (frames.js)
   if (!cur.hidden) {
     let text = frameText();
     if (FORK && typeof text === 'string') text = text.replace(/^Fork of table #\d+ after step \d+: /, '');       // (the first step of a fork: the server prefixes the label; the fork box above says where it comes from)
-    cur.append(labelNode(text));
-    if (s.engine && s.engine.detail && s.engine.source === 'log') cur.append(el('div', 'engine-detail', 'Engine: ' + s.engine.detail));
+    cur.append(labelNode(text, s));
+    if (s.engine && s.engine.detail && s.engine.source === 'log' && !/^Normal turn starts/.test(s.engine.detail)) cur.append(el('div', 'engine-detail', 'Engine: ' + s.engine.detail));
   }
   $('enginemark').replaceChildren(engineBadge(s.engine));
   if (PLAY && (!S.replay.maps || S.replay.maps.length < 2)) {                   // the maps are still being chosen: only the bar
@@ -104,7 +107,7 @@ export function render() {
     if (SANDBOX) renderSandboxTools(st);
   }
   if (!same) { S.prevZones = S.curZones; S.curZones = {}; S.prevZoneData = S.curZoneData; S.curZoneData = {}; }
-  $('jump').value = S.step;
+  $('jump').value = moveNumbers().cur[S.step]; fitJump();                              // (BGA's move number, playback.js `moveNumbers`)
   syncResults();                                                          // (the last step of a finished replay: the switch Final board | Results, results.js)
   // (the four playback buttons are never paled out: at the ends a click does nothing, it is clearer than a state that changes between the final board and the results)
   const fb = $('fork');
@@ -115,15 +118,19 @@ export function render() {
   li.classList.add('on');
   for (let i = 0; i < list.children.length; i++) list.children[i].hidden = i > S.step;       // (spoiler protection: the log only lists the moves up to the one on show)
   followLog();
-  history.replaceState(null, '', '#' + S.step + (S.phase ? '.' + S.phase : ''));       // (#13 = step 13, #13.1 = its second frame)
+  history.replaceState(null, '', '#' + moveHash(S.step, S.phase));       // (#641 = BGA's move 641, #641.1 = the second step of that move, #641.1.2 = its third frame)
   fitSidebar();
   fitDisplay();
   fitPlayed();
   updateTimeline();
   window.scrollTo(scrollX, scrollY);
+  afterRender();                                                          // (the cards a reveal kept fly from the lightbox into the hand, handfly.js)
 }
 
+const fitJump = () => { const j = $('jump'), n = Math.max(1, String(j.value).length); j.style.width = n + 'ch'; j.parentNode.dataset.len = Math.min(n, 3); };      // (the move box: the input is as wide as its digits; `data-len` lets the CSS nudge the "#" + number pair left)
+
 function init() {
+  initFullscreen($('fullscreen'));
   buildMoveList();
   buildTimeline();
   setupSidebar();
@@ -136,9 +143,11 @@ function init() {
   document.addEventListener('nosnake', () => { refreshLabels(); S.lastBoard = null; render(); });                  // (the cards with a snake photo get their new picture at once, no reload)
   setupShortcuts();
   $('last').onclick = () => { go(S.replay.steps.length - 1, 99); };
+  $('jump').oninput = fitJump;
   $('jump').onchange = (e) => {                                          // a move number past the end jumps to the end (its last frame)
     const n = parseInt(e.target.value, 10) || 0;
-    if (n >= S.replay.steps.length - 1) go(S.replay.steps.length - 1, 99); else go(Math.max(0, n));
+    const at = stepOfMove(n);                                            // (the step that holds BGA's move n, or the next one when BGA has no such move)
+    if (at < 0 || at >= S.replay.steps.length - 1) go(S.replay.steps.length - 1, 99); else go(Math.max(0, at));
   };
   document.addEventListener('keydown', (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
@@ -154,9 +163,9 @@ function init() {
   else if (FORK) initFork();
   else if (!MINIGAME) {
     const fb = $('fork');
-    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&pov=' + povParam() + '&orient=' + orientParam() + (params.get('source') === 'upload' ? '&source=upload' : ''), '_blank'); };
+    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&at=' + moveHash(S.step, 0) + '&pov=' + povParam() + '&orient=' + orientParam() + (params.get('source') === 'upload' ? '&source=upload' : ''), '_blank'); };
   }
-  const [h1, h2] = PLAY ? [S.replay.steps.length - 1, 0] : FORK || MINIGAME ? [0, 0] : location.hash.slice(1).split('.').map((x) => parseInt(x, 10));
+  const [h1, h2] = PLAY ? [S.replay.steps.length - 1, 0] : FORK || MINIGAME ? [0, 0] : stepOfHash(location.hash);
   if (loadProgress) loadProgress.done();
   $('loading').hidden = true;
   $('app').hidden = false;

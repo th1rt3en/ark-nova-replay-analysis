@@ -2,7 +2,7 @@
 import { seatRawColor, svg } from './util.js';
 import { FORK, S } from './state.js';
 import { zoneNew } from './cards.js';
-import { ICON_IDS, SLOT_ICON, SLOT_NUMBER, iconUrl, moneyDx, moneyTile, pieceUrl, workerUrl } from './icons.js';
+import { ICON_IDS, SLOT_ICON, SLOT_NUMBER, iconUrl, moneyTile, moneyTwo, pieceUrl, workerUrl } from './icons.js';
 import { bindActs, forkActs } from './action-bar.js';
 import { render } from './main.js';
 import { HANDSHAKE, UNIVERSITY, pentagon } from './handshake.js';
@@ -18,7 +18,7 @@ const ASSOC = {
   },
 };
 
-const BLOCKED_COLORS = ['#7f4e30', '#b91b1b', '#d1c81c', '#cb7b19', '#c028d3'];       // (BGA's player colours, the pieces of web/cubes)
+const BLOCKED_COLORS = ['#c028d3', '#cb7b19', '#d1c81c', '#b91b1b', '#30a638', '#1863a5'];       // (neutral cubes: six vivid BGA player colours, the pieces of web/cubes; the first one no player is close to; no brown, no grey / white / black)
 export function unusedColor() {
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   const far = (c) => S.replay.players.every((p) => !p.color || rgb(c).reduce((d, v, i) => d + Math.abs(v - rgb(p.color)[i]), 0) > 200);
@@ -105,7 +105,8 @@ export function slotGlyph(root, sl, y) {
   const add = (tag, attrs, text) => { const e = svg(tag, attrs); if (text !== undefined) e.textContent = text; root.append(e); return e; };
   if (sl.kind === 'instant_income') add('rect', { x: 78, y: y - 31, width: 62, height: 62, rx: 12, fill: '#9a4ba7', stroke: '#5e2a6b', 'stroke-width': 3 });
   else add('image', { href: iconUrl(ICON_IDS.pentagon), x: 74, y: y - 36, width: 72, height: 71 });
-  const icon = SLOT_ICON[bn.type] || ICON_IDS['bonus:' + bn.type];
+  let icon = SLOT_ICON[bn.type] || ICON_IDS['bonus:' + bn.type];
+  if (bn.type === 'xtoken' && bn.value) icon = ICON_IDS['bonus:xtoken_num'] || icon;        // (a number lies on it: no white squares)
   const size = bn.type === 'money' ? (sl.kind === 'instant_income' ? 46 : 42) : (sl.kind === 'instant_income' ? 44 : 50);
   if (bn.type === 'money') moneyTile(root, 109, y + 1, size);
   else if (bn.type === 'special-enclosure') {            // the choice of a large bird aviary / reptile house (/ large aquarium in a Marine Worlds game)
@@ -132,7 +133,10 @@ export function slotGlyph(root, sl, y) {
     const [w0, h0] = S.iconSizes[icon] || [size, size];
     add('image', { href: iconUrl(icon), x: 109 - (w0 * size / h0) / 2, y: y - size / 2 + 1, width: w0 * size / h0, height: size });
   } else add('text', { x: 109, y: y + 8, class: 'slot-label' }, '?');
-  if (SLOT_NUMBER.has(bn.type) && bn.value) add('text', Object.assign({ x: 109, y: y + 13, class: 'slot-number' + (bn.type === 'conservation' ? ' dk conservation' : '') + (bn.type === 'xtoken' ? ' xnum' : '') + (bn.type === 'money' && String(bn.value).length > 1 ? ' two' : '') }, bn.type === 'money' && String(bn.value).length > 1 ? { dx: moneyDx(bn.value) } : {}), bn.value);
+  if (SLOT_NUMBER.has(bn.type) && bn.value) {
+    if (bn.type === 'money' && String(bn.value).length > 1) add('text', { ...moneyTwo(bn.value, 109, y + 1, 34, 6), class: 'slot-number two' }, bn.value);      // (two digits: smaller, tighter and centred on the tile, `moneyTwo`)
+    else add('text', { x: 109, y: y + 13, class: 'slot-number' + (bn.type === 'conservation' ? ' dk conservation' : '') + (bn.type === 'xtoken' ? ' xnum' : '') }, bn.value);
+  }
   if (bn.type === 'cut-down' && icon) {                  // the Cut Down ability: a white 1 with a black border near the left edge of the icon
     const [w0, h0] = S.iconSizes[icon] || [size, size];
     add('text', { x: 109 - (w0 * size / h0) / 2 + 8, y: y + 14, class: 'slot-number', style: 'font-size:28px' }, '1');
@@ -227,17 +231,18 @@ export const stripUnits = (map) => (map.upgrade_sets || UPGRADE_SETS[map.id] ? 4
 // the look of the strip (the bonus pentagons have an ink edge and a hard shadow like the zoo panels)
 const ST = { paper: '#ede5d3', grid: 'rgba(0,0,0,.07)', pink: '#dbadc8', blue: '#93d4e7', blue2: '#92d2e8', frame: '#000', frameW: 8, shadow: 0, plaque: ['#000', .20], dark: ['#000', .17], uni: ['#000', .30], hex: '#F2E23D', hexLine: '#17262B', hexW: 3.1, hexShadow: 3.2, hexSheen: 0 };
 const BONUS_H = 129;                                                     // the height of the yellow pentagons of the worker / conservation bonuses
+let stripCount = 0;                                                      // (pattern ids must be unique in the whole page: every zoo has its own strip)
 export function associationStrip(p, map, seat) {
   const wide = stripUnits(map) === 451;
   const s = svg('svg', { class: 'strip', viewBox: (wide ? '-50 0 451 ' : '0 0 351 ') + STRIP_H, role: 'img', 'aria-label': 'Partner zoos and universities' });
   const put = (tag, attrs) => { const e = svg(tag, attrs); s.append(e); return e; };
   const BGA = '/assets/association_player_board.webp';
-  const grid = put('defs', {});
-  const pat = svg('pattern', { id: 'stripgrid', x: 24, y: 24, width: 48, height: 48, patternUnits: 'userSpaceOnUse' });
+  const grid = put('defs', {}), gridId = 'stripgrid' + (++stripCount);
+  const pat = svg('pattern', { id: gridId, x: 24, y: 24, width: 48, height: 48, patternUnits: 'userSpaceOnUse' });
   pat.append(svg('path', { d: 'M0 0H48M0 0V48', fill: 'none', stroke: ST.grid, 'stroke-width': 2 }));
   grid.append(pat);
   put('rect', { x: wide ? -50 : 0, y: 0, width: wide ? 451 : 351, height: STRIP_H, fill: ST.paper });
-  put('rect', { x: wide ? -50 : 0, y: 0, width: wide ? 451 : 351, height: STRIP_H, fill: 'url(#stripgrid)' });
+  put('rect', { x: wide ? -50 : 0, y: 0, width: wide ? 451 : 351, height: STRIP_H, fill: 'url(#' + gridId + ')' });
   put('rect', { x: 28, y: 24, width: 295, height: 2 * STRIP_PITCH, fill: ST.pink });            // partner zoos 3 and 4 (pink), 1 and 2 (blue), the universities (blue)
   put('rect', { x: 28, y: 24 + 2 * STRIP_PITCH, width: 295, height: 2 * STRIP_PITCH, fill: ST.blue });
   put('rect', { x: 28, y: STRIP_BOX2, width: 295, height: 3 * STRIP_PITCH, fill: ST.blue2 });

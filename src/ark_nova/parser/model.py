@@ -1,6 +1,7 @@
 """Normalized log model produced by the parser (see docs/log_format.md)."""
 from dataclasses import dataclass, field
 from typing import Any, Optional
+from ark_nova.parser.turns import TurnTimeline
 
 
 @dataclass
@@ -43,3 +44,6 @@ class ParsedLog:
     final_scores: dict[str, int] = field(default_factory=dict)   # from finalScoring events (absent when conceded)
     # a player's turn starts where BGA enters state 20 (choose an action card): (event order, active player id), public channel
     turn_markers: list[tuple[int, str]] = field(default_factory=list)
+    normal_turns: TurnTimeline = field(default_factory=TurnTimeline)  # normal starts; action segments stay independent
+
+    animal_ignores: dict[int, dict] = field(default_factory=dict)  # actual play order -> raw requirements/branch/token evidence

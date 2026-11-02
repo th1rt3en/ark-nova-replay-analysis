@@ -478,6 +478,8 @@ function emuChick(step = .55, phase = 0) {
     <circle cx="17.5" cy="-51.5" r="1.5" fill="${INK}"/><path d="M21.5 -50.5L26 -49.5L21.5 -48Z" fill="#4A3A2E"/></g>${leg('#8A7A6A', 0)}</g>`;
 }
 // Approved kangaroo model: ~102 map units tall, 80% of the crowned adult emu.
+// Master switch: the kangaroos are switched off on the front page for now (the code stays; set to true to bring them back).
+const KANGAROOS_ON = false;
 const ROO_SCALE = 0.830894;
 const ROO_HOP_MS = 1100;
 const ROO_LIFTOFF = .26;
@@ -833,7 +835,7 @@ function animals() {
     ${walker(`<g transform="scale(.82)">${emuAdult(.9, 0)}</g>`, -12, 26)}
     ${walker(`<g transform="scale(.82)">${emuChick(.5, 0)}</g>`, -9.6)}
     ${walker(`<g transform="scale(.76)">${emuChick(.5, -.2)}</g>`, -8)}
-    ${[false, true].map((dark) => `<g class="roo" visibility="hidden"><ellipse class="rooshadow" rx="${22 * ROO_SCALE / .55}" ry="${5 * ROO_SCALE / .55}" fill="#2B3A1C" opacity=".2"/><g class="rooflip"><g class="roo-model" transform="scale(${ROO_SCALE})"></g></g></g>`).join('')}
+    ${!KANGAROOS_ON ? '' : [false, true].map((dark) => `<g class="roo" visibility="hidden"><ellipse class="rooshadow" rx="${22 * ROO_SCALE / .55}" ry="${5 * ROO_SCALE / .55}" fill="#2B3A1C" opacity=".2"/><g class="rooflip"><g class="roo-model" transform="scale(${ROO_SCALE})"></g></g></g>`).join('')}
   </g>`;
 }
 function wildlife() {
@@ -1473,7 +1475,7 @@ map.innerHTML = defs() + `<g class="intro">
 
 followHere();
 bushLife();
-roos();
+if (KANGAROOS_ON) roos();
 lookoutToggle();
 siteBuild();
 document.getElementById('compass').innerHTML = compass();

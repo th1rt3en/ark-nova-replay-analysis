@@ -4,8 +4,9 @@
 "<seat>:<action type>", e.g. "1:animals". The viewer shows them when the action card is hovered (web/js/side-panel.js, `ACTION_STATS` in web/js/cards.js).
 The statistics of one card side are named apart from those of the other, so a card that has both sides over a game shows both.
 
-Counted from the engine, because the log has no line for it: Ignore Animals (a condition of the single animal was really missing), the hunts of Hunter Animals, the mark and
-the reputation of Mark Animals, the workers of Hire Association, the donation discount of X Association, the card instead of a donation, the extra strength of +1 Build and the
+Ignore Animals is counted from parser evidence in `logged_variant_gains`, independent of engine coverage.
+Counted from the engine: the hunts of Hunter Animals, the mark and
+the reputation of Mark Animals, the workers of Hire Association, the donation discount of X Association, the card instead of a donation, the extra strength and repeated enclosures of +1 Build, the additional cards retained by Keep Cards, and the
 terrain of Terrain Build. Counted from the log elsewhere (view.py): the money that Money Sponsors (variant 2) gave.
 """
 import copy
@@ -69,14 +70,7 @@ def observe_variants(before, act, after) -> list:
     p = before.players[seat]
     if typ == "animals":
         from ark_nova.engine import animals_action as aa, marks
-        if v == 1 and act.kind == "play_animal" and before.prompt.kind == "animals_play":
-            k = act.args["card"]
-            credits = aa.credits(before, seat, k)
-            if credits and credits[0] == "ignore" and aa.failed_conditions(before, seat, k, aa.live_level(p, a)):
-                add("ignored")                                     # the single animal had a condition that the zoo does not meet
-        elif v == 2:
-            pass                                                   # (the hunt: `_after_effects`)
-        elif v == 3:
+        if v == 3:
             if lvl == 1 and act.kind == "play_animal" and before.prompt.kind == "animals_play" and not a.get("played"):
                 k = act.args["card"]
                 folder = before.display.index(k) + 1 if act.args.get("from_display") and k in before.display else 0
@@ -113,20 +107,44 @@ def observe_variants(before, act, after) -> list:
             t = act.args.get("type")
             if v in (1, 2) and act.args.get("extra"):
                 add("extra3" if lvl == 1 else "extra2")             # the additional pavilion / kiosk: 3 money at level I, 2 at level II
-            elif v == 3:
+            elif v == 3 and before.prompt.kind == "build_place" and not act.args.get("engineer"):
+                # Only the action's own placements use +1 Build; free bonus buildings and Engineer have other sources.
                 placed = sum(build_action.SIZES.get(x, 0) for x in a.get("placed") or [])
                 size = build_action.SIZES.get(t, 0)
+                if lvl >= 2 and t in {"size-1", "size-2", "size-3", "size-4", "size-5"} and t in (a.get("placed") or []):
+                    add("identical")                               # each additional standard enclosure of this size, within this action
                 if placed <= ca.get("strength", 0) < placed + size:
                     add("extra_strength")                           # this building is the one that goes over the strength of the card
             elif v == 4 and _action_args(after).get("terrain_used") and not a.get("terrain_used"):
                 add("terrain_paid" if lvl == 1 else "terrain_gained")
     elif typ == "cards":
-        if v == 3 and act.kind == "take_cards" and act.args.get("mode") == "snap":
+        if v == 1 and act.kind == "take_cards" and before.prompt.kind == "cards_take" and act.args.get("mode") in {"deck", "range"}:
+            from ark_nova.engine.cards_action import discard_count
+            taken = int(act.args.get("count", 0)) if act.args["mode"] == "deck" else 1
+            # Count the avoided standard discard once, on the final acquisition of the draw action.
+            # Mixed deck/display draws can involve several engine actions; snapping never avoids a discard.
+            if taken > 0 and taken == a.get("remaining"):
+                add("extra_kept", discard_count(lvl, 0, ca.get("strength", 0)))
+        elif v == 3 and act.kind == "take_cards" and act.args.get("mode") == "snap":
             add("snaps")
     elif typ == "sponsors":
         if act.kind == "sponsor_side":
             stat = {"trade_money": "x_money", "trade_x": "money_x", "rep_money": "money_rep", "rep_x": "x_rep", "discard_money": "money", "discard_strength": "strength",
                     "discard_snap": "snap", "discard_play": "play"}.get(act.args.get("op"))
-            if stat:
+            if stat and (stat != "play" or act.args.get("play")):
                 add(stat)
     return out + out_effects
+
+
+def logged_variant_gains(parsed, move, seat_of) -> list:
+    """Count confirmed Ignore Animals uses at the actual buyAnimal, never from an inferred engine choice."""
+    out = []
+    for event in move.events:
+        evidence = parsed.animal_ignores.get(event.order)
+        if evidence is None or evidence.get("duplicate") or evidence.get("token"):
+            continue
+        seat = seat_of.get(evidence["player"])
+        if (seat is not None and evidence.get("action_type") == "Animals1" and evidence.get("branch") is True
+                and (evidence.get("requirements") or 0) > 0):
+            out.append((event.order, f"{seat}:animals", "ignored", 1))
+    return out

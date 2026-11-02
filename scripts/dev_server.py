@@ -30,13 +30,22 @@ def _remote_index(settings: Settings):
         return None, None
 
 
+class _PlaceholderElos(dict):
+    """Local only: every player has the Elo 123, so the Elo pill of the player boxes can be seen without BigQuery."""
+    def __bool__(self):
+        return True
+
+    def get(self, key, default=None):
+        return 123
+
+
 class LocalIndex:
     def __init__(self, remote=None):
         self.remote = remote
 
     def find(self, table_id):
         if (LOG_DIR / f"{table_id}.json").exists():
-            return TableRecord(table_id, f"{table_id}.json")           # (maps are inferred from the log, or read from data_manual/sample_maps.json)
+            return TableRecord(table_id, f"{table_id}.json", elos=_PlaceholderElos())           # (placeholder Elo 123 for every player, local only; maps are inferred from the log, or read from data_manual/sample_maps.json)
         return self.remote.find(table_id) if self.remote is not None else None
 
 

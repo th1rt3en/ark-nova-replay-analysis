@@ -314,7 +314,7 @@
     {
         "category": "sponsors",
         "variant": 1,
-        "name": "Money Sponsors",
+        "name": "Trade Sponsors",
         "level1": [
             "Blue area (Level I)",
             "Play 1 Sponsor card with a maximum level of X.",
@@ -379,7 +379,7 @@
     {
         "category": "sponsors",
         "variant": 4,
-        "name": "Snap Sponsors",
+        "name": "Marketing Sponsor",
         "level1": [
             "Play 1 Sponsor card with a maximum level of X.",
             "Or",

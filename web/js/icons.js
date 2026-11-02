@@ -16,7 +16,7 @@ export const ICON_IDS = {
   // what a placement bonus pentagon shows on top of the yellow base (r5c14); the number is drawn as text
   'bonus:reputation': 'r4c9', 'bonus:money': 'r11c8', 'bonus:xtoken': 'r3c2', 'bonus:take-in-range-or-deck': 'r6c13', 'bonus:Clever': 'r6c6',
   'bonus:bonus-sponsor': 'r7c6', 'bonus:sponsor-person-card': 'r7c6', 'bonus:Digging': 'r9c13', 'bonus:Determination': 'r6c7', 'bonus:cut-down': 'r4c1', 'bonus:bonus-scoring-cards': 'r6c4', 'bonus:Fac': 'r10c2', 'bonus:Partner-Zoo': 'r10c14', 'bonus:Multiplier': 'r6c8',
-  'bonus:animal-magnet': 'r10c12', 'bonus:Worker': 'r5c13', 'bonus:Scavenging': 'r4c10', 'bonus:Mark': 'r3c3', 'bonus:Pouch': 'r7c11', 'bonus:kiosk': 'r7c3', 'bonus:upgrade-card': 'r10c5',
+  'bonus:animal-magnet': 'r10c12', 'bonus:Worker': 'r5c13', 'bonus:extra-shift': 'r5c15', 'bonus:Scavenging': 'r4c10', 'bonus:Mark': 'r3c3', 'bonus:Pouch': 'r7c11', 'bonus:kiosk': 'r7c3', 'bonus:upgrade-card': 'r10c5',
   'bonus:continent': 'r9c12', 'bonus:shark-attack': 'r5c1', 'bonus:wave': 'r11c14', 'bonus:store': 'r5c2', 'bonus:conceal': 'r5c5',
 };
 // BGA's names of the icons (scripts/name_icons.py): the placement bonus of each type shows the icon of the same name
@@ -28,6 +28,8 @@ const BONUS_ICON_NAME = {
 export function applyIconNames(names) {
   for (const [type, name] of Object.entries(BONUS_ICON_NAME)) if (names[name] && type !== 'Digging') ICON_IDS['bonus:' + type] = names[name];       // (Digging keeps r9c13)
   ICON_IDS.money = names.money; ICON_IDS.appeal = names.appeal; ICON_IDS.conservation = names.conservation; ICON_IDS.reputation = names.reputation; ICON_IDS.xtoken_plain = names.xtoken;
+  names.xtoken_ns = 'r5c6_ns';          // the X token without the white squares, for every place a number lies on it
+  ICON_IDS['bonus:xtoken_num'] = 'r3c2_ns';   // the bordered one (placement / track bonus) without them
 }
 export const SHOW_VALUE = new Set(['money', 'reputation', 'appeal']);     // BGA prints the number on these three only (appeal: 2 on the drawing board); the icon of every other bonus already says what it is
 export const iconUrl = (id) => '/icons/' + id + '.webp';
@@ -65,6 +67,10 @@ export const SLOT_NUMBER = new Set(['money', 'xtoken', 'reputation', 'conservati
 
 // ---- rendering ------------------------------------------------------------------------------------------------
 export const ACTION_NAMES = { animals: 'Animals', association: 'Association', build: 'Build', cards: 'Cards', sponsors: 'Sponsors' };
+// the descriptive names of the special action cards of Marine Worlds (variant 1-4 of each type), for the tooltips; variant 0 is the plain card
+export const VARIANT_NAMES = { animals_1: 'Ignore Animals', animals_2: 'Hunter Animals', animals_3: 'Discount Animals', animals_4: 'Mark Animals', association_1: 'Supply Association', association_2: 'Hire Association',
+  association_3: 'X Association', association_4: 'Self-clever Association', build_1: 'Pavilion Build', build_2: 'Kiosk Build', build_3: '+1 Build', build_4: 'Terrain Build', cards_1: 'Keep Cards', cards_2: 'Digging Cards',
+  cards_3: 'Snap Cards', cards_4: 'Clever Cards', sponsors_1: 'Trade Sponsors', sponsors_2: 'Money Sponsors', sponsors_3: 'Sunbathing Sponsors', sponsors_4: 'Marketing Sponsor' };
 
 export const ACTION_ICON = { animals: 'action-animals', association: 'action-association', build: 'action-build', cards: 'action-cards', sponsors: 'action-sponsors' };
 export function pic(name, h) {
@@ -86,4 +92,16 @@ export function inkDxEm(text, ls = 0) {
 }
 // the shift of a two-digit money number in an svg text (bonus tiles, association strip), centred by its ink; the digits keep Park Num's own spacing
 export const moneyDx = (v) => inkDxEm(v, 0) + 'em';
+// A money number of two or more digits on a money tile (a placement bonus, a conservation track reward, a bonus slot of the association board): 90 % of the size of a
+// single digit, a little tighter, and centred on the tile by its ink (horizontally and vertically). `fs` / `sw` are the font size and the outline width of a single digit,
+// `cy` is the middle of the money tile; the result is the attributes of the svg <text> (x is the middle of the tile).
+export const MONEY_TWO = { scale: .9, ls: -.04 };
+export function moneyTwo(value, cx, cy, fs, sw) {
+  if (!inkCtx) inkCtx = document.createElement('canvas').getContext('2d');
+  const size = fs * MONEY_TWO.scale;
+  inkCtx.font = "100px 'Park Num'"; inkCtx.letterSpacing = (MONEY_TWO.ls * 100) + 'px';
+  const m = inkCtx.measureText(String(value));
+  return { x: cx, y: +(cy + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2 / 100 * size).toFixed(2), dx: inkDxEm(value, MONEY_TWO.ls) + 'em',
+           style: `font-size:${size.toFixed(2)}px;stroke-width:${(sw * MONEY_TWO.scale).toFixed(2)}px;letter-spacing:${MONEY_TWO.ls}em` };
+}
 

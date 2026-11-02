@@ -906,7 +906,7 @@ export const AnimalsData: AnimalCard[] = [
   },
   {
     id: '467',
-    name: 'ECUADORIAN SQUIRELL MONKEY',
+    name: 'ECUADORIAN SQUIRREL MONKEY',
     latinName: 'Saimiri macrodon',
     size: 2,
     price: 12,

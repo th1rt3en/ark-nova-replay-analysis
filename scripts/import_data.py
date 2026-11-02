@@ -111,9 +111,10 @@ def main() -> None:
     dump("endgames.json", endgames)
     dump("project_bonuses.json", raw["projectBonuses"])
     # action card faces: for every category and variant, the rule lines of level I and II (upstream i18n keys resolved to English)
+    action_names = {("sponsors", 1): "Trade Sponsors", ("sponsors", 4): "Marketing Sponsor"}
     dump("action_cards.json", [{
         "category": a["category"], "variant": a["variant"],
-        "name": resolve(a["nameKey"], en),
+        "name": action_names.get((a["category"], a["variant"]), resolve(a["nameKey"], en)),
         "level1": [resolve(k, en) for k in a["level1Keys"]],
         "level2": [resolve(k, en) for k in a["level2Keys"]],
     } for a in raw["actionCards"]])
