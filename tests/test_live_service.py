@@ -271,7 +271,7 @@ def test_the_game_modes_come_from_the_engine_and_a_bad_one_is_refused():
     from ark_nova.engine import map_select
     client, keeper, _ = _app()
     opts = client.get("/api/live/options").json()
-    assert [m["id"] for m in opts["game_modes"]] == list(map_select.MODES) and opts["default"] == map_select.DEFAULT_MODE and all(m["label"] for m in opts["game_modes"])
+    assert [m["id"] for m in opts["game_modes"]] == [m for m in map_select.MODES if m != "custom-map"] and opts["default"] == map_select.DEFAULT_MODE and all(m["label"] for m in opts["game_modes"])
     bad = client.post("/api/games", json={"game_mode": "nope"})
     assert bad.status_code == 422
     assert client.post("/api/games", json={"game_mode": "original"}).status_code == 200
