@@ -30,10 +30,12 @@ function textParts(i) {
   const label = String(labelOf(S.replay.steps[i]) || '(state update)'), parts = label.split(' · ');
   if (parts.length < 2 || S.replay.steps[i].state.phase !== 'setup') return [label];       // (outside the setup, " · " joins the steps that `view.py` folded into this one because nothing visible changed: one frame, the whole text)
   const names = S.replay.players.map((p) => p.name), owner = (p) => names.findIndex((n) => p.startsWith(n + ' '));
+  // the verb of a line ("draw", "keeps", ...): after the player's name, which may have several words ("Papa Emeritus V draw ...")
+  const verb = (p) => { const n = names.find((x) => p.startsWith(x + ' ')); return ((n ? p.slice(n.length + 1) : p).split(' ')[0]) || ''; };
   const groups = [];
   for (const p of parts) {
     const last = groups[groups.length - 1];
-    if (last && (last[0].split(' ')[1] || '') === (p.split(' ')[1] || '')) last.push(p); else groups.push([p]);
+    if (last && verb(last[0]) === verb(p)) last.push(p); else groups.push([p]);
   }
   return groups.map((g) => {
     const owners = [...new Set(g.map(owner).filter((o) => o >= 0))];

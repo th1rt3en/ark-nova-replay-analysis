@@ -18,7 +18,7 @@ export const S = {
   animalEnc: null,   // {card, x, y}: the enclosure clicked for the animal that is selected (not yet confirmed)
   // live play (play.js): the game id, the seat token and seat, the last version pushed, the socket / poll, the status, the abandon proposal, the clocks and the map picked but not confirmed
   play: { id: null, token: null, seat: null, version: -1, socket: null, poll: null, status: 'playing', backoff: 1000, leaving: false, abandon: { proposal: null, cooldown: {}, skew: 0 },
-          clock: null, clockSkew: 0, mapPick: null, endShown: false, menuOpen: false },
+          clock: null, clockSkew: 0, mapPick: null, endShown: false, menuOpen: false, study: null, studySkew: 0, studyAsked: false, started: true },
   forkBusy: false,
   // Placing a building in a fork: { seat, type, extra, x, y, rot } - the piece is chosen in the move panel, a click on a hex of the zoo sets its anchor, the two buttons round
   // the building turn it, green / red tells whether that placement is legal, the check mark places it. null while no building is being placed.
@@ -53,6 +53,7 @@ export const S = {
   forkBonus: null,   // fork: the bonus slot of the player board the viewer picked to unlock
   thresholdMode: null,   // fork: the upgrade / worker choice the viewer opened ({index, stage: 'choose' | 'upgrade'})
   marketMode: null,
+  multiplierMode: null,   // fork: the Multiplier effect (its index) whose action card the viewer is choosing
   assocSpecies: null,   // fork: the Marketing effect the viewer opened (its index) / the generic university whose species is being chosen
   assocMode: null,   // fork: 'partner' | 'university' once the viewer clicked that task of the Association action
   dockHandStep: -1,   // fork: the last step whose changed hand the dock was pointed at
