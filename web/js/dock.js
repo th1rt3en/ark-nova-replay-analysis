@@ -1,7 +1,7 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
 import { $, el, seatColor, seatText } from './util.js';
 import { FORK, MINIGAME, S, SANDBOX } from './state.js';
-import { curState, hides, seatOrder } from './pov.js';
+import { curState, hides, seatOrder, seesAll } from './pov.js';
 import { cardRow, quietly } from './cards.js';
 import { iconUrl } from './icons.js';
 import { cardPickAct, forkActs, pickCardOf } from './action-bar.js';
@@ -104,7 +104,7 @@ export function renderDock(st) {
   const panel = el('div', 'dockpanel');
   const bar = el('div', 'dockbar');
   const rows = {};
-  const shownSel = S.pov !== null && S.dockSel && S.dockSel.kind !== 'played' && S.dockSel.seat !== S.pov ? { seat: S.pov, kind: S.dockSel.kind } : S.dockSel;      // (a player's point of view has no way to the other player's cards)
+  const shownSel = !seesAll() && S.pov !== null && S.dockSel && S.dockSel.kind !== 'played' && S.dockSel.seat !== S.pov ? { seat: S.pov, kind: S.dockSel.kind } : S.dockSel;      // (a player's point of view has no way to the other player's cards)
   st.players.forEach((p, seat) => {
     if (hides(seat)) return;
     const cards = { hand: p.hand, endgame: p.endgame_hand || [], stored: p.stored || [], played: [...p.animals, ...p.sponsors] };

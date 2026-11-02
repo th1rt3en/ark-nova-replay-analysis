@@ -1,5 +1,5 @@
 // [module] Point of view (seat 0 / seat 1; both at once is no longer possible, a live game has none): what is hidden from the other player, the eyes that switch it.
-import { FORK, MINIGAME, PLAY, S, params, table } from './state.js';
+import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
 import { $, el, seatColor, svg } from './util.js';
 import { labelNode } from './log-labels.js';
 import { render } from './main.js';
@@ -10,7 +10,8 @@ const POV_KEY = 'pov:' + (table || 'local');
 const readPov = (v) => (v === '0' ? 0 : v === '1' ? 1 : undefined);       // (the former 'both eyes open' value 'all' is read as unset -> the first player)
 export const povParam = () => (S.pov === null ? 'all' : String(S.pov));
 { let v; try { v = readPov(FORK ? params.get('pov') : localStorage.getItem(POV_KEY)); } catch (e) { /* no storage */ } S.pov = PLAY ? null : MINIGAME ? window.MINIGAME_POV : v === undefined ? 0 : v; }       // (a live game: the server already left out what this seat may not see, nothing is hidden by the page)
-export const hides = (seat) => S.pov !== null && seat !== S.pov;
+export const seesAll = () => FORK || SANDBOX;                          // a fork / the sandbox plays both seats: whoever has to choose must be able to see (and click) their own cards, so the eye hides nothing there
+export const hides = (seat) => !seesAll() && S.pov !== null && seat !== S.pov;
 // The orientation of the boards: the spectated player chosen in the dialog at the start (`chooseSpectated`) has the left map and the upper player box, whichever eye is open later (the eyes
 // change only what is shown of the cards). Kept per table and per tab ('orient:<table>' in sessionStorage: '0' | '1'), so F5 keeps it but a new visit (window closed, ID entered again) asks again; a fork takes it from the URL (`&orient=`, else the eye's seat); a live game and the sandbox keep seat 0 left.
 const ORIENT_KEY = 'orient:' + (table || 'local');
@@ -22,7 +23,7 @@ export const needsChoice = () => !FORK && !PLAY && !MINIGAME && orientStored() =
 
 const povCache = new Map();
 export function povState(st) {
-  if (S.pov === null) return st;
+  if (S.pov === null || seesAll()) return st;
   const key = S.pov + ':' + (st.__id || (st.__id = Math.random()));
   if (povCache.has(key)) return povCache.get(key);
   const back = (a) => (a || []).map(() => '?');
