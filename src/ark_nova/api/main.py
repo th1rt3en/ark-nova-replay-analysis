@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import threading
+import zlib
 from collections import OrderedDict
 from pathlib import Path
 
@@ -28,6 +29,7 @@ from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
 from ark_nova.storage.tableinfo import elo_changes_from_tableinfo, elos_after_from_tableinfo, elos_from_tableinfo, maps_from_tableinfo, marine_worlds_of, record_from_tableinfo, same_map_of
 from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
+from ark_nova.storage.contributions import Contributions
 from ark_nova.storage.requests import request_log
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -63,6 +65,24 @@ def _not_modified(request: Request, tag: str) -> Response | None:
     if tag in [t.strip() for t in request.headers.get("if-none-match", "").split(",")]:
         return Response(status_code=304, headers={"ETag": tag, "Cache-Control": CACHE_CONTROL})
     return None
+
+
+MAX_BODY = 64 * 1024 * 1024
+
+
+async def _body(request: Request) -> bytes:
+    """The request body; one that starts with the gzip magic bytes is unpacked (the page sends a 10 MB log as a few hundred KB; a ValueError when it is not gzip or too large)."""
+    raw = await request.body()
+    if raw[:2] != b"\x1f\x8b":
+        return raw
+    unpacker = zlib.decompressobj(31)
+    try:
+        out = unpacker.decompress(raw, MAX_BODY + 1)
+    except zlib.error as e:
+        raise ValueError("not a gzip body") from e
+    if len(out) > MAX_BODY:
+        raise ValueError("body too large")
+    return out
 
 
 def _cache_dir(settings: Settings) -> str | None:
@@ -134,9 +154,10 @@ def _error(status: int, code: str, message: str, **extra) -> JSONResponse:
     return JSONResponse(status_code=status, content={"status": code, "message": message, **extra})
 
 
-def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None, minigames=None, accounts=None) -> FastAPI:
+def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None, minigames=None, accounts=None, contributions=None) -> FastAPI:
     app = FastAPI(title="Ark Nova replay")
     app.state.settings = settings or Settings.from_env()
+    app.state.contributions = contributions or Contributions(app.state.settings.upload_gcs_bucket, app.state.settings.upload_bq_table)
     app.state.index = index or _default_index(app.state.settings)
     app.state.logs = logs or _default_logs(app.state.settings)
     st = app.state.settings
@@ -260,9 +281,9 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             return _error(502, "log_missing", "The log is indexed but could not be found in storage.", table_id=table_id)
         return Response(content=body, media_type="application/json", headers={"ETag": tag, "Cache-Control": CACHE_CONTROL})
 
-    def _replay(table_id: int, rec: TableRecord, raw: dict) -> JSONResponse:
+    def _replay(table_id: int, rec: TableRecord, raw: dict, quick: bool = False) -> JSONResponse:
         try:
-            return JSONResponse(build_replay_view(raw, rec))
+            return JSONResponse(build_replay_view(raw, rec, quick=quick))
         except Exception as e:  # noqa: BLE001 - a log the replay builder cannot handle must not become a 500 page
             log.exception("replay build failed for table %s", table_id)
             return _error(500, "replay_failed", f"The replay could not be built ({type(e).__name__}).", table_id=table_id)
@@ -283,6 +304,10 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
                 raw = json.loads(app.state.logs.read(rec.gcs_path, table_id))
             except LogNotFound:
                 return _error(502, "log_missing", "The log is indexed but could not be found in storage.", table_id=table_id)
+            if request.headers.get("x-quick") == "1":                               # the viewer opens on the draft at once and asks for the whole replay next
+                res = _replay(table_id, rec, raw, True)
+                res.headers["Cache-Control"] = "no-store"
+                return res
             res = _replay(table_id, rec, raw)
             if res.status_code != 200:
                 return res
@@ -309,7 +334,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     async def fork_table(table_id: int, request: Request):
         """Fork a replay: the position after `step` (where the engine played it) with the deck order of `seed`. Everything the viewer needs comes back; the engine state travels with each step."""
         try:
-            body = json.loads(await request.body())
+            body = json.loads(await _body(request))
             step = int(body["step"])
             seed = int(body.get("seed") or forking.DEFAULT_SEED)
         except (ValueError, KeyError, TypeError):
@@ -481,10 +506,11 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         """Replay of a log the browser brings: {log, index}. `index` is the table info that the extension collected (optional): it gives the Elo of the
         players and stands in for the index, so a table that is not indexed yet can be replayed."""
         try:
-            body = json.loads(await request.body())
+            body = json.loads(await _body(request))               # (gzip or plain)
             raw = body["log"]
             index_info = body.get("index")
             base_projects = body.get("base_projects")
+            quick = bool(body.get("quick"))                       # only the draft and the starting hand (see build_replay_view)
         except (ValueError, KeyError, TypeError):
             return _error(422, "invalid", "Send {log, index}.", table_id=table_id)
         errors = await run_in_threadpool(verify_log, raw, table_id)
@@ -493,13 +519,15 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         rec = _record_for_upload(table_id, index_info, base_projects)
         if rec is None:
             return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
-        return await run_in_threadpool(_replay, table_id, rec, raw)
+        if not quick:                                          # (kept for the project on a thread of its own, while the replay is built: the player does not wait for it)
+            app.state.contributions.submit(table_id, raw, lambda: build_replay_view(raw, rec, quick=True)["base_projects"])
+        return await run_in_threadpool(_replay, table_id, rec, raw, quick)
 
     @app.post("/api/tables/{table_id}/verify")
     async def verify(table_id: int, request: Request):
         """Manual submission: check the uploaded log is a finished 2p Ark Nova log of this table. The table need not be indexed (its table info comes with the upload)."""
         try:
-            raw = json.loads(await request.body())
+            raw = json.loads(await _body(request))
         except ValueError:
             return JSONResponse(status_code=422, content={"ok": False, "errors": ["The file is not valid JSON."]})
         errors = await run_in_threadpool(verify_log, raw, table_id)

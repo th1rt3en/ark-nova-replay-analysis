@@ -28,19 +28,38 @@ export async function fetchReplay() {
       base_projects = projects ? JSON.parse(projects) : null;
     }
     res = await fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                           body: JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log, index, base_projects }) });
+                                                           body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log, index, base_projects })) });
   } else if (params.get('source') === 'upload') {
     const text = await LogStore.get(table);
     if (!text) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
     const info = await LogStore.get('index:' + table);                       // the table info of the extension (optional): the Elo of the players
     const projects = await LogStore.get('baseprojects:' + table);            // the base projects the extension read off BGA's replay (optional)
-    res = await fetch('/api/tables/' + encodeURIComponent(table) + '/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                                              body: '{"log":' + text + ',"index":' + (info || 'null') + ',"base_projects":' + (projects || 'null') + '}' });
+    const post = async (extra) => fetch('/api/tables/' + encodeURIComponent(table) + '/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                                                               body: await packed('{"log":' + text + ',"index":' + (info || 'null') + ',"base_projects":' + (projects || 'null') + extra + '}') });
+    fullFetch = () => post('');
+    res = await post(',"quick":true');                                       // (the draft and the starting hand first: the engine's replay of the whole game takes a while)
   } else {
-    res = await fetch(url);
+    fullFetch = () => fetch(url);
+    res = await fetch(url, { headers: { 'X-Quick': '1' } });                 // (a replay the browser or the server has comes back whole; else the draft and the starting hand only)
   }
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(body.message || 'the replay could not be loaded');
+  const body = await readReplay(res);
   if (FORK) S.forkInfo = body.fork;
   return body;
+}
+
+let fullFetch = null;
+async function readReplay(res) {
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || 'the replay could not be loaded');
+  return body;
+}
+// The whole replay, for a first answer that has `partial: true` (the viewer swaps it in when it arrives).
+export async function fetchFullReplay() {
+  return readReplay(await fullFetch());
+}
+
+// A log is some 10 MB of text and 30 times smaller gzipped: the upload of a slow connection took longer than anything else (the server unpacks a body that starts with the gzip bytes).
+async function packed(text) {
+  if (typeof CompressionStream === 'undefined') return text;
+  try { return await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).blob(); } catch (e) { return text; }
 }

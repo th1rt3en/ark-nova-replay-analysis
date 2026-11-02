@@ -1,4 +1,5 @@
 """A replay of a log the browser brings, with the table info of the extension: a table that is not indexed can be replayed, and its players get their Elo."""
+import gzip
 import json
 from pathlib import Path
 
@@ -53,6 +54,24 @@ def test_the_table_info_must_be_about_the_same_table(client):
 def test_without_table_info_the_replay_still_works(client):
     r = client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), None))
     assert r.status_code == 200 and all(p["elo"] is None for p in r.json()["players"])
+
+
+def test_a_gzipped_body_is_unpacked_and_a_quick_view_is_the_start_of_the_full_replay(client):
+    text = LOG.read_text(encoding="utf-8")
+    quick = client.post("/api/tables/607674960/upload", content=gzip.compress(_body(text, None).replace(b'"index":null', b'"index":null,"quick":true')))
+    assert quick.status_code == 200 and quick.json()["partial"] is True
+    full = client.post("/api/tables/607674960/upload", content=gzip.compress(_body(text, None)))
+    assert full.status_code == 200 and "partial" not in full.json()
+    q, f = quick.json()["steps"], full.json()["steps"]
+    assert 5 < len(q) < len(f) / 10                                                 # (the draft and the starting hand, not the game)
+    assert [s["label"] for s in q] == [s["label"] for s in f[:len(q)]]            # (the viewer swaps the full replay in at the step on show)
+    assert [s.get("move_id") for s in q] == [s.get("move_id") for s in f[:len(q)]]
+    assert quick.json()["players"] == full.json()["players"]
+
+
+def test_a_broken_gzip_body_is_refused(client):
+    r = client.post("/api/tables/607674960/upload", content=b"\x1f\x8bnot really gzip")
+    assert r.status_code == 422
 
 
 def test_an_unindexed_log_is_verified(client):

@@ -30,6 +30,7 @@ from ark_nova.replay.sponsor_stats import SponsorLogStats, diversity_gains, spon
 from ark_nova.storage.index import TableRecord
 
 _PLACEHOLDER = re.compile(r"\$\{(\w+)\}")
+QUICK_MOVES = 60                                            # moves of a quick view when the log never deals the starting hand
 IMAGE_DIR = {"animal": "animals", "sponsor": "sponsors"}       # fallback art from the vendored upstream repo (/img)
 WEB_DIR = Path(os.environ.get("WEB_DIR") or Path(__file__).resolve().parents[3] / "web")      # the Docker image sets WEB_DIR (the package lives in site-packages there)
 LARGE_DIR = WEB_DIR / "cards_large"      # full size cards (745 x 1040) for the hover preview (scripts/build_cards.py)
@@ -797,10 +798,15 @@ def _cp_bonuses(parsed: ParsedLog, seat_of: dict) -> list:
     return out
 
 
-def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False, first_moves: int | None = None):
+def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False, first_moves: int | None = None, quick: bool = False):
     """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking.
-    With `first_moves` only that many moves are replayed and the engine does not play them (the mini games need the first steps only; the table's setup is read from the whole log)."""
+    With `first_moves` only that many moves are replayed and the engine does not play them (the mini games need the first steps only; the table's setup is read from the whole log).
+    With `quick` the same for the moves up to the starting hand (the action card draft and the dealt cards): a fraction of a second instead of the engine's replay of the whole game,
+    so the viewer can open at once and swap in the full replay when it arrives (the view then has `partial: true`; its steps are the first steps of the full one)."""
     parsed: ParsedLog = parse_log(raw_log)
+    if quick:
+        dealt = next((i for i, m in enumerate(parsed.moves) if any(e.type == "pDiscardCards" for e in m.events)), None)
+        first_moves = QUICK_MOVES if dealt is None else dealt + 2
     seats = [str(p.id) for p in parsed.players]
     maps = None
     if record.player_maps and all(pid in record.player_maps for pid in seats):
@@ -987,5 +993,6 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         "cp_bonuses": _cp_bonuses(parsed, seat_of_pid),
         "break_markers": _break_markers(parsed, seat_of_pid),
         **normal_history,
+        **({"partial": True} if quick else {}),
     }
     return (view, objs_by_step) if with_states else view

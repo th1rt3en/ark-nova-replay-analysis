@@ -36,6 +36,8 @@ class Settings:
     minigames_db: str = ""  # a SQLite file for the mini games' puzzles and submissions; empty = in memory (lost on restart: the production store is D1, written with the accounts)
     disabled_features: frozenset = frozenset()  # features switched off for the public ("live", "accounts", "minigames", "sandbox"): their routes answer coming soon (DISABLED_FEATURES)
     live_gcs_bucket: str = "temp-common-storage"  # where the records of finished / conceded games go (live/<yyyy>/<mm>/E12.json.gz); empty = nothing is exported and the keeper keeps the tables
+    upload_gcs_bucket: str = ""  # logs the extension uploads are kept here as all_games_log/<table>.txt (storage/contributions.py); empty = not kept
+    upload_bq_table: str = ""  # and their three base projects go to this table (table_id, base_0..2, created_at), e.g. freestyle-190711.ark_nova.base_projects_appendix
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -53,6 +55,8 @@ class Settings:
             live_bq_project=os.environ.get("LIVE_BQ_PROJECT", "freestyle-190711"),
             live_bq_dataset=os.environ.get("LIVE_BQ_DATASET", "ark_nova_engine"),
             live_gcs_bucket=os.environ.get("LIVE_GCS_BUCKET", "temp-common-storage"),
+            upload_gcs_bucket=os.environ.get("UPLOAD_GCS_BUCKET", ""),
+            upload_bq_table=os.environ.get("UPLOAD_BQ_TABLE", ""),
             turnstile_site_key=os.environ.get("TURNSTILE_SITE_KEY", ""),
             turnstile_secret=os.environ.get("TURNSTILE_SECRET", ""),
             store_backend=os.environ.get("STORE_BACKEND", "").strip().lower(),

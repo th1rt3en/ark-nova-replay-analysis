@@ -3,7 +3,7 @@ import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
 import { $, el } from './util.js';
 import { setupNoTips } from './notips.js';
 import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, refreshLabels, seatOrder } from './pov.js';
-import { fetchReplay } from './load.js';
+import { fetchFullReplay, fetchReplay } from './load.js';
 import { applyIconNames } from './icons.js';
 import { renderShared } from './shared.js';
 import { actionBar } from './action-bar.js';
@@ -172,6 +172,27 @@ function init() {
   go(Number.isFinite(h1) ? h1 : 0, Number.isFinite(h2) ? h2 : 0);
   if (needsChoice()) askSpectated();                                        // (a replay opened for the first time: whom to spectate)
 }
+// The first answer holds the draft and the starting hand only (`partial`): the viewer is already usable; the whole replay (the engine plays the game, some 20 s) replaces it when it
+// arrives, at the step and frame on show. The first steps are the same in both, so nothing moves.
+function loadRest() {
+  const note = document.createElement('div');
+  note.id = 'restnote';
+  note.textContent = 'Loading the rest of the game…';
+  Object.assign(note.style, { position: 'fixed', left: '12px', bottom: '12px', zIndex: 9999, padding: '6px 12px', borderRadius: '14px', background: 'rgba(0,0,0,.75)', color: '#fff', font: '13px sans-serif', pointerEvents: 'none' });
+  document.body.append(note);
+  fetchFullReplay().then((full) => {
+    const step = S.step, phase = S.phase;
+    S.replay = full;
+    buildMoveList();
+    buildTimeline();
+    S.lastBoard = null;
+    note.remove();
+    go(step, phase);
+  }).catch((err) => {
+    note.textContent = 'The rest of the game could not be loaded: ' + err.message;
+    note.style.background = '#b3261e';
+  });
+}
 // start: the old file ended with these two statements inside its function
 let loadProgress = null;                                                 // (the progress circle of the loading box, progress.js)
 function boot() {
@@ -196,6 +217,7 @@ function boot() {
       S.sprites = sp.sprites;
       for (const [id, v] of Object.entries(ic)) S.iconSizes[id] = v.size;
       init();
+      if (data.partial) loadRest();
     });
   }).catch((err) => {
     const m = $('loading');
