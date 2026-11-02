@@ -449,6 +449,11 @@ body.viewer .draftpop .drafthead { line-height: 1.2; font: 700 24px/1.2 'Park La
 body.viewer .draftpop .draftcards { flex-wrap: nowrap; gap: 22px; padding: 38px 14px 24px; }
 body.viewer .draftpop .draftcard { flex: none; width: clamp(120px, calc(1230px / var(--cn, 5)), 250px); border-radius: 12px; box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 4px 10px rgba(0, 0, 0, .35); }
 body.viewer .draftpop .draftcard img { border-radius: 12px; }
+/* the button that hides the draft lightbox (so that the Fork button and the board can be used) and brings it back: under the panel, centred on the window; hidden, only the button stays */
+body.viewer .drafthide { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); pointer-events: auto; cursor: pointer; padding: 9px 22px; border-radius: 999px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); font: 700 16px 'Park Label', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; z-index: 2; }
+body.viewer .drafthide:hover { background: var(--gold); }
+body.viewer .draftbox.lbhide::before { display: none; }
+body.viewer .draftbox.lbhide .draftwrap { display: none; }
 body.viewer .draftpop .draftkept { padding: 0; margin-right: 22px; }
 body.viewer .draftpop .draftkept::after { right: -28.5px; top: -9px; bottom: -9px; border-right: 4px dashed rgba(23, 38, 43, .55); }      /* (halfway between the kept card's frame, 9 px outside it, and the next card, 44 px away: margin 22 + gap 22) */
 

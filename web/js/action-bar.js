@@ -214,7 +214,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   bar.classList.remove('draftbar');
   if (bar === $('actionbar')) { noteLightbox(); clearReveal(); }                                  // (the lightbox of a Perception / Scavenging / Hunter / Scuba Dive reveal, reveal.js: drawn again below when it is still on show)
   const popup = bar === $('actionbar') && !FORK ? draftPopup() : null;       // replay: the action card draft is not drawn into the move bar (the cards are far too high for it) but into a lightbox over the boards
-  if (popup) { popup.hidden = true; popup.replaceChildren(); }
+  if (popup) { popup.hidden = true; popup.replaceChildren(); popup.classList.remove('lbhide'); }
   const cur = S.replay.steps[S.step], o = cur.options;
   if (kind === 'text') { bar.hidden = true; return; }
   if (popup && kind === 'reveal') {                                              // replay: the cards of a reveal-and-keep effect in a lightbox (like the action card draft), the step text stays in the bar above
@@ -230,7 +230,12 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       pop.style.setProperty('--cn', String(Math.max(3, ...[0, 1].map((i) => (st.draft.offers[i] || []).length + (st.draft.stage === 'pick2' ? 1 : 0)))));
       const wrap = el('div', 'draftwrap');
       wrap.append(draftNav(-1), pop, draftNav(1));
-      popup.append(wrap); popup.hidden = false; bar.hidden = true;
+      const hide = el('button', 'drafthide');                                 // the lightbox dims the whole page, the Fork button included: this hides it (and brings it back) without leaving the step
+      hide.type = 'button';
+      const sync = () => { popup.classList.toggle('lbhide', !!S.draftHidden); hide.textContent = S.draftHidden ? 'Show the action card draft' : 'Hide the draft (to use Fork)'; hide.setAttribute('aria-pressed', String(!!S.draftHidden)); };
+      hide.onclick = () => { S.draftHidden = !S.draftHidden; sync(); };
+      sync();
+      popup.append(wrap, hide); popup.hidden = false; bar.hidden = true;
       openFx(popup);
       return;
     }
