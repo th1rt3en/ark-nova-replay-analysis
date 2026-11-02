@@ -29,7 +29,7 @@ export function legalPlacement(p) {
 
 // BGA's zoo map pictures (web/maps, 1122x976): hex (x, y) is centred at (MAP.x0 + x*MAP.dx, MAP.y0 + y*MAP.dy), see scripts/download_bga_maps.py
 const MAP = { x0: 96, y0: 88, dx: 115, dy: 66.5 };
-// with the setting "Show enclosure borders" (S.encBorders) the buildings are drawn with a thin gap between neighbours (ENC_GAP px cut off the outside of each outline) and a BGA-like border (ENC_BORDER px inside the outline); without it they are drawn as before
+// the buildings are drawn with a thin gap between neighbours (ENC_GAP px cut off the outside of each outline); with the setting "Show enclosure borders" (S.encBorders) they also get a BGA-like border (ENC_BORDER px inside the outline)
 let maskCount = 0;                                  // (mask / clip ids must be unique in the whole page, not per map)
 const ENC_GAP = 3, ENC_BORDER = 8, ENC_BORDER_COLOUR = '#A68731';
 const SPRITE_SCALE = (MAP.dx / 1.5) / 136;      // the building sprites are drawn with hexes of circumradius 136 px
@@ -191,7 +191,7 @@ export function zooBoard(map, player, seat) {
         transform: 'rotate(' + (b.rotation * 60) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')',
       });
       img.append(title);
-      const gap = S.encBorders ? ENC_GAP : 0, bw = S.encBorders ? ENC_BORDER : 0;
+      const gap = ENC_GAP, bw = S.encBorders ? ENC_BORDER : 0;
       if (gap > 0 || bw > 0) {                  // a thin gap between neighbouring buildings (the outer band of the building's outline is cut off) and / or a border inside it
         const id = 'bm' + (++maskCount), od = outlinePath(b.cells);
         const mask = svg('mask', { id, maskUnits: 'userSpaceOnUse', x: -400, y: -400, width: 3000, height: 3000 });

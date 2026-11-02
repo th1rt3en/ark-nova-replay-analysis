@@ -241,8 +241,8 @@ def _split_keep_and_draw(mv: Move, step: dict, before: dict | None, names: dict[
         mid_state["players"][1][k] = copy.deepcopy(before["players"][1][k])
     mid_state["main_deck"], mid_state["endgame_deck"] = list(before["main_deck"][n0:]), list(before["endgame_deck"][m0:])
     mid_state["main_deck_size"], mid_state["endgame_deck_size"] = len(mid_state["main_deck"]), len(mid_state["endgame_deck"])
-    middle = {**step, "label": draw_label(pids[0]), "label_pov": None, "state": mid_state, "options": None, "actor": None, "_obj": None}
-    last = {**step, "label": draw_label(pids[1]), "label_pov": None}
+    middle = {**step, "label": draw_label(pids[0]), "label_pov": None, "state": mid_state, "options": None, "actor": None, "_obj": None, "log_only": True}
+    last = {**step, "label": draw_label(pids[1]), "label_pov": None, "log_only": True}
     return [first, middle, last]
 
 
