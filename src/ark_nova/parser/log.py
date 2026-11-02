@@ -4,13 +4,18 @@ Rules (details and evidence in docs/log_format.md):
 - packets are chronological in `packet_id` order; events keep their order inside a packet;
 - moves are grouped by `move_id`; a move with no non-noise event is state-only and is dropped (replay steps = kept moves);
 - a public event whose private twin exists in the same move is dropped (the private one carries the card ids).
+- dedicated Break boundaries are reconciled per game/move/type; the public representation takes precedence.
 """
 import json
 import re
 from pathlib import Path
 from typing import Any
 
+from ark_nova.parser.animal_ignores import animal_ignore_evidence
 from ark_nova.parser.model import Event, Move, ParsedLog, PlayerInfo
+from ark_nova.parser.turns import extract_turns
+from ark_nova.parser.sponsor_messages import accepted_protection_orders
+from ark_nova.parser.breaks import BREAK_EVENTS, accepted_break_orders
 
 NOISE = {
     "gameStateChange", "gameStateMultipleActiveUpdate", "updateReflexionTime", "midmessage", "wakeupPlayers",
@@ -40,6 +45,8 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
         raw = load_json(raw)
     data = raw["data"]
     packets = data["logs"]
+    break_orders = accepted_break_orders(packets)
+    protection_orders = accepted_protection_orders(packets)
 
     table_id = int(packets[0]["table_id"]) if packets else 0
     players = [PlayerInfo(id=str(p["id"]), name=p.get("name", "")) for p in data.get("players", [])]
@@ -70,6 +77,8 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
         for e in p["data"]:
             order += 1
             t, a = e["type"], e["args"]
+            if t in BREAK_EVENTS and order not in break_orders:
+                continue  # a private/public copy or resend must not repeat Break processing
             if t == "gameStateChange" and isinstance(a, dict) and a.get("id") == 99 and isinstance(a.get("args"), dict):
                 result = a["args"].get("result") or result
             if t == "playerConcedeGame" and isinstance(a, dict):
@@ -97,7 +106,7 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
                     "types": aa.get("allBuildings"),
                     "options": {t2: sorted((d["pos"]["x"], d["pos"]["y"], r) for d in lst for r in d["rotations"])
                                 for t2, lst in opts.items()} if isinstance(opts, dict) else {}}})
-            if t in NOISE:
+            if t in NOISE and order not in protection_orders:
                 continue
             mv = by_move.get(key)
             if mv is None:
@@ -114,5 +123,8 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
         mv.events = [e for e in mv.events if not (e.type in PUBLIC_TWIN_OF and PUBLIC_TWIN_OF[e.type] in types)]
         mv.index = len(moves)
         moves.append(mv)
-    return ParsedLog(table_id=table_id, players=players, moves=moves, total_move_ids=len(move_ids),
-                     result=result, conceded=conceded, final_scores=final_scores, turn_markers=turn_markers)
+    parsed = ParsedLog(table_id=table_id, players=players, moves=moves, total_move_ids=len(move_ids),
+                     result=result, conceded=conceded, final_scores=final_scores, turn_markers=turn_markers, normal_turns=extract_turns(packets, break_orders))
+
+    parsed.animal_ignores = animal_ignore_evidence(packets, {e.order: e for m in moves for e in m.events})
+    return parsed

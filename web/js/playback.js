@@ -78,10 +78,8 @@ function draftSeen(i) {
   const d = povState(st).draft;
   return JSON.stringify({ ...d, stage: d.stage === 'done' ? 'keep' : d.stage });          // ('done' only says that the opponent's keep, which is hidden, ended the draft: the lightbox looks the same)
 }
-// The step is the viewed player's own choice (its label starts with that player's name): never skipped, the viewer sees what they chose.
-const ownChoice = (n) => { const me = S.replay.players[S.pov]; return !!me && String(S.replay.steps[n].label || '').startsWith(me.name + ' '); };
 function skipFrame(n, ph) {
-  if (S.pov === null || ph !== 0 || n < 1 || framesOf(n)[0] !== 'draft' || ownChoice(n)) return false;
+  if (S.pov === null || ph !== 0 || n < 1 || framesOf(n)[0] !== 'draft') return false;
   const seen = draftSeen(n);
   return seen !== null && seen === draftSeen(n - 1);
 }
@@ -104,9 +102,52 @@ export function go(n, phase = 0) {
   if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.multiplierMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
   render();
 }
+// BGA's move numbers (the log's `move_id`): a step that joins several BGA moves has `move_from` (its first move) and `move_id` (its last); steps without one (a fork, the sandbox, a live
+// game) go on counting from the last number. `show[i]`: the step starts a move that no earlier step has shown (only these have a number in the move list, the others stay blank),
+// `cur[i]`: the number of the step for the jump box, `first[i]` / `last[i]`: the BGA moves it holds.
+export function moveNumbers() {
+  let top = -1;
+  const first = [], last = [], show = [], cur = [];
+  for (const s of S.replay.steps) {
+    const has = s.move_id !== null && s.move_id !== undefined;
+    const hi = has ? Number(s.move_id) : top + 1;
+    const lo = has && s.move_from !== null && s.move_from !== undefined ? Number(s.move_from) : hi;
+    first.push(lo); last.push(hi); show.push(lo > top); cur.push(lo > top ? lo : hi);
+    top = Math.max(top, hi);
+  }
+  return { first, last, show, cur };
+}
+// the step a move number leads to: the first step that holds it, or the next one when BGA has no such move (-1: past the end)
+export function stepOfMove(n) {
+  const { last } = moveNumbers();
+  return last.findIndex((x) => x >= n);
+}
+// the address of a position: BGA's move number (`#641`), then `.k` for the k-th later step of the same move (`#641.1`), then `.f` for a frame inside the step (`#641.1.2`, a decision frame, playback `frames.js`);
+// trailing zeros are left out. Links of the earlier kind (the step index) now mean the move with that number.
+export function moveHash(step, phase) {
+  const { cur } = moveNumbers();
+  const n = cur[step];
+  let sub = 0;
+  for (let j = step - 1; j >= 0 && cur[j] === n; j--) sub++;
+  const f = phase || 0;
+  return String(n) + (f ? '.' + sub + '.' + f : sub ? '.' + sub : '');
+}
+// the [step, frame] an address leads to (a move BGA has no number for leads to the next step, a number past the end to the last step)
+export function stepOfHash(h) {
+  const [a, b, c] = String(h || '').replace(/^#/, '').split('.').map((x) => parseInt(x, 10));
+  if (!Number.isFinite(a)) return [0, 0];
+  const { cur } = moveNumbers();
+  const same = [];
+  cur.forEach((v, i) => { if (v === a) same.push(i); });
+  let step;
+  if (same.length) step = same[Math.min(Number.isFinite(b) ? b : 0, same.length - 1)];
+  else { step = stepOfMove(a); if (step < 0) step = S.replay.steps.length - 1; }
+  return [step, Number.isFinite(c) ? c : 0];
+}
 export function buildMoveList() {
   const list = $('moves');
   list.replaceChildren();
+  const mv = moveNumbers();
   S.replay.steps.forEach((s, i) => {
     // the step that finishes an action passes the turn in its state, but it still belongs to the player who acted
     const prev = i > 0 ? S.replay.steps[i - 1].state : null;
@@ -115,7 +156,7 @@ export function buildMoveList() {
       : prev && s.state.turn > prev.turn && s.state.active_player !== prev.active_player ? prev.active_player : s.state.active_player;
     const li = el('li', 'seat' + actor);
     li.style.borderLeftColor = seatColor(actor);
-    li.append(el('span', 'n', i), labelNode(labelOf(s) || '…'), engineBadge(s.engine));
+    li.append(el('span', 'n', mv.show[i] ? mv.first[i] : ''), labelNode(labelOf(s) || '…', s), engineBadge(s.engine));
     li._step = s;
     li.onclick = () => { go(i); };
     list.append(li);

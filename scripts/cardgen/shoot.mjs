@@ -15,7 +15,7 @@ await pg.goto(`http://127.0.0.1:${port}/cards.html`, { waitUntil: 'networkidle' 
 await pg.evaluate(() => document.fonts.ready);
 const fit = await pg.evaluate(() => { const out = []; document.querySelectorAll('.c').forEach(c => {
   const w = c.querySelector('.ark-card-wrapper'), bt = c.querySelector('.ark-card-bottom'); const kind = c.id[1];
-  if (!bt || kind === 'P' || kind === 'F') return;
+  if (!bt || kind === 'P' || kind === 'F' || ['cS227', 'cS215', 'cS218', 'cS270', 'cS222'].includes(c.id)) return;   // (never shrunk: S227's two-column layout of site/mw.css has room; S215 / S218: the last line of the endgame text sits left of the printed chip, below the 85 % limit; S270: no printed chip, the whole lower half is free; S222: the last line flows right of the tall chip)
   const t = [...bt.querySelectorAll('.animal-ability,.dijitTooltipContainer')]; if (!t.length) return;
   const R = w.getBoundingClientRect(), lim = R.top + R.height * (kind === 'S' ? 0.85 : 0.985);   // sponsors: the income/endgame bars start at 85 % of the card height
   const bot = () => Math.max(...t.map(e => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect().bottom; }));
@@ -41,7 +41,8 @@ const fitBody = () => pg.evaluate(() => { const out = []; document.querySelector
   kids.forEach(e => { e.style.zoom = ''; });
   const W_ = c.querySelector('.ark-card-wrapper').getBoundingClientRect(), mid = c.querySelector('.ark-card-middle').getBoundingClientRect();   // (limits: under the stripe, above the card's bottom edge)
   const over = () => { const B = { top: mid.bottom - 2, bottom: W_.bottom - 2 }; const r = kids.map(e => e.getBoundingClientRect()).filter(x => x.height > 0);
-    return r.length && (Math.min(...r.map(x => x.top)) < B.top + 4 || Math.max(...r.map(x => x.bottom)) > B.bottom - 6); };
+    const sm = document.body.classList.contains('compact') && k === 'F', m = (sm ? 13 : 0) * W_.height / 520;   // (small endgame cards: at least 13 design px free above and below, the gaps of the large card; the body is centred, so equal gaps)
+    return r.length && (Math.min(...r.map(x => x.top)) < B.top + 4 + m || Math.max(...r.map(x => x.bottom)) > B.bottom - 6 - m + (sm ? 8 * W_.height / 520 : 0)); };
   let z = 1; while (over() && z > 0.5) { z -= 0.02; kids.forEach(e => { e.style.zoom = z; }); }
   if (z < 1) out.push([c.id.slice(1), +z.toFixed(2)]); }); return out; });
 // project texts are meant to fit on 2 lines (BGA): a longer one (Herbivore Breeding Program) is shrunk until it does
@@ -50,6 +51,19 @@ const fitP = await pg.evaluate(() => { const out = []; document.querySelectorAll
   const lines = () => { const r = document.createRange(); r.selectNodeContents(d); return new Set([...r.getClientRects()].map(x => Math.round(x.top / (x.height * 0.6)))).size; };
   let z = 1; while (lines() > 2 && z > 0.8) { z -= 0.02; d.style.zoom = z; }
   if (z < 1) out.push([c.id.slice(1), +z.toFixed(2), lines()]); }); return out; });
+// animal names on the large card: one line only (the Latin name lies below it), clear of the card number (305 of the 373 design px): a name that is too wide gets -0.02em letter spacing and the next smaller size of 19.5 / 18 / 16.5 / 15 px that fits; all other names stay at 21 px. (The small card keeps the fan site's own title layout: `on` = false puts it back.)
+const fitNames = (on) => pg.evaluate((on) => { const out = []; const AV = 305, BASE = 21; document.querySelectorAll('.c').forEach(c => {
+  if (c.id[1] !== 'A') return; const t = c.querySelector('.ark-card-title'), wr = c.querySelector('.ark-card-title-wrapper'); if (!t || !wr) return;
+  if (t.dataset.cls === undefined) t.dataset.cls = t.className;
+  t.removeAttribute('style'); wr.style.removeProperty('padding'); t.className = t.dataset.cls;
+  if (!on) return;
+  t.classList.remove('scale-90', 'text-xs'); wr.style.setProperty('padding', '2px 34px', 'important');
+  const cl = t.cloneNode(true); cl.style.cssText = 'white-space:nowrap;display:inline-block;width:auto;position:absolute;visibility:hidden'; wr.appendChild(cl);
+  const w = cl.getBoundingClientRect().width / (cl.offsetWidth ? cl.getBoundingClientRect().width / cl.offsetWidth : 1) ; cl.remove();    // (design px: offsetWidth ignores the 2x zoom)
+  t.style.setProperty('white-space', 'nowrap', 'important'); if (w <= AV) return;
+  let f = 15; for (const g of [19.5, 18, 16.5, 15]) { if ((w - t.textContent.length * 0.02 * BASE) * g / BASE <= AV) { f = g; break; } }
+  t.style.setProperty('letter-spacing', '-0.02em', 'important'); t.style.setProperty('font-size', f + 'px', 'important'); out.push([c.id.slice(1), +w.toFixed(0), f]); }); return out; }, on);
+console.log('animal names (large):', JSON.stringify(await fitNames(true)));
 console.log('layout check (large):', JSON.stringify(await geom('L')));
 console.log('requirements scaled (large):', JSON.stringify(await fitReq(LAYOUT_PHOTO)));
 const body = await fitBody();
@@ -58,6 +72,7 @@ console.log('text shrunk:', JSON.stringify(fit), 'project texts:', JSON.stringif
 for (const k of ok) await pg.locator('#c' + k).screenshot({ path: `out/raw/${k}.png`, omitBackground: true });
 // the small cards: BGA's own no-description mode (data-card-desc="0" in arknova.css: bigger names and ability names, taller title bar, no Latin name / number) plus compact.css; the shrunk texts of the full cards are not needed any more
 fs.mkdirSync('out/compact', { recursive: true });
+await fitNames(false);
 await pg.evaluate(() => { document.querySelectorAll('.animal-ability,.dijitTooltipContainer').forEach(e => e.style.zoom = ''); document.body.classList.add('compact'); document.body.setAttribute('data-card-desc', '0'); });
 console.log('layout check (small):', JSON.stringify(await geom('S')));
 console.log('requirements scaled (small):', JSON.stringify(await fitReq(LAYOUT_PHOTO)));

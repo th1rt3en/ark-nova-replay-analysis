@@ -20,7 +20,7 @@ export function initFork() {
   box.hidden = false;
   box.replaceChildren();
   const back = el('a', '', 'replay of table #' + S.replay.table_id);
-  back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + '#' + S.forkInfo.step;
+  back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + '#' + (params.get('at') || S.forkInfo.step);
   const seedIn = el('input', 'seedinput');
   seedIn.type = 'number'; seedIn.min = 0; seedIn.value = S.forkInfo.seed; seedIn.setAttribute('aria-label', 'Seed');
   const use = el('button', '', 'Fork again with this seed');
@@ -39,6 +39,7 @@ export function initFork() {
   copy.title = 'The link of this fork position with its seed: opening it gives the same position and deck order';
   copy.onclick = async () => {
     const q = new URLSearchParams({ table: String(S.replay.table_id), step: String(S.forkInfo.step), seed: String(S.forkInfo.seed), pov: povParam(), orient: orientParam() });
+    if (params.get('at')) q.set('at', params.get('at'));
     if (params.get('source') === 'upload') q.set('source', 'upload');            // (a log kept in this browser: the link opens here only)
     const link = location.origin + '/fork.html?' + q.toString();
     try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; } catch (e) { window.prompt('Link of this fork', link); }

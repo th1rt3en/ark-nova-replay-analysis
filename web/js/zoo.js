@@ -62,7 +62,7 @@ function stacks(title, icon, keys, zone, after) {
 export const tabbedLayout = () => !FORK && !SANDBOX && !PLAY && !MINIGAME && S.zooLayout === 'tabs';      // (the replay's "Tabbed" layout of the Players' boards: one board at a time)
 export const besideLayout = () => !FORK && !SANDBOX && !PLAY && !MINIGAME && (S.zooLayout === 'tabs' || S.zooLayout === 'stack');      // (the replay's "Tabbed" and "Top / bottom" layouts: every board has its played cards in a box next to the map)
 // (the tabbed and the top / bottom layouts have one mode only, 'beside': the cards in a box next to the map; the other three are for the side-by-side boards, and 'beside' is not offered there. S.playedMode keeps the choice for that layout)
-export const playedMode = () => (MINIGAME ? 'below' : besideLayout() ? 'beside' : S.playedMode === 'beside' ? 'below' : S.playedMode === 'tray' && S.handMode !== 'tray' ? 'below' : S.playedMode);
+export const playedMode = () => (MINIGAME ? 'below' : besideLayout() ? 'beside' : S.playedMode === 'beside' ? 'drawer' : S.playedMode === 'tray' && S.handMode !== 'tray' ? 'drawer' : S.playedMode);
 const kindCount = (p) => p.animals.length + p.sponsors.length;
 function kindChip(icon, label, n) {                                       // the icon of the action card, the name (when asked for) and the count
   const c = el('span', 'gchip');

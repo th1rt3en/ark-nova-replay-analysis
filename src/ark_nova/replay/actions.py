@@ -15,7 +15,7 @@ from ark_nova.engine.build_action import SIZES, knows_shape
 from ark_nova.parser.model import Event, ParsedLog
 from ark_nova.parser.setup import parse_action_type
 
-_PASSIVE = {"advanceBreak", "fillPool", "gameStateChangePrivateArg", "endOfGame", "timeJokerUsed", "enableMultiplier"}          # automatic consequences the engine reproduces itself
+_PASSIVE = {"midmessage", "advanceBreak", "fillPool", "gameStateChangePrivateArg", "endOfGame", "timeJokerUsed", "enableMultiplier"}          # automatic consequences the engine reproduces itself
 _SPONSOR_SOURCES = {None, "Map 13 quarter bonus", "Animals3 ability", "increasing card strength", "triggering break", "buying sponsor card", "playing sponsor from reputation range",
                     "maxing out reputation", "reputation track bonus", "placement bonus", "building a pavilion", "filling the map", "max strength Animals", "playing animal from reputation range",
                     "last worker bonus", "Petting Zoo Animal action", "Jumping action", "Pack action", "Iconic animal", "Inventive", "Glide effect",
@@ -448,11 +448,13 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
     cleanup_type = None
     xdelta = 0
     spend = 0
+    unpaid = t1_in = 0
     built = False
     chosen = None
     variant_of_chosen = 0
     played: set[str] = set()
     in_break = False
+    break_player = None                                  # the player who plays a sponsor in the break
     boosts: list = []
     revealed: list = []
     flags: dict = {}
@@ -466,7 +468,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
     marketing_open = False                               # a bonus-sponsor / sponsor token announced a Marketing effect: the next sponsor played is its choice
     gained: set = set()
     assoc = _AssocMap(seat, lambda act, ev: add(act, ev))
-    if any(x.type == "discardTokens" and "multiplier" in x.log for x in events) and sum(1 for x in events if x.type == "chooseActionCard") < 2:
+    if any(x.type == "discardTokens" and "multiplier" in x.log for x in events) and 0 < sum(1 for x in events if x.type == "chooseActionCard") < 2:      # (a skipped action repeated with the token has no card choice at all: see below)
         return "multiplier token used without a second action in the log (ISSUES.md)"       # the repetition is not visible in the log
 
     def add(act: Action, e: Event) -> None:
@@ -480,6 +482,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         if t == "startBreak":
             in_break = True
             continue
+        if in_break and t == "playSponsor" and isinstance(a, dict) and a.get("player_id") is not None and str(a["player_id"]) in seat_of:
+            break_player = seat_of[str(a["player_id"])]                  # a sponsor played in the break (a Sponsor token / placement bonus): its icons go into this player's zoo, not the zoo of the player whose turn it is
         if t == "getBonuses" and isinstance(a, dict) and a.get("card_id") and a.get("player_id") is not None and _key(a["card_id"]) in TRIGGER_GAINS                 and set(a.get("bonuses") or {}) <= {"appeal", "money", "xtoken", "conservation"} and str(a["player_id"]) in seat_of:
             k_ = _key(a["card_id"])
             owner_ = seat_of[str(a["player_id"])]
@@ -493,7 +497,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             made = False
             for res_, total_ in got_.items():
                 unit_ = units.get(res_)
-                if unit_ and total_ >= unit_ and not (k_ == "S251" and owner_ != seat):
+                if unit_ and total_ >= unit_ and not (k_ == "S251" and owner_ != (break_player if in_break and break_player is not None else seat)):          # (the Polar Bear Exhibit pays by itself for a bear in the other zoo)
                     for _ in range(max(1, total_ // unit_)):
                         add(Action(owner_, "choose_effect", {"apply": "gain", "res": res_, "trigger": k_}), e)      # (a trigger: an effect of the owner's own; "from" tells which one when several are pending)
                     made = True
@@ -592,7 +596,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 return r
             if r is not _NOT_HANDLED:
                 continue
-        if t == "pDiscardCards" and "Map T1 effect" in e.log and not chose:
+        if t == "pDiscardCards" and "Map T1 effect" in e.log and (not chose or any(x.type == "chooseActionCard" for x in events[events.index(e) + 1:])):      # (before a Multiplier repetition too)
             t1_card = _key(a["cards"][0]["id"])
             continue
         if t == "chooseActionCard":
@@ -737,7 +741,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         elif t == "playSponsor":
             played.add(_key(a["card"]["id"]))
             add(Action(seat, "play_sponsor", {"card": _key(a["card"]["id"]), "from_display": bool(a.get("fromDisplay"))}), e)
-        elif chosen in ("sponsors", "animals") and t == "slideMeeples" and e.log.endswith("gains a new Association worker"):
+        elif chosen in ("sponsors", "animals", "build", "cards") and t == "slideMeeples" and e.log.endswith("gains a new Association worker"):      # (a reputation track bonus during a Build / Cards action too)
             if hire_choice:                                          # the choice at conservation 2 (upgrade or hire)
                 hire_choice = False
                 add(Action(seat, "choose_effect", {"hire": True}), e)
@@ -808,7 +812,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 return f"unsupported building: {b['type']}"
             built = True
             add(Action(seat, "place_building", {"type": b["type"], "x": b["x"], "y": b["y"], "rotation": b.get("rotation", 0)}), e)
-        elif t == "actionCardCleanup" and cleanup_type is not None and "action card" not in e.log and chosen == "cards" and variant_of_chosen != 4:
+        elif t == "actionCardCleanup" and cleanup_type is not None and "action card" not in e.log and chosen == "cards" and variant_of_chosen != 4 and not in_break:
             return "a card put on slot 1 in a Cards action without Clever (map effect?)"
         elif t == "actionCardCleanup" and cleanup_type is not None and "action card" not in e.log:
             if parse_action_type(a["actionCard"]["type"])[0] not in boosts:          # (a Boost to slot 1 is decided by the boost action)
@@ -861,7 +865,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         moves.append(moves[-1])
         orders.append(orders[-1])
     if not chose:                                       # the action was skipped: the card goes to slot 1 and gives an X token
-        if xdelta not in (0, 1):
+        again_ = sum(1 for x in events if x.type == "discardTokens" and "multiplier" in x.log)      # a Multiplier on the card: the skip is repeated, 1 more X token per token (FAQ: "use a x2 token on any Action card to take 2 X-tokens")
+        if xdelta not in range(0, 2 + again_):
             return "unexplained X token change"
         cleanup_event = next(e for e in events if e.type == "actionCardCleanup")
         cleanup_order = cleanup_event.order
@@ -869,7 +874,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         hypnosis = str(cleanup_event.args.get("player_id")) != mine                  # Hypnosis, declined: the card of the other player goes to its slot 1 and the hypnotiser gets the X token
         if hypnosis and xdelta != 1:
             return "unexplained X token change"
-        return TurnPlan([Action(seat, "skip_action", {"type": cleanup_type, **({"hypnosis": True} if hypnosis else {})})], [move_of[cleanup_order]], False, orders=[cleanup_order])
+        extra = {"hypnosis": True} if hypnosis else ({"repeat": again_} if again_ else {})
+        return TurnPlan([Action(seat, "skip_action", {"type": cleanup_type, **extra})], [move_of[cleanup_order]], False, orders=[cleanup_order])
     for sup in assoc.all_supports:                                           # a notepad bonus that leaves no trace: the keyword space (3) of the map (Clever, Pouch, Determination, Marketing ...), which is only
         if sup.args.get("bonus") is None:                                   # visible when it is used
             sup.args["bonus"] = {"slot": 3}
@@ -890,6 +896,6 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         actions.insert(i, Action(seat, "choose_effect", {"boost": t, **({"position": int(at.args["position"])} if t in boost_events and at.args.get("position") else {})}))
         moves.insert(i, move_of[at.order])
         orders.insert(i, at.order)
-    if not built and chosen not in ("sponsors", "association", "animals") and xdelta != -spend:
+    if not built and chosen not in ("sponsors", "association", "animals") and xdelta != -(spend - unpaid - t1_in):
         return "unexplained X token change"
     return TurnPlan(actions, moves, True, orders=orders)

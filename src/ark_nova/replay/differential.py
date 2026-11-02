@@ -27,7 +27,7 @@ from ark_nova.replay.builder import Replay
 # What the sponsors with a trigger did, seen from the effects that the engine has pending (the log does not name the sponsor of a Clever, a pavilion, a pouch ...): (kind, source) of the
 # pending effect -> the statistic of the sponsor that is counted when the player resolves it (not when they skip it). `observe_sponsors` is called for every engine action of the replay.
 RESOLVED_STATS = {("slot1", "S214"): "clever", ("build", "S213"): "pavilion", ("pouch", "S212"): "pouch", ("enlarge", "S269"): "enlarge", ("take", "S228"): "snap_small",
-                  ("build", "S210"): "kiosk", ("build", "S211"): "size1", ("expedition", "S270"): "expeditions", ("sell", "S250"): "sunbathed", ("donation", "S273"): "donations"}
+                  ("build", "S210"): "kiosk", ("build", "S211"): "size1", ("sell", "S250"): "sunbathed"}
 # the effects that a sponsor adds (counted when they appear among the pending effects, used or not): (kind, source) -> [(statistic, amount or the key of the effect that holds it)]
 APPEARED_STATS = {("take", "S228"): [("third_small", 1)], ("reveal", "S249"): [("birds", 1)], ("reveal", "S252"): [("hunts", 1), ("seen", "x")]}
 
@@ -57,8 +57,6 @@ def observe_sponsors(before: GameState, act: Action, after: GameState) -> list:
                 out.append((src, stat, len(act.args.get("cards") or [])))
             else:
                 out.append((src, stat, gone))
-            if stat == "expeditions" and act.args.get("scuba"):
-                out.append((src, "scuba3", 1))
     for (kind, src), stats in APPEARED_STATS.items():
         new = [(key, n - was[key]) for key, n in now.items() if (key[0], key[1]) == (kind, src) and n > was[key]]
         for key, extra in new:
@@ -255,6 +253,9 @@ def _fit_income_slots(state: GameState, events: list, seat_of: dict) -> None:
             break
         if e.type == "slideMeeples" and isinstance(e.args, dict) and "supports a conservation project" in str(e.log) and e.args.get("player_id") is not None and str(e.args["player_id"]) in seat_of:
             supports[seat_of[str(e.args["player_id"])]] = supports.get(seat_of[str(e.args["player_id"])], 0) + 1
+        if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "map bonus space" and e.args.get("player_id") is not None and str(e.args["player_id"]) in seat_of:
+            sp_ = seat_of[str(e.args["player_id"])]           # (the support took an instant slot of the map, paid at once: 3 X tokens, 12 money ...; it covers no income slot: 791369985 turn 51)
+            supports[sp_] = max(0, supports.get(sp_, 0) - 1)
     for seat, got in seen.items():
         got = got[:max(0, len(got) - supports.get(seat, 0))]
         p = state.players[seat]
@@ -274,18 +275,24 @@ def _fit_income_slots(state: GameState, events: list, seat_of: dict) -> None:
 def _needs_a_token(state: GameState, act: Action) -> bool:
     """The animal fails a condition that nothing but the ignore-conditions token (or Ignore Animals) would cover: not the Research Institute of map 6 / 6a, Waza Large,
     Camouflage."""
-    from ark_nova.engine import animals_action as aa, sponsor_extras
-    p = state.players[act.player]
-    failed = aa.failed_conditions(state, act.player, act.args["card"], state.prompt.args["level"])
-    if not failed:
+    from ark_nova.engine import animals_action as aa
+    failed = aa.failed_conditions(state, act.player, act.args["card"], aa.live_level(state.players[act.player], state.prompt.args))
+    capacity = sum(credit != "ignore" for credit in aa.credits(state, act.player, act.args["card"]))
+    return len(failed) > capacity
+
+
+def _use_ignore_branch(state: GameState, act: Action, evidence=None) -> bool:
+    """Honor direct BGA branch/token evidence; infer only when that branch is unknown."""
+    if act.kind != "play_animal" or state.prompt is None or state.prompt.kind != "animals_play":
         return False
-    if aa.institute_connected(p) and len(failed) == 1:
+    if Action(act.player, "animals_single", {}) not in legal_actions(state):
         return False
-    if "S263" in p.sponsors and sponsor_extras.size_class(aa.card(act.args["card"])) == "large" and len(failed) == 1:
-        return False
-    if state.current_action is not None and state.current_action.get("camouflage") and len(failed) == 1:
-        return False
-    return True
+    if evidence is not None:
+        if evidence.get("token"):
+            return False
+        if evidence.get("branch") is not None:
+            return evidence["branch"] is True
+    return _needs_a_token(state, act) or _plain(act) not in legal_actions(state)
 
 
 def _plain(act: Action) -> Action:
@@ -648,7 +655,7 @@ def _adds_icons(act) -> bool:
     if getattr(_skip_unneeded, "rep_first", False):
         return False
     def one(a) -> bool:
-        return a.kind in ("use_token", "play_sponsor") or (a.kind == "choose_effect" and "card" in a.args)
+        return a.kind in ("use_token", "play_sponsor") or (a.kind == "choose_effect" and "card" in a.args and not str(a.args["card"]).startswith("F"))      # (an endgame card discarded at 10 conservation adds no icons)
     if act is None:                                  # (the effects right after the choice of a project: look at what the turn still does)
         return any(one(x) for x in getattr(_skip_unneeded, "rest", []))
     return one(act)
@@ -680,7 +687,7 @@ def _symbiosis_for(state: GameState, act):
     """The Symbiosis choice after which the logged action is legal (the ability of another sea animal that the log shows being used)."""
     if not any(e["kind"] == "symbiosis" for e in state.prompt.args["pending"]):
         return None
-    if act.kind == "play_animal":                                # the next animal can be played after skipping it: nothing in the log says it was used (819962687 turn 64)
+    if act.kind == "play_animal" or (act.kind == "choose_effect" and act.args.get("mark")):      # the next animal can be played after skipping it: nothing in the log says it was used (819962687 turn 64); a mark that another effect already gives (920295323 turn 71: the reef effect of the Magnificent Sea Anemone)
         i_ = next(i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "symbiosis")
         skip_ = Action(state.prompt.args["pending"][i_].get("player", state.prompt.player), "skip_effect", {"index": i_})
         if skip_ in legal_actions(state) and _plain(_normalise(apply(state, skip_), act)) in legal_actions(apply(state, skip_)):
@@ -768,6 +775,22 @@ def _engine_project_options(state: GameState, seat: int) -> dict:
     return out
 
 
+def _is_free_part(events: list) -> bool:
+    """A "turn" of free actions only, before the player chooses an action card: the map T1 discard for +1 strength, a stored card taken back (map 11), a token used
+    (a Sponsor token and the sponsor it plays). BGA logs them after the turn marker, as a turn of their own."""
+    real = [e for e in events if not e.type.startswith("gameStateChange")]
+    if not real or any(e.type in ("chooseActionCard", "actionCardCleanup") for e in real):
+        return False
+    token = any(e.type == "discardTokens" and e.log.startswith("${player_name} uses") for e in real)
+    for e in real:
+        if e.type == "pDiscardCards" and "Map T1 effect" in e.log or e.type == "pUnstoreCard" or e.type == "discardTokens" and e.log.startswith("${player_name} uses"):
+            continue
+        if token and (e.type == "playSponsor" or e.type == "getBonuses"):
+            continue
+        return False
+    return True
+
+
 def _is_repetition(events: list) -> bool:
     """The turn starts with a chooseActionCard that uses a Multiplier token."""
     first = next((e for e in events if e.type in ("chooseActionCard", "actionCardCleanup")), None)
@@ -778,12 +801,17 @@ def _is_tail(prev: list, events: list) -> bool:
     """BGA re-enters the turn state in the middle of a turn: the next "turn" is just the cleanup of the card that the previous one chose."""
     chose = next((e for e in prev if e.type == "chooseActionCard"), None)
     real = [e for e in events if not e.type.startswith("gameStateChange")]
-    if not real or any(e.type == "chooseActionCard" for e in real) or real[0].type != "actionCardCleanup":
+    rest = real
+    if chose is None and real and real[0].type == "getBonuses" and (real[0].args.get("bonuses") or {}) == {"xtoken": 1}:
+        rest = [e for e in real[1:] if not (e.type == "discardTokens" and "multiplier" in e.log)]      # a skip repeated with a Multiplier: its X token and the token, then the cleanup
+        if len(rest) == len(real) - 1:
+            rest = real
+    if not real or any(e.type == "chooseActionCard" for e in real) or not rest or rest[0].type != "actionCardCleanup":
         return False
     if chose is None:                                   # a skipped action: the X token comes in a "turn" of its own
         prev_real = [e for e in prev if not e.type.startswith("gameStateChange")]
         return (len(prev_real) == 1 and prev_real[0].type == "getBonuses" and prev_real[0].args.get("bonuses") == {"xtoken": 1}
-                and str(prev_real[0].args.get("player_id")) == str(real[0].args.get("player_id")))
+                and str(prev_real[0].args.get("player_id")) == str(rest[0].args.get("player_id")))
     return str(real[0].args.get("player_id")) == str(chose.args.get("player_id")) and not any(e.type == "actionCardCleanup" for e in prev)
 
 
@@ -874,14 +902,19 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
     span: dict = {}
     for k in range(len(turns)):
         j = k
-        if k not in merged and k + 1 < len(turns) and turns[k] and all(e.type == "pDiscardCards" and "Map T1 effect" in e.log for e in turns[k]):
-            merged.add(k + 1)                # map T1: the discard for +1 strength is logged in a turn of its own, before the card is chosen
-            j = k + 1
+        while k not in merged and j + 1 < len(turns) and _is_free_part(turns[j]):
+            merged.add(j + 1)                # free actions before the card is chosen (map T1 discard, map 11 unstore, a token) are logged in a turn of their own
+            j = j + 1
         while k not in merged:
             nj = j + 1                                      # (the next turn with events: BGA leaves empty markers between the parts of a turn)
             while nj < len(turns) and not any(not e.type.startswith("gameStateChange") for e in turns[nj]):
                 nj += 1
-            if nj >= len(turns) or not ((_is_repetition(turns[nj]) and not any(e.type == "actionCardCleanup" for e in turns[j])) or _is_tail(turns[j], turns[nj])):
+            fj = nj                                         # (free actions before the repetition's card: map T1 discard ...)
+            while fj + 1 < len(turns) and _is_free_part(turns[fj]):
+                fj += 1
+            if fj < len(turns) and fj > nj and _is_repetition(turns[fj]) and not any(e.type == "actionCardCleanup" for e in turns[j]):
+                nj = fj
+            elif nj >= len(turns) or not ((_is_repetition(turns[nj]) and not any(e.type == "actionCardCleanup" for e in turns[j])) or _is_tail(turns[j], turns[nj])):
                 break
             merged.update(range(j + 1, nj + 1))
             j = nj
@@ -944,14 +977,19 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 rep.skipped["build turn with sponsor buildings of unknown shape on the map"] += 1
                 continue
             ch = next((e for e in events if e.type == "chooseActionCard"), None)
-            if ch is not None:                   # the logged card strength includes Venom / Constriction / hypnosis modifiers: not supported yet
-                owner = state.players[1 - seat if acts[0].args.get("hypnosis") else seat]
-                slot = [c.type for c in owner.action_cards].index(acts[0].args["type"]) + 1
+            ca_act = next((a for a in acts if a.kind == "choose_action_card"), None)      # (free actions may come first: map T1 discard, map 11 unstore, a token)
+            if ch is not None and ca_act is not None:                   # the logged card strength includes Venom / Constriction / hypnosis modifiers: not supported yet
+                owner = state.players[1 - seat if ca_act.args.get("hypnosis") else seat]
+                slot = [c.type for c in owner.action_cards].index(ca_act.args["type"]) + 1
                 if slot != int(ch.args["actionCard"]["strength"]):
                     rep.skipped["strength modifier (venom / constriction / hypnosis)"] += 1
                     continue
-                unpaid = acts[0].args.pop("unpaid", 0)
-                if unpaid != map_rules.strength_bonus(state.players[seat], slot):         # map 12: the concealed strength numbers
+                unpaid = ca_act.args.pop("unpaid", 0)
+                tokens_ = owner.action_cards[slot - 1].tokens.count("Constriction")
+                logged_ = slot + map_rules.strength_bonus(state.players[seat], slot) + ca_act.args.get("spend", 0) + (1 if ca_act.args.get("t1") else 0) - 2 * tokens_
+                if tokens_ and int(ch.args["strength"]) == logged_:
+                    pass                                     # map 12 with a Constriction token: concealed numbers + X tokens - 2 per token give the logged strength (937181556 turn 54)
+                elif unpaid != map_rules.strength_bonus(state.players[seat], slot):         # map 12: the concealed strength numbers
                     rep.skipped["strength above the slot that the engine does not explain"] += 1
                     continue
             acts = _mark_extra_building(state, seat, acts, turns[k])
@@ -1190,14 +1228,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             act = plain
                         elif got_plain is not None and got_extra is not None and top_(got_plain) == top_(want) != top_(got_extra):
                             act = plain
-                    if (act.kind == "play_animal" and state.prompt is not None and state.prompt.kind == "animals_play" and Action(seat, "animals_single", {}) in legal_actions(state)
-                            and not any(e_.type == "discardTokens" and any(m_.get("type") == "bonus-ignore-conditions" for m_ in (e_.args.get("meeples") or [])) for e_ in events)
-                            and _needs_a_token(state, act)):
-                        state = ap(state, Action(seat, "animals_single", {}))            # Ignore Animals instead of the token (the log shows no token used)
-                    if act.kind == "play_animal" and _plain(act) not in legal_actions(state) and Action(seat, "animals_single", {}) in legal_actions(state):
-                        state = ap(state, Action(seat, "animals_single", {}))            # Ignore Animals: a single animal that ignores a condition
+                    if _use_ignore_branch(state, act, parsed.animal_ignores.get(order)):
+                        state = ap(state, Action(act.player, "animals_single", {}))
                     if act.args.get("mark") and not any(e["kind"] == "mark" for e in (state.prompt.args.get("pending") or [] if state.prompt is not None else []))                         and not (state.prompt is not None and state.prompt.kind == "effects" and _plain(act) in legal_actions(state)):
-                        rep.skipped["mark from a source that is not implemented (action card variants)"] += 1
+                        rep.skipped["a Mark in the log that the engine did not expect (its source is not implemented)"] += 1
                         raise _Stop
                     follow = []
                     if act.kind == "association_task" and act.args.get("task") == "conservation" and "slot" in act.args:
@@ -1300,6 +1334,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         break
                     skip = _skip_unneeded(state, None)
                     if skip is None:
+                        mark_skip = next((Action(seat, "skip_effect", {"index": i_}) for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] in ("mark", "reef")
+                                          and Action(seat, "skip_effect", {"index": i_}) in legal_actions(state)), None)
+                        if mark_skip is not None:            # a Mark with no animal left in the display to mark, an Activate Reef without a reef dweller: nothing to do, BGA logs nothing
+                            state = ap(state, mark_skip)
+                            continue
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
@@ -1327,6 +1366,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         break
                     skip = _skip_unneeded(state, None)
                     if skip is None:
+                        mark_skip = next((Action(seat, "skip_effect", {"index": i_}) for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] in ("mark", "reef")
+                                          and Action(seat, "skip_effect", {"index": i_}) in legal_actions(state)), None)
+                        if mark_skip is not None:            # a Mark with no animal left in the display to mark, an Activate Reef without a reef dweller: nothing to do, BGA logs nothing
+                            state = ap(state, mark_skip)
+                            continue
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop

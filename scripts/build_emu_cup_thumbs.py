@@ -1,5 +1,5 @@
 """web/emu_cup_winners/thumbs/<season, 2 digits>.webp: the round portraits of the roll of honour next to the enlarged Victory Column card (web/js/cards.js `showRoll`), 112 x 112 px, cut square
-out of the winner's photo (data_manual/emu_cup_photos/<photo>: the photos are sources and are not served, see web/emu_cup_winners/winners.json: `photo`, `focus` = the face as fractions of the photo; default the middle). A winner without a photo file gets no thumbnail (the page shows an initial).
+out of the winner's photo (data_manual/emu_cup_photos/<photo>: the photos are sources and are not served, see web/emu_cup_winners/winners.json: `photo`, `focus` = the middle of the portrait as fractions of the photo (the face, or the sign SKANSEN behind the winner); default the middle, `zoom` optional). A winner without a photo file gets no thumbnail (the page shows an initial).
 Run with the system python (Pillow):  python scripts/build_emu_cup_thumbs.py"""
 import json
 from pathlib import Path
@@ -22,7 +22,7 @@ def main() -> None:
             continue
         w["thumb"] = True                                  # (the page asks for the thumbnails of these winners only)
         im = Image.open(f).convert("RGB")
-        side = round(min(im.size) * ZOOM)
+        side = round(min(im.size) * w.get("zoom", ZOOM))      # (`zoom` of a winner: the square's side as a fraction of the photo's shorter side)
         fx, fy = w.get("focus", [0.5, 0.5])
         x = min(max(round(fx * im.width - side / 2), 0), im.width - side)
         y = min(max(round(fy * im.height - side / 2), 0), im.height - side)

@@ -19,7 +19,7 @@ const Bonus=({b}:{b:any})=>{
   if(b.bonusType==='Conservation Point')return <ConservationIcon value={b.bonusValue}/>;
   if(b.bonusType==='Keyword')return <Kw k={b.keyword} v={b.bonusValue}/>;
   if(b.bonusType==='Activate Reef')return <div className='icon-container'><div className='arknova-icon icon-reef-effect mw-reef'/></div>;
-  if(b.bonusType==='Reputation'){return b.per?<div className='mw-rep'><div className='mw-sci'><TagIcon type={tag(b.per.tag)}/><TagIcon type={tag(b.per.tag)}/></div><span className='mw-colon'>:</span><ReputationIcon value={b.bonusValue}/></div>:<ReputationIcon value={b.bonusValue}/>;}
+  if(b.bonusType==='Reputation'){return b.per?<div className='mw-rep'><div className='mw-sci'><TagIcon type={tag(b.per.tag)}/><TagIcon type={tag(b.per.tag)}/></div><span className='mw-colon'><i/><i/></span><ReputationIcon value={b.bonusValue}/></div>:<ReputationIcon value={b.bonusValue}/>;}
   if(b.bonusType==='Tutor')return <div className='mw-tutor'><TagIcon type={tag(b.tag)}/><i/></div>;
   return <span>{b.bonusType}</span>;
 };
@@ -28,12 +28,12 @@ const Plan=({p}:{p:any})=>{
   const reqTag=tag(p.requirement.tag);
   const camel=(s:string)=>s.toLowerCase().replace(/(^|[^a-z])([a-z])/g,(_:any,__:any,c:string)=>c.toUpperCase());
   const dataId=`P${p.id}_${camel(name)}`;
-  return <div id={`card-${dataId}`} data-id={dataId} className='ark-card zoo-card project-card mw-plan tooltipable'><div className='ark-card-wrapper'>
+  return <div id={`card-${dataId}`} data-id={dataId} className='ark-card zoo-card project-card mw-plan mw-only tooltipable'><div className='ark-card-wrapper'>
     <div className='ark-card-top'><div className='ark-card-top-left'><div className='project-card-top-left-icon wide mw-two'><TagIcon type={reqTag}/><TagIcon type={reqTag}/></div></div><div className='ark-card-top-right'/></div>
     <div className='ark-card-middle'><div className='ark-card-number sf-hidden'>{p.id}</div><div className='ark-card-title-wrapper'><div className='ark-card-title'>{name}</div></div></div>
     <div className='ark-card-bottom'>
       <div className='project-card-description sf-hidden'>Requires {p.requirement.count} <b>{TAG[p.requirement.tag].toLowerCase()}</b> icons.</div>
-      <div className='project-card-slots-container mw'>{p.slots.map((s:any,i:number)=><div key={i} className='project-card-slot'><div className='project-card-slot-reward mw-reward'>{s.bonuses.map((b:any,j:number)=><div key={j} className='mw-b'><Bonus b={b}/></div>)}</div></div>)}</div>
+      <div className='project-card-slots-container mw'>{p.slots.map((s:any,i:number)=><div key={i} className={'project-card-slot mwp-slot'+(i!==1?' mwp-panel':'')}><div className='project-card-slot-cube-holder mwp-cube'/>{s.bonuses.filter((b:any)=>b.bonusType==='Conservation Point').map((b:any,j:number)=><div key={j} className='mwp-shield'><Bonus b={b}/></div>)}<div className='mwp-rest'>{s.bonuses.filter((b:any)=>b.bonusType!=='Conservation Point').map((b:any,j:number)=><Bonus key={j} b={b}/>)}</div></div>)}</div>
       <div className='zoo-card-bonuses mw-place' data-size='1'><div className='mw-place-in'>{p.placeBonuses.map((b:any,j:number)=><Bonus key={j} b={b}/>)}</div></div>
     </div></div></div>;
 };
@@ -42,5 +42,5 @@ const Plan=({p}:{p:any})=>{
   if(!p)return null;
   if(p.type==='Management')return renderToStaticMarkup(<Plan p={p}/>);
   const c={...p,type:ProjectCategory.BASE,tag:tag(p.tag),placeBonuses:[],description:{effectType:'conservation',effectDesc:''}};
-  return renderToStaticMarkup(<ProjectCard project={c as any}/>);
+  return renderToStaticMarkup(<ProjectCard project={c as any}/>).replace('class="ark-card zoo-card ','class="ark-card zoo-card mw-only ');   // (P133: Marine Worlds only, the seahorse on the name stripe)
 };

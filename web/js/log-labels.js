@@ -1,6 +1,6 @@
 // [module] Turns the <ICON> markup of move-list lines into icons and badges.
-import { el } from './util.js';
-import { iconUrl } from './icons.js';
+import { el, seatText } from './util.js';
+import { ACTION_ICON, ACTION_NAMES, VARIANT_NAMES, iconUrl } from './icons.js';
 import { S } from './state.js';
 
 
@@ -8,35 +8,159 @@ import { S } from './state.js';
 // Species searches and the other named icons come from BGA's icon sheet (names.json), continents and animal categories are the round badges.
 const BADGE = { AFRICA: 'Africa', AMERICAS: 'Americas', ASIA: 'Asia', AUSTRALIA: 'Australia', EUROPE: 'Europe', BIRD: 'Bird', HERBIVORE: 'Herbivore', PREDATOR: 'Predator',
                 PRIMATE: 'Primate', REPTILE: 'Reptile', SEAANIMAL: 'SeaAnimal' };
-const WITH_AMOUNT = new Set(['MONEY', 'APPEAL', 'REPUTATION', 'CONSERVATION']);           // the amount is printed over the icon, like on the tracker
+const WITH_AMOUNT = new Set(['MONEY', 'APPEAL', 'REPUTATION', 'CONSERVATION', 'XTOKEN', 'STRENGTH']);           // the amount is printed over the icon, like on the tracker
+// The number inside an icon is centred by its ink, not by its text box (a "1" has more room on its left, every font has its own space above and below the digits): the shift that
+// puts the middle of the drawn digits on the middle of the box is measured once per text with a canvas (in em of the number's own size) and set as --nx / --ny (parkposter.css).
+const INK = new Map();
+const NUM_LS = -.04;                                                                     // the letter-spacing (em) of the number in a money / appeal / conservation icon of a step text; the same value is in parkposter.css (`.labelamount.labelm b`, `.labeldk b`)
+function inkShift(text, ls = 0) {
+  const key = ls ? text + '|' + ls : text;
+  let v = INK.get(key);
+  if (v) return v;
+  const c = inkShift.ctx || (inkShift.ctx = document.createElement('canvas').getContext('2d'));
+  c.font = "400 200px 'Park Num'"; c.letterSpacing = (ls * 200) + 'px';                 // (the number's own letter-spacing, in em of its size)
+  const m = c.measureText(text), ascent = m.fontBoundingBoxAscent, descent = m.fontBoundingBoxDescent;
+  const baseline = (200 - (ascent + descent)) / 2 + ascent;                               // (line-height 1: the content area is centred in the line box)
+  v = { x: (m.width / 2 - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2) / 200,
+        y: (100 - (baseline + (m.actualBoundingBoxDescent - m.actualBoundingBoxAscent) / 2)) / 200 };
+  INK.set(key, v);
+  return v;
+}
+function centreInk(b, text, ls = 0) {
+  const go = () => { try { const v = inkShift(text, ls); b.style.setProperty('--nx', v.x.toFixed(4) + 'em'); b.style.setProperty('--ny', v.y.toFixed(4) + 'em'); } catch (e) { /* (the CSS centring stays) */ } };
+  if (document.fonts && !document.fonts.check("200px 'Park Num'")) { document.fonts.load("200px 'Park Num'").then(() => { INK.clear(); go(); }, () => {}); return; }
+  go();
+}
 function labelIcon(name, amount) {
+  if (name === 'ACARD') return actionCardIcon(amount);
   let src = null;
   if (BADGE[name]) src = '/badges/' + BADGE[name] + '.webp';
+  else if (name === 'STRENGTH') src = '/icons/strength.svg';       // (BGA's action strength icon redrawn as a vector, `r5c5` of the sheet is only 118 px)
   else {
     const key = name.startsWith('SEARCH-') ? 'search-' + name.slice(7).toLowerCase().replace('seaanimal', 'sea-animal') : name.toLowerCase();
     if (S.iconNames[key]) src = iconUrl(S.iconNames[key]);
   }
   if (!src) return null;
+  if (name === 'XTOKEN' && amount) src = iconUrl('r5c6_ns');       // (no white squares under a number)
   const img = el('img', 'icon labelicon' + (name === 'MONEY' ? ' labelmoney' : ''));
   img.src = src; img.alt = name.toLowerCase(); img.title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
   if (amount && WITH_AMOUNT.has(name)) {
-    const box = el('span', 'labelamount');
-    box.append(img, el('b', '', amount));
+    const box = el('span', 'labelamount' + (name === 'XTOKEN' ? ' labelx' : name === 'MONEY' ? ' labelm' : name === 'APPEAL' ? ' labeldk' : name === 'CONSERVATION' ? ' labeldk' : name === 'STRENGTH' ? ' labelstr' : ''));
+    const num = el('b', '', amount);
+    centreInk(num, String(amount), name === 'MONEY' || name === 'APPEAL' || name === 'CONSERVATION' ? NUM_LS : 0);
+    box.append(img, num);
     return box;
   }
   return amount ? [img, document.createTextNode(amount)] : img;
 }
-export function labelNode(text) {
+// "gains 5 money", "pays 1 xtoken", "to get 2 conservation": the amounts of the five counters are shown as their icon with the number inside (the same as the
+// <MONEY:5> markup), whichever way the line was worded (BGA's log, the engine, a live game). Only a number directly in front of the word counts.
+const AMOUNT_WORD = { money: 'MONEY', xtoken: 'XTOKEN', xtokens: 'XTOKEN', 'x-token': 'XTOKEN', 'x-tokens': 'XTOKEN', reputation: 'REPUTATION', appeal: 'APPEAL', conservation: 'CONSERVATION' };
+const AMOUNT_RE = /(^|[^\w<:-])(\d+) (money|x-?tokens?|reputation|appeal|conservation(?: points?)?)(?![\w-])/gi;
+const PLAYS_FOR_RE = /\b(plays [^<>\n]*? for )(\d+)(?= and places\b|\s*$)/gm;           // "X plays Malayan Tapir for 14 and places it ...": the price is money
+const PAYS_BUILDING_RE = /\b(pays )(\d+)( (?:for building|to buy)\b)/g;               // BGA leaves the word out here: "pays 4 for building a size-2 enclosure" is always money
+// "chooses action card Animals with strength 4": the word and the number are the strength icon with the number inside
+const STRENGTH_RE = /(^|[^\w<:-])strength (\d+)(?![\w-])/gi;
+// "places action card Sponsors at position 1 (finishing action)", "places Build at position 1 (Clever effect)": the slot is the strength icon with the slot number (a card in slot N has strength N)
+const POSITION_RE = /\b(places (?:action card )?<ACARD:[\w-]+> at )position (\d+)/g;
+// An action card in a step text is its icon (the type's icon, the silver badge of a special card, the side I / II chip) with the descriptive name as the tooltip. BGA writes it as
+// "action card SponsorsII" (type + side), "places Build at position 1", "upgrades AnimalsII" and, for a special card, "Sponsors2 effect" / "(Sponsors3)" / "Cards4 effect" (type + variant).
+// The side and the variant of a card the text does not give are those of the card the player owns in that step's state.
+const ACT = 'Animals|Association|Build|Cards|Sponsors';
+const ACARD_PLAIN_RE = new RegExp(`\\baction card (${ACT})(II|I)?(?![A-Za-z0-9])`, 'g');
+const ACARD_PLACES_RE = new RegExp(`\\b(places )(${ACT})(?= at position)`, 'g');
+const ACARD_UPGRADES_RE = new RegExp(`\\b(upgrades )(${ACT})(II|I)?(?![A-Za-z0-9])`, 'g');
+const ACARD_VARIANT_RE = new RegExp(`\\b(${ACT})([1-4])(?![A-Za-z0-9])`, 'g');
+function ownedCard(step, text, type) {
+  const st = step && step.state, players = (S.replay && S.replay.players) || [];
+  if (!st || !st.players) return null;
+  let seat = players.findIndex((p) => p.name && text.startsWith(p.name + ' '));
+  if (seat < 0) seat = step.actor !== null && step.actor !== undefined ? step.actor : st.active_player;
+  const p = st.players[seat];
+  return (p && (p.action_cards || []).find((c) => c.type === type)) || null;
+}
+function actionMarkup(text, step) {
+  if (!S.iconNames[ACTION_ICON.animals]) return text;
+  const mark = (type, variant, level) => `<ACARD:${type}-${variant}-${level}>`;
+  const mw = !!(S.replay && S.replay.marine_worlds);
+  const own = (word, level) => {                                                    // type, variant and side of a card the text names by type (+ side)
+    const type = word.toLowerCase(), c = ownedCard(step, text, type);
+    return mark(type, mw && c ? c.variant || 0 : 0, level === 'II' ? 2 : level === 'I' ? 1 : c && c.level === 2 ? 2 : 1);
+  };
+  return text
+    .replace(ACARD_PLAIN_RE, (all, w, lv) => `action card ${own(w, lv)}`)
+    .replace(ACARD_PLACES_RE, (all, pre, w) => pre + own(w, ''))
+    .replace(ACARD_UPGRADES_RE, (all, pre, w, lv) => pre + own(w, lv))
+    .replace(ACARD_VARIANT_RE, (all, w, v) => (mw && VARIANT_NAMES[w.toLowerCase() + '_' + v]) || all);          // "Sponsors2 effect": the descriptive name of the special card, as text ("Money Sponsors effect")
+}
+// the icon of an action card: <ACARD:type-variant-side>
+function actionCardIcon(spec) {
+  const [type, variant, side] = String(spec).split('-'), v = +variant, lvl = +side === 2 ? 2 : 1;
+  const id = S.iconNames[ACTION_ICON[type]];
+  if (!id) return null;
+  const box = el('span', 'acticon' + (lvl === 2 ? ' lvl2' : ''));                    // the look of the action card in the player box (side-panel.js: `.ac`): a white tile with a blue (I) / purple (II) frame
+  box.title = (v ? VARIANT_NAMES[type + '_' + v] || ACTION_NAMES[type] : ACTION_NAMES[type]) + ' (' + (lvl === 2 ? 'II' : 'I') + ')';
+  const img = el('img', 'icon');
+  img.src = iconUrl(id); img.alt = ACTION_NAMES[type] || type;
+  box.append(img);
+  if (v) {                                                                          // the silver badge of the special card, the side's own, top left like in the player box
+    const b = el('img', 'acvar');
+    b.src = '/action_icons/' + type + '_' + v + '_' + lvl + '.webp'; b.alt = 'Variant ' + v;
+    box.append(b);
+  }
+  return box;
+}
+function amountMarkup(text, step) {
+  text = actionMarkup(text, step);
+  text = text.replace(STRENGTH_RE, (all, pre, n) => `${pre}<STRENGTH:${n}>`).replace(POSITION_RE, (all, pre, n) => `${pre}<STRENGTH:${n}>`);
+  if (S.iconNames.money) text = text.replace(PAYS_BUILDING_RE, (all, a, n, b) => `${a}<MONEY:${n}>${b}`);
+  if (S.iconNames.money) text = text.replace(PLAYS_FOR_RE, (all, a, n) => `${a}<MONEY:${n}>`);
+  return text.replace(AMOUNT_RE, (all, pre, n, word) => {
+    const key = AMOUNT_WORD[word.toLowerCase().replace(/ points?$/, '')];
+    return key && S.iconNames[key.toLowerCase()] ? `${pre}<${key}:${n}>` : all;
+  });
+}
+// The icon of a counter with its amount inside, for the buttons of the move bar ("Gain" + this); null when the icon is not known yet.
+export function amountIcon(kind, n) {
+  const key = String(kind).toUpperCase();
+  if (!WITH_AMOUNT.has(key)) return null;
+  const r = labelIcon(key, String(n));
+  return r && !Array.isArray(r) ? r : null;
+}
+// The text of a log line / step text with the players' names in their colour (on the pale paper: `seatText`, the colour the decisions of the move bar use).
+const escapeRe = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function namedNodes(text) {
+  const players = (S.replay && S.replay.players) || [];
+  const names = players.map((p, i) => ({ name: p.name || '', seat: i })).filter((x) => x.name).sort((a, b) => b.name.length - a.name.length);
+  if (!names.length || !text) return [document.createTextNode(text)];
+  const re = new RegExp('(^|[^\\p{L}\\p{N}_])(' + names.map((x) => escapeRe(x.name)).join('|') + ')(?![\\p{L}\\p{N}_])', 'gu');
+  const out = [];
+  let last = 0;
+  for (const m of text.matchAll(re)) {
+    const start = m.index + m[1].length;
+    if (start > last) out.push(document.createTextNode(text.slice(last, start)));
+    const hit = names.find((x) => x.name === m[2]);
+    const sp = el('span', 'pname', m[2]);
+    sp.style.color = seatText(hit.seat);
+    out.push(sp);
+    last = start + m[2].length;
+  }
+  if (!out.length) return [document.createTextNode(text)];
+  if (last < text.length) out.push(document.createTextNode(text.slice(last)));
+  return out;
+}
+export function labelNode(text, step) {
+  text = amountMarkup(text, step);
   const span = el('span', '');
   let last = 0;
-  for (const m of text.matchAll(/<([A-Z][A-Z-]*)(?::(\d+))?>/g)) {
+  for (const m of text.matchAll(/<([A-Z][A-Z-]*)(?::([\w-]+))?>/g)) {
     const icon = labelIcon(m[1], m[2]);
     if (!icon) continue;
-    span.append(document.createTextNode(text.slice(last, m.index)));
+    span.append(...namedNodes(text.slice(last, m.index)));
     span.append(...(Array.isArray(icon) ? icon : [icon]));
     last = m.index + m[0].length;
   }
-  span.append(document.createTextNode(text.slice(last)));
+  span.append(...namedNodes(text.slice(last)));
   return span;
 }
 

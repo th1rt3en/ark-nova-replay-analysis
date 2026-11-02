@@ -185,7 +185,7 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         return
     if k == "initial_discard":
         cards = list(a.get("cards", []))
-        L.secret(f"{who} discards {names_of(cards)} (initial selection)", f"{who} discards {len(cards)} cards (initial selection)", f"You discard {names_of(cards)} (initial selection)")
+        L.add(f"{who} discards {len(cards)} card{'' if len(cards) == 1 else 's'}")          # (short for everyone, like the replay: the cards are no use to the reader)
         return
     if k == "choose_action_card":
         slot = next((i for i, c in enumerate(p0.action_cards) if c.type == a.get("type")), 0)
@@ -224,8 +224,9 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         c = a.get("card", "?")
         spent = -delta["money"]
         if a.get("from_display") and spent > 0:
-            L.add(f"{who} pays {spent} money for playing sponsor from reputation range")
-        L.add(f"{who} {'buys' if a.get('from_display') else 'plays'} {card(c)}{' from display' if a.get('from_display') else ''}")
+            L.add(f"{who} pays {spent} to buy {card(c)} from display")
+        else:
+            L.add(f"{who} {'buys' if a.get('from_display') else 'plays'} {card(c)}{' from display' if a.get('from_display') else ''}")
         got = _gain_words({kk: delta[kk] + (spent if kk == 'money' else 0) for kk in delta})
         if got:
             L.add(f"{who} gains {' and '.join(got)} ({card(c)})")
@@ -327,6 +328,8 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     elif kind in ("upgrade", "threshold2") and isinstance(a.get("upgrade"), str):
         c = next((c for c in new.players[seat].action_cards if c.type == a["upgrade"]), None)
         L.add(f"{who} upgrades {ACTION_NAMES.get(a['upgrade'], a['upgrade'])}{LEVEL.get(c.level, 'II') if c else 'II'}")
+    elif kind == "threshold2" and a.get("hire"):
+        L.add(f"{who} gains a new Association worker (reputation track bonus)")
     elif kind == "slot1":
         L.add(f"{who} places action card {ACTION_NAMES.get(a.get('type'), a.get('type'))} at position 1 (Clever)")
     elif kind in ("pbonus", "project_bonus", "threshold_bonus", "take_tile", "rep_bonus") and _gain_words(delta):

@@ -118,6 +118,10 @@ def main() -> None:
         import build_mw_card_images
         for folder in ("cards", "cards_large"):
             build_mw_card_images.build(folder)
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import build_nosnake_images                       # the no-snake variants (<key>_ns / _sw) are copies of the cards with another photo: remade whenever one of the 11 snake cards is drawn again, so they never lag behind
+    if set(rendered["ok"]) & set(build_nosnake_images.SNAKE_CARDS):
+        build_nosnake_images.main()
     if not a.keep_raw:
         shutil.rmtree(GEN / "out", ignore_errors=True)
     print(f"{len(rendered['ok'])} cards written to web/cards and web/cards_large; not in the card data: {rendered['missing'] or 'none'}")

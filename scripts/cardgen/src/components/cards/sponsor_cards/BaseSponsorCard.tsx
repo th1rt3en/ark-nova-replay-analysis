@@ -4,6 +4,7 @@ import React from 'react';
 import Effect from '@/components/abilities/Effect';
 import SponsorCardWrapper from '@/components/wrapper/SponsorWrapper';
 import { cn } from '@/lib/utils';
+import { cardNames } from '@/data/CardNames';
 
 import { SponsorCard as SponsorCardType } from '@/types/SponsorCard';
 
@@ -46,6 +47,11 @@ export const BaseSponsorCard: React.FC<AnimalCardProps> = ({ sponsor }) => {
           </div>
         </div>
       </div>
+      <img
+        className='sponsor-strip'
+        src={`/img/sponsor_strips/${cardNames[sponsor.id]}.png`}
+        alt=''
+      />
       {sponsor.effects && (
         <div className='ark-card-bottom text-start'>
           {sponsor.effects.map((effect, index) => {

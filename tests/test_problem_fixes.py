@@ -38,6 +38,7 @@ FIXED = {
     "894764261": "peaceful Pilfering 1: 3 money or a card",
     "805339373": "a Constriction ignores the appeal that the triggers of the animal gave",
     "920295323": "Symbiosis does not copy a Reef Dweller effect (turn 71: the Anemone's Mark is its reef effect, the log shows one Mark)",
+    "937181556": "the Polar Bear Exhibit played in the break by the player whose turn it is not: its own bear is an effect of the owner (turn 46)",
 }
 
 
@@ -71,3 +72,41 @@ def test_a_constricted_action_card_is_replayed_not_skipped():
     rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
     assert not rep.illegal and not rep.mismatches
     assert "strength above the slot that the engine does not explain" not in rep.skipped
+
+@pytest.mark.skipif(not (LOGS / "937181556.json").exists(), reason="log not available")
+def test_the_mark_hex_of_map_12_is_replayed_not_skipped():
+    """Map 12, hex (6, 3) is a Mark (BGA marks a display card every time it is covered: 937181556 moves 106 / 178, 791369985 moves 207 / 253); it was a take in range, so the engine stopped at the Mark."""
+    parsed = parse_log(str(LOGS / "937181556.json"))
+    setup, cfg, seed = game_from_log(parsed)
+    replay = build_replay(parsed, setup, cfg, seed)
+    rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
+    assert not rep.illegal and not rep.mismatches
+    assert not any("Mark" in reason for reason in rep.skipped), dict(rep.skipped)
+
+# turns the differential test used to skip or reject, now replayed (2026-10-29): fixes A-G of the problem review
+REPLAYED = {
+    "791369985": [42, 51, 53, 62],          # map 12: concealed strength is no X token (A); an instant map slot is no income slot (F)
+    "937181556": [49, 61],                  # map 12: concealed strength (A)
+    "930781276": [39],                      # map T1: the discard's +1 strength is no X token (A)
+    "833146203": [71, 72, 73],              # map 11: a stored card taken back before the card is chosen (B)
+    "927743770": [35],                      # map 11 (B)
+    "930258897": [54],                      # a Sponsor token used before the card is chosen (B)
+    "920295323": [52],                      # map T1 discard before a Multiplier repetition (B)
+    "927683584": [64, 70],                  # a Mark with no animal in the display (C); the other player's Clever in the break (D)
+    "920319154": [23],                      # Activate Reef without a reef dweller (C)
+    "795215166": [78],                      # an endgame card discard is no sponsor play (E)
+}
+
+
+@pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
+@pytest.mark.parametrize("table", sorted(REPLAYED))
+def test_a_turn_that_used_to_be_skipped_is_replayed(table):
+    path = LOGS / f"{table}.json"
+    if not path.exists():
+        pytest.skip("log not available")
+    parsed = parse_log(str(path))
+    setup, cfg, seed = game_from_log(parsed)
+    replay = build_replay(parsed, setup, cfg, seed)
+    rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)}, chain=True)
+    bad = {k: (rep.results[k].status, rep.results[k].detail[:120]) for k in REPLAYED[table] if k in rep.results and rep.results[k].status != "ok"}
+    assert not bad, bad

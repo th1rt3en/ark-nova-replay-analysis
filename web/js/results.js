@@ -34,7 +34,7 @@ export function thinkingTime(sec) {
   if (sec < 86400) return Math.floor(sec / 3600) + 'h ' + String(Math.floor((sec % 3600) / 60)).padStart(2, '0') + ' min';
   return Math.floor(sec / 86400) + 'd ' + Math.floor((sec % 86400) / 3600) + 'h';
 }
-// Only the table channel is read (every public event once). Thinking time is a placeholder for now: BGA's own clock is not in the log.
+// Only the table channel is read; identified Break effects are counted once. Thinking time is a placeholder for now: BGA's own clock is not in the log.
 const UNIQUE = new Set(['adventure', 'amazon', 'aquarium', 'arcade', 'baboon', 'cable', 'entrance', 'excavation', 'hyena', 'meerkat', 'monkey', 'okapi', 'owl', 'penguin', 'polar-bear',
   'sea-turtle', 'underwater-tunnel', 'victory', 'water-playground', 'zoo-school']);          // (the sponsors' unique buildings, src/ark_nova/data/unique_shapes.json)
 function countStats(raw) {
@@ -44,7 +44,10 @@ function countStats(raw) {
     onDonations: 0, onRange: 0, drawn: 0, fromRange: 0, snapped: 0, discarded: 0, animals: 0, sponsors: 0, released: 0, workers: 1, projects: 0, partners: 0, universities: 0, donations: 0,
     reputation: 0, breaks: 0, advances: 0, manualSnaps: 0, projectSnaps: 0, freeTwos: 0, clever: 0, enclosures: 0, kiosks: 0, pavilions: 0, unique: 0 });
   const P = [blank(), blank()], chose = [false, false];
-  let first = null, ender = null, conceded = null, inBreak = false;
+  const seenBreaks = new Set(), seenBreakEffects = new Set();
+  const normal = S.replay.normal_turns;
+  if (normal) normal.forEach((t) => { P[t.seat].turns = Math.max(P[t.seat].turns, t.number); });
+  let first = normal && normal.length ? normal[0].seat : null, ender = null, conceded = null, inBreak = false, moveId = null;
   // where a snap comes from (only two kinds are told apart): `sel` = the snap selector of a seat (gameStateChange id 59: its `source`, 'map bonus space' = a project snap, an animal's name = something else),
   // `proj` = snaps a break-income takeBonus "Snapping" (map bonus space) has granted and not used yet, `cards` = the snap state of the Cards action (id 34, descSuffix 'snap'), open until that action ends
   const sel = [null, null], proj = [0, 0], cards = [0, 0];
@@ -53,23 +56,39 @@ function countStats(raw) {
   const steps = S.replay.steps;
   const displayBefore = (moveId) => { let st = null; for (const s of steps) { if (Number(s.move_id) < moveId) st = s.state; else break; } return st ? st.display || [] : []; };
   for (const pk of data.logs || []) {
+    if (pk.move_id != null) moveId = Number(pk.move_id);
     if (!String(pk.channel || '').startsWith('/table/')) continue;
-    for (const e of pk.data || []) {
+    for (const [eventIndex, e] of (pk.data || []).entries()) {
       const a = e.args && typeof e.args === 'object' && !Array.isArray(e.args) ? e.args : {}, log = e.log || '', ty = e.type;
+      if (ty === 'advanceBreak' || (ty === 'getBonuses' && a.source === 'triggering break')) {
+        // Resends keep their event UID, or their packet/offset if no UID exists.
+        // Never identify effects by amount/result or move alone: equal effects can both execute.
+        const identity = e.uid != null && e.uid !== '' ? ['uid', String(e.uid)]
+          : pk.packet_id != null && pk.packet_id !== '' ? ['packet', String(pk.packet_id), eventIndex] : null;
+        if (identity) {
+          const key = JSON.stringify([pk.channel, moveId, ty, ...identity]);
+          if (seenBreakEffects.has(key)) continue;
+          seenBreakEffects.add(key);
+        }
+      }
       if (ty === 'gameStateChange' && a.id === 59 && a.args && typeof a.args === 'object') { const q = seatOf(a.active_player); if (q !== null) sel[q] = { src: a.args.source || null, suffix: a.args.descSuffix || '' }; }
       if (ty === 'gameStateChange' && a.id === 30 && a.args && typeof a.args === 'object') { const q = seatOf(a.active_player); if (q !== null) build[q] = a.args.source || null; }
       if (ty === 'gameStateChange' && a.id === 34 && a.args && typeof a.args === 'object' && a.args.descSuffix === 'snap' && a.args.nSnap > 0) { const q = seatOf(a.active_player); if (q !== null) cards[q] = a.args.nSnap; }
       if (ty === 'takeBonus' && a.source === 'map bonus space' && a.bonus_desc && a.bonus_desc.args && a.bonus_desc.args.bonus_type === 'Snapping') { const q = seatOf(a.player_id); if (q !== null) proj[q] += Number(a.bonus_desc.args.bonus_n) || 1; }
-      if (ty === 'startBreak') inBreak = true;
+      if (ty === 'startBreak' || ty === 'finishBreak') {
+        const boundary = ty + ':' + (moveId ?? ('event:' + (e.uid || pk.packet_id)));
+        if (seenBreaks.has(boundary)) continue;
+        seenBreaks.add(boundary);
+        inBreak = ty === 'startBreak';
+      }
       if (ty === 'advanceBreak') { const q = seatOf(a.player_id); if (q !== null) P[q].advances += Number(a.n) || 0; }       // every step of the break track a player caused (a Sponsors card for 5 = 5, Cards = 2, a jumping animal = its jump)
-      if (ty === 'finishBreak') inBreak = false;
       const s = seatOf(a.player_id);
       if (ty === 'playerConcedeGame' && s !== null) conceded = s;
       if (s === null) continue;
       const p = P[s];
       if (ty === 'chooseActionCard') { sel[s] = null; if (first === null) first = s; const k = String(a.action_card_type || '').toLowerCase(); if (k in p.act) p.act[k] += 1; chose[s] = true; }
       else if (ty === 'actionCardCleanup' && log.includes('(Clever effect)')) p.clever += 1;                  // one resolved Clever = one action card moved by it, whatever its source (sponsor, bonus, animal, project ...)
-      else if (ty === 'actionCardCleanup' && log.includes('finishing action')) { cards[s] = 0; sel[s] = null; p.turns += 1; if (!chose[s]) p.xPass += 1; chose[s] = false; }
+      else if (ty === 'actionCardCleanup' && log.includes('finishing action')) { cards[s] = 0; sel[s] = null; if (!normal) p.turns += 1; if (!chose[s]) p.xPass += 1; chose[s] = false; }
       else if (ty === 'getBonuses') {
         const b = a.bonuses && typeof a.bonuses === 'object' ? a.bonuses : {}, x = b.xtoken || 0, m = b.money || 0;
         if (x > 0) p.xGained += x; else if (x < 0) p.xUsed -= x;
@@ -142,20 +161,29 @@ function niceTicks(lo, hi) {
   return out;
 }
 function race(key = 'score') {
-  // One point per round (both players have played): the scores after the round's last turn (the state's turn counts both players, so round = ceil(turn / 2)); the points the
-  // end of the game adds (the endgame cards: phase 'over') are one more point, "End".
-  const byRound = new Map(), breaks = [];
+  // Compare both players at the last actual normal-turn endpoint numbered n.
+  // Earlier payloads retain the legacy completed-turn fallback. Final scoring
+  // is a separate End column; Break income is outside normal-turn samples.
+  const structuredBreaks = Array.isArray(S.replay.break_markers);
+  const byRound = new Map(), breaks = structuredBreaks ? S.replay.break_markers.map((b) => ({ turn: b.turn, seat: b.seat })) : [];
+  const normal = S.replay.normal_turns;
+  if (normal) {
+    if (S.replay.turn_start) byRound.set(0, S.replay.turn_start.map((p) => metric(p, key)));
+    // Keep the paired-player axis: Turn n is the last normal-turn endpoint
+    // numbered n, after both players have taken it when both exist.
+    normal.forEach((t) => byRound.set(t.number, t.players.map((p) => metric(p, key))));
+  }
   let trigger = null, last = null;
   S.replay.steps.forEach((s) => {
     const st = s.state;
     if (st && Number.isFinite(st.turn) && st.players && st.players.every((p) => Number.isFinite(metric(p, key)))) {
-      if (st.phase !== 'over') byRound.set(Math.ceil(st.turn / 2), st.players.map((p) => metric(p, key)));
+      if (!normal && st.phase !== 'over') byRound.set(Math.ceil(st.turn / 2), st.players.map((p) => metric(p, key)));
       last = st;
     }
     const label = s.label || '';
-    if (/\(triggering break\)/.test(label)) trigger = S.replay.players.findIndex((pl) => label.startsWith(pl.name + ' '));
+    if (!structuredBreaks && /\(triggering break\)/.test(label)) trigger = S.replay.players.findIndex((pl) => label.startsWith(pl.name + ' '));
     // a break is drawn exactly between the last finished round and the next point, whenever in the round it starts
-    if (st && /^Starting a new break/m.test(label)) { breaks.push({ turn: Math.floor((st.turn - 0.5) / 2) + 0.5, seat: trigger }); trigger = null; }
+    if (!structuredBreaks && st && /^Starting a new break/m.test(label)) { breaks.push({ turn: st.turn_context ? st.turn_context.display + .5 : Math.floor((st.turn - 0.5) / 2) + 0.5, seat: trigger }); trigger = null; }
   });
   const turns = [...byRound.keys()].sort((a, b) => a - b), scores = turns.map((t) => byRound.get(t));
   const end = !!last && last.phase === 'over';
@@ -181,7 +209,11 @@ function keyEvents() {
   S.replay.steps.forEach((s) => {
     const st = s.state, label = s.label || '';
     if (!st || !Number.isFinite(st.turn) || !st.players) return;
-    const round = Math.ceil(st.turn / 2);
+    const ctx = st.turn_context;
+    // Effects in a normal turn belong to its owner, including temporary
+    // opponent choices. Break choices remain neutral, between axis columns.
+    const round = ctx ? (ctx.phase === 'turn' ? ctx.number : ctx.phase === 'break' ? ctx.display + .5 : null) : Math.ceil(st.turn / 2);
+    if (round === null) { prev = st; return; }
     for (const m of label.matchAll(/^(.+?) upgrades (Animals|Association|Build|Cards|Sponsors)II\b/gm)) {
       const seat = seatOf(m[1].replace(/^.* · /, ''));
       if (seat >= 0) ev.push({ seat, round, lane: 0, kind: 'upgrade', type: m[2].toLowerCase() });
@@ -222,7 +254,7 @@ function shield(g, bx, by, r, n) {                                              
   const t = sv('text', { x: bx, y: by + r * .38, class: 'kecp', 'text-anchor': 'middle', style: `font-size:${r * 1.45}px` }); t.textContent = String(n); g.append(t);
 }
 function keSvg(w, h) {
-  const R = race('score'), ev = keyEvents().filter((e) => R.turns.includes(e.round));
+  const R = race('score'), ev = keyEvents().filter((e) => e.round >= R.turns[0] && e.round <= R.turns[R.turns.length - 1]);
   const pad = { l: 60, r: 40, t: 50, b: 46 }, t0 = R.turns[0] || 0, t1 = R.turns[R.turns.length - 1] || 1;
   const X = (t) => pad.l + (w - pad.l - pad.r) * (t - t0) / Math.max(1, t1 - t0);
   const s = sv('svg', { viewBox: `0 0 ${w} ${h}`, class: 'rsrace-svg big kesvg' });

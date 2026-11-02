@@ -13,7 +13,7 @@ const D = {                                                                // ke
   r: ['R', 'Turn the building preview', 'While a sponsor building is being previewed (right click on its card in a hand): Shift + R turns it the other way, the mouse wheel over the map too.'],
   h: ['H', 'Show / hide the hand', 'The floating tray or the fan.'],
   s: ['S', 'Open the settings', ''],
-  F11: ['F11', 'Full screen', 'Switches the browser to full screen and back; also a switch at the top of the settings.'],
+  F11: ['F11', 'Full screen', 'Switches the browser to full screen and back; the full screen button next to the settings wheel does the same.'],
   '?': ['?', 'Open this window', 'Shift + / on most keyboards.'],
   Escape: ['Esc', 'Close', 'The settings, a dialog or this window.'],
 };

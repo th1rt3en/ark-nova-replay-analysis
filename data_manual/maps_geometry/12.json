@@ -363,9 +363,10 @@
             "x": 6,
             "y": 3,
             "bonus": {
-                "type": "take-in-range-or-deck",
+                "type": "Mark",
                 "value": 1
-            }
+            },
+            "note": "a Mark, not a take in range: BGA marks a display card whenever this hex is covered (937181556 moves 106 / 178, 791369985 moves 207 / 253)"
         },
         {
             "x": 7,

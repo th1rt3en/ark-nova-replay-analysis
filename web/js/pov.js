@@ -49,7 +49,7 @@ export const curState = () => povState(S.replay.steps[S.step].state);
 const statueName = (t) => (typeof t === 'string' ? t.replace(/\b(Victory Column|Mascot Statue)\b/gi, S.s274 === 'mascot' ? 'Mascot Statue' : 'Victory Column') : t);        // (setting "Statue card": the log of BGA says Victory Column, the card data says Mascot Statue; the line follows the setting)
 export const labelOf = (s) => statueName((S.pov !== null && s.label_pov && s.label_pov[S.pov]) || s.label);
 export function refreshLabels() {                                  // the move list again, e.g. after the name of a card changed (setting "Statue card")
-  document.querySelectorAll('#moves li').forEach((li) => { const s = li._step; if (!s) return; const num = li.firstChild, badge = li.lastChild; li.replaceChildren(num, labelNode(labelOf(s) || '…'), badge); });
+  document.querySelectorAll('#moves li').forEach((li) => { const s = li._step; if (!s) return; const num = li.firstChild, badge = li.lastChild; li.replaceChildren(num, labelNode(labelOf(s) || '…', s), badge); });
 }
 
 // The point of view is set by the eye next to each player's name in the info box (side-panel.js): exactly one eye is open, S.pov = 0 / 1 = the game as that player saw it. Opening the closed eye
@@ -66,24 +66,22 @@ export const povDialogOpen = () => !!$('povChoice');
 export function askSpectated() {
   if ($('povChoice')) return;
   const modal = el('div', 'modal'); modal.id = 'povChoice';
-  const box = el('div', 'modalbox povbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Choose which player to spectate');
-  box.append(el('div', 'modalhead', 'Choose which player to spectate'));
-  const row = el('div', 'povchips');
+  const box = el('div', 'povbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Choose which player to spectate');
+  const rib = el('div', 'povrib', 'Choose which player to spectate');                  // (the gold ribbon: same notched shape as the ribbons of the lightbox)
   let picked = null;
   const ok = el('button', 'povok', 'Confirm'); ok.type = 'button'; ok.disabled = true;
-  const chips = S.replay.players.map((pl, seat) => {
-    const b = el('button', 'povchip'); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
+  const chips = S.replay.players.map((pl, seat) => {                                   // (the screen is split in two halves, one per player, tinted in the player's colour)
+    const b = el('button', 'povhalf'); b.type = 'button'; b.setAttribute('aria-pressed', 'false');
     b.style.setProperty('--pc', seatColor(seat));
-    b.append(el('i', 'povdot'), el('span', 'povname', pl.name));
-    b.onclick = () => { picked = seat; ok.disabled = false; chips.forEach((c, i) => { c.classList.toggle('on', i === seat); c.setAttribute('aria-pressed', String(i === seat)); }); };   // (a chip only selects: Confirm applies the choice, so it can be changed first)
-    row.append(b);
+    b.append(el('span', 'povname', pl.name));
+    b.onclick = () => { picked = seat; ok.disabled = false; box.classList.add('chosen'); chips.forEach((c, i) => { c.classList.toggle('on', i === seat); c.setAttribute('aria-pressed', String(i === seat)); }); };   // (a half only selects: Confirm applies the choice, so it can be changed first)
     return b;
   });
   const done = () => { if (picked === null) return; document.removeEventListener('keydown', onKey, true); modal.remove(); chooseSpectated(picked); };
   const onKey = (e) => { if (e.key === 'Enter' && picked !== null && !e.isComposing) { e.preventDefault(); e.stopPropagation(); done(); } };       // (Enter confirms once a player is selected, whichever button has the focus)
   ok.onclick = done;
   document.addEventListener('keydown', onKey, true);
-  box.append(row, ok); modal.append(box); document.body.append(modal);
+  box.append(...chips, el('i', 'povdiv'), rib, ok); modal.append(box); document.body.append(modal);
 }
 function chooseSpectated(seat) {
   S.orient = seat; S.pov = seat;
@@ -97,7 +95,7 @@ function applyPov() {
     const s = li._step;
     if (!s) return;
     const num = li.firstChild, badge = li.lastChild;
-    li.replaceChildren(num, labelNode(labelOf(s) || '…'), badge);
+    li.replaceChildren(num, labelNode(labelOf(s) || '…', s), badge);
   });
   render();
 }

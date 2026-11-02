@@ -3,7 +3,7 @@ import { $, el, seatRawColor, svg } from './util.js';
 import { FORK, S, SANDBOX } from './state.js';
 import { curState } from './pov.js';
 import { PREVIEW_CARDS, card, cardMarks, ghost, zoneNew } from './cards.js';
-import { ICON_IDS, iconUrl, moneyTile, moneyDx } from './icons.js';
+import { ICON_IDS, iconUrl, moneyTile, moneyTwo } from './icons.js';
 import { associationBoard } from './association.js';
 import { blockedCube, markCube, markOwner, projectPanel } from './projects.js';
 import { actionBar, afterMark, cardPickAct, forkActs, forkSingleSelect, pickCardOf } from './action-bar.js';
@@ -52,7 +52,7 @@ export function bonusTile(name, value, po) {
   pentagonShape(t, 40, 40, 80, { edge: (po && po.edge) ?? 2.2, shadow: (po && po.shadow) ?? 2 });                     // (a vector pentagon with an ink edge and shadow, like the bonuses of the association strip)
   if (name === 'money') {
     moneyTile(t, 40, 43, 48);
-    if (value) t.append(Object.assign(svg('text', Object.assign({ x: 40, y: 56, class: 'bonus-number' + (String(value).length > 1 ? ' two' : '') }, String(value).length > 1 ? { dx: moneyDx(value) } : {})), { textContent: value }));      // on top of the money icon
+    if (value) t.append(Object.assign(svg('text', String(value).length > 1 ? { ...moneyTwo(value, 40, 43, 36, 8), class: 'bonus-number two' } : { x: 40, y: 56, class: 'bonus-number' }), { textContent: value }));      // on top of the money icon (two digits: smaller, tighter and centred, `moneyTwo`)
   } else if (name === 'reputation' || name === 'appeal' || name === 'conservation') {
     picture(id, 40, 43, 48);
     if (value) t.append(Object.assign(svg('text', { x: 40, y: name === 'conservation' ? 55.5 : 59, class: 'bonus-number' + (name === 'appeal' || name === 'conservation' ? ' dk ' + name : '') }), { textContent: value }));      // the amount over the icon, like the other reputation bonuses (on the shield of the conservation points it sits 3.5 higher: the shield narrows towards its tip, so the foot of a 1 would hang over it)
@@ -60,7 +60,7 @@ export function bonusTile(name, value, po) {
     picture(id, 52, 42, 38);
     t.append(Object.assign(svg('text', { x: 24, y: 53, class: 'bonus-number', style: 'font-size:32px' }), { textContent: value }));   // the amount to the left of a smaller card, both inside the pentagon
   } else if (name === 'xtoken' && value > 1) {
-    picture(id, 40, 43, 48);
+    picture(ICON_IDS['bonus:xtoken_num'] || id, 40, 43, 48);
     t.append(Object.assign(svg('text', { x: 40, y: 55, class: 'bonus-number xnum' }), { textContent: value }));   // the amount lies on the X (white, black outline), like the X tokens of the player box
   } else {
     picture(id, 40, 43, 48);

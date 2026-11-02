@@ -1,6 +1,6 @@
 // [module] Sidebar: the Control | Log tabs, the log's scroll-follow, and the width of the control pane's scrollbar (the sidebar's size itself is CSS, see parkposter.css).
 import { $ } from './util.js';
-import { S, MINIGAME } from './state.js';
+import { S } from './state.js';
 
 const TAB_KEY = 'sidebarTab';
 let chatSeen = () => {};                                          // set by `chatTab` (the play page): the Chat tab was opened, the unread count goes

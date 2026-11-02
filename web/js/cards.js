@@ -4,6 +4,7 @@ import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { pic } from './icons.js';
 import { afterMark, forkSingleSelect } from './action-bar.js';
 import { snakeSafe } from './nosnake.js';
+import { sponsorStatRows } from './sponsor-stats.js';
 
 // S274 is the Mascot Statue of the card data and the Victory Column on BGA (setting "Statue card", S.s274): its name and pictures (made by build_cards.py as S274_VC; the photo is a placeholder for now) are swapped here, so every name and picture in the viewer follows.
 const VICTORY = new WeakMap();
@@ -65,10 +66,6 @@ function showNow(src, centered, extra) {
   showRoll(src, p);
 }
 // What a sponsor with passive effects has given its owner so far (the replay only; the totals are in `state.sponsor_stats`, made by view.py from the log): a panel at the right of the enlarged card
-const STAT_ORDER = ['appeal', 'money', 'reputation', 'conservation', 'xtoken'];
-// what some sponsors are counted by instead of the resources of their instant gain (view.py `OWN_STATS`, `differential.observe_sponsors`)
-const STAT_TEXT = { clever: 'Clevers activated', pavilion: 'Pavilions built', pouch: 'Pouches', enlarge: 'Enclosures enlarged', snap_small: 'Small animals snapped', third_small: '3rd small animals played', saved: 'saved',
-  expeditions: 'Expeditions', scuba3: 'Scuba Dive 3 triggered', kiosk: 'Kiosks gained', size1: 'Size-1 enclosures gained', birds: 'Bird icons played', sunbathed: 'Cards sunbathed', hunts: 'Hunts triggered', seen: 'Cards seen', donations: 'Donations' };
 function showStats(src, p, extra) {
   let box = $('previewstats');
   if (extra) {                                                               // (an action card of the player box: the statistics of its variant, `variantStatsBox`)
@@ -87,11 +84,12 @@ function showStats(src, p, extra) {
   if (!box) { box = el('div', 'previewstats'); box.id = 'previewstats'; document.body.append(box); }
   const got = st.sponsor_stats[key] || {};
   box.replaceChildren(el('b', 'psttitle', 'Given by this card'));
-  const rows = [...STAT_ORDER, ...Object.keys(STAT_TEXT)].filter((r) => got[r]);
-  for (const r of rows) {
+  const rows = sponsorStatRows(got, key);
+  for (const stat of rows) {
     const row = el('div', 'pstrow');
-    if (STAT_TEXT[r]) row.append(el('b', '', r === 'saved' ? '+' + got[r] : got[r] + '×'), ...(r === 'saved' ? [pic('money', 34)] : []), el('span', 'pstlabel', STAT_TEXT[r]));       // (a count: "3x Clevers activated"; the money the experts saved: "+12 [money] saved")
-    else row.append(pic(r, 34), el('b', '', '+' + got[r]));
+    if (stat.icon) row.append(pic(stat.icon, 34));
+    row.append(el('b', '', stat.value));
+    if (stat.label) row.append(el('span', 'pstlabel', stat.label));
     box.append(row);
   }
   if (!rows.length) box.append(el('div', 'pstnone', 'nothing yet'));
@@ -146,8 +144,8 @@ async function showRoll(src, p) {
 }
 // What the action card variants of Marine Worlds have done (the replay only; `state.variant_stats[seat][action]`, made by replay/variant_stats.py): [statistic, text]; the sides I and II are named in the text
 const VARIANT_NAME = { animals_1: 'Ignore Animals', animals_2: 'Hunter Animals', animals_3: 'Discount Animals', animals_4: 'Mark Animals', association_2: 'Hire Association', association_3: 'X Association',
-  association_4: 'Self-clever Association', build_1: 'Pavilion Build', build_2: 'Kiosk Build', build_3: '+1 Build', build_4: 'Terrain Build', cards_2: 'Digging Cards', cards_3: 'Snap Cards', cards_4: 'Clever Cards',
-  sponsors_1: 'Money Sponsors', sponsors_2: 'Money Sponsors', sponsors_3: 'Sunbathing Sponsors', sponsors_4: 'Snap Sponsors' };
+  association_4: 'Self-clever Association', build_1: 'Pavilion Build', build_2: 'Kiosk Build', build_3: '+1 Build', build_4: 'Terrain Build', cards_1: 'Keep Cards', cards_2: 'Digging Cards', cards_3: 'Snap Cards', cards_4: 'Clever Cards',
+  sponsors_1: 'Trade Sponsors', sponsors_2: 'Money Sponsors', sponsors_3: 'Sunbathing Sponsors', sponsors_4: 'Marketing Sponsor' };
 const ACTION_STATS = {
   animals_1: [['ignored', 'Animals played ignoring a condition']],
   animals_2: [['hunts', 'Hunts'], ['seen', 'Cards hunted']],
@@ -158,15 +156,16 @@ const ACTION_STATS = {
   association_4: [['determination', 'Determination used (side I)'], ['draws', 'Cards instead of a donation (side II)']],
   build_1: [['extra3', 'Pavilions built for 3 (side I)'], ['extra2', 'Pavilions built for 2 (side II)']],
   build_2: [['extra3', 'Kiosks built for 3 (side I)'], ['extra2', 'Kiosks built for 2 (side II)']],
-  build_3: [['extra_strength', 'Times the extra strength was used']],
+  build_3: [['extra_strength', 'Times the extra strength was used'], ['identical', 'Additional identical standard enclosures (side II)']],
   build_4: [['terrain_paid', 'Built on rock / water, paid 2 (side I)'], ['terrain_gained', 'Built on rock / water, gained 2 (side II)']],
+  cards_1: [['extra_kept', 'Additional cards kept']],
   cards_2: [['dig_hand', 'Digging from the hand'], ['dig_display', 'Digging from the display']],
   cards_3: [['snaps', 'Snaps']],
   cards_4: [['clever_paid', 'Clevers for 2 money (side I)'], ['clever_free', 'Clevers for free (side II)']],
   sponsors_1: [['x_money', 'X token for 5 money'], ['money_x', '5 money for an X token'], ['money_rep', '5 money for 1 reputation (side II)'], ['x_rep', 'X token for 1 reputation (side II)']],
   sponsors_2: [['money', 'Money gained by the ability']],
   sponsors_3: [['money', 'Discarded for 4 money'], ['strength', 'Discarded for 2 strength (side II)']],
-  sponsors_4: [['snap', 'Sponsors discarded to snap a sponsor (side I)'], ['play', 'Cards discarded to play a sponsor (side II)']],
+  sponsors_4: [['snap', 'Sponsors discarded to snap a sponsor (side I)'], ['play', 'Marketing']],
 };
 export function variantStatsBox(st, seat, a) {
   const rows = ACTION_STATS[a.type + '_' + a.variant];
