@@ -160,6 +160,7 @@ export function zooBoard(map, player, seat) {
   // the outline of a building: only the edges of its hexes that have no neighbour hex of the same building (flat topped hexes; the neighbour across edge i
   // lies at (+1,+1), (0,+2), (-1,+1), (-1,-1), (0,-2), (+1,-1))
   const NEIGHBOUR = [[1, 1], [0, 2], [-1, 1], [-1, -1], [0, -2], [1, -1]];
+  const fillPath = (cells) => cells.map(([x, y]) => 'M' + hexPoints(x, y).split(' ').join('L') + 'Z').join('');       // (the hexes as closed shapes: an outline made of loose edges has no area, so it cannot be clicked inside)
   const outlinePath = (cells) => {
     const mine = new Set(cells.map(([x, y]) => x + ',' + y));
     const parts = [];
@@ -226,19 +227,21 @@ export function zooBoard(map, player, seat) {
   const zone = seat + ':buildings';
   const z = zoneNew(zone, player.buildings.map(keyOf));
   S.curZoneData[zone] = Object.fromEntries(player.buildings.map((b) => [keyOf(b), b]));
-  const aSel = animalSelection();
+  const aSel = animalSelection(), encPicks = [];                              // (the click targets of the enclosures go on top of every building, else the sprite of a later building covers them)
   for (const b of player.buildings) {
     s.append(drawBuilding(b, z.isNew(keyOf(b)) ? 'tok-new' : ''));
     if (aSel && aSel.seat === seat && aSel.acts.some((a) => a.args.x === b.x && a.args.y === b.y)) {          // an enclosure the selected animal can go to: click it, then confirm
       const on = S.animalEnc && S.animalEnc.card === aSel.card && S.animalEnc.x === b.x && S.animalEnc.y === b.y;
-      const pick = svg('path', { d: outlinePath(b.cells), class: 'encpick' + (on ? ' on' : '') });
+      const pick = svg('path', { d: fillPath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'stroke: none' });
+      encPicks.push(svg('path', { d: outlinePath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'fill: none; pointer-events: none' }));       // (the border, drawn apart from the clickable area)
       pick.addEventListener('click', () => { S.animalEnc = { card: aSel.card, x: b.x, y: b.y }; render(); });
-      s.append(pick);
+      encPicks.push(pick);
     }
     if (params.has('debug')) {                  // ?debug: outline the cells the engine says the building covers
       for (const [x, y] of b.cells) s.append(svg('polygon', { points: hexPoints(x, y), fill: 'none', stroke: '#f0f', 'stroke-width': 3 }));
     }
   }
+  s.append(...encPicks);
   for (const gone of z.gone) {
     const b = (S.prevZoneData[zone] || {})[gone.key];
     if (!b) continue;

@@ -2163,3 +2163,7 @@ web/js/shared.js (draftOn): while the action card draft is running (state phase 
 ## 117. Fork: swap between the seats' hands and endgame cards in the tray
 
 web/js/dock.js (drawTray): the round buttons on the tray (setting Hand display = Floating container) now cover every seat that is not hidden (hides): hand + endgame cards (+ stored / played) of each, in the seat's colour, so a fork and the sandbox can switch between the seats. A replay with an eye open still shows only that player's buttons. The fan already had one group of buttons per seat.
+
+## 118. Fork: the enclosure to play an animal into can be clicked anywhere on it
+
+web/js/board.js (zooBoard): the click target of an enclosure offered to the selected animal (.encpick) was the outline path, which is only loose edge segments and has no area, so only the 4 px border could be clicked (a puffer could not be put into a large aquarium). The target is now a closed path of the building's hexes (illPath, no stroke) and the border is drawn apart from it (pointer-events none); both are appended after all buildings so no sprite covers them.
