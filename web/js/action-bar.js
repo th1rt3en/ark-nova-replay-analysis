@@ -104,6 +104,7 @@ export function draftOpen(st, i = S.step) {
   const d = st && st.phase === 'setup' && st.draft;
   if (!d) return false;
   if (d.stage !== 'done') return true;
+  if (PLAY || FORK) return false;                                           // (a live game / a fork has no frames: the state after the last keep is the starting hand selection, with the action card order drawn)
   const prev = i > 0 ? S.replay.steps[i - 1].state : null;
   return !!prev && !!prev.draft && prev.draft.stage !== 'done';
 }

@@ -1,7 +1,8 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
 import { $, el, seatColor, seatText } from './util.js';
-import { FORK, MINIGAME, S, SANDBOX } from './state.js';
-import { curState, hides, seatOrder, seesAll } from './pov.js';
+import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
+import { curState, hides as povHides, seatOrder, seesAll } from './pov.js';
+const hides = (seat) => povHides(seat) || (PLAY && S.play.seat !== null && seat !== S.play.seat);       // (a live game is between two real players: the dock only has the player's own hand and endgame cards, nothing of the opponent)
 import { cardRow, quietly } from './cards.js';
 import { iconUrl } from './icons.js';
 import { cardPickAct, forkActs, pickCardOf } from './action-bar.js';
@@ -134,7 +135,7 @@ export function renderDock(st) {
     bar.append(group);
   });
   if (MINIGAME && S.minigame) for (const k of Object.keys(rows)) S.minigame.decorate(rows[k], k);       // (mini game pages: `S.minigame.decorate(row, 'seat:hand')` makes the cards of a row selectable)
-  if (S.handMode === 'tray') { drawTray(dock, rows, shownSel, st); return; }
+  if (S.handMode === 'tray') { drawTray(dock, rows, shownSel, st); fitDockSpace(dock); return; }
   const fold = el('button', 'dockfold');                               // collapse / expand the cards, at the right end of the buttons
   fold.type = 'button';
   fold.textContent = S.dockHidden ? '▲' : '▼';
@@ -161,7 +162,8 @@ export function renderDock(st) {
 }
 // The dock floats over the bottom of the page: the page gets as much room under its last row (the zoos, with the played sponsors) as the dock is high, so it can be scrolled clear of the hand.
 function fitDockSpace(dock) {
-  document.body.style.paddingBottom = dock.childNodes.length ? Math.ceil(dock.offsetHeight + 16) + 'px' : '';
+  const h = Math.max(dock.offsetHeight, ...[...dock.children].map((c) => c.offsetHeight));       // (the tray is a child that may lie over the bottom of the page without giving the dock a height of its own)
+  document.body.style.paddingBottom = dock.childNodes.length ? Math.ceil(h + 16) + 'px' : '';
 }
 window.addEventListener('resize', () => { const d = $('dock'); if (d) fitDockSpace(d); });
 

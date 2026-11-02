@@ -2167,3 +2167,8 @@ web/js/dock.js (drawTray): the round buttons on the tray (setting Hand display =
 ## 118. Fork: the enclosure to play an animal into can be clicked anywhere on it
 
 web/js/board.js (zooBoard): the click target of an enclosure offered to the selected animal (.encpick) was the outline path, which is only loose edge segments and has no area, so only the 4 px border could be clicked (a puffer could not be put into a large aquarium). The target is now a closed path of the building's hexes (illPath, no stroke) and the border is drawn apart from it (pointer-events none); both are appended after all buildings so no sprite covers them.
+
+## 119. Live game: own dock only, page scrolls clear of the tray, action order at the starting hand
+
+- web/js/dock.js: in a live game (PLAY, seated) the dock (fan and tray) has only the player's own hand / endgame (/ stored / played) buttons; the opponent's group is not drawn (hides wraps the point of view's hides). A spectator still sees both. The tray branch of enderDock now calls itDockSpace (it returned before it), and itDockSpace also measures the dock's children, so the page has room under the zoos and the whole map can be scrolled clear of the tray.
+- web/js/action-bar.js (draftOpen): a live game or fork has no frames, so after the last keep the state is the starting hand selection, no longer the 'draft closing' frame; rameState therefore no longer sets ctions_hidden and the drawn action card order is visible while the starting hand is chosen.
