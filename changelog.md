@@ -2159,3 +2159,7 @@ The grid pattern of the strip had the fixed id `stripgrid`, so with two zoos on 
 ## 116. Base projects and 5 / 8 / 16 bonuses hidden during the draft
 
 web/js/shared.js (draftOn): while the action card draft is running (state phase setup with a draft that is not done, and step 0 of a replay) the three base project slots are drawn empty and the bonus tiles on the 5 / 8 conservation spaces and at 16 reputation (Marine Worlds) are not drawn. They appear when the draft box closes. Forks and live games use the same rule; the sandbox (no draft) is unaffected.
+
+## 117. Fork: swap between the seats' hands and endgame cards in the tray
+
+web/js/dock.js (drawTray): the round buttons on the tray (setting Hand display = Floating container) now cover every seat that is not hidden (hides): hand + endgame cards (+ stored / played) of each, in the seat's colour, so a fork and the sandbox can switch between the seats. A replay with an eye open still shows only that player's buttons. The fan already had one group of buttons per seat.

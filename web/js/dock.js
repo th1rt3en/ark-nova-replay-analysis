@@ -203,16 +203,21 @@ function drawTray(dock, rows, shownSel, st) {
   frame.replaceChildren(head, played ? playedTrayBody(st, seat, trayBox().width) : row);
   if (shownSel.kind === 'hand') dockIntro(row, st.players[seat].hand.length, seat, st.phase === 'setup', true);
   const kids = [];
-  const pl = st.players[seat];
+  for (const s of st.players.keys()) {                                  // (the buttons of every seat that is not hidden: a fork / the sandbox lets you swap between the seats' hands and endgame cards)
+  if (hides(s)) continue;
+  const pl = st.players[s];
   for (const kind of [...(pl.map_id === '11' ? ['hand', 'endgame', 'stored'] : ['hand', 'endgame']), ...(playedMode() === 'tray' ? ['played'] : [])]) {          // (map 11, Caves: the cards stored under the notepad are a third zone; the played cards: the setting "Played cards" = tray)
     const cnt = kind === 'played' ? pl.animals.length + pl.sponsors.length : (kind === 'hand' ? pl.hand : kind === 'stored' ? pl.stored || [] : pl.endgame_hand || []).length;
     const b = el('button', 'traydisc' + (shownSel.kind === kind ? ' on' : '')); b.type = 'button';
-    const label = S.replay.players[seat].name + ': ' + KIND_NAME[kind] + ' (' + cnt + ')';
-    b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(shownSel.kind === kind));
+    const on = shownSel.seat === s && shownSel.kind === kind;
+    const label = S.replay.players[s].name + ': ' + KIND_NAME[kind] + ' (' + cnt + ')';
+    b.classList.toggle('on', on); b.style.setProperty('--pc', seatColor(s));
+    b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
     const img = el('img', kind === 'played' ? 'tiles' : ''); img.src = iconUrl(KIND_ICON[kind]); img.alt = '';        // (the played-cards icon is built from the two tiles of the sheet, `scripts/build_played_icon.py`)
     b.append(img, el('span', 'traycount', cnt));
-    b.onclick = () => { S.dockSel = { seat, kind }; S.dockHidden = false; saveDock(); renderDock(curState()); };
+    b.onclick = () => { S.dockSel = { seat: s, kind }; S.dockHidden = false; saveDock(); renderDock(curState()); };
     kids.push(b);
+  }
   }
   btns.replaceChildren(...kids);
   wrap.style.setProperty('--nb', String(kids.length));                  // (the number of round buttons: the tray is never narrower than they are, see `.trayframe` min-width)
