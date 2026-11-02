@@ -6,6 +6,7 @@ until the step ends. Kinds: `upgrade` (flip an action card), `threshold2` (conse
 """
 from itertools import combinations
 
+from ark_nova import data
 from ark_nova.engine.actions import Action
 from ark_nova.engine.state import Token
 
@@ -85,6 +86,12 @@ def hire_worker(state, seat: int, where: str = "reserve") -> bool:
     if not supply:
         return False
     supply[0].location = where
+    if data.is_custom_map(p.map_id):                                  # a map made in the map editor: the 2nd, 3rd and last worker pay what the maker put on the space
+        hired = len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_"))
+        row = data.map_by_id(p.map_id)["association"]["workers"]
+        if 2 <= hired <= 1 + len(row) and row[hired - 2]:
+            apply_bonus(state, seat, {row[hired - 2]["type"]: row[hired - 2]["value"]})
+        return True
     if p.map_id == "11" and len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_")) == 3:
         defer(state, {"kind": "upgrade", "player": seat, "optional": False, "source": "third worker (map 11, Caves)"})
     if p.map_id == "T1" and len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_")) in (2, 3):

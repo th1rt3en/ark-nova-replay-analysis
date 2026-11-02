@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
+<title>My maps - Ark Nova Park</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/lobbies.css">
+</head>
+<body class="landing">
+<p class="small"><a href="/">&larr; Ark Nova Park</a></p>
+<main class="lobbies">
+<h1>My maps</h1>
+<p class="muted">The maps you made in the <a href="/map_editor.html">map editor</a>. You can keep <span id="limit">3</span>. Pick one in a lobby of the game mode <b>Custom map</b>: both players then play on it.</p>
+<div id="login" hidden class="banner"><span>Log in or sign up to save and manage your maps.</span><button type="button" class="go" id="loginbtn">Log in / Sign up</button></div>
+
+<section id="listing" hidden>
+  <h2>Saved maps <span class="muted small" id="count"></span></h2>
+  <div id="rows" aria-live="polite">Loading&hellip;</div>
+  <p><a class="btnlink" id="newmap" href="/map_editor.html">Make a new map</a></p>
+  <p class="msg" id="msg" role="alert"></p>
+</section>
+</main>
+<script type="module" src="/js/my_maps.js"></script>
+<script type="module" src="/js/account.js"></script>
+</body>
+</html>

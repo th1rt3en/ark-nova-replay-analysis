@@ -220,3 +220,22 @@ def test_the_socket_route_gives_a_ticket_to_an_account_and_none_to_a_visitor_and
     data = _json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
     assert data["a"] == "P7" and data["n"] == "Zed" and data["e"] > 0
     assert svc.notify("chat:L1") is None and make_ticket("a", SimpleNamespace(id="1", username="x")) != make_ticket("b", SimpleNamespace(id="1", username="x"))
+
+
+def test_a_custom_map_game_is_played_on_the_hosts_saved_map():
+    from test_custom_map import editor_export
+    w = World()
+    alice, bob = w.browser("Alice"), w.browser("Bob")
+    assert alice.post("/api/lobbies", json={"game_mode": "custom-map"}).status_code == 404                  # no map chosen
+    saved = alice.post("/api/maps", json={"name": "Alice's zoo", "data": editor_export()}).json()
+    assert saved["id"] == "M1" and bob.get("/api/maps").json()["maps"] == []                               # (the maps are private)
+    assert bob.post("/api/lobbies", json={"game_mode": "custom-map", "map_id": saved["id"]}).status_code == 404       # (not Bob's map)
+    lob = _lobby(alice, game_mode="custom-map", map_id=saved["id"])
+    assert lob["mode_label"] == "Custom map" and lob["map"] == "Alice's zoo"
+    assert bob.get("/api/lobbies").json()["lobbies"][0]["map"] == "Alice's zoo"
+    bob.post(f"/api/lobbies/{lob['id']}/join", json={"seat": 1})
+    started = alice.post(f"/api/lobbies/{lob['id']}/start", json={})
+    assert started.status_code == 200, started.text
+    game = started.json()["game"]["game_id"]
+    cfg = w.service.keeper.state(game)["config"]
+    assert len(set(cfg["maps"])) == 1 and cfg["maps"][0].startswith("custom-")                            # the same map for both seats

@@ -4,7 +4,7 @@ const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 import { onPush, pushReady } from './push.js';
 const POLL_MS = 5000, SAFETY_MS = 30000;
-let account = null, options = { game_modes: [] }, timer = 0, mine = null;
+let account = null, options = { game_modes: [] }, timer = 0, mine = null, showMapsLater = () => {};
 
 async function call(path, body) {
   const res = await fetch('/api/lobbies' + path, { method: body === undefined ? 'GET' : 'POST', headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
@@ -20,7 +20,7 @@ function render(lobbies) {
   t.append(el('tr', {}, ...['Host', 'Players', 'Game mode', 'Options', ''].map((h) => el('th', {}, h))));
   for (const l of lobbies) {
     const join = el('a', { href: '/lobby.html?id=' + encodeURIComponent(l.id), className: 'btnlink', title: 'Look at the lobby: you join by clicking an empty seat there' }, l.full ? 'View' : 'Open');       // (opening a lobby does not seat you)
-    t.append(el('tr', {}, el('td', {}, l.host), el('td', { className: 'count' }, `${l.players}/${l.seats}`), el('td', {}, l.mode_label),
+    t.append(el('tr', {}, el('td', {}, l.host), el('td', { className: 'count' }, `${l.players}/${l.seats}`), el('td', {}, l.mode_label + (l.map ? ': ' + l.map : '')),
       el('td', {}, el('span', { className: 'tag' }, l.marine_worlds ? 'Marine Worlds' : 'Base'), el('span', { className: 'tag' }, l.rated ? 'Rated' : 'Friendly')), el('td', {}, join)));
   }
   box.replaceChildren(t);
@@ -60,22 +60,31 @@ function setAccount(a) {
   $('login').hidden = !!a;
   $('createbtn').disabled = !a;
   $('rated').disabled = !a;
+  showMapsLater();
   refresh();
 }
 
 async function boot() {
   options = await fetch('/api/live/options').then((r) => r.json()).catch(() => ({ game_modes: [] }));
-  const ark = options.game_modes.filter((m) => m.id === 'ark360');                 // (the only mode that can be played from a lobby for now)
+  const ark = [...options.game_modes.filter((m) => m.id === 'ark360'),             // (the modes that can be played from a lobby; the options leave custom-map out: it is not for a table made by link)
+    { id: 'custom-map', label: 'Custom map', description: 'Both players play one of your own maps, made in the map editor. Everything else is as in a normal game.' }];
   const mode = $('mode');
   for (const m of ark) mode.append(el('option', { value: m.id, title: m.description }, m.label));
   const hint = () => { const m = ark.find((x) => x.id === mode.value); $('modehint').textContent = m ? m.description : ''; };
-  mode.onchange = hint; hint();
+  showMapsLater = async () => {                                                    // custom map: the host picks one of their saved maps
+    const custom = mode.value === 'custom-map';
+    $('mapbox').hidden = !custom;
+    if (!custom || !account) return;
+    const d = await fetch('/api/maps', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : { maps: [] })).catch(() => ({ maps: [] }));
+    $('mapsel').replaceChildren(...(d.maps.length ? d.maps.map((m) => el('option', { value: m.id }, m.name + ' (' + m.id + ')')) : [el('option', { value: '' }, 'No saved maps yet: make one in the map editor')]));
+  };
+  mode.onchange = () => { hint(); showMapsLater(); }; hint();
   $('loginbtn').onclick = () => { const b = document.querySelector('#acctbar button'); if (b) b.click(); };
   $('createform').onsubmit = async (e) => {
     e.preventDefault();
     $('msg').textContent = ''; $('createbtn').disabled = true;
     try {
-      const v = await call('', { game_mode: mode.value, marine_worlds: $('mw').checked, rated: $('rated').checked });
+      const v = await call('', { game_mode: mode.value, marine_worlds: $('mw').checked, rated: $('rated').checked, ...(mode.value === 'custom-map' ? { map_id: $('mapsel').value } : {}) });
       location.href = '/lobby.html?id=' + encodeURIComponent(v.id);
     } catch (err) { $('msg').textContent = err.message; $('createbtn').disabled = !account; }
   };

@@ -309,8 +309,8 @@ $('value').addEventListener('input', () => {
 
 // ---- export ----------------------------------------------------------------------------------------------------------------------------------------------------------
 const plainBonus = (b) => (b ? { type: b.type, value: b.value } : null);
-function exportJson() {
-  const out = {
+function exportObject() {
+  return {
     map_id: 'custom', verified: false,
     hexes: CELLS.map(([x, y]) => ({ x, y, terrain: model.terrain[key(x, y)] || 'plain' })),
     placement_bonuses: CELLS.filter(([x, y]) => model.bonus[key(x, y)]).map(([x, y]) => ({ x, y, bonus: plainBonus(model.bonus[key(x, y)]) })),
@@ -322,8 +322,8 @@ function exportJson() {
     },
     map_rules: [],
   };
-  return JSON.stringify(out, null, 4);
 }
+const exportJson = () => JSON.stringify(exportObject(), null, 4);
 function refreshExport() { if (!$('exportBox').hidden) $('exportText').value = exportJson(); }
 $('exportBtn').onclick = () => { $('exportBox').hidden = !$('exportBox').hidden; refreshExport(); };
 $('closeExport').onclick = () => { $('exportBox').hidden = true; };
@@ -336,6 +336,74 @@ $('downloadBtn').onclick = () => {
   const a = el('a'); a.href = URL.createObjectURL(new Blob([exportJson() + '\n'], { type: 'application/json' })); a.download = 'custom_map.json'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
+
+// ---- saving: a logged-in account keeps up to 3 maps (POST /api/maps, PUT /api/maps/<id>; the page web/my_maps.html lists them) and plays one in the game mode "custom map" ------------------
+let saved = null;                                                           // {id, name} of the saved map that is open: Save then replaces it
+const nameBox = $('mapName');
+const mapUrl = (id) => { const u = new URL(location.href); if (id) u.searchParams.set('map', id); else u.searchParams.delete('map'); return u.pathname + u.search; };
+const PROJECT_TYPES = new Set(PROJECT.map(([t]) => t));
+function modelFrom(d) {                                                     // the editor's model of an export (the other way round of `exportObject`)
+  const m = fresh();
+  for (const h of d.hexes || []) if (h.terrain && h.terrain !== 'plain') m.terrain[key(h.x, h.y)] = h.terrain;
+  for (const e of d.placement_bonuses || []) m.bonus[key(e.x, e.y)] = { type: e.bonus.type, value: e.bonus.value, family: 'placement' };
+  for (const s of d.special_hexes || []) if (s.kind === 'upgrade_flag') m.flag[key(s.x, s.y)] = true;
+  const own = (b, project) => (b ? { type: b.type, value: b.value, family: project && PROJECT_TYPES.has(b.type) ? 'project' : 'placement' } : null);
+  const slots = [...(d.bonus_slots || [])].sort((a, b) => a.index - b.index);
+  m.panel = Array.from({ length: 7 }, (_, i) => own(slots[i] && slots[i].bonus, true));
+  m.nIncome = Math.max(1, Math.min(6, slots.filter((s) => s.kind === 'instant_income').length || 4));
+  const a = d.association || {};
+  m.workers = Array.from({ length: 3 }, (_, i) => own((a.workers || [])[i], true));
+  m.partner = Array.from({ length: 4 }, (_, i) => own((a.partner_zoos || [])[i], true));
+  m.univ = Array.from({ length: 3 }, (_, i) => own((a.universities || [])[i], true));
+  m.upgrade = a.upgrade && a.upgrade.mode === 'pairs' ? { mode: 'pairs', sets: a.upgrade.sets && a.upgrade.sets.length ? [...a.upgrade.sets] : [1, 2] } : { mode: 'second', sets: [1, 2] };
+  return m;
+}
+function openMap(rec) {
+  saved = { id: rec.id, name: rec.name };
+  nameBox.value = rec.name;
+  model = modelFrom(rec.data); past = []; future = [];
+  drawPieces(); refreshButtons(); refreshExport(); syncControls(); refreshSaveButtons();
+}
+function refreshSaveButtons() {
+  $('saveBtn').textContent = saved ? 'Save changes' : 'Save map';
+  $('saveNewBtn').hidden = !saved;
+  $('mapId').textContent = saved ? saved.id : '';
+}
+async function saveCall(method, path, body) {
+  const res = await fetch('/api/maps' + path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), cache: 'no-store' });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(res.status === 401 ? 'Log in to save your map.' : out.message || 'The map could not be saved.'), { status: res.status });
+  return out;
+}
+async function save(asNew) {
+  const name = nameBox.value.trim();
+  if (!name) { say('Give the map a name first.', true); nameBox.focus(); return; }
+  for (const b of ['saveBtn', 'saveNewBtn']) $(b).disabled = true;
+  try {
+    const out = saved && !asNew ? await saveCall('PUT', '/' + encodeURIComponent(saved.id), { name, data: exportObject() }) : await saveCall('POST', '', { name, data: exportObject() });
+    saved = { id: out.id, name: out.name };
+    history.replaceState(null, '', mapUrl(out.id));
+    refreshSaveButtons();
+    say(`Saved as ${out.name} (${out.id}).`);
+  } catch (e) {
+    say(e.message, true);
+    if (e.status === 401) { const b = document.querySelector('#acctbar button'); if (b) b.click(); }
+  } finally { for (const b of ['saveBtn', 'saveNewBtn']) $(b).disabled = false; }
+}
+$('saveBtn').onclick = () => save(false);
+$('saveNewBtn').onclick = () => save(true);
+refreshSaveButtons();
+{
+  const id = new URLSearchParams(location.search).get('map');
+  if (id) {
+    fetch('/api/maps/' + encodeURIComponent(id), { cache: 'no-store' }).then(async (r) => {
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(r.status === 401 ? 'Log in to open your saved map.' : out.message || 'That map could not be opened.');
+      openMap(out);
+    }).catch((e) => say(e.message, true));
+  }
+}
+document.addEventListener('account-changed', () => { if (new URLSearchParams(location.search).get('map') && !saved) location.reload(); });
 
 // ---- start ----------------------------------------------------------------------------------------------------------------------------------------------------------------
 S.replay = { players: [{ name: 'You' }], marine_worlds: false };           // (what the panels read for their tooltips)

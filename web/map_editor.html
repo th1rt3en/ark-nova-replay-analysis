@@ -21,6 +21,13 @@
     <button id="redo" type="button" title="Redo (Ctrl+Y)" disabled>Redo &#8631;</button>
     <button id="exportBtn" type="button" title="Show the map as JSON, copy it or download it">Export JSON</button>
   </div>
+  <div class="mesave mebtns" role="group" aria-label="Save">
+    <input id="mapName" type="text" maxlength="40" placeholder="Name of the map" aria-label="Name of the map" autocomplete="off">
+    <span id="mapId" class="mapid" title="The id of the saved map"></span>
+    <button id="saveBtn" type="button" title="Save the map to your account (up to 3 maps; log in first)">Save map</button>
+    <button id="saveNewBtn" type="button" title="Keep the saved map as it is and save this one as another map" hidden>Save as new</button>
+    <a href="/my_maps.html" title="Your saved maps">My maps</a>
+  </div>
   <span id="status" class="mestatus" role="status"></span>
 </header>
 <div class="melayout">
@@ -88,5 +95,6 @@
 </div>
 <script>window.MAP_EDITOR = true;</script>
 <script type="module" src="/js/map_editor.js"></script>
+<script type="module" src="/js/account.js"></script>
 </body>
 </html>

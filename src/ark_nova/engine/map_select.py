@@ -15,12 +15,12 @@ import copy
 
 from ark_nova import data
 from ark_nova.data.map_support import UNSUPPORTED_MAPS
-from ark_nova.engine import ark360
+from ark_nova.engine import ark360, custom_map
 from ark_nova.engine.actions import Action
 from ark_nova.engine.rng import Rng
 from ark_nova.engine.state import Phase, Prompt
 
-MODES = ("original", "random-mirrored", "free-select", "ark360")
+MODES = ("original", "random-mirrored", "free-select", "ark360", custom_map.MODE)
 DEFAULT_MODE = "random-mirrored"
 MARINE_WORLDS_MAPS = frozenset({"10", "11", "12", "13", "14"})
 DEAL = 2
@@ -44,6 +44,13 @@ def begin(state) -> None:
     mode = cfg.game_mode or DEFAULT_MODE
     if mode not in MODES:
         raise ValueError(f"game_mode must be one of {list(MODES)}")
+    if mode == custom_map.MODE:                                  # a map made in the map editor, the same one for both players: nothing to choose
+        if not cfg.custom_map:
+            raise ValueError("the game mode custom-map needs a map")
+        mid = custom_map.register(cfg.custom_map)
+        state.map_select = {"mode": mode, "pool": [mid], "offers": [[mid], [mid]], "chosen": [mid, mid], "stage": "done"}
+        _finish(state)
+        return
     maps = pool(cfg)
     need = 2 * DEAL if mode == "original" else 1
     if len(maps) < need:

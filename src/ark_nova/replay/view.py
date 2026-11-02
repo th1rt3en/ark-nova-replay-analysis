@@ -459,11 +459,15 @@ def map_view(map_id: str, layout: list | None = None) -> dict:
         special = [s for s in special if s["kind"] != "hollywood_h"] + [{"x": e["x"], "y": e["y"], "kind": "hollywood_h", "off_board": False, "note": e.get("note", "")}
                                                                          for e in layout if e["bonus"]["type"] == "hollywood_h"]
         layout = [e for e in layout if e["bonus"]["type"] != "hollywood_h"]
-    return {"id": base, "name": m["name"], "image": f"/maps/map-{PICTURE_OF.get(base, base)}.jpg",
-            "description": [t.strip() for t in (m.get("description") or []) if t and t.strip()],
-            "hexes": geo.get("hexes", []), "placement_bonuses": layout or geo.get("placement_bonuses", []),
-            "special_hexes": special, "bonus_slots": geo.get("bonus_slots", []),
-            "association_bonuses": association.map_bonuses(base)}
+    out = {"id": base, "name": m["name"], "image": f"/maps/map-{PICTURE_OF.get(base, base)}.jpg",
+           "description": [t.strip() for t in (m.get("description") or []) if t and t.strip()],
+           "hexes": geo.get("hexes", []), "placement_bonuses": layout or geo.get("placement_bonuses", []),
+           "special_hexes": special, "bonus_slots": geo.get("bonus_slots", []),
+           "association_bonuses": association.map_bonuses(base)}
+    if data.is_custom_map(base):                                                  # a map made in the map editor: the blank board, the rock / water hexes drawn on it, its association spaces
+        out.update(image="/map_editor/blank_map.png", custom_terrain=[h for h in geo.get("hexes", []) if h["terrain"] != "plain"], custom_association=m["association"],
+                   **({"upgrade_sets": m["association"]["upgrade"]["sets"]} if m["association"]["upgrade"]["mode"] == "pairs" else {}))
+    return out
 
 
 # What the viewer does not draw: the order of the piles (their sizes are `*_size`), the prompt of the engine, the pending effects, the statistics, the number of completed turns.

@@ -59,6 +59,15 @@ describe("lobbies", () => {
         expect((await call("create", { account: c, settings: { game_mode: "original" } })).status).toBe(422);
     });
 
+    it("keeps the map of a custom map game and hands it to the start", async () => {
+        const { A: a, B: b } = fresh("lcm");
+        const made = await ok("create", { account: a, settings: { game_mode: "custom-map", custom_map: { id: "M7", name: "My zoo" } } });
+        expect(made).toMatchObject({ mode: "custom-map", mode_label: "Custom map", map: "My zoo" });
+        expect((await ok("list", { account: b })).lobbies.find((l: any) => l.id === made.id)).toMatchObject({ mode_label: "Custom map", map: "My zoo" });
+        await ok("join", { account: b, lobby_id: made.id, seat: 1 });
+        expect((await ok("begin_start", { account: a, lobby_id: made.id })).custom_map).toEqual({ id: "M7", name: "My zoo" });
+    });
+
     it("joins, starts in two steps and keeps the tokens of the table", async () => {
         const { A: a, B: b, C: c } = fresh("l2");
         const lob = await ok("create", { account: a, settings: {} });

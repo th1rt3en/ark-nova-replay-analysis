@@ -180,7 +180,8 @@ document.addEventListener('keydown', (e) => {                              // Es
 
 
 function mapBadge(map) {
-  const code = 'Map ' + map.id, title = map.name && !/^(map|tournament)\b/i.test(map.name) ? code + ': ' + map.name : (map.name || code);
+  const custom = !!map.custom_association;                                         // a map made in the map editor: its name is the badge (its id is a hash)
+  const code = custom ? map.name : 'Map ' + map.id, title = !custom && map.name && !/^(map|tournament)\b/i.test(map.name) ? code + ': ' + map.name : (map.name || code);
   const b = el('span', 'mapbadge'); b.tabIndex = 0; b.textContent = code;
   const tip = el('div', 'maptip'); tip.setAttribute('role', 'tooltip');
   tip.append(el('div', 'mt-title', title));

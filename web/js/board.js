@@ -47,6 +47,10 @@ const SPECIAL_ENCLOSURE = /aquarium|aviary|reptile-house|petting-zoo|tunnel/;   
 export function zooBoard(map, player, seat) {
   const s = svg('svg', { class: 'board', viewBox: '0 0 1122 976', role: 'img', 'aria-label': 'Zoo map ' + map.name });
   if (map.image) s.append(svg('image', { href: map.image, x: 0, y: 0, width: 1122, height: 976 }));
+  for (const h of map.custom_terrain || []) {        // a map made in the map editor: the blank board with its rock / water hexes drawn on it, as the editor does (156 x 135 pieces on the cell)
+    const [hx, hy] = cellCentre(h.x, h.y);
+    s.append(svg('image', { href: '/map_editor/hex_' + h.terrain + '.png', x: hx - 78, y: hy - 67.5, width: 156, height: 135 }));
+  }
   const covered = new Set();
   for (const b of player.buildings) for (const c of b.cells) covered.add(c[0] + ',' + c[1]);
 

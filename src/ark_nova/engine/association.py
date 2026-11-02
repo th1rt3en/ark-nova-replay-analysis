@@ -553,6 +553,19 @@ def space_bonuses(state, p, kind: str, k: int) -> None:
     n_p, n_u = len(partners(p)), len(universities(p))
     old_p, old_u = n_p - (kind == "partner"), n_u - (kind == "university")
     upgrade = {"kind": "upgrade", "player": p.seat, "optional": False}
+    if data.is_custom_map(p.map_id):                           # a map made in the map editor: the spaces are what its maker drew (engine/custom_map.py)
+        cm = data.map_by_id(p.map_id)["association"]
+        if cm["upgrade"]["mode"] == "second":
+            if k == 2:
+                bonuses.defer(state, dict(upgrade, source=f"second {kind}"))
+        else:
+            old_min, new_min = min(old_p, old_u), min(n_p, n_u)
+            if new_min > old_min and new_min in cm["upgrade"]["sets"]:
+                bonuses.defer(state, dict(upgrade, source=f"set {new_min}"))
+        row = cm["partner_zoos" if kind == "partner" else "universities"]
+        if 0 < k <= len(row) and row[k - 1]:
+            bonuses.apply_bonus(state, p.seat, {row[k - 1]["type"]: row[k - 1]["value"]})
+        return
     if p.map_id not in SET_MAPS:
         if k == 2:
             bonuses.defer(state, dict(upgrade, source=f"second {kind}"))

@@ -53,10 +53,24 @@ def _legacy_map(map_id: str) -> dict:
     return map_quirks.legacy_map(map_by_id(map_quirks.base_map_id(map_id)), map_id)
 
 
+CUSTOM_PREFIX = "custom-"                 # the id of a map made in the map editor (engine/custom_map.py): `custom-<hash of its content>`
+_CUSTOM: dict = {}                         # id -> record, filled by `register_map` whenever a state that carries a custom map is built or loaded
+
+
+def is_custom_map(map_id: str) -> bool:
+    return str(map_id).startswith(CUSTOM_PREFIX)
+
+
+def register_map(rec: dict) -> None:
+    _CUSTOM[rec["id"]] = rec
+
+
 def map_by_id(map_id: str) -> dict:
     """`map_id` may be a legacy id ('6a-legacy', see data/map_quirks.py): the map as BGA played it in older tables."""
     if str(map_id).endswith("-legacy"):
         return _legacy_map(str(map_id))
+    if str(map_id) in _CUSTOM:
+        return _CUSTOM[str(map_id)]
     for m in maps():
         if m["id"] == str(map_id):
             return m

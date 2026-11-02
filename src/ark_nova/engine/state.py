@@ -56,6 +56,7 @@ class GameConfig:
     draft_action_cards: bool = False      # a new game: the players draft their action card variants first (engine/draft.py); False = `action_cards` (or the standard cards) are given
     confirm_turns: bool = False           # live play: a turn ends with an explicit confirm, undo / restart turn are offered meanwhile (engine/turns.py)
     peaceful: bool = False                # the game variant where the hostile effects (Venom, Constriction, Pilfering, Hypnosis) are replaced
+    custom_map: Optional[dict[str, Any]] = None    # game_mode custom-map: the map made in the map editor that both players play (the normalized record of engine/custom_map.py; the state carries it so a reload needs no store)
 
 
 @dataclass
@@ -187,7 +188,11 @@ class GameState:
     def from_dict(cls, data: dict) -> "GameState":
         if isinstance(data.get("rng"), str):
             data = {**data, "rng": int(data["rng"])}
-        return from_jsonable(cls, data)
+        state = from_jsonable(cls, data)
+        if state.config.custom_map:                                # (the engine reads every map through `ark_nova.data`: a map that is not in the data has to be made known again)
+            from ark_nova import data as game_data
+            game_data.register_map(state.config.custom_map)
+        return state
 
     def other(self, seat: int) -> int:
         return 1 - seat

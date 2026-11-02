@@ -106,6 +106,23 @@ const OPS: Record<string, Op> = {
         return null;
     },
 
+    // ---- saved maps: at most `limit` per account; the id is the next `M{n}`, the counter moves only when the insert goes through (one batch)
+    "cmap.of": async (db, a) => (await db.prepare("SELECT * FROM custom_maps WHERE account_id = ? ORDER BY created_at DESC, rowid DESC").bind(str(a.account_id)).all()).results,
+    "cmap.get": (db, a) => first(db, "SELECT * FROM custom_maps WHERE id = ?", str(a.id)),
+    "cmap.create": async (db, a) => {
+        const acct = str(a.account_id), at = str(a.at), limit = num(a.limit);
+        const out = await db.batch([
+            db.prepare("INSERT INTO counters (name, value) SELECT 'custom_map', 1 WHERE (SELECT COUNT(*) FROM custom_maps WHERE account_id = ?) < ? ON CONFLICT(name) DO UPDATE SET value = value + 1").bind(acct, limit),
+            db.prepare("INSERT INTO custom_maps (id, account_id, name, data, created_at, updated_at) SELECT 'M' || value, ?, ?, ?, ?, ? FROM counters WHERE name = 'custom_map' AND changes() > 0").bind(acct, str(a.name), str(a.data), at, at),
+        ]);
+        if (out[1].meta.changes === 0) return null;
+        return first(db, "SELECT * FROM custom_maps WHERE id = (SELECT 'M' || value FROM counters WHERE name = 'custom_map')");
+    },
+    "cmap.update": async (db, a) => {
+        const out = await db.prepare("UPDATE custom_maps SET name = ?, data = ?, updated_at = ? WHERE id = ? AND account_id = ?").bind(str(a.name), str(a.data), str(a.at), str(a.id), str(a.account_id)).run();
+        return out.meta.changes > 0 ? first(db, "SELECT * FROM custom_maps WHERE id = ?", str(a.id)) : null;
+    },
+    "cmap.delete": async (db, a) => (await db.prepare("DELETE FROM custom_maps WHERE id = ? AND account_id = ?").bind(str(a.id), str(a.account_id)).run()).meta.changes > 0,
     // ---- mini games
     "mg.get_puzzle": (db, a) => first(db, "SELECT * FROM minigame_puzzles WHERE game_key = ? AND day = ?", str(a.game_key), str(a.day)),
     "mg.create_puzzle": async (db, a) => {

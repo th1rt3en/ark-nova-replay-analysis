@@ -92,6 +92,20 @@ class AccountStore(Protocol):
     def delete_account(self, account_id: str, at: str) -> None:
         """Anonymizes the account: it is called "Deleted player", has no password and no sessions; its ratings and results stay."""
 
+    # ---- saved maps (maps made in the map editor, `accounts/maps.py`): at most MAX_MAPS per account, each with a name and an id `M{n}`
+    def maps_of(self, account_id: str) -> list[dict]:
+        """The saved maps of an account, newest first: {id, account_id, name, data (the editor's JSON as text), created_at, updated_at}."""
+
+    def map_by_id(self, map_id: str) -> Optional[dict]: ...
+
+    def create_map(self, account_id: str, name: str, data: str, at: str, limit: int) -> Optional[dict]:
+        """Saves a new map under the next `M{n}`; None when the account already has `limit` maps (counted in the same step as the insert)."""
+
+    def update_map(self, account_id: str, map_id: str, name: str, data: str, at: str) -> Optional[dict]:
+        """Replaces the name and the map of `map_id` when it is the account's; None otherwise."""
+
+    def delete_map(self, account_id: str, map_id: str) -> bool: ...
+
 
 class MemoryStore:
     def __init__(self):
@@ -101,6 +115,8 @@ class MemoryStore:
         self._sessions: dict[str, Session] = {}
         self._p = 0
         self._history: list[RatingChange] = []
+        self._maps: dict[str, dict] = {}
+        self._m = 0
 
     def create_account(self, account, bga_id):
         with self._lock:
@@ -193,6 +209,40 @@ class MemoryStore:
             self._accounts[account_id] = replace(acc, username="Deleted player", username_lower="deleted:" + account_id, password_hash="", recovery_hash="", deleted_at=at)
             self._sessions = {k: v for k, v in self._sessions.items() if v.account_id != account_id}
 
+    def maps_of(self, account_id):
+        with self._lock:
+            return sorted((dict(m) for m in self._maps.values() if m["account_id"] == account_id), key=lambda m: (m["created_at"], int(m["id"][1:])), reverse=True)
+
+    def map_by_id(self, map_id):
+        with self._lock:
+            m = self._maps.get(map_id)
+            return dict(m) if m else None
+
+    def create_map(self, account_id, name, data, at, limit):
+        with self._lock:
+            if sum(1 for m in self._maps.values() if m["account_id"] == account_id) >= limit:
+                return None
+            self._m += 1
+            m = {"id": f"M{self._m}", "account_id": account_id, "name": name, "data": data, "created_at": at, "updated_at": at}
+            self._maps[m["id"]] = m
+            return dict(m)
+
+    def update_map(self, account_id, map_id, name, data, at):
+        with self._lock:
+            m = self._maps.get(map_id)
+            if m is None or m["account_id"] != account_id:
+                return None
+            m.update(name=name, data=data, updated_at=at)
+            return dict(m)
+
+    def delete_map(self, account_id, map_id):
+        with self._lock:
+            m = self._maps.get(map_id)
+            if m is None or m["account_id"] != account_id:
+                return False
+            del self._maps[map_id]
+            return True
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS accounts (id TEXT PRIMARY KEY, id_source TEXT NOT NULL, username TEXT NOT NULL, username_lower TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL,
@@ -202,6 +252,8 @@ CREATE TABLE IF NOT EXISTS counters (name TEXT PRIMARY KEY, value INTEGER NOT NU
 CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL, created_at TEXT NOT NULL, expires_at TEXT NOT NULL, user_agent TEXT NOT NULL DEFAULT '');
 CREATE TABLE IF NOT EXISTS rating_history (game_id TEXT NOT NULL, account_id TEXT NOT NULL, seat INTEGER NOT NULL, opponent_id TEXT NOT NULL, result REAL NOT NULL, rating_before REAL NOT NULL,
     rating_after REAL NOT NULL, delta REAL NOT NULL, k INTEGER NOT NULL, at TEXT NOT NULL, PRIMARY KEY (game_id, account_id));
+CREATE TABLE IF NOT EXISTS custom_maps (id TEXT PRIMARY KEY, account_id TEXT NOT NULL, name TEXT NOT NULL, data TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS custom_maps_by_account ON custom_maps (account_id);
 """
 FIELDS = ("id", "id_source", "username", "username_lower", "password_hash", "recovery_hash", "created_at", "last_login_at", "bga_elo_seed", "rating", "rated_games", "rated_wins", "deleted_at")
 
@@ -331,3 +383,32 @@ class SqliteStore:
         with self._lock, self._db:
             self._db.execute("UPDATE accounts SET username = 'Deleted player', username_lower = ?, password_hash = '', recovery_hash = '', deleted_at = ? WHERE id = ?", ("deleted:" + account_id, at, account_id))
             self._db.execute("DELETE FROM sessions WHERE account_id = ?", (account_id,))
+
+    def maps_of(self, account_id):
+        with self._lock:
+            return [dict(r) for r in self._db.execute("SELECT * FROM custom_maps WHERE account_id = ? ORDER BY created_at DESC, rowid DESC", (account_id,))]
+
+    def map_by_id(self, map_id):
+        with self._lock:
+            r = self._db.execute("SELECT * FROM custom_maps WHERE id = ?", (map_id,)).fetchone()
+        return dict(r) if r else None
+
+    def create_map(self, account_id, name, data, at, limit):
+        with self._lock, self._db:                                  # one transaction: the count, the counter and the insert go together
+            if self._db.execute("SELECT COUNT(*) FROM custom_maps WHERE account_id = ?", (account_id,)).fetchone()[0] >= limit:
+                return None
+            self._db.execute("INSERT INTO counters (name, value) VALUES ('custom_map', 1) ON CONFLICT(name) DO UPDATE SET value = value + 1")
+            map_id = "M%d" % self._db.execute("SELECT value FROM counters WHERE name = 'custom_map'").fetchone()[0]
+            self._db.execute("INSERT INTO custom_maps (id, account_id, name, data, created_at, updated_at) VALUES (?,?,?,?,?,?)", (map_id, account_id, name, data, at, at))
+            return {"id": map_id, "account_id": account_id, "name": name, "data": data, "created_at": at, "updated_at": at}
+
+    def update_map(self, account_id, map_id, name, data, at):
+        with self._lock, self._db:
+            cur = self._db.execute("UPDATE custom_maps SET name = ?, data = ?, updated_at = ? WHERE id = ? AND account_id = ?", (name, data, at, map_id, account_id))
+            if cur.rowcount == 0:
+                return None
+            return dict(self._db.execute("SELECT * FROM custom_maps WHERE id = ?", (map_id,)).fetchone())
+
+    def delete_map(self, account_id, map_id):
+        with self._lock, self._db:
+            return self._db.execute("DELETE FROM custom_maps WHERE id = ? AND account_id = ?", (map_id, account_id)).rowcount > 0

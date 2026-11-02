@@ -161,3 +161,26 @@ describe("ratings", () => {
         expect((await op("rating.changes", { game_id: "B0" })).body.result.length).toBe(2);
     });
 });
+
+describe("saved maps", () => {
+    const make = (acct: string, name: string, limit = 3) => op("cmap.create", { account_id: acct, name, data: '{"x":1}', at: "2026-11-02T10:00:00Z", limit });
+
+    it("numbers the maps M1, M2 ..., keeps at most `limit` per account and moves the counter only when a map is saved", async () => {
+        const made = [(await make("u1", "One")).body.result, (await make("u1", "Two")).body.result, (await make("u1", "Three")).body.result];
+        expect(made.map((m) => m.id)).toEqual(["M1", "M2", "M3"]);
+        expect((await make("u1", "Four")).body.result).toBeNull();                                  // (the limit: nothing is written, no number is used)
+        expect((await make("u2", "Other")).body.result.id).toBe("M4");
+        expect((await op("cmap.of", { account_id: "u1" })).body.result.map((m: any) => m.name)).toEqual(["Three", "Two", "One"]);
+        expect((await op("cmap.get", { id: "M2" })).body.result).toMatchObject({ account_id: "u1", name: "Two", data: '{"x":1}' });
+    });
+
+    it("changes and deletes a map only for its owner", async () => {
+        const id = (await make("u3", "Mine")).body.result.id;
+        expect((await op("cmap.update", { account_id: "u9", id, name: "Stolen", data: "{}", at: "t" })).body.result).toBeNull();
+        expect((await op("cmap.update", { account_id: "u3", id, name: "Renamed", data: "{}", at: "2026-11-03T00:00:00Z" })).body.result).toMatchObject({ name: "Renamed", data: "{}", updated_at: "2026-11-03T00:00:00Z" });
+        expect((await op("cmap.delete", { account_id: "u9", id })).body.result).toBe(false);
+        expect((await op("cmap.delete", { account_id: "u3", id })).body.result).toBe(true);
+        expect((await op("cmap.get", { id })).body.result).toBeNull();
+        expect((await make("u3", "Again")).body.result.id).not.toBe(id);                             // (an id is not used twice)
+    });
+});

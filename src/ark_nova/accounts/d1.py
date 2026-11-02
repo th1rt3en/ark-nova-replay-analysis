@@ -79,3 +79,19 @@ class D1AccountStore:
 
     def delete_account(self, account_id, at):
         self.c.call("acct.delete", {"id": account_id, "at": at}, retry=True)
+
+    # ---- saved maps (cloudflare/migrations/0004_custom_maps.sql)
+    def maps_of(self, account_id):
+        return list(self.c.call("cmap.of", {"account_id": account_id}, retry=True))
+
+    def map_by_id(self, map_id):
+        return self.c.call("cmap.get", {"id": map_id}, retry=True)
+
+    def create_map(self, account_id, name, data, at, limit):
+        return self.c.call("cmap.create", {"account_id": account_id, "name": name, "data": data, "at": at, "limit": limit})          # (not retried: a repeated insert would make a second map)
+
+    def update_map(self, account_id, map_id, name, data, at):
+        return self.c.call("cmap.update", {"account_id": account_id, "id": map_id, "name": name, "data": data, "at": at}, retry=True)
+
+    def delete_map(self, account_id, map_id):
+        return bool(self.c.call("cmap.delete", {"account_id": account_id, "id": map_id}, retry=True))

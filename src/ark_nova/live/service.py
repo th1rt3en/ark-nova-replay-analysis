@@ -21,7 +21,7 @@ from typing import Any
 
 from ark_nova import data as card_data
 from ark_nova.accounts import rating as elo
-from ark_nova.engine import ark360, endgame, gamestats, map_select, turns
+from ark_nova.engine import ark360, custom_map, endgame, gamestats, map_select, turns
 from ark_nova.engine.actions import Action
 from ark_nova.engine.game import IllegalAction, apply, legal_actions, new_game
 from ark_nova.engine.state import GameState, Phase
@@ -124,6 +124,7 @@ GAME_MODES = {
     "original": ("Original: pick one of two", "Each player is dealt two maps and keeps the one they like better."),
     "free-select": ("Free choice", "Each player picks any map (the same one is allowed)."),
     ark360.MODE: ("Ark360", _ark360_description()),
+    custom_map.MODE: ("Custom map", "Both players play a map made in the map editor, one of the host's saved maps. Everything else is as in a normal game."),
 }
 
 
@@ -131,7 +132,7 @@ def options() -> dict:
     """The game modes of the engine (`engine/map_select.py` is the list), with a name and a line of text each."""
     return {"default": map_select.DEFAULT_MODE, "time_control": tc.options(),
             "game_modes": [{"id": m, "label": GAME_MODES.get(m, (m, ""))[0], "description": GAME_MODES.get(m, (m, ""))[1], **({"fixed_time_control": ark360.time_control()} if m == ark360.MODE else {})}
-                           for m in map_select.MODES]}
+                           for m in map_select.MODES if m != custom_map.MODE]}       # (a custom map is chosen in a lobby, not for a table made by link)
 
 
 def token_hash(token: str) -> str:
@@ -167,7 +168,7 @@ class LiveService:
         return None
 
     def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None, rated: bool = False, account=None,
-               seat_accounts: list | None = None, creator_seat: int | None = None) -> dict:
+               seat_accounts: list | None = None, creator_seat: int | None = None, custom_map_record: dict | None = None) -> dict:
         """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`).
         With `seat_accounts` (the account ids by seat, from a lobby) the seats belong to those accounts: their keys are derived from them and no link carries a key."""
         if rated and self.ratings is None:
@@ -178,7 +179,9 @@ class LiveService:
         mode = game_mode or map_select.DEFAULT_MODE
         if mode not in map_select.MODES:
             raise IllegalMove(f"the game mode must be one of {list(map_select.MODES)}", 422)
-        options = {"game_mode": mode, "marine_worlds_flag": bool(marine_worlds), "confirm_turns": True}
+        if mode == custom_map.MODE and not custom_map_record:
+            raise IllegalMove("choose a map for the game mode custom-map", 422)
+        options = {"game_mode": mode, "marine_worlds_flag": bool(marine_worlds), "confirm_turns": True, **({"custom_map": custom_map_record} if mode == custom_map.MODE else {})}
         if mode == ark360.MODE:
             time_control = ark360.time_control()                              # (the time control is part of the mode)
         try:

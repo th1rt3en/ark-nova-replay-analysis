@@ -143,6 +143,20 @@ export function slotGlyph(root, sl, y) {
   }
 }
 
+// the picture of any bonus {type, value} inside `g`, centred on (x, y), `h` high: the icon of its type and, for the ones with a number, the number (a map made in the map editor puts any bonus on its
+// association spaces; the maps of the game have theirs drawn by hand below)
+function bonusFill(g, bn, x, y, h) {
+  const icon = SLOT_ICON[bn.type] || ICON_IDS['bonus:' + bn.type];
+  if (bn.type === 'money') moneyTile(g, x, y, h);
+  else if (icon) { const [w0, h0] = S.iconSizes[icon] || [h, h], w = w0 * h / h0; g.append(svg('image', { href: iconUrl(icon), x: x - w / 2, y: y - h / 2, width: w, height: h })); }
+  else { const t = svg('text', { x, y: y + h * 0.15, class: 'slot-label', 'text-anchor': 'middle', style: 'font-size:' + (h * 0.4).toFixed(0) + 'px' }); t.textContent = bn.type; g.append(t); }
+  if (bn.value > 1 || SLOT_NUMBER.has(bn.type)) {
+    const t = svg('text', { x, y: y + h * 0.3, class: 'slot-number' + (bn.type === 'conservation' ? ' dk conservation' : ''), 'text-anchor': 'middle', style: 'font-size:' + (h * 0.62).toFixed(0) + 'px' });
+    t.textContent = bn.value; g.append(t);
+  }
+}
+const bonusTip = (bn) => bn.type.replace(/^bonus-/, '').replace(/-/g, ' ') + (bn.value > 1 ? ' ' + bn.value : '');
+
 export function bonusPanel(map, p, seat) {
   const slots = [...map.bonus_slots].sort((a, b) => a.index - b.index);
   const lead = slots.findIndex((x) => x.kind !== 'instant_income');
@@ -164,7 +178,16 @@ export function bonusPanel(map, p, seat) {
   [1, 2, 3].forEach((k, i) => {
     const cx = 40 + i * 48;     // slots 18..62, 66..110, 114..158 stay inside the box (x 14..162)
     lbAdd('image', { href: '/assets/worker_slot.webp', x: cx - 23, y: 37, width: 46, height: 46 });          // (the empty worker slot of the association board, scripts/build_worker_slot.py)
-    if (k === 3) conservationBonus(lockbox, cx, 72, 38, (map.association_bonuses || {}).last_worker, '4th worker: ' + (map.association_bonuses || {}).last_worker + ' conservation');
+    const own = map.custom_association && map.custom_association.workers[k - 1];          // a map made in the map editor: what its maker put on the space of the 2nd / 3rd / 4th worker
+    if (map.custom_association) {
+      if (own) {
+        const g = svg('g', { class: 'consbonus' });
+        bonusFill(g, own, cx, 72, 38);
+        const tt = svg('title'); tt.textContent = 'Worker ' + (k + 1) + ': ' + bonusTip(own); g.append(tt);
+        lockbox.append(g);
+      }
+    }
+    else if (k === 3) conservationBonus(lockbox, cx, 72, 38, (map.association_bonuses || {}).last_worker, '4th worker: ' + (map.association_bonuses || {}).last_worker + ' conservation');
     else if (map.id === '11' && k === 2) {               // map 11 (Caves): the middle locked worker gives an action card upgrade, shown under the worker
       const id = ICON_IDS['bonus:upgrade-card'], [w0, h0] = S.iconSizes[id] || [38, 38], h = 40, w = w0 * h / h0;
       const g = svg('g', { class: 'consbonus' });
@@ -279,13 +302,19 @@ export function associationStrip(p, map, seat) {
   };
   const consInHex = (cx, cy, value, tip) => value && bonusHex(cx, cy, tip, 'consbonus', (g, x, y, h) => conservationBonus(g, x, y, h, value, null));
   const bonuses = map.association_bonuses || {};            // conservation points of the 4th partner zoo and the 3rd university, shown on their (empty) slots
-  consInHex(175, STRIP.partner[4], bonuses.partner4, '4th partner zoo: ' + bonuses.partner4 + ' conservation');
-  consInHex(175, STRIP.university[3], bonuses.university3, '3rd university: ' + bonuses.university3 + ' conservation');
+  const custom = map.custom_association;                    // a map made in the map editor: the bonus its maker put on each space, whatever it is
+  if (custom) {
+    custom.partner_zoos.forEach((bn, i) => bn && bonusHex(175, STRIP.partner[i + 1], 'Partner zoo ' + (i + 1) + ': ' + bonusTip(bn), 'consbonus', (g, x, y, h) => bonusFill(g, bn, x, y, h)));
+    custom.universities.forEach((bn, i) => bn && bonusHex(175, STRIP.university[i + 1], 'University ' + (i + 1) + ': ' + bonusTip(bn), 'consbonus', (g, x, y, h) => bonusFill(g, bn, x, y, h)));
+  } else {
+    consInHex(175, STRIP.partner[4], bonuses.partner4, '4th partner zoo: ' + bonuses.partner4 + ' conservation');
+    consInHex(175, STRIP.university[3], bonuses.university3, '3rd university: ' + bonuses.university3 + ' conservation');
+  }
   const workerBonus = (cx, cy, tip, cls) => bonusHex(cx, cy, tip, cls, (g, x, y, h) => {
     const id = ICON_IDS['bonus:Worker'] || 'r5c13', [w0, h0] = S.iconSizes[id] || [h, h], w = w0 * h / h0;
     g.append(svg('image', { href: iconUrl(id), x: x - w / 2, y: y - h / 2, width: w, height: h }));
   });
-  workerBonus(175, STRIP.partner[3], '3rd partner zoo: hire a worker', 'hirebonus');           // the 3rd partner zoo hires a worker on every map
+  if (!custom) workerBonus(175, STRIP.partner[3], '3rd partner zoo: hire a worker', 'hirebonus');           // the 3rd partner zoo hires a worker on every map of the game
   // where the zoo map awards an action card upgrade: most maps on the 2nd partner zoo and the 2nd university; maps 12 and T1 on the first and the second *set*
   // (a partner zoo and a university), map 11 on the first set: a curved line joins the two slots of a set with the upgrade icon in its middle and an arrow from
   // each end pointing at it

@@ -24,6 +24,7 @@ function renderBar() {
   if (account) {
     const me = el('a', { className: 'acctname', href: '/profile.html?id=' + encodeURIComponent(account.id), title: 'Your profile' }, account.username);
     bar.append(me, el('span', { className: 'muted small acctrating' }, ` rating ${account.rating}`));
+    if (!document.body.classList.contains('landing-start')) bar.append(el('a', { className: 'small acctmaps', href: '/my_maps.html', title: 'The maps you made in the map editor' }, 'My maps'));
     const out = el('button', { type: 'button', className: 'linkbtn' }, 'Log out');
     out.onclick = async () => { await call('logout', {}).catch(() => {}); account = null; window.arkAccount = null; renderBar(); document.dispatchEvent(new CustomEvent('account-changed', { detail: null })); };
     bar.append(out);

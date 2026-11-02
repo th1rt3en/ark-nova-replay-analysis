@@ -25,10 +25,10 @@ import urllib.request
 import uuid
 from types import SimpleNamespace
 
-from ark_nova.engine import ark360
+from ark_nova.engine import ark360, custom_map
 from ark_nova.live.keeper import USER_AGENT, LiveError, NoSuchTable, sign
 
-MODES = (ark360.MODE,)                       # the game modes that can be played from a lobby (the other modes are for a table made by link)
+MODES = (ark360.MODE, custom_map.MODE)                       # the game modes that can be played from a lobby (the other modes are for a table made by link)
 SEATS = 2
 ONLINE_SECONDS = 45                          # a player who asked for the inbox this recently is online (the pages ask every few seconds)
 IDLE_SECONDS = 90                            # a lobby whose host (a member) has not been seen for this long is closed (the member is taken out)
@@ -150,7 +150,7 @@ class MemoryLobbies:
         if self._lobby_of(account["id"]) is not None:
             raise LobbyError("You are in a lobby already: leave it first.", 409, "in_lobby")
         self._next += 1
-        lob = {"id": f"L{self._next}", "mode": mode, "marine_worlds": bool(settings.get("marine_worlds")), "rated": bool(settings.get("rated")), "status": "open", "created_at": self.clock(),
+        lob = {"id": f"L{self._next}", "mode": mode, "marine_worlds": bool(settings.get("marine_worlds")), "rated": bool(settings.get("rated")), "status": "open", "created_at": self.clock(), "custom_map": settings.get("custom_map"),
                "seats": [{"id": account["id"], "username": account["username"]}, None], "invites": [], "game": None}
         self._lobbies[lob["id"]] = lob
         return self._view(lob, account)
@@ -173,7 +173,7 @@ class MemoryLobbies:
     def _row(self, lob: dict) -> dict:
         players = sum(1 for m in lob["seats"] if m)
         return {"id": lob["id"], "host": lob["seats"][0]["username"], "players": players, "seats": SEATS, "mode": lob["mode"], "mode_label": _label(lob["mode"]),
-                "marine_worlds": lob["marine_worlds"], "rated": lob["rated"], "full": players >= SEATS, "created_at": lob["created_at"]}
+                "marine_worlds": lob["marine_worlds"], "rated": lob["rated"], "full": players >= SEATS, "created_at": lob["created_at"], "map": (lob.get("custom_map") or {}).get("name")}
 
     def op_get(self, lobby_id, account=None) -> dict:
         """Anybody may look at a lobby, logged in or not (a link to it does not seat them: a logged-in player takes an empty seat, `join`)."""
@@ -320,7 +320,7 @@ class MemoryLobbies:
         if not all(lob["seats"]):
             raise LobbyError("Both seats must be taken before the game can start.", 409, "not_full")
         lob["status"] = "starting"
-        return {"mode": lob["mode"], "marine_worlds": lob["marine_worlds"], "rated": lob["rated"], "seats": [dict(m) for m in lob["seats"]]}
+        return {"mode": lob["mode"], "marine_worlds": lob["marine_worlds"], "rated": lob["rated"], "custom_map": lob.get("custom_map"), "seats": [dict(m) for m in lob["seats"]]}
 
     def op_finish_start(self, lobby_id, game_id, tokens) -> dict:
         lob = self._get(lobby_id)
@@ -380,8 +380,9 @@ class LobbyService:
     """What the routes call: the lobby store (the Worker, or the twin in memory) and the live service that makes the table. `ws_url` + `secret`: where the pages open their
     WebSocket (the Worker's `/lobbies-ws`) and what signs their ticket; without them (the dev server, the tests) the pages poll."""
 
-    def __init__(self, live, store=None, ws_url: str | None = None, secret: str | None = None):
+    def __init__(self, live, store=None, ws_url: str | None = None, secret: str | None = None, maps=None):
         self.live = live
+        self.maps = maps                                                       # the saved maps (accounts/maps.py): the host of a custom map game picks one of theirs
         self.store = store or MemoryLobbies()
         self.ws_url, self.secret = ws_url, secret
 
@@ -397,7 +398,13 @@ class LobbyService:
     def create(self, account, settings: dict) -> dict:
         if bool(settings.get("rated")) and getattr(self.live, "ratings", None) is None:
             raise LobbyError("Rated games are not available here.", 503, "no_ratings")
-        return self.store.call("create", account=_who(account), settings={"game_mode": settings.get("game_mode"), "marine_worlds": bool(settings.get("marine_worlds")), "rated": bool(settings.get("rated"))})
+        extra = {}
+        if settings.get("game_mode") == custom_map.MODE:                       # the host plays one of their own saved maps (the other player gets the same one)
+            if self.maps is None:
+                raise LobbyError("Custom maps are not available here.", 503, "no_maps")
+            rec = self.maps.record_for_game(account.id, str(settings.get("map_id") or ""))
+            extra = {"custom_map": {"id": str(settings["map_id"]), "name": rec["name"]}}
+        return self.store.call("create", account=_who(account), settings={"game_mode": settings.get("game_mode"), "marine_worlds": bool(settings.get("marine_worlds")), "rated": bool(settings.get("rated")), **extra})
 
     def list_open(self, account=None) -> dict:
         out = self.store.call("list", account=_who(account))
@@ -447,7 +454,8 @@ class LobbyService:
             by_seat = [None, None]
             for k, m in enumerate(info["seats"]):
                 by_seat[host_seat if k == 0 else 1 - host_seat] = m
-            made = self.live.create(marine_worlds=info["marine_worlds"], game_mode=info["mode"], rated=info["rated"], account=account,
+            rec = self.maps.record_for_game(info["seats"][0]["id"], info["custom_map"]["id"]) if info["mode"] == custom_map.MODE else None       # (the host's map as it is now)
+            made = self.live.create(marine_worlds=info["marine_worlds"], game_mode=info["mode"], rated=info["rated"], account=account, custom_map_record=rec,
                                     seat_accounts=[m["id"] for m in by_seat], creator_seat=host_seat)
             for seat, m in enumerate(by_seat):                                  # the seats belong to the accounts: no key goes into a link or into the lobby (`LiveService.seat_for`)
                 self.live.join(made["game_id"], made["tokens"][seat], m["username"], SimpleNamespace(id=m["id"], username=m["username"]))
