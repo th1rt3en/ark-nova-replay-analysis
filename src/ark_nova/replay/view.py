@@ -96,9 +96,9 @@ def _draft_text(e, names: dict[str, str]) -> str:
 # (Hunter, Perception, Scuba Dive, a search of the deck, the discard pile) and everything that goes to the open discard pile are public (planning sheet "visibility").
 # A targeted draw is always public: the card found in the deck is shown to everybody (search effects, Map 8, Map 14, Waza Special Assignment, Monkey Gang, worker bonuses, the university search).
 _PUBLIC_DRAW = re.compile(r"resistance effect|for gaining a new university|from discard|Dominance|Pilfering|with <|Map 8 effect|Map 14 effect|Waza Special|monkey gang effect")
-# (hidden from the other player: the scoring cards, Adapt, pouched cards, the discards of Hunter / Scuba Dive without a pick, Glide, a card dug from the hand;
+# (hidden from the other player: the scoring cards, Adapt, pouched cards, sunbathed (sold) cards, the discards of Hunter / Scuba Dive without a pick, Glide, a card dug from the hand;
 # the break discards (see `_break_move`) and the keep / discard line of Perception (no suffix) are too)
-_SECRET_DISCARD = re.compile(r"scoring card|adapt effect|pouch|\(no animal\)|\(no sponsor\)|Glide effect|dig .* from your hand")
+_SECRET_DISCARD = re.compile(r"scoring card|adapt effect|pouch|\bsell\b|\(no animal\)|\(no sponsor\)|Glide effect|dig .* from your hand")
 _PLAIN_DISCARD = re.compile(r"^You discard \$\{card_names\}$")                    # (the discard of the Cards action: the other player does not read the card)
 _PERCEPTION_KEEP = re.compile(r"^You keep \$\{card_names2\} and discard \$\{card_names\}$")
 
@@ -302,6 +302,8 @@ def _hidden_text(e) -> str:
     word = f"{n} card" + ("" if n == 1 else "s")
     if "${card_names} cards" in (e.log or ""):                         # ("You pouch ${card_names} cards for ...": the word is already there)
         word = str(n)
+        if n == 1:
+            return render_log(e.log.replace("${card_names} cards", "${card_names} card"), {**a, "card_names": "1"}).replace(" from your hand", " from their hand")
     hidden = {**a, "card_names": word, "card_name": word, "card_names2": word}
     return render_log(e.log, hidden).replace(" from your hand", " from their hand")
 
@@ -311,7 +313,7 @@ def _fix_grammar(t: str) -> str:
     return re.sub(r"^(.+?) increase the size of (?:a )?(an? )", r"\1 increases the size of \2", t)
 
 
-_ANNOUNCES_TAKE = re.compile(r"^[^\n]* gets \d+ x (?:take-in-range-or-deck|upgrade-card|bonus-scoring-cards)(?: \([^)]*\))?$")      # (the upgrade-card line only announces the "X upgrades <card>" that follows; its state is the one of the step before; the bonus-scoring-cards line of Adapt 3 (5 / 8 conservation, 16 reputation) comes between the draw and the discard of the 3 scoring cards and says nothing the two lines do not)
+_ANNOUNCES_TAKE = re.compile(r"^[^\n]* gets \d+ x (?:take-in-range-or-deck|upgrade-card|bonus-scoring-cards|MAP_13_INCOME)(?: \([^)]*\))?$")      # (the Drawing Board's "X gets 1 x MAP_13_INCOME (map bonus space)" (the number is the quadrant: 0 money, 1 appeal, 2 reputation, 3 hunters) only announces the quarter bonus that the next lines give; the upgrade-card line only announces the "X upgrades <card>" that follows; its state is the one of the step before; the bonus-scoring-cards line of Adapt 3 (5 / 8 conservation, 16 reputation) comes between the draw and the discard of the 3 scoring cards and says nothing the two lines do not)
 
 
 def _you_to_name(t: str, name: str) -> str:
@@ -867,6 +869,41 @@ def _merge_pilfer(steps: list, keep: list) -> list:
     return out
 
 
+_GETS = re.compile(r"^(.+?) gets (\d+) x (\S+)(?: \([^)]*\))?$")
+_RESOURCES = ("money", "xtoken", "appeal", "reputation", "conservation")
+# what the line after "A gets N x <bonus>" says when it is the bonus' own effect ({name} / {n} / {bonus} are filled in; matched without case). Every entry has been checked against the
+# logs of 10 tables (log_examples): in all of them the line that follows is the effect. Not in the table, so their lines stay: Extra Shift, "ignore conditions", increased hand,
+# Clever, Fac, Partner Zoo, the grey sponsor bonus (the line after them is a different effect or none).
+_EFFECT_AFTER_GETS = {
+    **{r: r"{name} gains {n} {bonus}(?: \([^)]*\))?$" for r in _RESOURCES},          # the plain gains: "A gets 5 x money (map bonus space)" / "A gains 5 money (map bonus space)"
+    "Snapping": r"{name} snaps .+ from the display$",
+    "bonus-kiosk-pavilion": r"{name} adds an? (?:pavilion|kiosk)\b",
+    "size-2": r"{name} adds a size-2 enclosure for free$",
+    "size-3": r"{name} adds a size-3 enclosure for free$",
+    "Pouch": r"{name} pouches .+ cards? for \d+ appeal$",
+    "sponsor-person-card": r"{name} plays .+",
+    "Multiplier": r"{name} adds a multiplier token on action card \w+$",
+    "SharkAttack": r"{name} discards .+ for the Shark Attack effect$",
+    "add-worker": r"{name} gains a new Association worker",
+}
+
+
+def _drop_announced_gains(steps: list, keep: list) -> list:
+    """BGA words a bonus twice: "A gets N x <bonus> (<source>)" (the bonus is taken) and, as the next step, what it does ("A gains N money", "A snaps X from the
+    display", "A adds a size-2 enclosure for free"). The first only announces the second and is not a step. It stays when the effect line does not follow (a bonus that cannot be taken:
+    BGA logs no gain when the X tokens are at their limit; a Snapping that is not used) and for every bonus that is not in `_EFFECT_AFTER_GETS`."""
+    out = list(keep)
+    order = [i for i, k in enumerate(keep) if k]
+    for p in range(len(order) - 1):
+        i, j = order[p], order[p + 1]
+        m = _GETS.match(steps[i]["label"].strip())
+        pattern = m and _EFFECT_AFTER_GETS.get(m.group(3))
+        if i > 0 and pattern and re.match(
+                pattern.format(name=re.escape(m.group(1)), n=m.group(2), bonus=re.escape(m.group(3))), steps[j]["label"].strip(), re.I):
+            out[i] = False
+    return out
+
+
 def _fold_unchanged(steps: list, keep: list) -> list:
     """A step that changes nothing the viewer shows is joined to the next one: its text goes in front of the text of the next step (which keeps its state), so every step forward
     changes something. Always shown: the first step, the last step and the steps where a player must choose an action card. `keep` (the steps with a text) comes in and goes out."""
@@ -1233,6 +1270,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     # (what a play / purchase / building brings is NOT joined to it any more: the cost, every gain and every placement bonus is its own step, as when the engine plays it; `_combine_action`)
     keep = _merge_pairs(steps, keep)
     keep = _merge_pilfer(steps, keep)
+    keep = _drop_announced_gains(steps, keep)
     # (no step is joined to another any more: every effect / log line is a step of its own, like when the engine plays it; `_combine_runs` and `_fold_unchanged` are not called)
     setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])
     steps = [st for st, k in zip(steps, keep) if k]

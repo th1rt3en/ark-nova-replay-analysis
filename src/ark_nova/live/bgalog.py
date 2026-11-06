@@ -246,7 +246,8 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         L.secret(f"{who} discards {names_of(cards)} {phase}".strip(), f"{who} discards {n_cards(len(cards))} {phase}".strip(), f"You discard {names_of(cards)} {phase}".strip())
     elif k == "sponsor_break":
         moved = new.break_position - old.break_position
-        L.add(f"{who} advances break token of {moved} space(s), now at {new.break_position}/9" if new.break_position < 9 else f"{who} advances break token of {moved} space(s) and reach the last space of the Break")
+        sp = f"{moved} space" + ("" if moved == 1 else "s")
+        L.add(f"{who} advances the break token {sp} (now at {new.break_position}/9)" if new.break_position < 9 else f"{who} advances the break token {sp} to the last space of the Break track")
         if delta["money"] > 0:
             L.add(f"{who} gains {delta['money']} money (break)")
     elif k == "association_task":

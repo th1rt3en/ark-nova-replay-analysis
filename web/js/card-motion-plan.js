@@ -13,6 +13,14 @@ export function playedCards(before, after) {
     })));
   });
 }
+// The played cards that left a player's zones (animals / sponsors) between two states: released, sent away by an expedition ...
+export function playedRemoved(before, after) {
+  return after.players.flatMap((b, seat) => {
+    const a = before.players[seat];
+    if (!a) return [];
+    return ['animals', 'sponsors'].flatMap((kind) => difference(a[kind] || [], b[kind] || []).filter((key) => key && key !== '?').map((key) => ({ seat, key, kind })));
+  });
+}
 // Buildings (enclosures, kiosks, pavilions, sponsor buildings) that appeared or disappeared between two states, per seat. A building is told by type and anchor hex: a turn
 // (another rotation) or an animal moving in / out of it is not an arrival.
 export function buildingChanges(before, after) {
@@ -26,6 +34,22 @@ export function buildingChanges(before, after) {
     for (const id of was) if (!now.has(id)) removed.push({ seat, id });
   });
   return { added, removed };
+}
+// Standard enclosures (size-N) that stayed where they are but turned to the other side: an animal moved in (empty -> occupied) or was released (occupied -> empty). A new or
+// cut down building (a size increase) is not a turn, it is a change of buildingChanges.
+export function buildingFlips(before, after) {
+  const std = /^size-\d$/, held = (b) => !!(b.animal || (b.animals && b.animals.length));
+  const flips = [];
+  (after.players || []).forEach((b, seat) => {
+    const a = before.players && before.players[seat];
+    if (!a) return;
+    const was = new Map(((a.buildings) || []).filter((x) => std.test(x.type)).map((x) => [x.type + '|' + x.x + '|' + x.y, held(x)]));
+    for (const x of (b.buildings || [])) {
+      const id = x.type + '|' + x.x + '|' + x.y;
+      if (std.test(x.type) && was.has(id) && was.get(id) !== held(x)) flips.push({ seat, id, occupied: held(x) });
+    }
+  });
+  return flips;
 }
 // The display: cards that left it through a wave / a natural discard (they land in the discard pile, a take by a player does not) and cards that were put in (replenished).
 export function displayChanges(before, after) {
@@ -96,7 +120,7 @@ export function movementPlan(before, after, seat, text = '', pilfer = []) {
     const source = Object.keys(b.under || {}).find((src) => difference(b.under[src], a.under?.[src] || []).includes(key));
     if (source || difference(b.pouched || [], a.pouched || []).includes(key)) return [{ key, kind: 'pouch', source }];
     if (!discarded.includes(key)) return gave > 0 && !elsewhere(b, key) ? (gave--, [{ key, kind: 'pilfer', to: taker }]) : [];
-    return [{ key, kind: /\bglid(?:e|ing)\b/i.test(text) ? 'glide' : /\b(?:sunbath\w*|sell\w*|sold)\b|\bto (?:gain money|play a Sponsor card for money|snap a Sponsor card)\b/i.test(text) ? 'sun' : 'discard' }];
+    return [{ key, kind: /\bglid(?:e|ing)\b/i.test(text) ? 'glide' : /\b(?:sunbath\w*|sell\w*|sold)\b|\bto (?:gain money|increase Sponsors action.s strength)\b/i.test(text) ? 'sun' : 'discard' }];
   });
   // A conservation project played from the hand or from the display (the cards that join `projects_in_play`)
   const live = (st) => (st.projects_in_play || []).filter(Boolean);
@@ -106,8 +130,8 @@ export function movementPlan(before, after, seat, text = '', pilfer = []) {
 
 // The other seat (the one whose hand is not shown): only counts are known, never cards. Draws from the deck and discards are shown as card backs, a take from the display as the real (public) card.
 // "A, B" -> 2
-const listCount = (t) => String(t).split(/, | and /).filter(Boolean).length || 1;
-// How many cards the player `name` sold (sunbathing, Sponsors levels 3 / 4) and glided away, from the log lines of the step.
+const listCount = (t) => (/^\d+$/.test(String(t).trim()) ? Number(t) : String(t).split(/, | and /).filter(Boolean).length || 1);          // ("2" of the other player's hidden line "sells 2 cards", or a list of names)
+// How many cards the player `name` sold (sunbathing, Sponsors level 3: money or +2 strength) and glided away, from the log lines of the step.
 export function discardKinds(text, name) {
   let sun = 0, glide = 0;
   if (!name) return { sun, glide };
@@ -117,7 +141,7 @@ export function discardKinds(text, name) {
     const rest = l.slice(name.length + 1);
     let m;
     if ((m = /^sells (.+?) cards?(?: for|$)/i.exec(rest))) sun += listCount(m[1]);
-    else if ((m = /^discards (.+?) to (?:gain money|play a Sponsor card for money|snap a Sponsor card)/i.exec(rest))) sun += listCount(m[1]);
+    else if ((m = /^discards (.+?) to (?:gain money|increase Sponsors action.s strength)/i.exec(rest))) sun += listCount(m[1]);
     else if (/glid(?:e|ing)/i.test(rest) && (m = /^discards? (.+?)(?: \(| for |$)/i.exec(rest))) glide += listCount(m[1]);
   }
   return { sun, glide };

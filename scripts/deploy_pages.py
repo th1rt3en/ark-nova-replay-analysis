@@ -65,6 +65,36 @@ def coming_soon(site: Path) -> None:
     assert html.count(LANDING_SCRIPT) == 1, "start page: the landing script not found"
     html = html.replace(LANDING_SCRIPT, '<script>window.ARK_COMING_SOON = ' + json.dumps(START_COMING_SOON) + ';</script>' + chr(10) + LANDING_SCRIPT)
     index.write_text(html, encoding="utf-8")
+    soon_fork(site)
+
+
+# Fork is coming soon on the live site: the button is paled out and a tooltip (the "Night" look: near-black, light outline, orange label) opens on hover. The page keeps the working
+# button in the repository and in develop; only the production copy is changed here. main.js switches `disabled` of #fork on every render, so the button is wrapped and cannot be clicked
+# (pointer-events: none, no tab stop) instead of relying on that attribute.
+FORK_BUTTON = re.compile(r'<button id="fork" class="forkbtn"[^>]*>Fork</button>')
+FORK_TIP = "<b>Soon:</b> Fork this position and play it for both sides from here"
+FORK_CSS = """<style>
+.soonwrap { position: relative; display: inline-flex; order: 3; }
+.soonwrap .forkbtn { opacity: .45; pointer-events: none; cursor: default; }
+.soonwrap .soontip { position: absolute; top: calc(100% + 12px); right: 0; width: 236px; box-sizing: border-box; padding: 10px 14px; border-radius: 10px; text-align: left; white-space: normal;
+  background: #0F1B1F; color: #D8E6E8; border: 2px solid #F1F5F6; box-shadow: 0 0 0 1.5px #0F1B1F, 0 6px 16px rgba(0,0,0,.5); font: 500 14px/1.35 'Barlow', system-ui, sans-serif;
+  z-index: 50; opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity .12s, transform .12s; }
+.soonwrap .soontip::before { content: ''; position: absolute; top: -8px; right: 22px; width: 12px; height: 12px; transform: rotate(45deg); background: #0F1B1F; border-left: 2px solid #F1F5F6; border-top: 2px solid #F1F5F6; border-radius: 2px 0 0 0; }
+.soonwrap .soontip b { font: 700 12.5px 'Park Label', 'Barlow', system-ui, sans-serif; color: #EE6C2B; text-transform: uppercase; letter-spacing: .08em; }
+.soonwrap:hover .soontip { opacity: 1; transform: none; }
+</style>
+"""
+
+
+def soon_fork(site: Path) -> None:
+    """The production copy of replay.html: Fork paled out with its "Soon" tooltip."""
+    page = site / "replay.html"
+    text = page.read_text(encoding="utf-8")
+    assert len(FORK_BUTTON.findall(text)) == 1, "replay.html: the Fork button not found"
+    text = FORK_BUTTON.sub(lambda m: '<span class="soonwrap">' + re.sub(r' title="[^"]*"', "", m.group(0)).replace("<button ", '<button tabindex="-1" aria-disabled="true" ', 1)
+                           + '<span class="soontip" role="tooltip">' + FORK_TIP + "</span></span>", text)
+    assert text.count("</head>") == 1, "replay.html: </head> not found"
+    page.write_text(text.replace("</head>", FORK_CSS + "</head>"), encoding="utf-8")
 
 
 def main() -> None:

@@ -1,5 +1,6 @@
 // [module] Live play (play.html): the game is kept by the server (the Table Durable Object); the page draws every pushed state with the code of the fork, turns a click into one of the
 // legal actions and posts it. Also the clocks, the end of the game, abandoning by agreement, the turn alert and the game menu. State: `S.play` (state.js).
+import { stageBreaks } from './break-stages.js';
 import { $, el } from './util.js';
 import { S, params } from './state.js';
 import { render } from './main.js';
@@ -161,6 +162,7 @@ export function pushLive(p) {
   for (const st of S.replay.steps) st.actions = [];                          // (only the latest position can be played)
   const next = playStep(p, S.replay.steps.length);
   S.replay.steps.push(next);
+  stageBreaks(S.replay);
   buildMoveList();
   $('jump').max = S.replay.steps.length - 1;
   S.forkBusy = false;
@@ -226,7 +228,7 @@ function showGameEnd(end) {
   P.endShown = true;
   const bar = $('endbar');
   bar.replaceChildren();
-  bar.append(el('b', '', end.abandoned ? 'Game abandoned: no winner.' : w === null ? 'Game over: a tie.' : 'Game over: ' + names[w] + ' wins ' + end.scores[w] + ' to ' + end.scores[1 - w] + '.'));
+  bar.append(el('b', '', end.abandoned ? 'Game abandoned: no winner.' : w === null ? 'Game over: a tie.' : 'Game over: ' + names[w] + ' wins ' + end.scores[w] + '-' + end.scores[1 - w] + '.'));
   const sw = el('button', 'turnbtn confirm');
   sw.type = 'button';
   const paint = () => { sw.textContent = document.body.classList.contains('showstats') ? 'Show the final board' : 'Show the game statistics'; };

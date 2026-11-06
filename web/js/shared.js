@@ -96,7 +96,7 @@ function conservationTrack(st) {
     if (p.conservation > 10) return;                                   // past the end of this track
     const same = st.players.filter((q) => q.conservation === p.conservation);
     const cube = blockedCube(0, seatRawColor(seat), S.replay.players[seat].name + ': conservation ' + p.conservation, undefined, 'cylinders');
-    cube.setAttribute('class', 'trackcube');
+    cube.setAttribute('class', 'trackcube'); cube.dataset.track = 'cons'; cube.dataset.seat = String(seat);          // (assoc-motion.js glides it when the score changes)
     cube.style.left = ((CT_X(p.conservation) + (same.length > 1 ? (seat - 0.5) * 0.03 : 0)) * 100) + '%';
     cube.style.top = 'calc(' + (57 / CT_H * 100) + '% - 18px)';          // 18 px above the centre of the shield, so the cube stands on the shield and the number stays readable
     wrap.append(cube);
@@ -157,7 +157,7 @@ export function renderShared(st) {
   repCubes.forEach((c, i) => {
     const same = repCubes.filter((o) => o.x === c.x);
     const cube = blockedCube(0, seatRawColor(c.seat), S.replay.players[c.seat].name + ': reputation ' + c.rep + ', draws from the first ' + repRange(c.rep) + ' cards of the display', undefined, 'cylinders');
-    cube.setAttribute('class', 'trackcube');
+    cube.setAttribute('class', 'trackcube'); cube.dataset.track = 'rep'; cube.dataset.seat = String(c.seat);
     cube.style.left = ((c.x + (same.length > 1 ? (same.indexOf(c) - 0.5) * 0.026 : 0)) * 100) + '%';
     cube.style.top = '50%';
     repWrap.append(cube);

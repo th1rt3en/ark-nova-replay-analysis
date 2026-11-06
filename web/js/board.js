@@ -379,13 +379,6 @@ export function zooBoard(map, player, seat) {
       g.setAttribute('class', 'pghost');
       return [g, svg('path', { d: outlinePath(cells), class: 'placeborder ' + (fits(x, y, P.rot) ? 'ok' : 'bad') })];
     };
-    const tag = svg('g', { class: 'pvtag', 'pointer-events': 'none', transform: 'translate(561 46)' });          // how to turn / stop it
-    const pill = svg('rect', { y: -34, height: 68, rx: 34, class: 'pvpill' }), txt = svg('text', { y: 14, 'text-anchor': 'middle', class: 'pvtext' });
-    const label = 'Wheel / R: turn     Right click: stop';                                                 // (the green / red outline says whether it fits)
-    txt.textContent = label;
-    const w = 70 + label.length * 17.5;
-    pill.setAttribute('x', String(-w / 2)); pill.setAttribute('width', String(w));
-    tag.append(pill, txt);
     for (const h of map.hexes || []) {
       const poly = svg('polygon', { points: hexPoints(h.x, h.y), class: 'pickhex' });
       poly.addEventListener('mouseenter', () => { P.hx = h.x; P.hy = h.y; P.hs = seat; hover.replaceChildren(...ghostAt(h.x, h.y)); });
@@ -399,7 +392,6 @@ export function zooBoard(map, player, seat) {
     const here = at();
     if (here) hover.replaceChildren(...ghostAt(here[0], here[1]));
     s.append(layer);
-    s.append(tag);
   }
   return s;
 }

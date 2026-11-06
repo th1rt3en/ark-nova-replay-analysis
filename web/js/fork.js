@@ -1,4 +1,5 @@
 // [module] Fork mode: starts from a replay step, posts moves with their state to the server, placement controls, move flow.
+import { stageBreaks } from './break-stages.js';
 import { $, el, seatColor, seatText } from './util.js';
 import { PLAY, S, SANDBOX, params } from './state.js';
 import { legalPlacement, spriteOf, zooBoard } from './board.js';
@@ -146,6 +147,7 @@ export function commitSteps(steps) {
   S.placement = null;
   S.replay.steps.length = S.step + 1;
   for (const st of steps) { st.index = S.replay.steps.length; S.replay.steps.push(st); }
+  stageBreaks(S.replay);
   buildMoveList();
   S.forkBusy = false;
   go(S.replay.steps.length - 1, 0, true);

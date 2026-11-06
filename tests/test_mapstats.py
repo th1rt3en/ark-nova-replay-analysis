@@ -95,11 +95,13 @@ def test_quadrants_count_instant_and_income_triggers_once():
     fill = lambda q, filled: ev("slideMeeples", A, infos={"mapStatus": {A: [i == q and filled or False for i in range(4)]}})
     income = ev("takeBonus", A, source="map bonus space", bonus_desc={"args": {"bonus_type": "MAP_13_INCOME", "bonus_n": 3}})
     quarter = ev("getBonuses", A, source="Map 13 quarter bonus", bonuses={"appeal": 2})
+    income_appeal = ev("takeBonus", A, source="map bonus space", bonus_desc={"args": {"bonus_type": "MAP_13_INCOME", "bonus_n": 1}})
     raw = packets((1, "/table/t1", [fill(1, True), quarter]),                               # a transition and its explicit event: one trigger
-                  (2, "/table/t1", [fill(1, False)]), (3, "/table/t1", [fill(1, True)]),    # unfilled and filled again: another instant trigger
+                  (2, "/table/t1", [income_appeal, quarter]),                               # the income of a break: the takeBonus and its "quarter bonus" event are one trigger
+                  (3, "/table/t1", [fill(3, True)]),                                        # the hunters pay no bonus event: counted from the fill
                   (4, "/table/t1", [income]))
     out = stats(raw, ("13", "13"))[0]
-    assert (out["quad_appeal"], out["quad_hunters"], out["quad_money"], out["quad_reputation"]) == (2, 1, 0, 0)
+    assert (out["quad_appeal"], out["quad_hunters"], out["quad_money"], out["quad_reputation"]) == (2, 2, 0, 0)
 
 
 def _research_steps(move):

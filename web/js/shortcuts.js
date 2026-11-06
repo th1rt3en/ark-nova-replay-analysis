@@ -1,21 +1,22 @@
-// [module] Keyboard shortcuts pop-up (the ? button in the control panel, or the ? key): a keyboard where only the keys with a function are coloured; a click on such a key, or pressing it, shows what it does (the keys do not act while the pop-up is open).
+// [module] Keyboard shortcuts pop-up (the ? button in the control panel, or the ? key): a keyboard where only the keys with a function are coloured; a click on such a key, or pressing it, shows what it does (the keys do not act while the pop-up is open; light grey window with orange selected key, the text of the picked key is a typed prompt line in the title row).
 import { $, el } from './util.js';
 import { settingsOpen } from './settings.js';
 
+const SHOW_KEY_DETAILS = false;                                            // the grey detail line under a key's title is switched off for now (the texts stay in D, to be overhauled)
 const D = {                                                                // key id (KeyboardEvent.key, letters lower case) -> [label, title, detail]; keep in step with the keydown handler in main.js
-  ArrowLeft: ['←', 'Back one step', 'Skips the opponent\'s hidden steps in the action card draft. On the results of a finished game: back to the final board.'],
-  ArrowRight: ['→', 'Forward one step', 'Skips the opponent\'s hidden steps in the action card draft. On the last step of a finished game: opens the results.'],
+  ArrowLeft: ['←', 'Go back one step in replay', 'Skips the opponent\'s hidden steps in the action card draft. On the results of a finished game: back to the final board.'],
+  ArrowRight: ['→', 'Go forward one step in replay', 'Skips the opponent\'s hidden steps in the action card draft. On the last step of a finished game: opens the results.'],
   ' ': ['Space', 'Start / stop autoplay', ''],
-  ArrowUp: ['↑', 'Table', 'In the game stats: shows the table.'],
-  ArrowDown: ['↓', 'Graph', 'In the game stats: shows the score graph.'],
-  Home: ['Home', 'Jump to the first step', ''],
-  End: ['End', 'Jump to the last step', 'The final board, also from the results.'],
-  r: ['R', 'Turn the building preview', 'While a sponsor building is being previewed (right click on its card in a hand): Shift + R turns it the other way, the mouse wheel over the map too.'],
-  Tab: ['Tab', 'Switch the cards', 'Cycles through the tabs of the shown cards: hand, endgame cards, the cards stored under the notepad (map 11) and the played cards (when the setting "Played cards" is the tray). Shift + Tab goes back.'],
-  h: ['H', 'Show / hide the hand', 'The floating tray or the fan.'],
-  s: ['S', 'Open the settings', ''],
+  ArrowUp: ['↑', 'Switch to table (post-game only)', 'In the game stats: shows the table.'],
+  ArrowDown: ['↓', 'Switch to graph (post-game only)', 'In the game stats: shows the score graph.'],
+  Home: ['Home', 'Jump to first step', ''],
+  End: ['End', 'Jump to last step', 'The final board, also from the results.'],
+  r: ['R', 'Rotate building during map preview', 'While a sponsor building is being previewed (right click on its card in a hand): Shift + R turns it the other way, the mouse wheel over the map too.'],
+  Tab: ['Tab', 'Switch between tabs in hand', 'Cycles through the tabs of the shown cards: hand, endgame cards, the cards stored under the notepad (map 11) and the played cards (when the setting "Played cards" is the tray). Shift + Tab goes back.'],
+  h: ['H', 'Show / hide hand', 'The floating tray or the fan.'],
+  s: ['S', 'Open settings', ''],
   F11: ['F11', 'Full screen', 'Switches the browser to full screen and back; the full screen button next to the settings wheel does the same.'],
-  '?': ['?', 'Open this window', 'Shift + / on most keyboards.'],
+  '?': ['/', 'Open keyboard tooltips (= this window)', 'Shift + / on most keyboards.'],
   Escape: ['Esc', 'Close', 'The settings, a dialog or this window.'],
 };
 const GAP = [' ', .5];                                                     // (a blank space in a row: [label '', width])
@@ -40,15 +41,22 @@ export function setupShortcuts() {
   const btn = $('extra');
   if (!btn) return;                                                        // (only the replay page has the button)
   const keys = {};
-  const info = el('div', 'kbinfo');
+  const info = el('div', 'kbprompt'); info.setAttribute('role', 'status');   // the text of the picked key, typed letter by letter in the title row
+  let typing = 0;
+  const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const pick = (id) => {
     for (const k of Object.values(keys)) k.classList.remove('sel');
     if (!keys[id]) return;
     keys[id].classList.add('sel');
     const [label, title, detail] = D[id];
-    info.replaceChildren(el('kbd', '', label), el('p', '', ''));
-    info.lastChild.append(el('b', '', title));
-    if (detail) info.lastChild.append(el('small', '', detail));
+    const txt = el('span', 'kbtxt'); txt.setAttribute('aria-hidden', 'true');
+    info.replaceChildren(el('em', '', '›'), el('span', '', label), ...(id.startsWith('Arrow') ? [] : [el('span', 'kbsep', '|')]), txt,   // (a bar between the key and its text; not after the four arrows, which show as a glyph)
+       el('span', 'kbcur'), el('span', 'kbsr', label + ': ' + title));
+    info.title = SHOW_KEY_DETAILS && detail ? detail : '';
+    const my = ++typing;
+    if (reduced()) { txt.textContent = title; return; }
+    let n = 0;
+    (function step() { if (my !== typing) return; txt.textContent = title.slice(0, ++n); if (n < title.length) setTimeout(step, 13); })();
   };
   const block = (rows) => {
     const b = el('div', 'kbblk');
@@ -59,7 +67,7 @@ export function setupShortcuts() {
         const kid = id || (label.length === 1 && D[label.toLowerCase()] ? label.toLowerCase() : null);
         const k = el(kid && D[kid] ? 'button' : 'div', 'kbkey', label);
         k.style.setProperty('--w', String(w)); k.style.setProperty('--g', String(Math.max(0, Math.round(w) - 1)));
-        if (label.length > 3) k.classList.add('long');
+        if (label.length > 3 && w < 3) k.classList.add('long');                  // (long labels on narrow keys get a smaller font; Space is wide and keeps the normal size)
         if (kid && D[kid]) { k.type = 'button'; k.classList.add('on'); k.onclick = () => pick(kid); keys[kid] = k; }
         row.append(k);
       }
@@ -72,9 +80,9 @@ export function setupShortcuts() {
   const head = el('div', 'modalhead');
   const x = el('button', 'modalx'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
   x.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>';
-  head.append(el('b', '', 'Keyboard shortcuts'), x);
+  head.append(el('b', '', 'Keyboard shortcuts'), info, x);
   const kb = el('div', 'kb'); kb.append(block(MAIN), block(NAV));
-  box.append(head, kb, info, el('div', 'kbhint', 'Click a key, or press it, to see what it does. Esc or ✕ closes this window.'));
+  box.append(head, kb);
   modal.append(box);
   document.body.append(modal);
   const open = () => { modal.hidden = false; pick('ArrowRight'); x.focus(); };

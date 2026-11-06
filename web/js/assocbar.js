@@ -24,17 +24,19 @@ function bonusText(bn) {                                                   // wh
 const slotEl = (cls, svgEl) => { const s = el('span', cls); s.append(svgEl); return s; };
 
 // a bonus space: the panel's own picture (slotGlyph) in a small svg centred on it
-function bonusSpace(sl, taken, size, n) {
+function bonusSpace(sl, taken, size, n, seat) {
   const root = svg('svg', { viewBox: '69 60 80 80', width: size, height: size, class: 'abglyph' });
   slotGlyph(root, sl, 100);
   const t = svg('title');
   t.textContent = 'Bonus space ' + n + ' (' + (taken ? 'taken' : 'still covered') + '): ' + bonusText(sl.bonus || {});
   root.append(t);
-  return slotEl('abs abg ' + (taken ? 'on' : 'off') + (sl.kind === 'instant_income' ? ' pur' : ' yel'), root);
+  const e = slotEl('abs abg ' + (taken ? 'on' : 'off') + (sl.kind === 'instant_income' ? ' pur' : ' yel'), root);
+  e.dataset.abonus = String(sl.index); e.dataset.aseat = String(seat);          // (assoc-motion.js: the cube of a supported project flies from the bonus space that was taken)
+  return e;
 }
 // a partner zoo slot: the continent token, or the handshake of the slot when empty (a token picture is 190 x 152, its drawn part 179 x 142 from (5, 4))
-function partnerSlot(type, n, h) {
-  const root = svg('svg', { viewBox: type ? '5 4 179 142' : '0 0 283 230', width: type ? h * 179 / 142 : h * 283 / 230, height: h, class: 'abpartner ' + (type ? 'on' : 'off') });
+function partnerSlot(type, n, h, seat) {
+  const root = svg('svg', { 'data-assoc-slot': 'partner_' + n, 'data-assoc-seat': seat, viewBox: type ? '5 4 179 142' : '0 0 283 230', width: type ? h * 179 / 142 : h * 283 / 230, height: h, class: 'abpartner ' + (type ? 'on' : 'off') });
   if (type) root.append(svg('image', { href: iconUrl(ICON_IDS[type.replace('partner-', '')]), x: 0, y: 0, width: 190, height: 152 }));
   else root.append(svg('path', { d: HANDSHAKE.plaque, fill: '#000', 'fill-opacity': 0.2, 'fill-rule': 'evenodd' }), svg('path', { d: HANDSHAKE.dark, fill: '#000', 'fill-opacity': 0.2, 'fill-rule': 'evenodd' }));
   const t = svg('title');
@@ -43,9 +45,9 @@ function partnerSlot(type, n, h) {
   return slotEl('abs', root);
 }
 // a university slot: its tile, or the silhouette of a tile when empty (the pictures are 121 or 137 px wide; the drawn part is 119 x 84)
-function universitySlot(type, n, h) {
+function universitySlot(type, n, h, seat) {
   const [w0, h0] = (type && S.iconSizes[ICON_IDS[type]]) || [137, 98];
-  const root = svg('svg', { viewBox: type ? (w0 === 121 ? '1 1 119 84' : '7 6 119 84') : '0.5 1 120 84', width: h * 119 / 84, height: h, class: 'abuni ' + (type ? 'on' : 'off') });
+  const root = svg('svg', { 'data-assoc-slot': 'university_' + n, 'data-assoc-seat': seat, viewBox: type ? (w0 === 121 ? '1 1 119 84' : '7 6 119 84') : '0.5 1 120 84', width: h * 119 / 84, height: h, class: 'abuni ' + (type ? 'on' : 'off') });
   if (type) root.append(svg('image', { href: iconUrl(ICON_IDS[type]), x: 0, y: 0, width: w0, height: h0 }));
   else root.append(svg('path', { d: UNIVERSITY, fill: '#000', 'fill-opacity': 0.2 }));
   const t = svg('title');
@@ -69,12 +71,12 @@ export function assocBar(map, p, seat) {
   if (slots.length) {
     const g = el('div', 'abgroup');
     const income = slots.filter((s) => s.kind === 'instant_income').length;           // (the purple income spaces first, then the yellow ones in a cluster of their own, as in the panel)
-    const spaces = slots.map((sl) => bonusSpace(sl, !!(used & (1 << sl.index)), sl.kind === 'instant_income' ? 38 : 42, sl.index + 1));
+    const spaces = slots.map((sl) => bonusSpace(sl, !!(used & (1 << sl.index)), sl.kind === 'instant_income' ? 38 : 42, sl.index + 1, seat));
     g.append(...(income && income < slots.length ? [cluster(spaces.slice(0, income)), cluster(spaces.slice(income))] : [cluster(spaces)]));
     bar.append(g, el('i', 'abperf'));
   }
   const a = el('div', 'abgroup');
-  a.append(cluster(partners.map((t, i) => partnerSlot(t, i + 1, 36))), cluster(unis.map((t, i) => universitySlot(t, i + 1, 34))));
+  a.append(cluster(partners.map((t, i) => partnerSlot(t, i + 1, 36, seat))), cluster(unis.map((t, i) => universitySlot(t, i + 1, 34, seat))));
   bar.append(a);
   return bar;
 }

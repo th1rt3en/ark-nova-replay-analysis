@@ -1,7 +1,7 @@
 // Run with: node --test tests/card-motion-plan.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { movementPlan, difference, otherPlan, parsePilfer, discardKinds, playedCards, targetedCount, buildingChanges, displayChanges, targetedNames, endgamePlan } from '../web/js/card-motion-plan.js';
+import { movementPlan, difference, otherPlan, parsePilfer, discardKinds, playedCards, playedRemoved, targetedCount, buildingChanges, buildingFlips, displayChanges, targetedNames, endgamePlan } from '../web/js/card-motion-plan.js';
 const state = (hand) => ({ players: [{ hand, under: {}, pouched: [], animals: [], sponsors: [], stored: [] }], display: ['A438'], main_discard: [] });
 test('multiset differences preserve duplicates and ignore ordering', () => {
   assert.deepEqual(difference(['A','B','A'], ['B','A']), ['A']);
@@ -72,11 +72,13 @@ test('otherPlan: display take, deck draw and discard of the other seat', () => {
   assert.deepEqual(otherPlan(c, d, 0), { display: [], deck: 0, targeted: 0, discard: 1, sun: 0, glide: 0, pouch: 0, projects: [], egDeck: 0, egDiscard: 0 });
   assert.deepEqual(otherPlan(a, two(['?'], ['?', '?']), 0, [{ from: 0, to: 1, give: 1, get: 1 }]), { display: [], deck: 0, targeted: 0, discard: 0, sun: 0, glide: 0, pouch: 0, projects: [], egDeck: 0, egDiscard: 0 });
 });
-test('Sponsors level 3 and 4 discards count as sunbathing; discardKinds counts cards per line', () => {
-  for (const text of ['Ann discards X to gain money (Sponsors3 effect)', 'Ann discards X to play a Sponsor card for money (Sponsors4 effect)', 'Ann discards X to snap a Sponsor card (Sponsors4 effect)']) {
+test('Sponsors level 3 discards count as sunbathing, level 4 (Marketing) discards are normal discards; discardKinds counts cards per line', () => {
+  for (const [text, kind] of [['Ann discards X to gain money (Sponsors3 effect)', 'sun'], ["Ann discards X to increase Sponsors action's strength by 2 (Sponsors3 effect)", 'sun'], ['Ann discards X to play a Sponsor card for money (Sponsors4 effect)', 'discard'], ['Ann discards X to snap a Sponsor card (Sponsors4 effect)', 'discard']]) {
     const a = state(['A401']), b = state([]); b.main_discard = ['A401'];
-    assert.equal(movementPlan(a, b, 0, text).departures[0].kind, 'sun');
+    assert.equal(movementPlan(a, b, 0, text).departures[0].kind, kind);
   }
+  assert.deepEqual(discardKinds('Bob discards A to snap a Sponsor card (Sponsors4 effect) · Bob discards B to play a Sponsor card for money (Sponsors4 effect)', 'Bob'), { sun: 0, glide: 0 });
+  assert.deepEqual(discardKinds("Bob discards A to increase Sponsors action's strength by 2 (Sponsors3 effect)", 'Bob'), { sun: 1, glide: 0 });
   assert.deepEqual(discardKinds('Bob sells A, B cards for 8 money · Ann sells C cards for 4 money', 'Bob'), { sun: 2, glide: 0 });
   assert.deepEqual(discardKinds('Bob discards A to gain money (Sponsors3 effect)', 'Bob'), { sun: 1, glide: 0 });
 });
@@ -177,4 +179,20 @@ test('otherPlan: endgame cards of the other seat are counted (Adapt gives its ow
   assert.deepEqual([r.egDeck, r.egDiscard], [1, 0]);
   const a = otherPlan(hid(2), hid(2), 0, [], '', '', { out: 1, in: 1 });
   assert.deepEqual([a.egDeck, a.egDiscard], [1, 1]);
+});
+
+test('playedRemoved lists the animals / sponsors that left a player\'s played zones', () => {
+  const a = { players: [{ animals: ['A1', 'A2'], sponsors: ['S201'] }, { animals: ['A9'], sponsors: [] }] };
+  const b = { players: [{ animals: ['A2'], sponsors: [] }, { animals: ['A9', 'A3'], sponsors: [] }] };
+  assert.deepEqual(playedRemoved(a, b), [{ seat: 0, key: 'A1', kind: 'animals' }, { seat: 0, key: 'S201', kind: 'sponsors' }]);
+  assert.deepEqual(playedRemoved(b, a), [{ seat: 1, key: 'A3', kind: 'animals' }]);
+  assert.deepEqual(playedRemoved(a, a), []);
+});
+
+test('buildingFlips: a standard enclosure that fills or empties turns, a new one or another type does not', () => {
+  const b = (type, x, y, animal) => ({ type, x, y, animal: animal || null, animals: [] });
+  const before = { players: [{ buildings: [b('size-2', 1, 1), b('size-4', 2, 2, 'A1'), b('aquarium', 3, 3), b('size-1', 4, 4)] }] };
+  const after = { players: [{ buildings: [b('size-2', 1, 1, 'A9'), b('size-4', 2, 2), b('aquarium', 3, 3, 'A5'), b('size-1', 4, 4), b('size-3', 5, 5, 'A7')] }] };
+  assert.deepEqual(buildingFlips(before, after), [{ seat: 0, id: 'size-2|1|1', occupied: true }, { seat: 0, id: 'size-4|2|2', occupied: false }]);
+  assert.deepEqual(buildingFlips(after, after), []);
 });

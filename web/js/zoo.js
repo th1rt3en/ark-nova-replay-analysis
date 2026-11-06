@@ -192,14 +192,22 @@ document.addEventListener('keydown', (e) => {                              // Es
 });
 
 
+// The tooltip of the map badge: the first sentence of the map's rules is the main line. The longer notes that follow it in the data are switched off for now (SHOW_MAP_NOTES, to be overhauled);
+// MAP_TIP words the main line of a map ourselves (the card data's text is longer or has typos): 4 / 4a Commercial Harbor, 13 Drawing Board.
+const SHOW_MAP_NOTES = false;
+const MAP_TIP = {
+  '4': 'If Harbor is connected: Once during your turn, you may discard up to 1 hand card for 3 Money (at any time).',
+  '4a': 'If Harbor is connected: Once during your turn, you may discard up to 1 hand card for 3 Money (at any time).',
+  '13': 'If you completely cover a quadrant on your map, gain the depicted bonus immediately and as break income.',
+};
 function mapBadge(map) {
   const custom = !!map.custom_association;                                         // a map made in the map editor: its name is the badge (its id is a hash)
   const code = custom ? map.name : 'Map ' + map.id, title = !custom && map.name && !/^(map|tournament)\b/i.test(map.name) ? code + ': ' + map.name : (map.name || code);
   const b = el('span', 'mapbadge'); b.tabIndex = 0; b.textContent = code;
   const tip = el('div', 'maptip'); tip.setAttribute('role', 'tooltip');
   tip.append(el('div', 'mt-title', title));
-  const rules = map.description || [];
-  if (rules.length) { tip.append(el('p', 'mt-main', rules[0])); for (const t of rules.slice(1)) tip.append(el('p', 'mt-note', t)); }
+  const rules = MAP_TIP[map.id] ? [MAP_TIP[map.id]] : map.description || [];
+  if (rules.length) { tip.append(el('p', 'mt-main', rules[0])); if (SHOW_MAP_NOTES) for (const t of rules.slice(1)) tip.append(el('p', 'mt-note', t)); }
   else tip.append(el('p', 'mt-main', 'No special ability.'));
   b.append(tip);
   b.onclick = e => { e.stopPropagation(); b.classList.toggle('on'); };
@@ -242,6 +250,26 @@ function actionStrip(st, seat) {
   });
   return strip;
 }
+// The hint of the building preview (bpreview.js): a night tab that hangs from the bottom edge of the map, in the middle of it: mouse wheel / R turn, right click stops (Shift + R turns back too, but it is not on the tab) (the wheel and the right
+// button are lit and pulse slowly). The bar under the box of an open drawer has the same place: then the hint is not shown. Its position is measured from the map (the map row clips its children).
+const MOUSE_WHEEL = '<svg class="mouse wheel" viewBox="0 0 28 40" aria-hidden="true"><path class="hl hl-r" d="M14 3 H14.5 A11.5 11.5 0 0 1 26 14.5 V17 H14 Z"/><rect x="2" y="2" width="24" height="36" rx="12" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M2.6 17 H25.4 M14 2.4 V17" stroke="currentColor" stroke-width="2.2" fill="none"/><rect class="hl hl-w" x="10.8" y="6" width="6.4" height="10.5" rx="3.2" stroke="currentColor" stroke-width="2"/></svg>';
+const MOUSE_RIGHT = '<svg class="mouse right" viewBox="0 0 28 40" aria-hidden="true"><path class="hl hl-r" d="M14 3 H14.5 A11.5 11.5 0 0 1 26 14.5 V17 H14 Z"/><rect x="2" y="2" width="24" height="36" rx="12" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M2.6 17 H25.4 M14 2.4 V17" stroke="currentColor" stroke-width="2.2" fill="none"/><rect class="hl hl-w" x="10.8" y="6" width="6.4" height="10.5" rx="3.2" stroke="currentColor" stroke-width="2"/></svg>';
+function previewBar(box, row) {
+  const bar = el('div', 'pvbar');
+  bar.innerHTML = '<span class="pvg">' + MOUSE_WHEEL + '<span>/</span><span class="pvkey">R</span><span>Turn</span></span><i class="pvsp"></i>'
+    + '<span class="pvg">' + MOUSE_RIGHT + '<span>Stop</span></span>';
+  const place = () => {
+    const map = row.children[1];
+    if (!map || !bar.isConnected) return;
+    const bx = box.getBoundingClientRect(), mp = map.getBoundingClientRect(), k = bx.width / (box.offsetWidth || 1);          // (k: the page zoom, the numbers are in the pixels of the box)
+    bar.style.left = ((mp.left + mp.width / 2 - bx.left) / k) + 'px';
+    bar.style.top = ((mp.bottom - bx.top) / k - 2) + 'px';
+  };
+  new ResizeObserver(place).observe(row);
+  requestAnimationFrame(place);
+  return bar;
+}
+
 export function renderZoo(st, seat) {
   const p = st.players[seat], who = S.replay.players[seat], map = S.replay.maps[seat];
   const box = el('div', 'zoo seat' + seat + (st.active_player === seat && st.phase !== 'over' ? ' active' : ''));
@@ -272,6 +300,7 @@ export function renderZoo(st, seat) {
   row.append(bonusPanel(map, p, seat), zooBoard(map, p, seat), associationStrip(p, map, seat));
   if (box._sheetclip) row.append(box._sheetclip);
   box.append(row);
+  if (S.preview && S.preview.seats.includes(seat) && S.preview.per[seat] && !(FORK && S.placement) && !box.querySelector('.assocbar')) { box.append(previewBar(box, row)); if (S.zooLayout === 'stack' && besideLayout()) box.classList.add('pvroom'); }       // (Top / bottom: the next box slides down, the tab would cover its name)
   if (S.actionStrip) box.append(actionStrip(st, seat));                     // (under the map, above the played cards)
   if (mode === 'below') box.append(playedBlock(p, seat));                 // the played cards under the map: animals and sponsors side by side (no counts)
   // ('tray': the cards are in the hand dock, dock.js)

@@ -8,6 +8,8 @@ import { engineBadge, labelNode, stepLabelNode } from './log-labels.js';
 import { render } from './main.js';
 import { keepSel } from './fork.js';
 import { framesOf } from './frames.js';
+import { revealAt } from './reveal.js';
+import { FORK, PLAY, SANDBOX, MINIGAME } from './state.js';
 import { groupsOf, NEUTRAL_COLOR } from './log-filter.js';
 import { closeResults, openResults, resultsAvailable } from './results.js';
 import { cardAnimationsBusy } from './card-motion.js';
@@ -103,6 +105,25 @@ export function stepBy(d) {
   while (f && skipFrame(f[0], f[1])) { const g = frameAfter(f[0], f[1], d); if (!g) break; f = g; }
   if (f) go(f[0], f[1], d > 0);
 }
+
+// An unsuccessful Hunter / Scuba Dive (nothing of the revealed cards can be taken: the draw step is followed by the "discards ... (no animal)" step with no card kept): the replay
+// shows the lightbox for 2 seconds and goes on to the step after the discard by itself, the viewer has no empty frames to click through. Only when the draw frame was reached by
+// going forward (back, the timeline, the log and the jump box show every frame); a key press inside the 2 seconds simply goes on, the timer is dropped with the step.
+let closeTimer = 0;
+const CLOSE_MS = 2000;
+function autoClose(forward) {
+  clearTimeout(closeTimer); closeTimer = 0;
+  if (!forward || FORK || PLAY || SANDBOX || MINIGAME || S.phase !== 0) return;
+  const i = S.step, r = revealAt(i);
+  if (!r || r.kept || (r.effect !== 'hunter' && r.effect !== 'scuba dive')) return;
+  const next = revealAt(i + 1);
+  if (!next || next.seat !== r.seat || next.effect !== r.effect || !next.kept || next.kept.length) return;
+  if (i + 2 >= S.replay.steps.length) return;
+  closeTimer = setTimeout(() => {
+    closeTimer = 0;
+    if (S.step === i && S.phase === 0 && !S.results) go(i + 2, 0, true);
+  }, CLOSE_MS / (Number(S.animationSpeed) || 1));
+}
 export function go(n, phase = 0, animateCards = false) {
   S.cardMotionForward = animateCards;
   const before = S.step;
@@ -111,6 +132,7 @@ export function go(n, phase = 0, animateCards = false) {
   while (n < S.replay.steps.length - 1 && (mergedAway(S.replay.steps[n]) || dealMerged(n))) n++;          // (a step inside a merged run leads to the end of the run)
   S.step = n;
   S.phase = Math.max(0, Math.min(framesOf(S.step).length - 1, phase));
+  autoClose(animateCards);
   if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.multiplierMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
   render();
 }

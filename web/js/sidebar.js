@@ -31,7 +31,7 @@ export function setupSidebar() {
   if ($('tabChat')) $('tabChat').onclick = () => setTab('chat');
   let saved = 'control';
   try { saved = localStorage.getItem(TAB_KEY) || 'control'; } catch (e) { /* private window */ }
-  setTab(saved);
+  setTab(saved === 'chat' ? 'chat' : 'control');                       // (a loaded game always starts on Control, whatever tab was open last time; the Chat tab of the play page is remembered)
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSidebar);
 }
 // Keep the line of the step on show inside the visible part of the log (the list only, never the page). `center`: put it in the middle (after switching to the log).

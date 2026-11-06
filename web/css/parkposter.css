@@ -13,6 +13,7 @@
 @font-face { font-family: 'Park Label'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/archivo-w78-500.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
 @font-face { font-family: 'Park Label'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/archivo-w78-600.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
 @font-face { font-family: 'Park Label'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/archivo-w78-700.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/jetbrains-mono-700.woff) format('woff'); }   /* the prompt line of the keyboard pop-up (shortcuts.js); JetBrains Mono Bold, Latin subset + arrows */
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/barlow-latin-500-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/barlow-latin-600-normal.woff2) format('woff2'); }
 @font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/barlow-latin-700-normal.woff2) format('woff2'); }
@@ -112,16 +113,21 @@ body.viewer .pill.brk { gap: 12px; padding: 0 20px 0 19.7px;          /* (the in
 body.viewer .pill.brk .brkicon { height: 32px; width: auto; display: block; flex: none; position: relative; top: -2px; }          /* (BGA's own mug picture, 96 x 108 px, 32 px high: the body is as high as the dots; it sits 2 px lower than the exact middle (body bottom y 52, the dots end at 50), because the steam above makes the exact middle look too high) */
 body.viewer .pill.brk .bn { font: 400 34px/1 'Bowlby One'; color: var(--paper); -webkit-text-stroke: 1.5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); }
 body.viewer .pill.brk .bn small { font-size: 22px; margin-left: 1px; }
-body.viewer .pips { display: flex; gap: 5px; }
+body.viewer .pips { display: flex; gap: 5px; position: relative; }
 body.viewer .pips i { width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--ink); background: rgba(23, 38, 43, .25); }
 body.viewer .pips i.done { background: var(--gold); }
+body.viewer .pips .mk { position: absolute; left: 0; top: 0; width: 20px; height: 20px; box-sizing: border-box; border-radius: 50%; border: 3px solid var(--ink); background: var(--paper); box-shadow: 0 0 0 3px var(--gold); transform: scale(1.15); z-index: 2; pointer-events: none; }       /* (the marker on its hop, `hopBreak` in side-panel.js) */
+body.viewer .pill.brk .bn { display: inline-block; }
+body.viewer .pill.brk .bn.tick { animation: bn-tick .3s ease-out; }
+@keyframes bn-tick { 0% { transform: scale(.82); } 55% { transform: scale(1.12); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { body.viewer .pill.brk .bn.tick { animation: none; } }
 body.viewer .pips i.cur { background: var(--paper); box-shadow: 0 0 0 3px var(--gold); transform: scale(1.15); }
 body.viewer .hdrstats .gamemenu { position: relative; font-size: 1rem; }
 body.viewer .gamemenubtn { height: 50px; padding: 0 16px; border: 4px solid var(--ink); border-radius: 999px; background: var(--paper); color: var(--ink); font: 700 19px 'Park Label'; cursor: pointer; box-shadow: 0 4px 0 var(--ink); }
 body.viewer .hdrstats .gamemenulist { right: 0; top: calc(100% + 8px); background: var(--paper); border: 4px solid var(--ink); border-radius: 16px; box-shadow: 0 4px 0 var(--ink); overflow: hidden; }
 body.viewer .gamemenuitem { color: var(--ink); font: 600 18px 'Park Label'; border-bottom: 2px dashed rgba(23, 38, 43, .25); }
 body.viewer .gamemenuitem:hover:not(:disabled) { background: var(--gold); }
-body.viewer .hdrstats .flash-up, body.viewer .hdrstats .flash-down { animation: flash-up var(--flash-duration, .8s) ease-out; }
+body.viewer .hdrstats .brk.flash-up { animation: flash-up var(--flash-duration, .8s) ease-out; }       /* (the break pill flashes green when the marker reaches 9; nothing else in the top bar flashes) */
 
 /* ---- panels: the display, the association element and the zoos are cream paper with an ink border ------------------------------------------------------------------------ */
 body.viewer .shared { gap: 16px; margin-bottom: 8px; }
@@ -419,6 +425,8 @@ body.viewer .forkpanel .muted { color: #52666B; }
 body.viewer .movepill .abtn { font: inherit; justify-content: center; }
 body.viewer .movepill .abtn { box-sizing: border-box; min-height: 2.04em; }        /* (every button of the move bar as high as one with an amount icon: 40.8 px at 20 px) */
 body.viewer .movepill .abtn.acbtn { min-height: 1.52em; padding: 2px 8px; font-size: 17px; }        /* (the action card buttons: 31 px high, as small as the chosen card's icon in the log line (30 px); the other buttons of the bar keep the 41 px) */
+body.viewer .movepill .abtn.acbtn { position: relative; }
+body.viewer .movepill .abtn.acbtn .actoken { position: absolute; right: calc(-8px + var(--k, 0) * 14px); bottom: -9px; width: 19px; height: 19px; border-radius: 50%; background: var(--paper); border: 2px solid var(--ink); box-sizing: border-box; padding: 1px; object-fit: contain; z-index: 3; box-shadow: 0 1px 0 var(--ink); }       /* (the tokens on an action card, like the tracker's `.ppactions .ac .actoken`, smaller) */
 body.viewer .movepill .abtn.acbtn .variant { width: 21px; height: 21px; left: -8px; top: -8px; }
 body.viewer .abtn { background: var(--act1); border-color: var(--ink); border-width: 3px; }
 body.viewer .abtn.lvl2 { background: var(--act2); border-color: var(--ink); }
@@ -508,25 +516,35 @@ body.viewer .tlhead::before { content: ""; position: absolute; inset: -4px -9px;
 /* a long press on a card opens the enlarged view (cards.js bindPreview): no iOS callout, no text selection */
 .card, .draftcard { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 
-/* keyboard shortcuts pop-up (shortcuts.js): the keys with a function are mint, the selected one gold */
-body.viewer .kbbox { width: auto; --u: 42px; zoom: 1.3; }   /* the whole window (border, text, keys) is 30 % bigger than its base size */
+/* keyboard shortcuts pop-up (shortcuts.js): a light grey window with ink-outlined keys; the keys with a function are a lighter grey, the selected key and the cursor are orange, the text of the selected key is a typed prompt line in the title row, the close button is a key of its own */
+body.viewer .kbbox { --acc: #EE6C2B; --accd: #D9541A; --keyon: #EEF1F1; --u: 42px; width: auto; zoom: 1.3; padding-bottom: 20px; background: #E2E6E7; color: var(--ink); border-color: var(--ink); box-shadow: 0 8px 0 var(--ink); }   /* (zoom: the whole window, border, text and keys, is 30 % bigger than its base size) */
+body.viewer .kbbox .modalhead { display: flex; align-items: center; gap: 14px; min-height: 38px; }
+body.viewer .kbbox .modalhead b { flex: none; font-weight: 400; }
+body.viewer .kbbox .modalx { flex: none; width: var(--u); height: var(--u); margin: 0; border: 3px solid var(--ink); border-radius: calc(var(--u) * .16); background: var(--keyon); color: var(--ink); box-shadow: 0 3px 0 var(--ink); transition: transform .08s, box-shadow .08s; }
+body.viewer .kbbox .modalx svg { width: 16px; height: 16px; }
+body.viewer .kbbox .modalx:hover { background: var(--acc); color: var(--ink); transform: translateY(3px); box-shadow: none; }
+body.viewer .kbbox .modalx:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+body.viewer .kbprompt { flex: 1; min-width: 0; display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; font: 700 17px/1.3 'Park Mono', ui-monospace, Menlo, monospace; color: var(--ink); }
+body.viewer .kbprompt em { font-style: normal; color: var(--accd); }
+body.viewer .kbprompt .kbtxt { white-space: pre-wrap; }
+body.viewer .kbprompt .kbsep { margin: 0 -2px; color: rgba(23, 38, 43, .4); }
+body.viewer .kbcur { display: inline-block; flex: none; width: 10px; height: 20px; margin-left: -4px; background: var(--acc); transform: translateY(4px); animation: kbblink 1.1s steps(2) infinite; }
+@keyframes kbblink { 50% { opacity: 0; } }
+body.viewer .kbsr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 body.viewer .kb { display: flex; gap: calc(var(--u) * .45); align-items: flex-start; }
 body.viewer .kb .kbblk:last-child { padding-top: calc(var(--u) * 1.1); }
 body.viewer .kbblk { display: grid; gap: calc(var(--u) * .1); }
 body.viewer .kbrow { display: flex; gap: calc(var(--u) * .1); }
 body.viewer .kbrow:empty { display: none; }
 body.viewer .kbgap { flex: none; width: calc(var(--u) * var(--w)); }
-body.viewer .kbkey { box-sizing: border-box; flex: none; height: var(--u); width: calc(var(--u) * var(--w) + var(--u) * .1 * var(--g, 0)); margin: 0; padding: 0; display: grid; place-items: center; border-radius: calc(var(--u) * .16); border: 2px solid rgba(23, 38, 43, .28); background: rgba(23, 38, 43, .07); color: rgba(23, 38, 43, .45); font: 700 calc(var(--u) * .34)/1 'Park Label', system-ui, sans-serif; user-select: none; }
+body.viewer .kbkey { box-sizing: border-box; flex: none; height: var(--u); width: calc(var(--u) * var(--w) + var(--u) * .1 * var(--g, 0)); margin: 0; padding: 0; display: grid; place-items: center; border-radius: calc(var(--u) * .16); border: 2px solid rgba(23, 38, 43, .2); background: rgba(23, 38, 43, .04); color: rgba(23, 38, 43, .48); font: 700 calc(var(--u) * .34)/1 'Park Label', system-ui, sans-serif; user-select: none; }
 body.viewer .kbkey.long { font-size: calc(var(--u) * .27); }
-body.viewer .kbkey.on { border: 3px solid var(--ink); background: var(--mint); color: var(--ink); box-shadow: 0 3px 0 var(--ink); cursor: pointer; font-size: calc(var(--u) * .4); transition: transform .08s, box-shadow .08s; }
+body.viewer .kbkey.on { border: 3px solid var(--ink); background: var(--keyon); color: var(--ink); box-shadow: 0 3px 0 var(--ink); cursor: pointer; font-size: calc(var(--u) * .4); transition: transform .08s, box-shadow .08s; }
 body.viewer .kbkey.on.long { font-size: calc(var(--u) * .3); }
 body.viewer .kbkey.on:hover { transform: translateY(-2px); }
-body.viewer .kbkey.on.sel, body.viewer .kbkey.on.down { background: var(--gold); transform: translateY(3px); box-shadow: 0 0 0 var(--ink); }
-body.viewer .kbinfo { margin-top: 16px; min-height: 3.1em; padding: 10px 14px; border: 3px solid var(--ink); border-radius: 14px; background: #fff; display: flex; gap: 14px; align-items: center; font: 600 19px/1.25 'Park Label', system-ui, sans-serif; }
-body.viewer .kbinfo kbd { flex: none; min-width: 34px; height: 34px; box-sizing: border-box; padding: 0 8px; border: 3px solid var(--ink); border-radius: 9px; background: var(--gold); box-shadow: 0 3px 0 var(--ink); display: grid; place-items: center; font: 700 17px 'Park Label', system-ui, sans-serif; }
-body.viewer .kbinfo p { margin: 0; }
-body.viewer .kbinfo small { display: block; opacity: .7; font-size: 16px; font-weight: 600; }
-body.viewer .kbhint { margin-top: 10px; font: 600 16px 'Park Label', system-ui, sans-serif; opacity: .75; }
+body.viewer .kbkey.on:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+body.viewer .kbkey.on.sel, body.viewer .kbkey.on.down { background: var(--acc); color: var(--ink); transform: translateY(3px); box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { body.viewer .kbcur { animation: none; } body.viewer .kbkey.on, body.viewer .kbbox .modalx { transition: none; } }
 body.viewer .setrange:focus-visible { outline: none; }
 body.viewer .setrange:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--sun); }
 body.viewer .setrange:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--sun); }
@@ -623,7 +641,7 @@ body.viewer .zoo h2 .maptip::before { content: ''; position: absolute; left: 44p
 body.viewer .zoo h2 .mapbadge:hover .maptip, body.viewer .zoo h2 .mapbadge:focus-visible .maptip, body.viewer .zoo h2 .mapbadge.on .maptip { display: block; }
 body.viewer .zoo h2 .maptip .mt-title { font: 400 17px/1.2 'Park Head', system-ui, sans-serif; margin-bottom: 7px; }
 body.viewer .zoo h2 .maptip p { margin: 0 0 5px; }
-body.viewer .zoo h2 .maptip .mt-main { font-weight: 700; }
+body.viewer .zoo h2 .maptip .mt-main { font-weight: 400; font-size: calc(1em + 2px); }
 body.viewer .zoo h2 .maptip .mt-note { font-size: 13.5px; color: rgba(23, 38, 43, .75); }
 body.viewer .zoo h2 .maptip :last-child { margin-bottom: 0; }
 
@@ -851,15 +869,30 @@ body.viewer .board .pghost { opacity: .5; }
 body.viewer .board .pvpill { fill: rgba(23, 38, 43, .86); stroke: var(--gold); stroke-width: 3; }
 body.viewer .board .pvtext { font: 700 42px 'Park Label', system-ui, sans-serif; fill: var(--paper); letter-spacing: .02em; white-space: pre; }
 body.viewer .board .pvtext.small { font-size: 28px; }
+
+body.viewer .zoo.pvroom { margin-bottom: 36px; }       /* (the Top / bottom layout: the box under the tab of the preview hint slides down while the preview runs) */
+/* the hint of the building preview (zoo.js previewBar): a night tab that hangs from the bottom edge of the map while a preview runs (the bar of an open drawer has that place: then there is no hint) */
+body.viewer .zoo .pvbar { position: absolute; z-index: 5; display: flex; align-items: center; gap: 14px; height: 46px; box-sizing: border-box; padding: 0 22px; transform: translateX(-50%); pointer-events: none;
+  background: #0F1B1F; color: #D8E6E8; font: 700 15px/1 'Barlow', system-ui, sans-serif; white-space: nowrap; border: 2px solid #F1F5F6; border-top: 0; border-radius: 0 0 15px 15px; box-shadow: 0 0 0 1.5px #0F1B1F; }
+body.viewer .pvbar .pvg { display: flex; align-items: center; gap: 6px; }
+body.viewer .pvbar .pvsp { width: 2px; height: 22px; background: currentColor; opacity: .3; border-radius: 2px; }
+body.viewer .pvbar .mouse { height: 27px; width: auto; display: block; color: currentColor; overflow: visible; }
+body.viewer .pvbar .mouse .hl { fill: none; }
+body.viewer .pvbar .mouse .hl-r { stroke: none; }
+body.viewer .pvbar .mouse.wheel .hl-w, body.viewer .pvbar .mouse.right .hl-r { fill: #EE6C2B; animation: pvtick 2.4s ease-in-out infinite; }
+body.viewer .pvbar .pvkey { display: inline-grid; place-items: center; min-width: 23px; height: 23px; padding: 0 6px; box-sizing: border-box; background: #E6EEF0; color: #17262B; border-radius: 5px; box-shadow: 0 2px 0 #8FA9B0; font: 800 14px 'Barlow', system-ui, sans-serif; }
+body.viewer .pvbar .pvkey.wide { font-size: 12px; }
+@keyframes pvtick { 0%, 55%, 100% { opacity: 1; } 70% { opacity: .35; } 85% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body.viewer .pvbar .mouse .hl-w, body.viewer .pvbar .mouse .hl-r { animation: none !important; } }
 body.viewer .card.previewing { outline: 3px dashed var(--sun); outline-offset: -3px; }
 
 /* the picker of the enclosures (bpreview.js `openMenu`: a right click on a zoo map): a small paper card with the enclosure pictures */
-body.viewer .bpmenu { position: fixed; z-index: 400; box-sizing: border-box; padding: 12px 14px 14px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 18px; box-shadow: 0 6px 0 var(--ink); }
-body.viewer .bpmtitle { display: block; margin: 0 0 10px 2px; font: 400 20px 'Park Head', system-ui, sans-serif; }
-body.viewer .bpmgrid { display: grid; grid-template-columns: repeat(5, 114px); gap: 8px; }
-body.viewer .bpmitem { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px; height: 104px; padding: 6px 2px 5px; box-sizing: border-box; background: #fff8e0; border: 3px solid var(--ink); border-radius: 12px; cursor: pointer; color: var(--ink); }
-body.viewer .bpmitem img { flex: 1 1 0; min-height: 0; max-width: 100%; object-fit: contain; pointer-events: none; }
-body.viewer .bpmitem span { font: 700 17px/1 'Park Label', system-ui, sans-serif; text-align: center; white-space: nowrap; }
+body.viewer .bpmenu { position: fixed; z-index: 400; box-sizing: border-box; padding: 16px 18px 18px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); }
+body.viewer .bpmtitle { display: block; margin: 0 0 14px 2px; font: 400 23px 'Park Head', system-ui, sans-serif; }
+body.viewer .bpmgrid { display: grid; grid-template-columns: repeat(5, 134px); gap: 11px; }
+body.viewer .bpmitem { display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 6px; height: 126px; padding: 10px 4px 9px; box-sizing: border-box; background: #fff8e0; border: 3px solid var(--ink); border-radius: 13px; cursor: pointer; color: var(--ink); }
+body.viewer .bpmitem img { flex: 1 1 0; min-height: 0; max-width: 100%; box-sizing: border-box; padding: 5px 10px; object-fit: contain; pointer-events: none; }
+body.viewer .bpmitem span { font: 700 18px/1 'Park Label', system-ui, sans-serif; text-align: center; white-space: nowrap; }
 body.viewer .bpmitem:hover, body.viewer .bpmitem:focus-visible { background: var(--gold); outline: none; }
 body.viewer .bpmitem.taken, body.viewer .bpmitem.taken:hover { background: #e6dfcc; border-color: rgba(23, 38, 43, .35); color: rgba(23, 38, 43, .45); cursor: not-allowed; }          /* a special enclosure that stands already (only one of each) */
 body.viewer .bpmitem.taken img { filter: grayscale(1); opacity: .4; }
@@ -883,7 +916,7 @@ body.viewer .rsflap.fs { border-left: 3px solid var(--ink); }
 body.viewer .rsflap[aria-pressed="false"]:hover { background: #A9E0BE; }
 body.viewer .rsflap[aria-pressed="true"] { background: #2F7D50; color: var(--paper); cursor: default; }
 body.viewer .rsflap:focus-visible { outline: 3px solid var(--sun); outline-offset: -5px; }
-body.viewer .rsswitchtext { font: 600 19px 'Nunito Sans', system-ui, sans-serif; color: var(--ink); }
+body.viewer .rsswitchtext { font: 700 20px/1.15 'Nunito Sans', system-ui, sans-serif; color: var(--ink); }          /* (the font of the move bar: bold) */
 body.viewer.showresults #shared, body.viewer.showresults #zoos, body.viewer.showresults #dock { display: none !important; }
 /* no page scroll behind the table: the table fills the window (--vh = a hundredth of the window height in layout px, also in full screen) and scrolls by itself */
 html.showresults { overflow-y: scroll; }          /* (the window's scrollbar stays, with nothing to scroll, so the page does not jump sideways) */
@@ -923,7 +956,12 @@ body.viewer .gsd.up::before { border-bottom: 8px solid currentColor; }
 body.viewer .gsd.down::before { border-top: 8px solid currentColor; }
 body.viewer .gsspine { background: var(--ink); display: grid; place-items: center; }
 body.viewer .gssc { position: relative; top: -6px; display: flex; align-items: baseline; gap: 12px; font: 400 46px/1 'Park Num', system-ui, sans-serif; color: #fff; }
+body.viewer .gsw { position: relative; display: inline-block; }
+body.viewer .gseg { position: absolute; left: 50%; top: calc(100% + 12px); transform: translateX(-50%); box-sizing: border-box; height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 8px; white-space: nowrap; border-top: 1px solid rgba(214, 207, 182, .32); border-bottom: 1px solid rgba(214, 207, 182, .32); color: #C3CBCE; }   /* hourglass + the endgame points between two thin lines, on the line of the Elo chips */
+body.viewer .gseg b { font: 500 20px/1 'Park Label', system-ui, sans-serif; letter-spacing: .01em; color: #D6CFB6; }
+body.viewer .gshg { color: var(--hg, #C3CBCE); height: 19px; width: 12px; flex: none; }
 body.viewer .gssc .n.lo { opacity: .55; }
+body.viewer .gssc .gseg { opacity: 1; }
 body.viewer .gssc .dash { opacity: .5; font-size: 34px; }
 /* the rail: the category names in spaced capitals on a faint line, a glowing orange dot at the active one */
 body.viewer .gsrail { grid-column: 1; grid-row: 2; padding-top: 22px; overflow: hidden; }
@@ -1008,9 +1046,10 @@ body.viewer .gsgraph .ketip2 { font: 500 15px Barlow, system-ui, sans-serif; fil
 .kecp { font-family: 'Park Num', system-ui, sans-serif; font-weight: 400; fill: #000; stroke: none; }   /* the 2 on the shield of a worker taken as the 2 CP bonus: the number style of the shield counters (`.slot-number.dk`) */
 
 /* the move bar after the game (results.js resultsSwitch): warm paper with a wash of the winner's colour from the left, one forest green button at the left for the other view */
-body.viewer .movepill.rsgate { background: linear-gradient(90deg, color-mix(in srgb, var(--win, #F3DFA6) 24%, #F3DFA6) 0, color-mix(in srgb, var(--win, #F3DFA6) 10%, #F3DFA6) 38%, #F3DFA6 62%); }
 body.viewer .rsflap.rsgo { background: #2F7D50; color: var(--paper); border-right: 3px solid var(--ink); border-left: 0; width: auto; padding: 0 28px; gap: 10px; }
 body.viewer .rsflap.rsgo:hover { background: #3B9361; }
+body.viewer .rsflap.rsgo.rsback { background: #3F4FA0; }          /* (Final board, on the game stats: indigo; Game stats, on the final board: the green above) */
+body.viewer .rsflap.rsgo.rsback:hover { background: #5262B8; }
 body.viewer .rsflap.rsgo svg.o, body.viewer .rsflap.rsgo .o { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linejoin: round; }
 body.viewer .rsflap.rsgo .f { fill: currentColor; stroke: none; }
 body.viewer .rsflap.rsgo svg { width: 22px; height: 22px; }
@@ -1314,3 +1353,6 @@ body.viewer .moves li .loglines { flex: 1 1 auto; min-width: 0; }
 #card-motion .cm-card .egpts .pt { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 1px 0; background: rgba(217, 214, 206, .75); box-shadow: 0 2px 4px rgba(0, 0, 0, .25); }
 #card-motion .cm-card .egpts img { height: 26px; width: auto; }
 #card-motion .cm-card .egpts b { font: 400 36px/1 'Park Num', system-ui, sans-serif; color: var(--ink, #17262b); }
+
+/* the Multiplier token on an action card is BGA's blue x2 disc as it is: no cream circle, outline or shadow around it */
+body.viewer .movepill .abtn.acbtn .actoken[data-action-token="Multiplier"], body.viewer .ppactions .ac .actoken[data-action-token="Multiplier"] { background: none; border: 0; padding: 0; box-shadow: none; }
