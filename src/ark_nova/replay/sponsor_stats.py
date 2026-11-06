@@ -235,6 +235,24 @@ def diversity_gains(event, state, seat_of, action=None) -> list:
     return out
 
 
+def _archaeologist_offer(state_args: dict) -> Counter:
+    """The (bonus_type, bonus_n) pairs the Archaeologist's selector (state 91) offers: `choices`, `allChoices` only as the fallback; a Pass offers nothing."""
+    choices = state_args.get("choices")
+    if choices is None:
+        choices = state_args.get("allChoices")
+    items = choices.values() if isinstance(choices, dict) else choices if isinstance(choices, list) else []
+    offer: Counter = Counter()
+    for choice in items:
+        if not isinstance(choice, dict):
+            continue
+        if "S221" not in str((choice.get("args") or {}).get("sourceId") or ""):
+            continue
+        desc = ((choice.get("description") or {}).get("args") or {})
+        if desc.get("bonus_type"):
+            offer[(desc.get("bonus_type"), desc.get("bonus_n"))] += 1
+    return offer
+
+
 def sponsor_source_hints(raw_log, parsed) -> dict:
     """Bind retained acquisitions/bonus choices to BGA's explicit source state.
 
@@ -246,6 +264,7 @@ def sponsor_source_hints(raw_log, parsed) -> dict:
     retained = {e.order: e for m in parsed.moves for e in m.events}
     hints, seen = {}, set()
     order, source, actor, previous = 0, None, None, None
+    offered: Counter = Counter()
     for packet in raw_log["data"]["logs"]:
         for event in packet.get("data", []):
             order += 1
@@ -262,6 +281,8 @@ def sponsor_source_hints(raw_log, parsed) -> dict:
                     source = "association-donation" if sid == "33" else key if (sid, key) in {("27", "S201"), ("91", "S221")} else None
                     actor = owner
                     previous = signature
+                if source == "S221" and sid == "91" and key == "S221":
+                    offered = _archaeologist_offer(state_args)             # (replaced, not added up: a re-emitted state offers the same slots)
                 continue
             if order not in retained or source is None:
                 continue
@@ -279,6 +300,11 @@ def sponsor_source_hints(raw_log, parsed) -> dict:
                 # The source is one mandatory take; don't attribute a following unrelated draw to it.
                 hints[order], source = source, None
             elif source == "S221" and event["type"] == "takeBonus" and not args.get("source") and not args.get("remove"):
+                desc = (args.get("bonus_desc") or {}).get("args") or {}
+                offer = (desc.get("bonus_type"), desc.get("bonus_n"))
+                if offered[offer] <= 0:
+                    continue                                  # a bonus of the same chain that the Archaeologist never offered (an 8-CP bonus, a track upgrade)
+                offered[offer] -= 1                           # one resolution uses one slot
                 hints[order] = source
             else:
                 continue
@@ -321,6 +347,7 @@ def sponsor_state_gains(event, state, seat_of, action=None, source_hint=None) ->
             if typ == "Worker" and p.map_id == "11":
                 typ = "extra-shift"
             # Ability strength is not an activation count: Scavenging 3 twice is two bonuses, not six.
-            stat, n = (f"doubled:{typ}:{amount}", 2) if typ in {"Scavenging", "Digging", "shark-attack", "adapt"} else ("doubled:" + typ, 2 * amount)
+            # Only the extra copy is the sponsor's gain: the first activation comes with any building.
+            stat, n = (f"doubled:{typ}:{amount}", 1) if typ in {"Scavenging", "Digging", "shark-attack", "adapt"} else ("doubled:" + typ, amount)
             gains[stat] += n
     return [(event.order, "S271", stat, n) for stat, n in sorted(gains.items())]

@@ -57,7 +57,7 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
 
     def dump(name: str, obj) -> None:
-        (OUT / name).write_text(json.dumps(obj, ensure_ascii=False, indent=4), "utf8")
+        (OUT / name).write_text(json.dumps(obj, ensure_ascii=False, indent=4).replace("Sun Bathing", "Sunbathing"), "utf8")  # (upstream spells it "Sun Bathing")
 
     bga_names = raw["cardNames"]  # upstream id -> BGA id string (incomplete upstream)
 

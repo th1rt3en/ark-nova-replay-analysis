@@ -75,6 +75,8 @@ export const S = {
   postStats: null,    // replay: the statistics counted from the raw log once the last step is reached (results.js `loadStats`): {loading} | {error} | {players, first, ender, conceded}
   timer: null,
   speed: 1,
+  animationSpeed: 1,                                    // saved animation multiplier (.25/.5/1/1.5/2/3), independent of autoplay; 1x is half the original pace
+  cardMotionForward: false,                             // one forward navigation, consumed by card-motion after rendering (seeking stays instant)
   handScale: 1,                                          // size of the cards in the hand, 0.5 ... 2 (settings pop-up, settings.js; --hs on body)
   s274: 'victory',                                       // 'victory' | 'mascot': the sponsor S274 under its BGA name Victory Column (default) or as the Mascot Statue, see cards.js `info` / settings.js
   noSnake: 'show',                                       // 'show' | 'hide' | 'worm': the cards with a snake photo, see nosnake.js / settings.js
@@ -85,6 +87,7 @@ export const S = {
   drawerAnim: null,                                      // 'drawer': { seat, t, kind? } of the drawer that was just opened (it slides in once) or, with kind 'resize', of a size switch (only the drawer of that seat wipes to the new size)
   drawerSeats: {},                                       // 'drawer': seat -> true while that board's sheet is open
   zooTab: null,                                          // 'tabs': the seat on show (null = the first of seatOrder())
+  applyDiscounts: true,        // animals show their price after the partner zoo / Expert discounts (price.js; settings pop-up, Cards tab)
   endgameLive: true,           // the live count of the endgame points (violet +X under the appeal and conservation tiles, side-panel.js; settings pop-up, settings.js)
   showTimeline: false,         // the timeline row in the control panel (settings pop-up, settings.js)
   sbSeat: null,        // sandbox: the seat whose tools are shown

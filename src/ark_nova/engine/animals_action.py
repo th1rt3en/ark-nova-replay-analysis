@@ -62,7 +62,7 @@ def max_animals(level: int, strength: int, variant: int = 0) -> int:
     return (1 if strength < 5 else 2) if level < 2 else (1 if strength < 3 else 2)
 
 
-SUPPORTED_ABILITIES = ("Hunter", "Sun Bathing", "Snapping 1", "Snapping 2", "Perception 4", "Clever", "Boost: Association", "Boost: Sponsors",
+SUPPORTED_ABILITIES = ("Hunter", "Sunbathing", "Snapping 1", "Snapping 2", "Perception 4", "Clever", "Boost: Association", "Boost: Sponsors",
                        "Boost: Animal", "Boost: Card", "Boost: Building")
 _BOOST_TYPE = {"Association": "association", "Sponsors": "sponsors", "Animal": "animals", "Card": "cards", "Building": "build"}
 
@@ -125,7 +125,7 @@ def reef_effects(state, key: str, b) -> list:
 
 
 def ability_effects(state, key: str, pairs=None) -> list:
-    """Pending effects of the animal's abilities: Hunter X (reveal X, keep an animal), Perception X (reveal X, keep one), Sun Bathing X
+    """Pending effects of the animal's abilities: Hunter X (reveal X, keep an animal), Perception X (reveal X, keep one), Sunbathing X
     (sell up to X cards), Snapping N (take N cards from the display, any)."""
     out = []
     for name, value in (abilities(key) if pairs is None else pairs):
@@ -133,7 +133,7 @@ def ability_effects(state, key: str, pairs=None) -> list:
             out.append({"kind": "reveal", "source": key, "x": int(value), "filter": "animal", "optional": False})
         elif name.startswith("Perception"):
             out.append({"kind": "reveal", "source": key, "x": int(name.split()[1]), "filter": "any", "optional": False, "n": int(name.split()[1]) // 2})        # (Perception 4: draw 4, keep 2)
-        elif name == "Sun Bathing":
+        elif name == "Sunbathing":
             out.append({"kind": "sell", "source": key, "max": int(value), "optional": True})
         elif name.startswith("Boost: "):        # the X action card goes to slot 1 or slot 5 at the end of the action (player's choice)
             state.current_action.setdefault("after", []).append({"kind": "boost", "type": _BOOST_TYPE[name[7:]], "source": key, "optional": True})

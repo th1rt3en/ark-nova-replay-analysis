@@ -54,7 +54,9 @@ def observe_sponsors(before: GameState, act: Action, after: GameState) -> list:
         gone = total(was, kind, src) - total(now, kind, src)
         if act.kind != "skip_effect" and gone > 0:
             if stat == "sunbathed":
-                out.append((src, stat, len(act.args.get("cards") or [])))
+                cards = len(act.args.get("cards") or [])
+                out.append((src, stat, cards))
+                out.append((src, "money", 4 * cards))                       # Sea Turtle Tank pays 4 money for each card sunbathed
             else:
                 out.append((src, stat, gone))
     for (kind, src), stats in APPEARED_STATS.items():

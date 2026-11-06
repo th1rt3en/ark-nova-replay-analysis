@@ -737,7 +737,7 @@
         "abilities": [
             {
                 "keyword": {
-                    "name": "Sun Bathing",
+                    "name": "Sunbathing",
                     "descriptionTemplate": "abilities.sun_bathing_description",
                     "model": 1,
                     "multiply": true,
@@ -1777,7 +1777,7 @@
         "abilities": [
             {
                 "keyword": {
-                    "name": "Sun Bathing",
+                    "name": "Sunbathing",
                     "descriptionTemplate": "abilities.sun_bathing_description",
                     "model": 1,
                     "multiply": true,
@@ -2343,7 +2343,7 @@
         "abilities": [
             {
                 "keyword": {
-                    "name": "Sun Bathing",
+                    "name": "Sunbathing",
                     "descriptionTemplate": "abilities.sun_bathing_description",
                     "model": 1,
                     "multiply": true,
@@ -2384,7 +2384,7 @@
         "abilities": [
             {
                 "keyword": {
-                    "name": "Sun Bathing",
+                    "name": "Sunbathing",
                     "descriptionTemplate": "abilities.sun_bathing_description",
                     "model": 1,
                     "multiply": true,
@@ -2423,7 +2423,7 @@
         "abilities": [
             {
                 "keyword": {
-                    "name": "Sun Bathing",
+                    "name": "Sunbathing",
                     "descriptionTemplate": "abilities.sun_bathing_description",
                     "model": 1,
                     "multiply": true,
@@ -2620,7 +2620,7 @@
         "abilities": [
             {
                 "keyword": {
-                    "name": "Sun Bathing",
+                    "name": "Sunbathing",
                     "descriptionTemplate": "abilities.sun_bathing_description",
                     "model": 1,
                     "multiply": true,
@@ -2737,7 +2737,7 @@
         "abilities": [
             {
                 "keyword": {
-                    "name": "Sun Bathing",
+                    "name": "Sunbathing",
                     "descriptionTemplate": "abilities.sun_bathing_description",
                     "model": 1,
                     "multiply": true,

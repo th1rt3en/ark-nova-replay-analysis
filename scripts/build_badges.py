@@ -17,6 +17,8 @@ SHEET_URL = "https://x.boardgamearena.net/data/themereleases/current/games/arkno
 OUT = ROOT / "web" / "badges"
 CSS_URL = "https://x.boardgamearena.net/data/themereleases/current/games/arknova/260803-1142/arknova.css"
 COLS, ROWS = 5, 7
+SKIP = {"Pet2"}  # BGA lists it, but it is not an official badge and nothing uses it
+
 
 
 def main() -> None:
@@ -26,7 +28,7 @@ def main() -> None:
         m = re.fullmatch(r"\s*\.badge-icon\[data-type=([\w-]+)\]\s*", sel)
         x = re.search(r"background-position-x:([\d.]+)(%?)", body)
         y = re.search(r"background-position-y:([\d.]+)(%?)", body)
-        if m and x and y:
+        if m and x and y and m.group(1) not in SKIP:
             cells[m.group(1)] = (round(float(x.group(1)) / 25), round(float(y.group(1)) / (100 / (ROWS - 1))))
     if not SHEET.exists():
         SHEET.parent.mkdir(parents=True, exist_ok=True)

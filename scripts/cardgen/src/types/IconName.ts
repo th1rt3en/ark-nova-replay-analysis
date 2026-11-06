@@ -5,7 +5,7 @@
 export enum IconName {
   // keywords
   CLEVER = 'Clever',
-  SUN_BATHING = 'Sun Bathing',
+  SUN_BATHING = 'Sunbathing',
   POUCH = 'Pouch',
   HUNTER = 'Hunter',
   SPRINT = 'Sprint',

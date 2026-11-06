@@ -36,7 +36,8 @@ export function setupSidebar() {
 }
 // Keep the line of the step on show inside the visible part of the log (the list only, never the page). `center`: put it in the middle (after switching to the log).
 export function followLog(center) {
-  const list = $('moves'), li = list && list.children[S.step];
+  const list = $('moves'); let li = list && list.children[S.step];
+  while (li && li.offsetParent === null) li = li.previousElementSibling;           // (a step the log filter hides: follow the last line before it that is shown)
   if (!li || !list.clientHeight) return;
   if (center) list.scrollTop = li.offsetTop - (list.clientHeight - li.offsetHeight) / 2;
   else if (li.offsetTop < list.scrollTop) list.scrollTop = li.offsetTop;

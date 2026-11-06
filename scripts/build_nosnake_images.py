@@ -3,7 +3,8 @@ and Reptile Breeding Program, the sponsor Veterinarian), with the photo replaced
   _ns = "missing photo": a dashed frame with a crossed-out camera;  _sw = the photo of the Slow Worm (A488, not a snake) instead.
 The icons that lie on the photo are kept by shapes (KEEP, large-card pixels; the small card uses the same shapes scaled). Run with the system python (needs Pillow):
   python scripts/build_nosnake_images.py
-The list of cards is SNAKE_CARDS (the web page has the same list in web/js/nosnake.js)."""
+The list of cards is SNAKE_CARDS (the web page has the same list in web/js/nosnake.js).
+REMINDER: when a new card with a snake photo is added to the game (an animal, project or sponsor), put it in SNAKE_CARDS (animals also in ANIMALS) and in web/js/nosnake.js, run this script and look at the card in Slow Worm mode; the requirement badges of animals are kept by `bars_bottom`."""
 import math
 from pathlib import Path
 
@@ -34,12 +35,32 @@ def kind(key):
     return key[0]
 
 
+BARS = {}                                                              # animal -> large-card y where its red requirement bars end (0 = none): the column of requirement badges has to stay as well
+
+
+def bars_bottom(key):
+    """The lowest row (large-card pixels) of the red requirement bars under the price panel: scanned down column x = 12 of the large card from the panel's bottom edge (y 262) to the end of the art (520)."""
+    im = Image.open(WEB / "cards_large" / f"{key}.webp").convert("RGB")
+    last, gap = 0, 0
+    for y in range(262, ART_BOTTOM["A"][0]):                            # (the bars follow one another with a thin seam; the photo may be reddish, so only the run that starts right under the panel counts)
+        r, g, b = im.getpixel((12, y))
+        if r > 170 and g < 130 and b < 130:
+            last, gap = y, 0
+        else:
+            gap += 1
+            if gap > 8 and (last or y > 290):
+                break
+    return last
+
+
 def keep_mask(key, size, scale):
     w, h = size
     s = 4
     m = Image.new("L", (w * s, h * s), 0)
     d = ImageDraw.Draw(m)
     for sh in KEEP[key]:
+        if BARS.get(key) and sh[0] == "rrect" and sh[3] == 154:           # (the block under the grey panel reaches down to the last requirement bar)
+            sh = (*sh[:4], max(sh[4], BARS[key] + 4), sh[5])
         v = [c * scale * s for c in sh[1:]]
         if sh[0] == "rect":
             d.rectangle(v, fill=255)
@@ -97,6 +118,9 @@ def make(key, folder, size, scale, bottom):
 
 
 def main():
+    for key in ANIMALS:
+        BARS[key] = bars_bottom(key)
+    print("requirement bars end at", BARS)
     for key in SNAKE_CARDS:
         k = kind(key)
         make(key, "cards_large", LARGE, 1, ART_BOTTOM[k][0])

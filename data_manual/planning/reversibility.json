@@ -321,7 +321,7 @@
             "id": "effect:sell",
             "group": "Pending effects (effect kinds)",
             "label": "sell",
-            "description": "Discard cards for money (Sun Bathing).",
+            "description": "Discard cards for money (Sunbathing).",
             "suggested": "reversible",
             "why": "Public discard.",
             "decision": "reversible",

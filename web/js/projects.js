@@ -46,6 +46,7 @@ export function projectPanel(st, keys, count, iconName, title, blocked) {
       const wrap = el('div', 'withtokens');
       const pc = info(keys[i]);
       const line = el('div', 'projline projstrip' + (isNew(keys[i]) ? ' card-new' : ''));       // like BGA: the dark green part with the icon(s) of the project left, the light green part with its three slots right; the green base is CSS, the icons and slots are the picture
+      line.dataset.key = keys[i];          // (card-motion.js flips the played card into this strip)
       if (stripOf(pc)) {
         const art = el('img', 'projstripart'); art.src = stripOf(pc); art.alt = pc.name;
         line.append(art);

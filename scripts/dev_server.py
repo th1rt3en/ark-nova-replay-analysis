@@ -152,6 +152,13 @@ def build_app():
     local_index, local_logs = LocalIndex(index), LocalLogs(logs)
     app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs), accounts=accounts)
     _planning_routes(app)
+
+    @app.middleware("http")
+    async def no_browser_cache(request, call_next):          # the files under web/ change all the time here: the browser must fetch them fresh on every load (no stale ES modules / CSS)
+        response = await call_next(request)
+        if not request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
+        return response
     return app
 
 

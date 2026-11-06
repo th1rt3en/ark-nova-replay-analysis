@@ -133,7 +133,7 @@ REVERSIBILITY = {
         ("effect:take", "take", "Take a card: deck or display.", "depends", "Deck: irreversible. Display: reversible."),
         ("effect:gain", "gain", "Money, appeal, conservation, reputation, X tokens.", "reversible", "Reputation and conservation thresholds open their own rows."),
         ("effect:reveal", "reveal (Hunter, Perception, Scuba Dive)", "Reveal the X topmost cards and keep some.", "irreversible", "The cards were revealed to the opponent."),
-        ("effect:sell", "sell", "Discard cards for money (Sun Bathing).", "reversible", "Public discard."),
+        ("effect:sell", "sell", "Discard cards for money (Sunbathing).", "reversible", "Public discard."),
         ("effect:mark", "mark", "Place a mark cube.", "reversible", ""),
         ("effect:marketing", "marketing", "Play a sponsor / bonus through Marketing.", "reversible", ""),
         ("effect:donation", "donation", "Donate.", "reversible", ""),

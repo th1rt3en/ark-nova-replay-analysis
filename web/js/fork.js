@@ -148,7 +148,7 @@ export function commitSteps(steps) {
   for (const st of steps) { st.index = S.replay.steps.length; S.replay.steps.push(st); }
   buildMoveList();
   S.forkBusy = false;
-  go(S.replay.steps.length - 1);
+  go(S.replay.steps.length - 1, 0, true);
 }
 
 export async function playFork(action) {
@@ -337,9 +337,9 @@ export function forkBar() {
       bar.append(who0, el('b', '', ' must choose an action to put a multiplier token on'));
       (st.players[p0].action_cards || []).forEach((c, i) => {
         const a = mine.find((x) => x.args.multiplier === c.type);
-        const b = el('span', 'abtn' + (c.level === 2 ? ' lvl2' : '') + (a ? ' choosable' : ' off'));
+        const b = el('span', 'abtn acbtn' + (c.level === 2 ? ' lvl2' : '') + (a ? ' choosable' : ' off'));
         b.title = a ? 'Put the Multiplier token on ' + ACTION_NAMES[c.type] + (c.level === 2 ? ' II' : '') : ACTION_NAMES[c.type] + ' cannot take it';
-        b.append(pic(ACTION_ICON[c.type], 26), el('b', '', i + 1));
+        b.append(pic(ACTION_ICON[c.type], 22), el('b', '', i + 1));
         if (S.replay.marine_worlds && c.variant) { const v = el('img', 'variant'); v.src = '/action_icons/' + c.type + '_' + c.variant + '_' + (c.level === 2 ? 2 : 1) + '.webp'; v.alt = 'Variant ' + c.variant; b.append(v); }
         if (a) b.onclick = () => { if (!S.forkBusy) playFork(a); };
         bar.append(b);

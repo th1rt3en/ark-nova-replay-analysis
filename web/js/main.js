@@ -8,10 +8,12 @@ import { applyIconNames } from './icons.js';
 import { renderShared } from './shared.js';
 import { actionBar } from './action-bar.js';
 import { sidePanel } from './side-panel.js';
-import { renderDock, toggleDock } from './dock.js';
-import { afterRender } from './handfly.js';
+import { cycleDockTab, renderDock, toggleDock } from './dock.js';
+import { beforeRender, afterRender } from './card-motion.js';
 import { fitPlayed, renderCards, renderZoo } from './zoo.js';
 import { engineBadge, labelNode } from './log-labels.js';
+import { setupLogSearch, refreshLogSearch } from './log-search.js';
+import { setupLogFilter, refreshLogFilter } from './log-filter.js';
 import { fitDisplay, fitScale } from './layout.js';
 import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
 import { atEnd, atStart, buildMoveList, buildTimeline, go, moveHash, moveNumbers, setPlaying, stepBy, stepOfHash, stepOfMove, updateTimeline } from './playback.js';
@@ -43,6 +45,7 @@ function zooBoards(st) {
 export function zooStep(d) { const o = seatOrder(), at = Math.max(0, o.indexOf(S.zooTab)); S.zooTab = o[(at + d + o.length) % o.length]; S.lastBoard = null; render(); }
 document.addEventListener('zoolayout', () => { S.lastBoard = null; render(); });
 document.addEventListener('encborders', () => { S.lastBoard = null; render(); });
+document.addEventListener('actionstrip', () => { S.lastBoard = null; render(); });
 document.addEventListener('eglive', () => { S.lastBoard = null; render(); });                  // (the live count of the endgame points is switched on or off)
 document.addEventListener('playedmode', () => { S.lastBoard = null; render(); });          // (where the played cards are shown: the boards and the dock are drawn again)
 
@@ -89,6 +92,7 @@ export function render() {
   // made the whole page flicker with every frame. A fork / sandbox / live game draws every time (what is selected or clicked changes the boards).
   const same = !FORK && !SANDBOX && S.lastBoard && S.lastBoard.st === st && S.lastBoard.pov === S.pov && S.lastBoard.orient === S.orient && S.lastBoard.zoos === S.zooLayout + S.zooTab;
   if (!same) {
+    beforeRender(st);
     redraw($('shared'), () => renderShared(st));
     redraw($('side'), () => sidePanel(st));
     const zoos = $('zoos');
@@ -116,15 +120,19 @@ export function render() {
   list.querySelector('.on')?.classList.remove('on');
   const li = list.children[S.step];
   li.classList.add('on');
-  for (let i = 0; i < list.children.length; i++) list.children[i].hidden = i > S.step;       // (spoiler protection: the log only lists the moves up to the one on show)
+  // spoiler protection: the log lists the moves up to the furthest one shown so far (going back keeps what was already revealed)
+  S.seenStep = S.seenFor === S.replay ? Math.max(S.seenStep, S.step) : S.step; S.seenFor = S.replay;
+  for (let i = 0; i < list.children.length; i++) list.children[i].hidden = i > S.seenStep;
+  refreshLogFilter();                                                     // (the Players / Actions filter hides lines, log-filter.js)
+  refreshLogSearch();                                                     // (the search finds only in the lines on show)
   followLog();
-  history.replaceState(null, '', '#' + moveHash(S.step, S.phase));       // (#641 = BGA's move 641, #641.1 = the second step of that move, #641.1.2 = its third frame)
+  history.replaceState(null, '', '#' + moveHash(S.step, S.phase, S.results));       // (#641 = BGA's move 641, #641.1 = the second step of that move, #641.1.2 = its third frame)
   fitSidebar();
   fitDisplay();
   fitPlayed();
   updateTimeline();
   window.scrollTo(scrollX, scrollY);
-  afterRender();                                                          // (the cards a reveal kept fly from the lightbox into the hand, handfly.js)
+  afterRender(st);                                                        // visible card arrivals/departures, after final layout and scrolling
 }
 
 const fitJump = () => { const j = $('jump'), n = Math.max(1, String(j.value).length); j.style.width = n + 'ch'; j.parentNode.dataset.len = Math.min(n, 3); };      // (the move box: the input is as wide as its digits; `data-len` lets the CSS nudge the "#" + number pair left)
@@ -132,6 +140,8 @@ const fitJump = () => { const j = $('jump'), n = Math.max(1, String(j.value).len
 function init() {
   initFullscreen($('fullscreen'));
   buildMoveList();
+  setupLogSearch();
+  setupLogFilter();
   buildTimeline();
   setupSidebar();
   setupNoTips();
@@ -140,6 +150,7 @@ function init() {
   $('next').onclick = () => { stepBy(1); };
   $('play').onclick = () => { setPlaying(!S.timer); };
   setupSettings();
+  document.addEventListener('povapplied', () => { buildMoveList(); go(S.step, S.phase); });                  // (another point of view: the Log is built again, pov.js `mergedAway`)
   document.addEventListener('nosnake', () => { refreshLabels(); S.lastBoard = null; render(); });                  // (the cards with a snake photo get their new picture at once, no reload)
   setupShortcuts();
   $('last').onclick = () => { go(S.replay.steps.length - 1, 99); };
@@ -153,6 +164,7 @@ function init() {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
     if ((e.key === 's' || e.key === 'S') && !shortcutsOpen() && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
     if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'Tab' && !MINIGAME) { if (cycleDockTab(e.shiftKey ? -1 : 1)) e.preventDefault(); return; }       // (Tab / Shift + Tab: the tabs of the shown cards, dock.js)
     const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
     if (S.results && !FORK && !PLAY && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) keys[e.key] = () => { if (!!S.gsGraph === (e.key === 'ArrowDown')) return; S.gsGraph = e.key === 'ArrowDown'; syncResults(); };       // (on the game stats: ↑ Table, ↓ Graph; the key of the view that is already open does nothing, no redraw)
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)
@@ -165,11 +177,12 @@ function init() {
     const fb = $('fork');
     if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&at=' + moveHash(S.step, 0) + '&pov=' + povParam() + '&orient=' + orientParam() + (params.get('source') === 'upload' ? '&source=upload' : ''), '_blank'); };
   }
-  const [h1, h2] = PLAY ? [S.replay.steps.length - 1, 0] : FORK || MINIGAME ? [0, 0] : stepOfHash(location.hash);
+  const [h1, h2, hr] = PLAY ? [S.replay.steps.length - 1, 0] : FORK || MINIGAME ? [0, 0] : stepOfHash(location.hash);
   if (loadProgress) loadProgress.done();
   $('loading').hidden = true;
   $('app').hidden = false;
   go(Number.isFinite(h1) ? h1 : 0, Number.isFinite(h2) ? h2 : 0);
+  if (hr) { S.wantResults = true; render(); }                              // (an address one step past the last: open the results as soon as they are available)
   if (needsChoice()) askSpectated();                                        // (a replay opened for the first time: whom to spectate)
 }
 // The first answer holds the draft and the starting hand only (`partial`): the viewer is already usable; the whole replay (the engine plays the game, some 20 s) replaces it when it

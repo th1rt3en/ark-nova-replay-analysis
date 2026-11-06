@@ -40,14 +40,14 @@ const AbilityComponent: React.FC<AbilityProps> = ({
   try {
     keyWord =
       ability.value.toString().length > 1
-        ? t(ability.keyword.name) + ':' + t(ability.value.toString())
+        ? t(ability.keyword.name) + ': ' + t(ability.value.toString())
         : ability.value.toString().length === 1
           ? t(ability.keyword.name) + ' ' + t(ability.value.toString())
           : t(ability.keyword.name);
   } catch {
     keyWord =
       ability.value.toString().length > 1
-        ? ability.keyword.name + ':' + ability.value.toString()
+        ? ability.keyword.name + ': ' + ability.value.toString()
         : ability.value.toString().length === 1
           ? ability.keyword.name + ' ' + ability.value.toString()
           : ability.keyword.name;

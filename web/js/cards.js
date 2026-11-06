@@ -5,6 +5,7 @@ import { pic } from './icons.js';
 import { afterMark, forkSingleSelect } from './action-bar.js';
 import { snakeSafe } from './nosnake.js';
 import { sponsorStatRows } from './sponsor-stats.js';
+import { discounted, priceBadge, priceSrc, withPrice } from './price.js';
 
 // S274 is the Mascot Statue of the card data and the Victory Column on BGA (setting "Statue card", S.s274): its name and pictures (made by build_cards.py as S274_VC; the photo is a placeholder for now) are swapped here, so every name and picture in the viewer follows.
 const VICTORY = new WeakMap();
@@ -19,7 +20,7 @@ export const cardName = (key) => title(info(key).name);
 // Zoo School, the animal houses, Amazon House, Aquarium, Cable Car, Excavation Site, Waza Large Animal Program (keep in step with replay/preview.py PREVIEW_CARDS)
 export const PREVIEW_CARDS = new Set(['S210', 'S211', 'S213', 'S243', 'S244', 'S245', 'S246', 'S247', 'S248', 'S249', 'S250', 'S251', 'S252', 'S253', 'S254', 'S255', 'S256', 'S257',
   'S263', 'S265', 'S271', 'S272', 'S274', 'S276', 'S278', 'S279', 'S281']);
-export function card(key, extraClass) {
+export function card(key, extraClass, seat) {                          // `seat`: whose discounts the price shows (a seat, or 'display'; price.js); none = the printed price
   if (key === '?') {                                                     // a card the viewer may not see (the other player's hand in a player's point of view)
     const b = el('div', 'card back' + (extraClass ? ' ' + extraClass : ''));
     b.title = 'Hidden card';
@@ -34,9 +35,12 @@ export function card(key, extraClass) {
     img.src = snakeSafe(c.image); img.alt = cardName(key);                // (not lazy: a card drawn again with the page's next render would show an empty frame first)
     img.onerror = () => { img.remove(); d.append(textFace(key, c)); };
     d.append(img);
-    bindPreview(d, () => largeOf(c), () => !!d.closest('#dock'));                                    // (a card of the hand is shown in the middle of the screen)
-    d.addEventListener('pointerdown', (e) => { if (e.button === 0 && d.closest('#dock')) holdPreview(largeOf(c)); });         // (grabbing a card of the hand: no enlarged view while it is held or dragged, same as after a click)
-    d.addEventListener('click', () => { if (d.closest('#dock')) holdPreview(largeOf(c)); });         // (a click on a card of the hand: its enlarged view stays away until the pointer has left the card)
+    const dp = seat === undefined ? null : discounted(seat, key);                                    // the discounted price: drawn over the printed one, also in the enlarged card
+    if (dp !== null) d.append(priceBadge(key, dp));
+    const big = () => priceSrc(largeOf(c), key, dp);
+    bindPreview(d, big, () => !!d.closest('#dock'));                                    // (a card of the hand is shown in the middle of the screen)
+    d.addEventListener('pointerdown', (e) => { if (e.button === 0 && d.closest('#dock')) holdPreview(big()); });         // (grabbing a card of the hand: no enlarged view while it is held or dragged, same as after a click)
+    d.addEventListener('click', () => { if (d.closest('#dock')) holdPreview(big()); });         // (a click on a card of the hand: its enlarged view stays away until the pointer has left the card)
   } else {
     d.append(textFace(key, c));
   }
@@ -61,7 +65,7 @@ export function showPreview(src, centered, extra) {
 }
 function showNow(src, centered, extra) {
   const dbx = $('draftbox'); if (dbx && !dbx.hidden) return;
-  const p = $('preview'); p.classList.toggle('center', !!centered); p.src = src; p.hidden = false;
+  const p = $('preview'); p.classList.toggle('center', !!centered); withPrice(src, (u) => { p.src = u; }); p.hidden = false;
   showStats(src, p, extra);
   showRoll(src, p);
 }
@@ -341,7 +345,8 @@ export function cardRow(rawKeys, cls, emptyText, zone, dimmed, markable) {
   const keys = markable ? orderedKeys(zone, rawKeys) : rawKeys;
   if (!keys.length) row.append(el('span', 'empty', emptyText === '' ? '\u00a0' : emptyText || 'none')); // '' = no text (an empty hand), the space keeps the row's height
   const z = zone ? zoneNew(zone, keys) : null;
-  const items = keys.map((k, i) => (k ? card(k, (z && !quiet && z.isNew(k) ? 'card-new' : '') + (dimmed && dimmed(k) ? ' dim' : '')) : el('div', 'card')));
+  const zs = /^(\d+):(hand|stored)$/.exec(zone || ''), pseat = zs ? +zs[1] : undefined;            // (the cards of a hand / storage show the price after their owner's discounts)
+  const items = keys.map((k, i) => (k ? card(k, (z && !quiet && z.isNew(k) ? 'card-new' : '') + (dimmed && dimmed(k) ? ' dim' : ''), pseat) : el('div', 'card')));
   keys.forEach((k, i) => { if (k) items[i].dataset.key = k; });
   if (z && !quiet) for (const g of z.gone) items.splice(Math.min(g.index, items.length), 0, ghost(g.key));
   if (markable) {

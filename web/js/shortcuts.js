@@ -11,6 +11,7 @@ const D = {                                                                // ke
   Home: ['Home', 'Jump to the first step', ''],
   End: ['End', 'Jump to the last step', 'The final board, also from the results.'],
   r: ['R', 'Turn the building preview', 'While a sponsor building is being previewed (right click on its card in a hand): Shift + R turns it the other way, the mouse wheel over the map too.'],
+  Tab: ['Tab', 'Switch the cards', 'Cycles through the tabs of the shown cards: hand, endgame cards, the cards stored under the notepad (map 11) and the played cards (when the setting "Played cards" is the tray). Shift + Tab goes back.'],
   h: ['H', 'Show / hide the hand', 'The floating tray or the fan.'],
   s: ['S', 'Open the settings', ''],
   F11: ['F11', 'Full screen', 'Switches the browser to full screen and back; the full screen button next to the settings wheel does the same.'],
@@ -21,7 +22,7 @@ const GAP = [' ', .5];                                                     // (a
 const MAIN = [
   [['Esc', 1, 'Escape'], GAP, ...[1, 2, 3, 4].map((i) => ['F' + i, 1]), GAP, ...[5, 6, 7, 8].map((i) => ['F' + i, 1]), GAP, ...[9, 10, 11, 12].map((i) => i === 11 ? ['F11', 1, 'F11'] : ['F' + i, 1])],
   [...'`1234567890-='.split('').map((c) => [c, 1]), ['⌫', 2]],
-  [['Tab', 1.5], ...'QWERTYUIOP[]'.split('').map((c) => [c, 1]), ['\\', 1.5]],
+  [['Tab', 1.5, 'Tab'], ...'QWERTYUIOP[]'.split('').map((c) => [c, 1]), ['\\', 1.5]],
   [['Caps', 1.75], ...'ASDFGHJKL;\''.split('').map((c) => [c, 1]), ['Enter', 2.25]],
   [['Shift', 2.25], ...'ZXCVBNM,.'.split('').map((c) => [c, 1]), ['/', 1, '?'], ['Shift', 2.75]],
   [['Ctrl', 1.25], ['Win', 1.25], ['Alt', 1.25], ['Space', 6.25, ' '], ['Alt', 1.25], ['Win', 1.25], ['Fn', 1.25], ['Ctrl', 1.25]],

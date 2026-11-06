@@ -5,6 +5,7 @@
 // (`hexes`, `placement_bonuses`, `special_hexes` of the kind `upgrade_flag`, `bonus_slots`) and adds `association` (the spaces on the right and where the upgrade lies).
 import { $, el, svg } from './util.js';
 import { S } from './state.js';
+import { adaptIcon } from './bonusart.js';
 import { ICON_IDS, SHOW_VALUE, applyIconNames, iconUrl, moneyTile } from './icons.js';
 import { SLOT_SIZE, STRIP, associationStrip, bonusPanel } from './association.js';
 
@@ -53,7 +54,7 @@ function drawBonus(g, bn) {                                              // as z
   const icon = EXTRA_ICONS[bn.type] || ICON_IDS['bonus:' + bn.type];
   if (bn.type === 'Digging' || bn.type === 'rescue') { iconBox(g, icon, 0, 0, 80); return; }          // r9c13 (map 10) already has its own background
   iconBox(g, ICON_IDS.pentagon, 0, 0, 80);
-  if (bn.type === 'adapt') { iconBox(g, 'r10c15', -14, 3, 36); iconBox(g, 'r10c16', 15, 3, 36); }
+  if (bn.type === 'adapt') adaptIcon(g, 0, 1, bn.value || 1);
   else if (bn.type === 'money') moneyTile(g, 0, 3, 48);
   else if (bn.type === 'special-enclosure') { iconBox(g, 'r9c9', -17, 3, 30); iconBox(g, 'r9c11', 17, 3, 30); }
   else if ((bn.type === 'Scavenging' || bn.type === 'Pouch' || bn.type === 'perception' || ((bn.type === 'Clever' || bn.type === 'xtoken') && bn.value > 1)) && icon) {          // the number to the left of the icon, overlapping it a little
@@ -65,10 +66,13 @@ function drawBonus(g, bn) {                                              // as z
   if (bn.type === 'appeal' && !icon) put(g, 'text', { x: 0, y: 6, class: 'bonus-label' }, '★');
   if (SHOW_VALUE.has(bn.type) || bn.type === 'conservation') put(g, 'text', { x: 0, y: bn.type === 'money' ? 14 : 16, class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);
 }
-function drawFlag(g) {                                                    // as zooBoard draws a hex that needs the upgraded Build action (BGA's look): red parallelogram, BGA's Build II badge in a white ring
+function drawFlag(g, wedgeOnly) {                                         // as zooBoard draws a hex that needs the upgraded Build action (BGA's look): red parallelogram, BGA's Build II badge in a white ring (`wedgeOnly`: the hex has a bonus, its small badge comes after the bonus, `flagBadge`)
   const h = R * 0.866;
   put(g, 'polygon', { points: [[-R * 0.95, 0], [-R * 0.475, -h * 0.95], [R * 0.36, -h * 0.95], [-R * 0.115, 0]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '), class: 'flag-wedge' });
-  const br = R * 0.42, bx = R * 0.02, by = -R * 0.42;
+  if (wedgeOnly) return;
+  flagBadge(g, R * 0.02, -R * 0.42, R * 0.42);
+}
+function flagBadge(g, bx, by, br) {
   put(g, 'image', { href: '/badges/BuildII.webp', x: bx - br, y: by - br, width: 2 * br, height: 2 * br, class: 'flag-badge-img' });
   put(g, 'circle', { cx: bx, cy: by, r: br - 1, class: 'flag-ring' });
 }
@@ -140,11 +144,12 @@ function drawPieces() {
     const k = key(x, y), [cx, cy] = centre(x, y);
     const t = model.terrain[k];
     if (t) layers.terrain.append(svg('image', { href: '/map_editor/hex_' + t + '.png', x: cx - TILE[0] / 2, y: cy - TILE[1] / 2, width: TILE[0], height: TILE[1] }));
-    if (model.flag[k]) { const g = group(cx, cy); drawFlag(g); layers.flag.append(g); }
     const b = model.bonus[k];
-    if (b) {                                                              // beside an upgrade requirement the bonus is smaller and lies towards the lower right corner, so that both show
-      const g = model.flag[k] ? group(cx + 24, cy + 20, 0.62) : group(cx, cy);
+    if (model.flag[k]) { const g = group(cx, cy); drawFlag(g, !!b); layers.flag.append(g); }
+    if (b) {                                                              // on an upgrade requirement the bonus keeps its size (the wedge lies behind it) and a small Build II badge is pinned to its upper-left shoulder, as in the viewer (board.js)
+      const g = group(cx, cy);
       drawBonus(g, b);
+      if (model.flag[k]) flagBadge(g, -27, -29, 17);
       layers.bonus.append(g);
     }
   }

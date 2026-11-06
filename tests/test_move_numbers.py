@@ -45,3 +45,28 @@ def test_every_logged_bga_move_is_held_by_a_step_in_order():
             if e.get("log") and e["log"] not in HIDDEN and not any(t in e["log"] for t in NOT_SHOWN):
                 logged[int(p["move_id"])].append(e["log"])
     assert [m for m in logged if m not in held and m > 1] == []
+
+
+def test_merge_runs_unit():
+    """replay/merge.py: draws / digs / snaps of one player in a row are one step for the other player's point of view."""
+    from ark_nova.replay.merge import mark_merges
+
+    def step(label, pov=None, mid=1):
+        return {"label": label, "label_pov": pov, "move_id": mid, "state": {"turn_context": 1, "phase": "turn"}}
+
+    steps = [step("A draws X from the deck", [None, "A draws 1 card from the deck"], 5), step("A draws Y, Z from the deck", [None, "A draws 2 cards from the deck"], 6),
+             step("A discards X", [None, "A discards 1 card"], 7)]
+    assert mark_merges(steps, ["A", "B"]) == 1
+    assert steps[1]["merge"]["last"] and steps[1]["merge"]["from"] == 5 and not steps[0]["merge"]["last"] and "merge" not in steps[2]
+    assert steps[1]["label_pov"][1] == "A draws 3 cards from the deck" and steps[1]["label_pov"][0] is None
+    # digs are never merged; the draw that belongs to a dig from the hand (Digging Cards, same move) is not part of the run of draws after it
+    dd = [step("A digs X from your hand", [None, "A digs 1 card from their hand"], 1), step("A draws Y from the deck", [None, "A draws 1 card from the deck"], 1),
+          step("A draws Z from the deck", [None, "A draws 1 card from the deck"], 2), step("A draws W from the deck", [None, "A draws 1 card from the deck"], 3)]
+    assert mark_merges(dd, ["A", "B"]) == 1
+    assert "merge" not in dd[0] and "merge" not in dd[1] and dd[3]["merge"]["from"] == 2 and dd[3]["label_pov"][1] == "A draws 2 cards from the deck"
+    digs = [step("A digs P from the display", None, 1), step("The display is replenished with Q", None, 1), step("A digs Q from the display", None, 2)]
+    assert mark_merges(digs, ["A", "B"]) == 0
+    snaps = [step("A snaps P from the display", None, 1), step("A snaps Q from the display", None, 2)]
+    takes = [step("A takes P in reputation range from the display", None, 1), step("A takes Q in reputation range from the display", None, 2)]
+    assert mark_merges(snaps, ["A", "B"]) == 0 and mark_merges(takes, ["A", "B"]) == 0          # (only draws are merged)
+    assert mark_merges([step("A draws X from the deck", [None, "A draws 1 card from the deck"])], ["A", "B"]) == 0
