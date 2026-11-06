@@ -676,6 +676,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             pass                                                     # the card drawn for a rescued hand card, logged after the animal's own gains (a Meerkat Den: 837771519 turn 60)
         elif t == "pDrawCards" and e.log == "You draw ${card_names} from the deck" and (nxt_event(events, e) is not None and nxt_event(events, e).type == "buyAnimal" and nxt_event(events, e).args["card"].get("location") == "rescueStation"):
             pass                                                     # the card drawn for a rescued hand card: the engine draws it itself
+        elif t == "pDiscardCards" and e.log.startswith("You sell") and (a.get("bonuses") or {}).get("money") == 3 and len(a.get("cards") or []) == 1:
+            add(Action(seat_of[str(e.player or a.get("player_id"))], "harbor_sell", {"card": _key(a["cards"][0]["id"])}), e)      # map 4 Commercial Harbor: at any time of the turn, also before the action card is chosen
         elif (chosen in ("sponsors", "association", "animals", "build") or (chosen == "cards" and (_special_card_event(e) or flags.get("dig")))) and t in ("pDrawCards", "snapCard", "pDiscardCards"):
             why = _sponsor_cards(e, seat, seat_of, add, revealed, flags)
             if why:
@@ -875,7 +877,9 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         if hypnosis and xdelta != 1:
             return "unexplained X token change"
         extra = {"hypnosis": True} if hypnosis else ({"repeat": again_} if again_ else {})
-        return TurnPlan([Action(seat, "skip_action", {"type": cleanup_type, **extra})], [move_of[cleanup_order]], False, orders=[cleanup_order])
+        sold = [i for i, x in enumerate(actions) if x.kind == "harbor_sell"]          # (map 4: a card sold before the skipped action card is still sold, 688371482 turn 51)
+        return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})], [moves[i] for i in sold] + [move_of[cleanup_order]], False,
+                        orders=[orders[i] for i in sold] + [cleanup_order])
     for sup in assoc.all_supports:                                           # a notepad bonus that leaves no trace: the keyword space (3) of the map (Clever, Pouch, Determination, Marketing ...), which is only
         if sup.args.get("bonus") is None:                                   # visible when it is used
             sup.args["bonus"] = {"slot": 3}
