@@ -23,10 +23,11 @@ export function toggleSettings() {
 function close() { const m = $('settingsModal'); if (m) m.hidden = true; document.dispatchEvent(new Event('settingsclosed')); }
 // the timeline is a row of its own between the two button rows of the control panel; while it is off, a decorative line (#tldeco) holds its place
 export function applyTimeline() {
+  const shown = S.showTimeline && !(S.replay && S.replay.partial);          // (a partial replay, the first moves only: its timeline would end after a few steps and mislead; the full replay brings it, main.js `loadRest`)
   const t = $('timeline');
-  if (t) t.hidden = !S.showTimeline;
+  if (t) t.hidden = !shown;
   const d = $('tldeco');                                                   // the decorative line that the timeline replaces
-  if (d) d.hidden = S.showTimeline;
+  if (d) d.hidden = shown;
   fitSidebar();
 }
 export function applyHandScale() { document.body.style.setProperty('--hs', String(S.handScale)); }       // (parkposter.css sizes the dock from --hs)

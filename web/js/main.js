@@ -17,7 +17,7 @@ import { setupLogFilter, refreshLogFilter } from './log-filter.js';
 import { fitDisplay, fitScale } from './layout.js';
 import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
 import { atEnd, atStart, buildMoveList, buildTimeline, go, moveHash, moveNumbers, setPlaying, stepBy, stepOfHash, stepOfMove, updateTimeline } from './playback.js';
-import { settingsOpen, setupSettings, toggleSettings } from './settings.js';
+import { applyTimeline, settingsOpen, setupSettings, toggleSettings } from './settings.js';
 import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
 import { forkBar, initFork, renderForkMoves } from './fork.js';
@@ -198,6 +198,7 @@ function loadRest() {
     S.replay = full;
     buildMoveList();
     buildTimeline();
+    applyTimeline();                                                        // (the timeline appears with the full replay)
     S.lastBoard = null;
     note.remove();
     go(step, phase);
