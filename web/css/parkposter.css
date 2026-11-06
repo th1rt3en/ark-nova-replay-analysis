@@ -74,6 +74,10 @@ body.viewer .acticon img.icon { width: 1.32em; height: 1.32em; margin: 0; displa
 body.viewer .acticon .acvar { position: absolute; left: -.38em; top: -.38em; width: .87em; height: .87em; border-radius: 50%; box-shadow: 0 1px 2px rgba(0, 0, 0, .55); pointer-events: none; }
 body.viewer .labelamount.labelstr b { left: 10.6%; }                  /* (strength icon: the number is centred on the dark part, the four perforation holes take the left 10.6 %) */
 body.viewer .movepill .labelamount.labelm { --ah: 1.38em; }
+body.viewer .labelamount.labelx { --ah: 1.3em; }                  /* (the X token with a number is as high as the money icon, in the Log and in the move bar; it was 1.42 / 1.5em, taller than every other icon) */
+body.viewer .movepill .labelamount.labelx { --ah: 1.38em; }
+body.viewer :not(.labelamount) > .labelicon.labelxplain { --lh: .65em; height: 1.3em; width: auto; }                  /* (a single X token: the plain icon without the 1, the same height) */
+body.viewer .movepill :not(.labelamount) > .labelicon.labelxplain { --lh: .69em; height: 1.38em; }
 body.viewer .movepill .abtn b { color: inherit; }
 /* (in the decision bar `.movepill .actionbar b` resets the font of every <b> to the bar's: the numbers on the icons keep Park Num and their own stroke / colour there too) */
 body.viewer .movepill .actionbar .labelamount b { font: 400 .92em/1 'Park Num', system-ui, sans-serif; letter-spacing: 0; -webkit-text-stroke: 2.2px #222; color: #fff; }
@@ -92,6 +96,7 @@ body.viewer .brand img { width: 100%; height: 100%; display: block; }
 body.viewer .brand:hover { transform: translateY(-2px); filter: drop-shadow(0 6px 0 var(--ink)); }
 body.viewer .brand:active { transform: translateY(2px); filter: drop-shadow(0 2px 0 var(--ink)); }
 body.viewer .brand:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+body.viewer span.brand { pointer-events: none; }                    /* the public site: the logo is not a link (scripts/deploy_pages.py), so it does not rise either */
 body.viewer .hdrstats { flex: none; display: flex; align-items: center; gap: 12px; }
 body.viewer .pill { height: 60px; box-sizing: border-box; display: flex; align-items: center; background: var(--paper); border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); color: var(--ink); }
 body.viewer .pill.rnd { flex: none; gap: 0; padding: 0; }          /* Round | Turn: two equal 78 px halves and a dashed divider (the pill is 167 px wide); the word small above the number in each */
@@ -239,16 +244,14 @@ body.viewer .ppname .nm { display: block; overflow: hidden; text-overflow: ellip
 body.viewer .pphead .clock { margin: 0 4px 0 auto; font-size: 17px; background: rgba(255, 255, 255, .85); color: var(--ink); }
 body.viewer .poveye { color: inherit; }
 /* the score: a scoreboard, one plate per character on an ink plate; a plate swings over (rotateX, `plate` in side-panel.js) when its character changes; the small hole at the top is the hook */
-body.viewer .flip { display: inline-flex; gap: 0; padding: 3px; box-sizing: border-box; height: 38px; background: var(--ink); border-radius: 6px; align-items: center; }
-body.viewer .flip .ft { position: relative; display: block; width: 19px; height: 32px; perspective: 160px; flex: none; }
-body.viewer .flip .fc { position: absolute; inset: 0; display: block; transform-style: preserve-3d; }
-body.viewer .flip .ff { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 7px; box-sizing: border-box; border-radius: 0; background: #F1EEE0; backface-visibility: hidden; box-shadow: inset -1px 0 0 rgba(23, 38, 43, .55); font: 400 24px/1 'Park Num', system-ui, sans-serif; color: var(--ink); text-shadow: none; }
-body.viewer .flip .ff.back { transform: rotateX(180deg); }
-body.viewer .flip .ft:first-child .ff { border-radius: 3px 0 0 3px; }          /* (the plates touch: one board, fine lines between them) */
-body.viewer .flip .ft:last-child .ff { border-radius: 0 3px 3px 0; box-shadow: none; }
-body.viewer .flip .ff::before { content: ""; position: absolute; left: 50%; top: 1px; width: 3px; height: 3px; margin-left: -1.5px; border-radius: 50%; background: var(--ink); opacity: .8; }
+/* score: a chip with the number in white (side-panel.js); the player colour darkened, a thin light rim; as wide as its digits need (min 36 px), the type size and the shape do not change for 112 or -14.
+   Own colours where the darkened colour does not work (`chipTone` in side-panel.js): black (a dark grey-green, brighter rim), orange (deep amber), yellow (deep gold, pale yellow rim). */
+body.viewer .chip { display: grid; place-items: center; min-width: 36px; height: 36px; padding: 3px 7px 0; box-sizing: border-box; background: color-mix(in srgb, var(--pc) 60%, #000); color: #fff; border-radius: 9px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); font: 400 24px/1 'Park Num', system-ui, sans-serif; letter-spacing: 0; }
+body.viewer .pp.chip-black .chip { background: #14201F; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .5); }
+body.viewer .pp.chip-amber .chip { background: #5A2E00; box-shadow: inset 0 0 0 2px rgba(255, 200, 150, .5); }
+body.viewer .pp.chip-gold .chip { background: #7A6600; box-shadow: inset 0 0 0 2px rgba(255, 246, 170, .55); }
 body.viewer .ppscore { display: inline-flex; flex: none; }
-body.viewer .pp .ppres { display: flex; justify-content: space-evenly; gap: 0; align-items: center; text-align: center; margin: 0; padding: 0 8px 0 0; box-sizing: border-box; height: 56px; border: 0; }
+body.viewer .pp .ppres { display: grid; grid-template-columns: repeat(5, 59px); justify-content: center; justify-items: center; gap: 0; align-items: center; text-align: center; margin: 0; padding: 0; box-sizing: border-box; height: 56px; border: 0; }
 body.viewer .rt { position: relative; display: inline-flex; align-items: center; justify-content: center; }
 body.viewer .rt img { display: block; width: auto; }
 body.viewer .rt b { font: 400 20px/1 'Park Num', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; }
@@ -268,13 +271,20 @@ body.viewer .ppres2 .rt b small { font: 700 18px 'Park Label', system-ui, sans-s
 body.viewer .ppres2 .rt b.over { color: var(--rust); }
 body.viewer .ppres2 .bons { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; justify-content: flex-end; }
 body.viewer .ppres2 .btoken { display: inline-flex; margin: 0; }
+body.viewer .ppres2 .bons { flex-wrap: nowrap; gap: 0; }          /* several bonus tokens (rare: Extra Shift, a project token ...) stay on one row and overlap: 18 px to the left (two tokens, diagonal), the later one on top, always 36 px high; two tokens also alternate 5 px up / down (diagonal), three or more overlap by 10 px on one line */
+body.viewer .ppres2 .btoken + .btoken { margin-left: -18px; }
+body.viewer .ppres2 .bons:has(.btoken:nth-child(3)) .btoken + .btoken { margin-left: -10px; }
+body.viewer .ppres2 .bons:not(:has(.btoken:nth-child(3))) .btoken:nth-child(2):not(:only-child) { transform: translateY(5px); }
+body.viewer .ppres2 .bons:not(:has(.btoken:nth-child(3))) .btoken:nth-child(1):not(:only-child) { transform: translateY(-5px); }
 body.viewer .ppres2 .btoken img { height: 36px; width: auto; display: block; }
 body.viewer .pp .ppactions { display: flex; justify-content: space-between; margin: 0 10px; padding: 9px 0 0; border: 0; border-top: 3px dashed rgba(23, 38, 43, .4); }
 body.viewer .ppactions .ac { position: relative; display: inline-flex; box-sizing: content-box; border: 4px solid var(--act1); border-radius: 9px; background: #fff; }
 body.viewer .ppactions .ac.lvl2 { border-color: var(--act2); }
 body.viewer .ppactions .ac img.icon { width: 38px; height: 38px; display: block; }
 body.viewer .ppactions .ac .variant { left: -11px; top: -11px; width: 25px; height: 25px; }
-body.viewer .ppactions .ac.chosen { box-shadow: 0 5px 5px rgba(23,38,43,.35); transform: translateY(-5px); }
+body.viewer .ppactions .ac.ghost { box-sizing: content-box; width: 38px; height: 38px; border: 4px dashed rgba(23, 38, 43, .38); border-radius: 9px; background: transparent; align-items: center; justify-content: center; }        /* (an action card whose place is not known yet, during the draft: as big as the real card, 46 px) */
+body.viewer .ppactions .ac.ghost b { font: 400 24px/1 'Bowlby One', 'Park Head', system-ui, sans-serif; color: rgba(23, 38, 43, .38); }
+body.viewer .ppactions .ac.chosen { box-shadow: 0 0 0 3px var(--gold), 0 0 14px 5px rgba(244,182,63,.85), 0 6px 6px rgba(23,38,43,.35); transform: translateY(-5px); }        /* (the chosen action card: lifted 5 px, gold ring and halo) */
 body.viewer .pp .ppicons { display: grid; grid-template-columns: 1fr; gap: 2px; margin: 6px 10px 10px; padding-top: 7px; border-top: 3px dashed rgba(23, 38, 43, .4); }
 body.viewer .ppicons .icrow { display: flex; justify-content: space-around; }
 body.viewer .ppicons .ic { position: relative; display: inline-block; width: 44px; height: 44px; margin: 0 4px 4px 0; font-size: 0; }
@@ -408,6 +418,8 @@ body.viewer .forkpanel, body.viewer .sbtools { padding: 8px 14px; background: va
 body.viewer .forkpanel .muted { color: #52666B; }
 body.viewer .movepill .abtn { font: inherit; justify-content: center; }
 body.viewer .movepill .abtn { box-sizing: border-box; min-height: 2.04em; }        /* (every button of the move bar as high as one with an amount icon: 40.8 px at 20 px) */
+body.viewer .movepill .abtn.acbtn { min-height: 1.52em; padding: 2px 8px; font-size: 17px; }        /* (the action card buttons: 31 px high, as small as the chosen card's icon in the log line (30 px); the other buttons of the bar keep the 41 px) */
+body.viewer .movepill .abtn.acbtn .variant { width: 21px; height: 21px; left: -8px; top: -8px; }
 body.viewer .abtn { background: var(--act1); border-color: var(--ink); border-width: 3px; }
 body.viewer .abtn.lvl2 { background: var(--act2); border-color: var(--ink); }
 body.viewer .abtn.xbtn, body.viewer .abtn.gen, body.viewer .abtn.gainx { background: #5a5856; border-color: var(--ink); }
@@ -431,11 +443,13 @@ body.viewer .draftbox { position: fixed; left: 0; top: 0; z-index: 90; box-sizin
 body.viewer .draftbox[hidden] { display: none; }
 body.viewer .draftbox::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(8, 40, 50, .72); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }       /* (the dim is a layer of its own so that it can fade in while the cards move) */
 body.viewer .draftpop { pointer-events: auto; box-sizing: border-box; max-width: calc(100% - 48px); max-height: calc(var(--vh, 1vh) * 100 - 48px); overflow: auto; display: flex; flex-direction: column; gap: 0; padding: 40px 26px 20px; background: var(--paper); border: 4px solid var(--ink); border-radius: 26px; box-shadow: 0 8px 0 var(--ink); }
-body.viewer .draftwrap { display: flex; align-items: center; justify-content: center; gap: 26px; max-width: 100%; }          /* Back | panel | Next */
+body.viewer .draftwrap { position: relative; display: flex; align-items: center; justify-content: center; gap: 26px; max-width: 100%; }          /* Back | panel | Next */
 body.viewer .draftwrap .draftpop { min-width: 0; max-width: calc(100vw - 2 * 118px - 52px); max-width: calc(var(--vw, 1vw) * 100 - 2 * 118px - 52px); }
 body.viewer .draftnav { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: var(--paper); font: 700 18px 'Park Label', system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
+body.viewer .draftnav { position: relative; top: var(--ny, 0px); }        /* (centerNav() in reveal.js: the middle of the cards, not of the panel with its ribbon) */
 body.viewer .draftnav .dnbtn { width: 68px; height: 68px; box-sizing: border-box; display: grid; place-items: center; border-radius: 50%; background: var(--paper); border: 4px solid var(--ink); box-shadow: 0 5px 0 var(--ink); transition: background .12s, transform .12s; }
 body.viewer .draftnav .dnbtn svg { width: 40px; height: 40px; fill: none; stroke: var(--ink); stroke-width: 4.2; stroke-linecap: round; stroke-linejoin: round; }
+body.viewer .draftnav .dnbtn svg.dnglyph { width: 36px; height: 36px; fill: var(--ink); stroke: none; }        /* (the control box's double arrows, filled) */
 body.viewer .draftnav:hover:not(:disabled) .dnbtn { background: var(--gold); transform: translateY(-2px); }
 body.viewer .draftnav:active:not(:disabled) .dnbtn { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
 body.viewer .draftnav:focus-visible .dnbtn { outline: 3px solid var(--paper); outline-offset: 3px; }
@@ -450,8 +464,9 @@ body.viewer .draftpop .draftcards { flex-wrap: nowrap; gap: 22px; padding: 38px 
 body.viewer .draftpop .draftcard { flex: none; width: clamp(120px, calc(1230px / var(--cn, 5)), 250px); border-radius: 12px; box-shadow: 0 0 0 1px rgba(23, 38, 43, .6), 0 4px 10px rgba(0, 0, 0, .35); }
 body.viewer .draftpop .draftcard img { border-radius: 12px; }
 /* the button that hides the draft lightbox (so that the Fork button and the board can be used) and brings it back: under the panel, centred on the window; hidden, only the button stays */
-body.viewer .drafthide { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); pointer-events: auto; cursor: pointer; padding: 9px 22px; border-radius: 999px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); font: 700 16px 'Park Label', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; z-index: 2; }
-body.viewer .drafthide:hover { background: var(--gold); }
+body.viewer .drafthide { position: absolute; left: 50%; bottom: 42px; transform: translateX(-50%); pointer-events: auto; cursor: pointer; padding: 14px 34px; border-radius: 999px; background: var(--gold); color: var(--ink); border: 4px solid var(--ink); box-shadow: 0 6px 0 var(--ink), 0 12px 20px rgba(0, 0, 0, .35); font: 800 21px 'Park Label', system-ui, sans-serif; letter-spacing: .08em; word-spacing: .20em; text-transform: uppercase; white-space: nowrap; z-index: 2; }      /* (big gold with an ink outline and an eye: it must be seen on the dimmed lightbox and on the bright boards under it) */
+body.viewer .drafthide::before { content: ""; display: inline-block; width: 1.35em; height: 1.35em; margin-right: .55em; vertical-align: -.3em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2317262B' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E") center / contain no-repeat; }
+body.viewer .drafthide:hover { background: #FFC95E; }
 body.viewer .draftbox.lbhide::before { display: none; }
 body.viewer .draftbox.lbhide .draftwrap { display: none; }
 body.viewer .draftpop .draftkept { padding: 0; margin-right: 22px; }
@@ -580,14 +595,6 @@ body.viewer .zoo h2 .poveye svg .strike { stroke: color-mix(in srgb, var(--paper
 body.viewer .zoo h2 .poveye.closed { opacity: 1; }
 body.viewer .zoo h2 .poveye:not(.only):hover { filter: brightness(1.2); background: transparent; }
 body.viewer .zoo h2 .poveye.only:hover { background: transparent; }
-/* whose turn it is: the line under the header of the player on turn (`.on`, side-panel.js) is gold and glows, slowly pulsing */
-body.viewer .pphead.on { position: relative; z-index: 1; border-bottom-color: var(--gold); animation: pp-turn-glow 2.6s ease-in-out infinite; }
-@keyframes pp-turn-glow { 0%, 100% { box-shadow: 0 3px 6px -3px rgba(244, 182, 63, .45); } 50% { box-shadow: 0 5px 12px -2px rgba(244, 182, 63, .95); } }
-@media (prefers-reduced-motion: reduce) { body.viewer .pphead.on { animation: none; box-shadow: 0 4px 9px -2px rgba(244, 182, 63, .7); } }
-/* light player colours (yellow, white, grey): gold vanishes on them, so the line and glow turn deep orange */
-body.viewer .pp.light .pphead.on { border-bottom-color: #E0701E; animation-name: pp-turn-glow-light; }
-@keyframes pp-turn-glow-light { 0%, 100% { box-shadow: 0 3px 6px -3px rgba(224, 112, 30, .5); } 50% { box-shadow: 0 5px 12px -2px rgba(224, 112, 30, .95); } }
-@media (prefers-reduced-motion: reduce) { body.viewer .pp.light .pphead.on { animation: none; box-shadow: 0 4px 9px -2px rgba(224, 112, 30, .75); } }
 
 /* ---- numbers in Archivo (thin-numbers.js: the numbers in svg are drawn twice, the copy below carries the dark outline; the first row of the player box) ---- */
 body.viewer .rt.xo b { -webkit-text-stroke: 0; paint-order: normal; text-shadow: -2px 0 #000, 2px 0 #000, 0 -2px #000, 0 2px #000, -2px -2px #000, 2px 2px #000, -2px 2px #000, 2px -2px #000, -3px 0 #000, 3px 0 #000, 0 -3px #000, 0 3px #000; }
@@ -635,10 +642,12 @@ body.viewer .folders { gap: 0; align-items: flex-start; }
 body.viewer .folder { aspect-ratio: auto; margin: 0; width: 11.32rem; height: 16.2rem; background: none; filter: none; }
 body.viewer .folder .folname { display: none; }
 body.viewer .shared .displaycol .cards .folder > .card, body.viewer .folder > .card { left: .4rem; top: .9rem; width: 10.5rem; border-radius: 7px; box-shadow: 0 0 0 .75px rgba(23, 38, 43, .3), 0 1px 0 .75px rgba(23, 38, 43, .1); }
-body.viewer .folder:not(:has(.card))::before { content: ''; position: absolute; left: .4rem; top: .9rem; width: 10.5rem; height: 14.6rem; box-sizing: border-box; background: #E4C385; border: .75px solid rgba(23, 38, 43, .3); border-radius: 8px; box-shadow: 0 1px 0 .75px rgba(23, 38, 43, .1); }
+body.viewer .folder::before { content: ''; position: absolute; left: .4rem; top: .9rem; width: 10.5rem; height: 14.6rem; box-sizing: border-box; background: #E4C385; border: .75px solid rgba(23, 38, 43, .3); border-radius: 8px; box-shadow: 0 1px 0 .75px rgba(23, 38, 43, .1); }
 body.viewer .folder .folnum { left: 50%; top: .05rem; width: 2.5rem; height: 1.6rem; margin-left: -1.25rem; transform: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box; z-index: 3;
   background: #572411; border: .75px solid rgba(23, 38, 43, .3); border-radius: 7px; box-shadow: none;
   font: 400 1rem/1 'Park Num', system-ui, sans-serif; letter-spacing: 0; text-indent: 0; color: #F4E9CF; text-shadow: none; }
+
+body.viewer .folder:has(> .card.dim)::before { display: none; }          /* (a greyed-out card is see-through: the tan plate would shine through it) */
 
 /* Reputation track: a vector (js/reptrack.js, same size as the old picture). The reward pentagons are about 30 % bigger with a thin edge; the reward of 16 reputation lies above the end of the
    track (the ticket); the card upgrade badge sits smaller on the 9 | 10 border. */
@@ -751,6 +760,7 @@ body.viewer .drexp svg { width: 17px; height: 17px; }
 body.viewer .zoo.nrw.drawer-open .sheetclip { left: var(--sd-left, 66%); right: 0; z-index: 0; }       /* (behind the map (z 3) and the strip (z 1): they uncover it as they slide) */
 body.viewer .zoo.nrw.drawer-open .zooRow > :nth-child(2) { position: relative; z-index: 3; transform: translateX(calc(-1 * var(--sd-b, 0px))); box-shadow: 6px 0 14px rgba(0, 0, 0, .3); }
 body.viewer .zoo.nrw.drawer-open .zooRow > :nth-child(3) { position: relative; z-index: 1; transform: translateX(calc(-1 * var(--sd-s, 0px))); }
+body.viewer .zoo.nrw.drawer-open .zooRow > svg.strip { z-index: 1 !important; }       /* (the wide strip of a map with upgrade sets carries an inline z-index 3 so its pentagons can reach over the board: with the drawer open the map must cover it) */
 body.viewer .zoo.nrw.fresh .zooRow > :nth-child(2), body.viewer .zoo.nrw.fresh .zooRow > :nth-child(3) { animation: sd-map-out 400ms cubic-bezier(.3, .7, .2, 1) both; }       /* (the door: the map and the strip slide aside and uncover the sheet, which stays where it is) */
 body.viewer .zoo.nrw .drtab.open i.enter { animation-duration: 400ms; }
 body.viewer .zoo.nrw.closing .zooRow > :nth-child(2), body.viewer .zoo.nrw.closing .zooRow > :nth-child(3) { animation: sd-map-in 300ms ease-in forwards; }
@@ -817,10 +827,7 @@ body.viewer .zoo.closing .assocbar { animation: assocbar-out 200ms ease-in forwa
 @keyframes assocbar-in { from { transform: translateY(-14px); opacity: 0; } }
 @keyframes assocbar-out { to { transform: translateY(-14px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { body.viewer .zoo.foot-in .assocbar, body.viewer .zoo.closing .assocbar { animation: none; } }
-/* room to scroll the bar clear of the hand: while a drawer is open (and so its bar hangs 54 px under the box) the page can be scrolled until the bar's lower edge lies above the top of the hand: the unfolded tray
-   (169 px x --hk high) or the fan at rest (124 px x --hk); the folded tray is low enough for the normal room (118 px x --hk) */
-body.viewer:has(.zoo.drawer-open):has(.handtray.unf) { padding-bottom: calc(169px * var(--hk, 1.5) + 56px); }
-body.viewer:has(.zoo.drawer-open):has(.dock:not(.traymode)) { padding-bottom: calc(124px * var(--hk, 1.5) + 56px); }
+/* (the room to scroll the bottom of the page clear of the hand is measured by dock.js `fitDockSpace`) */
 
 /* settings panel: wider, with the controls in one column of equal width at the right (labels on the left); the text inside the controls is centred */
 body.viewer #settingsModal .modalbox { width: 620px; }
@@ -947,7 +954,7 @@ body.viewer .gsch { width: 0; height: 0; border-top: 7px solid transparent; bord
 body.viewer .gsv.a .gsch { border-left: 10px solid var(--sun); }
 body.viewer .gsv.b .gsch { border-right: 10px solid var(--sun); }
 body.viewer .gsv.hi .gsch { visibility: visible; }
-body.viewer .gslab { text-align: center; padding: 0 10px; font: 600 18px Barlow, system-ui, sans-serif; color: rgba(248, 237, 203, .85); }
+body.viewer .gslab { white-space: pre-line; text-align: center; padding: 0 10px; font: 600 18px Barlow, system-ui, sans-serif; color: rgba(248, 237, 203, .85); }
 body.viewer .gswait { padding: 30px; text-align: center; font: 600 18px Barlow, system-ui, sans-serif; color: var(--paper); }
 /* the graph view (the score race for now) on the dark field */
 body.viewer .gsgraph { background: rgba(7, 36, 45, .6); display: grid; place-items: stretch; padding: 8px 10px; min-height: 0; overflow: hidden; }
@@ -1020,7 +1027,7 @@ body.viewer .rsflap.rsgo svg:first-child:not([viewBox="0 0 24 24"]), body.viewer
 .incslip ul { list-style: none; margin: 0; padding: 0; }
 .incslip li { display: flex; align-items: baseline; gap: 6px; font: 600 15px 'Park Label'; padding: 3px 0 3px 10px; border-left: 6px solid var(--c); margin: 2px 0; }
 .incslip li b { font: 400 18px 'Park Num'; }
-.incslip .ilead { flex: 1; border-bottom: 2px dotted rgba(23, 38, 43, .5); transform: translateY(-3px); }
+.incslip .ilead { flex: 1; border-bottom: 2px dotted rgba(23, 38, 43, .6); transform: translateY(-3px); }
 .incslip .itot { display: flex; justify-content: space-between; align-items: baseline; border-top: 4px double var(--ink); margin-top: 8px; padding-top: 8px; font: 700 16px 'Park Label'; }
 .incslip .itot b { font: 400 26px 'Park Num'; }
 .incpop .iarrow { position: absolute; right: -11px; width: 0; height: 0; border: 11px solid transparent; border-right: 0; border-left: 12px solid #FFFCF0; }
@@ -1038,6 +1045,29 @@ body.viewer .draftcard.choosable { cursor: pointer; transition: transform .12s; 
 body.viewer .draftcard.choosable:hover { transform: translateY(-6px); }
 body.viewer .draftcard.faceless { aspect-ratio: 360 / 503; display: grid; place-items: center; box-sizing: border-box; background: repeating-linear-gradient(45deg, #5b3a24 0 8px, #6b4630 8px 16px); border: 3px solid #e8dcb8; }
 body.viewer .draftcard.faceless .backmark { font: 800 3.4rem system-ui, sans-serif; color: rgba(232, 220, 184, .55); }
+/* Assertion (reveal.js `assertion`): the base projects on offer in two rows, the first row the larger half (8 = 4 + 4, 9 = 5 + 4, 10 = 5 + 5, 11 = 6 + 5 ...); `--per` is the number in a row. Cards are 190 px wide up to 5 in a row and get narrower after that so that a row keeps the width of the 5-card row (1230 px). */
+body.viewer .draftpop.assertpop .draftcards { --aw: clamp(100px, min(calc((1230px - (var(--per) - 1) * 22px) / var(--per)), calc(var(--vh, 1vh) * 17.5)), 190px); flex-wrap: wrap; justify-content: center; width: calc(var(--per) * var(--aw) + (var(--per) - 1) * 22px + 28px); }
+body.viewer .draftpop.assertpop .draftcard { width: var(--aw); }
+/* Horse Whisperer lightbox (reveal.js `showHorse` / `horseFork`): the Petting Zoo animals large on top, below them the rest of the discard pile in a scrolling tray (10 cards in a row, greyed out) with the bin tile
+   (a tilted green tile with gold rim, like the ribbon icon, and the number of cards); no animal in the pile: the greyed goat badge with "x 0" in a dashed strip. */
+body.viewer .draftpop.hwpop { --hwc: clamp(96px, calc(var(--vh, 1vh) * 14), 160px); display: flex; flex-direction: column; max-height: calc(var(--vh, 1vh) * 100 - 160px); }       /* (the pop fits the window: the animals shrink with its height, the tray takes what is left and scrolls; the box keeps 110 px under it for the Hide button, `.draftbox:has(.drafthide)`) */
+body.viewer .draftpop.hwpop .draftgroup { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+body.viewer .draftpop.hwpop .draftgroup > * { flex: none; }
+body.viewer .draftpop.hwpop .draftcards.hwpets { flex-wrap: wrap; justify-content: center; gap: 20px; padding: 22px 14px 12px; }
+body.viewer .draftpop.hwpop .hwpets .draftcard { width: var(--hwc); }
+body.viewer .draftpop.hwpop .hwnone { display: flex; align-items: center; justify-content: center; gap: 16px; width: fit-content; margin: 18px auto 4px; padding: 10px 22px; border-radius: 14px; background: rgba(6, 30, 38, .6); border: 3px dashed rgba(244, 182, 63, .55); }
+body.viewer .draftpop.hwpop .hwbadge { width: 80px; height: 80px; border-radius: 50%; filter: grayscale(1); opacity: .5; }
+body.viewer .draftpop.hwpop .hwnone .x { font: 400 36px/1 'Park Num', system-ui, sans-serif; color: #FFF6DC; opacity: .8; }
+body.viewer .draftpop.hwpop .hwtray { position: relative; flex: 1 1 auto; min-height: 150px; display: flex; flex-direction: column; margin: 26px 14px 8px; padding: 22px 6px 8px; border-radius: 14px; background: rgba(6, 30, 38, .78); border: 3px solid rgba(244, 182, 63, .55); box-shadow: inset 0 3px 10px rgba(0, 0, 0, .5); }
+body.viewer .draftpop.hwpop .hwtile { position: absolute; left: -24px; top: -30px; z-index: 5; width: 72px; height: 72px; display: grid; place-items: center; transform: rotate(-6deg); border-radius: 12px; background: #2f8a4a; border: 4px solid var(--gold); box-shadow: 0 6px 4px rgba(0, 0, 0, .5); }
+body.viewer .draftpop.hwpop .hwtile .binsvg { width: 40px; height: 45px; display: block; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .35)); }
+body.viewer .draftpop.hwpop .hwtile .bincount { position: absolute; right: -14px; bottom: -12px; min-width: 28px; height: 28px; padding: 0 6px; box-sizing: border-box; border-radius: 14px; background: var(--paper); border: 3px solid var(--ink); color: var(--ink); display: grid; place-items: center; font: 400 17px/1 'Park Num', system-ui, sans-serif; }
+body.viewer .draftpop.hwpop .hwscroll { flex: 1 1 auto; min-height: 0; overflow-y: scroll; padding: 4px 10px; position: relative; }
+body.viewer .draftpop.hwpop .hwscroll::-webkit-scrollbar { width: 16px; }
+body.viewer .draftpop.hwpop .hwscroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, .10); border-radius: 8px; }
+body.viewer .draftpop.hwpop .hwscroll::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 8px; border: 3px solid rgba(6, 30, 38, .9); }
+body.viewer .draftpop.hwpop .hwrest { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 6px 0; width: calc(10 * 112px + 9 * 10px); margin: 0 auto; }
+body.viewer .draftpop.hwpop .hwrest .draftcard { width: 112px; filter: grayscale(1) brightness(.8); opacity: .92; box-shadow: 0 0 0 3px var(--ink); }
 body.viewer .draftpop.revealpop .revealbtns { display: flex; justify-content: center; gap: 14px; }
 body.viewer .draftpop.revealpop .revealbtns .forkmove { display: block; margin: .4rem 0 0; font-size: 1.1rem; padding: .5rem 1.6rem; }
 
@@ -1048,8 +1078,8 @@ body.viewer .draftpop { background: none; border: 0; box-shadow: none; padding: 
 body.viewer .draftpop .draftgroup + .draftgroup { border-top: 0; padding-top: 0; }
 body.viewer .draftpop .draftcards { position: relative; padding: 24px 14px 30px; }
 body.viewer .draftpop .draftcard { box-shadow: 0 0 0 4px var(--ink), 0 14px 22px rgba(0, 0, 0, .5); }
-body.viewer .draftpop .draftcard.picked, body.viewer .draftpop .draftcard.picked.marked { outline: 6px solid var(--gold); outline-offset: 0; box-shadow: 0 0 0 4px var(--ink), 0 14px 22px rgba(0, 0, 0, .5); }
-body.viewer .draftpop .draftcard .draftcheck { background-color: var(--gold); }
+body.viewer .draftpop .draftcard.picked, body.viewer .draftpop .draftcard.picked.marked { outline: 6px solid var(--sun); outline-offset: 0; box-shadow: 0 0 0 4px var(--ink), 0 14px 22px rgba(0, 0, 0, .5); }
+body.viewer .draftpop .draftcard .draftcheck { background-color: var(--sun); }
 body.viewer .draftnav .dnbtn { background: var(--gold); }
 body.viewer .draftnav .dnlab { color: var(--paper); }
 body.viewer .draftpop.revealpop .revealbtns .forkmove { background: var(--sun); color: #FFF6DC; border: 4px solid var(--ink); border-radius: 999px; box-shadow: 0 5px 0 var(--ink); font: 400 24px/1 'Bowlby One', sans-serif; padding: 12px 34px; }
@@ -1061,10 +1091,10 @@ body.viewer .draftpop .drafthead { font: 400 30px/1.2 'Bowlby One', sans-serif; 
 body.viewer .draftpop .drafthead .who { color: var(--gold) !important; }
 
 /* ---- opening animation of the lightbox (reveal.js `openFx`, class `lbopen` for the first 1.7 s after it opens; --el = seconds already played, so a redraw in between carries on instead of restarting; --d = number of the card):
-   the dim fades in, the cards fall from above one after another with a small bounce, then the ribbon settles (a soft fade from slightly large, no stamp), Back / Next fade in last. */
+   the dim fades in, the cards fall from above one after another with a small bounce, the ribbon settles as the first card touches down (0.45 s, 0.25 s; a soft fade from slightly large, no stamp), Back / Next fade in at 0.5 s. */
 body.viewer .draftbox.lbopen::before { animation: lbDim .35s ease-out backwards; animation-delay: calc(0s - var(--el, 0s)); }
 body.viewer .draftbox.lbopen .draftcard { animation: lbFall .75s cubic-bezier(.4, 0, .4, 1) backwards; animation-delay: calc(.1s + var(--d, 0) * .1s - var(--el, 0s)); }
-body.viewer .draftbox.lbopen .drafthead { animation: lbRibbon .4s ease-out backwards; animation-delay: calc(.95s - var(--el, 0s)); }
+body.viewer .draftbox.lbopen .drafthead { animation: lbRibbon .25s ease-out backwards; animation-delay: calc(.45s - var(--el, 0s)); }
 body.viewer .draftbox.lbopen .draftnav, body.viewer .draftbox.lbopen .revealbtns { animation: lbDim .4s ease-out backwards; animation-delay: calc(.5s - var(--el, 0s)); }
 @keyframes lbDim { from { opacity: 0; } to { opacity: 1; } }
 @keyframes lbFall { 0% { opacity: 1; transform: translateY(-700px); } 55% { transform: translateY(0); } 72% { transform: translateY(-34px); } 88% { transform: translateY(0); } 94% { transform: translateY(-8px); } 100% { transform: none; } }
@@ -1072,11 +1102,15 @@ body.viewer .draftbox.lbopen .draftnav, body.viewer .draftbox.lbopen .revealbtns
 @media (prefers-reduced-motion: reduce) { body.viewer .draftbox.lbopen::before, body.viewer .draftbox.lbopen .draftcard, body.viewer .draftbox.lbopen .drafthead, body.viewer .draftbox.lbopen .draftnav, body.viewer .draftbox.lbopen .revealbtns { animation: none; } }
 
 /* ---- the effect's icon on the headline of a reveal (reveal.js `head`, option "Tile on the tip"): a gold-rimmed tile tilted a little, pinned over the left tip of the ribbon (the ribbon's clip-path would cut it, so the tile is a sibling of `.drafthead` in `.headrow`) ---- */
-body.viewer .draftpop .headrow { position: relative; display: flex; justify-content: center; width: fit-content; max-width: 100%; margin: 0 auto 14px; }
+body.viewer .draftpop .headrow { position: relative; left: 24px; display: flex; justify-content: center; width: fit-content; max-width: 100%; margin: 0 auto 14px; }
 body.viewer .draftpop .headrow .drafthead { margin: 0; padding-left: 78px; }
 body.viewer .draftpop .headrow .fxicon { position: absolute; left: -44px; top: 50%; height: 84px; width: 84px; transform: translateY(-50%) rotate(-6deg); z-index: 4; pointer-events: none;
   filter: drop-shadow(3px 0 0 var(--gold)) drop-shadow(-3px 0 0 var(--gold)) drop-shadow(0 3px 0 var(--gold)) drop-shadow(0 -3px 0 var(--gold)) drop-shadow(0 6px 4px rgba(0,0,0,.5)); }
-body.viewer .draftbox.lbopen .headrow .fxicon { animation: lbIcon .4s ease-out backwards; animation-delay: calc(.95s - var(--el, 0s)); }
+/* the right end of the ribbon: a gold line follows the swallowtail (the ribbon's clip-path cuts the drawn edge, so the line is on the row; 26 px notch, same 4 px gold as the top and bottom edges) */
+body.viewer .draftpop .headrow::after { content: ""; position: absolute; right: -2px; top: 0; bottom: 0; width: 30px; pointer-events: none; z-index: 4; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 100' preserveAspectRatio='none'><path d='M30 0 L4 50 L30 100' fill='none' stroke='%23F4B63F' stroke-width='4' vector-effect='non-scaling-stroke'/></svg>") no-repeat; }
+/* Horse Whisperer: the goat badge (web/badges/Pet.webp, 296 px cell, the goat sits left of the middle) is a background cropped to the 246 px square around the goat, so it is in the middle of the tile; rim 5 px instead of 3 */
+body.viewer .draftpop .headrow .fxicon.pet { background: url(/badges/Pet.webp) 0 -13.3px / 101px 101px no-repeat; filter: drop-shadow(5px 0 0 var(--gold)) drop-shadow(-5px 0 0 var(--gold)) drop-shadow(0 5px 0 var(--gold)) drop-shadow(0 -5px 0 var(--gold)) drop-shadow(0 6px 4px rgba(0,0,0,.5)); }
+body.viewer .draftbox.lbopen .headrow .fxicon { animation: lbIcon .25s ease-out backwards; animation-delay: calc(.45s - var(--el, 0s)); }
 @keyframes lbIcon { from { opacity: 0; transform: translateY(-50%) rotate(-6deg) scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { body.viewer .draftbox.lbopen .headrow .fxicon { animation: none; } }
 
@@ -1135,7 +1169,148 @@ body.viewer #settingsModal .setmenu { position: absolute; z-index: 6; box-sizing
 body.viewer #settingsModal .setopt { height: 50px; padding: 0 14px; border: 0; border-radius: 0; background: none; color: var(--ink); font: 700 19px/1 'Nunito Sans', system-ui, sans-serif; text-align: center; white-space: nowrap; cursor: pointer; }
 body.viewer #settingsModal .setopt:hover:not(:disabled), body.viewer #settingsModal .setopt:focus-visible { background: var(--tc); color: #FFF6DC; outline: none; }
 body.viewer #settingsModal .setopt.on { background: var(--tc); color: #FFF6DC; }
-body.viewer #settingsModal .setopt:disabled { color: rgba(23, 38, 43, .3); cursor: default; }
+body.viewer #settingsModal .setopt:disabled { color: rgba(23, 38, 43, .6); cursor: default; }
 body.viewer #settingsModal .setmenu:hover .setopt:not(:hover) { background: none; color: var(--ink); }      /* while the mouse is in the list only the hovered entry is filled */
 body.viewer #settingsModal .ico-hand svg { width: 26px; height: 26px; stroke-width: 1.9; }      /* (a raised hand with five fingers, lucide 'hand') */
 body.viewer #settingsModal .ico-panda svg { width: 28px; height: 28px; }
+
+/* ---- Resistance (endgame cards): the hourglass keeps its own proportions (a tall SVG, not forced into the square of the other effect icons) and every card carries a pill with the points it scores now ---- */
+body.viewer .draftpop .headrow .fxicon.tall { width: auto; height: 92px; }
+body.viewer .draftcard .egpts { position: absolute; left: 0; right: 0; top: 28%; z-index: 4; display: flex; pointer-events: none; }      /* (a strip across the picture, a little below its top) */
+body.viewer .draftcard .egpts .pt { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 2px 0; background: rgba(217, 214, 206, .75); box-shadow: 0 2px 6px rgba(0, 0, 0, .25); }      /* (the stone of the page's bars, see parkposter.css --stone, translucent) */
+body.viewer .draftcard .egpts img { height: 38px; width: auto; }
+body.viewer .draftcard .egpts b { font: 400 52px/1 'Park Num', system-ui, sans-serif; color: var(--ink); }
+/* the same strip on the small endgame cards of the hand dock (dock.js): smaller numbers, same look */
+body.viewer #dock .card .egpts { position: absolute; left: 0; right: 0; top: 26%; z-index: 4; display: flex; pointer-events: none; }
+body.viewer #dock .card .egpts .pt { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 1px 0; background: rgba(217, 214, 206, .75); box-shadow: 0 2px 4px rgba(0, 0, 0, .25); }
+body.viewer #dock .card .egpts img { height: 26px; width: auto; }
+body.viewer #dock .card .egpts b { font: 400 36px/1 'Park Num', system-ui, sans-serif; color: var(--ink); }
+
+/* the Hide / Show button is always under the lightbox: the panel is centred in the room above it, not in the whole window */
+body.viewer .draftbox:has(.drafthide) { padding-bottom: 110px; }
+
+/* ---- Adapt (reveal.js `showAdapt` / `adaptFork`): one row of endgame cards; the drawn ones are lifted with a gold glow and a "NEW" sash, the discarded ones are greyed and struck out by a red cross. The hourglass is the `tall` icon of Resistance. ---- */
+body.viewer .draftpop.adaptpop { --adc: min(190px, calc(1400px / var(--cn, 3)), calc(var(--vh, 1vh) * 28)); }
+body.viewer .adaptpop .draftcards.adaptrow { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 20px; padding: 22px 14px 14px; }
+body.viewer .adaptpop .adaptrow .draftcard { width: var(--adc); overflow: visible; }
+body.viewer .adaptpop .draftcard.fresh { box-shadow: 0 0 0 4px var(--gold), 0 0 26px 8px rgba(244, 182, 63, .75), 0 14px 22px rgba(0, 0, 0, .5); }
+body.viewer .adaptpop .draftcard .sash { position: absolute; right: -6px; top: -6px; width: 120px; height: 120px; overflow: hidden; z-index: 7; pointer-events: none; }
+body.viewer .adaptpop .draftcard .sash b { position: absolute; right: -36px; top: 22px; width: 160px; transform: rotate(45deg); text-align: center; background: #EE6C2B; color: #FFF6DC; border-block: 3px solid #17262B; font: 400 20px/1.5 'Bowlby One', system-ui, sans-serif; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+body.viewer .adaptpop .draftcard.out img { filter: grayscale(1) brightness(.7); }
+body.viewer .adaptpop .draftcard.out { opacity: .85; }
+body.viewer .adaptpop .draftcard .xmark { position: absolute; left: 50%; top: 74%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; background: #A8321E; border: 5px solid #17262B; color: #FFF6DC; display: grid; place-items: center; font: 400 38px/1 'Park Num', system-ui, sans-serif; z-index: 6; pointer-events: none; }
+
+/* log search bar: find mode (hits a faint gold wash, the current one solid gold), funnel for the filters */
+body.viewer .sidebar .logbox { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+body.viewer .sidebar .logbox > .moves { border-top: 0; border-radius: 0 0 20px 20px; }
+.logsearch { position: relative; flex: none; overflow: hidden; box-sizing: border-box; height: 52px; padding: 0 12px 0 14px; display: flex; align-items: center; background: #FFFCF0; color: var(--ink); border: 4px solid var(--ink); border-bottom-width: 3px; border-radius: 20px 20px 0 0; font-family: 'Nunito Sans', system-ui, sans-serif; }
+.logsearch .ls-row { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; height: 42px; }
+.logsearch svg { flex: none; }
+.logsearch .ls-mag { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; }
+.logsearch .ls-q { flex: 1; min-width: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: 700 17px 'Nunito Sans', system-ui, sans-serif; caret-color: var(--sun); }
+.logsearch .ls-q::placeholder { color: rgba(23, 38, 43, .42); font-weight: 700; }
+.logsearch .ls-cnt { font: 800 14px 'Nunito Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.logsearch .ls-cnt.none { color: rgba(23, 38, 43, .35); }
+.logsearch .ls-nav { display: flex; gap: 1px; }
+.logsearch .ls-btn, .logsearch .ls-fun { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+.logsearch .ls-btn { width: 22px; height: 26px; border-radius: 6px; }
+.logsearch .ls-clear[hidden] { display: none; }
+.logsearch .ls-btn:hover:not(:disabled), .logsearch .ls-fun:hover { background: rgba(244, 182, 63, .45); }
+.logsearch .ls-btn:disabled { opacity: .25; cursor: default; }
+.logsearch .ls-chev { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.logsearch .ls-sep { flex: none; width: 2px; height: 22px; background: rgba(23, 38, 43, .25); }
+.logsearch .ls-fun { position: relative; display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 5px; border-radius: 7px; }
+.logsearch .ls-funnel { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; }      /* (three bars, long to short: the filter icon of Google Sheets) */
+.logsearch .ls-fk { font: 800 14px 'Nunito Sans', system-ui, sans-serif; color: var(--ink); }
+.logsearch .ls-fun.on { background: #F4B63F; }
+.logsearch .ls-fun[aria-expanded=true]:not(.on) { background: rgba(244, 182, 63, .45); }
+.logsearch .ls-btn:focus-visible, .logsearch .ls-fun:focus-visible { outline: 2px solid var(--ocean); outline-offset: 1px; }
+body.viewer .moves mark.hit { background: rgba(244, 182, 63, .32); color: inherit; border-radius: 4px; padding: 0 2px; }
+body.viewer .moves mark.hit.cur { background: #F4B63F; color: var(--ink); }
+body.viewer .moves li.hitline { background: rgba(244, 182, 63, .18); }
+body.viewer .moves li.on.hitline { background: rgba(238, 108, 43, .3); }
+body.viewer .logbox:not(.searching) .logsearch .ls-nav { display: none; }
+
+/* log filter bar: opened by the funnel; two dropdowns (Players, Actions) with the menu under them */
+body.viewer .moves li.fout { display: none; }
+.logfilter { box-sizing: border-box; flex: none; padding: 10px 10px 10px; background: #F3E4B8; color: var(--ink); border: solid var(--ink); border-width: 0 4px 3px 4px; font-family: 'Nunito Sans', system-ui, sans-serif; display: flex; flex-direction: column; gap: 8px; }
+.logfilter[hidden], .logfilter [hidden] { display: none !important; }
+.logfilter * { box-sizing: border-box; }
+.logfilter button { font: inherit; color: inherit; cursor: pointer; padding: 0; }
+.logfilter .lf-hd { display: flex; gap: 8px; }
+.logfilter .lf-dd { flex: 1; min-width: 0; height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 9px 0 10px; background: #FFFCF0; border: 2.5px solid var(--ink); border-radius: 8px; font: 800 14px 'Nunito Sans', system-ui, sans-serif; }
+.logfilter .lf-dd:hover { background: #FFF3C9; }
+.logfilter .lf-dd.open { background: #F4B63F; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.logfilter .lf-sw { display: flex; gap: 4px; margin-left: auto; }
+.logfilter .lf-sw i { width: 14px; height: 14px; border: 2px solid var(--ink); border-radius: 4px; }
+.logfilter .lf-sw i.off { background: transparent; opacity: .45; }
+.logfilter .lf-n { margin-left: auto; background: #F4B63F; border: 2px solid var(--ink); border-radius: 5px; padding: 0 6px; font-size: 12px; }
+.logfilter .lf-dd.open .lf-n { background: #FFFCF0; }
+.logfilter .lf-all { margin-left: auto; font-size: 12px; opacity: .55; }
+.logfilter .lf-chv { flex: none; width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.logfilter .lf-dd.open .lf-chv { transform: rotate(180deg); }
+.logfilter .lf-menu { margin-bottom: 5px; background: #FFFCF0; border: 2.5px solid var(--ink); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 0 var(--ink); }      /* (5 px: the footer is as far from the menu's shadow as from the bottom edge of the bar) */
+.logfilter .lf-row { display: flex; align-items: stretch; height: 31px; border-bottom: 1.5px dashed rgba(23, 38, 43, .25); }
+.logfilter .lf-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 0 0 0 10px; border: 0; background: transparent; font: 700 14px 'Nunito Sans', system-ui, sans-serif; text-align: left; }
+.logfilter .lf-only { flex: none; min-width: 52px; display: flex; align-items: center; justify-content: flex-end; padding: 0 8px 0 6px; border: 0; background: transparent; }
+.logfilter .lf-only u { display: none; text-decoration: none; padding: 1px 7px; background: #FFFCF0; border: 2px solid var(--ink); border-radius: 5px; font: 800 11px 'Nunito Sans', system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.logfilter .lf-row:hover .lf-only b, .logfilter .lf-row:has(:focus-visible) .lf-only b { display: none; }
+.logfilter .lf-row:hover .lf-only u, .logfilter .lf-row:has(:focus-visible) .lf-only u { display: block; }
+.logfilter .lf-only:hover u { background: #F4B63F; }
+@media (hover: none) { .logfilter .lf-only { pointer-events: none; } .logfilter .lf-row:hover .lf-only b { display: block; } .logfilter .lf-row:hover .lf-only u { display: none; } }      /* (touch: no hover, so the count stays a count) */
+.logfilter .lf-row:last-child { border-bottom: 0; }
+.logfilter .lf-row:hover { background: rgba(244, 182, 63, .3); }
+.logfilter .lf-bx { flex: none; width: 17px; height: 17px; border: 2.5px solid var(--ink); border-radius: 4px; background: #fff; display: grid; place-items: center; }
+.logfilter .lf-row.on .lf-bx { background: #F4B63F; }
+.logfilter .lf-tick { width: 11px; height: 11px; fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.logfilter .lf-ic { flex: none; width: 20px; height: 20px; }
+.logfilter .lf-seat { flex: none; width: 16px; height: 16px; border: 2px solid var(--ink); border-radius: 4px; }
+.logfilter .lf-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logfilter .lf-only b { font: 800 12px 'Nunito Sans', system-ui, sans-serif; opacity: .55; font-variant-numeric: tabular-nums; }
+.logfilter .lf-foot { display: flex; align-items: center; justify-content: space-between; font: 700 12px 'Nunito Sans', system-ui, sans-serif; }
+.logfilter .lf-foot span { opacity: .65; }
+.logfilter .lf-reset { border: 0; background: transparent; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }
+.logfilter button:focus-visible { outline: 2px solid var(--ocean); outline-offset: 1px; }
+
+/* ---- Action cards under the board (zoo.js `actionStrip`, Settings > Board): the five cards in slot order, whole and straight, hanging below the frame of the board (outside it, nothing of the frame grows), each held by a binder clip that carries the slot number ---- */
+body.viewer .zoo { position: relative; }
+body.viewer .actstrip { position: absolute; left: 0; right: 0; top: 100%; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding: 8px 14px 0; z-index: 5; }
+body.viewer .actstrip .asl { position: relative; }
+body.viewer .actstrip .acard { position: relative; border-radius: 9px; box-shadow: 0 0 0 2px #17262B, 0 6px 6px -2px rgba(0, 0, 0, .4); background: #F8EDCB; transition: transform .2s; }
+body.viewer .actstrip .acard img:not(.actoken) { display: block; width: 100%; aspect-ratio: 744 / 1039; border-radius: 9px; }
+body.viewer .actstrip .asl.empty .acard { aspect-ratio: 744 / 1039; background: rgba(248, 237, 203, .12); box-shadow: 0 0 0 2px rgba(248, 237, 203, .35); }
+body.viewer .actstrip .asl.chosen .acard { box-shadow: 0 0 0 2px #17262B, 0 0 0 4px #F4B63F, 0 0 20px 8px rgba(244, 182, 63, .9); }       /* (the card in play: a thin yellow ring and a glow, no lift) */
+body.viewer .actstrip .actoken { position: absolute; right: 6px; bottom: 6px; width: 30px; height: 30px; margin-right: calc(var(--k, 0) * 32px); z-index: 2; }
+body.viewer .actstrip .aclip { position: absolute; left: 50%; top: -14px; width: 44px; height: 36px; margin-left: -22px; z-index: 3; pointer-events: none; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .4)); }
+body.viewer .actstrip .aclip .clip { display: block; width: 100%; height: 100%; overflow: visible; }
+body.viewer .actstrip .clip .body { fill: #17262B; stroke: #17262B; stroke-width: 2; stroke-linejoin: round; }
+body.viewer .actstrip .clip .body.gold { fill: #F4B63F; }
+body.viewer .actstrip .clip .shine { stroke: rgba(255, 255, 255, .25); stroke-width: 2; }
+body.viewer .actstrip .clip text { font: 800 14px 'Nunito Sans', sans-serif; fill: #F8EDCB; }
+body.viewer .zoo.drawer-open .actstrip { top: calc(100% + 50px); }       /* (an open drawer's association bar hangs 54 px under the box: the action cards are pushed down to just under it, the clips lie over its foot) */
+body.viewer #zoos > .zoo:has(> .actstrip) { align-self: start; }       /* (a box with action cards keeps its own height: the margin that makes room for the cards must not stretch the frame of its neighbour) */
+
+/* Map 12: the strength of each action slot in the player box (side-panel.js, `.acstr`): the strength icon, 20 px, on the bottom left of the action icon, clear of the tokens on the right */
+body.viewer .ppactions .ac .acstr { position: absolute; left: -8px; bottom: -8px; z-index: 3; font-size: 20px; line-height: 1; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+body.viewer .ppactions .ac .acstr .labelamount { margin: 0; vertical-align: baseline; display: inline-block; --ah: 1em; }
+body.viewer .ppactions .ac .acstr .labelamount .labelicon { width: 20px !important; height: 20px !important; }
+body.viewer .ppactions .ac .acstr .labelamount b { font-size: .9em; -webkit-text-stroke: 1.1px #000; letter-spacing: -.02em; }
+
+/* resource tiles (appeal, conservation, reputation, X tokens): their picture is opaque, so the tracker's background flash is hidden behind it; the flash is a glow that follows the shape of the picture, with a short pop */
+.pp .rt.ov:not(.money).flash-up img { animation: glow-up calc(var(--flash-duration, .8s) * 1.5) ease-out; }
+.pp .rt.ov:not(.money).flash-down img { animation: glow-down calc(var(--flash-duration, .8s) * 1.5) ease-out; }
+@keyframes glow-up { 0%, 35% { filter: drop-shadow(0 0 2px #2ebe54) drop-shadow(0 0 4px #2ebe54) drop-shadow(0 0 8px #2ebe54) drop-shadow(0 0 14px #2ebe54); } 100% { filter: drop-shadow(0 0 0 #2ebe5400) drop-shadow(0 0 0 #2ebe5400) drop-shadow(0 0 0 #2ebe5400) drop-shadow(0 0 0 #2ebe5400); } }
+@keyframes glow-down { 0%, 35% { filter: drop-shadow(0 0 2px #de3026) drop-shadow(0 0 4px #de3026) drop-shadow(0 0 8px #de3026) drop-shadow(0 0 14px #de3026); } 100% { filter: drop-shadow(0 0 0 #de302600) drop-shadow(0 0 0 #de302600) drop-shadow(0 0 0 #de302600) drop-shadow(0 0 0 #de302600); } }
+.pp .rt.ov:not(.money) b { position: relative; z-index: 1; }          /* (the number stays above the glowing picture) */
+
+/* the Log's line of the starting discards: one line per player and one for the display (log-labels.js `stepLabelNode`) */
+body.viewer .moves li .loglines { display: block; }
+body.viewer .moves li .loglines .logline { display: block; }
+body.viewer .moves li .loglines .logline + .logline { margin-top: 5px; padding-top: 5px; border-top: 2px dashed rgba(23, 38, 43, .25); }
+body.viewer .moves li .loglines { flex: 1 1 auto; min-width: 0; }
+
+/* the live points of an endgame card fly with the card (card-motion.js `ghost`): the same strip as in the dock */
+#card-motion .cm-card .egpts { position: absolute; left: 0; right: 0; top: 26%; z-index: 4; display: flex; pointer-events: none; }
+#card-motion .cm-card .egpts .pt { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 1px 0; background: rgba(217, 214, 206, .75); box-shadow: 0 2px 4px rgba(0, 0, 0, .25); }
+#card-motion .cm-card .egpts img { height: 26px; width: auto; }
+#card-motion .cm-card .egpts b { font: 400 36px/1 'Park Num', system-ui, sans-serif; color: var(--ink, #17262b); }

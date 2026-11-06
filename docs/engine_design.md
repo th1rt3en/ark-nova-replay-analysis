@@ -174,7 +174,7 @@ enclosure building, so a replay and the engine agree) and `finish_animals`. Leve
   enough water / rock spaces around it (ignored with Diversity Researcher S219), or room in a special enclosure (`Building.animals`, capacities
   petting zoo 3, reptile house 5, aviary 5, small / large aquarium 2 / 5). Map 13 starts with a size-2 enclosure on the centre spaces.
 - On play: printed appeal / reputation / conservation, own gains (fixed ones from `data/animal_play_effects.json`, `scripts/infer_animal_effects.py`),
-  the ability effects that are implemented (Hunter X, Perception 4, Sun Bathing X, Snapping 1 / 2, Clever) and the triggers of the animal's icons.
+  the ability effects that are implemented (Hunter X, Perception 4, Sunbathing X, Snapping 1 / 2, Clever) and the triggers of the animal's icons.
   74 of 160 animals are playable (no ability, an implemented ability, or a fixed gain in the logs); the rest raise NotImplementedError.
 - Replay: `increaseSize` replaces the building by the bigger one, special enclosures hold several animals, the map 13 start building exists,
   the base projects are inferred from the log (the user enters them in production), players start at reputation 1.

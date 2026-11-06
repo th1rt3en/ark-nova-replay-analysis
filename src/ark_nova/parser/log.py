@@ -106,6 +106,13 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
                     "types": aa.get("allBuildings"),
                     "options": {t2: sorted((d["pos"]["x"], d["pos"]["y"], r) for d in lst for r in d["rotations"])
                                 for t2, lst in opts.items()} if isinstance(opts, dict) else {}}})
+            if t == "gameStateChange" and player and isinstance(a, dict) and isinstance(a.get("args"), dict):
+                ids = (a["args"].get("_private") or {}).get("cardIds") if isinstance(a["args"].get("_private"), dict) else None
+                if isinstance(ids, list) and ids and all(isinstance(x, str) and re.match(r"P1\d\d", x) for x in ids):         # the base projects an Assertion offers (the player's private choice state)
+                    mv0 = by_move.get(key)
+                    if mv0 is None:
+                        mv0 = by_move[key] = Move(index=-1, move_id=key, time=int(p["time"]))
+                    mv0.offers.append({"player": player, "cards": list(ids)})
             if t in NOISE and order not in protection_orders:
                 continue
             mv = by_move.get(key)
@@ -118,6 +125,7 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
         if not mv.events:
             if moves:                       # a state-only move: the state did not change, its snapshots belong to the previous step
                 moves[-1].checks.extend(mv.checks)
+                moves[-1].offers.extend(mv.offers)
             continue
         types = {e.type for e in mv.events}
         mv.events = [e for e in mv.events if not (e.type in PUBLIC_TWIN_OF and PUBLIC_TWIN_OF[e.type] in types)]

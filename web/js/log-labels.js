@@ -33,6 +33,7 @@ function centreInk(b, text, ls = 0) {
 }
 function labelIcon(name, amount) {
   if (name === 'ACARD') return actionCardIcon(amount);
+  if (name === 'XTOKEN' && String(amount) === '1') amount = '';          // (a single X token: the plain icon without the 1)
   let src = null;
   if (BADGE[name]) src = '/badges/' + BADGE[name] + '.webp';
   else if (name === 'STRENGTH') src = '/icons/strength.svg';       // (BGA's action strength icon redrawn as a vector, `r5c5` of the sheet is only 118 px)
@@ -42,7 +43,7 @@ function labelIcon(name, amount) {
   }
   if (!src) return null;
   if (name === 'XTOKEN' && amount) src = iconUrl('r5c6_ns');       // (no white squares under a number)
-  const img = el('img', 'icon labelicon' + (name === 'MONEY' ? ' labelmoney' : ''));
+  const img = el('img', 'icon labelicon' + (name === 'MONEY' ? ' labelmoney' : name === 'XTOKEN' && !amount ? ' labelxplain' : ''));
   img.src = src; img.alt = name.toLowerCase(); img.title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
   if (amount && WITH_AMOUNT.has(name)) {
     const box = el('span', 'labelamount' + (name === 'XTOKEN' ? ' labelx' : name === 'MONEY' ? ' labelm' : name === 'APPEAL' ? ' labeldk' : name === 'CONSERVATION' ? ' labeldk' : name === 'STRENGTH' ? ' labelstr' : ''));
@@ -57,7 +58,7 @@ function labelIcon(name, amount) {
 // <MONEY:5> markup), whichever way the line was worded (BGA's log, the engine, a live game). Only a number directly in front of the word counts.
 const AMOUNT_WORD = { money: 'MONEY', xtoken: 'XTOKEN', xtokens: 'XTOKEN', 'x-token': 'XTOKEN', 'x-tokens': 'XTOKEN', reputation: 'REPUTATION', appeal: 'APPEAL', conservation: 'CONSERVATION' };
 const AMOUNT_RE = /(^|[^\w<:-])(\d+) (money|x-?tokens?|reputation|appeal|conservation(?: points?)?)(?![\w-])/gi;
-const PLAYS_FOR_RE = /\b(plays [^<>\n]*? for )(\d+)(?= and places\b|\s*$)/gm;           // "X plays Malayan Tapir for 14 and places it ...": the price is money
+const PLAYS_FOR_RE = /\b((?:plays|buys) [^<>\n]*? for )(\d+)(?= and places\b|\s*$)/gm;           // "X plays Malayan Tapir for 14 and places it ...", "X buys Sand Tiger Shark from display for 32 and places it ...": the price is money
 const PAYS_BUILDING_RE = /\b(pays )(\d+)( (?:for building|to buy)\b)/g;               // BGA leaves the word out here: "pays 4 for building a size-2 enclosure" is always money
 // "chooses action card Animals with strength 4": the word and the number are the strength icon with the number inside
 const STRENGTH_RE = /(^|[^\w<:-])strength (\d+)(?![\w-])/gi;
@@ -83,7 +84,7 @@ function actionMarkup(text, step) {
   if (!S.iconNames[ACTION_ICON.animals]) return text;
   const mark = (type, variant, level) => `<ACARD:${type}-${variant}-${level}>`;
   const mw = !!(S.replay && S.replay.marine_worlds);
-  const own = (word, level) => {                                                    // type, variant and side of a card the text names by type (+ side)
+  const own = (word, level) => {                                                      // type, variant and side of a card the text names by type (+ side)
     const type = word.toLowerCase(), c = ownedCard(step, text, type);
     return mark(type, mw && c ? c.variant || 0 : 0, level === 'II' ? 2 : level === 'I' ? 1 : c && c.level === 2 ? 2 : 1);
   };
@@ -110,8 +111,23 @@ function actionCardIcon(spec) {
   }
   return box;
 }
+// "X plays A for 14 and places it in the large aquarium, the underwater tunnel": the special enclosures of BGA's text in our wording: aquariums and the tunnel capitalised like the other
+// special buildings, "and" instead of the commas, both aquariums together as "both Aquariums" ("... in both Aquariums and the Underwater Tunnel" / "... and the Reptile House").
+const PLACES_RE = /\b(places it in )([^\n<]+)/g;
+const SPECIAL = /^(the (?:large|small) aquarium|the underwater tunnel|the large bird aviary|the reptile house|the petting zoo)$/i;
+const SPECIAL_CAPS = { 'the large aquarium': 'the Large Aquarium', 'the small aquarium': 'the Small Aquarium', 'the underwater tunnel': 'the Underwater Tunnel', 'the large bird aviary': 'the Large Bird Aviary', 'the reptile house': 'the Reptile House', 'the petting zoo': 'the Petting Zoo' };
+export function placesText(text) {
+  return text.replace(PLACES_RE, (all, pre, list) => {
+    const parts = list.split(', ');
+    if (!parts.every((q) => SPECIAL.test(q.trim()))) return all;                  // (a size-N enclosure, a Kiosk ... stay as BGA writes them)
+    let names = parts.map((q) => SPECIAL_CAPS[q.trim().toLowerCase()]);
+    const big = names.indexOf('the Large Aquarium'), small = names.indexOf('the Small Aquarium');
+    if (big >= 0 && small >= 0) names = ['both Aquariums', ...names.filter((q, i) => i !== big && i !== small)];
+    return pre + (names.length < 3 ? names.join(' and ') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]);
+  });
+}
 function amountMarkup(text, step) {
-  text = actionMarkup(text, step);
+  text = placesText(actionMarkup(text, step));
   text = text.replace(STRENGTH_RE, (all, pre, n) => `${pre}<STRENGTH:${n}>`).replace(POSITION_RE, (all, pre, n) => `${pre}<STRENGTH:${n}>`);
   if (S.iconNames.money) text = text.replace(PAYS_BUILDING_RE, (all, a, n, b) => `${a}<MONEY:${n}>${b}`);
   if (S.iconNames.money) text = text.replace(PLAYS_FOR_RE, (all, a, n) => `${a}<MONEY:${n}>`);
@@ -149,8 +165,17 @@ function namedNodes(text) {
   if (last < text.length) out.push(document.createTextNode(text.slice(last)));
   return out;
 }
+// The Log's line of a step. The starting discards of both players are one step ("A discards 4 cards · B discards 4 cards · The display is replenished"): they stand on lines of their own,
+// as the two starting draws are lines of their own (the move bar joins them, frames.js `barLabel`).
+export function stepLabelNode(text, step) {
+  const names = (S.replay?.players || []).map((p) => p.name), parts = String(text).split(' · ');
+  if (parts.length < 2 || parts.filter((p) => names.some((n) => p.startsWith(n + ' discards '))).length !== 2) return labelNode(text, step);
+  const box = el('span', 'loglines');
+  for (const p of parts) { const l = el('span', 'logline'); l.append(labelNode(p, step)); box.append(l); }
+  return box;
+}
 export function labelNode(text, step) {
-  text = amountMarkup(text, step);
+  text = amountMarkup(text, step).replace(/ for a total of \d+ <[A-Z][A-Z-]*(?::[\w-]+)?>/gi, '').replace(/ chooses (.+?) and \1 to Pilfer\b/, ' chooses $1 to Pilfer');          // ("discards A, B for a total of 1 <SEAANIMAL> (Glide effect)" -> "discards A, B (Glide effect)")
   const span = el('span', '');
   let last = 0;
   for (const m of text.matchAll(/<([A-Z][A-Z-]*)(?::([\w-]+))?>/g)) {

@@ -40,7 +40,7 @@ const UNIQUE = new Set(['adventure', 'amazon', 'aquarium', 'arcade', 'baboon', '
 function countStats(raw) {
   const data = raw.data || raw, ids = (data.players || []).map((p) => String(p.id));
   const seatOf = (pid) => { const i = ids.indexOf(String(pid)); return i < 0 ? null : i; };
-  const blank = () => ({ turns: 0, act: { build: 0, animals: 0, cards: 0, association: 0, sponsors: 0 }, xPass: 0, xGained: 0, xUsed: 0, money: 0, income: 0, onAnimals: 0, onBuildings: 0,
+  const blank = () => ({ turns: 0, act: { build: 0, animals: 0, cards: 0, association: 0, sponsors: 0 }, xPass: 0, xGained: 0, xUsed: 0, money: 0, income: 0, kioskIncome: 0, spentOther: 0, onAnimals: 0, onBuildings: 0,
     onDonations: 0, onRange: 0, drawn: 0, fromRange: 0, snapped: 0, discarded: 0, animals: 0, sponsors: 0, released: 0, workers: 1, projects: 0, partners: 0, universities: 0, donations: 0,
     reputation: 0, breaks: 0, advances: 0, manualSnaps: 0, projectSnaps: 0, freeTwos: 0, clever: 0, enclosures: 0, kiosks: 0, pavilions: 0, unique: 0 });
   const P = [blank(), blank()], chose = [false, false];
@@ -92,7 +92,8 @@ function countStats(raw) {
       else if (ty === 'getBonuses') {
         const b = a.bonuses && typeof a.bonuses === 'object' ? a.bonuses : {}, x = b.xtoken || 0, m = b.money || 0;
         if (x > 0) p.xGained += x; else if (x < 0) p.xUsed -= x;
-        if (m > 0) { p.money += m; if (inBreak) p.income += m; }
+        if (m > 0) { p.money += m; if (inBreak) p.income += m; if (a.source === 'kiosk income') p.kioskIncome += m; }
+        else if (m < 0) p.spentOther -= m;      // (every other payment: sponsor cards and their range cost, Venom, ...; an animal's price already includes its range cost)
         if (a.source === 'triggering break') p.breaks += 1;
       } else if (ty === 'buyAnimal' || ty === 'playSponsor') {
         if (ty === 'buyAnimal') { p.animals += 1; p.onAnimals += Number(a.amount) || 0; } else p.sponsors += 1;
@@ -103,6 +104,10 @@ function countStats(raw) {
         const t = a.building && typeof a.building === 'object' ? String(a.building.type || '') : String(a.building || '');
         if (t === 'size-2' && log.includes('for free') && build[s] === 'map bonus space') { p.freeTwos += 1; build[s] = null; }       // a free 2-hex enclosure from the map's bonus space (counted as an enclosure as well)
         if (t === 'kiosk') p.kiosks += 1; else if (t === 'pavilion') p.pavilions += 1; else if (UNIQUE.has(t)) p.unique += 1; else p.enclosures += 1;
+      } else if (ty === 'gainMarked' || (ty === 'discardCards' && log.includes(' sells '))) {      // money for a mark on a card / money from selling cards: gained, but no getBonuses event
+        const m = Number(a.bonuses && a.bonuses.money) || 0; if (m > 0) p.money += m;
+      } else if (ty === 'pilferingMoney') {      // player_id gives the money, player_id2 receives it: spent by one, gained by the other
+        const m = Number(a.bonuses && a.bonuses.money) || 0, r = seatOf(a.player_id2); if (m > 0) { p.spentOther += m; if (r !== null) P[r].money += m; }
       } else if (ty === 'donation') { const m = (a.bonuses && a.bonuses.money) || 0; p.donations += 1; p.onDonations += Math.abs(m); }
       else if (ty === 'drawCards' && log.startsWith('${player_name} draws ${n} card(s) from the deck')) p.drawn += Number(a.n) || 0;
       else if (ty === 'snapCard') {
@@ -466,14 +471,37 @@ function outcome() {
   if (conceded !== null && conceded !== undefined) winner = 1 - conceded;
   return { names, scores, winner, conceded };
 }
+// ---- the map-specific rows (counted by `replay/mapstats.py`, `S.replay.map_stats`: one dict per seat with the keys of that seat's map) ------------------------------------------------
+// A row shows up when either player's map has the key; the other player gets a dash. [label, key, factor]: map 13's quadrant keys are trigger counts (Appeal pays 2 each, Money 3 each).
+const MAP_OVERVIEW = [['Tower appeal', 'tower_appeal'], ['Sponsors marketed\nwith map ability', 'tower_marketed'], ['Overall points of\nmarketed sponsors', 'tower_marketed_points'],
+  ['Animals played\nwith map ability', 'ignore_animals'], ['Cards pouched\nwith map ability', 'pouched'], ['Continent markers removed', 'cubes'],
+  ['Reputation from quadrant effect', 'quad_reputation'], ['Appeal from quadrant effect', 'quad_appeal', 2], ['Hunter from quadrant effect', 'quad_hunters'],
+  ['Shark Attack points', 'shark_points'], ['Person sponsors played with map ability', 'person_free'], ['Cards discarded for action strength', 't1_discards']];
+const mapValue = (seat, key, factor = 1) => { const m = S.replay.map_stats && S.replay.map_stats[seat]; return m && m[key] !== undefined ? m[key] * factor : undefined; };
+function mapRows(defs) {
+  const rows = [];
+  for (const [label, key, factor] of defs) {
+    const v = [0, 1].map((i) => mapValue(i, key, factor));
+    if (v[0] === undefined && v[1] === undefined) continue;
+    rows.push([label, v[0] === undefined ? '\u2013' : v[0], v[1] === undefined ? '\u2013' : v[1], ...(v[0] === undefined || v[1] === undefined ? [-1] : [])]);
+  }
+  return rows;
+}
+// the income of a map's ability: map 13's is money from its quadrants (3 each, instant or in a break), the others are counted from the log
+const incomeRow = () => {
+  const v = [0, 1].map((i) => { const m = S.replay.map_stats && S.replay.map_stats[i]; if (!m) return undefined; return m.income_map !== undefined ? m.income_map : m.quad_money !== undefined ? m.quad_money * 3 : undefined; });
+  if (v[0] === undefined && v[1] === undefined) return [];
+  const quad = [0, 1].some((i) => mapValue(i, 'quad_money') !== undefined);
+  return [[quad ? 'Income from quadrant effect' : 'Gained from map income', v[0] === undefined ? '\u2013' : v[0], v[1] === undefined ? '\u2013' : v[1], ...(v[0] === undefined || v[1] === undefined ? [-1] : [])]];
+};
 function groups(D) {
   const [a, b] = D.players, hx = [hexes(0), hexes(1)];
   const r = (label, f) => [label, f(a), f(b)];
   return [
-    ['Actions', [r('Animals', (p) => p.act.animals), r('Association', (p) => p.act.association), r('Build', (p) => p.act.build), r('Cards', (p) => p.act.cards), r('Sponsors', (p) => p.act.sponsors), r('X-back', (p) => p.xPass), r('Clever', (p) => p.clever)]],
+    ['Actions', [r('Animals', (p) => p.act.animals), r('Association', (p) => p.act.association), r('Build', (p) => p.act.build), r('Cards', (p) => p.act.cards), r('Sponsors', (p) => p.act.sponsors), r('X-back', (p) => p.xPass), r('Clever', (p) => p.clever), ...mapRows([['Clever from map ability', 'clever_map']])]],
     ['Association', [r('Projects', (p) => p.projects), r('Releases', (p) => p.released), r('Donations', (p) => p.donations), r('Universities', (p) => p.universities), r('Partner zoos', (p) => p.partners), r('Reputation', (p) => p.reputation), r('Workers', (p) => p.workers)]],
     ['Cards', [r('Drawn from deck', (p) => p.drawn), r('Drawn from range', (p) => p.fromRange), r('Snapped', (p) => p.snapped), r('Manual snaps', (p) => p.manualSnaps), r('Bonus snaps', (p) => p.projectSnaps), r('Discarded', (p) => p.discarded), r('Animals played', (p) => p.animals), r('Sponsors played', (p) => p.sponsors)]],
-    ['Money', [r('Gained overall', (p) => p.money), r('Gained from income', (p) => p.income), r('Spent on animals', (p) => p.onAnimals), r('Spent on buildings', (p) => p.onBuildings), r('Spent on donations', (p) => p.onDonations), r('Spent on display cost', (p) => p.onRange)]],
+    ['Money', [r('Gained overall', (p) => p.money), r('Gained from income', (p) => p.income), r('Gained from kiosk income', (p) => p.kioskIncome), ...mapRows([['Gained from map ability', 'harbor_money']]), ...incomeRow(), r('Spent overall', (p) => p.onAnimals + p.onBuildings + p.onDonations + p.spentOther), r('Spent on animals', (p) => p.onAnimals), r('Spent on buildings', (p) => p.onBuildings), r('Spent on donations', (p) => p.onDonations), r('Spent on display cost', (p) => p.onRange)]],
     ['X-tokens', [r('Gained', (p) => p.xGained), r('Used', (p) => p.xUsed)]],
     ['Zoo', [r('Enclosures', (p) => p.enclosures), r('Free 2-sizes', (p) => p.freeTwos), r('Pavilions', (p) => p.pavilions), r('Kiosks', (p) => p.kiosks), r('Unique buildings', (p) => p.unique), ['Covered hexes', hx[0].covered, hx[1].covered], ['Empty hexes', hx[0].empty, hx[1].empty]]],
   ];
@@ -495,6 +523,7 @@ function overview(D) {
     if (end === 0 || end === 1) rows.push(['Triggered end', ...yes(end === 0, end === 1)]);
     rows.push(['Breaks triggered', D.players[0].breaks, D.players[1].breaks], ['Break advancements', D.players[0].advances, D.players[1].advances]);
   }
+  rows.push(...mapRows(MAP_OVERVIEW));
   const t0 = Number(tt[0]), t1 = Number(tt[1]), known = tt[0] != null && tt[1] != null && isFinite(t0) && isFinite(t1) && t0 !== t1;
   rows.push(['Thinking time', thinkingTime(tt[0]), thinkingTime(tt[1]), known ? (t0 < t1 ? 0 : 1) : -1]);       // (the lower time gets the pointer)
   return ['Overview', rows];
@@ -598,6 +627,8 @@ function resultsSwitch() {
 export function syncResults() {
   if (FORK || PLAY || MINIGAME) return;
   if (S.step === lastStep()) loadStats();                                             // (read the log once the end is reached: a conceded game's switch needs it)
+  if (!atLast()) S.wantResults = false;
+  if (S.wantResults && atLast() && resultsAvailable()) { S.wantResults = false; S.results = true; }       // (an address that points at the results, main.js boot)
   const gate = atLast() && resultsAvailable();
   if (!gate) S.results = false;
   const pill = document.querySelector('.movepill');

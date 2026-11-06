@@ -17,18 +17,41 @@ import { revealAt } from './reveal.js';
 
 let cache = new Map(), cachePov = null, cacheReplay = null;
 const virt = new Map();
+// The starting hands are one step for the viewer (playback.js `dealMerged`): the move bar names both draws in one sentence ("A and B draw 8 cards and 2 endgame cards"; with different
+// counts "A draws ..., B draws ..."). The move list keeps one line per player.
+// the two discards of the starting hand are one line of the step's label ("A discards 4 cards · B discards 4 cards · The display is replenished", simultaneous): the bar says
+// "A and B discard 4 cards · The display is replenished", the names in seat order
+function discardsOf(label) {
+  const names = S.replay.players.map((p) => p.name), parts = String(label || '').split(' · ');
+  const own = (p) => names.findIndex((n) => p.startsWith(n + ' discards '));
+  const disc = parts.filter((p) => own(p) >= 0);
+  if (disc.length !== 2 || own(disc[0]) === own(disc[1])) return label;
+  const [x, y] = disc.slice().sort((a, b) => own(a) - own(b)), rest = (p) => p.slice(names[own(p)].length + ' discards '.length);
+  const both = rest(x) === rest(y) ? `${names[own(x)]} and ${names[own(y)]} discard ${rest(x)}` : `${x}, ${y}`;
+  return [both, ...parts.filter((p) => !disc.includes(p))].join(' · ');
+}
+function barLabel(i) {
+  const steps = S.replay.steps, s = steps[i];
+  if (!(s.log_only && steps[i - 1] && steps[i - 1].log_only && steps[i - 1].merge_group === s.merge_group)) return discardsOf(labelOf(s));
+  if (s.merge_group === 'discard') { let j = i; while (steps[j - 1] && steps[j - 1].log_only && steps[j - 1].merge_group === 'discard') j--; return discardsOf(steps.slice(j, i + 1).map((x) => labelOf(x)).join(' · ')); }
+  const a = String(labelOf(steps[i - 1]) || ''), b = String(labelOf(s) || ''), names = S.replay.players.map((p) => p.name);
+  const split = (t) => { const n = names.find((x) => t.startsWith(x + ' ')); return n ? [n, t.slice(n.length + 1)] : null; };
+  const x = split(a), y = split(b);
+  if (x && y && x[1] === y[1] && /^draws /.test(x[1])) return `${x[0]} and ${y[0]} draw ${x[1].slice(6)}`;
+  return `${a}, ${b}`;
+}
 const frameName = () => framesOf(S.step)[S.phase] || 'text';
 export const frameKind = () => (FORK || SANDBOX ? 'both' : frameName().replace(/\d+$/, ''));
 // the text of the frame on show (a text frame of a step that merges several lines: its group of lines)
 export function frameText() {
-  const s = S.replay.steps[S.step], label = labelOf(s) || '(state update)';
+  const s = S.replay.steps[S.step], label = barLabel(S.step) || '(state update)';
   return FORK || SANDBOX ? label : textParts(S.step)[+(frameName().replace(/^\D+/, '') || 0)] ?? label;
 }
 // the lines of a merged label (joined with " · "), grouped by what they say (second word: draw, discard, keeps ...); where one group holds lines of both players
 // (they act simultaneously) only the followed player's are kept
 function textParts(i) {
-  const label = String(labelOf(S.replay.steps[i]) || '(state update)'), parts = label.split(' · ');
-  if (parts.length < 2 || S.replay.steps[i].state.phase !== 'setup') return [label];       // (outside the setup, " · " joins the steps that `view.py` folded into this one because nothing visible changed: one frame, the whole text)
+  const label = String(barLabel(i) || '(state update)'), parts = label.split(' · ');
+  if (parts.length < 2 || S.replay.steps[i].log_only || S.replay.steps[i].state.phase !== 'setup') return [label];       // (outside the setup, " · " joins the steps that `view.py` folded into this one because nothing visible changed: one frame, the whole text)
   const names = S.replay.players.map((p) => p.name), owner = (p) => names.findIndex((n) => p.startsWith(n + ' '));
   // the verb of a line ("draw", "keeps", ...): after the player's name, which may have several words ("Papa Emeritus V draw ...")
   const verb = (p) => { const n = names.find((x) => p.startsWith(x + ' ')); return ((n ? p.slice(n.length + 1) : p).split(' ')[0]) || ''; };
@@ -61,6 +84,10 @@ export function framesOf(i) {
   const st = steps[i].state;
   if (draftOpen(st, i) && probe(i, 'draft')) f[0] = 'draft';
   else if (revealAt(i)) f[0] = 'reveal';                   // (Perception / Scavenging / Hunter / Scuba Dive: the cards of the effect in a lightbox, on the step that draws them and on the one that keeps some)       // (the first group of lines of a merged step is the draft's keep)
+  if (f[0] === 'reveal' && steps[i].horse) f = steps[i].horse.kept ? ['reveal', 'reveal1', 'text'] : ['reveal', 'text'];                // (Horse Whisperer: the pile with the animals, then the one taken, then the step text; a play with no animal in the pile: the pile, then the text)
+  if (f[0] === 'reveal' && steps[i].adapt) f = steps[i].adapt.discarded ? ['reveal', 'text'] : ['reveal'];                                  // (Adapt: the endgame cards with the new ones marked / the discarded ones struck out, then the step text)
+  if (f[0] === 'reveal' && steps[i].assertion) f = ['reveal', 'reveal1', 'text'];                 // (Assertion: the base projects on offer, then the one taken, then the step text with the card in the hand)
+  if (f[0] === 'reveal' && steps[i].resistance && steps[i].resistance.kept) f.push('text');      // (Resistance: the keep line is two frames, the lightbox with the chosen card, then the same line with the lightbox closed and the card among the endgame cards)
   if (PLAY && turnEnds(i)) f.push('gate');                  // (a live game only: a replay has nothing to confirm, the frame is skipped)
   const sig = probe(i, 'decision');
   const again = i > 0 && probe(i - 1, 'decision') === sig && (steps[i - 1].move_id === steps[i].move_id || JSON.stringify(steps[i - 1].options) === JSON.stringify(steps[i].options));       // (the decision of the step before, still pending in the engine's state while the log resolves it: nothing new to show)
@@ -103,7 +130,29 @@ export function frameState() {
       const key = S.step + 'r';
       let v = virt.get(key);
       if (!v) {
-        const out = (r.kept === null ? r.cards : r.kept).slice(), hand = base.players[r.seat].hand.filter((k) => { const j = out.indexOf(k); if (j >= 0) { out.splice(j, 1); return false; } return true; });
+        if (r.effect === 'resistance') {                                   // the chosen endgame card is not among the endgame cards yet (the cards drawn never were: nothing to take out on the draw step)
+          const out = r.kept || [];
+          v = { ...base, players: base.players.map((q, i) => {
+            if (i !== r.seat || !out.length) return q;
+            const lines = q.endgame_card_lines || [], gone = lines.filter((l) => out.includes(l[0])).reduce((a, l) => a + (+l[1] || 0), 0);
+            return { ...q, endgame_hand: (q.endgame_hand || []).filter((k) => !out.includes(k)), endgame_card_lines: lines.filter((l) => !out.includes(l[0])), endgame_cards: Math.max(0, (q.endgame_cards || 0) - gone) };
+          }) };
+          delete v.__id; virt.set(key, v);
+          return v;
+        }
+        if (r.effect === 'adapt') {                                       // Adapt: endgame cards only. The discard frame shows the endgame cards the player held before the effect (the lightbox closes, then the discarded card goes and the drawn one arrives)
+          const was = r.out && S.step > 0 ? steps[S.step - 1].state.players[r.seat] : null;
+          if (!was) return base;
+          v = { ...base, players: base.players.map((q, i) => (i === r.seat ? { ...q, endgame_hand: (was.endgame_hand || []).slice(), endgame_card_lines: was.endgame_card_lines, endgame_cards: was.endgame_cards, endgame_card_pts: was.endgame_card_pts } : q)) };
+          delete v.__id; virt.set(key, v);
+          return v;
+        }
+        if (r.effect === 'horse') {                                      // the animal taken is not in the hand yet and still lies in the pile
+          v = { ...base, main_discard: r.pile.slice(), players: base.players.map((q, i) => (i === r.seat ? { ...q, hand: q.hand.filter((k, j) => !(r.held.includes(k) && q.hand.indexOf(k) === j)) } : q)) };
+          delete v.__id; virt.set(key, v);
+          return v;
+        }
+        const out = (r.held || (r.kept === null ? r.cards : r.kept)).slice(), hand = base.players[r.seat].hand.filter((k) => { const j = out.indexOf(k); if (j >= 0) { out.splice(j, 1); return false; } return true; });
         v = { ...base, players: base.players.map((q, i) => (i === r.seat ? { ...q, hand } : q)) };
         delete v.__id; virt.set(key, v);
       }

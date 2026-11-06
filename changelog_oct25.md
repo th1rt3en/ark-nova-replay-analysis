@@ -1,5 +1,18 @@
 # Changes — 25 October 2026
 
+## Follow-up — action-card animations, 6 November 2026
+
+Implemented the approved Direct glides for action-card reordering and the right-to-left edge upgrade flip for sidebar icons and enabled full cards below the board. Venom, Constriction and Multiplier badges glide to/from the invisible deck in the sidebar, including while the player's info box is hidden by Log or Chat: exact hypothetical Control positions are measured invisibly without changing the selected tab. Full-card badges below the board retain their existing immediate updates. Fixed binder clips stay in their slots. All effects share animation-speed settings, autoplay waiting and interruption cleanup through the existing animation registry.
+
+Added `web/js/action-motion-plan.js`, `web/js/action-motion.js` and `tests/action-motion-plan.test.mjs`; integrated metadata and motion hooks in `side-panel.js`, `zoo.js`, `card-motion.js` and `card-motion.css`. Updated `docs/animations_v01.md`. Validation: 32 classifier tests passed; actual-frontend Chromium checks passed for 48 transitions across both players and Control/Log/Chat pane states, exact hidden token endpoints, instant board tokens, reduced motion, backward cleanup, optional-strip disabling and six speed levels. Token fixtures and Chat pane were synthetic where the saved replay lacked those cases. Browser cache cleared for local validation. Full details are in **Action-card glides, edge-led upgrades and token flights — 6 November 2026** in `changelog.md`. No backend changes or deployment.
+
+## Follow-up — played-card animations, 5 November 2026
+
+Implemented the approved animal/sponsor card-play glides for Top/bottom, Tabbed, and Side-by-side closed/small/full drawers. POV cards come from the hand/fan or display; other players' cards emerge from their info box. Cards continuously resize into the real fitted piles without scrolling. Hidden tabbed owners are selected immediately and the original tab returns one full second after the flights finish. Closed-drawer cards end at the full drawer's fitted card size before disappearing; existing full-drawer pile cards reflow on the incoming flight's clock to prevent the early twitch. Folded trays temporarily open for their own plays. Speed, reduced motion, autoplay waiting and interruption cleanup use the existing animation lifecycle.
+
+Changed `web/js/card-motion.js`, `web/js/card-motion-plan.js`, `web/js/zoo.js`, the classifier regression tests, and `docs/animations_v01.md`. Public played additions supply identities without revealing hidden hands; hand plays are excluded from other-player discard counts. Full implementation details and validation are maintained in the **Played animals and sponsors — 5 November 2026** section of `changelog.md`. No backend changes.
+
+
 ## 1. Normal-turn detection, replay header and post-game graphs
 
 ### Problem and verified evidence

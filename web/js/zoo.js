@@ -1,9 +1,10 @@
 // [module] Renders one player's zoo: board, cards row, association strip, bonus panel.
 import { el, seatColor, seatRawColor, section } from './util.js';
-import { ACTION_ICON, pic, pieceUrl } from './icons.js';
+import { ACTION_ICON, ACTION_NAMES, iconUrl, pic, pieceUrl } from './icons.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { eyeButton } from './pov.js';
-import { cardRow } from './cards.js';
+import { bindPreview, cardRow, variantStatsBox } from './cards.js';
+import { CARD_TOKEN_ICON, CARD_TOKEN_TEXT } from './side-panel.js';
 import { render, zooStep } from './main.js';
 import { zooBoard } from './board.js';
 import { associationStrip, bonusPanel, stripUnits } from './association.js';
@@ -43,7 +44,7 @@ export function withCubes(row, p, seat) {
 
 /** The badge "Map 2a" in the zoo tab; hovering (or focusing / tapping) it shows the card with the map's name and rule text. */
 // The played cards of one kind (animals / sponsors) as two stacks side by side: the cards go to the columns in turn (the 1st, 3rd... to the left, the 2nd, 4th... to the right), so the
-// columns differ by one card at most; in a column every card covers 2/3 of the one before (parkposter.css `.pstack`). The heading has the icon of the action card.
+// columns differ by one card at most; each card covers 80% of the one before (parkposter.css `.pstack`). The heading has the icon of the action card.
 function stacks(title, icon, keys, zone, after) {
   const cols = el('div', 'pstacks');
   for (let c = 0; c < 2; c++) {
@@ -74,6 +75,7 @@ function kindChip(icon, label, n) {                                       // the
 export const playedChips = (p, labels) => [kindChip('animals', labels ? 'Animals' : '', p.animals.length), kindChip('sponsors', labels ? 'Sponsors' : '', p.sponsors.length)];
 function playedBlock(p, seat) {                                          // the two kinds with their two stacks (the layout under the map, also used in the drawer)
   const played = el('div', 'played');
+  played.dataset.playedSeat = seat;
   played.append(stacks('Animals', 'animals', p.animals, seat + ':animals'));
   played.append(stacks('Sponsors', 'sponsors', p.sponsors, seat + ':sponsors', (row) => withCubes(row, p, seat)));
   return played;
@@ -150,7 +152,11 @@ export function fitPlayed() {
   if (!zoos) return;
   if (rowWatch) {                                                          // (only rows that are not watched yet are observed: a new observation fires once and would call `fitPlayed` again; rows that left the page are let go)
     for (const rw of watched) if (!rw.isConnected) { rowWatch.unobserve(rw); watched.delete(rw); }
-    for (const rw of zoos.querySelectorAll('.zoo .zooRow')) if (!watched.has(rw)) { rowWatch.observe(rw); watched.add(rw); }
+    for (const rw of zoos.querySelectorAll('.zoo .zooRow, .zoo > .actstrip')) if (!watched.has(rw)) { rowWatch.observe(rw); watched.add(rw); }
+  }
+  for (const bx of zoos.querySelectorAll('.zoo')) {                                // (the action cards under the board float outside its frame: the box leaves room for them below)
+    const as = bx.querySelector(':scope > .actstrip');
+    bx.style.marginBottom = as ? (as.offsetHeight + 4 + (bx.classList.contains('drawer-open') ? 50 : 0)) + 'px' : '';          // (an open drawer's bar hangs 54 px under the box: the cards go right under it)
   }
   for (const bx of zoos.querySelectorAll('.zoo.drawer-open')) {       // narrow: the shifts of the map and the strip and the place of the sheet, from the widths of the three parts of the row
     const row = bx.querySelector('.zooRow'), [bo, bd, st] = row ? row.children : [];
@@ -168,8 +174,15 @@ export function fitPlayed() {
   for (const sh of zoos.querySelectorAll('.sheet:not(.nrw)')) {                      // the sheet covers the board: the cards are as big as the tallest stack and the width allow
     const pl = sh.querySelector('.played'), cols = [...sh.querySelectorAll('.pkind')].map((k) => Math.ceil(k.querySelectorAll('.card').length / 2));
     const own = !!sh.closest('.cardsbox'), n = Math.max(1, ...cols), H = (own ? (sh.closest('.cardsbox').previousElementSibling || sh).clientHeight : sh.clientHeight) - (own ? 72 : 100), W = sh.clientWidth - (own ? 80 : 100);      // (100 px: the paddings and the title row of a kind; in the tabbed layout's own box, whose trays fill it edge to edge, 72 px and 80 px; its height is not the limit but follows the cards, so the cards are sized to fit the height of the zoo box beside it)
-    pl.style.setProperty('--cw', Math.max(60, Math.min(170, Math.floor(H / (1.3972 + (n - 1) * 0.2794)), Math.floor(W / 4))) + 'px');
+    pl.style.setProperty('--cw', fullCardWidth(H, W, n) + 'px');
   }
+}
+
+const fullCardWidth = (height, width, rows) => Math.max(60, Math.min(170, Math.floor(height / (1.3972 + (rows - 1) * .2794)), Math.floor(width / 4)));
+// The same fitting rule as an expanded drawer, also used for flights into a closed drawer.
+export function fullDrawerCardWidth(row, p) {
+  const n = Math.max(1, Math.ceil(p.animals.length / 2), Math.ceil(p.sponsors.length / 2));
+  return fullCardWidth(row.clientHeight - 100, row.clientWidth - 100, n);
 }
 document.addEventListener('keydown', (e) => {                              // Esc closes the open drawers
   if (e.key !== 'Escape' || document.querySelector('.modalback') || playedMode() !== 'drawer' || !Object.values(S.drawerSeats).some(Boolean)) return;      // (a dialog that is open takes the Esc first)
@@ -197,12 +210,42 @@ function mapBadge(map) {
 // It holds the same sheet as the expanded drawer (`.sheet`, filling the box), so `fitPlayed()` sizes its cards; the grid makes it as tall as the zoo box.
 export function renderCards(st, seat) {
   const box = el('div', 'zoo cardsbox'), sheet = el('div', 'sheet');      // (class `zoo`: the played-cards styles are scoped to it; `.cardsbox` below takes the padding away)
+  box.dataset.playedSeat = seat;
   sheet.append(playedBlock(st.players[seat], seat)); box.append(sheet);
   return box;
+}
+// The five action cards in their real slot order (1-5), shown whole and straight under the board, outside its frame (they hang in the free space below: `fitPlayed` gives the box a bottom margin of their height), each held to the board by a black binder clip that carries the slot number (Settings > Board, off by default).
+// The card chosen for the running action glows soft yellow. Before the cards are shuffled (`actions_hidden`) only slot 1 (Animals) is known: the others are empty slots.
+const CLIP = (n, gold) => '<svg class="clip" viewBox="0 0 44 36" aria-hidden="true"><path d="M5 13H39L36 33H8Z" class="body' + (gold ? ' gold' : '') + '"/><path d="M9 17H35" class="shine"/><text x="22" y="29" text-anchor="middle">' + n + '</text></svg>';
+function actionStrip(st, seat) {
+  const strip = el('div', 'actstrip');
+  const slots = st.actions_hidden ? [{ type: 'animals', level: 1, variant: 0, tokens: [] }, null, null, null, null] : st.players[seat].action_cards;
+  slots.forEach((a, i) => {
+    const slot = el('div', 'asl'), cur = st.current_action;
+    const chosen = !!a && cur && cur.seat === seat && cur.slot === i + 1;
+    if (chosen) slot.classList.add('chosen');
+    if (!a) { slot.classList.add('empty'); slot.append(el('div', 'acard'), el('div', 'aclip')); slot.lastChild.innerHTML = CLIP((st.players[seat].slot_numbers || [])[i] || i + 1, false); strip.append(slot); return; }
+    const card = el('div', 'acard');
+    card.dataset.actionSeat = seat; card.dataset.actionType = a.type; card.dataset.actionView = 'board';
+    const img = el('img', ''); img.alt = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : ''); img.draggable = false;
+    const art = '/action_cards/' + a.type + '_' + (S.replay.marine_worlds ? a.variant : 0) + '_' + (a.level === 2 ? 2 : 1) + '.webp';
+    img.src = art; card.append(img);
+    (a.tokens || []).forEach((t, k) => {                                   // the tokens that lie on the card (Venom, Constriction, Multiplier), as in the player box
+      const id = CARD_TOKEN_ICON[t]; if (!id) return;
+      const b = el('img', 'actoken'); b.src = iconUrl(id); b.alt = t; b.title = CARD_TOKEN_TEXT[t] || t; b.style.setProperty('--k', String(k));
+      b.dataset.actionToken = t; b.dataset.tokenIndex = k;
+      card.append(b);
+    });
+    bindPreview(card, art, undefined, () => variantStatsBox(st, seat, a));
+    const clip = el('div', 'aclip'); clip.innerHTML = CLIP((st.players[seat].slot_numbers || [])[i] || i + 1, false);          // (map 12: the black squares conceal numbers, `slot_numbers` has the strength of each slot)
+    slot.append(card, clip); strip.append(slot);
+  });
+  return strip;
 }
 export function renderZoo(st, seat) {
   const p = st.players[seat], who = S.replay.players[seat], map = S.replay.maps[seat];
   const box = el('div', 'zoo seat' + seat + (st.active_player === seat && st.phase !== 'over' ? ' active' : ''));
+  box.dataset.zooSeat = seat;
   const tabbed = tabbedLayout();
   const h = el('h2', '');                        // the tab above the zoo: a dot in the player's colour, the name, the map
   h.style.setProperty('--pc', seatColor(seat));
@@ -229,6 +272,7 @@ export function renderZoo(st, seat) {
   row.append(bonusPanel(map, p, seat), zooBoard(map, p, seat), associationStrip(p, map, seat));
   if (box._sheetclip) row.append(box._sheetclip);
   box.append(row);
+  if (S.actionStrip) box.append(actionStrip(st, seat));                     // (under the map, above the played cards)
   if (mode === 'below') box.append(playedBlock(p, seat));                 // the played cards under the map: animals and sponsors side by side (no counts)
   // ('tray': the cards are in the hand dock, dock.js)
   if (MINIGAME && S.pov === null) {                                      // a mini game that shows both players in full (Who's ahead): the dock holds one hand at a time, so each zoo carries its player's cards

@@ -3,7 +3,7 @@ import { svg } from './util.js';
 import { S } from './state.js';
 import { ICON_IDS, iconUrl } from './icons.js';
 import { pentagon } from './handshake.js';
-import { drawHdBonus } from './bonusart.js';
+import { drawHdBonus, hdBonus } from './bonusart.js';
 
 export const CT_W = 2000;                                              // the drawing is 2000 units wide; the cubes and bonus tiles are placed in the same units (percent of the width / height)
 export const CT_X = (n) => 88 + 182.4 * n;
@@ -33,6 +33,17 @@ export function pentagonShape(root, cx, cy, H, { fill = SHARED.hexFill, line = S
   g.append(svg('path', { d, fill, stroke: line, 'stroke-width': w, 'stroke-linejoin': 'round' }));
   root.append(g);
   return g;
+}
+
+// the pentagon of the conservation track / reputation track bonuses with one of the HD pictures of bonusart.js (upgrade-card, bonus-extra-shift, Worker...), as a nested <svg> in the units of an 80 high
+// pentagon (viewBox -4 -4 88 94, the pentagon centred on (40, 40)): `size` = the pentagon's height, `place` = the centre it is put on. Used for the upgrade and the Extra Shift of the association strip,
+// the Extra Shift hex of map 11 and the Extra Shift token of the info box, so they all look like the bonus of the track.
+export function hdPentagonSvg(name, size = 80, cx, cy) {
+  const hd = hdBonus(name) || {}, k = size / 80, t = svg('svg', { viewBox: '-4 -4 88 94', width: 88 * k, height: 94 * k, overflow: 'visible' });
+  pentagonShape(t, 40, 40, 80, { fill: hd.fill, edge: 2.2, shadow: 2 });
+  drawHdBonus(t, name, 2.2);
+  if (cx !== undefined) { t.setAttribute('x', cx - 44 * k); t.setAttribute('y', cy - 44 * k); }
+  return t;
 }
 
 const numText = (root, x, y, size, txt, fill, stroke, sw = 0.09, squeeze = 1) => {

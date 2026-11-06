@@ -16,7 +16,7 @@ export const ICON_IDS = {
   // what a placement bonus pentagon shows on top of the yellow base (r5c14); the number is drawn as text
   'bonus:reputation': 'r4c9', 'bonus:money': 'r11c8', 'bonus:xtoken': 'r3c2', 'bonus:take-in-range-or-deck': 'r6c13', 'bonus:Clever': 'r6c6',
   'bonus:bonus-sponsor': 'r7c6', 'bonus:sponsor-person-card': 'r7c6', 'bonus:Digging': 'r9c13', 'bonus:Determination': 'r6c7', 'bonus:cut-down': 'r4c1', 'bonus:bonus-scoring-cards': 'r6c4', 'bonus:Fac': 'r10c2', 'bonus:Partner-Zoo': 'r10c14', 'bonus:Multiplier': 'r6c8',
-  'bonus:animal-magnet': 'r10c12', 'bonus:Worker': 'r5c13', 'bonus:extra-shift': 'r5c15', 'bonus:Scavenging': 'r4c10', 'bonus:Mark': 'r3c3', 'bonus:Pouch': 'r7c11', 'bonus:kiosk': 'r7c3', 'bonus:upgrade-card': 'r10c5',
+  'bonus:animal-magnet': 'r11c9', 'bonus:Worker': 'r5c13', 'bonus:extra-shift': 'r5c15', 'bonus:Scavenging': 'r4c10', 'bonus:Mark': 'r3c3', 'bonus:Pouch': 'r7c11', 'bonus:kiosk': 'r7c3', 'bonus:upgrade-card': 'r10c5',
   'bonus:continent': 'r9c12', 'bonus:shark-attack': 'r5c1', 'bonus:wave': 'r11c14', 'bonus:store': 'r5c2', 'bonus:conceal': 'r5c5',
 };
 // BGA's names of the icons (scripts/name_icons.py): the placement bonus of each type shows the icon of the same name
@@ -62,6 +62,13 @@ export function pieceImage(kind, hex, size) {
   return svg('image', { href: pieceUrl(kind, hex), x: -size / 2, y: -size / 2, width: size, height: size });
 }
 // icon (and whether to print the value on it) of a bonus slot
+// The wide sprites of the university (Fac) and the partner zoo sit in the yellow pentagon of a placement bonus (board.js, 80 px high) and of a bonus space of the association panel (association.js,
+// 71 px high) at the same share of the pentagon: height = FIT_H[type] x the pentagon's height, centred on the pentagon's body (FIT_DY x its height below the middle: the pentagon's mass lies low).
+export const FIT_H = { Fac: 0.54, 'Partner-Zoo': 0.62 };
+export const FIT_DY = 0.02;
+// The partner zoo's grey blob is close to the yellow of the pentagon: it gets a soft dark shadow (an svg `filter: drop-shadow`, sized by the icon's height `h` in the units of the svg it lies in),
+// the same on the placement bonuses, the association spaces and the HD pictures of the tracks (bonusart.js).
+export const iconShadow = (type, h) => type === 'Partner-Zoo' ? `filter:drop-shadow(0 ${(h * 0.06).toFixed(2)}px ${(h * 0.06).toFixed(2)}px rgba(0,0,0,.85))` : '';
 export const SLOT_ICON = {};   // the slots use the same icons as the placement bonuses (ICON_IDS 'bonus:<type>', named from BGA's stylesheet)
 export const SLOT_NUMBER = new Set(['money', 'xtoken', 'reputation', 'conservation']);
 

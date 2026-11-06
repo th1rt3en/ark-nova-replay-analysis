@@ -1,7 +1,7 @@
 // [module] Point of view (seat 0 / seat 1; both at once is no longer possible, a live game has none): what is hidden from the other player, the eyes that switch it.
 import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
 import { $, el, seatColor, svg } from './util.js';
-import { labelNode } from './log-labels.js';
+import { labelNode, stepLabelNode } from './log-labels.js';
 import { render } from './main.js';
 
 // The eyes are remembered per table in localStorage ('pov:<table>': '0' | '1' (an old 'all' counts as unset)), also over F5; the first time only the first player's eye is open (his zoo is the left one).
@@ -48,9 +48,14 @@ export function povState(st) {
 }
 export const curState = () => povState(S.replay.steps[S.step].state);
 const statueName = (t) => (typeof t === 'string' ? t.replace(/\b(Victory Column|Mascot Statue)\b/gi, S.s274 === 'mascot' ? 'Mascot Statue' : 'Victory Column') : t);        // (setting "Statue card": the log of BGA says Victory Column, the card data says Mascot Statue; the line follows the setting)
+// Runs of draws of one player (replay/merge.py): for a viewer who follows the OTHER player they are one step (the last of the run; its text is `label_pov[viewer]`, the number is the
+// first move of the run); the steps before it are skipped by the keys, hidden in the Log, and a jump to one of them leads to the last one. The point of view of the acting player and "all" keep every step.
+const mergeOn = (s) => !!s.merge && !seesAll() && S.pov !== null && S.pov !== s.merge.seat;
+export const mergedAway = (s) => mergeOn(s) && !s.merge.last;
+export const mergedFrom = (s) => (mergeOn(s) && s.merge.last ? Number(s.merge.from) : null);
 export const labelOf = (s) => statueName((S.pov !== null && s.label_pov && s.label_pov[S.pov]) || s.label);
 export function refreshLabels() {                                  // the move list again, e.g. after the name of a card changed (setting "Statue card")
-  document.querySelectorAll('#moves li').forEach((li) => { const s = li._step; if (!s) return; const num = li.firstChild, badge = li.lastChild; li.replaceChildren(num, labelNode(labelOf(s) || '…', s), badge); });
+  document.querySelectorAll('#moves li').forEach((li) => { const s = li._step; if (!s) return; const num = li.firstChild, badge = li.lastChild; li.replaceChildren(num, stepLabelNode(labelOf(s) || '…', s), badge); });
 }
 
 // The point of view is set by the eye next to each player's name in the info box (side-panel.js): exactly one eye is open, S.pov = 0 / 1 = the game as that player saw it. Opening the closed eye
@@ -92,12 +97,7 @@ function chooseSpectated(seat) {
 }
 function applyPov() {
   if (!FORK) { try { localStorage.setItem(POV_KEY, povParam()); } catch (e) { /* no storage */ } }
-  document.querySelectorAll('#moves li').forEach((li) => {          // the move list names cards: rewrite every line for the new point of view
-    const s = li._step;
-    if (!s) return;
-    const num = li.firstChild, badge = li.lastChild;
-    li.replaceChildren(num, labelNode(labelOf(s) || '…', s), badge);
-  });
+  document.dispatchEvent(new Event('povapplied'));          // (main.js: the move list is built again - the lines name cards and the runs of draws are merged or not - and the step is moved out of a merged run)
   render();
 }
 

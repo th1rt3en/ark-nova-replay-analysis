@@ -25,6 +25,8 @@ class Move:
     # {"player": pid, "active": pid, "build": {lvl, max_size, free, can_pass, types, options: {type: [(x, y, rotation)]}}}
     # = BGA's legal placements after the events of this move.
     checks: list[dict] = field(default_factory=list)
+    # the base projects an Assertion offers: {"player": pid, "cards": [BGA card ids]} from the private `cardIds` of the choice state (the log lists them before the keep line)
+    offers: list[dict] = field(default_factory=list)
 
 
 @dataclass

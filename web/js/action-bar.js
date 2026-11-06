@@ -11,7 +11,7 @@ import { forkBar, keepSel, playFork } from './fork.js';
 import { render } from './main.js';
 import { atEnd, atStart, go, stepBy } from './playback.js';
 import { frameKind } from './frames.js';
-import { clearReveal, forkReveal, noteLightbox, openFx, revealAt, showReveal } from './reveal.js';
+import { centerNav, clearReveal, forkReveal, noteLightbox, openFx, revealAt, showReveal } from './reveal.js';
 
 
 // the bar above the boards, like BGA's: what the active player can do now. Before an action card is chosen: the five action cards (the number is the
@@ -110,14 +110,14 @@ export function draftOpen(st, i = S.step) {
 }
 // The Back / Next buttons at the sides of the draft lightbox (the real control panel lies under the dim and looks out of use): a round button and under it the word with a keycap
 // of the arrow key that does the same (ArrowLeft / ArrowRight step through the frames, main.js).
-const NAV_ARROW = { '-1': '<path d="M15 4 7 12l8 8"/>', '1': '<path d="M9 4l8 8-8 8"/>' };
+const NAV_ARROW = { '-1': '<path d="M17 3v14l-9-7zM8 3v14l-9-7z" transform="translate(2 0)"/>', '1': '<path d="M3 3l9 7-9 7zM11 3l9 7-9 7z" transform="translate(-1 0)"/>' };       // (the double arrows of the control box's Back / Forward buttons, 20 x 20)
 const NAV_KEY = { '-1': '<path d="M19 12H6m5-6-6 6 6 6"/>', '1': '<path d="M5 12h13m-5-6 6 6-6 6"/>' };
-function draftNav(d) {
+function draftNav(d, labels = true) {          // (`labels`: the word and the key cap under the button, only in the action card draft)
   const b = el('button', 'draftnav ' + (d < 0 ? 'back' : 'next'));
   b.type = 'button'; b.title = (d < 0 ? 'Back' : 'Next') + ' (arrow key ' + (d < 0 ? 'left' : 'right') + ')';
   b.disabled = d < 0 ? atStart() : atEnd();
-  b.innerHTML = '<span class="dnbtn"><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_ARROW[d] + '</svg></span>'
-    + '<span class="dnlab">' + (d < 0 ? 'Back' : 'Next') + '<kbd><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_KEY[d] + '</svg></kbd></span>';
+  b.innerHTML = '<span class="dnbtn"><svg class="dnglyph" viewBox="0 0 20 20" aria-hidden="true">' + NAV_ARROW[d] + '</svg></span>'
+    + (labels ? '<span class="dnlab">' + (d < 0 ? 'Back' : 'Next') + '<kbd><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_KEY[d] + '</svg></kbd></span>' : '');
   b.onclick = () => { stepBy(d); };
   return b;
 }
@@ -237,6 +237,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       hide.onclick = () => { S.draftHidden = !S.draftHidden; sync(); };
       sync();
       popup.append(wrap, hide); popup.hidden = false; bar.hidden = true;
+      centerNav(wrap);
       openFx(popup);
       return;
     }
@@ -295,9 +296,9 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   who.style.color = seatText(seat);
   bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : hyp ? " may use one of the opponent's first three action cards" : ' must choose an action card'));
   cardsShown.forEach((a, i) => {
-    const b = el('span', 'abtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
+    const b = el('span', 'abtn acbtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
     b.title = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + ', strength ' + (i + 1 + spent) + ' (up to ' + (i + 1 + spent + p.x_tokens) + ' with X tokens)';
-    b.append(pic(ACTION_ICON[a.type], 26), el('b', '', i + 1 + spent));
+    b.append(pic(ACTION_ICON[a.type], 22), el('b', '', i + 1 + spent));
     if (FORK && (S.skipMode ? maySkip(a.type) : mayChoose(a.type))) {
       b.classList.add('choosable');
       b.title = S.skipMode ? 'Put ' + ACTION_NAMES[a.type] + ' back to slot 1 and gain an X token' : 'Choose ' + ACTION_NAMES[a.type] + (S.forkSpend ? ', spending ' + S.forkSpend + ' X token' + (S.forkSpend === 1 ? '' : 's') : '');
@@ -352,10 +353,10 @@ function actionBadge(st) {
   const ca = st.current_action || {};
   const card = (st.players[ca.seat] && st.players[ca.seat].action_cards[ca.slot - 1]) || {};      // (the log-built state only knows the slot of the card)
   const type = ca.type || card.type, level = ca.level || card.level;
-  const b = el('span', 'abtn' + (level === 2 ? ' lvl2' : ''));
+  const b = el('span', 'abtn acbtn' + (level === 2 ? ' lvl2' : ''));
   b.title = (ACTION_NAMES[type] || '') + (level === 2 ? ' II' : '') + ', strength ' + ca.strength;
   if (!type) return document.createTextNode('');                  // (a build from a bonus / effect has no action card: no empty chip)
-  b.append(pic(ACTION_ICON[type], 26), el('b', '', ca.strength));
+  b.append(pic(ACTION_ICON[type], 22), el('b', '', ca.strength));
   return b;
 }
 // the Association action: one button per kind of task that can be done now (not one per partner zoo / university)
@@ -484,6 +485,9 @@ const effectOption = (a, e) => (e.option === 'send' ? a.args.send !== undefined 
 function effectButton(e) {
   if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res)) return null;
   if (e.kind === 'take' || e.kind === 'build') return null;                      // shown as the deck button / the pieces
+  if (FORK && e.kind === 'assertion' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) return null;       // (the base projects are chosen in the lightbox, reveal.js `forkReveal`)
+  if (FORK && e.kind === 'search_discard' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) return null;       // (Horse Whisperer: the animal is taken in the lightbox, reveal.js `horseFork`)
+  if (FORK && e.kind === 'adapt' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && Array.isArray(a.args.discard)).length) return null;       // (Adapt: the cards are discarded in the lightbox, reveal.js `adaptFork`)
   if (/^income_/.test(e.kind)) return null;                                       // the incomes of a break are paid by themselves (BGA shows them as log lines, not as a choice)
   if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
   const b = el('span', 'abtn deckbtn' + (e.enabled === false ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)

@@ -13,7 +13,7 @@ FREE = {"use_token", "harbor_sell"}            # free actions of the notepad / z
 # the keyword of the card ability that each kind of pending effect comes from (the button is named like the ability: "Perception 2", "Digging 3", ...)
 ABILITY_PREFIX = {"digging": "Digging", "scavenge": "Scavenging", "glide": "Glide", "glide_gain": "Glide", "shark": "Shark Attack", "symbiosis": "Symbiosis",
                   "cut_down": "Cut Down", "trade": "Trade", "extra_shift": "Extra Shift", "assertion": "Assertion", "pilfer": "Pilfering", "venom": "Venom",
-                  "constrict": "Constriction", "jumping": "Jumping", "hypnosis": "Hypnosis", "pouch": "Pouch", "mark": "Mark", "boost": "Boost", "marketing": "Marketing", "sell": "Sun Bathing"}
+                  "constrict": "Constriction", "jumping": "Jumping", "hypnosis": "Hypnosis", "pouch": "Pouch", "mark": "Mark", "boost": "Boost", "marketing": "Marketing", "sell": "Sunbathing"}
 REVEAL_NAME = {"animal": "Hunter", "any": "Perception", "sponsor": "Scuba Dive"}          # what a reveal-and-keep effect is called, by what it may keep
 
 
@@ -75,6 +75,16 @@ def _revealed_cards(state: GameState, e: dict) -> dict:
         return {"cards": list(state.main_deck[:e["x"]])}
     if e.get("kind") == "scavenge" and e.get("cards"):
         return {"cards": list(e["cards"])}
+    if e.get("kind") == "adapt":                                         # Adapt: what each endgame card of the pool (hand + the cards to draw) would score now, for the lightbox's strips
+        from ark_nova.engine import endgame
+        seat, pool = e.get("player"), list(state.players[e["player"]].endgame_hand) + list(state.endgame_deck[:e.get("draw", e["n"])])
+        pts = {}
+        for k in pool:
+            try:
+                pts[k] = {"conservation": endgame.card_points(state, seat, k), "appeal": 0}
+            except Exception:
+                pass
+        return {"pts": pts}
     return {}
 
 
@@ -123,6 +133,8 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         if d is not None:
             out["discard"] = {"count": d.get("n", 1), "what": "card" if d["kind"] == "break_discard" else "endgame card"}
     takes = [a for a in acts if a.kind == "take_cards"]
+    if pr.kind == "effects" and (pr.args.get("resume") or {}).get("kind") == "break":
+        out["in_break"] = True                                          # (the effects are those of a break: the replay may still be inside the action that ended in it)
     if takes:                                                           # taking cards: the deck and/or the display cards the player may take (the others are greyed out)
         take: dict = {"deck": max([a.args.get("count", 1) for a in takes if a.args["mode"] == "deck"], default=0),
                       "range": [a.args["card"] for a in takes if a.args["mode"] == "range"],

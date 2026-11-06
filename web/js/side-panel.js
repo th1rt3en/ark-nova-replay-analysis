@@ -6,6 +6,8 @@ import { bindPreview, variantStatsBox, zoneNew } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, inkDxEm, pic, workerUrl } from './icons.js';
 import { clockBadge, gameMenu } from './play.js';
 import { hideIncome, showEndgame, showIncome } from './incomepop.js';
+import { hdPentagonSvg } from './ctrack.js';
+import { amountIcon } from './log-labels.js';
 
 // score = appeal + conservation points (-14 at 0, +2 per step to 10, then +3): same rule as engine/tracks.py, used when the server did not send it
 const trackScore = (p) => Math.max(0, Math.min(113, p.appeal)) + (p.conservation <= 10 ? 2 * p.conservation - 14 : 3 * Math.min(41, p.conservation) - 24);
@@ -21,37 +23,16 @@ function trackIncome(appeal) {
   return income;
 }
 const isLight = (hex) => { const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || ''); return !!m && (0.299 * parseInt(m[1], 16) + 0.587 * parseInt(m[2], 16) + 0.114 * parseInt(m[3], 16)) / 255 > 0.6; };
-// The score of a player as a scoreboard: one plate per character on a dark plate (two plates at least, so a one-digit score keeps the width), the plate grows with the score (-105, 123).
-// When the score is not the one this seat showed in the previous render, the plates that change swing over one by one, the ones first (like the plates of a ballpark scoreboard); new plates for a
-// third digit or a minus sign come in blank and swing over too, plates that are no longer needed swing to blank and are removed. The sidebar is rebuilt on every step, so the score shown last is
-// remembered per table and seat (`shownScore`); the first render of a table and any render with the same score show the number without moving.
-const FLIP_MS = 620, FLIP_STAGGER = 90;
-const shownScore = new Map();                                             // table:seat -> { value, from, t0 }: the score shown last, the one before it, when it changed
-const nbsp = (ch) => (ch === ' ' ? '\u00a0' : ch);
-const animates = () => !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-function plate(ch) {
-  const t = el('b', 'ft'), card = el('span', 'fc'), front = el('span', 'ff', nbsp(ch)), back = el('span', 'ff back');
-  card.append(front, back); t.append(card);
-  t.flipTo = (to, delay) => {                                              // (a negative delay: the swing is already under way, the sidebar was rebuilt in between)
-    back.textContent = nbsp(to);
-    const a = card.animate([{ transform: 'rotateX(0)', offset: 0 }, { transform: 'rotateX(200deg)', offset: 0.62 }, { transform: 'rotateX(172deg)', offset: 0.82 }, { transform: 'rotateX(180deg)', offset: 1 }], { duration: FLIP_MS, delay, easing: 'ease-in-out', fill: 'both' });
-    a.onfinish = () => { front.textContent = nbsp(to); a.cancel(); };
-  };
-  return t;
-}
-// `from`: the score before the change (undefined = show the number as it is), `elapsed`: ms since it changed
-const fmt = (v) => { const s = String(v); return s.length < 2 ? '0' + s : s; };            // (a one-digit score shows a 0 on the first plate: 08; -8 has two characters already)
-function flipScore(value, from, elapsed) {
-  const w = el('span', 'flip'), to = fmt(value).padStart(2, ' ');
-  const n = from === undefined ? 0 : Math.max(fmt(from).length, to.length, 2);
-  const total = (n - 1) * FLIP_STAGGER + FLIP_MS + 40;
-  if (from === undefined || String(from) === String(value) || elapsed >= total || !animates()) { for (const ch of to) w.append(plate(ch)); return w; }
-  const f = fmt(from).padStart(n, ' '), t = to.padStart(n, ' ');
-  const plates = [...f].map(plate);
-  w.append(...plates);
-  plates.forEach((pl, i) => { if (f[i] !== t[i]) pl.flipTo(t[i], (n - 1 - i) * FLIP_STAGGER - elapsed); });
-  if (n > to.length) setTimeout(() => plates.slice(0, n - to.length).forEach((pl) => pl.remove()), total - elapsed);
-  return w;
+// The colour of the score chip: the player colour darkened (CSS, `.chip`); three colours need their own chip, set by a class on the box: `chip-black` (a black player: the chip would vanish on the header),
+// `chip-amber` (orange) and `chip-gold` (yellow; a darkened yellow turns olive green). Anything else, including BGA's white (shown grey) and grey, uses the darkened colour.
+function chipTone(hex) {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
+  if (!m) return '';
+  const [r, g, b] = [1, 2, 3].map((i) => parseInt(m[i], 16) / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  if (mx < 0.16) return 'chip-black';
+  if (!isLight(hex) || mx - mn < 0.4) return '';
+  const h = ((mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4) * 60 + 360) % 360;
+  return h >= 20 && h < 45 ? 'chip-amber' : h >= 45 && h < 75 ? 'chip-gold' : '';
 }
 // the numbered resource tile of the info box: the number sits on the icon (`ov`) or under it (`xt`)
 function tile(cls, title, img, value, sub) {
@@ -69,7 +50,7 @@ const nEgNow = (p) => (p.endgame_hand.length >= 2 && p.conservation < 10 ? p.end
 function egPill(tileEl, n, what, slip) {
   if (!(n > 0)) return tileEl;
   const s = el('small', 'eg', '+' + n);
-  if (slip) { s.onmouseenter = () => slip(s); s.onmouseleave = hideIncome; }          // (hover: the slip with one line per source)
+  if (slip) { s.title = ''; s.onmouseenter = () => slip(s); s.onmouseleave = hideIncome; }          // (hover: the slip with one line per source)
   else s.title = 'Endgame live count: ' + what + ' would give +' + n + ' now';
   tileEl.append(s);
   return tileEl;
@@ -163,8 +144,8 @@ function headerStats(st, flash) {
   const menu = PLAY ? gameMenu() : null;                                 // concede / propose to abandon / end on overtime
   if (menu) root.append(menu);
 }
-const CARD_TOKEN_ICON = { Venom: 'r2c12', Constriction: 'r2c9', Multiplier: 'r6c8' };       // (icons of BGA's sheet, see web/icons/names.json)
-const CARD_TOKEN_TEXT = { Venom: 'Venom token: it goes when this card is used or put back; if no token was removed this turn, 2 money are owed', Constriction: 'Constriction token: this card has 2 less strength until it is used or put back', Multiplier: 'Multiplier token' };
+export const CARD_TOKEN_ICON = { Venom: 'r2c12', Constriction: 'r2c9', Multiplier: 'r6c8' };       // (icons of BGA's sheet, see web/icons/names.json)
+export const CARD_TOKEN_TEXT = { Venom: 'Venom token: it goes when this card is used or put back; if no token was removed this turn, 2 money are owed', Constriction: 'Constriction token: this card has 2 less strength until it is used or put back', Multiplier: 'Multiplier token' };
 export function sidePanel(st) {
   const root = $('side');
   root.replaceChildren();
@@ -179,9 +160,11 @@ export function sidePanel(st) {
   seatOrder().forEach((seat) => {                                   // (the spectated player's box first: above)
     const p = st.players[seat];
     const box = el('div', 'pp' + (st.active_player === seat && st.phase !== 'over' ? ' active' : ''));
+    box.dataset.seat = String(seat);                                  // (card-motion.js flies cards to and from the box of a seat)
     box.style.setProperty('--pc', seatColor(seat));
     if (isLight(seatColor(seat))) box.classList.add('light');
-    const head = el('div', 'pphead' + (st.active_player === seat && st.phase !== 'over' ? ' on' : ''));          // (`on`: the player whose turn it is: a glowing gold edge under the header)
+    { const tone = chipTone(seatColor(seat)); if (tone) box.classList.add(tone); }
+    const head = el('div', 'pphead' + (st.active_player === seat && st.phase !== 'over' ? ' on' : ''));          // (`on`: the player whose turn it is; no style for now)
     const pl = S.replay.players[seat];
     const name = el('a', 'ppname');
     squeezeName(name, pl.name);
@@ -190,12 +173,7 @@ export function sidePanel(st) {
     const scoreValue = p.score !== undefined ? p.score : trackScore(p);
     const score = flash(seat + ':score', scoreValue, el('span', 'ppscore'));
     score.title = 'Score (appeal + conservation points)';
-    const shownKey = (table || '') + ':' + seat;
-    let shown = shownScore.get(shownKey);
-    if (!shown) shown = { value: scoreValue, from: undefined, t0: 0 };
-    else if (shown.value !== scoreValue) shown = { value: scoreValue, from: shown.value, t0: performance.now() };
-    shownScore.set(shownKey, shown);
-    score.append(flipScore(scoreValue, shown.from, performance.now() - shown.t0));
+    score.append(el('b', 'chip', String(scoreValue)));                      // (an ink chip with the number: its width follows the digits, 56 / 112 / -14 keep the same type size and shape)
     const who = el('span', 'who');
     who.append(name);
     if (SHOW_ELO && pl.elo) { const elo = el('span', 'ppelo', String(pl.elo)); elo.title = 'Elo of ' + pl.name + ' at this table (before the game)'; who.append(elo); }
@@ -207,16 +185,17 @@ export function sidePanel(st) {
     const inc = p.income_total !== undefined ? p.income_total : p.income !== undefined ? p.income : trackIncome(p.appeal);
     const mo = flash(seat + ':money', p.money, tile('ov money', 'Money', pic('money', 48), p.money, '+' + inc));          // (the total income paid at the next break sits on the money tile)
     const chip = mo.querySelector('small');                                   // (hover: the income slip, one line per source and per sponsor)
-    chip.onmouseenter = () => showIncome(chip, p); chip.onmouseleave = hideIncome;
+    chip.title = ''; chip.onmouseenter = () => showIncome(chip, p); chip.onmouseleave = hideIncome;
     res.append(mo);
     res.append(flash(seat + ':x', p.x_tokens, tile('ov xo', 'X tokens', pic('xtoken_ns', 46), p.x_tokens)));          // (the number lies on the X, white with a black outline)
     res.append(flash(seat + ':reputation', p.reputation, tile('ov', 'Reputation', pic('reputation', 48), p.reputation)));
     const lv = S.endgameLive && p.endgame_live ? p.endgame_live : null;                // sponsors: both players; endgame cards: only for a player whose hand is shown (the eye is open / the own seat)
     const cardCp = lv && !hides(seat) && p.endgame_cards ? p.endgame_cards : 0;
-    res.append(flash(seat + ':appeal', p.appeal, egPill(tile('ov dk', 'Appeal', pic('appeal', 48), p.appeal), lv && lv.appeal, 'the sponsors', (chipEl) => showEndgame(chipEl, p, 'appeal', !hides(seat), hides(seat) ? Math.max(0, nEgNow(p)) : 0))));
+    res.append(flash(seat + ':appeal', p.appeal, egPill(tile('ov dk', 'Appeal', pic('appeal', 48), p.appeal), lv && lv.appeal, 'the sponsors', (chipEl) => showEndgame(chipEl, p, 'appeal', !hides(seat), p.eg_appeal && hides(seat) ? Math.max(0, nEgNow(p)) : 0))));          // (no endgame card scores appeal yet: `p.eg_appeal`, replay/view.py `_endgame_has_appeal`, turns the hidden-card line on when the data has one)
     res.append(flash(seat + ':conservation', p.conservation, egPill(tile('ov dk', 'Conservation points', pic('conservation', 48), p.conservation), lv && lv.conservation + cardCp, cardCp ? 'the sponsors and the endgame cards' : 'the sponsors', (chipEl) => showEndgame(chipEl, p, 'conservation', !!cardCp, hides(seat) ? Math.max(0, nEgNow(p)) : 0))));
     const nEg = p.endgame_hand.length >= 2 && p.conservation < 10 ? p.endgame_hand.length - 1 : p.endgame_hand.length;          // (before the discard at 10 conservation one of the cards is going to be thrown away)
-    if (nEg > 0 && hides(seat)) res.children[4].append(egCardIcon(nEg));          // (only where the cards are hidden)
+    const left = p.endgame_unscored === undefined ? (st.phase === 'over' ? 0 : nEg) : Math.min(nEg, p.endgame_unscored);          // (the cards not scored yet, `endgame_unscored` in every state: replays count it per card, view.py `_endgame_unscored`; the engine of forks / sandbox / live games scores all cards in the step that ends the game)
+    if (left > 0 && hides(seat)) res.children[4].append(egCardIcon(left));          // (only where the cards are hidden)
     box.append(res);
 
     const res2 = el('div', 'ppres2');
@@ -234,6 +213,15 @@ export function sidePanel(st) {
     hand.append(plainIcon('r10c8', 36), hb);
     flash(seat + ':hand', p.hand.length, hand);
     res2.append(wr, hand);
+    if (p.map_id === '11') {                                                   // map 11 (Caves): the cards stored under the notepad, X/3, next to the hand
+      const sb = el('b', '', (p.stored || []).length);
+      sb.append(el('small', '', '/3'));
+      const st3 = el('span', 'rt hd stored');
+      st3.title = 'Cards stored under the notepad (Caves) / capacity';
+      st3.append(plainIcon('r5c2', 36), sb);
+      flash(seat + ':stored', (p.stored || []).length, st3);
+      res2.append(st3);
+    }
     // the bonus tokens of the player's notepad (one-time effects), at the right end of the row; every token goes at the step it is used
     const toks = p.tokens.filter((t) => BONUS_TOKENS.includes(t.type)).sort((x, y) => BONUS_TOKENS.indexOf(x.type) - BONUS_TOKENS.indexOf(y.type) || x.id - y.id);
     const bz = zoneNew(seat + ':bonustokens', toks.map((t) => t.type));
@@ -246,10 +234,14 @@ export function sidePanel(st) {
     box.append(res2);
 
     const acts = el('div', 'ppactions');
-    p.action_cards.forEach((a, i) => {
+    // before the action cards are shuffled (`actions_hidden`) the order is not known: slot 1 is always Animals (drawn like the real card), the other four are empty numbered slots
+    const slots = st.actions_hidden ? [{ type: 'animals', level: 1, variant: 0, tokens: [] }, null, null, null, null] : p.action_cards;
+    slots.forEach((a, i) => {
+      if (!a) { const g = el('span', 'ac ghost'); g.append(el('b', '', i + 1)); acts.append(g); return; }
       // the card chosen for the running action (set by "chooses action card", cleared when it is placed back on slot 1 at the end of the action)
       const chosen = st.current_action && st.current_action.seat === seat && st.current_action.slot === i + 1;
       const c = el('span', 'ac' + (a.level === 2 ? ' lvl2' : '') + (chosen ? ' chosen' : ''));
+      c.dataset.actionSeat = seat; c.dataset.actionType = a.type; c.dataset.actionView = 'sidebar';
       c.title = 'Slot ' + (i + 1) + ': ' + ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + (a.variant ? ' (variant ' + a.variant + ')' : '');
       c.append(pic(ACTION_ICON[a.type], 40));
       const art = '/action_cards/' + a.type + '_' + (S.replay.marine_worlds ? a.variant : 0) + '_' + (a.level === 2 ? 2 : 1) + '.webp';     // the whole action card
@@ -259,14 +251,18 @@ export function sidePanel(st) {
         b.src = '/action_icons/' + a.type + '_' + a.variant + '_' + (a.level === 2 ? 2 : 1) + '.webp'; b.alt = 'Variant ' + a.variant;
         c.append(b);
       }
+      if (p.map_id === '12' && !st.actions_hidden && p.slot_numbers) {      // map 12 (Binders): the slot's real strength (conceal markers raise it) as the small strength icon on the bottom left
+        const n = amountIcon('STRENGTH', p.slot_numbers[i]);
+        if (n) { const w = el('span', 'acstr'); w.append(n); c.append(w); }
+      }
       (a.tokens || []).forEach((t, k) => {                // the tokens that lie on the card: Venom (-> 2 money unless removed), Constriction (-2 strength), Multiplier
         const id = CARD_TOKEN_ICON[t]; if (!id) return;
         const b = el('img', 'actoken'); b.src = iconUrl(id); b.alt = t; b.title = CARD_TOKEN_TEXT[t] || t; b.style.setProperty('--k', String(k));
+        b.dataset.actionToken = t; b.dataset.tokenIndex = k;
         c.append(b);
       });
       acts.append(c);
     });
-    if (st.actions_hidden) acts.classList.add('unseen');          // (before the action cards are shuffled: the space stays, the cards are invisible)
     box.append(acts);
 
     const grid = el('div', 'ppicons');                            // the icons in three rows like BGA: 5 continents, 5 (6 with Marine Worlds) animal kinds, 5 others
@@ -301,7 +297,8 @@ function bonusToken(type, cls, ghost) {
   const t = el('span', 'btoken ' + (cls || ''));
   t.title = BONUS_TOKEN_TEXT[type] || type;
   const id = S.iconNames[type];
-  if (id) { const img = el('img'); img.src = iconUrl(id); img.alt = type; img.height = 36; t.append(img); } else t.append(el('b', '', type));
+  if (BONUS_TOKENS.includes(type)) { const k = hdPentagonSvg(type, 36); k.setAttribute('class', 'btoken-hd'); t.append(k); }          // (the pentagon of the track's bonus with its HD picture, like the Extra Shift on the board; no sprite)
+  else if (id) { const img = el('img'); img.src = iconUrl(id); img.alt = type; img.height = 36; t.append(img); } else t.append(el('b', '', type));
   if (ghost) t.addEventListener('animationend', () => t.remove());
   return t;
 }

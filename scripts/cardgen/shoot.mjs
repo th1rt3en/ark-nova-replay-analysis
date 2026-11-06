@@ -69,6 +69,12 @@ console.log('requirements scaled (large):', JSON.stringify(await fitReq(LAYOUT_P
 const body = await fitBody();
 console.log('body zoomed (projects, endgame):', JSON.stringify(body));
 console.log('text shrunk:', JSON.stringify(fit), 'project texts:', JSON.stringify(fitP));
+
+// the price badge of every animal (.animal-card-cost .icon-money): its box as fractions of the card, for the discounted price that the viewer draws over it (web/js/price.js, web/price_badges/)
+const priceBox = () => pg.evaluate(() => { const out = {}; document.querySelectorAll('.c').forEach(c => { if (c.id[1] !== 'A') return; const w = c.querySelector('.ark-card-wrapper'), m = c.querySelector('.animal-card-cost .icon-money'); if (!w || !m) return;
+  const W = w.getBoundingClientRect(), M = m.getBoundingClientRect(); out[c.id.slice(1)] = [(M.left - W.left) / W.width, (M.top - W.top) / W.height, M.width / W.width, M.height / W.height].map(v => +v.toFixed(5)); }); return out; });
+const priceGeo = {};
+priceGeo.large = await priceBox();
 for (const k of ok) await pg.locator('#c' + k).screenshot({ path: `out/raw/${k}.png`, omitBackground: true });
 // the small cards: BGA's own no-description mode (data-card-desc="0" in arknova.css: bigger names and ability names, taller title bar, no Latin name / number) plus compact.css; the shrunk texts of the full cards are not needed any more
 fs.mkdirSync('out/compact', { recursive: true });
@@ -77,6 +83,7 @@ await pg.evaluate(() => { document.querySelectorAll('.animal-ability,.dijitToolt
 console.log('layout check (small):', JSON.stringify(await geom('S')));
 console.log('requirements scaled (small):', JSON.stringify(await fitReq(LAYOUT_PHOTO)));
 console.log('body zoomed (small):', JSON.stringify(await fitBody()));
+priceGeo.small = await priceBox();
 for (const k of ok) await pg.locator('#c' + k).screenshot({ path: `out/compact/${k}.png`, omitBackground: true });
 
 // the strips of the conservation projects (the project area of the page): the icon(s) and the three slots alone on a transparent background (bare.css), with the boxes of the parts for strips.py
@@ -92,4 +99,15 @@ for (const k of ok.filter(k => k[0] === 'P')) {
   await pg.locator('#c' + k).screenshot({ path: `out/bare/${k}.png`, omitBackground: true });
 }
 fs.writeFileSync('out/bare/geometry.json', JSON.stringify(geo));
+
+// the price badge alone for every price an animal can show (0-40), on a transparent background: the same element and CSS as the card's (BGA's money icon), drawn by the viewer over the printed price
+fs.mkdirSync('out/price', { recursive: true });
+await pg.evaluate(() => { document.body.classList.remove('bare'); const st = document.createElement('style'); st.textContent = '.c,.c .ark-card-wrapper,.c .ark-card-wrapper *:not(.icon-money){visibility:hidden!important;box-shadow:none!important;background:transparent!important;border-color:transparent}.c .animal-card-cost{visibility:visible!important;clip-path:none!important}.c .animal-card-cost .icon-money{visibility:visible!important}body{background:transparent!important}'; document.head.append(st); });
+const demo = ok.find(k => k === 'A431') || ok.find(k => k[0] === 'A');
+for (let n = 0; n <= 40; n++) {
+  await pg.evaluate(([id, n]) => { document.querySelectorAll('.c .animal-card-cost .icon-money').forEach(e => { if (e.closest('.c').id === 'c' + id) e.textContent = n; }); }, [demo, n]);
+  await pg.locator('#c' + demo + ' .animal-card-cost .icon-money').screenshot({ path: `out/price/${n}.png`, omitBackground: true });
+}
+fs.writeFileSync('out/price_geometry.json', JSON.stringify(priceGeo));
+
 await b.close(); srv.close();

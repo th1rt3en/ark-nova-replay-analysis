@@ -9,6 +9,7 @@ service URL (the same value as in cloudflare/wrangler.jsonc).
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -54,6 +55,11 @@ def coming_soon(site: Path) -> None:
     template = (ROOT / "pages" / "coming-soon.html").read_text(encoding="utf-8")
     for name, (title, text) in COMING_SOON.items():
         (site / name).write_text(template.replace("{{TITLE}}", title).replace("{{TEXT}}", text), encoding="utf-8")
+    for page in site.rglob("*.html"):                       # the logo of the viewer pages leads to the start page (the park) only in the develop copy: here it is a plain picture
+        text = page.read_text(encoding="utf-8")
+        plain = re.sub(r'<a class="brand" href="/"[^>]*>(.*?)</a>', r'<span class="brand">\1</span>', text, flags=re.S)
+        if plain != text:
+            page.write_text(plain, encoding="utf-8")
     index = site / "index.html"
     html = index.read_text(encoding="utf-8")
     assert html.count(LANDING_SCRIPT) == 1, "start page: the landing script not found"

@@ -3,9 +3,9 @@ const RESOURCES = ['appeal', 'money', 'reputation', 'conservation', 'xtoken'];
 const COUNTERS = {
   cards_gained: 'Cards gained', effect_used: 'Effect used', tokens_spent: 'Tokens spent', attacks_prevented: 'Attacks prevented',
   water_covered: 'Water spaces built over', rock_covered: 'Rock spaces built over', water_ignored: 'Water requirements bypassed', rock_ignored: 'Rock requirements bypassed',
-  clever: 'Clevers activated', pavilion: 'Pavilions built', pouch: 'Pouches', enlarge: 'Enclosures enlarged', snap_small: 'Small animals snapped', third_small: '3rd small animals played',
+  clever: 'Clevers activated', pavilion: 'Pavilions built', pouch: 'Pouches', enlarge: 'Enclosures enlarged', snap_small: 'Small animals snapped', third_small: 'Extra small animals played',
   animals_marked: 'Animals marked', scuba3: 'Scuba Dives', kiosk: 'Kiosks gained', size1: 'Size-1 enclosures gained', birds: 'Perceptions', sunbathed: 'Cards sunbathed',
-  hunts: 'Hunts triggered', seen: 'Cards seen', donations: 'Donations',
+  hunts: 'Hunts triggered', seen: 'Cards seen', donations: 'Donations', ignores: 'Large animals played with an ignored condition',
 };
 const BONUS_NAMES = {
   Clever: 'Clever', Worker: 'Worker', 'extra-shift': 'Extra Shift', 'upgrade-card': 'Upgrade', 'take-in-range-or-deck': 'Card-taking',

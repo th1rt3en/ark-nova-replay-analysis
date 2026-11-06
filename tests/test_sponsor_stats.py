@@ -148,13 +148,16 @@ def test_explicit_source_context_counts_science_lab_draws_without_engine_or_publ
 
 def test_archaeologist_source_context_dates_bonus_and_excludes_track_choices_and_duplicates():
     bonus = {'type': 'takeBonus', 'uid': 'extra', 'args': {'player_id': 1, 'bonus_desc': {'args': {'bonus_type': 'money', 'bonus_n': 5}}}}
+    # a bonus of the same chain that the Archaeologist never offered (no source printed, like a bonus of a 5-conservation project) is not its gain
+    unoffered = {'type': 'takeBonus', 'uid': 'unoffered', 'args': {'player_id': 1, 'bonus_desc': {'args': {'bonus_type': 'xtoken', 'bonus_n': 2}}}}
+    offer = lambda typ, n: {'0': {'description': {'args': {'bonus_type': typ, 'bonus_n': n}}, 'args': {'sourceId': 'S221_Archeologist'}}, '1': {'description': 'Pass'}}
     raw = {'data': {'players': [{'id': '1'}, {'id': '2'}], 'logs': [
         packet(1, 1, [{'type': 'playSponsor', 'args': {'player_id': 1, 'card': {'id': 'S221_Archeologist'}}}]),
-        packet(2, 2, [{'type': 'gameStateChange', 'args': {'id': 91, 'active_player': '1', 'args': {'sourceId': 'S221_Archeologist'}}}]),
+        packet(2, 2, [{'type': 'gameStateChange', 'args': {'id': 91, 'active_player': '1', 'args': {'sourceId': 'S221_Archeologist', 'choices': offer('money', 5)}}}]),
         packet(20, 3, [{'type': 'gameStateChange', 'args': {'id': 111, 'active_player': '1', 'args': {}}}], '/player/p1'),
-        packet(3, 3, [{**bonus, 'uid': 'track', 'args': {**bonus['args'], 'remove': '5-2'}}, bonus]),
+        packet(3, 3, [{**bonus, 'uid': 'track', 'args': {**bonus['args'], 'remove': '5-2'}}, unoffered, bonus]),
         packet(4, 3, [copy.deepcopy(bonus)]),
-        packet(5, 4, [{'type': 'gameStateChange', 'args': {'id': 91, 'active_player': '1', 'args': {'sourceId': 'S221_Archeologist'}}}]),
+        packet(5, 4, [{'type': 'gameStateChange', 'args': {'id': 91, 'active_player': '1', 'args': {'sourceId': 'S221_Archeologist', 'choices': offer('Scavenging', 3)}}}]),
         packet(6, 5, [{**bonus, 'uid': 'scav', 'args': {'player_id': 1, 'bonus_desc': {'args': {'bonus_type': 'Scavenging', 'bonus_n': 3}}}}]),
     ]}}
     parsed = parse_log(raw)

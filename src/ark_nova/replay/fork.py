@@ -228,6 +228,9 @@ def narrate(before: GameState, action: Action, after: GameState, who: str) -> st
         got = list((Counter(p1.hand) - Counter(p0.hand)).elements())              # (a search is public: the card is named)
         icon = "<SEARCH-" + ("SEAANIMAL" if cat == "marine" else cat.upper()) + ">"
         text = f"drew {_name(got[0]) if got else 'no card'} with the {icon} effect"
+    elif k == "choose_effect" and _effect_kind(before, args) == "search_sponsor":          # (maps 8 / 8a: the sponsor found in the deck is public too)
+        got = list((Counter(p1.hand) - Counter(p0.hand)).elements())
+        text = f"drew {_name(got[0]) if got else 'no card'} from the deck (Map 8 effect)"
     elif k == "choose_effect" and args.get("hire"):
         text = "gained a worker"
     elif k == "choose_effect" and isinstance(args.get("upgrade"), str):

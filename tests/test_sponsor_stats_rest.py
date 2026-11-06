@@ -142,7 +142,7 @@ def test_excavation_unknown_map_retains_two_real_identical_payments_but_not_nest
     packets = [packet(1, 1, [raw_play('S271'), raw_state(30, 'S271_ExcavationSite')]),
                packet(2, 2, [{'type': 'buyBuilding', 'args': {'player_id': 1, 'building': {'type': 'excavation'}}},
                              reward('a', 'placement bonus'), reward('b', 'placement bonus'), reward('c', ' from university')])]
-    assert raw_observations(packets)['S271'] == {'doubled:money': 10}
+    assert raw_observations(packets)['S271'] == {'doubled:money': 5}          # only the extra copy: the first payment comes with any building
     assert 'S271' not in raw_observations(packets, {'1': True})
 
 
@@ -171,7 +171,7 @@ def test_publications_savings_are_capped_and_include_science_universities_withou
 def test_excavation_known_geometry_awards_the_doubled_printed_bonus_types_only():
     s = state('6a-legacy');s.players[0].sponsors = ['S271'];s.config.map_known = [True, True]
     ev = event('buyBuilding', building={'type': 'excavation', 'x': 6, 'y': 3, 'rotation': 3})
-    assert state_totals(ev, s)['S271'] == {'doubled:Clever': 2, 'doubled:Fac': 2}
+    assert state_totals(ev, s)['S271'] == {'doubled:Clever': 1, 'doubled:Fac': 1}
     s.players[0].sponsors.append('S280')
     assert state_totals(ev, s) == {}
     s.players[0].sponsors.remove('S280');s.config.map_known[0] = False
@@ -195,7 +195,7 @@ def test_excavation_known_geometry_awards_the_doubled_printed_bonus_types_only()
     ('760993552', 'S267', 'appeal', 3), ('927726814', 'S268', 'animals_marked', 3),
     ('927683584', 'S269', 'appeal_enlargement', 8), ('927683584', 'S269', 'appeal_final', 3),
     ('714192218', 'S270', 'scuba3', 2), ('795215166', 'S270', 'scuba3', 5), ('795215166', 'S270', 'conservation', 1),
-    ('770429314', 'S271', 'doubled:money', 10), ('798345117', 'S271', 'doubled:Fac', 2), ('798345117', 'S271', 'doubled:Clever', 2),
+    ('770429314', 'S271', 'doubled:money', 5), ('798345117', 'S271', 'doubled:Fac', 1), ('798345117', 'S271', 'doubled:Clever', 1),
     ('798345117', 'S272', 'conservation', 1), ('833146203', 'S274', 'appeal_income', 1), ('833146203', 'S274', 'appeal_final', 2),
     ('795215166', 'S279', 'appeal_initial', 2), ('795215166', 'S279', 'appeal_final', 5),
     ('798345117', 'S280', 'kiosk', 1), ('798345117', 'S280', 'pavilion', 1), ('760993552', 'S280', 'appeal_final', 5),
@@ -217,16 +217,16 @@ def test_complete_replay_publications_franchise_zero_and_statue_timing():
 
 def test_complete_replay_geometry_and_source_observations_do_not_double_count():
     view = replay('798345117');final = view['steps'][-1]['state']['sponsor_stats']
-    assert final['S271'] == {'doubled:Clever': 2, 'doubled:Fac': 2}
+    assert final['S271'] == {'doubled:Clever': 1, 'doubled:Fac': 1}
     assert final['S280'] == {'kiosk': 1, 'pavilion': 1}
     assert final['S273']['saved'] == 2
     assert 'S271' not in at_move(view, 242)
-    assert at_move(view, 243)['S271'] == {'doubled:Clever': 2, 'doubled:Fac': 2}
+    assert at_move(view, 243)['S271'] == {'doubled:Clever': 1, 'doubled:Fac': 1}
 
 
 def test_complete_replay_unknown_map_excavation_fallback_and_distinct_scuba_counter():
     unknown = replay('770429314')['steps'][-1]['state']['sponsor_stats']
-    assert unknown['S271']['doubled:money'] == 10
+    assert unknown['S271']['doubled:money'] == 5
     scuba = replay('714192218')['steps'][-1]['state']['sponsor_stats']
     assert scuba['S270'] == {'scuba3': 2}
     assert scuba['S279'] == {'appeal_initial': 2, 'appeal_final': 3}

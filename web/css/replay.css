@@ -34,6 +34,7 @@ h3 { margin: 0 0 .4rem; font-size: .95rem; }
 .card { position: relative; width: 9rem; aspect-ratio: 240 / 335; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); background: #e9e4d3; color: #222;
   font-size: .72rem; line-height: 1.15; }
 .card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.card img.cprice { position: absolute; width: auto; height: auto; object-fit: fill; pointer-events: none; user-select: none; }       /* the price of an animal after the discounts (price.js): the badge is placed by inline % of the card */
 .card .txt { padding: .3rem; }
 .card .txt b { display: block; }
 .card .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: .1rem .25rem; background: rgba(0, 0, 0, .65); color: #fff; font-size: .62rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -509,10 +510,10 @@ body.viewer { --flash-duration: 0.8s; }
   -webkit-text-stroke: 2.5px #222; paint-order: stroke fill; }
 
 
-/* the money tile is an opaque picture with a white border: the background flash of the tracker is hidden behind it, so the flash is a glowing ring round the tile */
-.pp .rs.money.flash-up, .pp .rs.money.flash-down { animation: none; background: none; }
-.pp .rs.money.flash-up img { animation: ring-up var(--flash-duration, .8s) ease-out; }
-.pp .rs.money.flash-down img { animation: ring-down var(--flash-duration, .8s) ease-out; }
+/* the money tile (`.rt.money`) is an opaque picture with a white border: the background flash of the tracker is hidden behind it, so the flash is a glowing ring round the tile */
+.pp .rt.money.flash-up, .pp .rt.money.flash-down { animation: none; background: none; }
+.pp .rt.money.flash-up img { animation: ring-up var(--flash-duration, .8s) ease-out; }
+.pp .rt.money.flash-down img { animation: ring-down var(--flash-duration, .8s) ease-out; }
 @keyframes ring-up { from { box-shadow: 0 0 0 5px rgba(46, 190, 84, 1), 0 0 14px 6px rgba(46, 190, 84, .85); } to { box-shadow: 0 0 0 5px rgba(46, 190, 84, 0), 0 0 14px 6px rgba(46, 190, 84, 0); } }
 @keyframes ring-down { from { box-shadow: 0 0 0 5px rgba(222, 48, 38, 1), 0 0 14px 6px rgba(222, 48, 38, .85); } to { box-shadow: 0 0 0 5px rgba(222, 48, 38, 0), 0 0 14px 6px rgba(222, 48, 38, 0); } }
 
@@ -889,7 +890,6 @@ html { overflow-y: scroll; }
 .dockpanel .card.dragging { cursor: grabbing; }       /* (full opacity: the card itself follows the pointer, see dragRow in cards.js) */
 
 /* the action cards of the info boxes before they are drawn (action card draft) */
-.ppactions.unseen { visibility: hidden; }
 
 /* the player name in the info box: a link that looks like plain bold text; light colours (yellow, white) get a very thin black outline */
 a.ppname { font-weight: 700; text-decoration: none; }

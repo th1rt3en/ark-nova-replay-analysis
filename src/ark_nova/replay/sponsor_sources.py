@@ -15,6 +15,7 @@ def sponsor_event_gains(raw_log, parsed, known_maps=None) -> dict:
     state, owner, source, reason = None, None, None, None
     excavation, scuba_used, signature = None, False, None
     active = defaultdict(set)
+    activations = defaultdict(int)           # Excavation doubles every bonus: only the second activation of a pair is the sponsor's gain
     order = 0
     for packet in raw_log["data"]["logs"]:
         for event in packet.get("data", []):
@@ -57,6 +58,8 @@ def sponsor_event_gains(raw_log, parsed, known_maps=None) -> dict:
                 if source == "S280" and state == "30" and owner == pid and b.get("type") in {"kiosk", "pavilion"}:
                     out[order].append(("S280", b["type"], 1))
                 # A new building establishes a new placement source. Reposition notifications never enter here.
+                for key in [k for k in activations if k[0] == pid]:
+                    del activations[key]          # parity counts the activations of one placement only
                 excavation = pid if b.get("type") == "excavation" and "S271" in active[pid] and "S280" not in active[pid] else None
             if owner != pid:
                 continue
@@ -75,6 +78,7 @@ def sponsor_event_gains(raw_log, parsed, known_maps=None) -> dict:
                 continue
             # Unknown-map fallback: direct placement rewards, not nested university rewards or other sponsors.
             placement = reason == "placement bonus"
+            before = len(out[order])
             if typ == "getBonuses" and a.get("source") == "placement bonus":
                 for resource, n in (a.get("bonuses") or {}).items():
                     if isinstance(n, (int, float)) and n > 0:
@@ -93,4 +97,10 @@ def sponsor_event_gains(raw_log, parsed, known_maps=None) -> dict:
                     out[order].append(("S271", "doubled:take-in-range-or-deck", n))
             elif placement and typ == "upgradeCard" and state == "37":
                 out[order].append(("S271", "doubled:upgrade-card", 1))
+            fresh = out[order][before:]
+            del out[order][before:]
+            for item in fresh:
+                activations[(pid, item[1], item[2])] += 1
+                if activations[(pid, item[1], item[2])] % 2 == 0:
+                    out[order].append(item)
     return dict(out)

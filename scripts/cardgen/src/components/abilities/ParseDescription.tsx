@@ -60,7 +60,7 @@ const ParseDescription: React.FC<ParseDescriptionProps> = ({ desc }) => {
   }
   // 根据关键字替换成对应的组件
   const pattern = /{(.*?)}/g;
-  const parsedComponents = valueFilledTemplate.split(' ').map((word, index) => {
+  const renderWord = (word: string, index: number): React.ReactNode => {
     // console.log(word);
     const match = pattern.exec(word);
     if (match) {
@@ -150,6 +150,19 @@ const ParseDescription: React.FC<ParseDescriptionProps> = ({ desc }) => {
       return <br key={index} />;
     }
     return word;
+  };
+  // an icon directly followed by punctuation ("{Appeal}.", "{ConservationPoint},"): draw the icon and keep the punctuation
+  const parsedComponents = valueFilledTemplate.split(' ').map((word, index) => {
+    const m = /^(\{[^{}]*\})([^{}\s]+)$/.exec(word);
+    if (m) {
+      return (
+        <React.Fragment key={index}>
+          {renderWord(m[1], index)}
+          {m[2]}
+        </React.Fragment>
+      );
+    }
+    return renderWord(word, index);
   });
 
   return (

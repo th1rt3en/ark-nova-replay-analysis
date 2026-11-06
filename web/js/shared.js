@@ -115,13 +115,13 @@ export function renderShared(st) {
   const row = el('div', 'cards folders');
   const displayNew = zoneNew('display', st.display);
   const displayGone = displayNew.gone;
-  st.display.forEach((k, i) => {
+  Array.from({ length: Math.max(6, (st.display || []).length) }, (_, i) => (st.display || [])[i] || null).forEach((k, i) => {            // (six folders always: before the first replenish the display is empty, the folders stay)
     const f = el('div', 'folder');
     const allowed = (S.replay.steps[S.step].options || {}).take;                       // while taking cards, the cards that cannot be taken are greyed out
     const sps = (S.replay.steps[S.step].options || {}).sponsors;
     const pickKeys = FORK ? forkActs(cardPickAct).map(pickCardOf) : [];
     const dim = (allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k)) || (sps && sps.level >= 2 && k && !sps.display.includes(k)) || (pickKeys.length && k && !pickKeys.includes(k));
-    if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '') + (FORK && cardMarks.has('display#' + i) ? ' marked' : '')));
+    if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '') + (FORK && cardMarks.has('display#' + i) ? ' marked' : ''), 'display'));
     if (k && FORK) {                                                              // a card of the display can be chosen for a move
       f.classList.add('markable');
       f.addEventListener('click', () => { if (dim && forkSingleSelect()) return; const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if (x.startsWith('display#') || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); afterMark(); });
