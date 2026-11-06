@@ -17,7 +17,7 @@ from collections import Counter
 from itertools import combinations
 
 from ark_nova import data
-from ark_nova.engine import build_action, card_programs as prog
+from ark_nova.engine import build_action, card_programs as prog, map_rules
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board_of, neighbours
 from ark_nova.engine.icons import icon_counts
@@ -195,6 +195,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         old = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
         bd_ = g.board_of(p)
         full_before = build_action.covers_map(bd_, [(q.type, q.x, q.y, q.rotation) for q in p.buildings])
+        areas_before = map_rules.quarters_done(p)
         b.type = f"size-{int(b.type[5:]) + 1}"
         b.x, b.y, b.rotation = opt
         if bd_.map_id not in build_action.NO_FULL_MAP_BONUS and not full_before and build_action.covers_map(bd_, [(q.type, q.x, q.y, q.rotation) for q in p.buildings]):
@@ -204,6 +205,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             if c not in old and "S280" not in p.sponsors:
                 for bon in board_of(p).bonuses.get(c, []):          # (the covered hex pays its placement bonus, a Marketing one included)
                     g.apply_placement_bonus(state, action.player, bon)
+        for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: the enlarged enclosure completes an area, which pays its bonus (941429583 turn 60)
+            map_rules.quarter_bonus(state, p.seat, name)
         if b.animal:
             g._gain(state, action.player, appeal=2)
     elif k == "reposition":

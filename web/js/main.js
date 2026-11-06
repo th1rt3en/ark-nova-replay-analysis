@@ -11,7 +11,7 @@ import { sidePanel } from './side-panel.js';
 import { cycleDockTab, renderDock, toggleDock } from './dock.js';
 import { beforeRender, afterRender } from './card-motion.js';
 import { fitPlayed, renderCards, renderZoo } from './zoo.js';
-import { engineBadge, labelNode } from './log-labels.js';
+import { engineBadge, labelNode, warmLabelIcons } from './log-labels.js';
 import { setupLogSearch, refreshLogSearch } from './log-search.js';
 import { setupLogFilter, refreshLogFilter } from './log-filter.js';
 import { fitDisplay, fitScale } from './layout.js';
@@ -230,6 +230,7 @@ function boot() {
       S.sprites = sp.sprites;
       for (const [id, v] of Object.entries(ic)) S.iconSizes[id] = v.size;
       init();
+      warmLabelIcons();                                                     // (the pictures of the step texts are decoded before a step needs them: no icon arrives after its text)
       if (data.partial) loadRest();
     });
   }).catch((err) => {

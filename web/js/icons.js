@@ -84,7 +84,7 @@ export function pic(name, h) {
   const id = S.iconNames[name];
   if (!id) return document.createTextNode('');
   const img = el('img', 'icon');
-  img.src = iconUrl(id); img.alt = name; img.title = name; img.height = h;
+  img.decoding = 'sync'; img.src = iconUrl(id); img.alt = name; img.title = name; img.height = h;
   return img;
 }
 

@@ -341,7 +341,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     gain.onclick = () => { S.skipMode = !S.skipMode; refreshBar(); };
   }
   gain.title = !canGain ? 'Not possible now (the maximum is 5 X tokens)' : 'Instead of an action: put one action card back to slot 1 and gain an X token';
-  const rawIcon = (id, h) => { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = h; return i; };
+  const rawIcon = (id, h) => { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = h; return i; };
   gain.append(rawIcon('r6c6', 30), el('b', '', ':'), rawIcon('r5c6', 26));
   bar.append(gain);
 }
@@ -368,7 +368,7 @@ function associationBar(bar, o) {
     bar.append(el('b', '', ' must choose the species of the university'));
     for (const a of species) {
       const b = el('span', 'abtn deckbtn tilebtn');
-      const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS['fac-science-' + a.args.category] || ICON_IDS['bonus:Fac']); i.alt = a.args.category; i.height = 44;
+      const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(ICON_IDS['fac-science-' + a.args.category] || ICON_IDS['bonus:Fac']); i.alt = a.args.category; i.height = 44;
       b.append(i);
       b.title = 'University: ' + a.args.category;
       bindActs(b, [a]);
@@ -391,7 +391,7 @@ function associationBar(bar, o) {
     for (const [key, list] of groups) {
       const name = list[0].args.continent || list[0].args.kind;
       const b = el('span', 'abtn deckbtn tilebtn' + (list[0].args.supply ? ' supply' : ''));
-      const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS[name] || ICON_IDS['bonus:Fac']); i.alt = name; i.height = 44;
+      const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(ICON_IDS[name] || ICON_IDS['bonus:Fac']); i.alt = name; i.height = 44;
       b.append(i);
       b.title = (S.assocMode === 'partner' ? 'Partner zoo: ' : 'University: ') + name.replace(/^fac-/, '').replace(/-/g, ' ') + (list[0].args.supply ? ' (from the supply)' : '');
       if (list.some((a) => a.args.category)) { b.classList.add('choosable'); b.onclick = () => { S.assocSpecies = key; refreshBar(); }; for (const a of list) S.forkClaimed.add(a); }
@@ -408,7 +408,7 @@ function associationBar(bar, o) {
   for (const [task, n] of Object.entries(o.association.tasks)) {
     const b = el('span', 'abtn deckbtn');
     b.title = task + ': ' + n + (n === 1 ? ' possibility' : ' possibilities');
-    const tile = (id, tip) => { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = tip; i.height = 34; return i; };
+    const tile = (id, tip) => { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = tip; i.height = 34; return i; };
     if (task === 'reputation') b.append(el('b', '', 'Take 2'), pic('reputation', 26));
     else if (FORK && task === 'partner') { b.append(tile(ICON_IDS['bonus:Partner-Zoo'], TASK_TEXT.partner)); b.title = TASK_TEXT.partner + ': choose the partner zoo'; }
     else if (FORK && task === 'university') { b.append(tile(ICON_IDS['bonus:Fac'], TASK_TEXT.university)); b.title = TASK_TEXT.university + ': choose the university'; }
@@ -500,17 +500,17 @@ function effectButton(e) {
     if (ai) b.append(el('b', '', 'Gain'), ai); else b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
   } else if (e.kind === 'search_category' && SEARCH_ICON[e.category]) {        // a targeted search: "Find a {species}" with the species' search icon
     const [label, id] = SEARCH_ICON[e.category];
-    const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = 28;
+    const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28;
     b.append(el('b', '', 'Find a ' + label.toLowerCase()), i);
     b.title = 'Search the deck for the first ' + label.toLowerCase() + ' card';
   } else if (pbName && e.bonus && amountIcon(e.bonus.type, e.bonus.value)) {            // money / X-token / reputation / appeal: "Gain" + the icon with the amount
     b.append(el('b', '', 'Gain'), amountIcon(e.bonus.type, e.bonus.value));
   } else if (pbName) {
     const id = e.bonus && ICON_IDS['bonus:' + e.bonus.type];
-    if (id) { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
+    if (id) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
     b.append(el('b', '', pbName));
   } else if (e.kind === 'multiplier') {                                          // the Multiplier icon, not the word
-    const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS['bonus:Multiplier']); i.alt = 'Multiplier'; i.height = 28;
+    const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(ICON_IDS['bonus:Multiplier']); i.alt = 'Multiplier'; i.height = 28;
     b.append(i);
     b.title = 'Multiplier: put a Multiplier token on one of the action cards' + (src ? ' (' + src + ')' : '');
   } else {

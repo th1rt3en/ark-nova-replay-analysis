@@ -38,6 +38,7 @@ FIXED = {
     "894764261": "peaceful Pilfering 1: 3 money or a card",
     "805339373": "a Constriction ignores the appeal that the triggers of the animal gave",
     "920295323": "Symbiosis does not copy a Reef Dweller effect (turn 71: the Anemone's Mark is its reef effect, the log shows one Mark)",
+    "941429583": "an enlarged enclosure (Conference on Australia) that completes an area of map 13 pays the area's bonus (turn 60)",
     "937181556": "the Polar Bear Exhibit played in the break by the player whose turn it is not: its own bear is an effect of the owner (turn 46)",
 }
 

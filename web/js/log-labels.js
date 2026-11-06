@@ -31,20 +31,57 @@ function centreInk(b, text, ls = 0) {
   if (document.fonts && !document.fonts.check("200px 'Park Num'")) { document.fonts.load("200px 'Park Num'").then(() => { INK.clear(); go(); }, () => {}); return; }
   go();
 }
+// Why an icon used to come a few milliseconds after its text: a step's line is built anew at every render, so each icon is a fresh <img>, and a fresh <img> is decoded off the main
+// thread even when the file is in the cache; the text was painted in the frame before the picture was ready. Three things close the gap: the pictures are decoded once at idle time
+// and kept (`warmLabelIcons`), the <img>s ask to be decoded with the frame (`decoding = 'sync'`, `labelImg`), and the strength icon (an SVG, rasterised on its own like any svg image)
+// is drawn inline, which paints in the same frame as the text around it.
+const WARM = new Map();
+function warm(src) {
+  if (WARM.has(src)) return;
+  const i = new Image();
+  i.decoding = 'async'; i.src = src;
+  WARM.set(src, i);                                                                       // (kept: a picture nobody holds is dropped from the decoded cache)
+  if (i.decode) i.decode().catch(() => {});
+}
+export function warmLabelIcons() {
+  const urls = [...Object.values(S.iconNames).map(iconUrl), ...Object.values(BADGE).map((b) => '/badges/' + b + '.webp'), iconUrl('r5c6_ns')];
+  const next = () => { for (const u of urls.splice(0, 12)) warm(u); if (urls.length) idle(next); };
+  const idle = window.requestIdleCallback || ((f) => setTimeout(f, 50));
+  if (document.fonts && document.fonts.load) document.fonts.load("200px 'Park Num'").catch(() => {});          // (the digits inside the icons are centred by this font's ink, `centreInk`)
+  idle(next);
+}
+function labelImg(cls, src) {
+  const img = el('img', cls);
+  img.decoding = 'sync'; img.src = src;
+  warm(src);
+  return img;
+}
+const STRENGTH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 118 118"><rect width="118" height="118" fill="#211e21"/><path fill="#fff" d="M0 13.13h13.15v13.2H0zM0 39.29h13.15v13.2H0zM0 65.58h13.15v13.2H0zM0 91.74h13.15v13.2H0z"/></svg>';          // (web/icons/strength.svg)
+function strengthIcon(cls, title) {
+  const t = document.createElement('template');
+  t.innerHTML = STRENGTH_SVG;
+  const s = t.content.firstChild;
+  s.setAttribute('class', cls); s.setAttribute('role', 'img'); s.setAttribute('aria-label', 'strength');
+  const ti = document.createElementNS('http://www.w3.org/2000/svg', 'title'); ti.textContent = title;
+  s.prepend(ti);
+  return s;
+}
 function labelIcon(name, amount) {
   if (name === 'ACARD') return actionCardIcon(amount);
   if (name === 'XTOKEN' && String(amount) === '1') amount = '';          // (a single X token: the plain icon without the 1)
   let src = null;
   if (BADGE[name]) src = '/badges/' + BADGE[name] + '.webp';
-  else if (name === 'STRENGTH') src = '/icons/strength.svg';       // (BGA's action strength icon redrawn as a vector, `r5c5` of the sheet is only 118 px)
+  else if (name === 'STRENGTH') src = 'inline';                    // (BGA's action strength icon redrawn as a vector, `r5c5` of the sheet is only 118 px; drawn inline, see `strengthIcon`)
   else {
     const key = name.startsWith('SEARCH-') ? 'search-' + name.slice(7).toLowerCase().replace('seaanimal', 'sea-animal') : name.toLowerCase();
     if (S.iconNames[key]) src = iconUrl(S.iconNames[key]);
   }
   if (!src) return null;
   if (name === 'XTOKEN' && amount) src = iconUrl('r5c6_ns');       // (no white squares under a number)
-  const img = el('img', 'icon labelicon' + (name === 'MONEY' ? ' labelmoney' : name === 'XTOKEN' && !amount ? ' labelxplain' : ''));
-  img.src = src; img.alt = name.toLowerCase(); img.title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
+  const cls = 'icon labelicon' + (name === 'MONEY' ? ' labelmoney' : name === 'XTOKEN' && !amount ? ' labelxplain' : ''), title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
+  let img;
+  if (src === 'inline') img = strengthIcon(cls, title);
+  else { img = labelImg(cls, src); img.alt = name.toLowerCase(); img.title = title; }
   if (amount && WITH_AMOUNT.has(name)) {
     const box = el('span', 'labelamount' + (name === 'XTOKEN' ? ' labelx' : name === 'MONEY' ? ' labelm' : name === 'APPEAL' ? ' labeldk' : name === 'CONSERVATION' ? ' labeldk' : name === 'STRENGTH' ? ' labelstr' : ''));
     const num = el('b', '', amount);
@@ -101,12 +138,12 @@ function actionCardIcon(spec) {
   if (!id) return null;
   const box = el('span', 'acticon' + (lvl === 2 ? ' lvl2' : ''));                    // the look of the action card in the player box (side-panel.js: `.ac`): a white tile with a blue (I) / purple (II) frame
   box.title = (v ? VARIANT_NAMES[type + '_' + v] || ACTION_NAMES[type] : ACTION_NAMES[type]) + ' (' + (lvl === 2 ? 'II' : 'I') + ')';
-  const img = el('img', 'icon');
-  img.src = iconUrl(id); img.alt = ACTION_NAMES[type] || type;
+  const img = labelImg('icon', iconUrl(id));
+  img.alt = ACTION_NAMES[type] || type;
   box.append(img);
   if (v) {                                                                          // the silver badge of the special card, the side's own, top left like in the player box
-    const b = el('img', 'acvar');
-    b.src = '/action_icons/' + type + '_' + v + '_' + lvl + '.webp'; b.alt = 'Variant ' + v;
+    const b = labelImg('acvar', '/action_icons/' + type + '_' + v + '_' + lvl + '.webp');
+    b.alt = 'Variant ' + v;
     box.append(b);
   }
   return box;
