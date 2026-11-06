@@ -7,6 +7,7 @@ import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { placementBonusName } from './bonus-names.js';
 import { amountIcon } from './log-labels.js';
 import { renderDock } from './dock.js';
+import { CARD_TOKEN_ICON, CARD_TOKEN_TEXT } from './side-panel.js';
 import { forkBar, keepSel, playFork } from './fork.js';
 import { render } from './main.js';
 import { atEnd, atStart, go, stepBy } from './playback.js';
@@ -297,8 +298,15 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : hyp ? " may use one of the opponent's first three action cards" : ' must choose an action card'));
   cardsShown.forEach((a, i) => {
     const b = el('span', 'abtn acbtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
-    b.title = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + ', strength ' + (i + 1 + spent) + ' (up to ' + (i + 1 + spent + p.x_tokens) + ' with X tokens)';
-    b.append(pic(ACTION_ICON[a.type], 22), el('b', '', i + 1 + spent));
+    const cut = 2 * (a.tokens || []).filter((t) => t === 'Constriction').length;                     // (each Constriction token on the card takes 2 strength, never below 1: engine/venom.py)
+    const str = Math.max(1, i + 1 + spent - cut);
+    b.title = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + ', strength ' + str + ' (up to ' + (str + p.x_tokens) + ' with X tokens)' + (cut ? ', 2 less per Constriction token' : '');
+    b.append(pic(ACTION_ICON[a.type], 22), el('b', '', str));
+    (a.tokens || []).forEach((t, k) => {                                 // the tokens that lie on the card (Venom, Constriction, Multiplier), as in the tracker
+      const id = CARD_TOKEN_ICON[t]; if (!id) return;
+      const tk = el('img', 'actoken'); tk.src = iconUrl(id); tk.alt = t; tk.title = CARD_TOKEN_TEXT[t] || t; tk.style.setProperty('--k', String(k));
+      b.append(tk);
+    });
     if (FORK && (S.skipMode ? maySkip(a.type) : mayChoose(a.type))) {
       b.classList.add('choosable');
       b.title = S.skipMode ? 'Put ' + ACTION_NAMES[a.type] + ' back to slot 1 and gain an X token' : 'Choose ' + ACTION_NAMES[a.type] + (S.forkSpend ? ', spending ' + S.forkSpend + ' X token' + (S.forkSpend === 1 ? '' : 's') : '');

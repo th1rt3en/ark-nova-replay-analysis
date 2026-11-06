@@ -119,12 +119,42 @@ function centreInk(node) {
   shift();
   if (document.fonts && !document.fonts.check('28px "Bowlby One"')) document.fonts.ready.then(shift);          // (the font may still be loading on the first draw)
 }
+// The break marker moves from dot to dot (a hop on a small arc per step, the first hop of a round drops onto the first dot; a new round puts the marker back on the first dot with a pop), the number changes and ticks when the marker has landed, and the pill flashes green when the marker reaches 9. Only when
+// the break moved from the picture before (a few steps: a jump of the position leaves it as it is); every mode (css `.pips .mk`, `.bn.tick`). The dots are drawn in their final state by `headerStats`: here they go back to the start and fill up.
+const HOP_MS = 230, hopsReduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+function hopBreak(brk, pips, num, from, to) {
+  if (from === undefined || from === to || hopsReduced() || !pips.animate) return;
+  const speed = Math.max(.1, Number(S.animationSpeed) || 1), dots = [...pips.children], ms = HOP_MS / speed;
+  const setNum = (v) => { num.firstChild.nodeValue = v; }, tick = () => { num.classList.add('tick'); num.style.animationDuration = (300 / speed) + 'ms'; };
+  if (to < from) {                                                         // a new round: the marker is back on the first dot
+    tick();
+    if (to === 1) dots[0].animate([{ transform: 'scale(.4)' }, { transform: 'scale(1.15)' }], { duration: 260 / speed, easing: 'ease-out' });
+    return;
+  }
+  const cur = dots[to - 1], pitch = dots[1].offsetLeft - dots[0].offsetLeft, mk = el('b', 'mk');
+  setNum(from);                                                            // (the number only changes when the marker has landed)
+  cur.classList.remove('cur'); for (let k = Math.max(0, from - 1); k < to - 1; k++) dots[k].classList.remove('done');
+  pips.append(mk);
+  const at = (k, extra = '') => 'translateX(' + k * pitch + 'px) ' + extra;
+  const opts = { duration: ms, easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' };
+  (async () => {
+    for (let p = from; p < to && mk.isConnected; p++) {                    // (every step is one hop of the same length: 0 to 9 = nine hops; the first hop of a round drops onto the first dot from the side of the number)
+      if (p >= 1) dots[p - 1].classList.add('done');
+      const a = p === 0
+        ? mk.animate([{ transform: at(-.5, 'scale(.3)'), opacity: 0 }, { transform: at(-.25, 'translateY(-11px) scale(1.22)'), opacity: 1, offset: .5 }, { transform: at(0, 'scale(1.15)'), opacity: 1 }], opts)
+        : mk.animate([{ transform: at(p - 1, 'scale(1.15)') }, { transform: at(p - .5, 'translateY(-11px) scale(1.22)'), offset: .5 }, { transform: at(p, 'scale(1.15)') }], opts);
+      try { await a.finished; } catch (e) { break; }
+    }
+    mk.remove(); cur.classList.add('cur'); setNum(to); tick();
+    if (to === 9 && brk.isConnected) brk.classList.add('flash-up');       // (the green wash of the pill, only for the end of the break)
+  })();
+}
 // round and break counter: the two pills at the right of the top bar (#hdrstats)
 function headerStats(st, flash) {
   const root = $('hdrstats');
   if (!root) return;
   root.replaceChildren();
-  const rnd = flash('round', st.round, el('div', 'pill rnd'));
+  const rnd = flash('round', st.round, el('div', 'pill rnd'), true);          // (the Round | Turn pill never animates)
   rnd.title = 'Round ' + st.round + ': a new round starts when a break ends. Turn: the acting player’s normal turn number, counted when the turn starts. During a break or after play ends, the last turn number stays visible. Setup does not count';
   const rn = el('b', 'rn', st.round), tn = el('b', 'tn', turnNumber(st));
   const rh = el('div', 'half'), th = el('div', 'half');          // (two equal halves, the word small above the number, a dashed divider between them)
@@ -132,7 +162,7 @@ function headerStats(st, flash) {
   th.append(el('span', 'lab', 'Turn'), tn);
   rnd.append(rh, el('i', 'dv'), th);
   centreInk(rn); centreInk(tn);
-  const brk = flash('break', st.break_position, el('div', 'pill brk'));
+  const brk = flash('break', st.break_position, el('div', 'pill brk'), true);          // (no colour change while the marker advances: it hops from dot to dot, `hopBreak`; only the 9 flashes green)
   brk.title = 'Break track: the break ends the round when the token reaches 9';
   const pips = el('div', 'pips');
   for (let k = 0; k < 9; k++) pips.append(el('i', k < st.break_position - 1 ? 'done' : k === st.break_position - 1 ? 'cur' : ''));
@@ -141,6 +171,7 @@ function headerStats(st, flash) {
   const mug = el('img', 'brkicon'); mug.src = '/icons/r3c14.webp'; mug.alt = 'Break'; mug.draggable = false;            // (Ark Nova's symbol for the break: a coffee mug)
   brk.append(mug, num, pips);
   root.append(rnd, brk);
+  hopBreak(brk, pips, num, S.lastNums.break, st.break_position);
   const menu = PLAY ? gameMenu() : null;                                 // concede / propose to abandon / end on overtime
   if (menu) root.append(menu);
 }
@@ -150,10 +181,10 @@ export function sidePanel(st) {
   const root = $('side');
   root.replaceChildren();
   const nums = {};
-  const flash = (key, value, node) => {
+  const flash = (key, value, node, quiet) => {                       // (`quiet`: only remember the number, no flash: the round / break pills of the top bar)
     nums[key] = value;
     const old = S.lastNums[key];
-    if (old !== undefined && old !== value) node.classList.add(value > old ? 'flash-up' : 'flash-down');
+    if (!quiet && old !== undefined && old !== value) node.classList.add(value > old ? 'flash-up' : 'flash-down');
     return node;
   };
   headerStats(st, flash);
@@ -205,6 +236,7 @@ export function sidePanel(st) {
     const owned = workers.filter((t) => !/^supply_/.test(t.location)).length;     // workers the player has (the locked ones in the supply do not count yet)
     const wr = flash(seat + ':workers', ready, tile('wk', 'Workers available / owned (' + workers.filter((t) => /^supply_/.test(t.location)).length + ' still locked)', wi, ready));
     wr.querySelector('b').append(el('small', '', '/' + owned));               // like the hand: 1/3
+    wr.dataset.wkSeat = String(seat);                                        // (assoc-motion.js: the icon is the store of the player's workers; its number follows the flights)
     const limit = p.hand_limit !== undefined ? p.hand_limit : (p.tokens.some((t) => t.type === 'fac-rep-hand' && /^university_/.test(t.location)) ? 5 : 3);
     const hb = el('b', p.hand.length > limit ? 'over' : '', p.hand.length);   // red while the hand is over the limit, as on BGA
     hb.append(el('small', '', '/' + limit));

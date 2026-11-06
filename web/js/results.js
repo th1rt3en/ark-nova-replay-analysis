@@ -463,6 +463,15 @@ function raceSvg(R, w, h, big) {
   return s;
 }
 // ---- the panel --------------------------------------------------------------------------------------------------------------------------------------------------------------
+// the points the final scoring added (the sponsors' endgame effects and the endgame cards): the final score minus the score after the last normal turn; null when that cannot be told
+const HOURGLASS = '<svg class="gshg" viewBox="0 0 64 100" aria-hidden="true"><path d="M10 10H54V22C54 36 36.5 43.5 35.5 50C36.5 56.5 54 64 54 78V90H10V78C10 64 27.5 56.5 28.5 50C27.5 43.5 10 36 10 22Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><rect x="4" y="2" width="56" height="9" rx="3.5" fill="currentColor"/><rect x="4" y="89" width="56" height="9" rx="3.5" fill="currentColor"/><path d="M20 25C22.5 32 28 36.5 32 39.5C36 36.5 41.5 32 44 25Z" fill="currentColor"/><path d="M19 86.5H45V83C44.5 77 40.5 72 34.5 67.5H29.5C23.5 72 19.5 77 19 83Z" fill="currentColor"/></svg>';
+function endgamePoints() {
+  const fin = finalState(), nt = S.replay.normal_turns;
+  if (fin.phase !== 'over' || !Array.isArray(nt) || !nt.length) return null;
+  const last = nt[nt.length - 1].players, sc = fin.result && fin.result.scores ? fin.result.scores : fin.players.map((p) => p.score);       // (the same split as the End column of the graph: the score after the last normal turn)
+  const d = sc.map((v, k) => v - (last[k] ? last[k].score : NaN));
+  return d.every((x) => Number.isFinite(x) && x >= 0) ? d : null;
+}
 function outcome() {
   const st = finalState(), names = S.replay.players.map((p) => p.name);
   const conceded = st.phase === 'over' ? null : S.postStats && S.postStats.conceded;
@@ -475,7 +484,7 @@ function outcome() {
 // A row shows up when either player's map has the key; the other player gets a dash. [label, key, factor]: map 13's quadrant keys are trigger counts (Appeal pays 2 each, Money 3 each).
 const MAP_OVERVIEW = [['Tower appeal', 'tower_appeal'], ['Sponsors marketed\nwith map ability', 'tower_marketed'], ['Overall points of\nmarketed sponsors', 'tower_marketed_points'],
   ['Animals played\nwith map ability', 'ignore_animals'], ['Cards pouched\nwith map ability', 'pouched'], ['Continent markers removed', 'cubes'],
-  ['Reputation from quadrant effect', 'quad_reputation'], ['Appeal from quadrant effect', 'quad_appeal', 2], ['Hunter from quadrant effect', 'quad_hunters'],
+  ['Quadrant reputation', 'quad_reputation'], ['Quadrant appeal', 'quad_appeal', 2], ['Quadrant hunter', 'quad_hunters'],
   ['Shark Attack points', 'shark_points'], ['Person sponsors played with map ability', 'person_free'], ['Cards discarded for action strength', 't1_discards']];
 const mapValue = (seat, key, factor = 1) => { const m = S.replay.map_stats && S.replay.map_stats[seat]; return m && m[key] !== undefined ? m[key] * factor : undefined; };
 function mapRows(defs) {
@@ -492,7 +501,7 @@ const incomeRow = () => {
   const v = [0, 1].map((i) => { const m = S.replay.map_stats && S.replay.map_stats[i]; if (!m) return undefined; return m.income_map !== undefined ? m.income_map : m.quad_money !== undefined ? m.quad_money * 3 : undefined; });
   if (v[0] === undefined && v[1] === undefined) return [];
   const quad = [0, 1].some((i) => mapValue(i, 'quad_money') !== undefined);
-  return [[quad ? 'Income from quadrant effect' : 'Gained from map income', v[0] === undefined ? '\u2013' : v[0], v[1] === undefined ? '\u2013' : v[1], ...(v[0] === undefined || v[1] === undefined ? [-1] : [])]];
+  return [[quad ? 'Gained from quadrant income' : 'Gained from map income', v[0] === undefined ? '\u2013' : v[0], v[1] === undefined ? '\u2013' : v[1], ...(v[0] === undefined || v[1] === undefined ? [-1] : [])]];
 };
 function groups(D) {
   const [a, b] = D.players, hx = [hexes(0), hexes(1)];
@@ -578,7 +587,15 @@ function panel() {
   };
   const spine = el('div', 'gsspine'); const sc = el('div', 'gssc');
   const hi = (k) => (O.winner === null || O.winner === k ? '' : ' lo');
-  sc.append(el('span', 'n' + hi(L), String(O.scores[L])), el('span', 'dash', '-'), el('span', 'n' + hi(R), String(O.scores[R])));
+  const eg = endgamePoints();
+  const swrap = (k) => {                                                                                    // a score with its endgame points (hourglass + value between two thin lines) hanging under it
+    const w = el('span', 'gsw'), n = el('span', 'n' + hi(k), String(O.scores[k])); w.append(n);
+    if (eg) { const g = el('span', 'gseg'); const rgb = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(seatColor(k) || '');
+      g.style.setProperty('--hg', rgb && Math.max(...[1, 2, 3].map((q) => parseInt(rgb[q], 16))) < 80 ? '#C3CBCE' : 'color-mix(in srgb, ' + seatColor(k) + ' 58%, #fff)');       // (the player's colour, lightened to read on the black; a (nearly) black seat gets the light grey)
+      g.title = 'Points from the final scoring (sponsors and endgame cards)'; g.innerHTML = HOURGLASS + '<b>+' + eg[k] + '</b>'; w.append(g); }
+    return w;
+  };
+  sc.append(swrap(L), el('span', 'dash', '-'), swrap(R));
   spine.append(sc);
   hd.append(side(L, 0), spine, side(R, 1));
   const cats = S.gsGraph ? GRAPH_CATS.map(([t]) => [t, []]) : [overview(D), ...(D ? groups(D) : [])];       // (the graph view has its own categories: a click opens that graph, nothing scrolls)
@@ -617,10 +634,14 @@ function resultsSwitch() {
   const ICB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7z" class="o"/><path d="M12 7l4.5 2.5v5L12 17l-4.5-2.5v-5z" class="f"/></svg>', ICS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18" class="o"/><rect x="4.5" y="11" width="4" height="8" rx="1" class="f"/><rect x="10" y="6" width="4" height="13" rx="1" class="f"/><rect x="15.5" y="13" width="4" height="6" rx="1" class="f"/></svg>';
   const AL = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 4l-6 6 6 6"/></svg>', AR = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l6 6-6 6"/></svg>';
   const b = el('button', 'rsflap rsgo'); b.type = 'button';                                      // one button, only the view that can be switched to: Game stats on the final board, Final board on the results
-  if (S.results) { b.innerHTML = AL + ICB + '<span>Final board</span>'; b.title = 'Final board (←)'; b.onclick = closeResults; }
+  if (S.results) { b.classList.add('rsback'); b.innerHTML = AL + ICB + '<span>Final board</span>'; b.title = 'Final board (←)'; b.onclick = closeResults; }
   else { b.innerHTML = ICS + '<span>Game stats</span>' + AR; b.title = 'Game stats (→)'; b.onclick = openResults; }
   const O = outcome(), text = el('span', 'rsswitchtext');
-  text.textContent = 'Game over · ' + (O.winner === null ? 'tie ' : O.names[O.winner] + ' wins ') + O.scores[0] + ' : ' + O.scores[1];
+  const hi = O.winner === null ? O.scores[0] : O.scores[O.winner], lo = O.winner === null ? O.scores[1] : O.scores[1 - O.winner];          // (the winner's score first: "Xiao Tsong wins 109-104")
+  text.append('Game over · ');
+  if (O.winner === null) text.append('tie ');
+  else { const nm = el('span', 'rsswinner', O.names[O.winner]); nm.style.color = seatColor(O.winner); text.append(nm, ' wins '); }       // (the winner's name in the seat colour)
+  text.append(hi + '-' + lo);
   const w = el('div', 'rsswitchrow'); w.append(b, text);
   return w;
 }
@@ -633,7 +654,6 @@ export function syncResults() {
   if (!gate) S.results = false;
   const pill = document.querySelector('.movepill');
   pill.classList.toggle('rsgate', gate);
-  if (gate) { const O = outcome(); pill.style.setProperty('--win', O.winner === null ? '#F3DFA6' : graphStyle(O.winner).df); } else pill.style.removeProperty('--win');          // (the post-game bar: a wash of the winner's colour on warm paper)
   pill.querySelector('.rsswitchrow')?.remove();
   if (gate) pill.append(resultsSwitch());
   document.body.classList.toggle('showresults', S.results);

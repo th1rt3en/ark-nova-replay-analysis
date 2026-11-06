@@ -172,7 +172,9 @@ def _scan(raw_log: dict, player_ids: list, maps: list, steps: list | None, spons
             if i is None or not isinstance(snap, list):
                 continue
             for q, filled in enumerate(snap[:4]):
-                if filled and not map_status[i][q] and base[i] == "13":
+                # (the instant trigger of money / appeal / reputation comes with its own "Map 13 quarter bonus" event, in the same or the next move: it is counted there, once; only
+                # the hunters' quadrant, which pays no bonus of its own, is counted from the fill)
+                if filled and not map_status[i][q] and base[i] == "13" and QUADRANT[q] == "hunters":
                     if (i, move, q) not in quad_seen:
                         quad_seen.add((i, move, q))
                         put(i, "quad_" + QUADRANT[q])
@@ -201,8 +203,11 @@ def _scan(raw_log: dict, player_ids: list, maps: list, steps: list | None, spons
         elif ty == "takeBonus":
             bd = (a.get("bonus_desc") or {}).get("args") or {}
             btype = bd.get("bonus_type")
-            if btype == "MAP_13_INCOME" and base[s] == "13":
-                put(s, "quad_" + QUADRANT[int(bd.get("bonus_n") or 0) % 4])
+            if btype == "MAP_13_INCOME" and base[s] == "13" and QUADRANT[int(bd.get("bonus_n") or 0) % 4] == "hunters":          # (the income of the other quadrants is the "quarter bonus" event that follows in the same move)
+                q = int(bd.get("bonus_n") or 0) % 4
+                if (s, move, q) not in quad_seen:
+                    quad_seen.add((s, move, q))
+                    put(s, "quad_hunters")
             if btype == "SharkAttack" and (a.get("source") == "Archaeologist" or "S221" in str(a.get("sourceId") or a.get("source") or "")):
                 arch_shark[s] = True
         elif ty == "discardCards":

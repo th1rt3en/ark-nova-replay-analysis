@@ -5,7 +5,7 @@
 import { el, svg } from './util.js';
 import { pentagon } from './handshake.js';
 import { BONUS_HD } from './bonus_hd_data.js';
-import { FIT_DY, FIT_H, iconShadow } from './icons.js';
+import { FIT_DY, FIT_H, ICON_IDS, iconShadow, iconUrl } from './icons.js';
 
 const INK = '#17262B';
 const hd = (name) => '/icons_hd/' + name + '.webp';
@@ -94,11 +94,7 @@ export function adaptIcon(root, cx, cy, v, k = 1) {
   add(g, 'text', { x: 0, y: 29, class: 'bonus-number', style: 'font-size:30px;stroke-width:6px;text-anchor:middle' }, v);
   return g;
 }
-// the blue Multiplier disc with x2 (vector)
+// the Multiplier: BGA's own blue disc with x2 (the picture of the placement bonus and of the action card token), no drawing of our own
 function multiplier(t) {
-  const id = 'bmg' + uid++;
-  const gr = add(t, 'radialGradient', { id, cx: 0.42, cy: 0.38, r: 0.7 });
-  add(gr, 'stop', { offset: 0, 'stop-color': '#4E6BD8' }); add(gr, 'stop', { offset: 1, 'stop-color': '#22308F' });
-  add(t, 'circle', { cx: 40, cy: 44, r: 25, fill: `url(#${id})`, stroke: '#141D5C', 'stroke-width': 2 });
-  add(t, 'text', { x: 40, y: 54, 'text-anchor': 'middle', style: "font:400 29px 'Park Num',system-ui,sans-serif", fill: '#fff' }, 'x2');
+  add(t, 'image', { href: iconUrl(ICON_IDS['bonus:Multiplier']), x: 15, y: 19, width: 50, height: 50, preserveAspectRatio: 'xMidYMid meet' });
 }

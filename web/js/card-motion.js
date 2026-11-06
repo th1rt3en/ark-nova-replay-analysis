@@ -2,7 +2,7 @@
 import { S, FORK, MINIGAME, PLAY, SANDBOX } from './state.js';
 import { frameText } from './frames.js';
 import { info, cardName, largeOf } from './cards.js';
-import { movementPlan, endgamePlan, otherPlan, parsePilfer, playedCards, buildingChanges, displayChanges, targetedNames } from './card-motion-plan.js';
+import { movementPlan, endgamePlan, otherPlan, parsePilfer, playedCards, playedRemoved, buildingChanges, buildingFlips, displayChanges, targetedNames } from './card-motion-plan.js';
 import { renderDock } from './dock.js';
 import { curState, hides } from './pov.js';
 import { tabbedLayout, playedMode, fullDrawerCardWidth } from './zoo.js';
@@ -10,6 +10,7 @@ import { render } from './main.js';
 import { snakeSafe } from './nosnake.js';
 import { createWave } from './wave.js';
 import { captureActionMotion, runActionMotion } from './action-motion.js';
+import { captureAssoc, runAssoc } from './assoc-motion.js';
 
 const EASE = 'cubic-bezier(.22,.65,.3,1)';
 export const ANIMATION_SPEEDS = [.25, .5, 1, 1.5, 2, 3];
@@ -20,7 +21,8 @@ export function setAnimationSpeed(value) {
   for (const a of animations) a.updatePlaybackRate(a.playbackRate * next / before);
 }
 let previous = null, capture = null, capture2 = null, pending = null, layer = null;
-let actionCapture = null;
+let actionCapture = null, assocCapture = null;
+const landings = new Map();          // project key (P###) -> when its card has settled in the strip (ms, absolute): the cube of the supporter glides after that
 let tabPrev = null, playedCapture = null, buildingCapture = null, displayCapture = null, tabVisit = null, tabReturnTimer = 0;
 const animations = new Set(), hidden = new Map();
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
@@ -170,12 +172,14 @@ export function beforeRender(st) {
   const forward = previous && previous.replay === S.replay && previous.pov === S.pov && previous.mode === S.handMode
     && ((S.cardMotionForward && S.step >= previous.step) || (FORK && S.step === previous.step + 1) || (S.step === previous.step && S.phase > previous.phase));
   actionCapture = forward && !reduced.matches && !MINIGAME ? captureActionMotion(previous.state, st) : null;
+  assocCapture = forward && !reduced.matches ? captureAssoc(previous.state, st) : null;
   tabPrev = forward && !reduced.matches && !MINIGAME ? previous.state : null;
   displayCapture = forward && !reduced.matches && !MINIGAME ? { state: previous.state, display: displayShots(previous.state) } : null;
   buildingCapture = forward && !reduced.matches && !MINIGAME ? previous.state : null;
   const plays = forward && !reduced.matches && !MINIGAME ? playedCards(previous.state, st) : [];
-  playedCapture = plays.length ? {
-    plays, hand: visibleHand() ? cards().map(shot) : [], seat: shownSeat(),
+  const gone = forward && !reduced.matches && !MINIGAME ? playedRemoved(previous.state, st) : [];
+  playedCapture = plays.length || gone.length ? {
+    plays, gone, before: previous.state, hand: visibleHand() ? cards().map(shot) : [], seat: shownSeat(),
     display: displayShots(previous.state), piles: playedShots(),
   } : null;
   if (playedCapture?.plays.length && tabbedLayout()) {
@@ -203,6 +207,9 @@ export function afterRender(st) {
   else if (old && !blocked && !reduced.matches && visibleZone() && zoneKind() === 'endgame') ownPlan = endgamePlan(old.state, st, seat);
   const action = actionCapture; actionCapture = null;
   if (action && !blocked && !reduced.matches) runActionMotion(action, { animate, finish, hide, show, element, deckPoint, scale });
+  landings.clear();
+  const assoc = assocCapture; assocCapture = null;
+  const assocGo = assoc && !blocked && !reduced.matches ? runAssoc(assoc, { animate, finish, hide, show, element, deckPoint, scale, glideEase, projectLanding: (key) => landings.get(key) || 0 }) : null;
   const tabOld = tabPrev; tabPrev = null;
   const tabs = tabOld && !blocked && !reduced.matches && Number.isInteger(seat) && !hides(seat) ? tabPlans(tabOld, st, seat) : null;     // (the zones of the followed player that are not on show: their cards fly to the zone's tab, which blinks)
   const tabShots = displayCapture ? displayCapture.display : [];
@@ -248,6 +255,7 @@ export function afterRender(st) {
       p.keys.filter((key) => !keys.has(key)).forEach((key, i) => { const t = targets.find((e) => e.dataset.key === key); if (t) arrive(t, { kind: 'deck' }, i); });
     }
   }
+  if (assocGo) assocGo();
   previous = { state: st, step: S.step, phase: S.phase, replay: S.replay, pov: S.pov, seat, kind: zoneKind(), mode: S.handMode, bar: [...(document.getElementById('current')?.childNodes || [])].map((n) => n.cloneNode(true)) };
   S.cardMotionForward = false;
 }
@@ -260,6 +268,39 @@ function runBuildings(old, st) {
   const find = (c, ghost) => document.querySelector('.board g[data-bseat="' + c.seat + '"][data-bid="' + c.id + '"]' + (ghost ? '.cm-leaving' : ':not(.cm-leaving)'));
   added.forEach((c, i) => { const g = find(c, false); if (g) buildingFlight(g, true, i); });
   removed.forEach((c, i) => { const g = find(c, true); if (g) buildingFlight(g, false, i); });
+  buildingFlips(old, st).forEach((c, i) => { const g = find(c, false); if (g) buildingTurn(g, c.occupied, i); });
+}
+// A standard enclosure that fills (an animal moves in) or empties (it is released) turns over on the spot to its other side, with a small lift and a shadow: it turns edge-on on a
+// vertical axis through its middle, the sprite is swapped there, and it turns back to flat. A release turns the other way. The real group is hidden for the turn (the sprite it holds is
+// already the new side); the copy holds both sides and shows one at a time.
+function buildingTurn(g, occupied, index) {
+  const ctm = g.getScreenCTM(), img = g.querySelector('image'), r = (img || g.querySelector('polygon') || g).getBoundingClientRect();
+  if (!ctm || !r.width || !img) return;
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2, dir = occupied ? 1 : -1, MS = 700, lift = Math.max(r.width, r.height);
+  const o = document.createElementNS(SVG_NS, 'svg');
+  o.setAttribute('class', 'cm-building');
+  Object.assign(o.style, { position: 'absolute', left: '0', top: '0', width: '1px', height: '1px', overflow: 'visible', transformOrigin: cx + 'px ' + cy + 'px', zIndex: '3' });
+  const ids = new Map(), copy = (flip) => {
+    const k = g.cloneNode(true);
+    k.removeAttribute('class'); k.removeAttribute('style'); k.removeAttribute('data-bid'); k.removeAttribute('data-bseat'); k.querySelector('.frame')?.remove();
+    k.querySelectorAll('[id]').forEach((e) => { const n = e.id + 'k' + (++copies); ids.set(e.id, n); e.id = n; });
+    k.querySelectorAll('[mask],[clip-path]').forEach((e) => ['mask', 'clip-path'].forEach((a) => { const m = /url\(#([^)]+)\)/.exec(e.getAttribute(a) || ''); if (m && ids.has(m[1])) e.setAttribute(a, 'url(#' + ids.get(m[1]) + ')'); }));
+    k.setAttribute('transform', 'matrix(' + [ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f].join(' ') + ')');
+    if (flip) k.querySelectorAll('image').forEach((im) => { const h = im.getAttribute('href') || ''; im.setAttribute('href', occupied ? h.replace('_occupied', '_empty') : h.replace('_empty', '_occupied')); });
+    return k;
+  };
+  const was = copy(true), now = copy(false);
+  now.style.opacity = '0';
+  o.append(was, now); root().append(o); hide(g);
+  const persp = 'perspective(' + Math.round(lift * 3.5) + 'px) ', ease = (t) => t * t, out = (t) => 1 - (1 - t) * (1 - t);
+  const at = (a, l) => ({ transform: persp + 'rotateY(' + a.toFixed(2) + 'deg) scale(' + (1 + .09 * l).toFixed(3) + ')', filter: l ? 'drop-shadow(0 ' + (lift * .05).toFixed(1) + 'px ' + (lift * .04).toFixed(1) + 'px rgba(0,0,0,' + (.4 * l).toFixed(2) + '))' : 'none' });
+  const frames = [];
+  for (let i = 0; i <= 20; i++) { const t = i / 20, u = ease(t); frames.push({ offset: t / 2, ...at(90 * dir * u, u) }); }
+  for (let i = 0; i <= 20; i++) { const t = i / 20, u = out(t); frames.push({ offset: .5 + t / 2, ...at(-90 * dir * (1 - u), 1 - u) }); }
+  const swap = (a, b) => [{ opacity: a, offset: 0 }, { opacity: a, offset: .4999 }, { opacity: b, offset: .5 }, { opacity: b, offset: 1 }];
+  animate(was, swap(1, 0), MS, index * 130, 'linear');
+  animate(now, swap(0, 1), MS, index * 130, 'linear');
+  finish(animate(o, frames, MS, index * 130, 'linear'), () => { o.remove(); show(g); });
 }
 function buildingFlight(g, appear, index) {
   const ctm = g.getScreenCTM(), r = (g.querySelector('image') || g.querySelector('polygon') || g).getBoundingClientRect();     // (not the group: its masks span the whole board)
@@ -406,6 +447,25 @@ function playedShots() {
     return { ...shot(node), w: r.width, h: r.height, seat: Number(block.dataset.playedSeat) };
   }));
 }
+// The "Cards N" chip of a board whose played-cards drawer is closed (zoo.js `playedDrawer`).
+const drawerChip = (seat) => document.querySelector('#zoos [data-zoo-seat="' + seat + '"] .drbar .drtab:not(.drexp)');
+// The number in the chip stays at the old count until a card arrives (+1) / leaves (-1), then shows the new count and pops. `step` counts the cards of this seat so far (a second card arriving: 2).
+const counted = new WeakMap();
+function chipCount(seat, before, step, at, pop) {
+  const chip = drawerChip(seat), b = chip && chip.querySelector('b');
+  if (!b || !before) return;
+  const base = before.animals.length + before.sponsors.length;
+  if (!counted.has(b)) { counted.set(b, 0); b.textContent = String(base); }
+  const n = counted.get(b) + Math.sign(step);
+  counted.set(b, n);
+  const text = String(Math.max(0, base + n)), a = animate(b, [{ opacity: 1 }, { opacity: 1 }], 1, at);
+  const go = () => { a.cancel(); if (!b.isConnected) return; b.textContent = text; if (pop) popNumber(b); };
+  a.finished.then(go, go);
+}
+function popNumber(b) {
+  const lit = (s, f) => ({ transform: 'scale(' + s + ')', filter: 'brightness(' + f + ') drop-shadow(0 0 7px #fff)' });
+  animate(b, [{ transform: 'scale(1)', filter: 'brightness(1)' }, { ...lit(1.5, 1.8), offset: .4 }, { transform: 'scale(1)', filter: 'brightness(1)' }], 600, 0, 'ease-in-out');          // (one single pulse)
+}
 function runPlayed(old, st) {
   const flights = [], sc = scale();
   let longest = 0;
@@ -426,11 +486,11 @@ function runPlayed(old, st) {
       const w = backWidth(); from = { ...point, w, h: w * 503 / 360, angle: 0, image };
     }
     let to;
-    if (closed) {
-      const row = board?.querySelector('.zooRow');
-      if (!row) continue;
-      const r = row.getBoundingClientRect(), w = fullDrawerCardWidth(row, st.players[p.seat]) * sc;
-      to = { x: r.left + r.width * .82, y: r.top + r.height * .52, w, h: w * 503 / 360 };
+    if (closed) {                                           // the drawer is closed: the card flies to its "Cards N" chip on the board's top edge (the number counts up when the card has landed)
+      const chip = drawerChip(p.seat);
+      if (!chip) continue;
+      const r = chip.getBoundingClientRect(), w = r.width * .7;
+      to = { x: r.left + r.width / 2, y: r.top + r.height / 2, w, h: w * 503 / 360 };
     } else {
       const r = target.getBoundingClientRect();
       to = { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height };
@@ -447,6 +507,22 @@ function runPlayed(old, st) {
     const a = animate(e, frames, ms, delay, 'linear');
     finish(a, () => { if (target) show(target); e.remove(); });
     flights.push(a.finished);
+    if (closed) chipCount(p.seat, old.before.players[p.seat], 1, delay + ms * .9, true);
+  }
+  const leaving = {};
+  for (const [i, p] of (old.gone || []).entries()) {         // a card leaves the played cards (release, expedition) while the drawer is closed: it comes out of the chip and glides to the invisible deck
+    if (playedMode() !== 'drawer' || S.drawerSeats[p.seat]) continue;
+    const chip = drawerChip(p.seat), image = snakeSafe(info(p.key).image);
+    if (!chip || !image) continue;
+    const r = chip.getBoundingClientRect(), w = r.width * .7, from = { x: r.left + r.width / 2, y: r.top + r.height / 2, w, h: w * 503 / 360, angle: 0, image };
+    const d = deckPoint(), dx = d.x - from.x, dy = d.y - from.y, ms = Math.min(1100, Math.max(800, 380 + Math.hypot(dx, dy) / sc * .5)), delay = i * 140;
+    const e = ghost(from);
+    const frames = [{ transform: tr(0, 0, 0, .6), opacity: 0 }, { transform: tr(0, 0, 0, 1), opacity: 1, offset: .1 }, { transform: tr(dx * .12, dy * .12 - 8 * sc, 4, 1), opacity: 1, offset: .2 }, { transform: tr(dx * .9, dy * .9, -5, .55), opacity: .85, offset: .85 }, { transform: tr(dx, dy, 0, .45), opacity: 0 }];
+    finish(animate(e, frames, ms, delay, 'cubic-bezier(.35,.05,.55,1)'), () => e.remove());
+    bubbleTrail(from, d, ms, delay, sc);
+    leaving[p.seat] = (leaving[p.seat] || 0) + 1;
+    chipCount(p.seat, old.before.players[p.seat], -leaving[p.seat], delay, true);
+    longest = Math.max(longest, delay + ms);
   }
   if (longest) {
     // Use the fitted final DOM once. Existing cards move/resize on the SAME clock as the incoming flight;
@@ -650,18 +726,21 @@ function run(plan, old, targets) {
   const outgoing = plan.departures.map((p) => ({ ...p, g: old.hand.find((c) => c.key === p.key) })).filter((p) => p.g);
   let hold = 0;
   outgoing.forEach((p, i) => { hold = Math.max(hold, depart(p, i, outgoing)); });
-  // Keep surviving cards in their old slots until the last outgoing card disappears.
+  const lead = plan.after && outgoing.length ? hold : 0;          // (endgame cards: what is discarded goes first, what is drawn comes when that is over)
+  const flights = plan.arrivals.map((p, i) => { const node = targets.find((e) => e.dataset.key === p.key); return node ? arrive(node, lead ? { ...p, lead } : p, i, old.display.find((c) => c.key === p.key)) : null; });
+  // Keep surviving cards in their old slots until the last outgoing card disappears, then they slide to their new places. A lone card drawn into the tray (the others only close up to make room, because the row is
+  // full) does not make them slide before it shows up: they close up while it drops in, so everything settles together.
+  const lone = flights.length === 1 && flights[0] && !outgoing.length && !(plan.projects || []).length && S.handMode === 'tray';
+  const slideAt = lone ? flights[0].delay + flights[0].duration * .4 : hold, slideMs = lone ? flights[0].duration * .6 : outgoing.length ? 230 : 260, slideEase = lone ? 'ease-in-out' : EASE;
   for (const node of targets) {
     const from = old.hand.find((c) => c.key === node.dataset.key);
     if (!from || plan.arrivals.some((p) => p.key === node.dataset.key)) continue;
     const to = shot(node);
     if (Math.abs(from.x - to.x) + Math.abs(from.y - to.y) + Math.abs(from.angle - to.angle) < .5) continue;
     const e = ghost(to); hide(node);
-    const a = animate(e, [{ transform: tr(from.x - to.x, from.y - to.y, from.angle) }, { transform: tr(0, 0, to.angle) }], outgoing.length ? 230 : 260, hold);
+    const a = animate(e, [{ transform: tr(from.x - to.x, from.y - to.y, from.angle) }, { transform: tr(0, 0, to.angle) }], slideMs, slideAt, slideEase);
     finish(a, () => { show(node); e.remove(); });
   }
-  const lead = plan.after && outgoing.length ? hold : 0;          // (endgame cards: what is discarded goes first, what is drawn comes when that is over)
-  const flights = plan.arrivals.map((p, i) => { const node = targets.find((e) => e.dataset.key === p.key); return node ? arrive(node, lead ? { ...p, lead } : p, i, old.display.find((c) => c.key === p.key)) : null; });
   // One card into the floating tray: the frame's edge opens with the card's flight and reaches the new slot as the card lands (instead of widening at once and leaving a gap)
   if (flights.length === 1 && flights[0] && !outgoing.length && !(plan.projects || []).length) openWith(flights[0], old.frameW);
   else if (shift > 0 && S.handMode === 'tray') {
@@ -676,6 +755,7 @@ function run(plan, old, targets) {
       const start = outgoing.length ? Math.max(0, hold - 250) : Math.min(...real.map((f) => f.delay)), end = outgoing.length ? start + 320 : Math.max(...real.map((f) => f.delay + f.duration)), was = frame.style.overflow;
       frame.style.overflow = 'hidden';
       const w = animate(frame, [{ width: old.frameW + 'px' }, { width: to + 'px' }], Math.max(200, end - start), start, 'ease-in-out');
+      pinRow(frame, old.frameW, w);
       finish(w, () => { frame.style.overflow = was; w.cancel(); });
     }
   }
@@ -692,7 +772,9 @@ function playProject(p, i, g, emerge = false) {
   const flight = Array.from({ length: N + 1 }, (_, n) => { const t = n / N, u = t < .5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2; return { offset: t, transform: tr(dx * u, dy * u, g.angle * (1 - u), 1 + (k - 1) * u), opacity: emerge && t < .2 ? t / .2 : 1 }; });          // (ease in and out: it leaves the hand softly and settles on the spot)
   finish(animate(e, flight, T, delay, 'linear'), () => {});
   // the flip: the card turns edge-on around its middle (200 ms), then the strip unfolds from its middle (220 ms)
-  const t0 = delay + T, edge = tr(dx, dy, 0, k).replace(/scale\([^)]*\)/, 'scale(0.001,' + k + ')');
+  const t0 = delay + T;
+  landings.set(String(p.key).split('_')[0], shift + t0 + 440);
+  const edge = tr(dx, dy, 0, k).replace(/scale\([^)]*\)/, 'scale(0.001,' + k + ')');
   finish(animate(e, [{ transform: tr(dx, dy, 0, k), opacity: 1 }, { transform: edge, opacity: 1 }], 200, t0, 'ease-in', 'forwards'), () => e.remove());
   // the slot itself (position, neighbour) is left alone; until the strip unfolds it keeps the look of an empty place (outline, no green base)
   const slot = strip.closest('.projslot');
@@ -712,7 +794,21 @@ function openWith(f, from) {
   const was = frame.style.overflow;
   frame.style.overflow = 'hidden';
   const a = animate(frame, [{ width: from + 'px' }, { width: to + 'px' }], f.duration, f.delay, f.ease);
+  pinRow(frame, from, a);
   finish(a, () => { frame.style.overflow = was; a.cancel(); });
+}
+// While the frame's width is animated, the row of cards inside it already has its new, wider layout. The row is centred in the frame (parkposter.css `.handtray .cards`), so a frame that is
+// still narrower than the row let the row overflow on both sides: every card stood half the added width to the left (the first one cut off at the frame's left edge) and drifted back
+// right as the frame opened. The row is held to the frame's left edge until the width animation is over (or cancelled); at its end the row fills the frame, so left and centred are the same
+// place. Not when the old frame was held at its minimum width (few cards, wider round buttons): there the old cards really were centred, and the slide of the survivors takes them over.
+function pinRow(frame, from, anim) {
+  const row = frame.querySelector('.cards');
+  if (!row || row.classList.contains('multi')) return;
+  const min = parseFloat(getComputedStyle(frame).minWidth) || 0;
+  if (from <= min + 1) return;
+  const was = row.style.justifyContent;
+  row.style.justifyContent = 'start';
+  anim.finished.then(() => { row.style.justifyContent = was; }, () => { row.style.justifyContent = was; });
 }
 // returns the card's flight window { delay, duration, ease } (ms at speed 1) for the tray
 function arrive(node, plan, index, source) {

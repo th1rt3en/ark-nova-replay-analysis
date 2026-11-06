@@ -55,33 +55,33 @@ export function associationBoard(st) {
       const continent = t.type.replace('partner-', '');
       const pos = ASSOC.partner[continent];
       if (pos) {
-        put('image', { href: iconUrl(ICON_IDS[continent]), x: pos[0] - 109, y: pos[1] - 87, width: 218, height: 174 }, undefined, t.type);
+        put('image', { href: iconUrl(ICON_IDS[continent]), x: pos[0] - 109, y: pos[1] - 87, width: 218, height: 174, 'data-supply': t.type }, undefined, t.type);
         pickable(pos[0] - 109, pos[1] - 87, 218, 174, (a) => a.args.task === 'partner' && a.args.continent === continent, 'Take this partner zoo');
       }
     } else if (t.location === 'association_4') {
       const pos = ASSOC.university[mw ? 'mw' : 'base'][t.type];
       if (pos && ICON_IDS[t.type]) {
-        put('image', { href: iconUrl(ICON_IDS[t.type]), x: pos[0] - 115, y: pos[1] - 87, width: 230, height: 174 }, undefined, t.type);
+        put('image', { href: iconUrl(ICON_IDS[t.type]), x: pos[0] - 115, y: pos[1] - 87, width: 230, height: 174, 'data-supply': t.type }, undefined, t.type);
         pickable(pos[0] - 115, pos[1] - 87, 230, 174, (a) => a.args.task === 'university' && a.args.kind === t.type, 'Take this university');
       }
     }
   }
-  const workerAt = (cx, cy, seat, tip) => {          // BGA's worker meeple of the player's colour (282x277), standing on the slot
+  const workerAt = (cx, cy, seat, tip, extra = {}) => {          // BGA's worker meeple of the player's colour (282x277), standing on the slot
     const w = 92, h = w * 277 / 282;
-    put('image', { href: workerUrl(seat), x: cx - w / 2, y: cy - h / 2, width: w, height: h }, undefined, tip);
+    put('image', { href: workerUrl(seat), x: cx - w / 2, y: cy - h / 2, width: w, height: h, ...extra }, undefined, tip);
   };
   // a cube of the fan site's picture (web/cubes, as on the base projects), centred on (x, y)
-  const cubeAt = (x, y, colour, tip) => {
-    const g = svg('image', { href: pieceUrl('cubes', colour), x: x - 37, y: y - 39, width: 74, height: 74 });
+  const cubeAt = (x, y, colour, tip, extra = {}) => {
+    const g = svg('image', { href: pieceUrl('cubes', colour), x: x - 37, y: y - 39, width: 74, height: 74, ...extra });
     if (tip) { const t = svg('title'); t.textContent = tip; g.append(t); }
     s.append(g);
   };
   const blocked = unusedColor();                     // 2 players: the left donation cells of 5 / 7 / 10 money are covered by cubes of a colour nobody plays
   for (const k of [1, 3, 5]) cubeAt(ASSOC.donation[k][0], ASSOC.donation[k][1], blocked, 'Blocked in a 2 player game');
-  ASSOC.donation.forEach(([x, y], k) => (at['association_0_' + k] || []).forEach((seat) => cubeAt(x, y, seatRawColor(seat), S.replay.players[seat].name + ': donation')));      // a donation is a cube of the player's colour
+  ASSOC.donation.forEach(([x, y], k) => (at['association_0_' + k] || []).forEach((seat) => cubeAt(x, y, seatRawColor(seat), S.replay.players[seat].name + ': donation', { 'data-dseat': seat, 'data-dk': k })));      // a donation is a cube of the player's colour
   for (const [n, [cx, cy, xs]] of Object.entries(ASSOC.workers)) {
     (at['association_' + n] || []).slice(0, 3).forEach((seat, i) => {
-      workerAt(cx + xs[i], cy, seat, S.replay.players[seat].name + ': worker');
+      workerAt(cx + xs[i], cy, seat, S.replay.players[seat].name + ': worker', { 'data-wtask': n, 'data-wseat': seat, 'data-widx': i });
     });
   }
   return s;
@@ -258,7 +258,7 @@ export function bonusPanel(map, p, seat) {
         hit.addEventListener('click', () => { S.forkBonus = sl.index; render(); });
       }
       if (!(used & (1 << sl.index))) {                     // the cube is still on the slot: its bonus has not been chosen yet
-        const cx = 46, c = add('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: cx - 26, y: y - 27, width: 52, height: 52 });
+        const cx = 46, c = add('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: cx - 26, y: y - 27, width: 52, height: 52, 'data-bcube': sl.index, 'data-bseat': seat });
         const tip = svg('title');
         tip.textContent = S.replay.players[seat].name + ': bonus ' + (sl.index + 1) + ' not chosen yet';
         c.append(tip);
@@ -401,6 +401,7 @@ export function associationStrip(p, map, seat) {
     const kx = slotW / bw, ky = kx;                                                 // (the slots have the proportions of their tokens: nothing is stretched)
     const w = w0 * kx, h = h0 * ky;
     const g = svg('g', cls ? { class: cls } : {});
+    g.append(svg('rect', { x: 175 - slotW / 2, y: y - slotH / 2, width: slotW, height: slotH, fill: 'none', 'pointer-events': 'none', 'data-assoc-slot': kind + '_' + slot, 'data-assoc-seat': seat }));          // (the visible part of the slot: where assoc-motion.js lands a partner zoo / university)
     const img = svg('image', { href: iconUrl(id), x: 175 - (bx + bw / 2) * kx, y: y - (by + bh / 2) * ky, width: w, height: h, preserveAspectRatio: 'none' });
     const tip = svg('title');
     tip.textContent = type;

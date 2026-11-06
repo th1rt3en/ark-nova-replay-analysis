@@ -55,7 +55,9 @@ export function projectPanel(st, keys, count, iconName, title, blocked) {
       const spots = STRIP_CUBES[keys[i]] || [];
       if (blocked) line.append(blockedCube(i, undefined, undefined, spots[i]));
       for (const t of projectTokens(st, keys[i])) {         // a supporter's cube blocks its slot
-        line.append(blockedCube(t.slot, seatRawColor(t.seat), S.replay.players[t.seat].name + ': slot ' + (t.slot + 1), spots[t.slot]));
+        const cube = blockedCube(t.slot, seatRawColor(t.seat), S.replay.players[t.seat].name + ': slot ' + (t.slot + 1), spots[t.slot]);
+        cube.dataset.pkey = keys[i].slice(0, keys[i].indexOf('_') < 0 ? undefined : keys[i].indexOf('_')); cube.dataset.pseat = String(t.seat); cube.dataset.pslot = String(t.slot);          // (assoc-motion.js: the cube glides to its slot)
+        line.append(cube);
       }
       wrap.append(line);
       slot.append(wrap);

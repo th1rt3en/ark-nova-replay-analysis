@@ -1,4 +1,5 @@
 // [module] Entry point of replay.html / fork.html / sandbox.html: `render()` draws one step, `boot()` loads and wires everything.
+import { stageBreaks } from './break-stages.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
 import { $, el } from './util.js';
 import { setupNoTips } from './notips.js';
@@ -195,7 +196,7 @@ function loadRest() {
   document.body.append(note);
   fetchFullReplay().then((full) => {
     const step = S.step, phase = S.phase;
-    S.replay = full;
+    S.replay = stageBreaks(full);
     buildMoveList();
     buildTimeline();
     S.lastBoard = null;
@@ -218,7 +219,7 @@ function boot() {
     : null;
   fetchReplay().then((data) => {
     if (!data) return;
-    S.replay = data;
+    S.replay = stageBreaks(data);
     if (loadProgress) loadProgress.stage('Preparing the board');
     return Promise.all([
       fetch('/enclosures/sprites.json').then((r) => r.json()).catch(() => ({ sprites: {} })),
