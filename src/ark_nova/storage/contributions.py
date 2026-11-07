@@ -43,6 +43,27 @@ class Contributions:
             with self._lock:
                 self._busy.discard(table_id)
 
+    def has(self, table_id: int) -> bool:
+        """Whether a log is kept for `table_id`. Blocking: call it off the event loop."""
+        if not self.enabled:
+            return False
+        from google.cloud import storage
+
+        self._gcs = self._gcs or storage.Client()
+        return self._gcs.bucket(self.bucket).blob(f"{PREFIX}/{table_id}.txt").exists()
+
+    def read(self, table_id: int) -> dict | None:
+        """The log kept for `table_id`, or None (nothing kept, or storage off). Blocking: call it off the event loop."""
+        if not self.enabled:
+            return None
+        from google.cloud import storage
+
+        self._gcs = self._gcs or storage.Client()
+        blob = self._gcs.bucket(self.bucket).blob(f"{PREFIX}/{table_id}.txt")
+        if not blob.exists():
+            return None
+        return json.loads(blob.download_as_bytes())
+
     def keep(self, table_id: int, raw: dict, projects) -> bool:
         """Writes the log and the row; False when the log is already kept (the same table brought before)."""
         from google.cloud import storage

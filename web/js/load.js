@@ -18,10 +18,11 @@ export async function fetchReplay() {
   }
   if (FORK) {
     const seed = params.get('seed');
-    let log, index = null, base_projects = null, maps = null;                // a table without a collected log (opened with the extension): the log and the table info are in this browser, the server builds the fork from them
+    let log, kept = false, index = null, base_projects = null, maps = null;               // a table without a collected log (opened with the extension): the log and the table info are in this browser, the server builds the fork from them
     if (params.get('source') === 'upload') {
-      log = await LogStore.get(table);
-      if (!log) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
+      kept = await keptOnServer();
+      if (!kept) log = await LogStore.get(table);
+      if (!kept && !log) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
       const info = await LogStore.get('index:' + table);
       index = info ? JSON.parse(info) : null;
       const projects = await LogStore.get('baseprojects:' + table);
@@ -29,16 +30,31 @@ export async function fetchReplay() {
       const seen = await LogStore.get('maps:' + table);
       maps = seen ? JSON.parse(seen) : null;
     }
-    res = await fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                           body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log, index, base_projects, maps })) });
+    const forkPost = async (withLog) => fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                                                  body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log: withLog ? log : undefined, kept: !withLog && kept, index, base_projects, maps })) });
+    res = await forkPost(!kept);
+    if (kept && res.status === 409) {                                        // (the kept copy is gone: send the log)
+      log = await LogStore.get(table);
+      if (!log) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
+      res = await forkPost(true);
+    }
   } else if (params.get('source') === 'upload') {
-    const text = await LogStore.get(table);
-    if (!text) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
+    let kept = await keptOnServer();                                         // (the log is already in GCS: nothing to send)
+    let text = kept ? null : await LogStore.get(table);
+    if (!kept && !text) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
     const info = await LogStore.get('index:' + table);                       // the table info of the extension (optional): the Elo of the players
     const projects = await LogStore.get('baseprojects:' + table);            // the base projects the extension read off BGA's replay (optional)
     const seenMaps = await LogStore.get('maps:' + table);                    // the maps of the players, read there when the table info masks them (optional)
-    const post = async (extra) => fetch('/api/tables/' + encodeURIComponent(table) + '/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                                                               body: await packed('{"log":' + text + ',"index":' + (info || 'null') + ',"base_projects":' + (projects || 'null') + ',"maps":' + (seenMaps || 'null') + extra + '}') });
+    const send = async (extra) => fetch('/api/tables/' + encodeURIComponent(table) + '/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                                                                body: await packed('{"log":' + (kept ? 'null,"kept":true' : text) + ',"index":' + (info || 'null') + ',"base_projects":' + (projects || 'null') + ',"maps":' + (seenMaps || 'null') + extra + '}') });
+    const post = async (extra) => {
+      const r = await send(extra);
+      if (!(kept && r.status === 409)) return r;                             // (the kept copy is gone: send the log as usual)
+      kept = false;
+      text = await LogStore.get(table);
+      if (!text) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return r; }
+      return send(extra);
+    };
     fullFetch = () => post('');
     res = await post(',"quick":true');                                       // (the draft and the starting hand first: the engine's replay of the whole game takes a while)
   } else {
@@ -48,6 +64,14 @@ export async function fetchReplay() {
   const body = await readReplay(res);
   if (FORK) S.forkInfo = body.fork;
   return body;
+}
+
+// Whether the server already keeps this table's log (GCS): then the page does not upload it. Any trouble counts as "no": the log is sent as before.
+async function keptOnServer() {
+  try {
+    const res = await fetch('/api/tables/' + encodeURIComponent(table) + '/kept', { cache: 'no-store' });
+    return res.ok && (await res.json()).kept === true;
+  } catch (e) { return false; }
 }
 
 let fullFetch = null;

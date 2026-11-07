@@ -26,6 +26,9 @@ class FakeBlob:
         assert if_generation_match == 0                         # (never overwrites)
         self.store[self.name] = data
 
+    def download_as_bytes(self):
+        return self.store[self.name]
+
     def delete(self):
         del self.store[self.name]
 
@@ -111,3 +114,38 @@ def test_the_upload_does_not_wait_for_it():
             break
         time.sleep(0.1)
     assert seen and seen[0][0] == 607674960 and len(seen[0][1]) == 3
+
+
+def _client(contributions):
+    class Idx:
+        def find(self, table_id):
+            return None
+
+    class Logs:
+        def read(self, *a):
+            raise AssertionError
+
+    return TestClient(create_app(Settings(cache_dir="off"), Idx(), Logs(), contributions=contributions))
+
+
+def test_a_kept_log_opens_without_the_upload():
+    if not LOG.exists():
+        pytest.skip("log not available")
+    c = _kept()
+    client = _client(c)
+    assert client.get("/api/tables/607674960/kept").json() == {"kept": False}
+    body = b'{"log":null,"kept":true,"index":null,"quick":true}'
+    r = client.post("/api/tables/607674960/upload", content=body)
+    assert r.status_code == 409 and r.json()["status"] == "not_kept"                # (nothing kept: the page sends the log)
+    c._gcs.objects["all_games_logs/607674960.txt"] = LOG.read_bytes()
+    assert client.get("/api/tables/607674960/kept").json() == {"kept": True}
+    r = client.post("/api/tables/607674960/upload", content=body)
+    assert r.status_code == 200 and r.json()["steps"]
+    r = client.post("/api/tables/607674960/fork", content=b'{"kept":true,"step":0}')
+    assert r.status_code != 409                                                    # (the fork reads the kept log as well)
+
+
+def test_nothing_is_kept_when_storage_is_off():
+    client = _client(Contributions())
+    assert client.get("/api/tables/7/kept").json() == {"kept": False}
+    assert client.post("/api/tables/7/upload", content=b'{"log":null,"kept":true}').status_code == 409

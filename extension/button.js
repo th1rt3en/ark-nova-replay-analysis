@@ -1,5 +1,6 @@
 // Isolated world. Stores what capture.js sees, per table id, in the extension's storage (so opening several tables keeps each one's data),
-// and shows one button, "Open in Ark Nova Replay", on the game review page once the table's index data AND its log are both stored and agree.
+// and shows one button, "Open in Ark Nova Replay", on the game review page once the table's log is stored (and, when the table info was seen too, agrees with it).
+// A review page opened directly, without the table page, has no table info: the maps are then read off BGA's replay, as when BGA masks them.
 // A click opens the replay tool when the three base conservation projects are known: the log shows all of them (they appear only when a project is supported) or they were
 // read before; and, when BGA masks the players' maps in the table info (no BGA premium: "*masked*"), when the maps were read as well. Otherwise a BGA replay page of a player
 // opens in a background tab, where this script (also running in the game's iframe) reads the projects off the association board (#base-projects-holder) and the maps off the
@@ -74,13 +75,13 @@
   async function loadPair(table) {
     const got = await api.storage.local.get([key('log', table), key('index', table), key('bp', table), key('maps', table)]);
     const log = got[key('log', table)], index = got[key('index', table)], bp = got[key('bp', table)], seen = got[key('maps', table)];
-    if (!log || !index) return null;
-    if (String(index.data.id) !== String(log.table) || String(log.table) !== String(table)) return null;      // the table ids must agree
+    if (!log || String(log.table) !== String(table)) return null;
+    if (index && String(index.data.id) !== String(table)) return null;      // the table ids must agree (no table info at all is fine: the review page was opened directly, without the table page)
     const ok = bp && Array.isArray(bp.projects) && bp.projects.length === 3 && bp.projects.every((k) => PROJECT.test(k));
     const ids = playerIds(log.text);
     const mapsOk = seen && seen.maps && ids.length > 0 && ids.every((id) => MAP.test(String(seen.maps[id] || '')));
-    return { table, log: log.text, index: index.data, complete: logComplete(log.text), projects: ok ? bp.projects : null,
-             needsMaps: mapsMasked(index.data), maps: mapsOk ? seen.maps : null, players: ids };
+    return { table, log: log.text, index: index ? index.data : null, complete: logComplete(log.text), projects: ok ? bp.projects : null,
+             needsMaps: !index || mapsMasked(index.data), maps: mapsOk ? seen.maps : null, players: ids };      // (without the table info the maps are unknown, as when BGA masks them)
   }
 
   // everything the replay tool needs is known: the base projects (the log shows them or they were read) and, when BGA masks the maps, the maps

@@ -45,7 +45,7 @@ if (!/^\d+$/.test(table || '') || !(window.opener || auto)) {
     try {
       // (no round trip to the server here: the replay page sends the log, which the server verifies first and answers with the reason when it cannot be used)
       await LogStore.put(table, d.log);
-      if (index) await LogStore.put('index:' + table, JSON.stringify(index));       // (kept with the log: the replay and the fork read the players' Elo from it)
+      await LogStore.put('index:' + table, index ? JSON.stringify(index) : '');     // (kept with the log: the replay and the fork read the players' Elo from it; none when the review page was opened directly)
       // the base projects the extension read off BGA's replay, when the log never shows all three (3 keys like "P103", in the order of the board); else nothing stays from an earlier import
       const projects = Array.isArray(d.base_projects) && d.base_projects.length === 3 && d.base_projects.every((k) => /^P\d{3}$/.test(k)) ? d.base_projects : null;
       await LogStore.put('baseprojects:' + table, projects ? JSON.stringify(projects) : '');

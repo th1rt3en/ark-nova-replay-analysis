@@ -365,18 +365,25 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             return _error(422, "invalid", "The seed must be a number between 0 and 2^63 - 1.", table_id=table_id)
         rec = app.state.index.find(table_id)
         key = None
-        if body.get("log"):                                  # a log that the page brings (the extension, or a table that is not indexed): with the table info, when there is one
-            text = body["log"] if isinstance(body["log"], str) else json.dumps(body["log"])
+        if body.get("log") or body.get("kept"):              # a log that the page brings (the extension, or a table that is not indexed) or that is kept in GCS: with the table info, when there is one
+            kept = not body.get("log")
             index_info = body.get("index")
-            try:
-                raw = json.loads(text)
-            except ValueError:
-                return _error(422, "invalid", "The log is not valid JSON.", table_id=table_id)
+            if kept:
+                raw = await _kept_log(table_id)
+                if raw is None:
+                    return _error(409, "not_kept", "No log is kept for this table: send it.", table_id=table_id)
+                text = f"kept:{table_id}"                    # (a kept log is never overwritten: the table id stands for its content in the key)
+            else:
+                text = body["log"] if isinstance(body["log"], str) else json.dumps(body["log"])
+                try:
+                    raw = json.loads(text)
+                except ValueError:
+                    return _error(422, "invalid", "The log is not valid JSON.", table_id=table_id)
             rec = _record_for_upload(table_id, index_info, body.get("base_projects"), body.get("maps"))
             if rec is None:
                 return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
             key = (table_id, hashlib.sha1((text + json.dumps(index_info, sort_keys=True) + json.dumps(rec.base_projects) + json.dumps(rec.player_maps, sort_keys=True)).encode()).hexdigest())
-            if key not in app.state.forks:                   # (checked once: a log that was built before is the one that passed)
+            if key not in app.state.forks and not kept:      # (checked once: a log that was built before is the one that passed; a kept one was verified when it was kept)
                 errors = await run_in_threadpool(verify_log, raw, table_id)
                 if errors:
                     return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
@@ -532,26 +539,53 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             changes.update(player_maps={**maps_from_tableinfo(index_info), **seen_maps}, marine_worlds=marine_worlds_of(index_info))
         return dataclasses.replace(base, **changes)
 
+    async def _kept_log(table_id: int) -> dict | None:
+        """The log the extension brought earlier (storage/contributions.py), or None."""
+        try:
+            return await run_in_threadpool(app.state.contributions.read, table_id)
+        except Exception:  # noqa: BLE001 - storage trouble: the page then uploads the log as usual
+            log.exception("reading the kept log of table %s failed", table_id)
+            return None
+
+    @app.get("/api/tables/{table_id}/kept")
+    async def kept_log(table_id: int):
+        """Whether the log of this table is already kept in GCS: then the page need not upload it (`kept: true` in the body of /upload and /fork)."""
+        if not app.state.contributions.enabled:
+            return JSONResponse({"kept": False}, headers={"Cache-Control": "no-store"})
+        try:
+            kept = await run_in_threadpool(app.state.contributions.has, table_id)
+        except Exception:  # noqa: BLE001
+            log.exception("looking for the kept log of table %s failed", table_id)
+            kept = False
+        return JSONResponse({"kept": kept}, headers={"Cache-Control": "no-store"})
+
     @app.post("/api/tables/{table_id}/upload")
     async def upload_replay(table_id: int, request: Request):
         """Replay of a log the browser brings: {log, index}. `index` is the table info that the extension collected (optional): it gives the Elo of the
-        players and stands in for the index, so a table that is not indexed yet can be replayed."""
+        players and stands in for the index, so a table that is not indexed yet can be replayed. With `kept: true` the log is not in the body: it is read from
+        the copy kept in GCS (409 `not_kept` when there is none: the page then sends the log)."""
         try:
             body = json.loads(await _body(request))               # (gzip or plain)
-            raw = body["log"]
+            kept = bool(body.get("kept"))
+            raw = None if kept else body["log"]
             index_info = body.get("index")
             base_projects = body.get("base_projects")
             seen_maps = body.get("maps")
             quick = bool(body.get("quick"))                       # only the draft and the starting hand (see build_replay_view)
-        except (ValueError, KeyError, TypeError):
+        except (ValueError, KeyError, TypeError, AttributeError):
             return _error(422, "invalid", "Send {log, index}.", table_id=table_id)
-        errors = await run_in_threadpool(verify_log, raw, table_id)
-        if errors:
-            return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
+        if kept:
+            raw = await _kept_log(table_id)                       # (verified when it was kept, and never overwritten)
+            if raw is None:
+                return _error(409, "not_kept", "No log is kept for this table: send it.", table_id=table_id)
+        else:
+            errors = await run_in_threadpool(verify_log, raw, table_id)
+            if errors:
+                return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
         rec = _record_for_upload(table_id, index_info, base_projects, seen_maps)
         if rec is None:
             return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
-        if not quick:                                          # (kept for the project on a thread of its own, while the replay is built: the player does not wait for it)
+        if not quick and not kept:                             # (kept for the project on a thread of its own, while the replay is built: the player does not wait for it)
             app.state.contributions.submit(table_id, raw, lambda: build_replay_view(raw, rec, quick=True)["base_projects"])
         return await run_in_threadpool(_replay, table_id, rec, raw, quick)
 
