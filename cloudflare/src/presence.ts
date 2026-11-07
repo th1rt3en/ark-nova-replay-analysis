@@ -71,8 +71,14 @@ export class Presence extends DurableObject<Env> {
         const perHour = this.ctx.storage.sql.exec<{ hour: number; peak: number }>(
             "SELECT (at / 3600000) * 3600000 AS hour, MAX(users) AS peak FROM history WHERE at > ? GROUP BY hour ORDER BY hour", now - hours * 3600 * 1000).toArray();
         const day = this.ctx.storage.sql.exec<{ peak: number | null }>("SELECT MAX(users) AS peak FROM history WHERE at > ?", now - 24 * 3600 * 1000).one().peak ?? 0;
+        // the timeline: every sample (5 minutes apart) for up to 2 days, the busiest sample of each hour beyond that. A gap is a time when nobody was there (sampling pauses then).
+        const step = hours > 48 ? 3600 * 1000 : SAMPLE_MS;
+        const samples = this.ctx.storage.sql.exec<{ at: number; users: number; replay: number; fork: number; play: number; sandbox: number; other: number }>(
+            "SELECT bucket * ? AS at, MAX(users) AS users, MAX(replay) AS replay, MAX(fork) AS fork, MAX(play) AS play, MAX(sandbox) AS sandbox, MAX(other) AS other " +
+            "FROM (SELECT CAST(at / ? AS INTEGER) AS bucket, users, replay, fork, play, sandbox, other FROM history WHERE at > ?) GROUP BY bucket ORDER BY bucket",
+            step, step, now - hours * 3600 * 1000).toArray();
         return { now, window_s: WINDOW_MS / 1000, online: c.users, by_page: { replay: c.replay, fork: c.fork, play: c.play, sandbox: c.sandbox, other: c.other },
-                 peak_24h: Math.max(day, c.users), hourly_peaks: perHour };
+                 peak_24h: Math.max(day, c.users), hourly_peaks: perHour, step_ms: step, samples };
     }
 
     async alarm(): Promise<void> {

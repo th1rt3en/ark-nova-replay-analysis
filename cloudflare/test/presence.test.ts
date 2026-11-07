@@ -56,6 +56,13 @@ describe("the presence of the pages", () => {
         expect(r.hourly_peaks.length).toBeGreaterThanOrEqual(1);
         expect(r.hourly_peaks.at(-1).peak).toBeGreaterThanOrEqual(3);
         expect(r.window_s).toBe(180);
+        // the timeline: 5-minute samples for a short range, hourly ones for a long range
+        expect(r.step_ms).toBe(300000);
+        expect(r.samples.at(-1)).toMatchObject({ users: expect.any(Number), replay: expect.any(Number), play: expect.any(Number) });
+        expect(r.samples.at(-1).users).toBeGreaterThanOrEqual(3);
+        const long = (await online({ hours: 24 * 7 })).body.result;
+        expect(long.step_ms).toBe(3600000);
+        expect(long.samples.every((s: any) => s.at % 3600000 === 0)).toBe(true);
     });
 
     it("lets the history survive: an old sample is kept for two weeks, then dropped", async () => {

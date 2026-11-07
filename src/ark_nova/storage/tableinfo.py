@@ -12,22 +12,38 @@ from ark_nova.storage.index import TableRecord, map_id
 OFFSET = 1300
 
 
+def _number(value) -> float | None:
+    """A number of the table info, or None: a friendly game has no rating, BGA sends null (or an empty string) for `rank_after_game` and `point_win`."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _players(info: dict) -> list[dict]:
+    players = (info.get("result") or {}).get("player") if isinstance(info.get("result"), dict) else None
+    return [p for p in players or [] if isinstance(p, dict) and p.get("player_id") is not None]
+
+
 def elos_from_tableinfo(info: dict) -> dict[str, int]:
-    """{BGA player id: the Elo the player had before the game} (the index's `elo`)."""
+    """{BGA player id: the Elo the player had before the game} (the index's `elo`); a player with no rating (a friendly game) is left out."""
     out: dict[str, int] = {}
-    for p in (info.get("result") or {}).get("player") or []:
-        out[str(p["player_id"])] = math.floor(float(p["rank_after_game"]) - float(p["point_win"]) - OFFSET)
+    for p in _players(info):
+        after, win = _number(p.get("rank_after_game")), _number(p.get("point_win"))
+        if after is not None and win is not None:
+            out[str(p["player_id"])] = math.floor(after - win - OFFSET)
     return out
 
 
 def elos_after_from_tableinfo(info: dict) -> dict[str, int]:
     """{BGA player id: the Elo the player has after the game} (the index's `post_match_elo` = `rank_after_game` - 1300)."""
-    return {str(p["player_id"]): round(float(p["rank_after_game"]) - OFFSET) for p in (info.get("result") or {}).get("player") or [] if p.get("rank_after_game") is not None}
+    return {str(p["player_id"]): round(after - OFFSET) for p in _players(info) if (after := _number(p.get("rank_after_game"))) is not None}
 
 
 def elo_changes_from_tableinfo(info: dict) -> dict[str, int]:
     """{BGA player id: the change of the game} (`point_win`, rounded)."""
-    return {str(p["player_id"]): round(float(p["point_win"])) for p in (info.get("result") or {}).get("player") or [] if p.get("point_win") is not None}
+    return {str(p["player_id"]): round(win) for p in _players(info) if (win := _number(p.get("point_win"))) is not None}
 
 
 def table_id_of(info: dict) -> str:
