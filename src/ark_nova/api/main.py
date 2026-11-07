@@ -1,6 +1,7 @@
 """FastAPI app: /healthz, table lookup (landing page flow), log fetch / verification and the static frontend."""
 import dataclasses
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -22,6 +23,7 @@ from ark_nova.config import Settings
 from ark_nova.parser.verify import verify_log
 from ark_nova.engine.game import IllegalAction
 from ark_nova.engine.state import GameState
+from ark_nova.live.keeper import LiveError
 from ark_nova.replay import fork as forking
 from ark_nova.replay import preview as building_preview
 from ark_nova.replay import sandbox
@@ -230,6 +232,26 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
     @app.get("/healthz")
     def healthz():
         return {"status": "ok"}
+
+    # who is on the site: the pages send their heartbeat to the Worker (live/presence.py), the count is read here
+    from ark_nova.live.presence import HttpPresence, MemoryPresence
+    app.state.presence = HttpPresence(st.live_keeper_url, st.internal_secret) if st.live_keeper_url and st.internal_secret else MemoryPresence()
+
+    @app.get("/api/presence/config")
+    def presence_config():
+        """Where the pages send their heartbeat ("" = nowhere: the dev server and the tests have no Worker)."""
+        return {"base": st.live_keeper_url.rstrip("/") if st.live_keeper_url and st.internal_secret else ""}
+
+    @app.get("/api/admin/online")
+    async def admin_online(request: Request, hours: int = 48):
+        """The count of people on the site now, by page, with the busiest sample of each hour. Needs the header `X-Admin-Secret` = `INTERNAL_SECRET`."""
+        given = request.headers.get("x-admin-secret", "")
+        if not st.internal_secret or not hmac.compare_digest(given.encode(), st.internal_secret.encode()):
+            return _error(403, "forbidden", "Send the admin secret.")
+        try:
+            return JSONResponse(await run_in_threadpool(app.state.presence.online, max(1, min(hours, 24 * 14))), headers={"Cache-Control": "no-store"})
+        except LiveError as e:
+            return _error(502, "presence_unavailable", str(e))
 
     @app.get("/api/lookup")
     def lookup(q: str = ""):

@@ -8,7 +8,8 @@
             { "name": "TABLE", "class_name": "Table" },
             { "name": "COUNTER", "class_name": "Counter" },
             { "name": "LOBBIES", "class_name": "Lobbies" },
-            { "name": "CHAT", "class_name": "Chat" }          // the chat of a lobby or a table (src/chat.ts)
+            { "name": "CHAT", "class_name": "Chat" },         // the chat of a lobby or a table (src/chat.ts)
+            { "name": "PRESENCE", "class_name": "Presence" }  // who is on the site right now (src/presence.ts)
         ]
     },
     "triggers": { "crons": ["0 0 * * *", "10 0 * * *"] },       // the daily mini game rollover (src/cron.ts)
@@ -19,7 +20,8 @@
     "migrations": [
         { "tag": "v1", "new_sqlite_classes": ["Table", "Counter"] },
         { "tag": "v2", "new_sqlite_classes": ["Lobbies"] },
-        { "tag": "v3", "new_sqlite_classes": ["Chat"] }
+        { "tag": "v3", "new_sqlite_classes": ["Chat"] },
+        { "tag": "v4", "new_sqlite_classes": ["Presence"] }
     ],
     "vars": {
         // the Cloud Run service behind /api/* (empty: /api/* answers 502)

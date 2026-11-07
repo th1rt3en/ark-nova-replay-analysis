@@ -6,12 +6,15 @@
 //   /internal/lobbies/<op>            -> the lobbies of the custom games (the Lobbies Durable Object), same rule
 //   /internal/chat/<L12|E7>/<post|list> -> the chat of a lobby or a table (the Chat Durable Object of the room), same rule
 //   /internal/store/<op>              -> the accounts and mini game tables in D1 (src/store.ts), same signature rule
+//   /presence                         -> a page's anonymous heartbeat (the Presence Durable Object, src/presence.ts); Cloud Run is not involved
+//   /internal/presence/online         -> the count now and its history, signed by Cloud Run
 //   /api/*                            -> Cloud Run
 import { verify, verifyTicket } from "./auth";
 export { Table } from "./table";
 export { Counter } from "./counter";
 export { Lobbies } from "./lobbies";
 export { Chat } from "./chat";
+export { Presence } from "./presence";
 import { runStoreOp } from "./store";
 import { rollover } from "./cron";
 
@@ -24,6 +27,20 @@ export default {
         const path = url.pathname;
 
         if (path === "/healthz") return json({ ok: true });
+
+        if (path === "/presence") {                                    // the heartbeat of a page: the body is text/plain JSON { id, page } (no preflight), the answer is not read
+            const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type" };
+            if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+            if (request.method !== "POST") return new Response(null, { status: 405, headers: cors });
+            const text = (await request.text()).slice(0, 400);
+            const res = await env.PRESENCE.get(env.PRESENCE.idFromName("presence")).fetch(new Request(new URL("/beat", request.url), { method: "POST", body: text }));
+            return new Response(null, { status: res.ok ? 204 : res.status, headers: cors });
+        }
+        if (path === "/internal/presence/online") {
+            if (request.method !== "POST") return json({ status: "error", message: "wrong method" }, 405);
+            if (!(await verify(env.INTERNAL_SECRET, request, path))) return json({ status: "error", message: "forbidden" }, 403);
+            return env.PRESENCE.get(env.PRESENCE.idFromName("presence")).fetch(rewrite(request, "/online", ""));
+        }
 
         let m = /^\/ws\/([^/]+)$/.exec(path);
         if (m) {

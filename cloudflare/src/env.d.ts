@@ -5,6 +5,7 @@ declare namespace Cloudflare {
         COUNTER: DurableObjectNamespace<import("./counter").Counter>;
         LOBBIES: DurableObjectNamespace<import("./lobbies").Lobbies>;
         CHAT: DurableObjectNamespace<import("./chat").Chat>;
+        PRESENCE: DurableObjectNamespace<import("./presence").Presence>;
         DB: D1Database;
         INTERNAL_SECRET: string;
         CLOUD_RUN_URL: string;

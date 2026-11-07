@@ -13,6 +13,7 @@ import { cycleDockTab, renderDock, toggleDock } from './dock.js';
 import { beforeRender, afterRender } from './card-motion.js';
 import { fitPlayed, renderCards, renderZoo } from './zoo.js';
 import { engineBadge, labelNode, warmLabelIcons } from './log-labels.js';
+import { startPresence } from './presence.js';
 import { setupLogSearch, refreshLogSearch } from './log-search.js';
 import { setupLogFilter, refreshLogFilter } from './log-filter.js';
 import { fitDisplay, fitScale } from './layout.js';
@@ -233,6 +234,7 @@ function boot() {
       for (const [id, v] of Object.entries(ic)) S.iconSizes[id] = v.size;
       init();
       warmLabelIcons();                                                     // (the pictures of the step texts are decoded before a step needs them: no icon arrives after its text)
+      startPresence();                                                      // (an anonymous heartbeat while the tab is on show: how many people are on the site)
       if (data.partial) loadRest();
     });
   }).catch((err) => {

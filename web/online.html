@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Online now</title>
+<style>
+  :root { --bg: #1b1f1a; --card: #262c24; --ink: #e8e6d8; --dim: #9aa38f; --accent: #8fc46a; --line: #38402f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .big { font-size: 56px; font-weight: 700; line-height: 1; color: var(--accent); }
+  .dim { color: var(--dim); font-size: 13px; }
+  .row { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 14px; }
+  .row div b { display: block; font-size: 22px; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 120px; margin-top: 12px; }
+  .bars i { flex: 1; min-width: 3px; background: var(--accent); border-radius: 2px 2px 0 0; opacity: .85; }
+  .bars i:hover { opacity: 1; }
+  form { display: flex; gap: 8px; }
+  input { flex: 1; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+  button { padding: 8px 14px; border: 0; border-radius: 6px; background: var(--accent); color: #12200a; font: inherit; font-weight: 600; cursor: pointer; }
+  .err { color: #e8907a; }
+  .axis { display: flex; justify-content: space-between; margin-top: 4px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Online now</h1>
+  <div class="card" id="login" hidden>
+    <p class="dim">Admin secret (the service's <code>INTERNAL_SECRET</code>). It stays in this tab only.</p>
+    <form id="form"><input id="secret" type="password" autocomplete="off" placeholder="Admin secret"><button>Show</button></form>
+    <p class="err" id="loginerr"></p>
+  </div>
+  <div id="view" hidden>
+    <div class="card">
+      <div class="big" id="now">–</div>
+      <div class="dim" id="window"></div>
+      <div class="row" id="pages"></div>
+    </div>
+    <div class="card">
+      <b>Busiest moment of each hour</b> <span class="dim" id="peak"></span>
+      <div class="bars" id="bars"></div>
+      <div class="axis dim"><span id="from"></span><span id="to"></span></div>
+    </div>
+    <p class="dim" id="status"></p>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const KEY = 'ark:admin-secret';
+  let timer = null;
+  const get = () => { try { return sessionStorage.getItem(KEY) || ''; } catch (e) { return ''; } };
+  const put = (v) => { try { sessionStorage.setItem(KEY, v); } catch (e) { /* kept for this page view only */ } };
+
+  function draw(d) {
+    $('now').textContent = d.online;
+    $('window').textContent = 'people active on a replay, fork or play page in the last ' + Math.round(d.window_s / 60) + ' minutes (anonymous heartbeats)';
+    $('pages').replaceChildren(...Object.entries(d.by_page).map(([k, n]) => { const div = document.createElement('div'); div.innerHTML = '<b>' + n + '</b><span class="dim">' + k + '</span>'; return div; }));
+    $('peak').textContent = '· peak in the last 24 h: ' + d.peak_24h;
+    const hours = d.hourly_peaks, max = Math.max(1, ...hours.map((h) => h.peak));
+    $('bars').replaceChildren(...hours.map((h) => { const i = document.createElement('i'); i.style.height = Math.max(2, (h.peak / max) * 100) + '%'; i.title = new Date(h.hour).toLocaleString() + ': ' + h.peak; return i; }));
+    $('from').textContent = hours.length ? new Date(hours[0].hour).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' }) : '';
+    $('to').textContent = hours.length ? new Date(hours[hours.length - 1].hour).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit' }) : '';
+    $('status').textContent = 'Updated ' + new Date().toLocaleTimeString() + ' · refreshes every 30 s';
+  }
+
+  async function load() {
+    const secret = get();
+    if (!secret) { $('login').hidden = false; $('view').hidden = true; return; }
+    try {
+      const res = await fetch('/api/admin/online?hours=72', { headers: { 'X-Admin-Secret': secret }, cache: 'no-store' });
+      if (res.status === 403) { put(''); $('loginerr').textContent = 'That is not the admin secret.'; $('login').hidden = false; $('view').hidden = true; return; }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      draw(await res.json());
+      $('login').hidden = true; $('view').hidden = false;
+    } catch (e) {
+      $('view').hidden = false; $('status').textContent = 'Could not read the count (' + e.message + '). Trying again in 30 s.';
+    }
+    clearTimeout(timer); timer = setTimeout(load, 30000);
+  }
+
+  $('form').addEventListener('submit', (e) => { e.preventDefault(); put($('secret').value.trim()); $('loginerr').textContent = ''; load(); });
+  load();
+})();
+</script>
+</body>
+</html>
