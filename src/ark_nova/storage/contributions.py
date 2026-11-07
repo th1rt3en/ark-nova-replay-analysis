@@ -1,4 +1,4 @@
-"""Logs that players bring (the browser extension) are kept for the project: the raw log in GCS (all_games_log/<table>.txt) and the table's three base
+"""Logs that players bring (the browser extension) are kept for the project: the raw log in GCS (all_games_logs/<table>.txt) and the table's three base
 projects in a BigQuery table. It runs on a thread of its own, started while the replay is built, so it never makes the player wait; it is best effort
 (a failure is logged and tried again the next time the same log is brought)."""
 import json
@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 log = logging.getLogger(__name__)
 
-PREFIX = "all_games_log"
+PREFIX = "all_games_logs"
 
 
 class Contributions:

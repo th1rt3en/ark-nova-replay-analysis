@@ -1,4 +1,4 @@
-"""The log an extension brings is kept (GCS all_games_log/<table>.txt + a BigQuery row with the base projects) on a thread, without making the player wait."""
+"""The log an extension brings is kept (GCS all_games_logs/<table>.txt + a BigQuery row with the base projects) on a thread, without making the player wait."""
 import json
 import threading
 import time
@@ -60,7 +60,7 @@ def _kept(bq_errors=None):
 def test_the_log_and_the_base_projects_are_kept_once():
     c = _kept()
     assert c.keep(7, {"data": {"logs": []}}, ["P101", "P102", "P103"]) is True
-    assert json.loads(c._gcs.objects["all_games_log/7.txt"]) == {"data": {"logs": []}}
+    assert json.loads(c._gcs.objects["all_games_logs/7.txt"]) == {"data": {"logs": []}}
     (table, row), = c._bq.rows
     assert table == "p.d.t" and (row["table_id"], row["base_0"], row["base_1"], row["base_2"]) == (7, "P101", "P102", "P103") and row["created_at"]
     assert c.keep(7, {"data": {"logs": []}}, ["P101", "P102", "P103"]) is False         # (a reload brings the same log again: nothing is written twice)
