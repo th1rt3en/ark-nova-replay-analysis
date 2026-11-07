@@ -20,13 +20,21 @@ def _early_view(log: GameLog) -> dict:
     if hit is None:
         view = build_replay_view(log.raw, log.record or TableRecord(log.table_id, "x"), first_moves=60)       # (the engine does not play it: only the first steps are needed)
         steps = view.pop("steps")
-        dealt = [i for i, s in enumerate(steps) if isinstance(s["state"].get("prompt"), dict) and s["state"]["prompt"].get("kind") == "initial_discard" and any(p["hand"] for p in s["state"]["players"])]
-        if not dealt or dealt[-1] + 1 >= len(steps):
+        # (the discards are steps of their own and the prompt stays `initial_discard` after them: the dealt moment is the last one where every hand is still full)
+        selecting = [i for i, s in enumerate(steps) if isinstance(s["state"].get("prompt"), dict) and s["state"]["prompt"].get("kind") == "initial_discard"]
+        peak = [max(len(steps[i]["state"]["players"][k]["hand"]) for i in selecting) for k in (0, 1)] if selecting else [0, 0]
+        dealt = [i for i in selecting if [len(p["hand"]) for p in steps[i]["state"]["players"]] == peak]
+        if not dealt or not peak[0] or not peak[1]:
             raise ValueError("the log has no initial selection to guess")
         j = dealt[-1]
+        count = steps[j]["state"]["prompt"]["args"]["count"]
+        sizes = [n - count for n in peak]
+        after = next((s for s in steps[j + 1:] if all(len(p["hand"]) <= n for p, n in zip(s["state"]["players"], sizes))), None)
+        if after is None:
+            raise ValueError("the log has no initial selection to guess")
         if len(_VIEWS) > 8:
             _VIEWS.clear()
-        hit = _VIEWS[log.table_id] = {"view": view, "dealt": steps[j], "after": steps[j + 1]}
+        hit = _VIEWS[log.table_id] = {"view": view, "dealt": steps[j], "after": after}
     return hit
 
 
