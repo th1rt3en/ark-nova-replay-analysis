@@ -9,6 +9,7 @@
 (() => {
   const DEFAULT_SITE = 'https://ark-nova.pages.dev';
   const READY_FOR = 30000;                                // ms the "ready" popup stays
+  const ELO_GRACE = 8000;                                 // ms the replay page is given to show the players' Elo: it is a nicety (the replay opens without), so it never holds the replay back for long
   const SLOW_AFTER = 60000;                               // ms: after that the popup offers to open the replay without the projects
   const api = typeof browser !== 'undefined' ? browser : chrome;
   const key = (kind, table) => `ark:${kind}:${table}`;
@@ -22,6 +23,7 @@
   let waiting = null;                                     // review page: { slow } while a replay page collects the projects
   let slowTimer = null;
   let found = {};                                         // replay page: what was read on this visit ({ projects, maps })
+  let collectStart = 0;                                   // replay page: when it first looked for the Elo
   let lastNote = 0;                                       // the time of the last console note while looking for the board
   let ui = null, dlg = null;
 
@@ -73,23 +75,27 @@
 
   // what is stored for `table`: the log and the index data, only when both exist and agree; the base projects and the maps read off BGA's replay, when there are some
   async function loadPair(table) {
-    const got = await api.storage.local.get([key('log', table), key('index', table), key('bp', table), key('maps', table)]);
-    const log = got[key('log', table)], index = got[key('index', table)], bp = got[key('bp', table)], seen = got[key('maps', table)];
+    const got = await api.storage.local.get([key('log', table), key('index', table), key('bp', table), key('maps', table), key('elo', table)]);
+    const log = got[key('log', table)], index = got[key('index', table)], bp = got[key('bp', table)], seen = got[key('maps', table)], seenElo = got[key('elo', table)];
     if (!log || String(log.table) !== String(table)) return null;
     if (index && String(index.data.id) !== String(table)) return null;      // the table ids must agree (no table info at all is fine: the review page was opened directly, without the table page)
     const ok = bp && Array.isArray(bp.projects) && bp.projects.length === 3 && bp.projects.every((k) => PROJECT.test(k));
     const ids = playerIds(log.text);
     const mapsOk = seen && seen.maps && ids.length > 0 && ids.every((id) => MAP.test(String(seen.maps[id] || '')));
+    const eloOk = seenElo && seenElo.elos && ids.length > 0 && ids.every((id) => Number.isFinite(seenElo.elos[id]));
     return { table, log: log.text, index: index ? index.data : null, complete: logComplete(log.text), projects: ok ? bp.projects : null,
-             needsMaps: !index || mapsMasked(index.data), maps: mapsOk ? seen.maps : null, players: ids };      // (without the table info the maps are unknown, as when BGA masks them)
+             needsMaps: !index || mapsMasked(index.data), maps: mapsOk ? seen.maps : null, players: ids,
+             needsElo: !index, elos: eloOk ? seenElo.elos : null };      // (without the table info the maps are unknown, as when BGA masks them)
   }
 
   // everything the replay tool needs is known: the base projects (the log shows them or they were read) and, when BGA masks the maps, the maps
-  const isReady = (p) => !!p && (p.complete || !!p.projects) && (!p.needsMaps || !!p.maps);
+  // (the Elo, which only a review page opened without the table page lacks, is waited for ELO_GRACE at most, from the start of the wait)
+  const eloPending = (p) => p.needsElo && !p.elos && !(waiting && Date.now() - waiting.since > ELO_GRACE);
+  const isReady = (p) => !!p && (p.complete || !!p.projects) && (!p.needsMaps || !!p.maps) && !eloPending(p);
 
   async function refresh() {
     const page = pageOf(), id = pageKey(page);
-    if (id !== lastPage) { lastPage = id; dismissed = null; found = {}; stopWaiting(); }
+    if (id !== lastPage) { lastPage = id; dismissed = null; found = {}; collectStart = 0; stopWaiting(); }
     if (id !== checked) {                                 // another page (or none): look at the storage again
       checked = id;
       const mine = ++loadSeq;
@@ -148,14 +154,32 @@
     return ids.length && ids.every((id) => out[id]) ? out : null;
   }
 
+  // ---- BGA's replay page: the Elo each player has (player_elo_<id> in the player panel; the number BGA shows, which the server brings to the index's scale) ----
+  function readElos(ids, doc = document, depth = 0, out = {}) {
+    for (const id of ids) {
+      if (id in out) continue;
+      const el = doc.getElementById('player_elo_' + id) || doc.querySelector('#overall_player_board_' + id + ' .gamerank_value, #player_board_' + id + ' .gamerank_value');
+      const m = el && /\d{3,4}/.exec((el.textContent || '').replace(/[\s,.]/g, ''));
+      if (m) out[id] = parseInt(m[0], 10);
+    }
+    if (depth <= 3) {
+      for (const f of doc.querySelectorAll('iframe')) {
+        try { if (f.contentDocument) readElos(ids, f.contentDocument, depth + 1, out); } catch (e) { /* another origin */ }
+      }
+    }
+    return ids.length && ids.every((id) => id in out) ? out : null;
+  }
+
   async function collect() {
     const page = pageOf();
     if (!page || page.kind === 'review' || !pair || pair.table !== page.table) return;
     const wantProjects = !pair.complete && !pair.projects && !found.projects;
     const wantMaps = pair.needsMaps && !pair.maps && !found.maps;
-    if (!wantProjects && !wantMaps) return;
-    const seen = wantProjects ? readBoard() : null, maps = wantMaps ? readMaps(pair.players) : null;
-    if (wantProjects && !seen || wantMaps && !maps) {
+    const wantElos = pair.needsElo && !pair.elos && !found.elos;
+    if (!wantProjects && !wantMaps && !wantElos) return;
+    if (wantElos && !collectStart) collectStart = Date.now();
+    const seen = wantProjects ? readBoard() : null, maps = wantMaps ? readMaps(pair.players) : null, elos = wantElos ? readElos(pair.players) : null;
+    if (wantProjects && !seen || wantMaps && !maps || wantElos && !elos) {
       if (Date.now() - lastNote > 10000) {                // (for a bug report: what this frame can see; F12 console, filter "ark-nova")
         lastNote = Date.now();
         const zoo = [...document.querySelectorAll('.zoo-map-board-background')].map((el) => ({ map: el.getAttribute('data-map'), owner: ownerOf(el, pair.players), id: el.id, parent: el.parentElement && el.parentElement.id }));
@@ -172,7 +196,16 @@
       console.debug('[ark-nova] maps read from the zoo boards:', JSON.stringify(maps));
       await api.storage.local.set({ [key('maps', page.table)]: { table: page.table, maps, savedAt: Date.now() } }).catch(() => {});
     }
-    if ((seen || !wantProjects) && (maps || !wantMaps)) api.runtime.sendMessage({ type: 'board-read' }).catch(() => {});       // (a tab the extension opened for this closes itself, once it has read everything)
+    if (elos) {
+      found.elos = elos;
+      console.debug('[ark-nova] Elo read from the player panels:', JSON.stringify(elos));
+      await api.storage.local.set({ [key('elo', page.table)]: { table: page.table, elos, savedAt: Date.now() } }).catch(() => {});
+    }
+    const eloGone = wantElos && !elos && Date.now() - collectStart > ELO_GRACE;
+    if ((seen || !wantProjects) && (maps || !wantMaps) && (elos || !wantElos || eloGone) && !found.done) {
+      found.done = true;
+      api.runtime.sendMessage({ type: 'board-read' }).catch(() => {});       // (a tab the extension opened for this closes itself, once it has read everything)
+    }
   }
 
   // ---- the button and the popup ------------------------------------------------------------------------------------------------------------------
@@ -253,7 +286,7 @@
     if (isReady(pair)) { openReplay(); return; }                           // the projects (and the maps BGA masks) are known
     const url = playerReplayUrl();
     if (!url) { openReplay(); return; }                                    // (no replay page to read them from: the replay tool infers them)
-    waiting = { slow: false };
+    waiting = { slow: false, since: Date.now() };
     slowTimer = setTimeout(() => { if (waiting) { waiting.slow = true; render(); } }, SLOW_AFTER);
     api.runtime.sendMessage({ type: 'open-helper', url }).catch(() => { stopWaiting(); openReplay(); });
     render();
@@ -266,12 +299,13 @@
     const { table, log, index } = pair;
     const base_projects = pair.complete ? null : pair.projects;             // (a log that shows them all needs nothing: it stays the authority)
     const maps = pair.needsMaps ? pair.maps : null;                         // (only when BGA masks them in the table info)
+    const elos = pair.needsElo ? pair.elos : null;                          // (only without the table info)
     const win = window.open(origin + '/import.html?table=' + table, '_blank');
     if (!win) { alert('The popup was blocked, allow popups for this site.'); return; }
     const onReady = (e) => {
       if (e.source !== win || e.origin !== origin || !e.data || e.data.type !== 'ark-nova-import-ready') return;
       window.removeEventListener('message', onReady);
-      win.postMessage({ type: 'ark-nova-log', table, log, index, base_projects, maps }, origin);
+      win.postMessage({ type: 'ark-nova-log', table, log, index, base_projects, maps, elos }, origin);
     };
     window.addEventListener('message', onReady);
     setTimeout(() => window.removeEventListener('message', onReady), 60000);
@@ -298,5 +332,5 @@
 
   document.addEventListener('DOMContentLoaded', refresh);
   // BGA navigates without reloading (history API): look again when the address changes; on the replay page the board is read as soon as it is there
-  setInterval(() => { if (pageKey(pageOf()) !== checked) refresh(); else { collect(); render(); } }, 500);
+  setInterval(() => { if (pageKey(pageOf()) !== checked) refresh(); else { collect(); render(); if (waiting && !waiting.ready) refresh(); } }, 500);       // (the Elo's grace runs out with no change in the storage: look again)
 })();
