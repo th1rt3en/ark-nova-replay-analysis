@@ -10,6 +10,7 @@
   const DEFAULT_SITE = 'https://ark-nova.pages.dev';
   const READY_FOR = 30000;                                // ms the "ready" popup stays
   const ELO_GRACE = 8000;                                 // ms the replay page is given to show the players' Elo: it is a nicety (the replay opens without), so it never holds the replay back for long
+  const NO_ELO_AFTER = 2000;                              // ms: player panels on show but no Elo in them = a friendly game (BGA shows no rating there), nothing more to wait for
   const SLOW_AFTER = 60000;                               // ms: after that the popup offers to open the replay without the projects
   const api = typeof browser !== 'undefined' ? browser : chrome;
   const key = (kind, table) => `ark:${kind}:${table}`;
@@ -85,12 +86,12 @@
     const eloOk = seenElo && seenElo.elos && ids.length > 0 && ids.every((id) => Number.isFinite(seenElo.elos[id]));
     return { table, log: log.text, index: index ? index.data : null, complete: logComplete(log.text), projects: ok ? bp.projects : null,
              needsMaps: !index || mapsMasked(index.data), maps: mapsOk ? seen.maps : null, players: ids,
-             needsElo: !index, elos: eloOk ? seenElo.elos : null };      // (without the table info the maps are unknown, as when BGA masks them)
+             needsElo: !index, elos: eloOk ? seenElo.elos : null, noElo: !!(seenElo && seenElo.none) };      // (without the table info the maps are unknown, as when BGA masks them)
   }
 
   // everything the replay tool needs is known: the base projects (the log shows them or they were read) and, when BGA masks the maps, the maps
   // (the Elo, which only a review page opened without the table page lacks, is waited for ELO_GRACE at most, from the start of the wait)
-  const eloPending = (p) => p.needsElo && !p.elos && !(waiting && Date.now() - waiting.since > ELO_GRACE);
+  const eloPending = (p) => p.needsElo && !p.elos && !p.noElo && !(waiting && Date.now() - waiting.since > ELO_GRACE);
   const isReady = (p) => !!p && (p.complete || !!p.projects) && (!p.needsMaps || !!p.maps) && !eloPending(p);
 
   async function refresh() {
@@ -170,12 +171,23 @@
     return ids.length && ids.every((id) => id in out) ? out : null;
   }
 
+  // whether the player panels of all the players are on the page (then a missing Elo is not for lack of waiting)
+  function panelsShown(ids, doc = document, depth = 0, seen = new Set()) {
+    for (const id of ids) if (doc.getElementById('overall_player_board_' + id) || doc.getElementById('player_board_' + id)) seen.add(id);
+    if (depth <= 3) {
+      for (const f of doc.querySelectorAll('iframe')) {
+        try { if (f.contentDocument) panelsShown(ids, f.contentDocument, depth + 1, seen); } catch (e) { /* another origin */ }
+      }
+    }
+    return ids.length > 0 && ids.every((id) => seen.has(id));
+  }
+
   async function collect() {
     const page = pageOf();
     if (!page || page.kind === 'review' || !pair || pair.table !== page.table) return;
     const wantProjects = !pair.complete && !pair.projects && !found.projects;
     const wantMaps = pair.needsMaps && !pair.maps && !found.maps;
-    const wantElos = pair.needsElo && !pair.elos && !found.elos;
+    const wantElos = pair.needsElo && !pair.elos && !pair.noElo && !found.elos && !found.noElo;
     if (!wantProjects && !wantMaps && !wantElos) return;
     if (wantElos && !collectStart) collectStart = Date.now();
     const seen = wantProjects ? readBoard() : null, maps = wantMaps ? readMaps(pair.players) : null, elos = wantElos ? readElos(pair.players) : null;
@@ -201,7 +213,13 @@
       console.debug('[ark-nova] Elo read from the player panels:', JSON.stringify(elos));
       await api.storage.local.set({ [key('elo', page.table)]: { table: page.table, elos, savedAt: Date.now() } }).catch(() => {});
     }
-    const eloGone = wantElos && !elos && Date.now() - collectStart > ELO_GRACE;
+    const waited = Date.now() - collectStart;
+    const eloGone = wantElos && !elos && (waited > ELO_GRACE || (waited > NO_ELO_AFTER && panelsShown(pair.players)));       // (a friendly game has no Elo to show)
+    if (eloGone && !found.noElo) {
+      found.noElo = true;
+      console.debug('[ark-nova] no Elo on the player panels (a friendly game?), going on without it');
+      await api.storage.local.set({ [key('elo', page.table)]: { table: page.table, none: true, savedAt: Date.now() } }).catch(() => {});
+    }
     if ((seen || !wantProjects) && (maps || !wantMaps) && (elos || !wantElos || eloGone) && !found.done) {
       found.done = true;
       api.runtime.sendMessage({ type: 'board-read' }).catch(() => {});       // (a tab the extension opened for this closes itself, once it has read everything)
