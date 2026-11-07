@@ -5,6 +5,7 @@ pre-match rating = `rank_after_game` - `point_win` (the change of the game), ind
 """
 import math
 
+from ark_nova import data
 from ark_nova.storage.index import TableRecord, map_id
 
 
@@ -33,11 +34,28 @@ def table_id_of(info: dict) -> str:
     return str(info.get("id") or "")
 
 
+def is_known_map(map_label: str) -> bool:
+    """A map id of the data ('9', '3a', 'T1'); BGA hides the maps of the end-of-game stats from players without BGA premium ('*masked*')."""
+    try:
+        data.map_by_id(map_label)
+        return True
+    except KeyError:
+        return False
+
+
 def maps_from_tableinfo(info: dict) -> dict[str, str]:
-    """{BGA player id: map id} from the table info (`result.stats.player.map`, labelled "Map 9: Geographical Zoo"); {} when it is not there."""
+    """{BGA player id: map id} from the table info (`result.stats.player.map`, labelled "Map 9: Geographical Zoo"); {} when it is not there.
+    A map that BGA masks (the viewer has no BGA premium) is left out: the extension reads it off BGA's replay, else the log tells it."""
     field = (((info.get("result") or {}).get("stats") or {}).get("player") or {}).get("map") or {}
     labels = field.get("valuelabels") or {}
-    return {str(pid): map_id(labels.get(pid) or f"Map {value}") for pid, value in (field.get("values") or {}).items()}
+    out = {str(pid): map_id(labels.get(pid) or f"Map {value}") for pid, value in (field.get("values") or {}).items()}
+    return {pid: m for pid, m in out.items() if is_known_map(m)}
+
+
+def maps_masked(info: dict) -> bool:
+    """Whether the table info has the maps of the players but BGA hid them (no BGA premium): the extension then has to read them off BGA's replay."""
+    field = (((info.get("result") or {}).get("stats") or {}).get("player") or {}).get("map") or {}
+    return bool(field) and not maps_from_tableinfo(info)
 
 
 def marine_worlds_of(info: dict) -> bool:

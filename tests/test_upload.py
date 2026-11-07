@@ -127,3 +127,34 @@ def test_base_projects_that_are_not_three_different_ones_are_ignored(client):
     for bad in (["P106", "P106", "P110"], ["P106", "P110"], ["P106", "P110", "S201"], ["P106", "P110", "P999"], "P106,P110,P111"):
         r = client.post("/api/tables/603637393/upload", content=_projects_body(text, bad))
         assert r.status_code == 200 and r.json()["base_projects"] == inferred
+
+
+def _masked(info):
+    """The table info of a player without BGA premium: the maps of the end-of-game stats read "*masked*" (table 943915463 was a 500)."""
+    field = info["result"]["stats"]["player"]["map"]
+    field["valuelabels"] = {pid: "*masked*" for pid in field["values"]}
+    field["values"] = {pid: "*masked*" for pid in field["values"]}
+    return info
+
+
+def _maps_body(info, maps) -> bytes:
+    return ('{"log":' + LOG.read_text(encoding="utf-8") + ',"index":' + json.dumps(info) + ',"maps":' + json.dumps(maps) + "}").encode()
+
+
+def test_masked_maps_in_the_table_info_do_not_break_the_replay(client):
+    info = _masked(json.loads(INFO.read_text(encoding="utf-8"))["data"])
+    r = client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), info))
+    assert r.status_code == 200 and r.json()["steps"]
+
+
+def test_the_maps_the_extension_read_stand_in_for_the_masked_ones(client):
+    """Without BGA premium the extension reads the maps off BGA's replay and sends them with the log; ids that are no map are ignored."""
+    from ark_nova.storage.tableinfo import maps_from_tableinfo
+    full = json.loads(INFO.read_text(encoding="utf-8"))["data"]
+    real = maps_from_tableinfo(full)
+    expected = [m["id"] for m in client.post("/api/tables/607674960/upload", content=_body(LOG.read_text(encoding="utf-8"), full)).json()["maps"]]
+    r = client.post("/api/tables/607674960/upload", content=_maps_body(_masked(full), real))
+    assert r.status_code == 200 and [m["id"] for m in r.json()["maps"]] == expected == ["10", "9"]
+    pid = next(iter(real))
+    r = client.post("/api/tables/607674960/upload", content=_maps_body(_masked(json.loads(INFO.read_text(encoding="utf-8"))["data"]), {**real, pid: "*masked*"}))
+    assert r.status_code == 200 and len(r.json()["maps"]) == 2

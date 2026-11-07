@@ -18,7 +18,7 @@ export async function fetchReplay() {
   }
   if (FORK) {
     const seed = params.get('seed');
-    let log, index = null, base_projects = null;                             // a table without a collected log (opened with the extension): the log and the table info are in this browser, the server builds the fork from them
+    let log, index = null, base_projects = null, maps = null;                // a table without a collected log (opened with the extension): the log and the table info are in this browser, the server builds the fork from them
     if (params.get('source') === 'upload') {
       log = await LogStore.get(table);
       if (!log) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
@@ -26,16 +26,19 @@ export async function fetchReplay() {
       index = info ? JSON.parse(info) : null;
       const projects = await LogStore.get('baseprojects:' + table);
       base_projects = projects ? JSON.parse(projects) : null;
+      const seen = await LogStore.get('maps:' + table);
+      maps = seen ? JSON.parse(seen) : null;
     }
     res = await fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                           body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log, index, base_projects })) });
+                                                           body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log, index, base_projects, maps })) });
   } else if (params.get('source') === 'upload') {
     const text = await LogStore.get(table);
     if (!text) { location.replace('/submit.html?table=' + encodeURIComponent(table)); return null; }
     const info = await LogStore.get('index:' + table);                       // the table info of the extension (optional): the Elo of the players
     const projects = await LogStore.get('baseprojects:' + table);            // the base projects the extension read off BGA's replay (optional)
+    const seenMaps = await LogStore.get('maps:' + table);                    // the maps of the players, read there when the table info masks them (optional)
     const post = async (extra) => fetch('/api/tables/' + encodeURIComponent(table) + '/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                                                               body: await packed('{"log":' + text + ',"index":' + (info || 'null') + ',"base_projects":' + (projects || 'null') + extra + '}') });
+                                                                                               body: await packed('{"log":' + text + ',"index":' + (info || 'null') + ',"base_projects":' + (projects || 'null') + ',"maps":' + (seenMaps || 'null') + extra + '}') });
     fullFetch = () => post('');
     res = await post(',"quick":true');                                       // (the draft and the starting hand first: the engine's replay of the whole game takes a while)
   } else {

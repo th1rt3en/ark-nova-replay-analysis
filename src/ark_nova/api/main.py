@@ -27,7 +27,7 @@ from ark_nova.replay import preview as building_preview
 from ark_nova.replay import sandbox
 from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
-from ark_nova.storage.tableinfo import elo_changes_from_tableinfo, elos_after_from_tableinfo, elos_from_tableinfo, maps_from_tableinfo, marine_worlds_of, record_from_tableinfo, same_map_of
+from ark_nova.storage.tableinfo import elo_changes_from_tableinfo, elos_after_from_tableinfo, elos_from_tableinfo, is_known_map, maps_from_tableinfo, marine_worlds_of, record_from_tableinfo, same_map_of
 from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
 from ark_nova.storage.contributions import Contributions
 from ark_nova.storage.requests import request_log
@@ -350,10 +350,10 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
                 raw = json.loads(text)
             except ValueError:
                 return _error(422, "invalid", "The log is not valid JSON.", table_id=table_id)
-            rec = _record_for_upload(table_id, index_info, body.get("base_projects"))
+            rec = _record_for_upload(table_id, index_info, body.get("base_projects"), body.get("maps"))
             if rec is None:
                 return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
-            key = (table_id, hashlib.sha1((text + json.dumps(index_info, sort_keys=True) + json.dumps(rec.base_projects)).encode()).hexdigest())
+            key = (table_id, hashlib.sha1((text + json.dumps(index_info, sort_keys=True) + json.dumps(rec.base_projects) + json.dumps(rec.player_maps, sort_keys=True)).encode()).hexdigest())
             if key not in app.state.forks:                   # (checked once: a log that was built before is the one that passed)
                 errors = await run_in_threadpool(verify_log, raw, table_id)
                 if errors:
@@ -487,18 +487,27 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             return []
         return list(value)
 
-    def _record_for_upload(table_id: int, index_info, base_projects=None):
+    def _clean_maps(value) -> dict[str, str]:
+        """The maps the extension read off BGA's replay when the table info masks them (no BGA premium): {player id: map id} of known maps (else {})."""
+        if not isinstance(value, dict):
+            return {}
+        return {str(pid): str(m) for pid, m in value.items() if re.fullmatch(r"\d{1,12}", str(pid)) and isinstance(m, str) and is_known_map(m)}
+
+    def _record_for_upload(table_id: int, index_info, base_projects=None, maps=None):
         """The record of an uploaded log: the index's when the table has one, else built from the table info of the extension (None: that table info is about another table).
-        `base_projects` are the three base projects the extension saw on BGA's replay (the log does not show them all)."""
+        `base_projects` are the three base projects the extension saw on BGA's replay (the log does not show them all); `maps` the maps of the players that it read there
+        when BGA masks them in the table info."""
         projects = _clean_base_projects(base_projects)
+        seen_maps = _clean_maps(maps)
         if index_info is None:
-            return dataclasses.replace(app.state.index.find(table_id) or TableRecord(table_id), base_projects=projects)
+            base = app.state.index.find(table_id) or TableRecord(table_id)
+            return dataclasses.replace(base, base_projects=projects, **({} if base.player_maps or not seen_maps else {"player_maps": seen_maps}))
         if not isinstance(index_info, dict) or str(index_info.get("id")) != str(table_id):
             return None
         base = app.state.index.find(table_id) or TableRecord(table_id)
         changes = {"elos": elos_from_tableinfo(index_info), "elos_after": elos_after_from_tableinfo(index_info), "elo_changes": elo_changes_from_tableinfo(index_info), "same_map": same_map_of(index_info), "base_projects": projects}
         if not base.player_maps:                              # the table is not indexed: its table info tells the maps and the Marine Worlds flag
-            changes.update(player_maps=maps_from_tableinfo(index_info), marine_worlds=marine_worlds_of(index_info))
+            changes.update(player_maps={**maps_from_tableinfo(index_info), **seen_maps}, marine_worlds=marine_worlds_of(index_info))
         return dataclasses.replace(base, **changes)
 
     @app.post("/api/tables/{table_id}/upload")
@@ -510,13 +519,14 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             raw = body["log"]
             index_info = body.get("index")
             base_projects = body.get("base_projects")
+            seen_maps = body.get("maps")
             quick = bool(body.get("quick"))                       # only the draft and the starting hand (see build_replay_view)
         except (ValueError, KeyError, TypeError):
             return _error(422, "invalid", "Send {log, index}.", table_id=table_id)
         errors = await run_in_threadpool(verify_log, raw, table_id)
         if errors:
             return JSONResponse(status_code=422, content={"status": "invalid", "message": errors[0], "errors": errors})
-        rec = _record_for_upload(table_id, index_info, base_projects)
+        rec = _record_for_upload(table_id, index_info, base_projects, seen_maps)
         if rec is None:
             return _error(422, "invalid", "The table info is about another table.", table_id=table_id)
         if not quick:                                          # (kept for the project on a thread of its own, while the replay is built: the player does not wait for it)

@@ -1,8 +1,9 @@
 // Isolated world. Stores what capture.js sees, per table id, in the extension's storage (so opening several tables keeps each one's data),
 // and shows one button, "Open in Ark Nova Replay", on the game review page once the table's index data AND its log are both stored and agree.
 // A click opens the replay tool when the three base conservation projects are known: the log shows all of them (they appear only when a project is supported) or they were
-// read before. Otherwise a BGA replay page of a player opens in a background tab, where this script (also running in the game's iframe) reads them off the association board
-// (#base-projects-holder) and stores them; the review page, which shows "Preparing your replay…" meanwhile, then opens the replay tool (importer.js hands it the stored data).
+// read before; and, when BGA masks the players' maps in the table info (no BGA premium: "*masked*"), when the maps were read as well. Otherwise a BGA replay page of a player
+// opens in a background tab, where this script (also running in the game's iframe) reads the projects off the association board (#base-projects-holder) and the maps off the
+// zoo boards (.zoo-map-board-background[data-map]) and stores them; the review page, which shows "Preparing your replay…" meanwhile, then opens the replay tool (importer.js hands it the stored data).
 // Everything the extension puts on a page can be closed with its x.
 (() => {
   const DEFAULT_SITE = 'https://ark-nova.pages.dev';
@@ -11,6 +12,7 @@
   const api = typeof browser !== 'undefined' ? browser : chrome;
   const key = (kind, table) => `ark:${kind}:${table}`;
   const PROJECT = /^P\d{3}$/;
+  const MAP = /^(\d{1,2}[a-z]?|[A-Z]|T1)$/;                 // a map as the replay tool names it: "9", "3a", "A", "T1"
   let pair = null;                                        // { table, log, index, complete, projects } for the table on show, once its log and index data are stored and match
   let checked = null;                                     // the page (kind:table) whose storage was looked at last
   let lastPage = null;                                    // the page seen on the last look (a new one forgets what was closed and what was read)
@@ -18,7 +20,7 @@
   let dismissed = null;                                   // the page whose button was closed with its x
   let waiting = null;                                     // review page: { slow } while a replay page collects the projects
   let slowTimer = null;
-  let found = null;                                       // replay page: the projects read off the board on this visit
+  let found = {};                                         // replay page: what was read on this visit ({ projects, maps })
   let lastNote = 0;                                       // the time of the last console note while looking for the board
   let ui = null, dlg = null;
 
@@ -56,19 +58,37 @@
     return slots.every((k) => PROJECT.test(k || ''));
   }
 
-  // what is stored for `table`: the log and the index data, only when both exist and agree; the base projects read off BGA's replay, when there are some
+  // the player ids of the log
+  function playerIds(text) {
+    try { return (JSON.parse(text).data.players || []).map((p) => String(p.id)); } catch (e) { return []; }
+  }
+
+  // whether BGA hid the players' maps in the table info (the end-of-game stats are a BGA premium feature: the maps read "*masked*"): the replay page then has to tell them
+  function mapsMasked(index) {
+    const field = ((((index || {}).result || {}).stats || {}).player || {}).map;
+    if (!field) return false;
+    return [...Object.values(field.valuelabels || {}), ...Object.values(field.values || {})].some((v) => /masked/i.test(String(v)));
+  }
+
+  // what is stored for `table`: the log and the index data, only when both exist and agree; the base projects and the maps read off BGA's replay, when there are some
   async function loadPair(table) {
-    const got = await api.storage.local.get([key('log', table), key('index', table), key('bp', table)]);
-    const log = got[key('log', table)], index = got[key('index', table)], bp = got[key('bp', table)];
+    const got = await api.storage.local.get([key('log', table), key('index', table), key('bp', table), key('maps', table)]);
+    const log = got[key('log', table)], index = got[key('index', table)], bp = got[key('bp', table)], seen = got[key('maps', table)];
     if (!log || !index) return null;
     if (String(index.data.id) !== String(log.table) || String(log.table) !== String(table)) return null;      // the table ids must agree
     const ok = bp && Array.isArray(bp.projects) && bp.projects.length === 3 && bp.projects.every((k) => PROJECT.test(k));
-    return { table, log: log.text, index: index.data, complete: logComplete(log.text), projects: ok ? bp.projects : null };
+    const ids = playerIds(log.text);
+    const mapsOk = seen && seen.maps && ids.length > 0 && ids.every((id) => MAP.test(String(seen.maps[id] || '')));
+    return { table, log: log.text, index: index.data, complete: logComplete(log.text), projects: ok ? bp.projects : null,
+             needsMaps: mapsMasked(index.data), maps: mapsOk ? seen.maps : null, players: ids };
   }
+
+  // everything the replay tool needs is known: the base projects (the log shows them or they were read) and, when BGA masks the maps, the maps
+  const isReady = (p) => !!p && (p.complete || !!p.projects) && (!p.needsMaps || !!p.maps);
 
   async function refresh() {
     const page = pageOf(), id = pageKey(page);
-    if (id !== lastPage) { lastPage = id; dismissed = null; found = null; stopWaiting(); }
+    if (id !== lastPage) { lastPage = id; dismissed = null; found = {}; stopWaiting(); }
     if (id !== checked) {                                 // another page (or none): look at the storage again
       checked = id;
       const mine = ++loadSeq;
@@ -76,7 +96,7 @@
       if (mine !== loadSeq) return;
       pair = loaded;
     }
-    if (waiting && !waiting.ready && pair && pair.projects) {                         // (the replay page has read them)
+    if (waiting && !waiting.ready && isReady(pair)) {                                 // (the replay page has read them)
       stopWaiting();
       waiting = { ready: true };                          // the popup stays with a button: the tab opened below needs the extension to have access to the site, a click always works
       openImportTab();
@@ -103,21 +123,55 @@
     return null;
   }
 
+  // ---- BGA's replay page: the map of each player (the zoo map board has data-map="<map>"; the player's id is in an id / data attribute of the zoo around it) ----
+  function ownerOf(el, ids) {
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      for (const attr of ['data-player-id', 'data-player', 'data-pid', 'id']) {
+        const hit = (n.getAttribute(attr) || '').match(/\d{5,}/g);
+        const id = hit && hit.find((x) => ids.includes(x));
+        if (id) return id;
+      }
+    }
+    return null;
+  }
+  function readMaps(ids, doc = document, depth = 0, out = {}) {
+    for (const el of doc.querySelectorAll('.zoo-map-board-background[data-map]')) {
+      const owner = ownerOf(el, ids), map = el.getAttribute('data-map');
+      if (owner && MAP.test(map || '') && !(owner in out)) out[owner] = map;
+    }
+    if (depth <= 3) {
+      for (const f of doc.querySelectorAll('iframe')) {
+        try { if (f.contentDocument) readMaps(ids, f.contentDocument, depth + 1, out); } catch (e) { /* another origin */ }
+      }
+    }
+    return ids.length && ids.every((id) => out[id]) ? out : null;
+  }
+
   async function collect() {
     const page = pageOf();
-    if (!page || page.kind === 'review' || !pair || pair.table !== page.table || pair.complete || found) return;
-    const seen = readBoard();
-    if (!seen) {
+    if (!page || page.kind === 'review' || !pair || pair.table !== page.table) return;
+    const wantProjects = !pair.complete && !pair.projects && !found.projects;
+    const wantMaps = pair.needsMaps && !pair.maps && !found.maps;
+    if (!wantProjects && !wantMaps) return;
+    const seen = wantProjects ? readBoard() : null, maps = wantMaps ? readMaps(pair.players) : null;
+    if (wantProjects && !seen || wantMaps && !maps) {
       if (Date.now() - lastNote > 10000) {                // (for a bug report: what this frame can see; F12 console, filter "ark-nova")
         lastNote = Date.now();
-        console.debug('[ark-nova] looking for the base projects:', { page: page.kind, iframes: document.querySelectorAll('iframe').length, holder: !!document.querySelector('#base-projects-holder') });
+        const zoo = [...document.querySelectorAll('.zoo-map-board-background')].map((el) => ({ map: el.getAttribute('data-map'), owner: ownerOf(el, pair.players), id: el.id, parent: el.parentElement && el.parentElement.id }));
+        console.debug('[ark-nova] looking for the base projects / maps:', { page: page.kind, iframes: document.querySelectorAll('iframe').length, holder: !!document.querySelector('#base-projects-holder'), zoo });
       }
-      return;
     }
-    found = seen;
-    console.debug('[ark-nova] base projects read from the board:', seen.join(', '));
-    await api.storage.local.set({ [key('bp', page.table)]: { table: page.table, projects: seen, savedAt: Date.now() } }).catch(() => {});
-    api.runtime.sendMessage({ type: 'board-read' }).catch(() => {});             // (a tab the extension opened for this closes itself)
+    if (seen) {
+      found.projects = seen;
+      console.debug('[ark-nova] base projects read from the board:', seen.join(', '));
+      await api.storage.local.set({ [key('bp', page.table)]: { table: page.table, projects: seen, savedAt: Date.now() } }).catch(() => {});
+    }
+    if (maps) {
+      found.maps = maps;
+      console.debug('[ark-nova] maps read from the zoo boards:', JSON.stringify(maps));
+      await api.storage.local.set({ [key('maps', page.table)]: { table: page.table, maps, savedAt: Date.now() } }).catch(() => {});
+    }
+    if ((seen || !wantProjects) && (maps || !wantMaps)) api.runtime.sendMessage({ type: 'board-read' }).catch(() => {});       // (a tab the extension opened for this closes itself, once it has read everything)
   }
 
   // ---- the button and the popup ------------------------------------------------------------------------------------------------------------------
@@ -195,7 +249,7 @@
 
   function onClick() {
     if (!pair) return;
-    if (pair.complete || pair.projects) { openReplay(); return; }          // the projects are known
+    if (isReady(pair)) { openReplay(); return; }                           // the projects (and the maps BGA masks) are known
     const url = playerReplayUrl();
     if (!url) { openReplay(); return; }                                    // (no replay page to read them from: the replay tool infers them)
     waiting = { slow: false };
@@ -210,12 +264,13 @@
     const origin = await siteOrigin();
     const { table, log, index } = pair;
     const base_projects = pair.complete ? null : pair.projects;             // (a log that shows them all needs nothing: it stays the authority)
+    const maps = pair.needsMaps ? pair.maps : null;                         // (only when BGA masks them in the table info)
     const win = window.open(origin + '/import.html?table=' + table, '_blank');
     if (!win) { alert('The popup was blocked, allow popups for this site.'); return; }
     const onReady = (e) => {
       if (e.source !== win || e.origin !== origin || !e.data || e.data.type !== 'ark-nova-import-ready') return;
       window.removeEventListener('message', onReady);
-      win.postMessage({ type: 'ark-nova-log', table, log, index, base_projects }, origin);
+      win.postMessage({ type: 'ark-nova-log', table, log, index, base_projects, maps }, origin);
     };
     window.addEventListener('message', onReady);
     setTimeout(() => window.removeEventListener('message', onReady), 60000);

@@ -203,12 +203,22 @@ def _label_fixes() -> dict:
     return {t: {pid: v["log"] if isinstance(v, dict) else v for pid, v in m.items()} for t, m in json.loads(path.read_text()).items()} if path.exists() else {}
 
 
+def _known_map(map_label) -> bool:
+    try:
+        data.map_by_id(str(map_label))
+        return True
+    except KeyError:
+        return False
+
+
 def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_projects: Optional[list[str]] = None,
                   marine_worlds: Optional[bool] = None, from_seq: int = 0) -> tuple[SetupInfo, GameConfig, SeedSpec]:
     """`maps`, `base_projects` and `marine_worlds` come from the BigQuery index / the user in production. When they are not
     given (tests) they are inferred: Marine Worlds if any known card is a Marine Worlds card, Map 14 if the log shows its
     start-of-game sponsor search, map 1 otherwise, and the first 3 base projects."""
     setup = extract_setup(parsed)
+    if maps is not None and any(not _known_map(m) for m in maps):       # (e.g. BGA's "*masked*" without BGA premium: the log tells the maps instead)
+        maps = None
     sample = _sample_maps().get(str(parsed.table_id))
     if sample and maps is None and all(pid in sample["maps"] for pid in setup.seats):
         mapped = [sample["maps"][pid] for pid in setup.seats]

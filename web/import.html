@@ -49,6 +49,9 @@ if (!/^\d+$/.test(table || '') || !(window.opener || auto)) {
       // the base projects the extension read off BGA's replay, when the log never shows all three (3 keys like "P103", in the order of the board); else nothing stays from an earlier import
       const projects = Array.isArray(d.base_projects) && d.base_projects.length === 3 && d.base_projects.every((k) => /^P\d{3}$/.test(k)) ? d.base_projects : null;
       await LogStore.put('baseprojects:' + table, projects ? JSON.stringify(projects) : '');
+      // the maps of the players when BGA masks them in the table info (no BGA premium): {player id: "9"}, read off BGA's replay by the extension; else nothing stays from an earlier import
+      const maps = d.maps && typeof d.maps === 'object' && !Array.isArray(d.maps) && Object.keys(d.maps).length && Object.entries(d.maps).every(([p, m]) => /^\d+$/.test(p) && typeof m === 'string' && /^[0-9A-Za-z]{1,3}$/.test(m)) ? d.maps : null;
+      await LogStore.put('maps:' + table, maps ? JSON.stringify(maps) : '');
       location.replace('/replay.html?table=' + table + '&source=upload');
     } catch (err) { show('Could not keep the log in this browser, try again.', 'error'); }
   });
