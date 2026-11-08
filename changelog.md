@@ -2976,3 +2976,5 @@ Rewording of the mouse view (7 November 2026): the view is titled "Mouse control
 ## 148. Enclosure flip without animated filters
 
 web/js/card-motion.js 	urnOver: the flip is four stacked outer svg layers (shadow of the old side, shadow of the new side, old side, new side; will-change: transform, opacity) instead of one svg with a ilter: drop-shadow keyframe and a swap of two child groups. The shadow is the sprite alone, a static rightness(0) blur() filter, animated only by transform and opacity; the sides are swapped by the opacity of their own layer; the lift and shadow follow sin(pi*t) over the whole turn (no peak at the edge-on moment). The masks of the building copy stay (the gap / border between buildings needs them). Not yet checked in a browser trace.
+
+Section 148, addition: the copies of a building that flies or turns (card-motion.js itMasks) get their masks cut down from the whole board (3000 x 3000 units) to the building's own box; the flight's svg has will-change: transform, opacity. Found in a screen recording of a new enclosure gliding in from the deck: frames repeated at intervals during the glide.

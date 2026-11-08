@@ -274,6 +274,14 @@ export function afterRender(st) {
 // an overlay svg (placed with the group's screen matrix, so it looks the same under any zoom); the real group is hidden until the copy has landed (a cut-down building's ghost stays hidden).
 const SVG_NS = 'http://www.w3.org/2000/svg';
 let copies = 0;
+// The masks of a building (board.js: the gap between neighbours) span the whole board (3000 x 3000 units), so a copy that moves would be masked and repainted over the area of the board on every frame:
+// each mask of the copy is cut down to the box of the building (the mask only matters where the building is).
+function fitMasks(k, g) {
+  let b;
+  try { b = g.getBBox(); } catch (e) { return; }
+  if (!b || !b.width) return;
+  k.querySelectorAll('mask').forEach((m) => { m.setAttribute('x', b.x - 30); m.setAttribute('y', b.y - 30); m.setAttribute('width', b.width + 60); m.setAttribute('height', b.height + 60); });
+}
 function runBuildings(old, st) {
   const { added, removed } = buildingChanges(old, st);
   const find = (c, ghost) => document.querySelector('.board g[data-bseat="' + c.seat + '"][data-bid="' + c.id + '"]' + (ghost ? '.cm-leaving' : ':not(.cm-leaving)'));
@@ -316,6 +324,7 @@ function turnOver(wasG, nowG, dir, index, oldHref) {
     k.removeAttribute('class'); k.removeAttribute('style'); k.removeAttribute('data-bid'); k.removeAttribute('data-bseat'); k.querySelector('.frame')?.remove();
     k.querySelectorAll('[id]').forEach((e) => { const n = e.id + 'k' + (++copies); ids.set(e.id, n); e.id = n; });
     k.querySelectorAll('[mask],[clip-path]').forEach((e) => ['mask', 'clip-path'].forEach((a) => { const m = /url\(#([^)]+)\)/.exec(e.getAttribute(a) || ''); if (m && ids.has(m[1])) e.setAttribute(a, 'url(#' + ids.get(m[1]) + ')'); }));
+    fitMasks(k, g);
     k.setAttribute('transform', 'matrix(' + [ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f].join(' ') + ')');
     if (href) k.querySelectorAll('image').forEach((im) => im.setAttribute('href', href(im.getAttribute('href') || '')));
     return k;
@@ -353,12 +362,13 @@ function buildingFlight(g, appear, index) {
   const sc = scale(), d = deckPoint(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dx = d.x - cx, dy = d.y - cy;
   const o = document.createElementNS(SVG_NS, 'svg');
   o.setAttribute('class', 'cm-building');
-  Object.assign(o.style, { position: 'absolute', left: '0', top: '0', width: '1px', height: '1px', overflow: 'visible', transformOrigin: cx + 'px ' + cy + 'px', zIndex: '3' });
+  Object.assign(o.style, { position: 'absolute', left: '0', top: '0', width: '1px', height: '1px', overflow: 'visible', transformOrigin: cx + 'px ' + cy + 'px', zIndex: '3', willChange: 'transform, opacity' });
   const k = g.cloneNode(true);
   k.removeAttribute('class'); k.removeAttribute('style'); k.removeAttribute('data-bid'); k.removeAttribute('data-bseat'); k.querySelector('.frame')?.remove();
   const ids = new Map();                                        // (the copy gets ids of its own: the masks of the original are hidden with it and would mask the copy away)
   k.querySelectorAll('[id]').forEach((e) => { const n = e.id + 'k' + (++copies); ids.set(e.id, n); e.id = n; });
   k.querySelectorAll('[mask],[clip-path]').forEach((e) => ['mask', 'clip-path'].forEach((a) => { const m = /url\(#([^)]+)\)/.exec(e.getAttribute(a) || ''); if (m && ids.has(m[1])) e.setAttribute(a, 'url(#' + ids.get(m[1]) + ')'); }));
+  fitMasks(k, g);
   k.setAttribute('transform', 'matrix(' + [ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f].join(' ') + ')');
   o.append(k); root().append(o); hide(g);
   // A new building first shows itself at the deck (fades in, grows a little) before it sets off; the top of the viewport is where the eye has to catch it, so that part is not rushed.
