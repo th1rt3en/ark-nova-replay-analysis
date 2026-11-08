@@ -7,6 +7,7 @@ body.compact .ark-card.zoo-card .ark-card-wrapper .ark-card-top { height: 270px 
 body.compact .ark-card.zoo-card .ark-card-wrapper .ark-card-middle { height: 72.5px !important; margin: -10px 0 -10px !important; }
 body.compact .ark-card.zoo-card .ark-card-wrapper .ark-card-bottom { height: 197.5px !important; }
 body.compact .ark-card.zoo-card.scoring-card .ark-card-wrapper .ark-card-bottom { /* small endgame cards: the body starts LIP px under the stripe (the stripe's negative margin), so its top padding is LIP larger: the text and table are centred in the visible free space like on the large card */ padding-top: 16px !important; padding-bottom: 6px !important; }
+.ark-card.zoo-card.animal-card .ark-card-wrapper .ark-card-top > .arknova-meeple { top: 176px !important; }
 .ark-card.zoo-card.animal-card .ark-card-wrapper .ark-card-top { background-size: cover !important; background-position: 50% 0 !important; }
 .ark-card.zoo-card .ark-card-wrapper .ark-card-bottom .icon-container-wave { top: 306px !important; }
 body.compact .ark-card.zoo-card .ark-card-wrapper .ark-card-bottom .icon-container-wave { top: 328.5px !important; }

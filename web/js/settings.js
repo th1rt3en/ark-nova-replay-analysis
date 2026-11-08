@@ -1,10 +1,11 @@
-// [module] Settings pop-up: animation/autoplay speed, timeline, hand, played cards, card variants and board layout. Remembered in localStorage.settings, including animationSpeed (.25/.5/1/1.5/2/3; default 1).
+// [module] Settings pop-up: animation/autoplay speed, timeline, hand, played cards, card variants and board layout. Remembered in localStorage.settings, including animationSpeed (.25/.5/1/1.25/1.5/1.75/2; default 1) and animations ('all' | 'standard' | 'none'; default 'all').
 import { $, el } from './util.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { setSpeed } from './playback.js';
 import { fitSidebar } from './sidebar.js';
 import { NO_SNAKE_MODES } from './nosnake.js';
-import { ANIMATION_SPEEDS, setAnimationSpeed } from './card-motion.js';
+import { ANIMATION_SPEEDS, ANIMATION_MODES, setAnimationSpeed, setAnimations } from './card-motion.js';
+import { onScrollbar } from './modalscroll.js';                         // (the page behind an open pop-up does not scroll)
 
 let settingsTab = 0;                                                       // the tab of the pop-up that is open: 0 Control, 1 Board, 2 Cards (not stored)
 const KEY = 'settings';                                                    // localStorage: { speed: 0.5 | 1 | 2 | 3 | 4, timeline: boolean, hand: 0.5 ... 2, handMode: 'fan' | 'tray', noSnake: 'show' | 'hide' | 'worm', s274: 'victory' | 'mascot', zoos: 'side' | 'tabs' | 'stack', played: 'below' | 'tray' | 'drawer', drawerFull: { 0: boolean, 1: boolean } }
@@ -12,7 +13,7 @@ const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}') 
 export const PLAYED_MODES = [['drawer', 'Slide-out drawer'], ['below', 'Below the map'], ['tray', 'Tray in the hand dock'], ['beside', 'Cards next to the map']];       // where the played cards are shown (zoo.js `playedMode`)
 export const SPEEDS = [0.5, 1, 2, 3, 4];                                  // the autoplay speeds, the steps of the slider (1 = the default)
 export const HAND_SCALES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];            // the sizes of the cards in the hand (1 = the default size)
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, animationSpeed: S.animationSpeed, timeline: S.showTimeline, egLive: S.endgameLive, discounts: S.applyDiscounts, hand: S.handScale, bpreview: S.previewBuilding, encBorders: S.encBorders, actionStrip: S.actionStrip, handMode: S.handMode, noSnake: S.noSnake, s274: S.s274, zoos: S.zooLayout, played: S.playedMode, drawerFull: S.drawerFull })); } catch (e) { /* no storage */ } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, animationSpeed: S.animationSpeed, animations: S.animations, timeline: S.showTimeline, egLive: S.endgameLive, discounts: S.applyDiscounts, hand: S.handScale, bpreview: S.previewBuilding, encBorders: S.encBorders, actionStrip: S.actionStrip, handMode: S.handMode, noSnake: S.noSnake, s274: S.s274, zoos: S.zooLayout, played: S.playedMode, drawerFull: S.drawerFull })); } catch (e) { /* no storage */ } };
 document.addEventListener('drawerfull', () => save());                  // (the size button of the drawer, zoo.js: narrow beside the map / expanded over it)
 export const settingsOpen = () => { const m = $('settingsModal'); return !!m && !m.hidden; };
 export function toggleSettings() {
@@ -36,14 +37,14 @@ function knobSlider(values, current, label, onPick, format = (v) => v + 'x') {
   const slider = el('input'); slider.type = 'range'; slider.className = 'setrange'; slider.min = '0'; slider.max = String(values.length - 1); slider.step = '1';
   slider.value = String(values.indexOf(current)); slider.setAttribute('aria-label', label);
   const track = el('div', 'settrack'), bubble = el('b', 'setbubble');
-  const showVal = () => { const f = Number(slider.value) / (values.length - 1), v = values[Number(slider.value)]; bubble.textContent = format(v); slider.setAttribute('aria-valuetext', format(v)); bubble.style.left = 'calc(var(--knob) / 2 + (100% - var(--knob)) * ' + f + ')'; track.style.setProperty('--f', String(f)); };
+  const showVal = () => { const f = Number(slider.value) / (values.length - 1), v = values[Number(slider.value)]; bubble.textContent = format(v); slider.setAttribute('aria-valuetext', format(v)); bubble.style.left = 'calc(var(--inset, 0px) + var(--knob) / 2 + (100% - 2 * var(--inset, 0px) - var(--knob)) * ' + f + ')'; track.style.setProperty('--f', String(f)); };
   slider.addEventListener('input', () => { onPick(values[Number(slider.value)]); showVal(); }); showVal();
   track.append(slider, bubble);
   return track;
 }
 // the little icon chip in front of every setting (css `.setico`): a drawn glyph on a pastel tile
 const ICONS = {
-  speed: ['M4 5l8 7-8 7zM12 5l8 7-8 7z', '#e58b6b'], stopwatch: ['M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4.5l3 1.8M9.5 2h5M12 2v3', '#F4B63F'], time: ['M3 12h18M6 8v8M12 6v12M18 9v6', '#7fc3dd'], shield: ['M12 3l7 3v6c0 4.6-3 7.6-7 9.5-4-1.9-7-4.9-7-9.5V6z', '#cdb8e8'], actions: ['M8 3h11v18H8zM8 7H4.5M8 12H4.5M8 17H4.5M12 8h4M12 12h4', '#d98ee0'],
+  speed: ['M4 5l8 7-8 7zM12 5l8 7-8 7z', '#e58b6b'], anim: ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM10 8.5l5.5 3.5-5.5 3.5z', '#7fc3dd'], stopwatch: ['M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4.5l3 1.8M9.5 2h5M12 2v3', '#F4B63F'], time: ['M3 12h18M6 8v8M12 6v12M18 9v6', '#8fd09a'], shield: ['M12 2.5L19.5 4.5 18.3 8.2 21 10.5C21 16.5 16.5 20 12 21.5 7.5 20 3 16.5 3 10.5L5.7 8.2 4.5 4.5z', '#cdb8e8'], actions: ['M8 3h11v18H8zM8 7H4.5M8 12H4.5M8 17H4.5M12 8h4M12 12h4', '#d98ee0'],
   boards: ['M3 5h8v14H3zM13 5h8v14h-8z', '#8fd09a'], played: ['M5 8h10v12H5zM9 4h10v12', '#e7c15d'], hand: ['M18 11V6a2 2 0 0 0-4 0M14 10V4a2 2 0 0 0-4 0v2M10 10.5V6a2 2 0 0 0-4 0v8M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15', '#9fb7e6'], frame: ['M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z', '#6fd0c3'], lens: ['M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM15 15l5 5', '#f0a8c8'],
   discount: ['M4 12l8-8h8v8l-8 8zM15.5 8.5h.01', '#f0a58f'],
   statue: ['M4 20h16M7 20V10M12 20V10M17 20V10M4 10h16L12 4z', '#cdb8e8'], panda: ['M12 20.5c4.4 0 7.5-2.8 7.5-6.3S16.4 8.5 12 8.5s-7.5 2.2-7.5 5.7 3.1 6.3 7.5 6.3zM5.8 10.2A2.7 2.7 0 1 1 9 7.2M18.2 10.2A2.7 2.7 0 1 0 15 7.2', '#e4e0d4', '<ellipse cx="8.8" cy="13.5" rx="1.7" ry="2.2" transform="rotate(18 8.8 13.5)"/><ellipse cx="15.2" cy="13.5" rx="1.7" ry="2.2" transform="rotate(-18 15.2 13.5)"/><ellipse cx="12" cy="16.8" rx="1.3" ry="0.9"/>'],
@@ -58,6 +59,7 @@ export function setupSettings() {
   S.endgameLive = st.egLive !== false;                                    // default: on
   S.showTimeline = st.timeline === true;                                   // default: off
   S.speed = SPEEDS.includes(st.speed) ? st.speed : 1;                  // default: 1x
+  setAnimations(st.animations);                                    // default: all
   setAnimationSpeed(st.animationSpeed);                            // default: new half-pace 1x; independent of autoplay
   S.handScale = HAND_SCALES.includes(st.hand) ? st.hand : 1;               // default: 1x
   S.handMode = st.handMode === 'fan' ? 'fan' : 'tray';                   // default: the floating tray
@@ -81,9 +83,9 @@ export function setupSettings() {
       const menu = el('div', 'setmenu'); menu.setAttribute('role', 'listbox'); menu.style.setProperty('--tc', getComputedStyle(box).getPropertyValue('--tc'));      // (the active tab's colour fills the selected / hovered entry)
       const items = [...sel.options].map((o) => { const b = el('button', 'setopt' + (o.value === sel.value ? ' on' : ''), o.textContent); b.type = 'button'; b.setAttribute('role', 'option'); b.disabled = o.disabled; b.onclick = () => pick(o); menu.append(b); return b; });
       const m = modal.getBoundingClientRect(), r = btn.getBoundingClientRect(), z = m.width / modal.offsetWidth || 1;      // (the viewer is zoomed: screen pixels / zoom = layout pixels)
-      menu.style.left = ((r.left - m.left) / z) + 'px'; menu.style.width = (r.width / z) + 'px'; menu.style.top = ((r.bottom - m.top) / z + 6) + 'px';
+      menu.style.left = ((r.left - m.left) / z) + 'px'; menu.style.width = (r.width / z) + 'px'; menu.style.top = ((r.bottom - m.top) / z + modal.scrollTop + 6) + 'px';      // (+ scrollTop: the pop-up scrolls when it is taller than the window, modalscroll.js)
       modal.append(menu);
-      if (menu.offsetTop + menu.offsetHeight > modal.offsetHeight - 8) menu.style.top = Math.max(8, (r.top - m.top) / z - 6 - menu.offsetHeight) + 'px';      // (no room below: opens upward)
+      if (menu.offsetTop + menu.offsetHeight > modal.scrollTop + modal.clientHeight - 8) menu.style.top = Math.max(8, (r.top - m.top) / z + modal.scrollTop - 6 - menu.offsetHeight) + 'px';      // (no room below: opens upward)
       openMenu = { menu, btn }; btn.setAttribute('aria-expanded', 'true');
       (items.find((b) => b.classList.contains('on')) || items.find((b) => !b.disabled))?.focus();
     };
@@ -104,6 +106,21 @@ export function setupSettings() {
   const head = el('div', 'modalhead');
   const x = el('button', 'modalx'); x.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>'; x.type = 'button'; x.title = 'Close (Esc)'; x.setAttribute('aria-label', 'Close'); x.onclick = close;
   head.append(el('b', '', 'Settings'), x);
+  // Animations: a three-part switch (green all, yellow only standard, red none), css `.setthree`; the words are the tooltips
+  const THREE = [['all', 'All', 'All\n(full animation pack)', '<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/>'],
+    ['standard', 'Only standard', 'Standard only\n(no detailed thematic animations)', '<path d="M4 12h16M14 6l6 6-6 6"/>'],
+    ['none', 'None', 'None\n(all actions happen instantly)', '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>']];
+  const animRow = el('div', 'setrow'), three = el('div', 'setthree'); three.setAttribute('role', 'radiogroup'); three.setAttribute('aria-label', 'Animations');
+  const syncThree = () => [...three.children].forEach((b, i) => { const on = ANIMATION_MODES[i] === S.animations; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; });
+  THREE.forEach(([v, name, tip, svg], i) => {
+    const b = el('button', 'setthree-opt'); b.type = 'button'; b.dataset.v = v; b.dataset.tip = tip; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', name);
+    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + svg + '</svg>';
+    b.onclick = () => { setAnimations(v); save(); syncThree(); };
+    b.onkeydown = (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); const n = (i + (e.key === 'ArrowRight' ? 1 : 2)) % 3; setAnimations(THREE[n][0]); save(); syncThree(); three.children[n].focus(); } };
+    three.append(b);
+  });
+  syncThree();
+  animRow.append(el('span', 'setlabel', 'Animations'), three);
   const animationRow = el('div', 'setrow setslide');
   animationRow.append(el('span', 'setlabel', 'Animation speed'), knobSlider(ANIMATION_SPEEDS, S.animationSpeed, 'Animation speed', (v) => { setAnimationSpeed(v); save(); }, (v) => v + 'x'));
   const speedRow = el('div', 'setrow setslide');                         // the autoplay speed: a slider with five steps (0.5x ... 4x)
@@ -126,7 +143,7 @@ export function setupSettings() {
   const showNote = (help, note) => {                                      // the note hangs from the ? (its tape touches it): measured in screen pixels, divided by the viewer zoom
     const m = modal.getBoundingClientRect(), q = help.getBoundingClientRect(), z = m.width / modal.offsetWidth || 1;
     const left = box.offsetLeft + 28, w = box.offsetWidth - 56, qx = (q.left + q.width / 2 - m.left) / z;
-    note.style.left = left + 'px'; note.style.width = w + 'px'; note.style.top = ((q.bottom - m.top) / z + 21) + 'px'; note.style.setProperty('--tx', (qx - left) + 'px'); note.hidden = false;
+    note.style.left = left + 'px'; note.style.width = w + 'px'; note.style.top = ((q.bottom - m.top) / z + modal.scrollTop + 21) + 'px'; note.style.setProperty('--tx', (qx - left) + 'px'); note.hidden = false;
   };
   const helpMark = (label, note) => {                                     // a ? in a label: the sticky note opens on hover or keyboard focus
     const h = el('span', 'qm', '?'); h.tabIndex = 0; h.setAttribute('role', 'note'); h.setAttribute('aria-label', label + ' help');
@@ -199,7 +216,7 @@ export function setupSettings() {
   zsel.onchange = () => { S.zooLayout = zsel.value; syncPlayedOptions(); save(); document.dispatchEvent(new Event('zoolayout')); };
   zooRow.append(el('span', 'setlabel', 'Player boards'), dropdown(zsel));
   const tabs = el('div', 'settabs'); tabs.setAttribute('role', 'tablist');       // Control | Board | Cards: the rows are grouped on three tabs; the one last used stays open while the page is open
-  const panels = [['Control', [[animationRow, 'stopwatch'], [egRow, 'shield'], [tlRow, 'time'], [speedRow, 'speed']]], ['Board', [[zooRow, 'boards'], [modeRow, 'hand'], [playedRow, 'played'], [asRow, 'actions'], [pvRow, 'lens'], [ebRow, 'frame']]], ['Cards', [[handRow, 'played'], [dcRow, 'discount'], [statueRow, 'statue'], [snakeRow, 'panda']]]].map(([name, rows], i) => {
+  const panels = [['Control', [[animRow, 'anim'], [animationRow, 'stopwatch'], [egRow, 'shield'], [tlRow, 'time'], [speedRow, 'speed']]], ['Board', [[zooRow, 'boards'], [modeRow, 'hand'], [playedRow, 'played'], [asRow, 'actions'], [pvRow, 'lens'], [ebRow, 'frame']]], ['Cards', [[handRow, 'played'], [dcRow, 'discount'], [statueRow, 'statue'], [snakeRow, 'panda']]]].map(([name, rows], i) => {
     const pn = el('div', 'setpanel'); pn.setAttribute('role', 'tabpanel'); for (const [r, k] of rows) { r.prepend(chip(k)); pn.append(r); }
     const b = el('button', 'settab', name); b.type = 'button'; b.setAttribute('role', 'tab');
     b.onclick = () => showTab(i);
@@ -211,7 +228,7 @@ export function setupSettings() {
   showTab(settingsTab);
   box.append(head, tabs, ...panels);
   modal.append(box, pvNote, dcNote);
-  modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });         // a click on the dimmed background closes it
+  modal.addEventListener('mousedown', (e) => { if (e.target === modal && !onScrollbar(e, modal)) close(); });         // a click on the dimmed background closes it
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && settingsOpen()) { e.stopPropagation(); close(); } }, true);
   document.body.append(modal);
   const wheel = $('settings');

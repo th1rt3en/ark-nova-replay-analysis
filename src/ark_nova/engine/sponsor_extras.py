@@ -218,5 +218,5 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         for b in held:
             state.prompt.args["pending"].append({
                 "kind": "build", "source": e["source"], "type": b.type, "rules": _unique_rules(b.type, state.config.marine_worlds), "optional": False, "double": False, "player": action.player,
-                "placeback": {"id": b.id, "animal": b.animal, "animals": list(b.animals)}})
+                "placeback": {"id": b.id, "animal": b.animal, "animals": list(b.animals), "cubes": dict(b.cubes)}})
     fx._done(state, i)

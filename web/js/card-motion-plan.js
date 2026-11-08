@@ -51,6 +51,25 @@ export function buildingFlips(before, after) {
   });
   return flips;
 }
+// Standard enclosures that grew (Conference on Australia: BGA and the engine replace the enclosure by a bigger one, often with another anchor hex and another rotation): an enclosure that
+// disappeared, paired with a bigger standard enclosure of the same player that appeared and covers all of its cells. Over a jump of several steps it may have grown more than once
+// (size-2 -> size-4), so any bigger size counts; each new enclosure takes at most one old one (the smallest bigger size first). Without cells (`state.players[].buildings[].cells`,
+// view.py) nothing is paired: the old one flies to the deck and the new one out of it, as before.
+export function buildingGrowths(before, after) {
+  const std = /^size-(\d)$/, size = (x) => Number(std.exec(x.type)[1]), id = (x) => x.type + '|' + x.x + '|' + x.y;
+  const { added, removed } = buildingChanges(before, after), out = [];
+  (after.players || []).forEach((b, seat) => {
+    const a = before.players && before.players[seat];
+    if (!a) return;
+    const pick = (p, list) => list.filter((c) => c.seat === seat).map((c) => (p.buildings || []).find((x) => id(x) === c.id)).filter((x) => x && std.test(x.type) && (x.cells || []).length);
+    const olds = pick(a, removed), news = pick(b, added), used = new Set();
+    for (const o of olds) {
+      const n = news.filter((x) => !used.has(x) && size(x) > size(o) && o.cells.every((c) => x.cells.some((d) => d[0] === c[0] && d[1] === c[1]))).sort((x, y) => size(x) - size(y))[0];
+      if (n) { used.add(n); out.push({ seat, from: id(o), to: id(n) }); }
+    }
+  });
+  return out;
+}
 // The display: cards that left it through a wave / a natural discard (they land in the discard pile, a take by a player does not) and cards that were put in (replenished).
 export function displayChanges(before, after) {
   const was = (before.display || []).filter(Boolean), now = (after.display || []).filter(Boolean);
@@ -163,13 +182,14 @@ export function otherPlan(before, after, seat, pilfer = [], text = '', name = ''
   const out = Math.max(0, (net < 0 ? -net : 0) - projects.filter((q) => q.source === 'hand').length - played);
   const under = (p) => Object.values(p.under || {}).flat();
   const pouch = Math.min(out, difference(under(b), under(a)).length + difference(b.pouched || [], a.pouched || []).length);
+  const pouchSource = Object.keys(b.under || {}).find((k) => difference(b.under[k] || [], (a.under || {})[k] || []).length) || null;          // (the card the cards went under; null: the map's pouch)
   const discarded = difference(after.main_discard || [], before.main_discard || []).length;
   const k = discardKinds(text, name), sun = Math.min(k.sun, out - pouch, discarded), glide = Math.min(k.glide, out - pouch - sun, discarded - sun);
   const discard = Math.max(0, Math.min(out - pouch - sun - glide, discarded - sun - glide));
   const fromDeck = net > 0 ? net - display.length : 0, targeted = Math.min(1, fromDeck, targetedCount(text, name));
   // endgame cards (only counts are known): `eg` = { out, in } of an Adapt that happened in this step (a card drawn and discarded again changes nothing), else the change of the count
   const en = (b.endgame_hand || []).length - (a.endgame_hand || []).length, egIn = eg ? eg.in : Math.max(0, en), egOut = eg ? eg.out : Math.max(0, -en);
-  return { display, deck: fromDeck - targeted, targeted, discard, sun, glide, pouch, projects, egDeck: egIn, egDiscard: egOut };
+  return { display, deck: fromDeck - targeted, targeted, discard, sun, glide, pouch, pouchSource, projects, egDeck: egIn, egDiscard: egOut };
 }
 // The endgame cards of a seat whose cards are known: drawn ones come from the deck (Resistance, Adapt), discarded ones go back (Adapt, the discard at the end of the game). `after`: when both happen in one step (Adapt) the
 // discards are played first and the draws start once they are over. The two endgame cards of the starting hand are a draw too.
@@ -178,4 +198,17 @@ export function endgamePlan(before, after, seat) {
   if (!a || !b) return none;
   const real = (k) => k && k !== '?';
   return { ...none, arrivals: difference(b.endgame_hand || [], a.endgame_hand || []).filter(real).map((key) => ({ key, kind: 'deck' })), departures: difference(a.endgame_hand || [], b.endgame_hand || []).filter(real).map((key) => ({ key, kind: 'discard' })) };
+}
+
+// "Only standard" animations: the thematic ones (sunbathing, gliding, pouching, the targeted draw) play like a plain discard / draw.
+export function plainPlan(plan) {
+  if (!plan) return plan;
+  return { ...plan,
+    arrivals: (plan.arrivals || []).map((x) => (x.kind === 'targeted' ? { key: x.key, kind: 'deck' } : x)),
+    departures: (plan.departures || []).map((x) => (['sun', 'glide', 'pouch'].includes(x.kind) ? { key: x.key, kind: 'discard' } : x)) };
+}
+// the same for the other seat's counts (`otherPlan`)
+export function plainOther(plan) {
+  if (!plan) return plan;
+  return { ...plan, deck: plan.deck + (plan.targeted || 0), targeted: 0, discard: plan.discard + (plan.sun || 0) + (plan.glide || 0) + (plan.pouch || 0), sun: 0, glide: 0, pouch: 0 };
 }

@@ -480,7 +480,7 @@ body.viewer { --flash-duration: 0.8s; }
 
 /* taking cards: the button to draw from the deck, and the display cards that cannot be taken */
 .abtn.deckbtn { background: #4a76b8; border-color: #1f3a66; }
-.card.dim { opacity: .35; filter: grayscale(1); }
+.card.dim { opacity: 1; filter: grayscale(1) brightness(.86); }
 
 /* composed bonus tiles on the conservation track: same look as the placement bonuses of the zoo map */
 .ctcomposed { display: block; aspect-ratio: 1; overflow: visible; }
@@ -619,7 +619,7 @@ html, body.viewer { overflow-x: hidden; }
 .draftcard { position: relative; width: 12.5rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
 .draftcard img { display: block; width: 100%; height: auto; border-radius: 8px; }
 .draftcard.picked { outline: 4px solid #2ebe54; outline-offset: 1px; }
-.draftcard.passed { opacity: .6; filter: grayscale(.4); }
+.draftcard.passed { opacity: 1; filter: grayscale(.9) brightness(.84); }
 .draftcheck { position: absolute; right: -.5rem; top: -.6rem; width: 1.9rem; height: 1.9rem; display: grid; place-items: center; border-radius: 50%; background: #2ebe54; color: #fff; font: 800 1.1rem/1 system-ui, sans-serif; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
 @media (max-width: 899px) and (max-width: 800px) { .draftcard { width: 8.5rem; } .draftgroup + .draftgroup { border-left: 0; padding-left: 0; } }
 

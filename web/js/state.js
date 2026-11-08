@@ -75,7 +75,8 @@ export const S = {
   postStats: null,    // replay: the statistics counted from the raw log once the last step is reached (results.js `loadStats`): {loading} | {error} | {players, first, ender, conceded}
   timer: null,
   speed: 1,
-  animationSpeed: 1,                                    // saved animation multiplier (.25/.5/1/1.5/2/3), independent of autoplay; 1x is half the original pace
+  animationSpeed: 1,                                    // saved animation multiplier (.25/.5/1/1.25/1.5/1.75/2), independent of autoplay; 1x is half the original pace
+  animations: 'all',                                    // 'all' | 'standard' (no thematic animations: sunbathing, pouching, gliding, targeted draw play like a plain draw / discard) | 'none' (nothing moves), settings.js / card-motion.js
   cardMotionForward: false,                             // one forward navigation, consumed by card-motion after rendering (seeking stays instant)
   handScale: 1,                                          // size of the cards in the hand, 0.5 ... 2 (settings pop-up, settings.js; --hs on body)
   s274: 'victory',                                       // 'victory' | 'mascot': the sponsor S274 under its BGA name Victory Column (default) or as the Mascot Statue, see cards.js `info` / settings.js

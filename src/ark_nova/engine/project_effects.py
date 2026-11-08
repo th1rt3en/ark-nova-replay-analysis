@@ -142,10 +142,13 @@ def release_enclosures(state, seat: int, key: str, exclude=None) -> list:
     return []
 
 
-def release_animal(state, seat: int, key: str, building=None) -> None:
-    """The animal leaves the zoo for good: the chosen enclosure is empty, its appeal is lost, the card goes to the discard pile."""
+def release_animal(state, seat: int, key: str, building=None, totals=None) -> None:
+    """The animal leaves the zoo for good: the chosen enclosure is empty, its appeal is lost, the card goes to the discard pile. `totals`: the cubes the log
+    gives for the buildings it names (engine/cubes.py)."""
+    from ark_nova.engine import cubes
     p = state.players[seat]
     p.animals.remove(key)
+    cubes.release(p, key, totals)
     b = next((b for b in p.buildings if building is not None and [b.x, b.y] == list(building)), None)
     if b is not None:
         if b.type.startswith("size-"):
@@ -171,7 +174,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         where = release_enclosures(state, p.seat, a["release"])
         if where and list(a.get("building") or []) not in [[b.x, b.y] for b in where]:
             raise _fx().IllegalEffect("empty one of the enclosures with the highest priority")
-        release_animal(state, p.seat, a["release"], a.get("building"))
+        release_animal(state, p.seat, a["release"], a.get("building"), a.get("cubes"))
         for other in a.get("also") or []:                       # BGA may name more enclosures as emptied (an animal is not tied to an enclosure): each one loses an animal
             ob = next((b for b in p.buildings if [b.x, b.y] == list(other)), None)
             if ob is not None and not ob.type.startswith("size-") and ob.animals:

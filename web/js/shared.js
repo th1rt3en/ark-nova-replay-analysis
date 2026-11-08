@@ -67,14 +67,12 @@ export function bonusTile(name, value, po) {
   }
   return t;
 }
-// During the action card draft the base projects and the bonuses of the 5 / 8 conservation spaces and of 16 reputation are not known yet: they are shown once the draft is over.
-const draftOn = (st) => st.phase === 'setup' && (st.draft ? st.draft.stage !== 'done' : !FORK && !SANDBOX && S.step === 0 && !PLAY);       // (step 0 of a replay: the draft has not started, its state has no draft yet)
 function conservationTrack(st) {
   const wrap = el('div', 'ctrackwrap');                                // (always drawn, also when both players are past 10: then without cubes)
   wrap.append(conservationTrackSvg());
   wrap.style.setProperty('--ct-h', CT_H); 
   const first = SANDBOX ? sbMeta().initial : S.replay.steps[0].state.conservation_options || {};     // the options of the game as dealt: a taken one leaves its place empty
-  for (const th of draftOn(st) ? [] : ['5', '8']) {
+  for (const th of ['5', '8']) {   // (known from the start of the game, also during the action card draft)
     const left = (st.conservation_options || {})[th] || [];
     (first[th] || []).forEach((opt, i) => {
       if (SANDBOX && !S.replay.setup && sbMeta().unset['b' + th][i]) {                            // not set yet: randomize / choose
@@ -176,7 +174,7 @@ export function renderShared(st) {
     repWrap.append(t);
   }
   // Marine Worlds: the bonus drawn for 16 reputation (a point gained at 15 may be traded for it) sits above the appeal space at the end of the track, until it is taken
-  const bonus16 = S.replay.marine_worlds && !draftOn(st) && ((st.conservation_options || {})['99'] || [])[0];
+  const bonus16 = S.replay.marine_worlds && ((st.conservation_options || {})['99'] || [])[0];
   if (SANDBOX && !S.replay.setup && S.replay.marine_worlds && sbMeta().unset.b99 && sbMeta().unset.b99[0]) {
     const b = sbSlotButtons('99', 0);
     b.classList.add('rep16');
@@ -221,6 +219,6 @@ export function renderShared(st) {
       slotEl.append(over);
     });
     col.append(panel);
-  } else col.append(projectPanel(st, draftOn(st) ? S.replay.base_projects.map(() => null) : S.replay.base_projects, 3, 'conservation-project-base', 'Base conservation projects', true));
+  } else col.append(projectPanel(st, (S.replay.base_projects || []).length ? S.replay.base_projects : [null, null, null], 3, 'conservation-project-base', 'Base conservation projects', true));
   root.append(col);
 }

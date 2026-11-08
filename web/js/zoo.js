@@ -3,6 +3,7 @@ import { el, seatColor, seatRawColor, section } from './util.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, pic, pieceUrl } from './icons.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { eyeButton } from './pov.js';
+import { motionOff } from './motion.js';
 import { bindPreview, cardRow, variantStatsBox } from './cards.js';
 import { CARD_TOKEN_ICON, CARD_TOKEN_TEXT } from './side-panel.js';
 import { render, zooStep } from './main.js';
@@ -82,7 +83,7 @@ function playedBlock(p, seat) {                                          // the 
 }
 // The expanded drawer slides like a wooden tray: it is pulled out from the top edge with a small overshoot and a settle (460 ms), and pushed back in with a short grab and a quick run (TRAY_IN_MS, the same 300 ms as `sheet-in`; parkposter.css: sheet-out / sheet-in). The narrow drawer is a door: its sheet stays in place behind the map and the strip, which slide aside (400 ms) and back (300 ms, the same TRAY_IN_MS).
 const TRAY_IN_MS = 300;
-const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const reducedMotion = motionOff;
 function openDrawer(seat) { S.drawerSeats[seat] = true; S.drawerAnim = { seat, t: performance.now() }; S.lastBoard = null; render(); }
 function closeDrawer(seat, box) {                                        // the sheet runs back in first, then the board is drawn without it
   if (box && box.classList.contains('closing')) return;

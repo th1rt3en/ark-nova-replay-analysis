@@ -19,6 +19,7 @@ from ark_nova.engine import association, endgame, tracks
 from ark_nova.engine.breaks import hand_limit, kiosk_income, map_ability_income, map_income, sponsor_income
 from ark_nova.engine.game import deck_cards
 from ark_nova.engine.board import footprint_cells
+from ark_nova.engine import cubes as cube_rules
 from ark_nova.engine.build_action import knows_shape, shape_of
 from ark_nova.engine.state import GameState, Phase
 from ark_nova.parser.log import parse_log
@@ -377,7 +378,10 @@ def _split_discards(mv: Move, before: GameState, final_view: dict, pids: list) -
 def _split_keep_and_draw(mv: Move, step: dict, before: dict | None, names: dict[str, str], pids: list) -> list | None:
     """The last keep of the action card draft and the starting hands are three steps: "X keeps Money Sponsors and Terrain Build", then one step per player, in seat order:
     "X draws 8 cards and 2 endgame cards" (9 cards with the map of Lagoon, counted from the log). The first step has the state of the step before with the draft finished;
-    the step of the first player to draw has the second player's hand, endgame cards and the cards of the decks still as before."""
+    the step of the first player to draw has the second player's hand, endgame cards and the cards of the decks still as before.
+    Lagoon (map 14): each player also gets a person sponsor searched out of the deck ("X draws Spokesperson with <SPONSOR-PERSON> (Map 14 effect)"). It is not part of the deal:
+    the two draws of 8 + 2 come first (without the sponsor, so the viewer's merged deal step reads "A and B draw 8 cards and 2 endgame cards"), then one step per player in seat
+    order with the sponsor (`merge_group` "person<seat>", never merged with the deal; the replay plays them on by itself after the deal, playback.js `personChain`)."""
     keeps = [e for e in mv.events if e.type == "updateInitialActionCardsKeep"]
     draws = [e for e in mv.events if e.type == "pDrawCards" and e.player]
     if len(keeps) != 1 or not draws or before is None or "draft" not in step["state"] or len(pids) != 2:
@@ -397,26 +401,76 @@ def _split_keep_and_draw(mv: Move, step: dict, before: dict | None, names: dict[
 
     targeted = {str(pid): [e for e in draws if str(e.player) == str(pid) and isinstance(e.args, dict) and e.args.get("cards") and _PUBLIC_DRAW.search(e.log or "") and "(scoring cards)" not in (e.log or "")] for pid in pids}
 
+    found_keys = {pid: [_key_of(c) for e in found for c in e.args["cards"]] for pid, found in targeted.items()}
+
     def draw_label(pid) -> str:
         n, m = cards[str(pid)]
-        found = targeted[str(pid)]
-        n -= sum(len(e.args["cards"]) for e in found)                  # (a card found by a search - Map 14's person sponsor - is named on a line of its own: it is public)
-        text = f"{names.get(str(pid), 'A player')} draws {n} card{'' if n == 1 else 's'}" + (f" and {m} endgame card{'' if m == 1 else 's'}" if m else "")
-        return " · ".join([text] + [_event_text(e, names) for e in found])
+        n -= len(found_keys[str(pid)])                                 # (a card found by a search - Map 14's person sponsor - is a step of its own: it is public)
+        return f"{names.get(str(pid), 'A player')} draws {n} card{'' if n == 1 else 's'}" + (f" and {m} endgame card{'' if m == 1 else 's'}" if m else "")
 
     keep_text = keep_label(None)
     lp = [keep_label(pid) for pid in pids]
     first = {**step, "label": keep_text, "label_pov": [t if t != keep_text else None for t in lp] if any(t != keep_text for t in lp) else None,
              "state": {**copy.deepcopy(before), "draft": step["state"]["draft"]}, "options": None, "actor": None, "_obj": None}
-    mid_state = copy.deepcopy(step["state"])                          # after the first player's draw only
-    n0, m0 = cards[str(pids[0])]
-    for k in ("hand", "endgame_hand", "initial_offer"):
-        mid_state["players"][1][k] = copy.deepcopy(before["players"][1][k])
-    mid_state["main_deck"], mid_state["endgame_deck"] = list(before["main_deck"][n0:]), list(before["endgame_deck"][m0:])
-    mid_state["main_deck_size"], mid_state["endgame_deck_size"] = len(mid_state["main_deck"]), len(mid_state["endgame_deck"])
+
+    def without(st: dict, seats: list) -> dict:                       # the final state with the hands of `seats` still as before, and the person sponsors of the others not drawn yet
+        out = copy.deepcopy(st)
+        deck = list(out["main_deck"])
+        for seat, pid in enumerate(pids):
+            if seat in seats:
+                for k in ("hand", "endgame_hand", "initial_offer"):
+                    out["players"][seat][k] = copy.deepcopy(before["players"][seat][k])
+        drawn = [k for seat, pid in enumerate(pids) if seat not in seats for k in out["players"][seat]["hand"]]
+        gone = list(before["main_deck"])
+        for k in drawn:                                               # (the deck: the one before the deal without the cards dealt so far, in its order)
+            if k in gone:
+                gone.remove(k)
+        out["main_deck"] = gone if len(gone) >= len(deck) else deck
+        eg = list(before["endgame_deck"])
+        for seat in range(len(pids)):
+            if seat not in seats:
+                for k in out["players"][seat].get("endgame_hand") or []:
+                    if k in eg:
+                        eg.remove(k)
+        out["endgame_deck"] = eg
+        out["main_deck_size"], out["endgame_deck_size"] = len(out["main_deck"]), len(out["endgame_deck"])
+        return out
+
+    def strip(st: dict, seats: list) -> dict:                         # the person sponsors of `seats` not drawn yet: out of the hand, back in the deck (where the deck had them)
+        out = copy.deepcopy(st)
+        back = []
+        for seat in seats:
+            for k in found_keys[str(pids[seat])]:
+                for z in ("hand", "initial_offer"):
+                    if k in out["players"][seat][z]:
+                        out["players"][seat][z].remove(k)
+                back.append(k)
+        if back:
+            order = {k: i for i, k in enumerate(before["main_deck"])}
+            out["main_deck"] = sorted(set(out["main_deck"]) | set(back), key=lambda k: order.get(k, len(order))) if all(k in order for k in back) else back + list(out["main_deck"])
+            out["main_deck_size"] = len(out["main_deck"])
+        return out
+
+    persons = [seat for seat, pid in enumerate(pids) if found_keys[str(pid)]]
+    final = step["state"]
+    mid_state = strip(without(final, [1]), persons)                   # after the first player's deal only
+    deal_state = strip(final, persons)                                 # both deals, no person sponsor yet
     middle = {**step, "label": draw_label(pids[0]), "label_pov": None, "state": mid_state, "options": None, "actor": None, "_obj": None, "log_only": True, "merge_group": "deal"}
-    last = {**step, "label": draw_label(pids[1]), "label_pov": None, "log_only": True, "merge_group": "deal"}
-    return [first, middle, last]
+    last = {**step, "label": draw_label(pids[1]), "label_pov": None, "state": deal_state if persons else final, "log_only": True, "merge_group": "deal"}
+    out = [first, middle, last]
+    if persons:
+        last.update(options=None, actor=None, _obj=None)
+    for i, seat in enumerate(persons):                                 # Lagoon: the person sponsors, one step per player, the last one has the step's own state
+        st = final if i == len(persons) - 1 else strip(final, persons[i + 1:])
+        text = " · ".join(_event_text(e, names) for e in targeted[str(pids[seat])])
+        out.append({**step, "label": text, "label_pov": None, "state": st, "log_only": True, "merge_group": f"person{seat}",
+                    **({} if i == len(persons) - 1 else {"options": None, "actor": None, "_obj": None})})
+    return out
+
+
+def _key_of(card) -> str:
+    """The card key of a card of a log event ({"id": "S202_Spokesperson", ...} -> S202)."""
+    return data.parse_bga_card_id(str(card.get("id") if isinstance(card, dict) else card))[0]
 
 
 def _event_text(e, names: dict[str, str]) -> str:
@@ -589,8 +643,9 @@ def state_view(state: GameState) -> dict:
         p["income_parts"] = income_parts(state, ps)
         p["income_total"] = sum(p["income_parts"].values())
         p["income_lines"] = income_lines(state, ps)
-        for b in p["buildings"]:
+        for j, b in enumerate(p["buildings"]):
             b["cells"] = building_cells(b)
+            b["cubes"] = cube_rules.view(ps, ps.buildings[j]) if j < len(ps.buildings) else []          # [[card key, cubes], ...] of a special enclosure: the browser draws one cube per space (engine/cubes.py)
     return s
 
 
@@ -1262,7 +1317,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
             halves = _split_keep_and_draw(mv, move_steps[0], steps[-1]["state"] if steps else None, names, config.player_ids)
             if halves is not None:
                 move_steps = halves
-                split_extra += 2
+                split_extra += len(halves) - 1
         steps.extend(move_steps)
     normal_history = _normal_history(parsed, rep, steps, seat_of_pid, names)
     # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step. The first step stays.

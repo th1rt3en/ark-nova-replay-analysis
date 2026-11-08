@@ -7,6 +7,7 @@ import { cardRow, quietly } from './cards.js';
 import { pointsBadge } from './egpoints.js';
 import { endgameDiscardAt } from './egdiscard.js';
 import { iconUrl } from './icons.js';
+import { motionOff } from './motion.js';
 import { cardPickAct, forkActs, pickCardOf } from './action-bar.js';
 import { playedChips, playedMode, withCubes } from './zoo.js';
 
@@ -75,7 +76,7 @@ function dockIntro(row, handCount, seat, setup, tray) {
   const now = Date.now();
   if (prev && prev.setup && prev.count === 0 && handCount > 0) { introState = null; introDone = true; return; } // card-motion owns all deals, including setup
   else if (!tray && !introState && !introDone) { introState = { kind: 'rise', start: now }; introDone = true; }
-  const s = introState; if (!s || (s.kind === 'drop') !== !!tray || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const s = introState; if (!s || (s.kind === 'drop') !== !!tray || motionOff()) return;
   const total = s.kind === 'rise' ? FAN_RISE_MS : s.kind === 'drop' ? TRAY_SLIDE_MS + DROP_MS + (cards.length - 1) * DROP_GAP : FAN_DEAL_MS + (cards.length - 1) * FAN_DEAL_GAP, elapsed = now - s.start;
   if (elapsed >= total) { introState = null; return; }
   const n = cards.length, step = n > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 0, hk = parseFloat(getComputedStyle(document.body).getPropertyValue('--hk')) || 1.5, rise = 240 * hk;
@@ -192,6 +193,13 @@ function fitDockSpace(dock) {
   if (!dock.childNodes.length || dock.hidden) { body.style.paddingBottom = ''; return; }
   if (dock.classList.contains('raised') || dock.querySelector('.handtray.enter')) { queueDockSpace(); return; }      // (a raised fan sinks back, a new tray is still sliding up: measured when it has settled)
   const z = S.scale || 1, vh = window.innerHeight;
+  if (!dock.classList.contains('traymode')) {                                // (the strip that keeps the fan raised: exactly where its cards lie at rest, in the dock's own pixels)
+    const cs = [...dock.querySelectorAll('.dockpanel .cards .card')].map((c) => c.getBoundingClientRect()).filter((r) => r.width > 2);
+    if (cs.length) {
+      const d0 = dock.getBoundingClientRect().left, l = Math.min(...cs.map((r) => r.left)), rt = Math.max(...cs.map((r) => r.right));
+      dock.style.setProperty('--fl', ((l - d0) / z - 6).toFixed(1) + 'px'); dock.style.setProperty('--fw', ((rt - l) / z + 12).toFixed(1) + 'px');
+    } else { dock.style.removeProperty('--fl'); dock.style.removeProperty('--fw'); }
+  }
   let top = vh;
   for (const e of [dock, ...dock.querySelectorAll(':scope > *, .handtray, .trayframe, .traydisc, .dockbtn, .dockpanel')]) {          // (the frames, not the cards: a card in flight is moved by a transform and would read as reaching to the top of the window)
     const r = e.getBoundingClientRect();

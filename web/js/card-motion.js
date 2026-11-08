@@ -1,21 +1,31 @@
 // [module] Visible hand transitions, isolated from replay state and renderer-owned DOM.
 import { S, FORK, MINIGAME, PLAY, SANDBOX } from './state.js';
 import { frameText } from './frames.js';
-import { info, cardName, largeOf } from './cards.js';
-import { movementPlan, endgamePlan, otherPlan, parsePilfer, playedCards, playedRemoved, buildingChanges, buildingFlips, displayChanges, targetedNames } from './card-motion-plan.js';
+import { info, cardName } from './cards.js';
+import { zooBoard } from './board.js';
+import { movementPlan, endgamePlan, otherPlan, parsePilfer, playedCards, playedRemoved, buildingChanges, buildingFlips, buildingGrowths, displayChanges, targetedNames, plainPlan, plainOther } from './card-motion-plan.js';
 import { renderDock } from './dock.js';
 import { curState, hides } from './pov.js';
 import { tabbedLayout, playedMode, fullDrawerCardWidth } from './zoo.js';
 import { render } from './main.js';
 import { snakeSafe } from './nosnake.js';
 import { createWave } from './wave.js';
+import { runShark } from './shark-motion.js';
+import { motionOff, motionQuery } from './motion.js';
 import { captureActionMotion, runActionMotion } from './action-motion.js';
 import { captureAssoc, runAssoc } from './assoc-motion.js';
 
 const EASE = 'cubic-bezier(.22,.65,.3,1)';
-export const ANIMATION_SPEEDS = [.25, .5, 1, 1.5, 2, 3];
+export const ANIMATION_SPEEDS = [.25, .5, 1, 1.25, 1.5, 1.75, 2];
+export const ANIMATION_MODES = ['all', 'standard', 'none'];
+// Animations = None behaves like the system setting "reduce motion"; Only standard keeps every move but turns the thematic ones into a plain draw / discard (`plainPlan`, `plainOther`).
+export function setAnimations(value) {
+  const next = ANIMATION_MODES.includes(value) ? value : 'all', was = S.animations;
+  S.animations = next;
+  if (was !== next && next === 'none') stop();
+}
 export function setAnimationSpeed(value) {
-  const next = ANIMATION_SPEEDS.includes(value) ? value : 1;
+  const next = ANIMATION_SPEEDS.includes(value) ? value : value > 2 ? 2 : 1;          // (a saved 3x, removed, becomes 2x)
   const before = S.animationSpeed || 1;
   S.animationSpeed = next;
   for (const a of animations) a.updatePlaybackRate(a.playbackRate * next / before);
@@ -25,7 +35,7 @@ let actionCapture = null, assocCapture = null;
 const landings = new Map();          // project key (P###) -> when its card has settled in the strip (ms, absolute): the cube of the supporter glides after that
 let tabPrev = null, playedCapture = null, buildingCapture = null, displayCapture = null, tabVisit = null, tabReturnTimer = 0;
 const animations = new Set(), hidden = new Map();
-const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const reduced = { get matches() { return motionOff(); }, addEventListener: (type, fn) => motionQuery && motionQuery.addEventListener(type, fn) };
 const frameWidth = () => document.querySelector('#dock .trayframe')?.offsetWidth || 0;       // (layout px: the tray's width before / after a step)
 const cards = () => [...document.querySelectorAll('#dock .cards .card[data-key]')];
 const shownSeat = () => Number(document.getElementById('dock')?.dataset.motionSeat ?? S.dockSel?.seat);
@@ -103,7 +113,7 @@ function deckPoint() {
 }
 function ghost(g) {
   const e = element('cm-card', { left: g.x - g.w / 2 + 'px', top: g.y - g.h / 2 + 'px', width: g.w + 'px', height: g.h + 'px' });
-  if (g.image) { const im = document.createElement('img'); im.src = g.image; im.alt = ''; if (g.dim) { im.style.opacity = '.35'; im.style.filter = 'grayscale(1)'; e.style.boxShadow = 'none'; } e.append(im); }
+  if (g.image) { const im = document.createElement('img'); im.src = g.image; im.alt = ''; if (g.dim) { im.style.filter = 'grayscale(1) brightness(.86)'; e.style.boxShadow = 'none'; } e.append(im); }
   if (g.strip) { const st = g.strip.cloneNode(true); st.style.zoom = String(scale()); e.append(st); }          // (the overlay is not zoomed with the page: the strip's pixel sizes are)
   return e;
 }
@@ -197,13 +207,14 @@ export function setPending() {
   const keys = [...box.querySelectorAll('.draftcard.picked[data-key]')].map((c) => c.dataset.key);
   if (keys.length) pending = { keys, step: S.step, seat: shownSeat(), pov: S.pov, replay: S.replay };
 }
+const standard = (plan, plain) => (S.animations === 'standard' ? plain(plan) : plan);          // (Animations = Only standard)
 export function afterRender(st) {
   const old = capture; capture = null;
   const played = playedCapture; playedCapture = null;
   const box = document.getElementById('draftbox'), blocked = box && !box.hidden;
   const targets = cards(), seat = shownSeat();
   let ownPlan = null;
-  if (old && !blocked && !reduced.matches && visibleHand()) ownPlan = movementPlan(old.state, st, seat, ownText(), pilferMoves());
+  if (old && !blocked && !reduced.matches && visibleHand()) ownPlan = standard(movementPlan(old.state, st, seat, ownText(), pilferMoves()), plainPlan);
   else if (old && !blocked && !reduced.matches && visibleZone() && zoneKind() === 'endgame') ownPlan = endgamePlan(old.state, st, seat);
   const action = actionCapture; actionCapture = null;
   if (action && !blocked && !reduced.matches) runActionMotion(action, { animate, finish, hide, show, element, deckPoint, scale });
@@ -214,7 +225,7 @@ export function afterRender(st) {
   const tabs = tabOld && !blocked && !reduced.matches && Number.isInteger(seat) && !hides(seat) ? tabPlans(tabOld, st, seat) : null;     // (the zones of the followed player that are not on show: their cards fly to the zone's tab, which blinks)
   const tabShots = displayCapture ? displayCapture.display : [];
   const old2 = capture2; capture2 = null;
-  const otherP = old2 && !blocked && !reduced.matches && Number.isInteger(seat) ? otherPlan(old2.state, st, seat, pilferMoves(), fullText(), names()[1 - seat], adaptCounts(old2.state, st, 1 - seat)) : null;
+  const otherP = old2 && !blocked && !reduced.matches && Number.isInteger(seat) ? standard(otherPlan(old2.state, st, seat, pilferMoves(), fullText(), names()[1 - seat], adaptCounts(old2.state, st, 1 - seat)), plainOther) : null;
   // what a player's part takes (ms at speed 1, counted from the step's start); `by` = when it starts. The followed player's part is its row in the dock (`run`, the same for an open
   // and a folded tray) and then the zones that are not on show (`tabFlights`: the endgame cards dealt with the starting hand come after the cards).
   const doOwn = (by) => {
@@ -256,7 +267,7 @@ export function afterRender(st) {
     }
   }
   if (assocGo) assocGo();
-  previous = { state: st, step: S.step, phase: S.phase, replay: S.replay, pov: S.pov, seat, kind: zoneKind(), mode: S.handMode, bar: [...(document.getElementById('current')?.childNodes || [])].map((n) => n.cloneNode(true)) };
+  previous = { state: st, step: S.step, phase: S.phase, replay: S.replay, pov: S.pov, seat, kind: zoneKind(), mode: S.handMode, bar: (barHold && barHold.step === S.step ? barHold.keep : [...(document.getElementById('current')?.childNodes || [])]).map((n) => n.cloneNode(true)) };          // (while a search holds the bar on the text before, the step's own text is what the next step holds: two searches in a row, Lagoon's person sponsors)
   S.cardMotionForward = false;
 }
 // Buildings: a new one glides from the invisible deck to its place on the map, one that is cut down glides back to the deck. The flying piece is a copy of the building's SVG group in
@@ -266,32 +277,47 @@ let copies = 0;
 function runBuildings(old, st) {
   const { added, removed } = buildingChanges(old, st);
   const find = (c, ghost) => document.querySelector('.board g[data-bseat="' + c.seat + '"][data-bid="' + c.id + '"]' + (ghost ? '.cm-leaving' : ':not(.cm-leaving)'));
-  added.forEach((c, i) => { const g = find(c, false); if (g) buildingFlight(g, true, i); });
-  removed.forEach((c, i) => { const g = find(c, true); if (g) buildingFlight(g, false, i); });
+  // an enclosure that grew (Conference on Australia ...) turns over on the spot into the bigger one instead of flying to the deck while the new one flies out of it; without both groups
+  // (a board that is not drawn) it falls back to the flights
+  const grown = buildingGrowths(old, st).map((c) => ({ ...c, was: find({ seat: c.seat, id: c.from }, true), now: find({ seat: c.seat, id: c.to }, false) })).filter((c) => c.was && c.now)
+    .filter((c, i) => turnOver(c.was, c.now, 1, i, null));
+  const paired = (c, k) => grown.some((x) => x.seat === c.seat && x[k] === c.id);
+  added.filter((c) => !paired(c, 'to')).forEach((c, i) => { const g = find(c, false); if (g) buildingFlight(g, true, i); });
+  removed.filter((c) => !paired(c, 'from')).forEach((c, i) => { const g = find(c, true); if (g) buildingFlight(g, false, i); });
   buildingFlips(old, st).forEach((c, i) => { const g = find(c, false); if (g) buildingTurn(g, c.occupied, i); });
 }
 // A standard enclosure that fills (an animal moves in) or empties (it is released) turns over on the spot to its other side, with a small lift and a shadow: it turns edge-on on a
 // vertical axis through its middle, the sprite is swapped there, and it turns back to flat. A release turns the other way. The real group is hidden for the turn (the sprite it holds is
 // already the new side); the copy holds both sides and shows one at a time.
 function buildingTurn(g, occupied, index) {
-  const ctm = g.getScreenCTM(), img = g.querySelector('image'), r = (img || g.querySelector('polygon') || g).getBoundingClientRect();
-  if (!ctm || !r.width || !img) return;
-  const cx = r.left + r.width / 2, cy = r.top + r.height / 2, dir = occupied ? 1 : -1, MS = 700, lift = Math.max(r.width, r.height);
+  turnOver(g, g, occupied ? 1 : -1, index, (h) => (occupied ? h.replace('_occupied', '_empty') : h.replace('_empty', '_occupied')));
+}
+// The turn itself: `wasG` is drawn on the first half (edge-on at 90 degrees), `nowG` on the second. For a fill / release both are the same group, the first side with its sprite swapped
+// back (`oldHref`); for an enclosure that grew `wasG` is the invisible ghost of the old enclosure (board.js `cm-leaving`) and `nowG` the new one: the two may differ in size, anchor hex
+// and rotation, and each copy keeps its own screen matrix, so only the turn axis is shared: the vertical line through the middle of both pictures together. Returns false when a group has
+// no picture or matrix (nothing is animated then).
+function turnOver(wasG, nowG, dir, index, oldHref) {
+  const parts = [wasG, nowG].map((g) => ({ g, ctm: g.getScreenCTM(), img: g.querySelector('image') }));
+  if (parts.some((p) => !p.ctm || !p.img)) return false;
+  const rs = parts.map((p) => p.img.getBoundingClientRect());
+  if (rs.some((r) => !r.width)) return false;
+  const left = Math.min(rs[0].left, rs[1].left), top = Math.min(rs[0].top, rs[1].top), right = Math.max(rs[0].right, rs[1].right), bottom = Math.max(rs[0].bottom, rs[1].bottom);
+  const cx = (left + right) / 2, cy = (top + bottom) / 2, MS = 1000, lift = Math.max(right - left, bottom - top);
   const o = document.createElementNS(SVG_NS, 'svg');
   o.setAttribute('class', 'cm-building');
   Object.assign(o.style, { position: 'absolute', left: '0', top: '0', width: '1px', height: '1px', overflow: 'visible', transformOrigin: cx + 'px ' + cy + 'px', zIndex: '3' });
-  const ids = new Map(), copy = (flip) => {
+  const ids = new Map(), copy = ({ g, ctm }, href) => {
     const k = g.cloneNode(true);
     k.removeAttribute('class'); k.removeAttribute('style'); k.removeAttribute('data-bid'); k.removeAttribute('data-bseat'); k.querySelector('.frame')?.remove();
     k.querySelectorAll('[id]').forEach((e) => { const n = e.id + 'k' + (++copies); ids.set(e.id, n); e.id = n; });
     k.querySelectorAll('[mask],[clip-path]').forEach((e) => ['mask', 'clip-path'].forEach((a) => { const m = /url\(#([^)]+)\)/.exec(e.getAttribute(a) || ''); if (m && ids.has(m[1])) e.setAttribute(a, 'url(#' + ids.get(m[1]) + ')'); }));
     k.setAttribute('transform', 'matrix(' + [ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f].join(' ') + ')');
-    if (flip) k.querySelectorAll('image').forEach((im) => { const h = im.getAttribute('href') || ''; im.setAttribute('href', occupied ? h.replace('_occupied', '_empty') : h.replace('_empty', '_occupied')); });
+    if (href) k.querySelectorAll('image').forEach((im) => im.setAttribute('href', href(im.getAttribute('href') || '')));
     return k;
   };
-  const was = copy(true), now = copy(false);
+  const was = copy(parts[0], oldHref), now = copy(parts[1], null);
   now.style.opacity = '0';
-  o.append(was, now); root().append(o); hide(g);
+  o.append(was, now); root().append(o); hide(nowG);
   const persp = 'perspective(' + Math.round(lift * 3.5) + 'px) ', ease = (t) => t * t, out = (t) => 1 - (1 - t) * (1 - t);
   const at = (a, l) => ({ transform: persp + 'rotateY(' + a.toFixed(2) + 'deg) scale(' + (1 + .09 * l).toFixed(3) + ')', filter: l ? 'drop-shadow(0 ' + (lift * .05).toFixed(1) + 'px ' + (lift * .04).toFixed(1) + 'px rgba(0,0,0,' + (.4 * l).toFixed(2) + '))' : 'none' });
   const frames = [];
@@ -300,7 +326,8 @@ function buildingTurn(g, occupied, index) {
   const swap = (a, b) => [{ opacity: a, offset: 0 }, { opacity: a, offset: .4999 }, { opacity: b, offset: .5 }, { opacity: b, offset: 1 }];
   animate(was, swap(1, 0), MS, index * 130, 'linear');
   animate(now, swap(0, 1), MS, index * 130, 'linear');
-  finish(animate(o, frames, MS, index * 130, 'linear'), () => { o.remove(); show(g); });
+  finish(animate(o, frames, MS, index * 130, 'linear'), () => { o.remove(); show(nowG); });
+  return true;
 }
 function buildingFlight(g, appear, index) {
   const ctm = g.getScreenCTM(), r = (g.querySelector('image') || g.querySelector('polygon') || g).getBoundingClientRect();     // (not the group: its masks span the whole board)
@@ -346,7 +373,17 @@ function runDisplay(old, st) {
   const next = waveNext(text);
   if (next && changes.leaving.length && runWave(old, changes, next)) return;
   const given = changes.leaving.map((key) => ({ key, seat: givenTo(key, text) })).filter((x) => x.seat >= 0), taken = [...changes.taken, ...given.map((x) => x.key)];
-  const leaving = changes.leaving.filter((key) => !given.some((x) => x.key === key));
+  let leaving = changes.leaving.filter((key) => !given.some((x) => x.key === key));
+  // Shark Attack (Animations = All; Only standard keeps the plain discard below): the cards are eaten where they lie (shark-motion.js), the rest of the display waits for it
+  let eatenFor = 0;
+  if (S.animations === 'all' && SHARK_ATTACK.test(text) && leaving.length) {
+    const folders = [...document.querySelectorAll('.folders .folder')].map((f) => f.getBoundingClientRect()).filter((r) => r.width);
+    const eaten = leaving.map((key) => old.display.find((c) => c.key === key)).filter(Boolean);
+    if (folders.length && eaten.length === leaving.length) {
+      eatenFor = runShark({ animate, element, finish }, eaten, { x0: Math.min(...folders.map((r) => r.left)), x1: Math.max(...folders.map((r) => r.right)) });
+      leaving = [];
+    }
+  }
   // discarded by the display's own rules (wave, natural discard) -> the deck; "given" cards (the state has them in the discard pile, the log gives them to a player) -> the player's info box
   given.forEach((x, i) => { const g = old.display.find((c) => c.key === x.key), to = boxPoint(x.seat); if (g && to) displayTake(g, to, i * 145); });
   leaving.forEach((key, i) => {
@@ -356,7 +393,7 @@ function runDisplay(old, st) {
   });
   const nodes = [...document.querySelectorAll('.folders .folder')].map((f) => f.querySelector('.card')), rest = [...added];
   // the cards behind a gap slide left, like dominoes: each starts 70 ms after the one on its left (left to right), after the leaving / taken cards have gone
-  const t0 = leaving.length || taken.length ? 320 : 0;
+  const t0 = eatenFor ? eatenFor : leaving.length || taken.length ? 320 : 0;
   let rank = 0;
   (st.display || []).forEach((key, i) => {
     const node = nodes[i], was = old.display.find((c) => c.key === key);
@@ -571,11 +608,12 @@ function displayTake(g, to, delay = 0) {
   finish(animate(e, frames, ms, delay, 'linear'), () => e.remove());
 }
 // Which seat a card that left the display was given to: the log line "<player> <verb> <card> from the display" (takes, snaps, digs ...); -1 for a card that was really discarded (a wave, the natural discard).
+const SHARK_ATTACK = /\bshark ?attack\b/i;                              // (replay: "X discards A for the Shark Attack effect", live: "X removes A from the display (shark attack)", fork: "X shark Attack 2, cards ...")
 function givenTo(key, text) {
   const nm = [String(info(key).name).toLowerCase(), cardName(key).toLowerCase()];
   for (const line of String(text || '').split(/ · |\n/)) {
     const l = line.trim(), low = l.toLowerCase();
-    if (!/ from the display\b/.test(low) || !nm.some((n) => low.includes(n))) continue;
+    if (!/ from the display\b/.test(low) || SHARK_ATTACK.test(low) || !nm.some((n) => low.includes(n))) continue;          // (a Shark Attack removes the card, it goes to nobody)
     const seat = names().findIndex((p) => l.startsWith(p + ' '));
     if (seat >= 0) return seat;
   }
@@ -596,7 +634,7 @@ function adaptCounts(before, after, seat) {
 // The zone of the followed player that is not on show (the other tab is open, or the tray / fan is folded): the cards that were drawn fly from the invisible deck to that zone's button, the ones that were discarded
 // from the button to the deck; the button blinks as each lands. Nothing is added to a row on screen and the tab is not switched.
 function tabPlans(old, st, seat) {
-  const shows = visibleZone() ? zoneKind() : '', all = { hand: movementPlan(old, st, seat, ownText(), pilferMoves()), endgame: endgamePlan(old, st, seat) }, zones = [];
+  const shows = visibleZone() ? zoneKind() : '', all = { hand: standard(movementPlan(old, st, seat, ownText(), pilferMoves()), plainPlan), endgame: endgamePlan(old, st, seat) }, zones = [];
   for (const kind of ['hand', 'endgame']) {
     if (kind === shows) continue;
     const plan = all[kind];
@@ -694,10 +732,14 @@ function runOther(plan, old, seat, text = '', name = '') {
   }
   // gliding: the backs rise to the invisible deck in a trail of bubbles
   for (let k = 0; k < plan.glide; k++, i++) glideBack(backGhost(to.x, to.y, w), to, deck, k * 145, sc);
-  // pouching: the backs slide out of the info box towards the zoo and are tucked away
-  for (let k = 0; k < plan.pouch; k++, i++) {
-    const e = backGhost(to.x, to.y, w);
-    finish(animate(e, [{ transform: tr(0, 0, 0, 1), clipPath: 'inset(0)', opacity: 1 }, { transform: tr(-70 * sc, -10 * sc, -4, .85), clipPath: 'inset(0)', opacity: 1, offset: .5 }, { transform: tr(-90 * sc, 30 * sc, 0, .8), clipPath: 'inset(0 0 100% 0)', opacity: .9 }], 900, k * 160, 'ease-in-out'), () => e.remove());
+  // pouching: the backs fly out of the info box and are tucked under the source (public: the animal / sponsor card, or the model of the map)
+  if (plan.pouch) {
+    const h = w * 503 / 360, from = { x: to.x, y: to.y, w, h, angle: 0 }, stage = tuckStage(from, plan.pouchSource || null, o, plan.pouch, true);
+    for (let k = 0; k < plan.pouch; k++, i++) {
+      const e = backGhost(to.x, to.y, w), f = stage.flight(from, k, k * TUCK_GAP);
+      e.style.zIndex = '4';
+      finish(animate(e, f.frames, f.duration, k * TUCK_GAP, 'linear'), () => e.remove());
+    }
   }
 }
 // the ray of the sun: narrow at the invisible deck, wide at the card, held for the whole animation
@@ -713,11 +755,24 @@ function glideBack(e, from, deck, delay, sc) {
   finish(animate(e, [{ transform: tr(0, 0, 0, 1), opacity: 1 }, { transform: tr(dx * .12, dy * .12 - 8 * sc, 4, 1), opacity: 1, offset: .15 }, { transform: tr(dx * .9, dy * .9, -5, .55), opacity: .85, offset: .85 }, { transform: tr(dx, dy, 0, .45), opacity: 0 }], ms, delay, 'cubic-bezier(.35,.05,.55,1)'), () => e.remove());
   bubbleTrail(from, deck, ms, delay, sc);
 }
+// The trail of a glide: bubbles along the way (the focus), a thin faint streak under them, two ripple rings where the card leaves and, where it vanishes at the invisible deck, a ring and a burst of bubbles.
 function bubbleTrail(from, to, ms, delay, sc) {
-  for (let j = 0; j < 20; j++) {
-    const t = j / 19, x = from.x + (to.x - from.x) * t * .9, y = from.y + (to.y - from.y) * t * .9, r = (11 + j % 3 * 6) * sc;
+  const N = 34, K = 1.45;
+  const ang = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI, len = Math.hypot(to.x - from.x, to.y - from.y), h = 8 * sc;
+  const wake = element('cm-wake', { left: from.x + 'px', top: from.y - h / 2 + 'px', width: len + 'px', height: h + 'px', transformOrigin: '0 50%', borderRadius: h / 2 + 'px' });
+  finish(animate(wake, [{ transform: `rotate(${ang}deg) scaleX(0)`, opacity: 0 }, { transform: `rotate(${ang}deg) scaleX(.55)`, opacity: .55, offset: .45 }, { transform: `rotate(${ang}deg) scaleX(1)`, opacity: .35, offset: .85 }, { transform: `rotate(${ang}deg) scaleX(1)`, opacity: 0 }], ms + 450, delay, 'linear'), () => wake.remove());
+  const ring = (at, d, wait, frames) => { const e = element('cm-ring', { left: at.x - d / 2 * sc + 'px', top: at.y - d / 2 * sc + 'px', width: d * sc + 'px', height: d * sc + 'px', borderWidth: 2.5 * sc + 'px' }); finish(animate(e, frames, 700, wait, 'ease-out'), () => e.remove()); };
+  for (let k = 0; k < 2; k++) ring(from, 44, delay + k * 140, [{ transform: 'scale(.3)', opacity: .9 }, { transform: 'scale(2.2)', opacity: 0 }]);
+  for (let j = 0; j < N; j++) {
+    const t = j / (N - 1), x = from.x + (to.x - from.x) * t * .9, y = from.y + (to.y - from.y) * t * .9, r = (11 + j % 3 * 6) * sc * K;
     const b = element('cm-bubble', { left: x - r / 2 + (j % 3 - 1) * 20 * sc + 'px', top: y + 'px', width: r + 'px', height: r + 'px' });
     finish(animate(b, [{ opacity: 0, transform: tr() }, { opacity: .85, offset: .2 }, { opacity: 0, transform: tr((j % 2 ? 22 : -22) * sc, -90 * sc) }], 1000, delay + ms * t * .85), () => b.remove());
+  }
+  for (let k = 0; k < 2; k++) ring(to, 48, delay + ms * .8 + k * 130, [{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(.5)', opacity: .9, offset: .2 }, { transform: 'scale(2.2)', opacity: 0 }]);
+  for (let j = 0; j < 14; j++) {
+    const a = j / 14 * Math.PI * 2, d = (34 + (j % 3) * 12) * sc, r = (10 + j % 3 * 4) * sc * K;
+    const b = element('cm-bubble', { left: to.x - r / 2 + 'px', top: to.y - r / 2 + 'px', width: r + 'px', height: r + 'px' });
+    finish(animate(b, [{ opacity: 0, transform: tr() }, { opacity: .9, offset: .2 }, { opacity: 0, transform: tr(Math.cos(a) * d, Math.sin(a) * d - 10 * sc) }], 800, delay + ms * .85), () => b.remove());
   }
 }
 function run(plan, old, targets) {
@@ -956,14 +1011,12 @@ function depart(p, i, all) {
     frames = [{ transform: tr(0, 0, g.angle), opacity: 1 }, { transform: tr(dx * .12, dy * .12 - 8 * sc, 4, 1), opacity: 1, offset: .15 }, { transform: tr(dx * .9, dy * .9, -5, .55), opacity: .85, offset: .85 }, { transform: tr(dx, dy, 0, .45), opacity: 0 }];
     easing = 'cubic-bezier(.35,.05,.55,1)';
     bubbleTrail({ x: g.x, y: g.y }, d, duration, delay, sc);
-  } else if (kind === 'pouch') {
-    duration = 900;
-    const first = all.find((x) => x.kind === 'pouch' && x.source === p.source);
-    if (!first.pouch) first.pouch = pouch(g, p.source, 900 + (all.length - 1) * 160);
-    const bag = first.pouch, dx = bag.x - g.x, peak = bag.y - g.h * .84 - (g.y - g.h / 2);
-    e.style.zIndex = '2';
-    frames = [{ transform: tr(0, 0, g.angle), clipPath: 'inset(0)', offset: 0 }, { transform: tr(0, 0, g.angle), clipPath: 'inset(0)', offset: .14 }, { transform: tr(dx, peak - 13, 0, .84), clipPath: 'inset(0)', offset: .54 }, { transform: tr(dx, peak + 28, 0, .82), clipPath: 'inset(0 0 28% 0)', offset: .76 }, { transform: tr(dx, peak + g.h * .88, 0, .78), clipPath: 'inset(0 0 100% 0)' }];
-    animate(bag.front, [{ transform: 'scale(1)' }, { transform: 'scale(1.035,1.025)', offset: .55 }, { transform: 'scale(1)' }], 270, delay + 650);
+  } else if (kind === 'pouch') {                                   // tucked under its source (an animal / sponsor card, or a small model of the map), above the hand
+    const mine = all.filter((x) => x.kind === 'pouch' && x.source === p.source), first = mine[0];
+    if (!first.tuck) first.tuck = tuckStage(g, p.source, shownSeat(), mine.length, false);
+    delay = mine.indexOf(p) * TUCK_GAP;
+    const t = first.tuck.flight(g, mine.indexOf(p), delay);
+    frames = t.frames; duration = t.duration; easing = 'linear'; e.style.zIndex = '4';
   }
   if (kind === 'pilfer') {                                         // the card given away leaves the hand as a back and flies to the receiver's info box
     const to = boxPoint(p.to);
@@ -984,19 +1037,49 @@ function depart(p, i, all) {
   finish(animate(e, frames, duration, delay, easing), () => e.remove());
   return duration + delay;
 }
-function pouch(g, source, last) {
-  const w = Math.min(194, Math.max(125, g.w * 1.55)), x = Math.max(w / 2 + 30, Math.min(innerWidth - w / 2 - 30, g.x)), y = Math.max(35, g.y - g.h * 1.35);
-  const bag = element('cm-pouch', { left: x - 97 + 'px', top: y + 'px', transform: `scale(${w / 194})`, transformOrigin: 'top center' });
-  const mouth = element('cm-mouth', {}, bag), front = element('cm-front', {}, bag);
-  if (source && info(source).image) {
-    const portrait = element('cm-portrait', {}, front), im = document.createElement('img'); im.src = largeOf(info(source)); im.alt = ''; portrait.append(im);
-    const name = element('cm-name', {}, front); name.textContent = cardName(source);
-  }
-  for (const side of ['left', 'right']) element('cm-cord ' + side, {}, bag);
-  animate(bag, [{ opacity: 0, translate: '0 22px' }, { opacity: 1, translate: '0 0' }], 220);
-  animate(mouth, [{ transform: 'scaleY(1)' }, { transform: 'scaleY(.23)' }], 220, last + 30);
-  finish(animate(bag, [{ opacity: 1 }, { opacity: 1, offset: .2 }, { opacity: 0, translate: '0 8px' }], 300, last + 620), () => bag.remove());
-  return { x, y, front };
+// Pouching (as in the board game): the card is tucked under its source and peeks out below it. The source is the animal / sponsor card the cards go under (`under`), or, for a map
+// ability (`pouched`: map 7's pouch), a small model of the player's map with its placement bonuses. It appears above the hand (never cut off by the hand, folded or open, or by the
+// bottom of the window) or, for the other seat, next to that player's info box; it stands still, the cards fly to it on one smooth curve, then everything fades together.
+const easeInOut = (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const TUCK_FLY = 820, TUCK_GAP = 160, TUCK_HOLD = 640, TUCK_OUT = 340;
+function tuckStage(g, source, seat, count, other) {
+  const sc = scale(), isMap = !source || !info(source).image;
+  const aw = (other ? g.w * 1.45 : g.w * 1.3) * (isMap ? 1.25 : 1), ah = isMap ? aw * 976 / 1122 : aw * 503 / 360;
+  const ch = g.h * Math.min((aw * .94) / g.w, isMap ? (ah * .9) / g.h : Infinity);          // (the height of a tucked card)
+  const peekOf = (n) => ch * ((isMap ? .22 : .14) + n * .06), below = peekOf(count - 1);
+  const top0 = (document.querySelector('.movebar')?.getBoundingClientRect().bottom || 0) + 8;
+  const dock = document.getElementById('dock')?.getBoundingClientRect();
+  let cx = Math.max(aw / 2 + 16, Math.min(innerWidth - aw / 2 - 16, other ? g.x - g.w * 2.9 : g.x));
+  const overHand = dock && dock.height && cx + aw / 2 > dock.left && cx - aw / 2 < dock.right;
+  const floor = (overHand ? Math.min(dock.top, innerHeight) : innerHeight) - 14 * sc;          // (above the hand, folded or open, wherever the source would cover it, and above the bottom edge)
+  let cy = other ? g.y - g.h * .6 : floor - below - ah / 2;
+  cy = Math.max(top0 + ah / 2, Math.min(cy, floor - below - ah / 2));
+  const left = Math.round(cx - aw / 2), top = Math.round(cy - ah / 2);
+  cx = left + aw / 2; cy = top + ah / 2;
+  const src = element('cm-card cm-tuck', { left: left + 'px', top: top + 'px', width: aw + 'px', height: ah + 'px' });
+  if (isMap) {
+    src.classList.add('map');
+    const mv = (S.replay.maps || [])[seat];
+    if (mv) { const board = zooBoard(mv, { buildings: [], flags: {}, tokens: [], animals: [], sponsors: [] }, seat); board.setAttribute('width', '100%'); board.setAttribute('height', '100%'); src.append(board); }
+  } else { const im = document.createElement('img'); im.src = snakeSafe(info(source).image); im.alt = ''; src.append(im); }
+  const land = (count - 1) * TUCK_GAP + TUCK_FLY, end = land + TUCK_HOLD + TUCK_OUT;
+  finish(animate(src, [{ opacity: 0 }, { opacity: 1, offset: 260 / end }, { opacity: 1, offset: (land + TUCK_HOLD) / end }, { opacity: 0 }], end, 0, 'linear'), () => src.remove());
+  return {
+    // the keyframes of the n-th card: one curve up out of the hand / box, round below the source and up under it, then it waits and fades with the source
+    flight(g, n, delay) {
+      const s2 = Math.min((aw * .94) / g.w, isMap ? (ah * .9) / g.h : Infinity);
+      const c2 = g.h * s2, tx = Math.round(cx - g.x), ty = Math.round(cy + ah / 2 - c2 / 2 + peekOf(n) - g.y);
+      const P = [[0, 0], [0, -40 * sc], [tx - 70 * sc, ty + c2 * .75], [tx, ty]], total = end - delay, fly = TUCK_FLY / total;
+      const frames = [];
+      for (let j = 0; j <= 30; j++) {
+        const u = easeInOut(j / 30), v = 1 - u, bz = (q) => v * v * v * P[0][q] + 3 * v * v * u * P[1][q] + 3 * v * u * u * P[2][q] + u * u * u * P[3][q];
+        frames.push({ offset: fly * j / 30, transform: tr(bz(0), bz(1), g.angle * (1 - u), 1 + (s2 - 1) * Math.min(1, u * 1.25)), opacity: 1 });
+      }
+      const still = tr(tx, ty, 0, s2);
+      frames.push({ offset: (land + TUCK_HOLD - delay) / total, transform: still, opacity: 1 }, { offset: 1, transform: still, opacity: 0 });
+      return { frames, duration: total };
+    }
+  };
 }
 for (const event of ['handmode', 'povapplied', 'cardorder']) document.addEventListener(event, () => {
   stop(); pending = null;

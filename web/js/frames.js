@@ -43,6 +43,19 @@ function barLabel(i) {
 const frameName = () => framesOf(S.step)[S.phase] || 'text';
 export const frameKind = () => (FORK || SANDBOX ? 'both' : frameName().replace(/\d+$/, ''));
 // the text of the frame on show (a text frame of a step that merges several lines: its group of lines)
+// The bar says only how many cards a Perception / Hunter / Scuba Dive / Scavenging draws ("A draws 8 cards for Hunter effect"), the names are in the lightbox and in the Log (the step's own label keeps them; only the bar of main.js uses this, the card motion still reads the full text).
+// Card names have no comma in them, so the count is the number of items of the list; the owner's wording in a live game is "You draw ...", an opponent's already is "X draws 3 cards".
+const DRAWN = /^(.+? draws?) (.+?)( for (?:perception|hunter|scuba dive|scavenging) effect)$/i;
+const KEPT = /^(.+? keeps? .+?) and discards? (.+?)( for (?:perception|hunter|scuba dive|scavenging) effect)$/i;      // ("X keeps A and discard B, C for Hunter effect": the kept card by name, the discarded ones as a count)
+const countOf = (list) => { const n = list.split(', ').length; return `${n} card${n === 1 ? '' : 's'}`; };
+export const shortDraw = (text) => {
+  if (typeof text !== 'string') return text;
+  const k = KEPT.exec(text);
+  if (k) return `${k[1]} and discards ${/^\d+ cards?$/.test(k[2]) ? k[2] : countOf(k[2])}${k[3]}`;
+  const m = DRAWN.exec(text);
+  if (!m || /^\d+ cards?$/.test(m[2])) return text;
+  return `${m[1]} ${countOf(m[2])}${m[3]}`;
+};
 export function frameText() {
   const s = S.replay.steps[S.step], label = barLabel(S.step) || '(state update)';
   return FORK || SANDBOX ? label : textParts(S.step)[+(frameName().replace(/^\D+/, '') || 0)] ?? label;

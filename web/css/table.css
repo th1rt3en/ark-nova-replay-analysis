@@ -89,6 +89,10 @@ aside.sidebar { position: fixed; top: .8rem; right: 1rem; width: var(--sidebar-w
 
 /* settings pop-up: dimmed background over the whole page, the box in the middle */
 .modal { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: rgba(15, 9, 4, .6); }
+/* a pop-up taller than the window (a wide window gives a short layout height: the page is zoomed to the width, layout.js) scrolls by itself instead of being cut off; `safe center`
+   keeps it centred while it fits and puts its top edge at the top when it does not (plain `center` would push the top out of reach). While it fits nothing changes. The page behind does
+   not scroll: modalscroll.js */
+.modal { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; align-items: safe center; }
 .modal[hidden] { display: none; }
 .modalbox { min-width: 24rem; max-width: 90%; padding: 1rem 1.4rem 1.2rem; border: 2px solid #1b110a; border-radius: 12px; background: #ece3b4; color: #2b1d12; box-shadow: 0 10px 40px rgba(0, 0, 0, .7); }
 .modalhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: .9rem; font-size: 1.3rem; }

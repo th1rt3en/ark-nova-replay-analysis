@@ -1,5 +1,24 @@
 # Changes — 25 October 2026
 
+## Rounded X-token silhouettes — 7 November 2026
+
+Matched the supplied X-token reference with explicit curves at all eight outer corners, retaining sharp inward notches. The previous polygon rounded only its thin stroke, which became visually sharp at log sizes. All four sprite variants now share the same path: dotted/solid, bordered/plain (`r3c2`, `r5c6`, `r3c2_ns`, `r5c6_ns`). Editable SVGs live in `web/icons_hd/xtoken-{dotted,solid}[-plain].svg`; all have uniform opaque charcoal interiors. Verified identical alpha silhouettes for dotted and solid counterparts and inspected 24/32/44/100 px browser renders. Shared icon cache version bumped to art20261107c; validation browser cache cleared.
+
+
+## Clean dotted X-token — 7 November 2026
+
+Rebuilt the dotted X-token as precise SVG geometry with a uniform opaque charcoal fill and four white squares. Replaced both bordered (`r3c2.webp`) and plain (`r5c6.webp`) raster consumers with lossless renders. Editable sources: `web/icons_hd/xtoken-dotted.svg` and `xtoken-dotted-plain.svg`. This removes the right-half stains and stray edge pixels from the AI-generated asset. Checked the opaque fill and the 44 px log rendering in Chrome; bumped the shared icon cache version and cleared the validation browser cache. Number-overlay variants are unchanged.
+
+
+## Approved icon restorations throughout the frontend — 7 November 2026
+
+Installed the 20 reviewed image variants (19 pictograms plus the dotted X-token). Replaced both the shared `web/icons` sprites and `web/icons_hd` artwork, so existing consumers in resource counters, logs, maps, association bonuses, track rewards, action tokens, tooltips and the map editor resolve to the approved artwork without individual layout rewrites. Existing logical sprite dimensions and aspect ratios remain unchanged. Full bonus-tile sprites are composed from the real `bonusTile` renderer, preserving their pentagon, background and framing. The plain/bordered X-token families retain separate dotted and number-overlay variants; the plain versions have the external white perimeter removed while preserving the four square dots.
+
+Adapt 3 now uses the restored original BGA two-card design (hourglass, crossed card, separate 3x labels) through `adaptIcon`, including maps, association bonuses and the editor. Adapt values other than 3 keep their existing variable-number drawing. Shared icon and HD image URLs carry `?v=art20261107` to bypass previous image cache entries.
+
+Validation: headless Chrome loaded the actual frontend modules and all 40 bonus/frame variants, verified Adapt 3 selects its restored image, captured the full-tile sprites and a visual overview, and reported no JavaScript errors. Browser cache was cleared in the validation context. No engine rules or game-state data changed. These are approved AI-assisted recreations of legacy BGA artwork, not newly designed symbols or lossless enlargements. The historical `build_bonus_hd.py` / `build_icons.py` pipelines still recreate older art if run: preserve the installed assets when regenerating unrelated sprites.
+
+
 ## Follow-up — action-card animations, 6 November 2026
 
 Implemented the approved Direct glides for action-card reordering and the right-to-left edge upgrade flip for sidebar icons and enabled full cards below the board. Venom, Constriction and Multiplier badges glide to/from the invisible deck in the sidebar, including while the player's info box is hidden by Log or Chat: exact hypothetical Control positions are measured invisibly without changing the selected tab. Full-card badges below the board retain their existing immediate updates. Fixed binder clips stay in their slots. All effects share animation-speed settings, autoplay waiting and interruption cleanup through the existing animation registry.

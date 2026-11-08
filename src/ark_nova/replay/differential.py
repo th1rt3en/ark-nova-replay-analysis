@@ -299,8 +299,8 @@ def _use_ignore_branch(state: GameState, act: Action, evidence=None) -> bool:
 
 def _plain(act: Action) -> Action:
     """The action as `legal_actions` lists it: the category of a category university is a chance outcome, not a choice."""
-    if act.args.get("mark") or "also" in act.args or "shown" in act.args or "trigger" in act.args:
-        return Action(act.player, act.kind, {k: v for k, v in act.args.items() if k not in ("mark", "also", "shown", "trigger")})
+    if act.args.get("mark") or "also" in act.args or "shown" in act.args or "trigger" in act.args or "cubes" in act.args:
+        return Action(act.player, act.kind, {k: v for k, v in act.args.items() if k not in ("mark", "also", "shown", "trigger", "cubes")})      # (`cubes`: the log's cube counts, engine/cubes.py)
     return act
 
 
@@ -339,7 +339,7 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
             if cand.kind == "choose_effect" and "donate" in cand.args and state.prompt.args["pending"][cand.args["index"]]["kind"] == "donation":
                 return cand
     if act.kind == "play_animal" and not act.args.get("stored") and _plain(act) not in legal_actions(state) \
-            and Action(act.player, act.kind, {**act.args, "stored": True}) in legal_actions(state):
+            and _plain(Action(act.player, act.kind, {**act.args, "stored": True})) in legal_actions(state):
         return Action(act.player, act.kind, {**act.args, "stored": True})         # map 11: played directly from the storage
     if act.kind == "play_sponsor" and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
         mk = [i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "marketing"]

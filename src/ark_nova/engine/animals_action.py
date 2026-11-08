@@ -17,7 +17,7 @@ from pathlib import Path
 
 from ark_nova import data
 from ark_nova.data.map_quirks import base_map_id
-from ark_nova.engine import animal_abilities, bonuses, cards_action, gamestats, map_rules, marks, sponsor_extras
+from ark_nova.engine import animal_abilities, bonuses, cards_action, cubes, gamestats, map_rules, marks, sponsor_extras
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board_of, footprint_cells, neighbours
 from ark_nova.engine.icons import icon_counts, requirement
@@ -387,7 +387,7 @@ def play(state: GameState, action: Action) -> None:
     g, fx = _g(), _fx()
     p = state.players[action.player]
     a = state.prompt.args
-    if action not in legal(state, p):
+    if (Action(action.player, action.kind, {k_: v_ for k_, v_ in action.args.items() if k_ != "cubes"}) if "cubes" in action.args else action) not in legal(state, p):      # (`cubes`: the log's cube counts, not a choice)
         raise fx.IllegalEffect(f"that animal cannot be played now: {action.args}")
     k, from_display = action.args["card"], bool(action.args["from_display"])
     if not implemented(k):
@@ -428,6 +428,7 @@ def play(state: GameState, action: Action) -> None:
         b.animal = k
     else:                                                     # special enclosures
         b.animals.append(k)
+        cubes.place(p, b, k, action.args.get("cubes"))        # (its cubes: in the log's buildings, else this one first, then the other aquariums)
     p.animals.append(k)
     gamestats.count(state, p.seat, "animals_played")
     a["played"].append(k)

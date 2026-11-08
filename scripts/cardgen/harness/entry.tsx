@@ -15,10 +15,11 @@ const ourP:any=(ours as any);
 const MWO=(c:any,html:string|null)=>html&&c&&c.source==='Marine World'?html.replace('class="ark-card zoo-card ','class="ark-card zoo-card mw-only '):html;   // (cards that exist only in Marine Worlds: the seahorse on the name stripe, site/mw.css)
 (globalThis as any).renderCard=(kind:string,idRaw:string)=>MWO(cardOf(kind,idRaw),renderCard0(kind,idRaw));
 const cardOf=(kind:string,idRaw:string)=>{const id=idRaw.replace('_MW','').replace('_VC','');return kind==='A'?AnimalsData.find(x=>x.id===id):kind==='S'?SponsorsData.find(x=>x.id===id):kind==='F'?(EndGameData as any[]).find(x=>x.id===id):kind==='P'?(ProjectsData as any[]).find(x=>x.id===id):null;};
+const named=(kind:string,id:string,c:any)=>{const f=(nameFixes as any)[kind+id];return c&&f?{...c,...f}:c;};   // (BGA's names for the cards where the fan site's data differs: data_manual/card_names.json, the same file scripts/import_data.py applies to our data)
 const renderCard0=(kind:string,idRaw:string)=>{
   const mw=idRaw.endsWith('_MW'),vc=idRaw.endsWith('_VC');const id=idRaw.replace('_MW','').replace('_VC','');
-  if(kind==='A'){const c=AnimalsData.find(x=>x.id===id);return c?renderToStaticMarkup(<BaseAnimalCard animal={c as any}/>):null;}
-  if(kind==='S'){const c:any=SponsorsData.find(x=>x.id===id);if(!c)return null;
+  if(kind==='A'){const c=named('A',id,AnimalsData.find(x=>x.id===id));return c?renderToStaticMarkup(<BaseAnimalCard animal={c as any}/>):null;}
+  if(kind==='S'){const c:any=named('S',id,SponsorsData.find(x=>x.id===id));if(!c)return null;
     const d=mw&&id==='250'?{...c,water:2,tags:[AnimalTag.Reptile,AnimalTag.SeaAnimal]}:c;
     const d2=vc&&id==='274'?{...d,name:'VICTORY COLUMN'}:d;                                   // (S274_VC: the BGA name Victory Column, with the picture of the incumbent Emu Cup winner: scripts/build_victory_column_art.py)
     let html=renderToStaticMarkup(<BaseSponsorCard sponsor={d2}/>);
@@ -32,6 +33,7 @@ const renderCard0=(kind:string,idRaw:string)=>{
   if(kind==='F'){const c=(EndGameData as any[]).find(x=>x.id===id);return c?renderToStaticMarkup(<BaseEndGameCard card={c}/>):null;}
 };
 import variants from '../../../data_manual/variants_mw.json';
+import nameFixes from '../../../data_manual/card_names.json';
 import emu from '../../../web/emu_cup_winners/winners.json';
 // S274_VC: another data-id (site/mw.css gives S274_EmuCup its own face, art/S274_VC.jpg) and the caption on the photo that names the incumbent Emu Cup champion (the newest season of winners.json); the small cards hide it (site/compact.css)
 const LAUREL="<svg viewBox='0 0 40 34' fill='none' stroke='#8a4a2a' stroke-width='3' stroke-linecap='round'><path d='M20 31C9 29 4 21 5 8M20 31c11-2 16-10 15-23'/><path d='M8 14c-3-1-4-3-4-6 3 0 5 2 4 6zM10 21c-3 0-5-2-5-5 3-1 5 1 5 5zM15 27c-3 1-5-1-6-4 3-1 5 1 6 4zM32 14c3-1 4-3 4-6-3 0-5 2-4 6zM30 21c3 0 5-2 5-5-3-1-5 1-5 5zM25 27c3 1 5-1 6-4-3-1-5 1-6 4z' fill='#8a4a2a' stroke='none'/></svg>";

@@ -918,7 +918,7 @@
     },
     {
         "id": "428",
-        "name": "GIRAFFE",
+        "name": "NORTHERN GIRAFFE",
         "latinName": "Giraffa",
         "size": 3,
         "price": 16,
@@ -1276,7 +1276,7 @@
     },
     {
         "id": "439",
-        "name": "LAMA",
+        "name": "LLAMA",
         "latinName": "Lama glama",
         "size": 2,
         "price": 10,
@@ -2188,7 +2188,7 @@
     },
     {
         "id": "467",
-        "name": "ECUADORIAN SQUIRELL MONKEY",
+        "name": "ECUADORIAN SQUIRREL MONKEY",
         "latinName": "Saimiri macrodon",
         "size": 2,
         "price": 12,
@@ -2483,7 +2483,7 @@
     },
     {
         "id": "475",
-        "name": "KING COBRA",
+        "name": "INDIAN COBRA",
         "latinName": "Ophiophagus hannah",
         "size": 2,
         "price": 13,
@@ -5363,7 +5363,7 @@
     },
     {
         "id": "547",
-        "name": "MEDITERRANEAN RAINBOW",
+        "name": "MEDITERRANEAN RAINBOW WRASSE",
         "latinName": "Coris julis",
         "size": 1,
         "rock": 1,
@@ -5406,8 +5406,8 @@
     },
     {
         "id": "548",
-        "name": "LINED SEAHORSE",
-        "latinName": "Hippocampus erectus",
+        "name": "SHORT-SNOUTED SEAHORSE",
+        "latinName": "Hippocampus hippocampus",
         "size": 1,
         "rock": 1,
         "water": 0,

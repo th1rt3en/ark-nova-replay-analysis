@@ -47,7 +47,8 @@ export function povState(st) {
   return out;
 }
 export const curState = () => povState(S.replay.steps[S.step].state);
-const statueName = (t) => (typeof t === 'string' ? t.replace(/\b(Victory Column|Mascot Statue)\b/gi, S.s274 === 'mascot' ? 'Mascot Statue' : 'Victory Column') : t);        // (setting "Statue card": the log of BGA says Victory Column, the card data says Mascot Statue; the line follows the setting)
+const CAPS = { hunter: 'Hunter', perception: 'Perception', scavenging: 'Scavenging', 'scuba dive': 'Scuba Dive' };
+const statueName = (t) => (typeof t === 'string' ? t.replace(/\b(Victory Column|Mascot Statue)\b/gi, S.s274 === 'mascot' ? 'Mascot Statue' : 'Victory Column').replace(/\b(hunter|perception|scavenging|scuba dive)( effect)\b/gi, (m, n, e) => CAPS[n.toLowerCase()] + e).replace(/ with <SPONSOR-PERSON>/g, '') : t);        // (Map 14's person sponsor: "X draws Spokesperson (Map 14 effect)", the placeholder of the log is not shown)        // (setting "Statue card": the log of BGA says Victory Column, the card data says Mascot Statue; the line follows the setting)
 // Runs of draws of one player (replay/merge.py): for a viewer who follows the OTHER player they are one step (the last of the run; its text is `label_pov[viewer]`, the number is the
 // first move of the run); the steps before it are skipped by the keys, hidden in the Log, and a jump to one of them leads to the last one. The point of view of the acting player and "all" keep every step.
 const mergeOn = (s) => !!s.merge && !seesAll() && S.pov !== null && S.pov !== s.merge.seat;

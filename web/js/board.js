@@ -252,13 +252,19 @@ export function zooBoard(map, player, seat) {
         g.append(mask, cp, inner);
       } else g.append(img);
     }
-    if (animals && animals.length && SPECIAL_ENCLOSURE.test(b.type)) {         // a special enclosure is filled with the player's cubes (the cubes of the projects and the donations): one per animal, on its hexes in turn
+    if (SPECIAL_ENCLOSURE.test(b.type) && ((Array.isArray(b.cubes) && b.cubes.length) || (animals && animals.length))) {         // a special enclosure is filled with the player's cubes (the cubes of the projects and the donations): one per animal, on its hexes in turn
       const cells = b.cells.slice().sort((p, q) => p[0] - q[0] || p[1] - q[1]), size = 66;
-      animals.forEach((k, i) => {
-        const [hx, hy] = cellCentre(...cells[i % cells.length]), lap = Math.floor(i / cells.length) * 14;
-        const cube = svg('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: hx - size / 2 + lap, y: hy - size / 2 - lap, width: size, height: size });
-        const t = svg('title'); t.textContent = cardName(k); cube.append(t);
-        g.append(cube);
+      // the cubes on its spaces, `b.cubes` from the view ([[card key, cubes], ...], engine/cubes.py): an animal covers as many spaces as its special enclosure
+      // size says (Aquarium 2 = 2 cubes, Aquarium 0 = none) and an aquarium animal may have its cubes in several aquariums; without `cubes` (an older view) one per animal
+      const list = Array.isArray(b.cubes) ? b.cubes : animals.map((k) => [k, 1]);
+      let at = 0;
+      list.forEach(([k, n]) => {
+        for (let c = 0; c < n; c++, at++) {
+          const [hx, hy] = cellCentre(...cells[at % cells.length]), lap = Math.floor(at / cells.length) * 14;
+          const cube = svg('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: hx - size / 2 + lap, y: hy - size / 2 - lap, width: size, height: size });
+          const t = svg('title'); t.textContent = cardName(k); cube.append(t);
+          g.append(cube);
+        }
       });
     }
     if (cls) g.append(svg('path', { d: outlinePath(b.cells), class: 'frame' }));

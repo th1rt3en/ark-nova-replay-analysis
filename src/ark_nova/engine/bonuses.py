@@ -444,6 +444,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         else:
             old.animals.remove(key)
         nb.animals.append(key)
+        from ark_nova.engine import cubes
+        cubes.move(p, key, nb, a.get("cubes"))                  # (its cubes go along)
         return                                                  # more animals may follow; the player skips the effect when done
     elif k == "store":
         if a["store"] not in p.hand:

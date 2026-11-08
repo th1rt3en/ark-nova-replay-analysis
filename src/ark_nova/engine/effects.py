@@ -337,7 +337,7 @@ def resolve_build(state, action: Action) -> None:
         pb = e["placeback"]
         from ark_nova.engine import map_rules
         areas_before = map_rules.quarters_done(p)
-        p.buildings.append(Building(id=pb["id"], type=t, x=x, y=y, rotation=k, animal=pb["animal"], animals=list(pb["animals"])))
+        p.buildings.append(Building(id=pb["id"], type=t, x=x, y=y, rotation=k, animal=pb["animal"], animals=list(pb["animals"]), cubes=dict(pb.get("cubes") or {})))
         p.flags.setdefault("built_now", []).append(pb["id"])
         g.hydrologist_geologist(state, p.seat, build_action.footprint(t, x, y, k))          # (the building that is put back pays the Hydrologist / Geologist again)
         for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: an area that is covered again pays its bonus again
@@ -507,3 +507,4 @@ def search_for_category(state, seat: int, category: str) -> None:
     found = search_deck(state.main_deck, ("tag", tag))
     if found:
         state.players[seat].hand.append(found)
+        state.players[seat].uni_cards[category] = found                 # (the viewer shows it when the university is hovered)

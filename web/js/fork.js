@@ -13,6 +13,7 @@ import { renderDock } from './dock.js';
 import { render } from './main.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
 import { buildMoveList, go } from './playback.js';
+import { expandLagoonDeal } from './lagoon-deal.js';
 
 
 export function initFork() {
@@ -145,12 +146,14 @@ export function warnIrreversible(reason) {
 // the steps a move made after going back replaces the old future with
 export function commitSteps(steps) {
   S.placement = null;
+  const all = expandLagoonDeal(S.replay.steps[S.step].state, steps);          // (Map 14: the person sponsors are steps of their own, as in the replay)
   S.replay.steps.length = S.step + 1;
-  for (const st of steps) { st.index = S.replay.steps.length; S.replay.steps.push(st); }
+  const first = S.replay.steps.length;
+  for (const st of all) { st.index = S.replay.steps.length; S.replay.steps.push(st); }
   stageBreaks(S.replay);
   buildMoveList();
   S.forkBusy = false;
-  go(S.replay.steps.length - 1, 0, true);
+  go(all.length > steps.length ? first : S.replay.steps.length - 1, 0, true);          // (a split deal is entered at its first step: playback.js `personChain` plays the sponsors on)
 }
 
 export async function playFork(action) {

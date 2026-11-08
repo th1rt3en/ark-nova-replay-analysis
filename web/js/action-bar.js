@@ -167,7 +167,8 @@ function draftBar(bar, d) {
       bindPreview(card, () => draftCardUrl(v));
       row.append(card);
     }
-    group.append(head, row);
+    const hrow = el('div', 'headrow noicon'); hrow.append(head);          // (the row draws the gold ends of the ribbon, as in the reveals)
+    group.append(hrow, row);
     if (mine.length) {
       const keepRound = mine[0].kind === 'draft_keep';
       const confirm = el('button', 'forkmove forkconfirm');

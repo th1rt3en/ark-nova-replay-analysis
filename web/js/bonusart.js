@@ -1,14 +1,14 @@
 // [module] The bonus pictures of the pentagons (the random bonuses of 5 / 8 conservation and 16 reputation, the pentagons of the reputation track and of 2 conservation)
-// in HD: BGA's pictures upscaled 4x (web/icons_hd, made by scripts/build_bonus_hd.py, which also writes where each one sits: bonus_hd_data.js), centred in the pentagon
+// in HD: approved faithful AI-assisted recreations (November 2026); original pipeline: BGA's pictures upscaled 4x (web/icons_hd, made by scripts/build_bonus_hd.py, which also writes where each one sits: bonus_hd_data.js), centred in the pentagon
 // of `bonusTile` (shared.js; 80 high centred on (40, 40), viewBox -4 -4 88 94). BGA's own tiles lose their ground and ring: the picture alone lies on the vector
-// pentagon (yellow, or beige for the Marine Worlds ones; their Marine Worlds mark is left out). The Multiplier is a vector drawing.
+// pentagon (yellow, or beige for the Marine Worlds ones; their Marine Worlds mark is left out). The Multiplier uses the restored blue disc.
 import { el, svg } from './util.js';
 import { pentagon } from './handshake.js';
 import { BONUS_HD } from './bonus_hd_data.js';
 import { FIT_DY, FIT_H, ICON_IDS, iconShadow, iconUrl } from './icons.js';
 
 const INK = '#17262B';
-const hd = (name) => '/icons_hd/' + name + '.webp';
+const hd = (name) => '/icons_hd/' + name + '.webp?v=art20261107';
 let uid = 0;
 const add = (root, tag, attrs, text) => { const e = svg(tag, attrs); if (text !== undefined) e.textContent = text; root.append(e); return e; };
 const image = (root, name, [x, y, w, h]) => add(root, 'image', { href: hd(name), x, y, width: w, height: h, preserveAspectRatio: 'none', ...(iconShadow(name, h) ? { style: iconShadow(name, h) } : {}) });
@@ -43,7 +43,7 @@ export function hdBonus(name) {
 // draws the picture into `t` (an svg or group in pentagon units whose pentagon is drawn already); `edge` = the width of the pentagon's ink line
 export function drawHdBonus(t, name, edge = 2.2) {
   if (name === 'Multiplier') return multiplier(t);
-  if (name === 'bonus-scoring-cards') { adaptIcon(t, 40, 41, 3); return; }               // Adapt 3 (5 / 8 conservation, 16 reputation): the vector icon instead of BGA's blurry picture
+  if (name === 'bonus-scoring-cards') { adaptIcon(t, 40, 41, 3); return; }               // Adapt 3 uses the approved restoration of BGA's original two-card artwork
   const icon = BONUS_HD.icons[name];
   if (icon) { image(t, name, nudged(name, fitted(name, icon.box))); return; }
   const tile = BONUS_HD.tiles[name];
@@ -81,6 +81,11 @@ export function binderSvg(cx, cy, k = 1) {
 // 80 high pentagon, centred on (cx, cy), scaled by k; used by the zoo map (placement bonus Adapt 1), the bonus spaces (map 13's Adapt 3), the tracks' Adapt 3 (drawHdBonus) and the map editor.
 // (before: BGA's picture of two cards under "3x 3x", upscaled and blurry)
 export function adaptIcon(root, cx, cy, v, k = 1) {
+  if (Number(v) === 3) {
+    const g = add(root, 'g', { transform: `translate(${cx} ${cy}) scale(${k})` });
+    image(g, 'bonus-scoring-cards', [-26.9, -21.2, 53.8, 46.4]);
+    return g;
+  }
   const g = add(root, 'g', { class: 'adapt', transform: 'translate(' + cx + ' ' + cy + ') scale(' + k + ')' });
   const card = (x, y, w, h) => {
     add(g, 'rect', { x, y, width: w, height: h, rx: 4, fill: '#b3402d', stroke: '#6f2216', 'stroke-width': 2 });

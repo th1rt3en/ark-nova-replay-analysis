@@ -2,6 +2,7 @@
 import { seatRawColor, svg } from './util.js';
 import { FORK, S } from './state.js';
 import { zoneNew } from './cards.js';
+import { bindUniCard, UNI_CATS } from './unicard.js';
 import { BONUS_HD } from './bonus_hd_data.js';
 import { adaptIcon, binderSvg, fitImageAttrs, marketingAttrs } from './bonusart.js';
 import { hdPentagonSvg } from './ctrack.js';
@@ -416,7 +417,11 @@ export function associationStrip(p, map, seat) {
   for (const t of toks) {
     const [kind, slot] = t.location.split('_');
     const g = drawToken(kind, slot, t.type, z.isNew(keyOf(t)) ? 'tok-new' : '');
-    if (g) s.append(g);
+    if (!g) continue;
+    const cat = kind === 'university' && t.type.startsWith('fac-science-') ? t.type.slice(12) : '';
+    const ucard = cat && UNI_CATS[cat] && p.uni_cards && p.uni_cards[cat];
+    if (ucard) { g.classList.add('uni-hover'); bindUniCard(g, g.querySelector('image'), cat, ucard); }          // (hovering shows the card this university gave)
+    s.append(g);
   }
   for (const gone of z.gone) {
     const [loc, type] = gone.key.split('|');
