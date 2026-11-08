@@ -145,9 +145,9 @@ def assign_maps(state: GameState, maps: list) -> None:
 
 def new_game(options: dict, player_ids: list, tail_seed: int = 0) -> GameState:
     """A new game from the options of the lobby: `{"game_mode": "original" | "random-mirrored" | "free-select" (default random-mirrored),
-    "marine_worlds_flag": true | false (default true), "maps_to_exclude": [3, "3a", 11, "T1"] (default []), "bdw_maps": true | false (default false: the BDW maps join the pool)}`. The 3 base projects are drawn at random; a Marine
+    "marine_worlds_flag": true | false (default true), "maps_to_exclude": [3, "3a", 11, "T1"] (default []), "bdw_maps": true | false (default false: the BDW maps join the pool), "map_options": {"pack1": bool, "pack2": bool, "alt": "off" | "include" | "replace"} (default: the maps 1-8)}`. The 3 base projects are drawn at random; a Marine
     Worlds game drafts the action cards after the maps."""
-    unknown = set(options) - {"game_mode", "marine_worlds_flag", "maps_to_exclude", "confirm_turns", "custom_map", "bdw_maps"}
+    unknown = set(options) - {"game_mode", "marine_worlds_flag", "maps_to_exclude", "confirm_turns", "custom_map", "bdw_maps", "map_options"}
     if unknown:
         raise ValueError(f"unknown options {sorted(unknown)}")
     mw = bool(options.get("marine_worlds_flag", True))
@@ -159,7 +159,7 @@ def new_game(options: dict, player_ids: list, tail_seed: int = 0) -> GameState:
         raise ValueError(f"game_mode must be one of {list(map_select.MODES)}")
     config = GameConfig(marine_worlds=mw, player_ids=list(player_ids), maps=[], base_projects=sorted(base[:3]), game_mode=mode, conservation_bonuses=bonuses.draw_conservation_bonuses(Rng(tail_seed + 31337), mw),
                         maps_to_exclude=[str(m) for m in options.get("maps_to_exclude") or []], draft_action_cards=mw, confirm_turns=bool(options.get("confirm_turns", False)),
-                        custom_map=options.get("custom_map"), bdw_maps=bool(options.get("bdw_maps", False)))
+                        custom_map=options.get("custom_map"), bdw_maps=bool(options.get("bdw_maps", False)), map_options=map_select.normalize(options.get("map_options")))
     return start_game(config, SeedSpec(tail_seed=tail_seed))
 
 

@@ -2,6 +2,7 @@
 // opening a lobby and, in a lobby, taking a seat or writing in the chat need an account: without one the page asks to log in.
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+import { mapOptionControls } from '/js/mapopts.js';
 import { onPush, pushReady } from './push.js';
 const POLL_MS = 5000, SAFETY_MS = 30000;
 let account = null, options = { game_modes: [] }, timer = 0, mine = null, showMapsLater = () => {};
@@ -78,14 +79,16 @@ async function boot() {
     const d = await fetch('/api/maps', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : { maps: [] })).catch(() => ({ maps: [] }));
     $('mapsel').replaceChildren(...(d.maps.length ? d.maps.map((m) => el('option', { value: m.id }, m.name + ' (' + m.id + ')')) : [el('option', { value: '' }, 'No saved maps yet: make one in the map editor')]));
   };
-  const syncPack = () => { $('bdw').parentElement.hidden = mode.value === 'custom-map'; };           // (a custom map game plays the host's own map: no pool)
+  const mapOpts = mapOptionControls();
+  $('mw').parentElement.after(...mapOpts.nodes);
+  const syncPack = () => { for (const n of [$('bdw').parentElement, ...mapOpts.nodes]) n.hidden = mode.value === 'custom-map'; };           // (a custom map game plays the host's own map: no pool)
   mode.onchange = () => { hint(); showMapsLater(); syncPack(); }; hint(); syncPack();
   $('loginbtn').onclick = () => { const b = document.querySelector('#acctbar button'); if (b) b.click(); };
   $('createform').onsubmit = async (e) => {
     e.preventDefault();
     $('msg').textContent = ''; $('createbtn').disabled = true;
     try {
-      const v = await call('', { game_mode: mode.value, marine_worlds: $('mw').checked, bdw_maps: $('bdw').checked, rated: $('rated').checked, ...(mode.value === 'custom-map' ? { map_id: $('mapsel').value } : {}) });
+      const v = await call('', { game_mode: mode.value, marine_worlds: $('mw').checked, bdw_maps: $('bdw').checked, map_options: mapOpts.value(), rated: $('rated').checked, ...(mode.value === 'custom-map' ? { map_id: $('mapsel').value } : {}) });
       location.href = '/lobby.html?id=' + encodeURIComponent(v.id);
     } catch (err) { $('msg').textContent = err.message; $('createbtn').disabled = !account; }
   };

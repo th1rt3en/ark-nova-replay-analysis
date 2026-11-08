@@ -25,7 +25,7 @@ def client():
 
 
 def _new(client, mw=True, controller=1, maps=("1", "11")):
-    r = client.post("/api/sandbox/new", json={"marine_worlds": mw, "maps": list(maps), "controller": controller})
+    r = client.post("/api/sandbox/new", json={"marine_worlds": mw, "maps": list(maps), "controller": controller, "map_options": {"pack1": True, "pack2": True}})
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -120,9 +120,9 @@ def test_a_setup_game_starts_on_placeholder_maps_and_any_map_can_be_shown(client
 
 
 def test_every_map_is_available_with_or_without_marine_worlds(client):
-    base = {m["id"] for m in client.get("/api/sandbox/maps?marine_worlds=false").json()["maps"]}
-    assert base == {m["id"] for m in client.get("/api/sandbox/maps?marine_worlds=true").json()["maps"]} and "12" in base
-    r = client.post("/api/sandbox/new", json={"marine_worlds": False, "maps": ["12", "14"], "controller": 0})
+    base = {m["id"] for m in client.get("/api/sandbox/maps?marine_worlds=false&pack1=true&pack2=true").json()["maps"]}
+    assert base == {m["id"] for m in client.get("/api/sandbox/maps?marine_worlds=true&pack1=true&pack2=true").json()["maps"]} and "12" in base
+    r = client.post("/api/sandbox/new", json={"marine_worlds": False, "maps": ["12", "14"], "controller": 0, "map_options": {"pack1": True, "pack2": True}})
     assert r.status_code == 200, r.text
 
 
@@ -165,3 +165,12 @@ def test_a_snap_can_be_taken_back_and_the_confirm_that_refills_the_display_canno
     confirm = play(snapped, "confirm_turn", {})
     assert confirm[0]["irreversible"] and None not in GameState.from_dict(confirm[0]["engine_state"]).display         # the confirm reveals the new cards
     assert GameState.from_dict(confirm[-1]["engine_state"]).active_player == 0               # (the bot confirmed its own turn: it is the player's turn again)
+
+
+def test_the_sandbox_offers_the_maps_1_to_8_unless_the_options_add_more(client):
+    ids = lambda q="": [m["id"] for m in client.get("/api/sandbox/maps?marine_worlds=true" + q).json()["maps"]]
+    assert ids() == list("12345678")
+    assert ids("&alt=include") == list("12345678") + [f"{n}a" for n in "12345678"] and ids("&alt=replace") == [f"{n}a" for n in "12345678"]
+    assert ids("&pack1=true") == list("12345678") + ["9", "10"]
+    refused = client.post("/api/sandbox/new", json={"marine_worlds": True, "maps": ["1", "11"], "controller": 0})                 # (map 11 is in pack 2)
+    assert refused.status_code != 200

@@ -238,3 +238,15 @@ describe("the BDW map pack option", () => {
         expect(plain.bdw_maps).toBe(false);
     });
 });
+
+describe("the map options", () => {
+    it("are kept with the lobby, cleaned up, and handed over when the game starts", async () => {
+        const { A: a, B: b } = fresh("mapopts");
+        const lob = await ok("create", { account: a, settings: { map_options: { pack1: true, pack2: 0, alt: "replace", junk: 1 } } });
+        expect(lob.map_options).toEqual({ pack1: true, alt: "replace" });
+        await ok("join", { account: b, lobby_id: lob.id, seat: 1 });
+        const info = await ok("begin_start", { account: a, lobby_id: lob.id });
+        expect(info.map_options).toEqual({ pack1: true, alt: "replace" });
+        expect((await ok("create", { account: fresh("mapopts2").A, settings: { map_options: { alt: "nonsense" } } })).map_options).toEqual({});
+    });
+});

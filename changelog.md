@@ -2990,3 +2990,5 @@ Section 147, rule fix (engine): BDW2's crane reposition no longer checks the ani
 Section 149: profile page, Your tables (own profile only): web/profile.html reads GET /api/me/games and lists every table of the account (in progress: Back to the table; ended: Result, Replay).
 
 Section 150: setup pages in the Park Poster look: new web/css/poster-page.css (+ css/park-fonts.css for the pages that do not load parkposter.css): lobbies.html and lobby.html (ody.poster: teal park background, paper cards with an ink outline and offset shadow, Bowlby One title, pill buttons, option tiles with switches, the rated / friendly choice as two pills) and the .lobby cards of sandbox.html and play.html.
+
+Section 151: map options in the setup pages: web/js/mapopts.js builds the tiles Include Map Pack 1, Include Map Pack 2 and the choice Maps 1-8 / Include alternative maps / Replace maps 1-8 (sandbox, lobbies, live game page); the lobby page shows them as tags.

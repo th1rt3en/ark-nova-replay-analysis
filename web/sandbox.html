@@ -87,12 +87,14 @@
     return;
   }
   $('lobby').hidden = false;
+  let mapOptions = () => ({});
+  import('/js/mapopts.js').then(({ mapOptionControls }) => { const mo = mapOptionControls(); $('mw').closest('label').after(...mo.nodes); mapOptions = mo.value; });
   $('lobbyform').onsubmit = async (e) => {
     e.preventDefault();
     $('start').disabled = true; $('lobbymsg').textContent = 'Starting…';
     try {
       const res = await fetch('/api/sandbox/new', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marine_worlds: $('mw').checked, bdw_maps: $('bdw').checked, setup: true }) });
+        body: JSON.stringify({ marine_worlds: $('mw').checked, bdw_maps: $('bdw').checked, map_options: mapOptions(), setup: true }) });
       const body = await res.json();
       if (!res.ok) throw new Error(body.message || 'could not start');
       sessionStorage.setItem('sandboxGame', JSON.stringify(body));

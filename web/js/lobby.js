@@ -2,6 +2,7 @@
 // seat"). The host can remove the other player, click the empty seat to invite an online player into it (the seat then shows the invited player behind a white filter until they
 // accept; if they decline it looks empty again) and start the game once both seats are taken. When the host has started it every member goes to the table (play.html) by itself,
 // the others get a link to watch it. The page polls the lobby.
+import { mapOptionTags } from '/js/mapopts.js';
 import { mountChat } from './chat.js';
 import { onPush, pushReady } from './push.js';
 
@@ -98,7 +99,7 @@ function draw() {
   if (!view || gone) return;
   if (view.status === 'started' && view.game && view.is_member) { location.href = '/play.html?game=' + encodeURIComponent(view.game.game_id); return; }      // (the seat belongs to the account: no key in the link)
   $('title').textContent = `${view.host}'s lobby`;
-  $('sub').replaceChildren(el('span', { className: 'tag' }, view.mode_label + (view.map ? ': ' + view.map : '')), el('span', { className: 'tag' }, view.marine_worlds ? 'Marine Worlds' : 'Base'), ...(view.bdw_maps ? [el('span', { className: 'tag' }, 'BDW map pack')] : []), el('span', { className: 'tag' }, view.rated ? 'Rated' : 'Friendly'), ` ${view.players}/${view.seats} players`,
+  $('sub').replaceChildren(el('span', { className: 'tag' }, view.mode_label + (view.map ? ': ' + view.map : '')), el('span', { className: 'tag' }, view.marine_worlds ? 'Marine Worlds' : 'Base'), ...(view.bdw_maps ? [el('span', { className: 'tag' }, 'BDW map pack')] : []), ...mapOptionTags(view.map_options).map((t) => el('span', { className: 'tag' }, t)), el('span', { className: 'tag' }, view.rated ? 'Rated' : 'Friendly'), ` ${view.players}/${view.seats} players`,
     !view.is_member && view.status === 'open' ? el('span', { className: 'note' }, ' · You are looking at this lobby: click an empty seat to join.') : '');
   $('seats').replaceChildren(...view.seats_detail.map(seatCard));
   const actions = [];

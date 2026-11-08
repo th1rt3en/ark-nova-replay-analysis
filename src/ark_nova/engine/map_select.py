@@ -5,8 +5,8 @@
 - `random-mirrored` (default): both players play on the same map drawn at random from the pool, nothing to choose;
 - `free-select`: both players pick any map of the pool (the same one is allowed);
 - `ark360`: like `random-mirrored`, on the maps that `ark360.applicable` allows, and the placement bonuses are at random places (`engine/ark360.py`).
-The pool is every map with a geometry (the beginner maps 0 / A are left out unless enabled), the Marine Worlds maps 10-14 only in a Marine Worlds game,
-minus `GameConfig.maps_to_exclude`; `GameConfig.bdw_maps` adds the four Board Design Workshop maps BDW1..BDW4. A game that is given its `maps` (a replay, a test) skips all this.
+The pool is the maps 1-8 and, with `GameConfig.map_options` (`normalize`): `pack1` adds the maps 9 and 10, `pack2` the maps 11-14 and T1 (the Marine Worlds maps 10-14 only in a Marine Worlds game),
+`alt` = "include" adds the alternative maps 1a-8a, "replace" plays 1a-8a in place of 1-8; the beginner maps 0 / A are never in it; minus `GameConfig.maps_to_exclude`; `GameConfig.bdw_maps` adds the four Board Design Workshop maps BDW1..BDW4. A game that is given its `maps` (a replay, a test) skips all this.
 
 `GameState.map_select` (JSON): `mode`, `pool`, `offers` (per seat what it chooses from), `chosen`, `stage` (pick | done). The players pick at the same
 time with `choose_map {map}`.
@@ -23,6 +23,40 @@ from ark_nova.engine.state import Phase, Prompt
 MODES = ("original", "random-mirrored", "free-select", "ark360", custom_map.MODE)
 DEFAULT_MODE = "random-mirrored"
 MARINE_WORLDS_MAPS = frozenset({"10", "11", "12", "13", "14"})
+BASE_MAPS = tuple("12345678")
+ALT_MAPS = tuple(f"{n}a" for n in BASE_MAPS)
+PACK1_MAPS = ("9", "10")
+PACK2_MAPS = ("11", "12", "13", "14", "T1")
+ALT_CHOICES = ("off", "include", "replace")
+
+
+def normalize(options) -> dict:
+    """The map options of a game: {"pack1": bool, "pack2": bool, "alt": "off" | "include" | "replace"}. Anything else is left out; the default (nothing set) is {}."""
+    o = options if isinstance(options, dict) else {}
+    out = {}
+    if o.get("pack1"):
+        out["pack1"] = True
+    if o.get("pack2"):
+        out["pack2"] = True
+    if o.get("alt") in ("include", "replace"):
+        out["alt"] = o["alt"]
+    return out
+
+
+def allowed_ids(options) -> list:
+    """The map ids the options allow, in the order of the data: 1-8, the alternative maps (added or in their place), the packs."""
+    o = normalize(options)
+    have = {m["id"] for m in data.maps() if m.get("geometry")}
+    want = set(ALT_MAPS if o.get("alt") == "replace" else BASE_MAPS)
+    if o.get("alt") == "replace":
+        want |= {n for n in BASE_MAPS if f"{n}a" not in have}              # (a map without an alternative stays)
+    if o.get("alt") == "include":
+        want |= set(ALT_MAPS)
+    if o.get("pack1"):
+        want |= set(PACK1_MAPS)
+    if o.get("pack2"):
+        want |= set(PACK2_MAPS)
+    return [m["id"] for m in data.maps() if m.get("geometry") and m["id"] in want]
 DEAL = 2
 
 
@@ -33,8 +67,8 @@ class MapSelectError(Exception):
 def pool(config) -> list:
     """The maps of a new game, in the order of the data (the variants 'a' follow the numbers)."""
     excluded = {str(m) for m in (config.maps_to_exclude or [])}
-    ids = [m["id"] for m in data.maps() if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS and m["id"] not in excluded
-           and (config.marine_worlds or m["id"] not in MARINE_WORLDS_MAPS)]
+    ids = [m for m in allowed_ids(getattr(config, "map_options", None)) if m not in UNSUPPORTED_MAPS and m not in excluded
+           and (config.marine_worlds or m not in MARINE_WORLDS_MAPS)]
     if getattr(config, "bdw_maps", False):                           # the Board Design Workshop maps
         ids += [m["id"] for m in data.bdw_maps() if m["id"] not in excluded]
     return [m for m in ids if ark360.applicable(m)] if getattr(config, "game_mode", None) == ark360.MODE else ids

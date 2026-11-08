@@ -68,13 +68,13 @@ body.poster .lobbies .create .hint { padding: .6rem .9rem; background: rgba(23, 
 .lobbycheck input[type=checkbox]:checked, .tile input[type=checkbox]:checked { background: var(--sun); }
 .lobbycheck input[type=checkbox]:checked::after, .tile input[type=checkbox]:checked::after { transform: translateX(1.3rem); }
 .lobbycheck:has(input:checked), .tile:has(input:checked) { background: #FFEFB8; }
-.tile[hidden] { display: none !important; }
-body.poster .lobbies .kind { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
-body.poster .lobbies .kind label { display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .6rem .8rem; background: var(--field); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink);
+.tile[hidden], .lobbycheck[hidden] { display: none !important; }
+.kind { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .7rem; }
+.kind label { display: flex; text-align: center; align-items: center; justify-content: center; gap: .5rem; padding: .6rem .8rem; background: var(--field); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink);
   font: 700 1.05rem 'Park Label', system-ui, sans-serif; cursor: pointer; }
-body.poster .lobbies .kind label:has(input:checked) { background: var(--gold); }
-body.poster .lobbies .kind label:has(input:disabled) { opacity: .55; cursor: default; }
-body.poster .lobbies .kind input { accent-color: var(--ink); width: 1.1rem; height: 1.1rem; margin: 0; }
+.kind label:has(input:checked) { background: var(--gold); }
+.kind label:has(input:disabled) { opacity: .55; cursor: default; }
+.kind input { accent-color: var(--ink); width: 1.1rem; height: 1.1rem; margin: 0; }
 
 /* the lobby: the two seats and the chat */
 body.poster .lobbies .seat { min-height: 9rem; padding: .9rem 1.2rem; background: var(--paper); border: 4px solid var(--ink); border-radius: 22px; box-shadow: 0 6px 0 var(--ink); }
@@ -109,7 +109,7 @@ body.poster #acctbar button.linkbtn { background: none; border: 0; box-shadow: n
 .lobby h1 { margin: 0 0 .5rem; font: 400 2.3rem/1.05 'Bowlby One', system-ui, sans-serif; color: var(--ink); }
 .lobby .lobbytext, .lobby .muted { color: #2c3f45; }
 .lobby .lobbytext { margin: 0 0 1.1rem; }
-.lobby form { gap: .85rem; }
+.lobby form { gap: .85rem; flex-wrap: nowrap; }
 .lobby form button[type=submit] { margin-top: .4rem; padding: .65rem 1rem .75rem; font: 400 1.3rem 'Park Head', system-ui, sans-serif; border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 4px 0 var(--ink); }
 .lobby form button[type=submit]:hover:not(:disabled) { background: var(--sun); }
 .lobby a { display: inline-block; margin-top: .4rem; color: #7a3b00; font-weight: 700; }
@@ -121,4 +121,8 @@ body.poster #acctbar button.linkbtn { background: none; border: 0; box-shadow: n
 .lobby .switchtrack::after { background: var(--paper); border: 3px solid var(--ink); box-sizing: border-box; width: 1.1rem; height: 1.1rem; top: 1px; left: 1px; }
 .lobby .lobbyswitch input:checked + .switchtrack { background: var(--sun); }
 .lobby .lobbyswitch input:checked + .switchtrack::after { transform: translateX(1.2rem); }
-@media (max-width: 600px) { .lobby { margin: 1.5rem .8rem; padding: 1.2rem 1.2rem 1.3rem; } body.poster .lobbies .kind { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .lobby { margin: 1.5rem .8rem; padding: 1.2rem 1.2rem 1.3rem; } }
+
+.mapalt > span { display: block; margin-bottom: .45rem; font: 400 1.05rem 'Park Head', system-ui, sans-serif; }
+.mapalt .kind label { padding: .5rem .8rem; font-size: 1rem; }
+@media (max-width: 600px) { .kind { grid-template-columns: 1fr; } }
