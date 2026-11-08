@@ -260,6 +260,27 @@ def test_construction_yard_a_flipped_enclosure_next_to_the_crane_may_be_repositi
     assert len(s.players[0].buildings) == 2 and not _crane_effects(s)
 
 
+def test_construction_yard_reposition_ignores_the_animals_rock_and_water_requirements():
+    from ark_nova import data
+    from ark_nova.engine import build_action
+    from ark_nova.engine.board import neighbours
+    from ark_nova.engine.icons import requirement
+    s, p = _bdw2()
+    bd = board("BDW2")
+    key = next(a["key"] for a in data.animals() if requirement(a["key"], "rock", False) or requirement(a["key"], "water", False))       # an animal that needed rock / water next to its enclosure
+    p.sponsors = [k for k in p.sponsors if k != "S219"]                                  # (the helper's Overbuild would skip the old check)
+    b = p.buildings[0]
+    b.animal = key
+    targets = map_rules.crane_targets(s, p, b, 1)
+    occupied = {c for o in p.buildings if o is not b for c in build_action.footprint(o.type, o.x, o.y, o.rotation)}
+
+    def bare(x, y, k):                                                                     # no rock or water next to the new place: only the animal's own requirement would refuse it
+        cells = build_action.footprint(b.type, x, y, k)
+        around = {n for c in cells for n in neighbours(c) if n not in cells} - occupied
+        return not any(bd.terrain.get(n) in ("rock", "water") for n in around)
+    assert any(bare(*t) for t in targets)
+
+
 def test_construction_yard_a_far_enclosure_has_no_crane_effect():
     from tests.test_animal_abilities import _play
     s, p = _bdw2()

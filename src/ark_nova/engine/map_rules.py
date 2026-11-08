@@ -105,9 +105,8 @@ def crane_effects(p, b) -> list:
 
 
 def crane_targets(state, p, b, level: int | None = None) -> list:
-    """[(x, y, rotation)] where the occupied enclosure `b` may be repositioned: free spaces, the animal's water / rock requirements met (the Diversity Researcher ignores them); it need not touch another
-    building. Spaces with an upgrade flag need the upgraded Build action, as for a new building."""
-    from ark_nova.engine.icons import requirement
+    """[(x, y, rotation)] where the occupied enclosure `b` may be repositioned: free spaces; the animal's water / rock requirements are not checked again (they were met when the animal was played);
+    it need not touch another building. Spaces with an upgrade flag need the upgraded Build action, as for a new building."""
     bd = board(p.map_id)
     if level is None:
         level = max((c.level for c in p.action_cards if c.type == "build"), default=1)
@@ -124,11 +123,6 @@ def crane_targets(state, p, b, level: int | None = None) -> list:
                 continue
             if level < 2 and any(c in bd.flags for c in cells):
                 continue
-            if b.animal and not overbuild:
-                around = {n for c in cells for n in neighbours(c) if n not in cells} - occupied
-                if (sum(bd.terrain.get(n) == "water" for n in around) < requirement(b.animal, "water", state.config.marine_worlds)
-                        or sum(bd.terrain.get(n) == "rock" for n in around) < requirement(b.animal, "rock", state.config.marine_worlds)):
-                    continue
             out.append((x, y, k))
     return out
 
