@@ -31,3 +31,4 @@ engine_versions.json
 bdw_maps/
 bga_replay/
 specs/
+*.mp4
