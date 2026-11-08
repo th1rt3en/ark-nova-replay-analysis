@@ -147,6 +147,19 @@ describe("ratings", () => {
         expect((await op("rating.history", { account_id: a, limit: 5 })).body.result.map((r: any) => r.game_id)).toEqual(["G1"]);
     });
 
+    it("keeps the tables of an account, fills in the opponent and marks the end", async () => {
+        const a = await acct("TabA"), b = await acct("TabB");
+        await op("tables.add", { account_id: a, game_id: "T1", seat: 0, opponent_id: "", rated: 0, created_at: "2026-11-08T10:00:00+00:00" });
+        await op("tables.add", { account_id: a, game_id: "T1", seat: 0, opponent_id: b, rated: 0, created_at: "2026-11-08T10:00:00+00:00" });
+        await op("tables.add", { account_id: b, game_id: "T1", seat: 1, opponent_id: a, rated: 0, created_at: "2026-11-08T10:00:00+00:00" });
+        await op("tables.add", { account_id: a, game_id: "T2", seat: 1, opponent_id: b, rated: 1, created_at: "2026-11-08T11:00:00+00:00" });
+        expect((await op("tables.list", { account_id: a, limit: 10 })).body.result.map((r: any) => [r.game_id, r.opponent_id, r.rated, r.status])).toEqual([["T2", b, 1, "live"], ["T1", b, 0, "live"]]);
+        await op("tables.finish", { game_id: "T1", status: "finished", ended_at: "2026-11-08T10:30:00+00:00", results: { [a]: "win", [b]: "loss" } });
+        const done = (await op("tables.list", { account_id: a, limit: 10 })).body.result.find((r: any) => r.game_id === "T1");
+        expect([done.status, done.result]).toEqual(["finished", "win"]);
+        expect((await op("tables.list", { account_id: b, limit: 10 })).body.result[0].result).toBe("loss");
+    });
+
     it("lists the board and anonymizes a deleted account", async () => {
         const a = await acct("BoardA", 300), b = await acct("BoardB", 200);
         for (let i = 0; i < 5; i++) await op("rating.commit", pair("B" + i, a, b, i === 0 ? 300 : 300 + i * 10 - 10, i === 0 ? 200 : 200 - i * 10 + 10, 300 + i * 10, 200 - i * 10));

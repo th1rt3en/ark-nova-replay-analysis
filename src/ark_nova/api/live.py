@@ -166,6 +166,14 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
         seat = await run_in_threadpool(service.seat_for, game_id, account_of(request))
         return JSONResponse(seat) if seat else _error(404, "no_seat", "This account has no seat in this game.")
 
+    @app.get("/api/me/games")
+    async def my_games(request: Request):
+        """The tables of the logged-in account (the way back to a table that was left without its link)."""
+        account = account_of(request)
+        if account is None:
+            return _error(401, "not_logged_in", "Log in to see your tables.")
+        return JSONResponse({"games": await run_in_threadpool(service.my_games, account)}, headers={"Cache-Control": "no-store"})
+
     @app.get("/api/games/{game_id}/abandon")
     async def abandon_state(game_id: str):
         return game_or_404(game_id) or await run(service.abandon_status, game_id)

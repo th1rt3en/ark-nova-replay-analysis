@@ -2986,3 +2986,5 @@ Section 148, fix: Firefox leaves the page's CSS zoom (zoom on <body>, layout.js)
 Section 147, change: BDW2's crane in the fork bar (ork.js): the Place a building menu and the skip button of the crane effect are hidden until Reposition (crane) is clicked; then the placement controls and Skip the reposition appear.
 
 Section 147, rule fix (engine): BDW2's crane reposition no longer checks the animal's water / rock requirements (map_rules.crane_targets); they are checked when the animal is played, which is when the enclosure is flipped.
+
+Section 149: profile page, Your tables (own profile only): web/profile.html reads GET /api/me/games and lists every table of the account (in progress: Back to the table; ended: Result, Replay).

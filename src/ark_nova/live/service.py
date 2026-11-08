@@ -206,6 +206,8 @@ class LiveService:
         self.keeper.init(table_id, config, self.engine_version, [token_hash(t) for t in tokens], views=projection.views(state, {r: "The game starts" for r in projection.ROLES}), snapshot={"engine": state.to_dict(), "eff": []},
                          registry_event={"status": "waiting", "n_actions": 0})
         self._remember(table_id, Cached(0, state, [token_hash(t) for t in tokens], "waiting", [None, None], clock=clock0))
+        if seat_accounts:
+            self._note_tables(table_id, [str(a) for a in seat_accounts], bool(rated))
         self.sync_registry(table_id)
         return {"game_id": table_id, "tokens": tokens, "creator_seat": secrets.randbelow(2) if creator_seat is None else creator_seat}
 
@@ -222,6 +224,7 @@ class LiveService:
             if cfg.get(f"account_{seat}") not in (None, account.id):
                 raise RatedRefused("this seat already belongs to another player", 409)
             self.keeper.update_config(game_id, {f"account_{seat}": account.id})
+            self._note_tables(game_id, [account.id if i == seat else cfg.get(f"account_{i}") for i in (0, 1)], True)
             name = account.username
         if not name or not name.strip():
             raise IllegalMove("type a name", 422)
@@ -665,6 +668,7 @@ class LiveService:
                 now = datetime_now()
                 path = self.archive.write(arch.path_for(game_id, now), data)
                 patch = {"gcs_path": path, "exported_at": int(now.timestamp() * 1000), "record_bytes": len(data), "ended_at": kept.get("ended_at")}
+            self._note_end(game_id, kept, status)                   # (the accounts' lists of tables: a failure here must not hold the wrap-up back)
             if status in ("finished", "conceded"):
                 self._rate(game_id, kept)                           # (before the keeper forgets the table; it is applied once, a failure here is tried again with the wrap-up)
             if not self.sync_registry(game_id, patch):
@@ -709,6 +713,56 @@ class LiveService:
             if out != "changed":
                 return
         raise RuntimeError(f"the ratings of {game_id} kept changing while it was rated")
+
+    # ---- the tables of an account -------------------------------------------------------------------------------------------------------
+    def _note_tables(self, game_id: str, accounts: list, rated: bool) -> None:
+        """Each account of a game between accounts gets the table in its list (`my_games`); the opponent is filled in as soon as both are known. Never raises."""
+        if self.ratings is None:
+            return
+        try:
+            at = datetime_now().isoformat()
+            for seat, acc in enumerate(accounts):
+                other = accounts[1 - seat]
+                if acc:
+                    self.ratings.add_table(str(acc), game_id, seat, str(other) if other else "", rated, at)
+        except Exception:                                    # noqa: BLE001
+            log.exception("the table %s could not be added to the accounts' lists", game_id)
+
+    def _note_end(self, game_id: str, kept: dict, status: str) -> None:
+        """The table ended: its status and, for a finished or conceded game, "win" / "loss" / "draw" for each account. Never raises."""
+        cfg = kept.get("config") or {}
+        ids = [cfg.get("account_0"), cfg.get("account_1")]
+        if self.ratings is None or not any(ids):
+            return
+        try:
+            results: dict = {}
+            if status in ("finished", "conceded") and all(ids):
+                res = self._load(game_id, fresh=True).state.result
+                if res is not None:
+                    for seat, acc in enumerate(ids):
+                        if res.conceded is not None:
+                            results[str(acc)] = "loss" if res.conceded == seat else "win"
+                        else:
+                            results[str(acc)] = "draw" if res.winner is None else ("win" if res.winner == seat else "loss")
+            self.ratings.finish_table(game_id, status, datetime_now().isoformat(), results)
+        except Exception:                                    # noqa: BLE001
+            log.exception("the end of table %s could not be written to the accounts' lists", game_id)
+
+    def my_games(self, account) -> list:
+        """The tables of a logged-in account, newest first, each with the way back: a table in progress opens at `play_url` (the seat belongs to the account, no link needed), one that has ended at the
+        end page and, when its record was kept, the replay."""
+        if account is None or self.ratings is None:
+            return []
+        rows = self.ratings.tables_of(account.id, 50)
+        names = self.ratings.usernames(sorted({r["opponent_id"] for r in rows if r["opponent_id"]}))
+        out = []
+        for r in rows:
+            g, over = r["game_id"], r["status"] != "live"
+            out.append({"game_id": g, "opponent_id": r["opponent_id"], "opponent": names.get(r["opponent_id"], r["opponent_id"] or "waiting for an opponent"), "rated": bool(r["rated"]),
+                        "status": r["status"], "result": r["result"], "created_at": r["created_at"], "ended_at": r["ended_at"],
+                        "play_url": None if over else f"/play.html?game={g}", "end_url": f"/end.html?game={g}" if over and r["status"] in ("finished", "conceded") else None,
+                        "replay_url": f"/replay.html?table={g}" if r["status"] in ("finished", "conceded") else None})
+        return out
 
     def rating_changes(self, game_id: str) -> list:
         """The rating changes of a rated game, for the end page: who, before, after, with the account names."""

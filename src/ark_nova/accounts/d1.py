@@ -74,6 +74,15 @@ class D1AccountStore:
     def rating_history(self, account_id, limit=20):
         return [self._change(r) for r in self.c.call("rating.history", {"account_id": account_id, "limit": limit}, retry=True)]
 
+    def add_table(self, account_id, game_id, seat, opponent_id, rated, created_at):
+        self.c.call("tables.add", {"account_id": account_id, "game_id": game_id, "seat": seat, "opponent_id": opponent_id or "", "rated": 1 if rated else 0, "created_at": created_at}, retry=True)
+
+    def finish_table(self, game_id, status, ended_at, results):
+        self.c.call("tables.finish", {"game_id": game_id, "status": status, "ended_at": ended_at, "results": results}, retry=True)
+
+    def tables_of(self, account_id, limit=50):
+        return list(self.c.call("tables.list", {"account_id": account_id, "limit": limit}, retry=True))
+
     def ratings_board(self, min_games, limit=100):
         return list(self.c.call("rating.board", {"min_games": min_games, "limit": limit}, retry=True))
 

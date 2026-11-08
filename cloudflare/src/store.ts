@@ -95,6 +95,20 @@ const OPS: Record<string, Op> = {
     },
     "rating.changes": async (db, a) => (await db.prepare("SELECT * FROM rating_history WHERE game_id = ? ORDER BY seat").bind(str(a.game_id)).all()).results,
     "rating.history": async (db, a) => (await db.prepare("SELECT * FROM rating_history WHERE account_id = ? ORDER BY at DESC LIMIT ?").bind(str(a.account_id), Math.min(100, num(a.limit))).all()).results,
+    "tables.add": async (db, a) => {
+        await db.prepare("INSERT INTO account_tables (account_id, game_id, seat, opponent_id, rated, created_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (account_id, game_id) DO UPDATE SET opponent_id = CASE WHEN excluded.opponent_id != '' THEN excluded.opponent_id ELSE opponent_id END")
+            .bind(str(a.account_id), str(a.game_id), num(a.seat), str(a.opponent_id ?? ""), num(a.rated), str(a.created_at)).run();
+        return null;
+    },
+    "tables.finish": async (db, a) => {
+        const results = (a.results ?? {}) as Record<string, string>;
+        const rows = (await db.prepare("SELECT account_id FROM account_tables WHERE game_id = ?").bind(str(a.game_id)).all()).results as { account_id: string }[];
+        await db.batch(rows.map((r) => db.prepare("UPDATE account_tables SET status = ?, ended_at = ?, result = ? WHERE account_id = ? AND game_id = ?")
+            .bind(str(a.status), str(a.ended_at), String(results[r.account_id] ?? ""), r.account_id, str(a.game_id))));
+        return null;
+    },
+    "tables.list": async (db, a) => (await db.prepare("SELECT game_id, seat, opponent_id, rated, status, result, created_at, ended_at FROM account_tables WHERE account_id = ? ORDER BY created_at DESC LIMIT ?")
+        .bind(str(a.account_id), Math.min(100, num(a.limit))).all()).results,
     "rating.board": async (db, a) => (await db.prepare("SELECT id, username, rating, rated_games, rated_wins FROM accounts WHERE rated_games >= ? AND deleted_at = '' ORDER BY rating DESC, rated_games DESC, id LIMIT ?")
         .bind(num(a.min_games), Math.min(200, num(a.limit))).all()).results,
     "acct.delete": async (db, a) => {

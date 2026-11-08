@@ -28,6 +28,10 @@
   <h1 id="name"></h1>
   <p class="muted" id="sub"></p>
   <div class="stats" id="stats"></div>
+  <section id="tablesbox" hidden>
+    <h2>Your tables</h2>
+    <div id="tables"></div>
+  </section>
   <h2>Last rated games</h2>
   <div id="histbox"></div>
   <section class="danger" id="danger" hidden>
@@ -67,7 +71,25 @@ async function main() {
     }
     $('histbox').append(t);
   }
-  if (me && me.account && me.account.id === p.id) {                               // your own profile: the way to delete the account
+  if (me && me.account && me.account.id === p.id) {                               // your own profile: every table you have a seat at (the way back without the link), then the way to delete the account
+    const tr = await fetch('/api/me/games', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    if (tr) {
+      $('tablesbox').hidden = false;
+      if (!tr.games.length) $('tables').append(mk('p', 'muted', 'No tables yet. Games you start from a lobby or play as a rated game are listed here.'));
+      else {
+        const t = mk('table', 'hist'); t.innerHTML = '<tr><th>Table</th><th>Against</th><th>Kind</th><th>Status</th><th></th></tr>';
+        for (const g of tr.games) {
+          const row = mk('tr');
+          const id = mk('td', null, g.game_id);
+          const o = mk('td'); if (g.opponent_id) { const oa = mk('a', null, g.opponent); oa.href = '/profile.html?id=' + encodeURIComponent(g.opponent_id); o.append(oa); } else o.textContent = g.opponent;
+          const status = g.status === 'live' ? 'In progress' : g.status === 'finished' || g.status === 'conceded' ? (g.result === 'win' ? 'Won' : g.result === 'loss' ? 'Lost' : g.result === 'draw' ? 'Draw' : 'Ended') : 'Abandoned';
+          const links = mk('td');
+          for (const [href, text] of [[g.play_url, 'Back to the table'], [g.end_url, 'Result'], [g.replay_url, 'Replay']]) if (href) { const a = mk('a', null, text); a.href = href; links.append(a, document.createTextNode(' ')); }
+          row.append(id, o, mk('td', null, g.rated ? 'Rated' : 'Friendly'), mk('td', null, status), links); t.append(row);
+        }
+        $('tables').append(t);
+      }
+    }
     $('danger').hidden = false;
     $('delform').onsubmit = async (e) => {
       e.preventDefault();

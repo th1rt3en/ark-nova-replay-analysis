@@ -86,6 +86,15 @@ class AccountStore(Protocol):
     def rating_history(self, account_id: str, limit: int = 20) -> list[RatingChange]:
         """The latest rated games of an account, newest first."""
 
+    def add_table(self, account_id: str, game_id: str, seat: int, opponent_id: str, rated: bool, created_at: str) -> None:
+        """Remembers that the account has a seat at a live table (a game between accounts), so the account can find it again without the link. Written again, it only fills in an opponent that was unknown."""
+
+    def finish_table(self, game_id: str, status: str, ended_at: str, results: dict) -> None:
+        """The table has ended: its status and, per account id, "win" / "loss" / "draw" or "" (no result)."""
+
+    def tables_of(self, account_id: str, limit: int = 50) -> list[dict]:
+        """The tables of an account, newest first: {game_id, seat, opponent_id, rated, status ("live" until it ends), result, created_at, ended_at}."""
+
     def ratings_board(self, min_games: int, limit: int = 100) -> list[dict]:
         """{id, username, rating, rated_games, rated_wins} of the accounts with at least `min_games` rated games, best first (not the deleted ones)."""
 
@@ -115,6 +124,7 @@ class MemoryStore:
         self._sessions: dict[str, Session] = {}
         self._p = 0
         self._history: list[RatingChange] = []
+        self._tables: dict[tuple, dict] = {}
         self._maps: dict[str, dict] = {}
         self._m = 0
 
@@ -194,6 +204,24 @@ class MemoryStore:
     def rating_history(self, account_id, limit=20):
         return sorted((h for h in self._history if h.account_id == account_id), key=lambda h: h.at, reverse=True)[:limit]
 
+    def add_table(self, account_id, game_id, seat, opponent_id, rated, created_at):
+        with self._lock:
+            row = self._tables.get((account_id, game_id))
+            if row is None:
+                self._tables[(account_id, game_id)] = {"game_id": game_id, "seat": seat, "opponent_id": opponent_id or "", "rated": 1 if rated else 0, "status": "live", "result": "", "created_at": created_at, "ended_at": ""}
+            elif opponent_id:
+                row["opponent_id"] = opponent_id
+
+    def finish_table(self, game_id, status, ended_at, results):
+        with self._lock:
+            for (account_id, g), row in self._tables.items():
+                if g == game_id:
+                    row.update(status=status, ended_at=ended_at, result=results.get(account_id, ""))
+
+    def tables_of(self, account_id, limit=50):
+        with self._lock:
+            return [dict(r) for (a, _), r in sorted(((k, r) for k, r in self._tables.items() if k[0] == account_id), key=lambda kr: kr[1]["created_at"], reverse=True)[:limit]]
+
     def ratings_board(self, min_games, limit=100):
         rows = [a for a in self._accounts.values() if a.rated_games >= min_games and not a.deleted_at]
         rows.sort(key=lambda a: (-a.rating, -a.rated_games, a.id))
@@ -254,6 +282,9 @@ CREATE TABLE IF NOT EXISTS rating_history (game_id TEXT NOT NULL, account_id TEX
     rating_after REAL NOT NULL, delta REAL NOT NULL, k INTEGER NOT NULL, at TEXT NOT NULL, PRIMARY KEY (game_id, account_id));
 CREATE TABLE IF NOT EXISTS custom_maps (id TEXT PRIMARY KEY, account_id TEXT NOT NULL, name TEXT NOT NULL, data TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS custom_maps_by_account ON custom_maps (account_id);
+CREATE TABLE IF NOT EXISTS account_tables (account_id TEXT NOT NULL, game_id TEXT NOT NULL, seat INTEGER NOT NULL, opponent_id TEXT NOT NULL DEFAULT '', rated INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'live', result TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, ended_at TEXT NOT NULL DEFAULT '', PRIMARY KEY (account_id, game_id));
+CREATE INDEX IF NOT EXISTS account_tables_by_account ON account_tables (account_id, created_at);
 """
 FIELDS = ("id", "id_source", "username", "username_lower", "password_hash", "recovery_hash", "created_at", "last_login_at", "bga_elo_seed", "rating", "rated_games", "rated_wins", "deleted_at")
 
@@ -373,6 +404,22 @@ class SqliteStore:
     def rating_history(self, account_id, limit=20):
         with self._lock:
             return [self._change(r) for r in self._db.execute("SELECT * FROM rating_history WHERE account_id = ? ORDER BY at DESC LIMIT ?", (account_id, limit))]
+
+    def add_table(self, account_id, game_id, seat, opponent_id, rated, created_at):
+        with self._lock:
+            self._db.execute("INSERT INTO account_tables (account_id, game_id, seat, opponent_id, rated, created_at) VALUES (?,?,?,?,?,?) ON CONFLICT (account_id, game_id) DO UPDATE SET "
+                             "opponent_id = CASE WHEN excluded.opponent_id != '' THEN excluded.opponent_id ELSE opponent_id END", (account_id, game_id, seat, opponent_id or "", 1 if rated else 0, created_at))
+            self._db.commit()
+
+    def finish_table(self, game_id, status, ended_at, results):
+        with self._lock:
+            for (account_id,) in self._db.execute("SELECT account_id FROM account_tables WHERE game_id = ?", (game_id,)).fetchall():
+                self._db.execute("UPDATE account_tables SET status = ?, ended_at = ?, result = ? WHERE account_id = ? AND game_id = ?", (status, ended_at, results.get(account_id, ""), account_id, game_id))
+            self._db.commit()
+
+    def tables_of(self, account_id, limit=50):
+        with self._lock:
+            return [dict(r) for r in self._db.execute("SELECT game_id, seat, opponent_id, rated, status, result, created_at, ended_at FROM account_tables WHERE account_id = ? ORDER BY created_at DESC LIMIT ?", (account_id, limit))]
 
     def ratings_board(self, min_games, limit=100):
         with self._lock:
