@@ -40,6 +40,8 @@ def placement_bonus_name(bonus: dict) -> str:
 def effect_name(e: dict) -> str | None:
     """The name of the ability behind a pending effect, as the card writes it ("Perception 2"), None when it is not an ability."""
     kind, src = e.get("kind"), e.get("source")
+    if kind == "build" and (e.get("rules") or {}).get("reposition"):
+        return "Crane: reposition the enclosure"                                  # BDW2
     if kind == "pbonus":
         return placement_bonus_name(e.get("bonus"))
     if kind == "reveal":

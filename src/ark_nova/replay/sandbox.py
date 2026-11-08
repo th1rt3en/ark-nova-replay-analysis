@@ -51,7 +51,7 @@ def new_game(marine_worlds: bool, maps: list, controller: int, seed: int | None 
     if marine_worlds:
         initial["99"] = BONUS_POOL[4:5]
     config = GameConfig(marine_worlds=marine_worlds, player_ids=["1", "2"], maps=[str(m) for m in maps], base_projects=base[:3],
-                        conservation_bonuses=copy.deepcopy(initial), draft_action_cards=False, bdw_maps=bdw_maps, player_names=["You" if controller == 0 else "Bot", "You" if controller == 1 else "Bot"])
+                        conservation_bonuses=copy.deepcopy(initial), draft_action_cards=False, bdw_maps=bdw_maps, confirm_turns=True, player_names=["You" if controller == 0 else "Bot", "You" if controller == 1 else "Bot"])
     state = start_game(config, SeedSpec(tail_seed=seed if seed is not None else random.SystemRandom().randrange(1, 2 ** 31)))
     meta = {"controller": controller, "bot": 1 - controller, "initial": initial,
             "unset": {"projects": [True] * 3, "b5": [True] * 2, "b8": [True] * 2, **({"b99": [True]} if marine_worlds else {})}}
@@ -80,7 +80,7 @@ def bot_action(state: GameState, bot: int) -> Action | None:
         return None
     if not acts:
         return None
-    for kind in ("skip_action", "skip_effect", "skip_extra", "skip_snap", "finish_sponsors", "finish_animals", "finish_association", "finish_build", "skip", "self_clever"):
+    for kind in ("confirm_turn", "skip_action", "skip_effect", "skip_extra", "skip_snap", "finish_sponsors", "finish_animals", "finish_association", "finish_build", "skip", "self_clever"):
         for a in acts:
             if a.kind == kind:
                 return a
@@ -327,4 +327,7 @@ def _add_tile(state: GameState, meta: dict, seat: int, tile: str, name: str):
 def edit_payload(state_dict: dict, meta: dict, op: str, args: dict) -> dict:
     state = GameState.from_dict(state_dict)
     new, meta2, label = edit(state, meta, op, args)
+    if new.checkpoint is not None:                         # an edit is not an action: the turn can be taken back to the state with the edit in it, not before it
+        from ark_nova.engine import turns
+        new.checkpoint = turns.make_checkpoint(new)
     return payload(new, label, meta2)

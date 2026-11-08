@@ -24,7 +24,7 @@ export function legalPlacement(p) {
   if (p.x === null) return null;
   const want = cellsKey(placementCells(p.type, p.x, p.y, p.rot));
   for (const a of S.replay.steps[S.step].actions || []) {
-    if (a.kind !== 'place_building' || a.player !== p.seat || a.args.type !== p.type || !!a.args.extra !== !!p.extra) continue;
+    if (a.kind !== 'place_building' || a.player !== p.seat || a.args.type !== p.type || !!a.args.extra !== !!p.extra || !!a.args.move !== !!p.move) continue;
     if (cellsKey(placementCells(p.type, a.args.x, a.args.y, a.args.rotation)) === want) return a;
   }
   return null;

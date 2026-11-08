@@ -237,7 +237,7 @@ def legal(state, p0) -> list:
             start = len(out)
             for t in e.get("types", [e["type"]]):
                 for x, y, r in build_options(state, p.seat, t, e["rules"]):
-                    out.append(Action(p.seat, "place_building", {"type": t, "x": x, "y": y, "rotation": r}))
+                    out.append(Action(p.seat, "place_building", {"type": t, "x": x, "y": y, "rotation": r, **({"move": True} if e["rules"].get("reposition") else {})}))      # (BDW2's crane: `move` tells the move of an enclosure from a new building)
             if not any(a.kind == "place_building" and a.player == p.seat for a in out[start:]):
                 out.append(Action(p.seat, "skip_effect", {"index": i}))      # (found by self-play: no placement for a non-optional building left the player with no move)
         elif k == "take":
@@ -337,7 +337,8 @@ def resolve_build(state, action: Action) -> None:
     p = state.players[action.player]
     t, x, y, k = action.args["type"], int(action.args["x"]), int(action.args["y"]), int(action.args["rotation"])
     def fits(e):
-        return t in e.get("types", [e["type"]]) and e.get("player", p.seat) == p.seat and (x, y, k) in build_options(state, p.seat, t, e["rules"])
+        return (t in e.get("types", [e["type"]]) and e.get("player", p.seat) == p.seat and bool(e["rules"].get("reposition")) == bool(action.args.get("move"))
+                and (x, y, k) in build_options(state, p.seat, t, e["rules"]))
 
     try:                                            # a building that was picked up (Reconstruction) goes back before a new one is built
         i = _find(state, "build", lambda e: bool(e.get("placeback")) and fits(e))

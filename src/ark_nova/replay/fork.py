@@ -88,7 +88,11 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         return f"Skip {str(args.pop('type', '?')).capitalize()}: put it on slot 1 and gain an X token" + (f" (repeat {args.pop('repeat')})" if "repeat" in args else "")
     if k == "place_building":
         extra = " (additional)" if args.pop("extra", False) else ""
-        return f"Place {args.pop('type', '?')} at ({args.pop('x', '?')}, {args.pop('y', '?')}) rotation {args.pop('rotation', 0)}{extra}"
+        move = args.pop("move", False)                                            # BDW2: the crane moves an enclosure that stands on the map
+        t_, x_, y_, r_ = args.pop("type", "?"), args.pop("x", "?"), args.pop("y", "?"), args.pop("rotation", 0)
+        if move:
+            return f"Move the {t_} to ({x_}, {y_}) rotation {r_} (crane)"
+        return f"Place {t_} at ({x_}, {y_}) rotation {r_}{extra}"
     if k == "play_animal":
         src = " from the display" if args.pop("from_display", False) else ""
         card = _name(args.pop("card", "?"))

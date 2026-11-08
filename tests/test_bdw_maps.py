@@ -352,3 +352,21 @@ def test_a_lobby_game_can_ask_for_the_maps():
     acct = {"id": "A1", "username": "alice"}
     v = lobbies.op_create(acct, {"game_mode": "ark360", "marine_worlds": False, "bdw_maps": True})
     assert v["bdw_maps"] is True and lobbies.op_create({"id": "A2", "username": "bob"}, {"game_mode": "ark360"})["bdw_maps"] is False
+
+
+def test_construction_yard_the_crane_move_is_told_apart_from_a_new_building():
+    from ark_nova.replay import fork
+    from ark_nova.replay.options import effect_name
+    from tests.test_animal_abilities import _play
+    s, p = _bdw2()
+    p.buildings = [Building(id=1, type="size-2", x=3, y=10), Building(id=2, type="size-2", x=1, y=0)]
+    s = _play(s, "A404", x=3, y=10, settle=False)
+    eff = _crane_effects(s)[0]
+    assert effect_name(eff) == "Crane: reposition the enclosure"
+    moves = [a for a in game.legal_actions(s) if a.kind == "place_building"]
+    assert moves and all(a.args.get("move") is True for a in moves)
+    assert fork.describe_action(moves[0], s).startswith("Move the size-2 to (")
+    skip = next(a for a in game.legal_actions(s) if a.kind == "skip_effect" and s.prompt.args["pending"][a.args["index"]] is eff)
+    assert fork.describe_action(skip, s) == "Skip: Crane: reposition the enclosure"
+    s = game.apply(s, moves[0])                                                           # the move works with the flag
+    assert not _crane_effects(s)

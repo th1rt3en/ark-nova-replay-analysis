@@ -61,9 +61,9 @@ function renderPlacementControls(box, placeActs) {
   const seat = placeActs[0].player;
   const pieces = [];
   for (const a of placeActs) {
-    const key = a.args.type + (a.args.extra ? '*' : '');
+    const key = a.args.type + (a.args.extra ? '*' : '') + (a.args.move ? '^' : '');
     let p = pieces.find((q) => q.key === key);
-    if (!p) { p = { key, type: a.args.type, extra: !!a.args.extra, n: 0 }; pieces.push(p); }
+    if (!p) { p = { key, type: a.args.type, extra: !!a.args.extra, move: !!a.args.move, n: 0 }; pieces.push(p); }
     p.n += 1;
   }
   if (!S.placement) {
@@ -88,9 +88,9 @@ function renderPlacementControls(box, placeActs) {
       b.style.setProperty('--pc', seatColor(seat));
       const sp = spriteOf({ type: p.type });
       if (sp) { const img = el('img'); img.src = '/enclosures/' + sp.image; img.alt = ''; const k = Math.min(0.12, 70 / sp.size[1]); img.style.width = (sp.size[0] * k) + 'px'; img.style.height = (sp.size[1] * k) + 'px'; b.append(img); }
-      b.append(el('span', '', p.type.replace(/-/g, ' ') + (p.extra ? ' (additional)' : '') + ' - ' + p.n + ' spots'));
+      b.append(el('span', '', (p.move ? 'Reposition the ' : '') + p.type.replace(/-/g, ' ') + (p.extra ? ' (additional)' : '') + (p.move ? ' (crane)' : '') + ' - ' + p.n + ' spots'));
       b.onclick = () => {
-        S.placement = { seat, type: p.type, extra: p.extra, x: null, y: null, rot: 0 };
+        S.placement = { seat, type: p.type, extra: p.extra, move: p.move, x: null, y: null, rot: 0 };
         render();
         const board = document.querySelectorAll('.zoo')[seat];
         if (board) board.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -102,14 +102,14 @@ function renderPlacementControls(box, placeActs) {
   } else {
     const legal = legalPlacement(S.placement);
     const head = el('div', 'placehead');
-    head.append(el('b', '', S.placement.type.replace(/-/g, ' ') + (S.placement.extra ? ' (additional)' : '')),
+    head.append(el('b', '', (S.placement.move ? 'Reposition the ' : '') + S.placement.type.replace(/-/g, ' ') + (S.placement.extra ? ' (additional)' : '') + (S.placement.move ? ' (crane)' : '')),
                 document.createTextNode(S.placement.x === null ? ' - click a hex of ' + S.replay.players[S.placement.seat].name + "'s zoo to put the anchor there"
                   : ' - anchor (' + S.placement.x + ', ' + S.placement.y + '), rotation ' + S.placement.rot + ' - '),
                 S.placement.x === null ? document.createTextNode('') : el('b', legal ? 'placeok' : 'placebad', legal ? 'legal' : 'not legal'));
     wrap.append(head);
     const row = el('div', 'forkrow');
     const ok = el('button', 'forkmove');
-    ok.type = 'button'; ok.textContent = 'Place the building'; ok.disabled = !legal || S.forkBusy;
+    ok.type = 'button'; ok.textContent = S.placement.move ? 'Move the enclosure' : 'Place the building'; ok.disabled = !legal || S.forkBusy;
     ok.onclick = () => playFork(legal);
     const cancel = el('button', 'forkmove');
     cancel.type = 'button'; cancel.textContent = 'Choose another piece';
@@ -194,6 +194,7 @@ export function forkBar() {
     if (bar) { bar.hidden = false; bar.replaceChildren(el('b', '', 'Set the base projects and the conservation bonuses (the empty spaces of the board) to start playing.')); }
     return;
   }
+  if (SANDBOX && bar) for (const a of acts) if (['confirm_turn', 'undo_last', 'restart_turn'].includes(a.kind)) S.forkClaimed.add(a);          // (the sandbox plays turns like a live game: confirm / undo / restart are moves of the engine)
   if (PLAY && bar) {                                                       // a live game: the confirm / undo / restart are legal actions of their own
     for (const a of acts) if (['confirm_turn', 'undo_last', 'restart_turn'].includes(a.kind)) S.forkClaimed.add(a);
     if (!acts.length || S.play.status === 'waiting') { playWaitingBar(bar); return; }                 // (nothing is offered until both players have joined)
@@ -465,7 +466,7 @@ export function forkBar() {
     for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + a.text, false));
     bar.append(holder);
   }
-  if (PLAY) playTurnButtons(bar, acts);
+  if (PLAY || SANDBOX) playTurnButtons(bar, acts);
   else if (st.phase === 'turn' || st.phase === 'final_turns') turnButtons(bar, st.turn, st.active_player, false);       // undo / restart turn at every step of a turn
   if (!acts.length) bar.append(el('span', 'forkerror', 'The engine offers no move in this position (a rule that is not complete yet). Go back a step and play something else.'));
   if (S.forkError) bar.append(el('span', 'forkerror', S.forkError));

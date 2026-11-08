@@ -9,6 +9,7 @@ import { blockedCube, markCube, markOwner, projectPanel } from './projects.js';
 import { actionBar, afterMark, cardPickAct, forkActs, forkSingleSelect, pickCardOf } from './action-bar.js';
 import { CT_BONUS_DX, CT_H, conservationTrackSvg, pentagonShape } from './ctrack.js';
 import { REP16_X, REP_W, reputationTrackSvg } from './reptrack.js';
+import { fitDisplay } from './layout.js';
 import { sbButton, sbEdit, sbMeta, sbPickProjects, sbSlotButtons } from './sandbox.js';
 import { drawHdBonus, hdBonus, marketingTile } from './bonusart.js';
 
@@ -122,7 +123,7 @@ export function renderShared(st) {
     if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '') + (FORK && cardMarks.has('display#' + i) ? ' marked' : ''), 'display'));
     if (k && FORK) {                                                              // a card of the display can be chosen for a move
       f.classList.add('markable');
-      f.addEventListener('click', () => { if (dim && forkSingleSelect()) return; const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if (x.startsWith('display#') || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); afterMark(); });
+      f.addEventListener('click', () => { if (dim && forkSingleSelect()) return; const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if (x.startsWith('display#') || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); fitDisplay(); afterMark(); });
     }
     if (k && PREVIEW_CARDS.has(k)) {                                                // a sponsor building of the display: a right click previews it on either zoo (bpreview.js)
       if (S.preview && S.preview.seat === 'display' && S.preview.card === k) { const c = f.querySelector('.card'); if (c) c.classList.add('previewing'); }

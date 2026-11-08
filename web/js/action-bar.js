@@ -1,6 +1,6 @@
 // [module] The action bar at the top (replay: current action; fork / sandbox: the playable controls), prompts and draft marks.
 import { $, el, seatColor, seatText } from './util.js';
-import { FORK, PLAY, S } from './state.js';
+import { FORK, PLAY, S, SANDBOX } from './state.js';
 import { curState, seatOrder } from './pov.js';
 import { bindPreview, cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
@@ -21,7 +21,7 @@ import { centerNav, clearReveal, forkReveal, noteLightbox, openFx, revealAt, sho
 // steps the bar is guessed from the log-built state (only the choice of an action card).
 export const PROMPT_TEXT = {
   build_place: 'must place a building', cards_take: 'must take cards', cards_discard: 'must discard cards', sponsors_play: 'may play a sponsor',
-  animals_play: 'may play an animal', association_tasks: 'may perform an association task', effects: 'must resolve an effect',
+  animals_play: 'may play an animal', association_tasks: 'may perform an association task', effects: 'must resolve an effect', confirm_turn: 'must confirm the turn or take it back',
 };
 const KIND_LABEL = {
   draft_pick: 'Pick an action card', draft_keep: 'Keep two action cards', initial_discard: 'Initial discard',
@@ -258,7 +258,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   // the step that puts the action card back on slot 1 ends the turn (the state already passes it on): the player has to confirm it. In the replay the buttons
   // are only shown, greyed out; in the game Confirm passes the turn, Undo takes back the last effect that can be taken back, Restart turn all of them
   const before = S.step > 0 ? S.replay.steps[S.step - 1].state : null;
-  if (turnEnds(S.step) && kind !== 'decision' && !(FORK && S.forkConfirmed === S.step) && !PLAY) {
+  if (turnEnds(S.step) && kind !== 'decision' && !(FORK && S.forkConfirmed === S.step) && !PLAY && !SANDBOX) {
     bar.hidden = false;
     S.forkGate = FORK;
     const who = el('span', 'who', S.replay.players[before.active_player].name);
@@ -493,6 +493,20 @@ const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
 const effectOption = (a, e) => (e.option === 'send' ? a.args.send !== undefined : e.option === 'scuba' ? !!a.args.scuba : true);
 function effectButton(e) {
   if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res)) return null;
+  if (e.kind === 'build' && FORK && /^Crane:/.test(e.name || '')) {                 // BDW2: the enclosure next to the crane may be repositioned, in any order with the animal's ability and gains
+    const moves = forkActs((a) => a.kind === 'place_building' && a.args.move);
+    if (!moves.length) return null;
+    const cb = el('span', 'abtn deckbtn choosable');
+    cb.title = 'Crane: move the enclosure you just filled (optional): click it, then a hex of the zoo for its anchor';
+    cb.append(el('b', '', 'Reposition (crane)'));
+    cb.onclick = () => {
+      S.placement = { seat: moves[0].player, type: moves[0].args.type, extra: false, move: true, x: null, y: null, rot: 0 };
+      render();
+      const board = document.querySelectorAll('.zoo')[moves[0].player];
+      if (board) board.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    };
+    return cb;
+  }
   if (e.kind === 'take' || e.kind === 'build') return null;                      // shown as the deck button / the pieces
   if (FORK && e.kind === 'assertion' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) return null;       // (the base projects are chosen in the lightbox, reveal.js `forkReveal`)
   if (FORK && e.kind === 'search_discard' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) return null;       // (Horse Whisperer: the animal is taken in the lightbox, reveal.js `horseFork`)

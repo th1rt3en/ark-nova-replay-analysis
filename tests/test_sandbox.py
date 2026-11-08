@@ -124,3 +124,44 @@ def test_every_map_is_available_with_or_without_marine_worlds(client):
     assert base == {m["id"] for m in client.get("/api/sandbox/maps?marine_worlds=true").json()["maps"]} and "12" in base
     r = client.post("/api/sandbox/new", json={"marine_worlds": False, "maps": ["12", "14"], "controller": 0})
     assert r.status_code == 200, r.text
+
+
+def test_a_snap_can_be_taken_back_and_the_confirm_that_refills_the_display_cannot(client):
+    """The sandbox plays turns like a live game: the snap itself reveals nothing (the display is refilled when the turn is confirmed), so it is reversible; the confirm is not."""
+    body = _new(client, mw=False, controller=0, maps=("1", "1"))
+    step = _ready(client, body)
+    state = GameState.from_dict(step["engine_state"])
+    assert state.config.confirm_turns
+    def play(step, kind, args, player=0):
+        r = client.post("/api/sandbox/apply", json={"state": step["engine_state"], "meta": step["sandbox"], "action": {"player": player, "kind": kind, "args": args}})
+        assert r.status_code == 200, r.text
+        return r.json()["steps"]
+    # the setup discards of both seats, then the first turn
+    state = GameState.from_dict(step["engine_state"])
+    while state.prompt is not None and state.prompt.kind == "initial_discard":
+        acts = [a for a in legal_actions(state) if a.player == 0 and a.kind == "initial_discard"]
+        if not acts:
+            break
+        steps = play(step, "initial_discard", acts[0].args)
+        step = steps[-1]
+        state = GameState.from_dict(step["engine_state"])
+    for i in range(2):                                                                       # (the sandbox display starts empty: two cards from the deck)
+        step = _edit(client, step, "set_display", {"index": i, "card": GameState.from_dict(step["engine_state"]).main_deck[0]})
+    slot = [c.type for c in GameState.from_dict(step["engine_state"]).players[0].action_cards].index("cards") + 1       # (the order of the action cards is drawn at random)
+    spend = 5 - slot                                                                           # X tokens up to strength 5: snap or draw
+    if spend:
+        step = _edit(client, step, "set_value", {"seat": 0, "field": "x_tokens", "value": spend})
+    steps = play(step, "choose_action_card", {"type": "cards", "spend": spend})
+    step = steps[-1]
+    state = GameState.from_dict(step["engine_state"])
+    snaps = [a for a in legal_actions(state) if a.kind == "take_cards" and a.args.get("mode") == "snap"]
+    assert snaps, (state.prompt.kind, state.prompt.args, [a.kind for a in legal_actions(state)][:5], state.players[0].x_tokens)
+    steps = play(step, "take_cards", snaps[0].args)
+    snapped = steps[0]
+    assert not snapped["irreversible"]                                                       # the snap can be taken back
+    after = GameState.from_dict(snapped["engine_state"])
+    kinds = [a.kind for a in legal_actions(after) if a.player == 0]
+    assert "confirm_turn" in kinds and "undo_last" in kinds and None in after.display        # the display is not refilled yet
+    confirm = play(snapped, "confirm_turn", {})
+    assert confirm[0]["irreversible"] and None not in GameState.from_dict(confirm[0]["engine_state"]).display         # the confirm reveals the new cards
+    assert GameState.from_dict(confirm[-1]["engine_state"]).active_player == 0               # (the bot confirmed its own turn: it is the player's turn again)
