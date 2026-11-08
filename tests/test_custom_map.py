@@ -57,7 +57,7 @@ def test_a_bonus_on_rock_is_refused_and_rescue_is_the_digging_of_map_10():
     with pytest.raises(custom_map.CustomMapError, match="rock or water"):
         custom_map.normalize(m, "x")
     m = editor_export(bonuses=[("rescue", 2)])
-    assert custom_map.normalize(m, "x")["geometry"]["placement_bonuses"][0]["bonus"] == {"type": "Digging", "value": 2}
+    assert custom_map.normalize(m, "x")["geometry"]["placement_bonuses"][0]["bonus"] == {"type": "Digging", "value": 2}      # (the rescue-enabled one keeps map 10's type; the plain one is "digging-plain", tests/test_placement_bonus_types.py)
 
 
 def test_a_game_on_a_custom_map_plays_and_survives_a_reload():

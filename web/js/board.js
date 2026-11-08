@@ -89,7 +89,7 @@ export function zooBoard(map, player, seat) {
     tip.textContent = bn.type ? bn.type + (bn.value ? ' ' + bn.value : '') : 'bonus';
     const icon = ICON_IDS['bonus:' + bn.type];
     if (bn.type === 'Digging') { iconBox(icon, cx, cy, 80); s.lastChild.append(tip); continue; }       // r9c13 already has its own background
-    if (bn.type === 'Worker' && map.id === '11') {                                                       // map 11 (Caves): the Worker hex takes a worker back (Extra Shift: 13 of 13 in the logs), the whole tile of the icon sheet
+    if (bn.type === 'extra-shift' || (bn.type === 'Worker' && map.id === '11')) {                       // Extra Shift (map 11's hex, custom maps; "Worker" on map 11 is the old name of it): a worker comes back (13 of 13 in the logs), the whole tile of the icon sheet
       tip.textContent = 'Extra Shift: take a worker back from the association board';
       s.append(hdPentagonSvg('bonus-extra-shift', 80, cx, cy)); s.lastChild.append(tip); continue;          // (the pentagon of the track's Extra Shift bonus, HD, ctrack.js)
     }
@@ -100,7 +100,7 @@ export function zooBoard(map, player, seat) {
     iconBox(ICON_IDS.pentagon, cx, cy, 80);
     if (bn.type === 'adapt') adaptIcon(s, cx, cy + 1, bn.value || 1);                    // (vector, bonusart.js)
     else if (bn.type === 'money') moneyTile(s, cx, cy + 3, 48);
-    else if (bn.type === 'Scavenging' && icon && bn.value > 1) {                 // Scavenging 3: the number to the left of the icon, overlapping it a little
+    else if ((bn.type === 'Scavenging' || bn.type === 'digging-plain') && icon && bn.value > 1) {                 // Scavenging 3 / Digging 2: the number to the left of the icon, overlapping it a little
       iconBox(icon, cx + 9, cy + 3, 44);
       put('text', { x: cx - 15, y: cy + 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
     }

@@ -5521,7 +5521,7 @@
                     "x": 4,
                     "y": 3,
                     "bonus": {
-                        "type": "Worker",
+                        "type": "extra-shift",
                         "value": 1
                     }
                 },

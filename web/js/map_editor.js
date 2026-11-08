@@ -20,7 +20,7 @@ const centre = (x, y) => [MAP.x0 + x * MAP.dx, MAP.y0 + y * MAP.dy];
 const BONUSES = [
   ['money', 'Money', 5], ['reputation', 'Reputation', 1], ['appeal', 'Appeal', 1], ['xtoken', 'X token', 1], ['Scavenging', 'Scavenging', 3], ['Multiplier', 'Multiplier', 2],
   ['take-in-range-or-deck', 'Take a card', 1], ['bonus-sponsor', 'Marketing', 1], ['search-sponsor-person', 'Find a person', 1], ['Clever', 'Clever', 1], ['digging', 'Digging', 1],
-  ['rescue', 'Rescue', 1], ['Mark', 'Mark', 1], ['Worker', 'Worker', 1], ['extra-shift', 'Extra shift', 1], ['Pouch', 'Pouching X', 1], ['perception', 'Perception X', 1],
+  ['rescue', 'Digging (rescue enabled)', 1], ['Mark', 'Mark', 1], ['Worker', 'Worker', 1], ['extra-shift', 'Extra shift', 1], ['Pouch', 'Pouching X', 1], ['perception', 'Perception X', 1],
   ['Partner-Zoo', 'Partner zoo', 1], ['Fac', 'University', 1], ['kiosk', 'Kiosk', 1], ['pavilion', 'Pavilion', 1], ['store', 'Store', 1], ['conceal', 'Conceal', 1],
   ['shark-attack', 'Shark attack', 1], ['adapt', 'Adapt', 1], ['wave', 'Wave', 1],
 ];
@@ -32,7 +32,7 @@ const PROJECT = [
   ['animal-magnet', 'Animal magnet', 1], ['bonus-scoring-cards', 'Scoring cards', 3], ['continent', 'Continent', 1], ['special-enclosure', 'Special enclosure', 1],
 ];
 const PROJECT_NUMBERED = new Set(['money', 'xtoken', 'reputation', 'conservation', 'Clever', 'Pouch']);
-const NUMBERED = new Set(['money', 'reputation', 'appeal', 'Scavenging', 'Pouch', 'perception']);          // the bonuses whose number the user types
+const NUMBERED = new Set(['money', 'reputation', 'appeal', 'Scavenging', 'digging', 'Pouch', 'perception']);          // the bonuses whose number the user types
 const typedValue = { ...Object.fromEntries(BONUSES.map(([t, , v]) => [t, v])), ...Object.fromEntries(PROJECT.map(([t, , v]) => ['p:' + t, v])) };
 const EXTRA_ICONS = { 'extra-shift': 'r5c15', perception: 'r7c10', digging: 'r4c2', rescue: 'r9c13', 'search-sponsor-person': 'r4c13' };      // icons of the new bonuses (names.json: bonus-extra-shift, perception, digging, map10, search-sponsor-person)
 
@@ -52,12 +52,12 @@ function iconBox(g, id, cx, cy, h) {
 }
 function drawBonus(g, bn) {                                              // as zooBoard draws a placement bonus (a project bonus is its picture)
   const icon = EXTRA_ICONS[bn.type] || ICON_IDS['bonus:' + bn.type];
-  if (bn.type === 'Digging' || bn.type === 'rescue') { iconBox(g, icon, 0, 0, 80); return; }          // r9c13 (map 10) already has its own background
+  if (bn.type === 'Digging' || bn.type === 'rescue' || bn.type === 'extra-shift') { iconBox(g, icon, 0, 0, 80); return; }          // r9c13 (map 10) and r5c15 (Extra Shift) already have their own background
   iconBox(g, ICON_IDS.pentagon, 0, 0, 80);
   if (bn.type === 'adapt') adaptIcon(g, 0, 1, bn.value || 1);
   else if (bn.type === 'money') moneyTile(g, 0, 3, 48);
   else if (bn.type === 'special-enclosure') { iconBox(g, 'r9c9', -17, 3, 30); iconBox(g, 'r9c11', 17, 3, 30); }
-  else if ((bn.type === 'Scavenging' || bn.type === 'Pouch' || bn.type === 'perception' || ((bn.type === 'Clever' || bn.type === 'xtoken') && bn.value > 1)) && icon) {          // the number to the left of the icon, overlapping it a little
+  else if ((bn.type === 'Scavenging' || bn.type === 'digging' || bn.type === 'Pouch' || bn.type === 'perception' || ((bn.type === 'Clever' || bn.type === 'xtoken') && bn.value > 1)) && icon) {          // the number to the left of the icon, overlapping it a little
     iconBox(g, bn.type === 'xtoken' && bn.value > 1 ? (ICON_IDS['bonus:xtoken_num'] || icon) : icon, bn.value > 1 ? 9 : 0, 3, 44);
     if (bn.value > 1 || bn.type === 'perception' || bn.type === 'Pouch') put(g, 'text', { x: -15, y: 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
   }

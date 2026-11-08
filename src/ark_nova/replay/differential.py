@@ -195,6 +195,7 @@ def _placement_types(state: GameState, act: Action) -> Counter:
     return Counter(b["type"] for c in cells for b in bd.bonuses.get(c, []) if b)
 
 
+_BONUS_ALIAS = {"extrashift": "worker", "map10": "digging"}      # the log's names of a placement bonus -> the board's (the Extra Shift hex of map 11 is "Worker" in the logs)
 _ARCH_TAKEN: list = []       # the bonuses that `_archaeologist` picked for the turn that is being replayed
 
 
@@ -229,7 +230,7 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
             if i is None:
                 return state
             cell = next((c for c in bon.archaeologist_cells(state, state.players[seat])
-                        if any(b and b["type"].replace("-", "").lower() == {"extrashift": "worker", "map10": "digging"}.get(str(typ).replace("-", "").lower(), str(typ).replace("-", "").lower())
+                        if any(b and _BONUS_ALIAS.get(b["type"].replace("-", "").lower(), b["type"].replace("-", "").lower()) == _BONUS_ALIAS.get(str(typ).replace("-", "").lower(), str(typ).replace("-", "").lower())
                                and (amount is None or b["type"] not in ("money", "xtoken", "reputation") or b["value"] == amount) for b in bd.bonuses[c])), None)
             if cell is None:
                 break                                      # (not a bonus of a hex: the choice at conservation 5 / 8 is logged the same way)

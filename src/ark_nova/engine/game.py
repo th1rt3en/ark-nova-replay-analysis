@@ -669,7 +669,7 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
     """The effect of one placement bonus that is gained (covered by a building, or chosen with the Archeologist)."""
     _gain(state, seat, money=b["value"] if b["type"] == "money" else 0, x_tokens=b["value"] if b["type"] == "xtoken" else 0,
           reputation=b["value"] if b["type"] == "reputation" else 0)
-    if b["type"] == "Worker" and state.players[seat].map_id == "11":      # the Worker hex of map 11 takes a worker back from the association board (13 of 13 in the logs); the notepad Worker hires
+    if b["type"] == "extra-shift" or (b["type"] == "Worker" and state.players[seat].map_id == "11"):      # Extra Shift takes a worker back from the association board (the hex of map 11, 13 of 13 in the logs, and custom maps). `Worker` on map 11 is the old name of the hex; the notepad Worker hires
         bonuses.defer(state, {"kind": "extra_shift", "source": "map11", "optional": False, "player": seat})
     elif b["type"] == "Worker":                                     # the Worker hex of map A hires a new worker (817617353 turn 38)
         bonuses.apply_bonus(state, seat, {"Worker": 1})
@@ -687,8 +687,10 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
         bonuses.defer(state, {"kind": "build", "source": "bonus", "type": "kiosk", "rules": {}, "optional": True, "double": False, "player": seat})
     if b["type"] == "pavilion":                                     # BDW2: a free pavilion (the placement rules apply)
         bonuses.defer(state, {"kind": "build", "source": "bonus", "type": "pavilion", "rules": {}, "optional": True, "double": False, "player": seat})
-    if b["type"] == "Digging":                                      # map 10 (Rescue Station): digging, or rescuing an animal
+    if b["type"] == "Digging":                                      # map 10 (Rescue Station): digging, or rescuing an animal (the type keeps its old name: "Digging" = the rescue-enabled one)
         bonuses.defer(state, {"kind": "digging", "source": "map10", "n": b["value"], "optional": False, "rescue": True, "player": seat})
+    if b["type"] == "digging-plain":                                # an ordinary Digging X (custom maps): no rescue
+        bonuses.defer(state, {"kind": "digging", "source": "map", "n": b["value"], "optional": False, "player": seat})
     if b["type"] == "wave":                                         # map 14: a Wave effect: the first card of the display goes and the display is replenished
         bonuses.defer(state, {"kind": "wave", "source": "map14", "optional": False, "player": seat})
     if b["type"] == "shark-attack":                                 # map 14: Shark Attack 1
@@ -758,7 +760,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
         _pay(state, p, fee)
     gains = [] if "S280" in p.sponsors else build_action.placement_bonuses(bd, cells) * (2 if double else 1)      # Reconstruction: no bonuses
     for b in gains:
-        if b is None or b["type"] not in ("money", "xtoken", "reputation", "take-in-range-or-deck", "Clever", "conceal", "Digging", "Mark", "store", "wave", "shark-attack", "adapt", "Multiplier", "Scavenging", "kiosk", "pavilion") + PLACEMENT_VIA_BONUSES:
+        if b is None or b["type"] not in ("money", "xtoken", "reputation", "take-in-range-or-deck", "Clever", "conceal", "Digging", "digging-plain", "extra-shift", "Mark", "store", "wave", "shark-attack", "adapt", "Multiplier", "Scavenging", "kiosk", "pavilion") + PLACEMENT_VIA_BONUSES:
             raise NotImplementedError(f"placement bonus {b and b['type']} is not implemented yet")
     before = [(b.type, b.x, b.y, b.rotation) for b in p.buildings]
     areas_before = map_rules.quarters_done(p)
