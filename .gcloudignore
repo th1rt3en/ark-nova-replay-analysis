@@ -28,3 +28,6 @@ bga_ui_screenshots/
 extension/
 pages/
 engine_versions.json
+bdw_maps/
+bga_replay/
+specs/
