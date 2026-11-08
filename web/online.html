@@ -131,7 +131,7 @@
     $('pages').replaceChildren(...Object.entries(d.by_page).map(([k, n]) => { const div = document.createElement('div'); div.innerHTML = '<b>' + n + '</b><span class="dim">' + k + '</span>'; return div; }));
     $('peak').textContent = '· peak in the last 24 h: ' + d.peak_24h;
     timeline(d);
-    $('status').textContent = 'Updated ' + new Date().toLocaleTimeString() + ' · refreshes every 30 s';
+    $('status').textContent = 'Updated ' + new Date().toLocaleTimeString() + ' · refreshes every 30 s while this tab is in focus';
   }
 
   function drawRanges() {
@@ -150,8 +150,19 @@
     } catch (e) {
       $('view').hidden = false; $('status').textContent = 'Could not read the count (' + e.message + '). Trying again in 30 s.';
     }
-    clearTimeout(timer); timer = setTimeout(load, 30000);
+    schedule();
   }
+
+  // Poll only while the tab is on show and the window has focus (a forgotten tab kept a Cloud Run instance awake); coming back reloads at once.
+  const active = () => document.visibilityState === 'visible' && document.hasFocus();
+  function schedule() {
+    clearTimeout(timer);
+    timer = active() ? setTimeout(() => { timer = null; load(); }, 30000) : null;
+  }
+  function resume() { if (active() && !timer) load(); }
+  document.addEventListener('visibilitychange', resume);
+  window.addEventListener('focus', resume);
+  window.addEventListener('blur', () => { clearTimeout(timer); timer = null; });
 
   $('form').addEventListener('submit', (e) => { e.preventDefault(); put($('secret').value.trim()); $('loginerr').textContent = ''; load(); });
   drawRanges();
