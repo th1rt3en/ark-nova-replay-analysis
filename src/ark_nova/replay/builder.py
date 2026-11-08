@@ -17,7 +17,7 @@ from typing import Callable
 from ark_nova import data
 from ark_nova.engine.actions import Action
 from ark_nova.engine.game import IllegalAction, apply, start_game
-from ark_nova.engine import icons, tracks
+from ark_nova.engine import cubes, icons, tracks
 from ark_nova.engine.state import ActionCardState, Building, GameConfig, GameState, Phase, SeedSpec, Token
 from ark_nova.parser.deck import classify_draw
 from ark_nova.parser.model import Event, Move, ParsedLog
@@ -179,7 +179,7 @@ def h_increase_size(ctx: _Ctx, e: Event) -> None:
     for i, b in enumerate(p.buildings):
         if b.id == old["id"] or (b.x, b.y) == (old["x"], old["y"]):
             p.buildings[i] = Building(id=int(new["id"]), type=new["type"], x=new["x"], y=new["y"], rotation=new.get("rotation", 0),
-                                      animal=b.animal, animals=list(b.animals))
+                                      animal=b.animal, animals=list(b.animals), cubes=dict(b.cubes))
             return
     p.buildings.append(Building(id=int(new["id"]), type=new["type"], x=new["x"], y=new["y"], rotation=new.get("rotation", 0)))
 
@@ -250,6 +250,12 @@ def h_take_bonus(ctx: _Ctx, e: Event) -> None:
         ctx.__dict__["rep_take"] = True                      # (the card of the reputation track that follows is no notepad bonus)
     if bd.get("bonus_source_type") == "incomeBonusSpace" and e.args.get("player_id") is not None:
         _mark_income_slot(ctx.player(e.args["player_id"]), bd.get("bonus_type"), bd.get("bonus_n"))
+    th, _, _ = str(e.args.get("remove") or "").partition("-")
+    if th in ("5", "8", "99") and bd.get("bonus_type"):               # a random bonus of the conservation track (5 / 8) or the bonus on 16 reputation was taken: it leaves the track
+        opts = ctx.state.conservation_options.get(th) or []        # (the engine does the same; without it the steps built from the log showed the taken bonus again)
+        hit = next((i for i, o in enumerate(opts) if bd["bonus_type"] in o), None)
+        if hit is not None:
+            opts.pop(hit)
     h_meeples(ctx, e)
 
 
@@ -340,6 +346,15 @@ def h_draw_cards(ctx: _Ctx, e: Event) -> None:
             if k in s.base_projects_unused:
                 s.base_projects_unused.remove(k)
     (p.endgame_hand if kind == "scoring" else p.hand).extend(keys)
+    if "for gaining a new university" in (e.log or ""):                    # the card a category university found: remember it on the university (the viewer shows it on hover)
+        from ark_nova.engine.cards import matches
+        for k in keys:
+            for tok in p.tokens:
+                cat = tok.type.split("-", 2)[2] if tok.type.startswith("fac-science-") else None
+                if cat in ("bird", "predator", "herbivore", "primate", "reptile", "marine") and cat not in p.uni_cards \
+                        and matches(("tag", "seaAnimal" if cat == "marine" else cat), k):
+                    p.uni_cards[cat] = k
+                    break
 
 
 def h_discard_cards(ctx: _Ctx, e: Event) -> None:
@@ -470,6 +485,15 @@ def h_unstore_card(ctx: _Ctx, e: Event) -> None:
 
 # ---- zoo -----------------------------------------------------------------------------------------------------------
 
+def cube_totals(buildings) -> list:
+    """[[x, y, cubes], ...] of the special enclosures a log event names (`state` of a building = its cubes after the event; engine/cubes.py)."""
+    out = []
+    for b in buildings or []:
+        if isinstance(b, dict) and not str(b.get("type", "size-")).startswith("size-") and str(b.get("type")) in cubes.CAPACITY and str(b.get("state", "")).lstrip("-").isdigit():
+            out.append([b["x"], b["y"], int(b["state"])])
+    return out
+
+
 def h_buy_animal(ctx: _Ctx, e: Event) -> None:
     s = ctx.state
     a = e.args
@@ -484,13 +508,14 @@ def h_buy_animal(ctx: _Ctx, e: Event) -> None:
     p.money = int(a["total"])
     for n, b in enumerate(a.get("buildings") or []):
         if n and not b["type"].startswith("size-"):
-            break                                        # an aquarium animal spread over several aquariums is kept in the first one
+            break                                        # an aquarium animal spread over several aquariums lives in the first one (its cubes lie in all of them)
         for mine in p.buildings:
             if mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"]):
                 if mine.type.startswith("size-"):
                     mine.animal = k
                 else:                                    # special enclosures hold several animals
                     mine.animals.append(k)
+                    cubes.place(p, mine, k, cube_totals(a.get("buildings")))
 
 
 def h_play_sponsor(ctx: _Ctx, e: Event) -> None:
@@ -537,6 +562,7 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
         p.animals.remove(k)
     p.released.append(k)
     s.main_discard.append(k)
+    cubes.release(p, k, cube_totals(a.get("buildings")))
     emptied = False
     for b in a.get("buildings") or []:                       # the enclosure that was emptied (an animal is not tied to an enclosure)
         for mine in p.buildings:
@@ -570,6 +596,8 @@ def h_move_animal(ctx: _Ctx, e: Event) -> None:
     a = e.args
     p = ctx.player(a["player_id"])
     k = _key(a["card"]["id"])
+    dest = next((b for b in p.buildings if b.id == a["building"]["id"] or (b.x, b.y) == (a["building"]["x"], a["building"]["y"])), None)
+    moved_cubes = cube_totals((a.get("buildings") or []) + [a["building"]])
     freed = {x["id"] for x in a.get("buildings") or []}
     freed_at = {(x["x"], x["y"]) for x in a.get("buildings") or []}
     for b in p.buildings:
@@ -582,6 +610,7 @@ def h_move_animal(ctx: _Ctx, e: Event) -> None:
                 b.animal = k
             else:                                       # moved into a new special enclosure (reptile house / aviary)
                 b.animals.append(k)
+    cubes.move(p, k, dest, moved_cubes)
 
 
 def h_reconstruction_remove(ctx: _Ctx, e: Event) -> None:

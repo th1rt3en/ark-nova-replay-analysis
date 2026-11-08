@@ -1,0 +1,10 @@
+{
+    "_about": "Card names (and where noted the Latin name) as BGA's own log calls them; the fan site's data has older or misspelt ones. Applied by scripts/import_data.py to src/ark_nova/data/*.json (so a re-import keeps them) and by scripts/cardgen/harness/entry.tsx to the card images. Found by comparing the card_name of every card in the sample logs with our data. The bga_id keeps BGA's own spelling (it is used to match, never shown).",
+    "A428": {"name": "NORTHERN GIRAFFE"},
+    "A439": {"name": "LLAMA"},
+    "A467": {"name": "ECUADORIAN SQUIRREL MONKEY"},
+    "A475": {"name": "INDIAN COBRA"},
+    "A547": {"name": "MEDITERRANEAN RAINBOW WRASSE"},
+    "A548": {"name": "SHORT-SNOUTED SEAHORSE", "latinName": "Hippocampus hippocampus"},
+    "S221": {"name": "ARCHAEOLOGIST"}
+}

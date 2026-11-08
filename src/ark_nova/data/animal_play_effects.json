@@ -252,7 +252,7 @@
         }
     },
     "A428": {
-        "name": "GIRAFFE",
+        "name": "NORTHERN GIRAFFE",
         "kind": "complex",
         "plays": 10,
         "events": {
@@ -346,7 +346,7 @@
         "gain": {}
     },
     "A439": {
-        "name": "LAMA",
+        "name": "LLAMA",
         "kind": "fixed",
         "plays": 15,
         "gain": {}
@@ -591,7 +591,7 @@
         }
     },
     "A467": {
-        "name": "ECUADORIAN SQUIRELL MONKEY",
+        "name": "ECUADORIAN SQUIRREL MONKEY",
         "kind": "complex",
         "plays": 24,
         "events": {
@@ -663,7 +663,7 @@
         }
     },
     "A475": {
-        "name": "KING COBRA",
+        "name": "INDIAN COBRA",
         "kind": "complex",
         "plays": 25,
         "events": {
@@ -1338,7 +1338,7 @@
         }
     },
     "A547": {
-        "name": "MEDITERRANEAN RAINBOW",
+        "name": "MEDITERRANEAN RAINBOW WRASSE",
         "kind": "complex",
         "plays": 9,
         "events": {
@@ -1348,7 +1348,7 @@
         }
     },
     "A548": {
-        "name": "LINED SEAHORSE",
+        "name": "SHORT-SNOUTED SEAHORSE",
         "kind": "complex",
         "plays": 6,
         "events": {

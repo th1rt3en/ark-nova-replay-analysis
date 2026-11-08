@@ -126,10 +126,15 @@ function countStats(raw) {
       else if (ty === 'discardCards' && (log.includes('discards ${n} card(s)') || log.includes('during break'))) p.discarded += Number(a.n) || 0;
       else if (ty === 'slideMeeples') {
         if (log.includes('conservation project')) p.projects += 1;
-        else if (log.includes('university')) p.universities += 1;
-        else if (log.includes('Partner zoo')) p.partners += 1;
-        else if (log.includes('increases reputation')) p.reputation += 1;
+        else if (log.includes('increases reputation')) p.reputation += 1;      // (only the Association task: the 2 reputation of a 5 / 8 conservation points bonus replaces no action)
         else if (log.includes('new Association worker') || log.includes('hires a new worker')) p.workers += 1;
+        // every partner zoo / university tile that arrives on the player's board, whatever brought it: the Association task, the free one of 5 / 8 conservation points or of the end of the reputation
+        // track, a placement bonus of the map (the tile's own slide has an empty log line, so the text of the task is not enough)
+        for (const mp of Array.isArray(a.meeples) ? a.meeples : []) {
+          const where = String(mp.location || ''), kind = String(mp.type || '');
+          if (where.startsWith('partner_') && kind.startsWith('partner-')) p.partners += 1;
+          else if (where.startsWith('university_') && kind.startsWith('fac-')) p.universities += 1;
+        }
       } else if (ty === 'endOfGame') ender = s;
     }
   }
@@ -465,6 +470,14 @@ function raceSvg(R, w, h, big) {
 // ---- the panel --------------------------------------------------------------------------------------------------------------------------------------------------------------
 // the points the final scoring added (the sponsors' endgame effects and the endgame cards): the final score minus the score after the last normal turn; null when that cannot be told
 const HOURGLASS = '<svg class="gshg" viewBox="0 0 64 100" aria-hidden="true"><path d="M10 10H54V22C54 36 36.5 43.5 35.5 50C36.5 56.5 54 64 54 78V90H10V78C10 64 27.5 56.5 28.5 50C27.5 43.5 10 36 10 22Z" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><rect x="4" y="2" width="56" height="9" rx="3.5" fill="currentColor"/><rect x="4" y="89" width="56" height="9" rx="3.5" fill="currentColor"/><path d="M20 25C22.5 32 28 36.5 32 39.5C36 36.5 41.5 32 44 25Z" fill="currentColor"/><path d="M19 86.5H45V83C44.5 77 40.5 72 34.5 67.5H29.5C23.5 72 19.5 77 19 83Z" fill="currentColor"/></svg>';
+// the hourglass of a seat on the black score area: the player's colour mixed 70% with white; the three greys are spread so that white, grey and black seats can be told apart
+const HG_GREY = { ffffff: '#FFFFFF', '5a5856': '#ADA9A5', '000000': '#6F7B81' };
+function hourglassColor(k) {
+  const raw = String(seatRawColor(k) || '').replace('#', '').toLowerCase();
+  if (HG_GREY[raw]) return HG_GREY[raw];
+  const m = /^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/.exec(raw);
+  return m && Math.max(...[1, 2, 3].map((q) => parseInt(m[q], 16))) < 80 ? HG_GREY['000000'] : 'color-mix(in srgb, #' + raw + ' 70%, #fff)';
+}
 function endgamePoints() {
   const fin = finalState(), nt = S.replay.normal_turns;
   if (fin.phase !== 'over' || !Array.isArray(nt) || !nt.length) return null;
@@ -590,8 +603,7 @@ function panel() {
   const eg = endgamePoints();
   const swrap = (k) => {                                                                                    // a score with its endgame points (hourglass + value between two thin lines) hanging under it
     const w = el('span', 'gsw'), n = el('span', 'n' + hi(k), String(O.scores[k])); w.append(n);
-    if (eg) { const g = el('span', 'gseg'); const rgb = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(seatColor(k) || '');
-      g.style.setProperty('--hg', rgb && Math.max(...[1, 2, 3].map((q) => parseInt(rgb[q], 16))) < 80 ? '#C3CBCE' : 'color-mix(in srgb, ' + seatColor(k) + ' 58%, #fff)');       // (the player's colour, lightened to read on the black; a (nearly) black seat gets the light grey)
+    if (eg) { const g = el('span', 'gseg'); g.style.setProperty('--hg', hourglassColor(k));
       g.title = 'Points from the final scoring (sponsors and endgame cards)'; g.innerHTML = HOURGLASS + '<b>+' + eg[k] + '</b>'; w.append(g); }
     return w;
   };

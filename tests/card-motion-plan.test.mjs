@@ -1,7 +1,7 @@
 // Run with: node --test tests/card-motion-plan.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { movementPlan, difference, otherPlan, parsePilfer, discardKinds, playedCards, playedRemoved, targetedCount, buildingChanges, buildingFlips, displayChanges, targetedNames, endgamePlan } from '../web/js/card-motion-plan.js';
+import { movementPlan, difference, otherPlan, parsePilfer, discardKinds, playedCards, playedRemoved, targetedCount, buildingChanges, buildingFlips, buildingGrowths, plainPlan, plainOther, displayChanges, targetedNames, endgamePlan } from '../web/js/card-motion-plan.js';
 const state = (hand) => ({ players: [{ hand, under: {}, pouched: [], animals: [], sponsors: [], stored: [] }], display: ['A438'], main_discard: [] });
 test('multiset differences preserve duplicates and ignore ordering', () => {
   assert.deepEqual(difference(['A','B','A'], ['B','A']), ['A']);
@@ -67,10 +67,10 @@ test('pilfer: the receiver gets a pilfer arrival, the giver a pilfer departure',
 });
 test('otherPlan: display take, deck draw and discard of the other seat', () => {
   const a = two(['?'], ['?']), b = two(['?'], ['?', '?', '?']); b.display = [null, 'A2', null];
-  assert.deepEqual(otherPlan(a, b, 0), { display: ['A1'], deck: 1, targeted: 0, discard: 0, sun: 0, glide: 0, pouch: 0, projects: [], egDeck: 0, egDiscard: 0 });
+  assert.deepEqual(otherPlan(a, b, 0), { display: ['A1'], deck: 1, targeted: 0, discard: 0, sun: 0, glide: 0, pouch: 0, pouchSource: null, projects: [], egDeck: 0, egDiscard: 0 });
   const c = two(['?'], ['?', '?']), d = two(['?'], ['?']); d.main_discard = ['Z'];
-  assert.deepEqual(otherPlan(c, d, 0), { display: [], deck: 0, targeted: 0, discard: 1, sun: 0, glide: 0, pouch: 0, projects: [], egDeck: 0, egDiscard: 0 });
-  assert.deepEqual(otherPlan(a, two(['?'], ['?', '?']), 0, [{ from: 0, to: 1, give: 1, get: 1 }]), { display: [], deck: 0, targeted: 0, discard: 0, sun: 0, glide: 0, pouch: 0, projects: [], egDeck: 0, egDiscard: 0 });
+  assert.deepEqual(otherPlan(c, d, 0), { display: [], deck: 0, targeted: 0, discard: 1, sun: 0, glide: 0, pouch: 0, pouchSource: null, projects: [], egDeck: 0, egDiscard: 0 });
+  assert.deepEqual(otherPlan(a, two(['?'], ['?', '?']), 0, [{ from: 0, to: 1, give: 1, get: 1 }]), { display: [], deck: 0, targeted: 0, discard: 0, sun: 0, glide: 0, pouch: 0, pouchSource: null, projects: [], egDeck: 0, egDiscard: 0 });
 });
 test('Sponsors level 3 discards count as sunbathing, level 4 (Marketing) discards are normal discards; discardKinds counts cards per line', () => {
   for (const [text, kind] of [['Ann discards X to gain money (Sponsors3 effect)', 'sun'], ["Ann discards X to increase Sponsors action's strength by 2 (Sponsors3 effect)", 'sun'], ['Ann discards X to play a Sponsor card for money (Sponsors4 effect)', 'discard'], ['Ann discards X to snap a Sponsor card (Sponsors4 effect)', 'discard']]) {
@@ -84,10 +84,14 @@ test('Sponsors level 3 discards count as sunbathing, level 4 (Marketing) discard
 });
 test('otherPlan splits discards into sun, glide and pouch by count', () => {
   const a = two(['?', '?', '?', '?'], ['?', '?', '?', '?']), b = two(['?', '?', '?', '?'], ['?']); b.main_discard = ['Z1', 'Z2', 'Z3'];
-  assert.deepEqual(otherPlan(a, b, 0, [], 'Bob sells A, B cards for 8 money', 'Bob'), { display: [], deck: 0, targeted: 0, discard: 1, sun: 2, glide: 0, pouch: 0, projects: [], egDeck: 0, egDiscard: 0 });
+  assert.deepEqual(otherPlan(a, b, 0, [], 'Bob sells A, B cards for 8 money', 'Bob'), { display: [], deck: 0, targeted: 0, discard: 1, sun: 2, glide: 0, pouch: 0, pouchSource: null, projects: [], egDeck: 0, egDiscard: 0 });
   b.main_discard = ['Z1'];
   const c = two(['?'], ['?', '?']), d = two(['?'], ['?']); d.players[1].pouched = ['P'];
   assert.equal(otherPlan(c, d, 0).pouch, 1);
+  assert.equal(otherPlan(c, d, 0).pouchSource, null);                              // (pouched by the map: no card to tuck it under)
+  const e = two(['?'], ['?']); e.players[1].under = { S212: ['X'] };
+  const f = two(['?'], ['?', '?']); f.players[1].under = {};
+  assert.deepEqual([otherPlan(f, e, 0).pouch, otherPlan(f, e, 0).pouchSource], [1, 'S212']);          // (under Expert On Australia)
 });
 test('otherPlan: the giver\'s step and the getter\'s step each explain only their own hand', () => {
   const a = two(['?'], ['?']), b = two(['?'], ['?', '?']);
@@ -146,6 +150,26 @@ test('buildingChanges: arrivals and cut downs by type and anchor, not turns or a
   assert.deepEqual(buildingChanges(after, after), { added: [], removed: [] });
 });
 
+test('buildingGrowths: an enclosure that grew is paired with the bigger one that covers its cells, whatever its new anchor and rotation', () => {
+  const b = (type, x, y, rotation, cells, animal = null) => ({ type, x, y, rotation, cells, animal });
+  // the two enlargements of table 941429583: move 284 (same anchor, rotation 5 -> 0) and move 394 (anchor 4|9 -> 4|11)
+  const s2 = b('size-2', 4, 9, 5, [[4, 9], [4, 11]]), s3 = b('size-3', 4, 9, 0, [[4, 9], [4, 11], [5, 10]], 'A491'), s4 = b('size-4', 4, 11, 0, [[4, 9], [4, 11], [5, 10], [5, 12]], 'A491');
+  const kiosk = b('kiosk', 1, 1, 0, [[1, 1]]), st = (...bs) => ({ players: [{ buildings: bs }, { buildings: [] }] });
+  assert.deepEqual(buildingGrowths(st(s2, kiosk), st(s3, kiosk)), [{ seat: 0, from: 'size-2|4|9', to: 'size-3|4|9' }]);
+  assert.deepEqual(buildingGrowths(st(s3), st(s4)), [{ seat: 0, from: 'size-3|4|9', to: 'size-4|4|11' }]);
+  assert.deepEqual(buildingGrowths(st(s2), st(s4)), [{ seat: 0, from: 'size-2|4|9', to: 'size-4|4|11' }], 'a jump over two enlargements');
+  // not a growth: a smaller one (a step back), one that does not cover the old cells, a non-standard building, no cells (old data), nothing changed
+  assert.deepEqual(buildingGrowths(st(s4), st(s3)), []);
+  assert.deepEqual(buildingGrowths(st(s3), st(b('size-4', 8, 8, 0, [[8, 8], [8, 10], [9, 9], [9, 11]]))), []);
+  assert.deepEqual(buildingGrowths(st(b('size-1', 1, 1, 0, [[1, 1]])), st(b('kiosk', 1, 1, 0, [[1, 1]]))), []);
+  assert.deepEqual(buildingGrowths(st({ ...s3, cells: undefined }), st({ ...s4, cells: undefined })), []);
+  assert.deepEqual(buildingGrowths(st(s3), st(s3)), []);
+  // two enclosures grew in one step (or a jump): each takes its own bigger one; the other seat is apart
+  const t1 = b('size-1', 0, 0, 0, [[0, 0]]), t2 = b('size-2', 0, 0, 0, [[0, 0], [0, 2]]);
+  const both = buildingGrowths({ players: [{ buildings: [s3, t1] }, { buildings: [t1] }] }, { players: [{ buildings: [s4, t2] }, { buildings: [t2] }] });
+  assert.deepEqual(both, [{ seat: 0, from: 'size-3|4|9', to: 'size-4|4|11' }, { seat: 0, from: 'size-1|0|0', to: 'size-2|0|0' }, { seat: 1, from: 'size-1|0|0', to: 'size-2|0|0' }]);
+});
+
 test('displayChanges: wave / natural discard leaves, a take does not, replenished cards are added', () => {
   const before = { display: ['A1', 'A2', 'A3'], main_discard: ['A9'] };
   const after = { display: ['A3', 'A4', 'A5'], main_discard: ['A9', 'A1'] };
@@ -195,4 +219,13 @@ test('buildingFlips: a standard enclosure that fills or empties turns, a new one
   const after = { players: [{ buildings: [b('size-2', 1, 1, 'A9'), b('size-4', 2, 2), b('aquarium', 3, 3, 'A5'), b('size-1', 4, 4), b('size-3', 5, 5, 'A7')] }] };
   assert.deepEqual(buildingFlips(before, after), [{ seat: 0, id: 'size-2|1|1', occupied: true }, { seat: 0, id: 'size-4|2|2', occupied: false }]);
   assert.deepEqual(buildingFlips(after, after), []);
+});
+
+test('plainPlan / plainOther: thematic kinds become a plain draw or discard', () => {
+  const own = plainPlan({ arrivals: [{ key: 'A1', kind: 'targeted', species: 'Bird' }, { key: 'A2', kind: 'display' }], departures: [{ key: 'A3', kind: 'sun' }, { key: 'A4', kind: 'glide' }, { key: 'A5', kind: 'pouch', source: 'S1' }, { key: 'A6', kind: 'discard' }], projects: [] });
+  assert.deepEqual(own.arrivals, [{ key: 'A1', kind: 'deck' }, { key: 'A2', kind: 'display' }]);
+  assert.deepEqual(own.departures.map((d) => d.kind), ['discard', 'discard', 'discard', 'discard']);
+  const other = plainOther({ display: [], deck: 1, targeted: 1, discard: 1, sun: 2, glide: 1, pouch: 1, projects: [], egDeck: 0, egDiscard: 0 });
+  assert.deepEqual([other.deck, other.targeted, other.discard, other.sun, other.glide, other.pouch], [2, 0, 5, 0, 0, 0]);
+  assert.equal(plainPlan(null), null);
 });

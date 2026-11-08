@@ -32,9 +32,29 @@ export function setSpeed(x) {
 
 // ---- timeline: |----|------|----|, each | is the start of a round (the step after a break ends) ---------------------
 function roundStarts() {
-  const starts = [0];
-  S.replay.steps.forEach((s, i) => { if (/^End of the break/im.test(s.label || '') && i + 1 < S.replay.steps.length) starts.push(i + 1); });
+  const starts = [0], steps = S.replay.steps;
+  if (SANDBOX) {                                                         // (the sandbox's steps are the engine's: a round starts at the first step whose state has a higher round number)
+    steps.forEach((s, i) => { if (i && s.state && steps[i - 1].state && s.state.round > steps[i - 1].state.round) starts.push(i); });
+    return starts;
+  }
+  steps.forEach((s, i) => { if (/^End of the break/im.test(s.label || '') && i + 1 < steps.length) starts.push(i + 1); });
   return starts;
+}
+// Jumping by rounds (replay and sandbox only): right click on the timeline, Ctrl + Left / Right, Ctrl (or Alt) + 1-9.
+export const roundJumps = () => !PLAY && !MINIGAME && (!FORK || SANDBOX);
+const roundOf = (step) => { const st = roundStarts(); let k = 0; st.forEach((a, i) => { if (a <= step) k = i; }); return k; };      // (0-based round that holds a step)
+export function goRound(n) {                                              // the start of round n (1-based); past the last round: nothing
+  const st = roundStarts();
+  if (n < 1 || n > st.length) return;
+  if (S.timer) setPlaying(false);
+  go(st[n - 1], 0);
+}
+export function goRoundBy(d) {                                            // d = -1: the start of this round (the one before when already there); d = 1: the start of the next round (the end of the game from the last round)
+  const st = roundStarts(), k = roundOf(S.step), atStartOfK = S.step === st[k] && S.phase === 0;
+  if (d < 0) return goRound(atStartOfK ? Math.max(1, k) : k + 1);
+  if (k + 1 < st.length) return goRound(k + 2);
+  if (S.timer) setPlaying(false);
+  go(S.replay.steps.length - 1, 99);
 }
 export function buildTimeline() {
   const tl = $('timeline'), n = S.replay.steps.length, starts = roundStarts();
@@ -62,6 +82,7 @@ export function buildTimeline() {
   tl.onpointermove = (e) => { if (!dragging) return; want = stepAt(e); if (!frame) frame = requestAnimationFrame(flush); };
   const end = (e) => { if (!dragging) return; dragging = false; tl.classList.remove('dragging'); if (tl.hasPointerCapture(e.pointerId)) tl.releasePointerCapture(e.pointerId); if (frame) { cancelAnimationFrame(frame); flush(); } };
   tl.onpointerup = end; tl.onpointercancel = end;
+  tl.oncontextmenu = (e) => { if (!roundJumps()) return; e.preventDefault(); goRound(roundOf(stepAt(e)) + 1); };          // (right click: the start of the round under the pointer)
 }
 export function updateTimeline() {
   const head = document.querySelector('#timeline .tlhead'), fill = document.querySelector('#timeline .tlfill');
@@ -124,6 +145,24 @@ function autoClose(forward) {
     if (S.step === i && S.phase === 0 && !S.results) go(i + 2, 0, true);
   }, CLOSE_MS / (Number(S.animationSpeed) || 1));
 }
+// Lagoon (map 14): after the starting hands each player draws a person sponsor, one step per player (`merge_group` "person<seat>", replay/view.py). They are steps of their own (the
+// move bar names each card) but the replay plays them on by itself: reached forward from the deal (or from the first sponsor) with animations on, the next step follows once the
+// cards have landed. Not during autoplay (it steps on anyway), not with Animations = None (each is a step to click), dropped with any other move.
+let chainTimer = 0;
+function personChain(forward) {
+  clearTimeout(chainTimer); chainTimer = 0;
+  if (!forward || MINIGAME || S.timer || S.animations === 'none') return;
+  const i = S.step, next = S.replay.steps[i + 1];
+  if (!next || !/^person\d+$/.test(String(next.merge_group || '')) || S.phase !== framesOf(i).length - 1) return;
+  const t0 = performance.now(), speed = Number(S.animationSpeed) || 1;
+  const tick = () => {
+    chainTimer = 0;
+    if (S.step !== i || S.results) return;
+    if (cardAnimationsBusy() && performance.now() - t0 < 20000) { chainTimer = setTimeout(tick, 80); return; }
+    chainTimer = setTimeout(() => { chainTimer = 0; if (S.step === i && !S.results) go(i + 1, 0, true); }, 350 / speed);       // (a short rest on the landed cards, so the text of the step can be read)
+  };
+  chainTimer = setTimeout(tick, 120);
+}
 export function go(n, phase = 0, animateCards = false) {
   S.cardMotionForward = animateCards;
   const before = S.step;
@@ -133,6 +172,7 @@ export function go(n, phase = 0, animateCards = false) {
   S.step = n;
   S.phase = Math.max(0, Math.min(framesOf(S.step).length - 1, phase));
   autoClose(animateCards);
+  personChain(animateCards);
   if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.multiplierMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
   render();
 }

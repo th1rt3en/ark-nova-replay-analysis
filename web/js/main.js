@@ -18,7 +18,7 @@ import { setupLogSearch, refreshLogSearch } from './log-search.js';
 import { setupLogFilter, refreshLogFilter } from './log-filter.js';
 import { fitDisplay, fitScale } from './layout.js';
 import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
-import { atEnd, atStart, buildMoveList, buildTimeline, go, moveHash, moveNumbers, setPlaying, stepBy, stepOfHash, stepOfMove, updateTimeline } from './playback.js';
+import { atEnd, atStart, buildMoveList, buildTimeline, go, goRound, goRoundBy, moveHash, moveNumbers, roundJumps, setPlaying, stepBy, stepOfHash, stepOfMove, updateTimeline } from './playback.js';
 import { applyTimeline, settingsOpen, setupSettings, toggleSettings } from './settings.js';
 import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
@@ -26,7 +26,7 @@ import { forkBar, initFork, renderForkMoves } from './fork.js';
 import { initPlay } from './play.js';
 import './thin-numbers.js';
 import './bpreview.js';
-import { frameKind, frameState, frameText } from './frames.js';
+import { frameKind, frameState, frameText, shortDraw } from './frames.js';
 import { resultsAvailable, syncResults } from './results.js';
 import { initFullscreen } from './fullscreen.js';
 
@@ -79,7 +79,7 @@ export function render() {
   cur.replaceChildren();
   cur.hidden = kind !== 'text' && kind !== 'both' && (FORK || (kind !== 'draft' && kind !== 'reveal'));       // (the replay's draft frame shows the step text in the bar: the cards are in a lightbox)                 // replay: the step text and the bar are never shown together (frames.js)
   if (!cur.hidden) {
-    let text = frameText();
+    let text = shortDraw(frameText());
     if (FORK && typeof text === 'string') text = text.replace(/^Fork of table #\d+ after step \d+: /, '');       // (the first step of a fork: the server prefixes the label; the fork box above says where it comes from)
     cur.append(labelNode(text, s));
     if (s.engine && s.engine.detail && s.engine.source === 'log' && !/^Normal turn starts/.test(s.engine.detail)) cur.append(el('div', 'engine-detail', 'Engine: ' + s.engine.detail));
@@ -165,6 +165,11 @@ function init() {
   document.addEventListener('keydown', (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
     if ((e.key === 's' || e.key === 'S') && !shortcutsOpen() && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
+    if (!typing && roundJumps() && !settingsOpen() && !shortcutsOpen() && !povDialogOpen() && (e.ctrlKey || e.altKey) && !e.metaKey && !e.shiftKey) {          // round jumps (replay, sandbox)
+      const dig = /^(?:Digit|Numpad)([1-9])$/.exec(e.code || '');
+      if (e.ctrlKey && !e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); goRoundBy(e.key === 'ArrowLeft' ? -1 : 1); return; }
+      if (dig) { e.preventDefault(); goRound(+dig[1]); return; }          // (Ctrl + n; Alt + n too: browsers keep Ctrl + 1-9 for their tabs)
+    }
     if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === 'Tab' && !MINIGAME) { if (cycleDockTab(e.shiftKey ? -1 : 1)) e.preventDefault(); return; }       // (Tab / Shift + Tab: the tabs of the shown cards, dock.js)
     const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
@@ -172,6 +177,23 @@ function init() {
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)
     if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
   });
+  // The side wheel of a mouse (a tilt wheel, or Shift + the wheel, which browsers turn into a horizontal scroll) steps like the arrow keys: right = forward, left = back. One step per notch
+  // (a trackpad's stream of small deltas is summed up and paced), not while a dialog is open, while typing, or when the element under the pointer can scroll sideways itself (a tray of cards).
+  let sideAcc = 0, sideAt = 0;
+  document.addEventListener('wheel', (e) => {
+    const dx = e.deltaX || (e.shiftKey ? e.deltaY : 0);                 // (Shift + the wheel: Chrome on Windows already sends it as deltaX, others keep deltaY)
+    if (e.ctrlKey || e.altKey || e.metaKey || !dx || (e.deltaX && Math.abs(e.deltaX) < Math.abs(e.deltaY))) return;
+    if (MINIGAME || settingsOpen() || shortcutsOpen() || povDialogOpen() || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    for (let n = e.target instanceof Element ? e.target : null; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+      if (/(auto|scroll)/.test(getComputedStyle(n).overflowX) && n.scrollWidth > n.clientWidth + 1) return;
+    }
+    e.preventDefault();                                                  // (also keeps a sideways swipe from being the browser's back / forward)
+    const now = performance.now();
+    if (now - sideAt > 400) sideAcc = 0;
+    sideAcc += dx;
+    if (Math.abs(sideAcc) < 30 || now - sideAt < 140) return;
+    stepBy(sideAcc > 0 ? 1 : -1); sideAcc = 0; sideAt = now;
+  }, { passive: false });
   if (SANDBOX) initSandbox();
   else if (PLAY) initPlay();
   else if (FORK) initFork();

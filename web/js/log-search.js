@@ -86,10 +86,11 @@ export function setupLogSearch() {
   down = el('button', 'ls-btn'); down.type = 'button'; down.title = 'Next hit (Enter)'; down.setAttribute('aria-label', 'Next hit');
   down.append(icon('ls-chev', '0 0 16 16', 'M3 6l5 5 5-5'));
   nav.append(up, down);
+  const zone = el('span', 'ls-grp'); zone.append(count, nav);                      // (the count and the arrows are one control, set apart from the X)
   fun = el('button', 'ls-fun'); fun.type = 'button'; fun.title = 'Filters'; fun.setAttribute('aria-label', 'Filters');
   fun.append(icon('ls-funnel', '0 0 24 24', 'M3 6h18M6 12h12M10 18h4'));
   funCount = el('b', 'ls-fk'); funCount.hidden = true; fun.append(funCount);
-  row.append(MAG(), input, clear, count, nav, el('i', 'ls-sep'), fun);
+  row.append(MAG(), input, clear, zone, el('i', 'ls-sep'), fun);
   bar.append(row);
   list.replaceWith(box); box.append(bar, list);
   const reset = () => { input.value = ''; q = ''; cur = null; clear.hidden = true; refreshLogSearch(); };

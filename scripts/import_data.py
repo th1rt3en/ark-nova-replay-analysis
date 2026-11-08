@@ -59,6 +59,7 @@ def main() -> None:
     def dump(name: str, obj) -> None:
         (OUT / name).write_text(json.dumps(obj, ensure_ascii=False, indent=4).replace("Sun Bathing", "Sunbathing"), "utf8")  # (upstream spells it "Sun Bathing")
 
+    NAME_FIXES = {k: v for k, v in json.loads((ROOT / "data_manual" / "card_names.json").read_text("utf8")).items() if not k.startswith("_")}
     bga_names = raw["cardNames"]  # upstream id -> BGA id string (incomplete upstream)
 
     def cards(kind: str, prefix: str, items: list) -> list:
@@ -69,6 +70,7 @@ def main() -> None:
             c["card_type"] = kind
             c["key"] = f"{prefix}{int(c['id']):03d}"  # join key: matches the letter+number part of BGA ids, e.g. A414
             c["bga_id"] = bga_names.get(c["id"])
+            c.update(NAME_FIXES.get(c["key"], {}))  # (BGA's own names, data_manual/card_names.json)
             out.append(c)
         return out
 

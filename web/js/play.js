@@ -9,6 +9,7 @@ import { refreshBar } from './action-bar.js';
 import { playFork, renderForkMoves, warnIrreversible } from './fork.js';
 import { mountChat } from './chat.js';
 import { chatTab } from './sidebar.js';
+import { expandLagoonDeal, personStep } from './lagoon-deal.js';
 
 const P = S.play;
 
@@ -157,11 +158,13 @@ export function pushLive(p) {
   P.version = p.version;
   if (p.status) P.status = p.status;
   if (p.view && p.view.clock) setClock(p.view.clock);
-  const wasLast = S.step === S.replay.steps.length - 1;
+  const wasLast = S.replay.steps.slice(S.step + 1).every(personStep);          // (on the last step, or on a person sponsor step of a Lagoon deal that is still being played on)
   const hadMove = S.replay.steps.some((st) => (st.actions || []).length > 0);
   for (const st of S.replay.steps) st.actions = [];                          // (only the latest position can be played)
-  const next = playStep(p, S.replay.steps.length);
-  S.replay.steps.push(next);
+  const lastState = S.replay.steps[S.replay.steps.length - 1].state;
+  const batch = expandLagoonDeal(lastState, [playStep(p, S.replay.steps.length)]);          // (Map 14: the starting hands come with the person sponsors, steps of their own)
+  const firstNew = S.replay.steps.length, next = batch[batch.length - 1];
+  for (const st of batch) { st.index = S.replay.steps.length; S.replay.steps.push(st); }
   stageBreaks(S.replay);
   buildMoveList();
   $('jump').max = S.replay.steps.length - 1;
@@ -171,7 +174,7 @@ export function pushLive(p) {
       if (r.ok && r.body.maps.length) { Object.assign(S.replay, { maps: r.body.maps, map_names: r.body.map_names, map_images: r.body.map_images, map_views: r.body.map_views, cards: r.body.cards, base_projects: r.body.base_projects }); go(S.replay.steps.length - 1); }
     });
   }
-  if (wasLast) go(S.replay.steps.length - 1); else renderForkMoves();
+  if (wasLast) { if (batch.length > 1) go(firstNew, 0, true); else go(S.replay.steps.length - 1); } else renderForkMoves();
   if (p.view && p.view.end) showGameEnd(p.view.end);
   else playEndCheck();
   if (!hadMove && next.actions.length) turnAlert('It is your turn');                  // the turn has just passed to this player (not after the player's own move)

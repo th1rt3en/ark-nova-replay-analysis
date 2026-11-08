@@ -14,6 +14,8 @@ import { pointsBadge } from './egpoints.js';
 import { draftMarks } from './action-bar.js';          // (the cards the viewer highlighted with a click, shared with the action card draft; cleared at every step)
 
 const DRAW = /^(.+?) draws .* for (perception|hunter|scuba dive|scavenging) effect$/i;
+const MAXROW = 5, ROWED = new Set(['perception', 'hunter', 'scuba dive', 'scavenging']);
+const perRow = (effect, n) => effect === 'assertion' ? Math.ceil(n / 2) : ROWED.has(effect) && n > MAXROW ? Math.ceil(n / Math.ceil(n / MAXROW)) : 0;      // (cards per row: Assertion always two rows, the others at most 5 in a row, then the cards are split evenly with the longer row first: 6 = 3 + 3, 7 = 4 + 3, 8 = 4 + 4, 9 = 5 + 4; 0 = one row as before)
 const NAME = { perception: 'Perception', hunter: 'Hunter', 'scuba dive': 'Scuba Dive', scavenging: 'Scavenging', resistance: 'Resistance', assertion: 'Assertion', horse: 'Horse Whisperer', adapt: 'Adapt' };
 const ONLY = { hunter: 'A', 'scuba dive': 'S', assertion: 'P' };                     // (the first letter of the keys the effect may take; the others take any card)
 export const takes = (effect, key) => !ONLY[effect] || String(key).startsWith(ONLY[effect]);
@@ -123,7 +125,7 @@ export function centerNav(wrap) {
 export function showReveal(r, nav) {
   if (r.effect === 'horse') return showHorse(r, nav);
   if (r.effect === 'adapt') return showAdapt(r, nav);
-  const hidden = false, pop = el('div', 'draftpop revealpop replayreveal' + (r.effect === 'assertion' ? ' assertpop' : '')), group = el('div', 'draftgroup'), row = el('div', 'draftcards');
+  const hidden = false, pop = el('div', 'draftpop revealpop replayreveal' + (perRow(r.effect, r.cards.length) ? ' assertpop' : '')), group = el('div', 'draftgroup'), row = el('div', 'draftcards');
   const say = r.effect === 'assertion' ? (r.kept ? 'keeps ' + cardName(r.kept[0]) + ' with Assertion' : 'reveals ' + plural(r.cards.length, 'base project') + ' for Assertion')
     : 'reveals ' + plural(r.cards.length, r.effect === 'resistance' ? 'endgame card' : 'card') + ' for ' + NAME[r.effect];      // (the same headline on the draw frame and on the keep frame: the seals show what was kept)
   for (const k of r.cards) {
@@ -139,7 +141,7 @@ export function showReveal(r, nav) {
     }
     row.append(c);
   }
-  if (r.effect === 'assertion') pop.style.setProperty('--per', String(Math.ceil(r.cards.length / 2)));          // (two rows: the first has the larger half, 8 = 4 + 4, 9 = 5 + 4, 11 = 6 + 5; the cards get narrower from 7 in a row on, css `.assertpop`)
+  if (perRow(r.effect, r.cards.length)) pop.style.setProperty('--per', String(perRow(r.effect, r.cards.length)));          // (two rows: the first has the larger half, 8 = 4 + 4, 9 = 5 + 4, 11 = 6 + 5; the cards get narrower from 7 in a row on, css `.assertpop`)
   group.append(head(r.seat, say, r.effect));
   group.append(row);
   pop.append(group);
@@ -321,8 +323,8 @@ export function forkReveal(o, acts, play) {
   const offered = new Set(mine.flatMap(keys));
   if (!S.revealSel || S.revealSel.index !== e.index || S.revealSel.step !== S.step) S.revealSel = { index: e.index, step: S.step, sel: [] };
   const sel = S.revealSel.sel;
-  const pop = el('div', 'draftpop revealpop' + (effect === 'assertion' ? ' assertpop' : '')), group = el('div', 'draftgroup'), row = el('div', 'draftcards');
-  if (effect === 'assertion') pop.style.setProperty('--per', String(Math.ceil(e.cards.length / 2)));
+  const pop = el('div', 'draftpop revealpop' + (perRow(effect, e.cards.length) ? ' assertpop' : '')), group = el('div', 'draftgroup'), row = el('div', 'draftcards');
+  if (perRow(effect, e.cards.length)) pop.style.setProperty('--per', String(perRow(effect, e.cards.length)));
   const none = !offered.size;
   group.append(head(seat, none ? 'reveals ' + plural(e.cards.length, 'card') + ' for ' + NAME[effect]
     : 'must choose ' + plural(n, 'card') + ' to keep (' + NAME[effect] + ')', effect), row);

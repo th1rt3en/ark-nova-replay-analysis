@@ -15,6 +15,9 @@ body.compact .ark-card.zoo-card .ark-card-wrapper .ark-card-middle { height: ${S
 body.compact .ark-card.zoo-card .ark-card-wrapper .ark-card-bottom { height: ${CARD - PHOTO - STRIPE_SMALL + LIP * 2 - LIP}px !important; }
 body.compact .ark-card.zoo-card.scoring-card .ark-card-wrapper .ark-card-bottom { /* small endgame cards: the body starts LIP px under the stripe (the stripe's negative margin), so its top padding is LIP larger: the text and table are centred in the visible free space like on the large card */ padding-top: ${6 + LIP}px !important; padding-bottom: 6px !important; }
 `;
+// animals: the ability icon on the photo (Venom, Hypnosis, Constriction, Pilfering: the octagon, `> .arknova-meeple`) is placed by the fan site at top 213 (+ 70 high = 283) for its 297 px photo, 14 px above the stripe;
+// with the 260 px photo the same offset would put the lower part of it under the stripe, so it keeps the same 14 px above the stripe (as on BGA, where it is fully inside the photo)
+out += `.ark-card.zoo-card.animal-card .ark-card-wrapper .ark-card-top > .arknova-meeple { top: ${PHOTO - 14 - 70}px !important; }\n`;
 // animals: the photo (377 x 301) is scaled to cover the taller element, top aligned, the sides are cropped a little
 out += `.ark-card.zoo-card.animal-card .ark-card-wrapper .ark-card-top { background-size: cover !important; background-position: 50% 0 !important; }\n`;
 // the Adapt wave icon of some animals hangs under the stripe at a fixed top (343 = 4 px above the stripe's lower edge of the fan site's 297 + 50 layout)

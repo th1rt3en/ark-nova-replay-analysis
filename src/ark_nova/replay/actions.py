@@ -46,6 +46,13 @@ def turn_events(parsed: ParsedLog) -> list[list[Event]]:
     return turns
 
 
+def _cubes(buildings) -> dict:
+    """{"cubes": [[x, y, count], ...]}: the cubes BGA shows on the special enclosures the event names (engine/cubes.py), or nothing."""
+    from ark_nova.replay.builder import cube_totals
+    t = cube_totals([b for b in buildings or [] if b])
+    return {"cubes": t} if t else {}
+
+
 def _key(card_id: str) -> str:
     return data.parse_bga_card_id(card_id)[0]
 
@@ -698,7 +705,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             bl = a.get("buildings") or []
             if not bl:
                 return "moved animal without a freed enclosure"
-            add(Action(seat_of[str(a.get("player_id"))], "choose_effect", {"move": _key(a["card"]["id"]), "from": [bl[0]["x"], bl[0]["y"]]}), e)
+            add(Action(seat_of[str(a.get("player_id"))], "choose_effect", {"move": _key(a["card"]["id"]), "from": [bl[0]["x"], bl[0]["y"]],
+                                                               **_cubes(bl + [a.get("building")])}), e)
         elif t == "pStoreCard":                                       # map 11: a card of the hand goes into the storage
             add(Action(seat_of[str(e.player or a.get("player_id"))], "choose_effect", {"store": _key(a["cards"][0]["id"])}), e)
         elif t == "pDiscardCards":
@@ -719,11 +727,11 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                     boosts.append({"Association": "association", "Sponsors": "sponsors", "Animal": "animals", "Card": "cards",
                                    "Building": "build"}[ab["keyword"]["name"][7:]])
             add(Action(seat, "play_animal", {"card": _key(a["card"]["id"]), "from_display": bool(a.get("fromDisplay")),
-                                             **({"x": bs[0]["x"], "y": bs[0]["y"]} if bs else {"flock": True})}), e)
+                                             **({"x": bs[0]["x"], "y": bs[0]["y"]} if bs else {"flock": True}), **_cubes(bs)}), e)
         elif t == "releaseAnimal":
             bl = a.get("buildings") or []
             add(Action(seat, "choose_effect", {"release": _key(a["card"]["id"]), **({"building": [bl[0]["x"], bl[0]["y"]]} if bl else {}),
-                                                         **({"also": [[b_["x"], b_["y"]] for b_ in bl[1:]]} if len(bl) > 1 else {})}), e)      # (the log may name several enclosures that were emptied)    # Release projects
+                                                         **({"also": [[b_["x"], b_["y"]] for b_ in bl[1:]]} if len(bl) > 1 else {}), **_cubes(bl)}), e)      # (the log may name several enclosures that were emptied)    # Release projects
         elif t == "wazaSpecial":
             add(Action(seat, "choose_effect", {"waza": a["type"]}), e)
         elif t == "reconstructionRemove":

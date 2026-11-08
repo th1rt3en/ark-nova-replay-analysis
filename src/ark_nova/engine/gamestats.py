@@ -4,7 +4,7 @@ They are part of the state, so a move that is taken back takes its numbers back 
 
 - `turns`, `actions` (per kind of action card chosen), `passes` (an action card put back on slot 1 for an X token);
 - `money_gained` / `money_spent` and `x_gained` / `x_used`, counted where the resource changes (every gain goes through `game._gain`, every payment through `spent`);
-- `assoc`: the tasks of the Association action (2 reputation, partner zoo, university, project), `animals_played`, `animals_released`, `sponsors_played`, `breaks` (triggered);
+- `assoc`: the tasks of the Association action (2 reputation, partner zoo, university, project); the partner zoos and universities also count when they come free (conservation bonus, reputation track, map bonus: `association.take_tile`), the 2 reputation of such a bonus does not (it replaces no action), `animals_played`, `animals_released`, `sponsors_played`, `breaks` (triggered);
 - `points`: the points of the score (appeal + conservation points) by where they were scored: Animals / Sponsors / Association (= projects) while that kind of action
   is running, the final scoring of the sponsors under `sponsors`, and everything else (build, cards, the break's income, the endgame cards) under `others`. The score at the start
   of the game (-14 and what the map gives at once) is not counted: it is kept apart as `start`, and the sources add up to the score minus `start`.

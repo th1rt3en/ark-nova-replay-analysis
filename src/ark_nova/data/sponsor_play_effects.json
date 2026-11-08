@@ -189,7 +189,7 @@
         }
     },
     "S221": {
-        "name": "ARCHEOLOGIST",
+        "name": "ARCHAEOLOGIST",
         "kind": "fixed",
         "plays": 18,
         "gain": {}

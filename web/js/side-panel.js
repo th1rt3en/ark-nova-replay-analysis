@@ -2,6 +2,7 @@
 import { $, el, seatColor } from './util.js';
 import { PLAY, S, SHOW_ELO, table } from './state.js';
 import { hides, seatOrder } from './pov.js';
+import { motionOff } from './motion.js';
 import { bindPreview, variantStatsBox, zoneNew } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, inkDxEm, pic, workerUrl } from './icons.js';
 import { clockBadge, gameMenu } from './play.js';
@@ -121,7 +122,7 @@ function centreInk(node) {
 }
 // The break marker moves from dot to dot (a hop on a small arc per step, the first hop of a round drops onto the first dot; a new round puts the marker back on the first dot with a pop), the number changes and ticks when the marker has landed, and the pill flashes green when the marker reaches 9. Only when
 // the break moved from the picture before (a few steps: a jump of the position leaves it as it is); every mode (css `.pips .mk`, `.bn.tick`). The dots are drawn in their final state by `headerStats`: here they go back to the start and fill up.
-const HOP_MS = 230, hopsReduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+const HOP_MS = 230, hopsReduced = motionOff;
 function hopBreak(brk, pips, num, from, to) {
   if (from === undefined || from === to || hopsReduced() || !pips.animate) return;
   const speed = Math.max(.1, Number(S.animationSpeed) || 1), dots = [...pips.children], ms = HOP_MS / speed;

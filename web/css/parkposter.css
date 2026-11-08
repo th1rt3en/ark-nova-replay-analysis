@@ -252,7 +252,7 @@ body.viewer .poveye { color: inherit; }
 /* the score: a scoreboard, one plate per character on an ink plate; a plate swings over (rotateX, `plate` in side-panel.js) when its character changes; the small hole at the top is the hook */
 /* score: a chip with the number in white (side-panel.js); the player colour darkened, a thin light rim; as wide as its digits need (min 36 px), the type size and the shape do not change for 112 or -14.
    Own colours where the darkened colour does not work (`chipTone` in side-panel.js): black (a dark grey-green, brighter rim), orange (deep amber), yellow (deep gold, pale yellow rim). */
-body.viewer .chip { display: grid; place-items: center; min-width: 36px; height: 36px; padding: 3px 7px 0; box-sizing: border-box; background: color-mix(in srgb, var(--pc) 60%, #000); color: #fff; border-radius: 9px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); font: 400 24px/1 'Park Num', system-ui, sans-serif; letter-spacing: 0; }
+body.viewer .chip { display: grid; place-items: center; width: 58px; min-width: 58px; height: 36px; padding: 3px 7px 0; box-sizing: border-box; background: color-mix(in srgb, var(--pc) 60%, #000); color: #fff; border-radius: 9px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35); font: 400 24px/1 'Park Num', system-ui, sans-serif; letter-spacing: 0; }
 body.viewer .pp.chip-black .chip { background: #14201F; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .5); }
 body.viewer .pp.chip-amber .chip { background: #5A2E00; box-shadow: inset 0 0 0 2px rgba(255, 200, 150, .5); }
 body.viewer .pp.chip-gold .chip { background: #7A6600; box-shadow: inset 0 0 0 2px rgba(255, 246, 170, .55); }
@@ -299,7 +299,7 @@ body.viewer .ppicons .ic b { position: absolute; right: -4px; bottom: -4px; min-
   background: var(--paper); border: 3px solid var(--ink); border-radius: 14px; color: var(--ink); }
 body.viewer .ppicons .ic.zero { opacity: 1; }
 body.viewer .ppicons .ic.zero .badge { opacity: .3; }
-body.viewer .ppicons .ic.zero b { opacity: .55; }
+body.viewer .ppicons .ic.zero b { display: none; }                               /* (an empty slot shows no 0, only its faded badge) */
 
 /* log */
 body.viewer .sidebar .moves { flex: 1 1 0; min-height: 0; padding: 8px 10px; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 6px 0 var(--ink); font: 600 18px/1.15 'Nunito Sans', system-ui, sans-serif; }
@@ -346,7 +346,9 @@ body.viewer .setswitch:checked::after { left: 33px; background: var(--paper); }
    cards that move up under the pointer do not take the hover away: the fan never flickers ------------------------------------------------------------------------------------- */
 body.viewer { --hk: calc(1.5 * var(--hs, 1)); }                    /* hand scale: the default hand is 1.5 x the first design (--hs = 1), the setting changes --hs */
 body.viewer .dock { left: 14px; bottom: 0; z-index: 35; width: calc(150px + 560px * var(--hk)); height: calc(150px * var(--hk)); max-width: none; display: block; pointer-events: none; }
-body.viewer .dock::after { content: ""; position: absolute; left: 150px; bottom: 0; width: calc(560px * var(--hk)); height: calc(124px * var(--hk)); pointer-events: auto; }
+body.viewer .dock::after { content: ""; position: absolute; left: var(--fl, 150px); bottom: 0; width: var(--fw, calc(560px * var(--hk))); height: calc(124px * var(--hk)); pointer-events: auto; }      /* (--fl / --fw: where the cards lie at rest, measured by dock.js `fitDockSpace`: the fan reacts only over its cards, not over the empty width of the panel) */
+body.viewer .dock:not(.traymode) .dockpanel { pointer-events: none; }
+body.viewer .dock:not(.traymode) .dockpanel .cards .card { pointer-events: auto; }
 body.viewer .dockbar { position: absolute; left: 0; bottom: 6px; z-index: 3; display: grid; gap: 6px; padding: 0; background: none; box-shadow: none; border-radius: 0; pointer-events: auto; }
 body.viewer .dockgroup { display: grid; grid-template-columns: auto; gap: 6px; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; }       /* no frame, no name: the open eye says whose cards these are; the two pills (hand, endgame cards) are stacked and small: 62 px each, 130 px together, about as high as the part of the fan that shows at rest */
 
@@ -544,6 +546,14 @@ body.viewer .kbkey.on.long { font-size: calc(var(--u) * .3); }
 body.viewer .kbkey.on:hover { transform: translateY(-2px); }
 body.viewer .kbkey.on:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 body.viewer .kbkey.on.sel, body.viewer .kbkey.on.down { background: var(--acc); color: var(--ink); transform: translateY(3px); box-shadow: none; }
+/* the Ctrl layer (shortcuts.js): Ctrl is a key of its own; clicking it latches it (orange, pressed, a padlock above the label) until it is clicked again; while it is on, the keys with a Ctrl function are lit and the plain ones are quiet */
+body.viewer .kbkey.ctl { row-gap: 1px; align-content: center; }
+body.viewer .kbkey.ctl svg { display: none; width: calc(var(--u) * .3); height: calc(var(--u) * .3); }
+body.viewer .kbkey.ctl span { line-height: 1; }
+body.viewer .kb.ctrl .kbkey.ctl { font-size: calc(var(--u) * .3); }
+body.viewer .kb.ctrl .kbkey.ctl svg { display: block; }
+body.viewer .kb.ctrl .kbkey.ctl.on { background: var(--acc); color: var(--ink); transform: translateY(3px); box-shadow: none; }
+body.viewer .kbkey:not(.on) { cursor: default; }
 @media (prefers-reduced-motion: reduce) { body.viewer .kbcur { animation: none; } body.viewer .kbkey.on, body.viewer .kbbox .modalx { transition: none; } }
 body.viewer .setrange:focus-visible { outline: none; }
 body.viewer .setrange:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--sun); }
@@ -1079,7 +1089,7 @@ body.viewer .rt.ov b.d3 { letter-spacing: -.09em; font-size: 22px; }          /*
 /* ---- the reveal lightbox (Perception, Scavenging, Hunter, Scuba Dive; reveal.js): the layer, panel, seal and faded cards of the action card draft; a card the effect cannot take is grey and dark and cannot be chosen,
    a card the viewer may not see is a card back. A card to choose (fork / live game) lifts on hover; the chosen ones carry the seal (`.picked`). -- */
 body.viewer .draftpop.revealpop .draftcards { justify-content: center; }
-body.viewer .draftcard.unavailable { filter: grayscale(1) brightness(.5); opacity: .75; cursor: not-allowed; }
+body.viewer .draftcard.unavailable { filter: grayscale(1) brightness(.82) contrast(.95); opacity: 1; cursor: not-allowed; }   /* solid grey: nothing of the dim or the board shows through (changelog) */
 body.viewer .draftcard.choosable { cursor: pointer; transition: transform .12s; }
 body.viewer .draftcard.choosable:hover { transform: translateY(-6px); }
 body.viewer .draftcard.faceless { aspect-ratio: 360 / 503; display: grid; place-items: center; box-sizing: border-box; background: repeating-linear-gradient(45deg, #5b3a24 0 8px, #6b4630 8px 16px); border: 3px solid #e8dcb8; }
@@ -1112,7 +1122,7 @@ body.viewer .draftpop.revealpop .revealbtns .forkmove { display: block; margin: 
 
 /* ---- lightbox look "Spotlight" (action draft + Perception / Scavenging / Hunter / Scuba Dive reveals): no panel, the cards in a warm spotlight, the headline on an orange ribbon with notched ends.
    Specificity: body.viewer .draftpop .drafthead (rule near the top of this file) sets the plain look, the rules below come later with the same weight. */
-body.viewer .draftbox::before { background: radial-gradient(760px 520px at 50% 52%, rgba(244, 182, 63, .30), rgba(8, 40, 50, .78) 64%), rgba(8, 40, 50, .72); }
+body.viewer .draftbox::before { background: radial-gradient(760px 520px at 50% 52%, rgba(244, 182, 63, .28), rgba(8, 40, 50, .55) 64%), rgba(8, 40, 50, .45); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }       /* (lighter dim, level 2 of the mock: the board stays readable behind the cards) */
 body.viewer .draftpop { background: none; border: 0; box-shadow: none; padding: 0; overflow: visible; }
 body.viewer .draftpop .draftgroup + .draftgroup { border-top: 0; padding-top: 0; }
 body.viewer .draftpop .draftcards { position: relative; padding: 24px 14px 30px; }
@@ -1155,9 +1165,18 @@ body.viewer .draftbox.lbopen .headrow .fxicon { animation: lbIcon .25s ease-out 
 
 /* ---- the headline of the action card draft (action-bar.js `draftBar`, text "Action card draft"): the same ribbon as the reveals, in harbour teal with the gold edges ---- */
 body.viewer .draftpop .drafthead.actionhead { background: #1f5f6b; color: #FFF6DC; }
+/* the action card draft headline has no effect icon: a gold line follows the swallowtail on both ends (same 4 px gold as the reveals' right end above) */
+body.viewer .draftpop .headrow.noicon { left: 0; }
+body.viewer .draftpop .headrow.noicon .drafthead { padding-left: 56px; }
+body.viewer .draftpop .headrow.noicon::before { content: ""; position: absolute; left: -2px; top: 0; bottom: 0; width: 30px; pointer-events: none; z-index: 4; background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 100' preserveAspectRatio='none'><path d='M0 0 L26 50 L0 100' fill='none' stroke='%23F4B63F' stroke-width='4' vector-effect='non-scaling-stroke'/></svg>") no-repeat; }
+
 
 /* the settings panel hangs from a fixed top edge (above the vertical centre) instead of being centred: switching between tabs with more or fewer settings grows or shrinks it downwards, the top edge and the tabs stay where they are */
 body.viewer #settingsModal { align-items: flex-start; padding-top: 14vh; box-sizing: border-box; }
+/* ... but only as long as the tallest tab still fits below it: a window wider than the design width (zoom > 1, e.g. a 3440 px ultrawide) has a short layout height, and 14vh (not --vh)
+   grows with the zoom; then the gap shrinks to what is left (at least 12 px) and, if even that is too little, the pop-up scrolls (table.css .modal). --settall: the box with the
+   tallest tab (Board in the replay: 594 px) + its shadow. On windows where the box fits, `min()` gives 14vh, i.e. exactly the old position. */
+body.viewer #settingsModal { --settall: 604px; padding-top: min(14vh, max(12px, calc(var(--vh, 1vh) * 100 - var(--settall) - 12px))); padding-bottom: 12px; }
 
 /* ---- settings panel "Coloured header per tab" (settings.js): a cream panel under a coloured header band; the band is a fixed harbour teal; the active tab and the controls take the colour of the active tab (Control orange, Board green, Cards blue: `data-tab` on the box); a pastel icon chip in front of every setting; Bowlby One for the title, the tabs and the slider knob. These rules override the older settings rules above (.setrow, .setswitch, .setselect, the slider, .modalbox / .modalhead of the settings, the tabs). ---- */
 body.viewer #settingsModal .modalbox { position: relative; --tc: var(--sun); width: 690px; max-width: 94vw; padding: 0; overflow: hidden; border-width: 5px; border-radius: 26px; box-shadow: 0 10px 0 var(--ink); background: var(--paper); }
@@ -1185,13 +1204,30 @@ body.viewer #settingsModal .setswitch { flex: none; margin-left: auto; width: 66
 body.viewer #settingsModal .setswitch::after { top: 3px; left: 3px; width: 24px; height: 24px; border: 0; background: var(--ink); }
 body.viewer #settingsModal .setswitch:checked { background: var(--tc); }
 body.viewer #settingsModal .setswitch:checked::after { left: 31px; background: #FFF6DC; border: 3px solid var(--ink); box-sizing: border-box; }
+/* Animations: a three-part switch in one frame (green all, yellow only standard, red none); the chosen field is solid, the others tinted; the words are tooltips (data-tip) */
+body.viewer #settingsModal .setthree { flex: none; margin-left: auto; display: flex; width: 232px; border: 4px solid var(--ink); border-radius: 14px; background: var(--ink); box-shadow: 0 4px 0 var(--ink); position: relative; }
+body.viewer #settingsModal .setthree-opt { position: relative; flex: 1; height: 46px; padding: 0; border: 0; border-radius: 0; background: var(--t); display: grid; place-items: center; cursor: pointer; font: inherit; }
+body.viewer #settingsModal .setthree-opt + .setthree-opt { border-left: 4px solid var(--ink); }
+body.viewer #settingsModal .setthree-opt:first-child { border-radius: 9px 0 0 9px; }
+body.viewer #settingsModal .setthree-opt:last-child { border-radius: 0 9px 9px 0; }
+body.viewer #settingsModal .setthree-opt[data-v="all"] { --c: #35b567; --t: #a9dfbb; }
+body.viewer #settingsModal .setthree-opt[data-v="standard"] { --c: #F4B63F; --t: #f8d88a; }
+body.viewer #settingsModal .setthree-opt[data-v="none"] { --c: #e2503f; --t: #f1a79d; }
+body.viewer #settingsModal .setthree-opt:hover, body.viewer #settingsModal .setthree-opt[aria-checked="true"] { background: var(--c); }
+body.viewer #settingsModal .setthree-opt svg { width: 26px; height: 26px; fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+body.viewer #settingsModal .setthree-opt:hover svg, body.viewer #settingsModal .setthree-opt[aria-checked="true"] svg { opacity: 1; }
+body.viewer #settingsModal .setthree-opt:focus-visible { outline: 4px solid var(--ink); outline-offset: -8px; }
+body.viewer #settingsModal .setthree-opt:hover::after, body.viewer #settingsModal .setthree-opt:focus-visible::after { content: attr(data-tip); position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%); z-index: 30; width: max-content; max-width: 280px; padding: 5px 10px; border-radius: 8px; border: 4px solid var(--ink); background: #F4F4F2; color: var(--ink); font: 700 15px/1.35 'Nunito Sans', system-ui, sans-serif; text-align: center; white-space: pre-line; pointer-events: none; box-shadow: 0 5px 0 var(--ink); }
 body.viewer #settingsModal .setslide { display: flex; }
-body.viewer #settingsModal .settrack { flex: none; width: 330px; --knob: 50px; --f: 0; }
-body.viewer #settingsModal .setrange::-webkit-slider-runnable-track { height: 9px; border-radius: 99px; border: 3px solid var(--ink); box-sizing: border-box; box-shadow: none; background: linear-gradient(to right, var(--tc) calc(var(--knob) / 2 + (100% - var(--knob)) * var(--f)), #FFF6DC 0); }
-body.viewer #settingsModal .setrange::-moz-range-track { height: 9px; border-radius: 99px; border: 3px solid var(--ink); box-sizing: border-box; box-shadow: none; background: linear-gradient(to right, var(--tc) calc(var(--knob) / 2 + (100% - var(--knob)) * var(--f)), #FFF6DC 0); }
-body.viewer #settingsModal .setrange::-webkit-slider-thumb { height: 32px; margin-top: -12px; border-radius: 99px; border: 4px solid var(--ink); background: var(--ink); }
-body.viewer #settingsModal .setrange::-moz-range-thumb { height: 32px; border-radius: 99px; border: 4px solid var(--ink); background: var(--ink); }
-body.viewer #settingsModal .setbubble { font: 400 16px/1 'Bowlby One', sans-serif; color: #FFF6DC; letter-spacing: 0; }
+body.viewer #settingsModal .settrack { flex: none; width: 330px; --knob: 76px; --inset: 9px; --f: 0; }
+/* the rail is drawn by the track itself, a little longer than the travel of the knob (`--inset` on each side), the range input lies over it with a transparent runnable track */
+body.viewer #settingsModal .settrack::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 9px; margin-top: -4.5px; border-radius: 99px; border: 3px solid var(--ink); box-sizing: border-box; pointer-events: none; background: linear-gradient(to right, var(--tc) calc(var(--inset) + var(--knob) / 2 + (100% - 2 * var(--inset) - var(--knob)) * var(--f) + (var(--knob) / 2 + var(--inset)) * clamp(0, (var(--f) - .98) * 50, 1)), #FFF6DC 0); background-origin: border-box; }          /* (on the last step the colour runs on to the end of the rail) */
+body.viewer #settingsModal .settrack .setrange { width: calc(100% - 2 * var(--inset)); margin: 0 var(--inset); position: relative; }
+body.viewer #settingsModal .setrange::-webkit-slider-runnable-track { height: 9px; border: 0; box-shadow: none; background: none; }
+body.viewer #settingsModal .setrange::-moz-range-track { height: 9px; border: 0; box-shadow: none; background: none; }
+body.viewer #settingsModal .setrange::-webkit-slider-thumb { height: 38px; margin-top: -14.5px; border-radius: 99px; border: 4px solid var(--ink); background: var(--ink); }
+body.viewer #settingsModal .setrange::-moz-range-thumb { height: 38px; border-radius: 99px; border: 4px solid var(--ink); background: var(--ink); }
+body.viewer #settingsModal .setbubble { font: 400 16px/1 'Bowlby One', sans-serif; color: #FFF6DC; letter-spacing: 0; transform: translate(-50%, calc(-50% + 1px)); }          /* (the digits of Bowlby One sit about 1 px high in the line box: lowered so they are centred in the knob) */
 
 /* placement preview help: a ? after the label opens a sticky note whose tape touches the ? (colours: --nbg paper, --ntape tape, --nink text, --nacc title / bullets) */
 body.viewer #settingsModal .qm { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-left: 10px; border: 3px solid var(--ink); border-radius: 50%; background: #E9D9A6; color: var(--ink); font: 400 15px/1 'Bowlby One', sans-serif; vertical-align: middle; cursor: default; box-sizing: border-box; }
@@ -1251,6 +1287,10 @@ body.viewer .sidebar .logbox > .moves { border-top: 0; border-radius: 0 0 20px 2
 .logsearch .ls-cnt { font: 800 14px 'Nunito Sans', system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .logsearch .ls-cnt.none { color: rgba(23, 38, 43, .35); }
 .logsearch .ls-nav { display: flex; gap: 1px; }
+.logsearch .ls-grp { flex: none; display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 6px 0 10px; background: #E7EEEF; border-radius: 3px; box-shadow: inset 0 0 0 2px rgba(23, 38, 43, .12); }       /* (count + arrows: one pale grey-blue block, the X stays outside it) */
+.logsearch .ls-btn.ls-clear { color: #9AA4A6; }
+.logsearch .ls-btn.ls-clear:hover { color: var(--ink); }
+.logsearch .ls-grp .ls-btn { color: var(--teal); }
 .logsearch .ls-btn, .logsearch .ls-fun { display: grid; place-items: center; padding: 0; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
 .logsearch .ls-btn { width: 22px; height: 26px; border-radius: 6px; }
 .logsearch .ls-clear[hidden] { display: none; }
@@ -1269,6 +1309,8 @@ body.viewer .moves mark.hit.cur { background: #F4B63F; color: var(--ink); }
 body.viewer .moves li.hitline { background: rgba(244, 182, 63, .18); }
 body.viewer .moves li.on.hitline { background: rgba(238, 108, 43, .3); }
 body.viewer .logbox:not(.searching) .logsearch .ls-nav { display: none; }
+body.viewer .logbox:not(.searching) .logsearch .ls-grp { padding-right: 10px; }       /* (no hit: just the 0/0 in the block) */
+.logsearch .ls-grp:has(.ls-cnt:empty) { display: none; }                              /* (nothing typed: no block) */
 
 /* log filter bar: opened by the funnel; two dropdowns (Players, Actions) with the menu under them */
 body.viewer .moves li.fout { display: none; }
@@ -1356,3 +1398,65 @@ body.viewer .moves li .loglines { flex: 1 1 auto; min-width: 0; }
 
 /* the Multiplier token on an action card is BGA's blue x2 disc as it is: no cream circle, outline or shadow around it */
 body.viewer .movepill .abtn.acbtn .actoken[data-action-token="Multiplier"], body.viewer .ppactions .ac .actoken[data-action-token="Multiplier"] { background: none; border: 0; padding: 0; box-shadow: none; }
+
+/* The card a category university gave: slides out from behind the tile (clipped at the tile's edge), tilted, ribbon at the bottom, ring in the category colour. */
+.unipeek { position: fixed; z-index: 9000; transform-origin: 0 0; pointer-events: none; }
+.unipeek .upk-clip { position: absolute; top: -400px; bottom: -400px; left: -420px; width: 424px; overflow: visible; }
+.unipeek.flip .upk-clip { left: calc(var(--tw) - 4px); width: 424px; }
+.unipeek .upk-card { position: absolute; top: 50%; right: 0; width: var(--cw); transform: translate(calc(var(--cw) * .6), -50%) rotate(0deg); opacity: 0; transition: transform .42s cubic-bezier(.2,.9,.25,1.15), opacity .2s; }
+.unipeek.on .upk-card { transform: translate(-6px, calc(-50% + var(--dy))) rotate(-6deg); opacity: 1; }
+.unipeek.flip .upk-card { right: auto; left: 0; transform: translate(calc(-1 * var(--cw)), -50%); }
+.unipeek.flip.on .upk-card { transform: translate(6px, calc(-50% + var(--dy))) rotate(6deg); }
+.unipeek .upk-card img { display: block; width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 0 3px #17262B, 0 10px 22px rgba(0,0,0,.4); }
+.unipeek .upk-rib { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%) rotate(2deg); white-space: nowrap; padding: 6px 26px; font: 400 15px/1 'Bowlby One', 'Park Head', sans-serif; letter-spacing: .02em; text-transform: uppercase;
+  background: var(--rc); color: var(--rt); border-top: 3px solid #17262B; border-bottom: 3px solid #17262B;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 50%, 100% 100%, 0 100%, 12px 50%); }
+
+/* shortcuts pop-up: same dim as the card spotlight; the mouse is a separate element right of the keyboard (all values are viewport px, the pop-up is not inside the zoomed body) */
+body.viewer #shortcutsModal { gap: 28px; background: radial-gradient(760px 520px at 50% 52%, rgba(244, 182, 63, .28), rgba(8, 40, 50, .55) 64%), rgba(8, 40, 50, .45); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.kbmouse { position: relative; flex: none; width: 210px; height: 300px; box-sizing: border-box; border: 5px solid var(--ink); border-radius: 50% 50% 50% 50% / 27% 27% 36% 36%; background: #E2E6E7; overflow: hidden; box-shadow: 0 5px 0 var(--ink), 0 14px 30px rgba(0, 0, 0, .35); }
+.kbmouse::after { content: ""; position: absolute; left: 0; right: 0; top: 132px; height: 5px; background: var(--ink); }
+.kbmouse .mbtn { all: unset; position: absolute; top: 0; height: 132px; width: 50%; box-sizing: border-box; display: grid; place-items: end center; padding-bottom: 16px; font: 700 19px/1 var(--f-label, 'Archivo', system-ui, sans-serif); letter-spacing: .04em; color: rgba(23, 38, 43, .55); }
+.kbmouse .mbtn.l { left: 0; border-right: 5px solid var(--ink); background: #D3D9DA; }
+.kbmouse .mbtn.r { right: 0; border-left: 5px solid var(--ink); background: #EE6C2B; color: var(--ink); cursor: pointer; transition: background .12s, transform .12s; }
+.kbmouse .mbtn.r:hover { background: #F5864B; }
+.kbmouse .mbtn.r:focus-visible { outline: 3px solid var(--sun, #FFD66B); outline-offset: -6px; }
+.kbmouse .mbtn.r.down { background: #D9541A; box-shadow: inset 0 7px 0 rgba(0, 0, 0, .28); transform: translateY(3px); }
+.kbmouse .ring { position: absolute; inset: 0; border: 3px solid #fff; opacity: 0; animation: kbmpulse 1.8s ease-out infinite; }
+.kbmouse .mbtn.r:hover .ring, .kbmouse .mbtn.r.down .ring { animation: none; }
+.kbmouse .mbtn.r span { position: relative; }
+.kbmouse .mwheel { position: absolute; left: 50%; top: 30px; width: 36px; height: 76px; transform: translateX(-50%); box-sizing: border-box; border: 5px solid var(--ink); border-radius: 18px; background: #C5CCCD; display: grid; place-items: center; }
+.kbmouse .mwheel i { width: 5px; height: 26px; border-radius: 2px; background: rgba(23, 38, 43, .45); }
+@keyframes kbmpulse { 0% { opacity: 0; transform: scale(.8); } 20% { opacity: .9; } 100% { opacity: 0; transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .kbmouse .ring { animation: none; } }
+
+/* shortcuts pop-up, "Right click" view (rcview.js): a small copy of the page; the epicentres are soft orange ripples (3 rings growing from a dot, medium line), the tip is frosted glass with a mono headline and a gradient edge. All sizes are design px (the pop-up sits inside the zoomed body). */
+.rcbox { --ink: #17262B; --acc: #EE6C2B; --ec: #FF8A3D; --t: 5; --r: 110; box-sizing: border-box; padding: 21px 26px 26px; background: #E2E6E7; color: var(--ink); border: 5px solid var(--ink); border-radius: 28px; box-shadow: 0 10px 0 var(--ink); }
+.rcbox[hidden] { display: none; }
+.rchead { display: flex; align-items: center; gap: 18px; min-height: 55px; margin-bottom: 13px; }
+.rchead b { flex: none; font: 400 31px/1 'Park Head', system-ui, sans-serif; }
+.rchint { flex: 1; text-align: right; font: 700 20px/1.2 'Park Label', system-ui, sans-serif; color: rgba(23, 38, 43, .6); }
+.rcx { all: unset; box-sizing: border-box; flex: none; width: 55px; height: 55px; display: grid; place-items: center; border: 4px solid var(--ink); border-radius: 9px; background: #EEF1F1; color: var(--ink); box-shadow: 0 4px 0 var(--ink); cursor: pointer; transition: transform .08s, box-shadow .08s; }
+.rcx svg { width: 21px; height: 21px; }
+.rcx:hover { background: var(--acc); transform: translateY(3px); box-shadow: none; }
+.rcx:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.rcshot { position: relative; width: 100%; margin: 0 auto; border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; }
+.rcshot::after { content: ""; position: absolute; inset: 0; background: rgba(8, 40, 50, .18); pointer-events: none; z-index: 1; }
+.rcclone { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; pointer-events: none; user-select: none; }
+.rcspots { position: absolute; inset: 0; z-index: 2; }
+.rcepi { all: unset; position: absolute; box-sizing: border-box; width: 130px; height: 130px; transform: translate(-50%, -50%); border-radius: 50%; cursor: pointer; }
+.rcepi:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.rcepi i { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 0; height: 0; border-radius: 50%; box-sizing: border-box; opacity: 0; pointer-events: none; filter: drop-shadow(0 0 2px rgba(8, 40, 50, .95)); animation: rcripple 3.6s cubic-bezier(.2, .6, .3, 1) infinite; }
+.rcepi i::before { content: ""; position: absolute; inset: 0; border-radius: 50%; box-sizing: border-box; border: calc(var(--t) * 1px) solid var(--ec); }
+.rcepi.sel i { animation: none; opacity: 0; }
+.rcepi.sel::after { content: ""; position: absolute; left: 50%; top: 50%; width: calc(var(--t) * 7px); height: calc(var(--t) * 7px); transform: translate(-50%, -50%); border-radius: 50%; background: var(--ec); box-shadow: 0 0 0 3px rgba(23, 38, 43, .85), 0 0 0 10px rgba(255, 255, 255, .35); }
+@keyframes rcripple { 0% { opacity: 0; width: calc(var(--t) * 2.1px); height: calc(var(--t) * 2.1px); } 7% { opacity: 1; } 50% { opacity: .9; } 100% { opacity: 0; width: calc(var(--r) * 1px); height: calc(var(--r) * 1px); } }
+@media (prefers-reduced-motion: reduce) { .rcepi i { animation: none; opacity: .7; width: 60px; height: 60px; } .rcepi i:nth-child(2) { width: 110px; height: 110px; opacity: .4; } .rcepi i:nth-child(3) { display: none; } }
+.rctip { position: absolute; z-index: 3; width: 300px; box-sizing: border-box; padding: 14px 18px 16px; pointer-events: none; color: #fff; border: 2px solid transparent; border-radius: 16px; background: linear-gradient(rgba(8, 40, 50, .62), rgba(8, 40, 50, .62)) padding-box, linear-gradient(135deg, rgba(255, 138, 61, .95), rgba(255, 255, 255, .1) 55%, rgba(255, 255, 255, .35)) border-box; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 8px 22px rgba(0, 0, 0, .4); }
+.rctip[hidden] { display: none; }
+.rctip p b { color: #FF8A3D; }
+.rctip p { margin: 0; font: 700 16px/1.45 'Park Mono', ui-monospace, monospace; color: rgba(255, 255, 255, .88); }
+.rcstatic, .rcstatic * { transition: none !important; animation: none !important; }
+
+/* the tooltip of the last field keeps to the frame's right edge (a centred one would leave the pop-up) */
+body.viewer #settingsModal .setthree-opt[data-v="none"]:hover::after, body.viewer #settingsModal .setthree-opt[data-v="none"]:focus-visible::after { left: auto; right: -4px; transform: none; }

@@ -531,6 +531,8 @@ def tile_options(state, p, tile: str) -> list:
 
 
 def take_tile(state, p, args: dict) -> None:
+    """A free tile (conservation bonus of 5 / 8 points, end of the reputation track, a placement bonus of the map): it counts in the stats like the tile of an Association task."""
+    gamestats.count(state, p.seat, "assoc", sub="partner" if "partner" in args else "university")
     if "partner" in args:
         tok = next(t for t in state.board_tokens if t.location == "association_3" and continent_of(t) == args["partner"])
         state.board_tokens.remove(tok)

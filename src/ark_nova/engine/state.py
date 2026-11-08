@@ -92,6 +92,7 @@ class Building:
     rotation: int = 0    # 0..5, footprint anchor + rotation as in the BGA log
     animal: Optional[str] = None      # card key of the animal living here (standard enclosures)
     animals: list[str] = field(default_factory=list)   # animals living here (special enclosures: petting zoo, reptile house, aviary, aquariums)
+    cubes: dict[str, int] = field(default_factory=dict)  # special enclosures: the cubes on its spaces, per animal (an aquarium animal may have cubes in several aquariums; engine/cubes.py)
 
 
 @dataclass
@@ -115,6 +116,7 @@ class PlayerState:
     under: dict[str, list[str]] = field(default_factory=dict)   # cards pouched under a card in play (Expert on Australia, some animals)
     buildings: list[Building] = field(default_factory=list)
     tokens: list[Token] = field(default_factory=list)
+    uni_cards: dict[str, str] = field(default_factory=dict)     # category university (bird, predator, ..., marine) -> the card its search found (public: BGA shows it to everybody)
     flags: dict[str, int] = field(default_factory=dict)         # once-per-turn/break markers, map- and card-specific counters
     initial_offer: list[str] = field(default_factory=list)      # the 8 dealt cards while the initial discard is pending
     icons: dict[str, int] = field(default_factory=dict)         # icon counters (icons.TRACKED), kept in step with the zoo by icons.sync_icons

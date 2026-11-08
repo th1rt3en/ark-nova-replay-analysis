@@ -118,7 +118,7 @@ def test_flock_animal_needs_no_enclosure_with_a_big_enough_herbivore():
 
 
 def test_camouflage_ignores_one_condition_of_the_next_animal():
-    s = _zoo("A548", hand=["A412"])                                                   # Lined Seahorse, then Jaguar (needs an Americas icon)
+    s = _zoo("A548", hand=["A412"])                                                   # Short-snouted Seahorse, then Jaguar (needs an Americas icon)
     s.players[0].buildings.append(Building(id=3, type="small-aquarium", x=6, y=5))
     s = _start(s)
     assert not any(a.args["card"] == "A412" for a in legal_actions(s) if a.kind == "play_animal")
