@@ -66,7 +66,17 @@ function holdBar(at) {
   cur.replaceChildren(...old.map((n) => n.cloneNode(true)));
   barHold.timer = setTimeout(releaseBar, at / Math.max(.1, Number(S.animationSpeed) || 1));
 }
+// Debugging a flight that stutters or snaps: open the page with ?cmdebug=1 (or localStorage cmdebug = 1) and send the console: it lists what cancelled running animations (stop(): a new render, a
+// resize, a scroll, a dock click) and every main-thread task over 40 ms that overlapped a running animation.
+const CM_DEBUG = /[?&]cmdebug=1/.test(location.search) || (() => { try { return localStorage.getItem('cmdebug') === '1'; } catch (e) { return false; } })();
+if (CM_DEBUG) {
+  try {
+    new PerformanceObserver((list) => { for (const e of list.getEntries()) if (animations.size) console.warn('[card-motion] long task', Math.round(e.duration) + ' ms at ' + Math.round(e.startTime), 'with', animations.size, 'animations running'); }).observe({ entryTypes: ['longtask'] });
+  } catch (e) { /* no long task support */ }
+  document.addEventListener('keydown', (e) => console.log('[card-motion] key', e.key, 'at', Math.round(performance.now())), true);
+}
 function stop(redraw = true) {
+  if (CM_DEBUG && animations.size) console.warn('[card-motion] stop() cancels', animations.size, 'animations at', Math.round(performance.now()), new Error().stack.split('\n').slice(2, 6).join(' <- '));
   clearTimeout(tabReturnTimer); tabReturnTimer = 0;
   const visit = tabVisit; tabVisit = null;
   const restore = visit && S.zooTab === visit.seat && tabbedLayout();
