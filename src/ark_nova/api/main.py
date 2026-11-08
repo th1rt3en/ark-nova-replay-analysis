@@ -28,7 +28,7 @@ from ark_nova.replay import fork as forking
 from ark_nova.replay import preview as building_preview
 from ark_nova.replay import sandbox
 from ark_nova.replay.view import build_replay_view
-from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
+from ark_nova.storage.index import IndexUnavailable, NotConfiguredIndex, TableIndex, TableRecord
 from ark_nova.storage.tableinfo import elo_changes_from_tableinfo, elos_after_from_tableinfo, elos_from_tableinfo, is_known_map, maps_from_tableinfo, marine_worlds_of, record_from_tableinfo, same_map_of
 from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
 from ark_nova.storage.contributions import Contributions
@@ -44,7 +44,10 @@ log = logging.getLogger(__name__)
 def _default_index(settings: Settings) -> TableIndex:
     if not (settings.bq_table and settings.bq_logs_table):
         return NotConfiguredIndex()
-    from ark_nova.storage.index import BigQueryIndex
+    from ark_nova.storage.index import BigQueryIndex, gcp_credentials_ok
+    if not gcp_credentials_ok():
+        log.warning("BigQuery index disabled: no Google credentials (gcloud auth application-default login)")
+        return NotConfiguredIndex()
     return BigQueryIndex(settings.bq_table, settings.bq_logs_table)
 
 
@@ -269,7 +272,10 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         table_id = parse_table_id(q)
         if table_id is None:
             return _error(400, "invalid", "Enter a table id (e.g. 924000095) or a table url (https://boardgamearena.com/table?table=924000095).")
-        rec = app.state.index.find(table_id)
+        try:
+            rec = app.state.index.find(table_id)
+        except IndexUnavailable:
+            rec = None
         if rec is None:
             request_log(table_id)
             return _error(404, "not_indexed", "This table has not been indexed yet. A request to index it has been raised, please check back later.",

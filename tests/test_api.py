@@ -8,7 +8,7 @@ from ark_nova.api.main import create_app
 from ark_nova.api.tableid import parse_table_id
 from ark_nova.config import Settings
 from ark_nova.parser.verify import verify_log
-from ark_nova.storage.index import TableRecord
+from ark_nova.storage.index import BigQueryIndex, IndexUnavailable, TableRecord
 from ark_nova.storage.logs import LogNotFound
 
 LOG_DIR = Path(__file__).resolve().parents[1] / "log_examples"
@@ -74,6 +74,25 @@ def test_lookup_not_indexed_requests_indexing(caplog):
         r = client().get("/api/lookup", params={"q": "123"})
     assert r.status_code == 404 and r.json()["status"] == "not_indexed"
     assert "indexed yet" in r.json()["message"] and "123" in caplog.text
+
+
+def test_lookup_without_google_credentials_is_not_a_500():
+    class MissingCreds:
+        def find(self, table_id):
+            raise IndexUnavailable("Google credentials were not found.")
+
+    r = TestClient(create_app(Settings(), MissingCreds(), Logs())).get("/api/lookup", params={"q": "943273722"})
+    assert r.status_code == 404 and r.json()["status"] == "not_indexed"
+
+
+def test_bigquery_index_auth_error_is_a_miss():
+    idx = BigQueryIndex("proj.ds.stats", "proj.ds.logs")
+
+    def boom(sql, table_id):
+        raise IndexUnavailable("no adc")
+
+    idx._query = boom
+    assert idx.find(943273722) is None
 
 
 def test_lookup_indexed_not_logged_goes_to_submit_page():

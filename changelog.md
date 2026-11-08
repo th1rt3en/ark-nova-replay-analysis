@@ -1,5 +1,13 @@
 # Frontend change documentation (for the AI agent that ports the local frontend to the live site)
 
+## Settings gear on fork, sandbox and live play — 8 November 2026
+
+`.forkpage #settings { display: none; }` hid the gear on every fork-style page (fork, sandbox, live play) because Settings originally only had autoplay and the timeline, which those pages do not have. The gear is now on every viewer; S opens it. Autoplay speed and Timeline stay off the Control tab there (no autoplay, `.forkpage` still hides `#timeline` / `#play`). Player boards stays replay-only: fork, sandbox and live play keep both boards side by side.
+
+## Cross out original animal price — 8 November 2026
+
+Setting "Cross out original price" (Cards tab, under "Apply discounts to animals", `S.strikePrice`, default on, saved as `strikePrice`; switching it redraws every card like the discount setting; the row is hidden while "Apply discounts to animals" is off). When a discount applies, the printed price is faded (a white veil) with a faint white slash from corner to corner, and the new price sits a little to its right: the same money-icon badge as the overlay, on a gray plate (`#878787`, the printed cost panel, a little larger than the icon). Switch it off to cover the printed badge with the money-icon overlay as before. Same look on the small card and in the enlarged preview (`price.js` `priceBadge` / `withPrice` / `priceSrc`: the preview hash is `#price=N:x,y,w,h:s` when the original is crossed out). Styles `.cprices` / `.cprice-off` / `.cprice-back` / `.cprice-new` in `replay.css`.
+
 ## Mouse and "Right click" view in the shortcuts pop-up — 7 November 2026
 
 The keyboard shortcuts pop-up (the ? button, all modes) now has a mouse next to the keyboard, as its own element and not part of the keyboard: Left / Right buttons and a wheel, with the right button in orange and pulsing gently. A click on any part of the mouse (left, right, wheel) swaps the keyboard for the "Right click" view and back (also the X, Esc, or the pop-up closing). The view is a small copy of the current page; every spot where a right click does something has an epicentre of soft orange ripples, and a click on one explains it in a frosted tip:

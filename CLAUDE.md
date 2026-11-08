@@ -9,10 +9,22 @@ Website: enter a BGA table id, step through the finished game (fwd/back/jump, no
 Python (engine, API), HTML + vanilla JS. Cloud Run. BigQuery (log index) + GCS (raw logs). Fork sessions are ephemeral, client-side.
 
 ## Commands
+
+Windows (venv interpreter `.venv/Scripts/python`):
 - Setup: `python -m venv .venv && .venv/Scripts/python -m pip install -e ".[dev]"`
 - Tests: `.venv/Scripts/python -m pytest -q` (data, API, engine foundation, parser; the log-based tests read `log_examples/` and take ~10 s)
 - Run locally: `.venv/Scripts/python -m uvicorn ark_nova.api.main:app --reload` (serves `web/` at `/`)
 - Run locally on the sample logs (no BigQuery/GCS needed): `.venv/Scripts/python scripts/dev_server.py` (every table in `log_examples/` counts as indexed and logged)
+- Replay lookup against BigQuery/GCS also needs the GCP extra: `.venv/Scripts/python -m pip install -e ".[gcp]"` plus Application Default Credentials (`gcloud auth application-default login`)
+
+macOS/Linux (venv interpreter `.venv/bin/python`; use `python3` to create the venv — a bare `python` may be an old Intel 2.7 that Apple Silicon refuses: `bad CPU type in executable`):
+- Setup: `python3 -m venv .venv && .venv/bin/python -m pip install -e ".[dev]"`
+- Tests: `.venv/bin/python -m pytest -q`
+- Run locally: `.venv/bin/python -m uvicorn ark_nova.api.main:app --reload`
+- Run locally on the sample logs (no BigQuery/GCS needed): `.venv/bin/python scripts/dev_server.py`
+- Replay lookup against BigQuery/GCS also needs the GCP extra: `.venv/bin/python -m pip install -e ".[gcp]"` plus Application Default Credentials (`gcloud auth application-default login`)
+
+Either:
 - Regenerate data: `python scripts/import_data.py` (needs `ESBUILD_BIN`/`NODE_BIN`, see script header). Map geometry lives in `data_manual/maps_geometry/` (see `docs/map_geometry.md`).
 - Deploy: `gcloud run deploy ark-nova-replay-analysis --source . --region us-central1 --max-instances 1 --min-instances 0` (the live service; always these instance limits; uses `Dockerfile`, `.gcloudignore`); env vars `BQ_TABLE`, `BQ_LOGS_TABLE`, `GCS_BUCKET`, `RATE_LIMIT_ENABLED`, `RATE_LIMIT_PER_MINUTE`.
 

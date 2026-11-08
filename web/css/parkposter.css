@@ -1194,6 +1194,7 @@ body.viewer #settingsModal .settab:hover { background: #fff; }
 body.viewer #settingsModal .settab.on { background: var(--tc); color: #FFF6DC; }
 body.viewer #settingsModal .setpanel { padding: 14px 30px 14px; }
 body.viewer #settingsModal .setrow { display: flex; align-items: center; gap: 14px; height: 74px; box-sizing: border-box; margin: 0; padding: 0; border-top: 3px dashed rgba(23, 38, 43, .3); font: 700 22px/1.15 'Nunito Sans', system-ui, sans-serif; color: var(--ink); }
+body.viewer #settingsModal .setrow[hidden] { display: none; }              /* (display:flex above would keep a hidden row on screen; Cross out original price is hidden when discounts are off) */
 body.viewer #settingsModal .setpanel > .setrow:first-child { border-top: 0; margin-top: 0; }
 body.viewer #settingsModal .setlabel { flex: 1 1 auto; min-width: 0; font-weight: 700; }
 body.viewer #settingsModal .setico { flex: none; width: 42px; height: 42px; box-sizing: border-box; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 12px; }

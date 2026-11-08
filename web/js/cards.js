@@ -35,7 +35,7 @@ export function card(key, extraClass, seat) {                          // `seat`
     img.src = snakeSafe(c.image); img.alt = cardName(key);                // (not lazy: a card drawn again with the page's next render would show an empty frame first)
     img.onerror = () => { img.remove(); d.append(textFace(key, c)); };
     d.append(img);
-    const dp = seat === undefined ? null : discounted(seat, key);                                    // the discounted price: drawn over the printed one, also in the enlarged card
+    const dp = seat === undefined ? null : discounted(seat, key);                                    // the discounted price: over the printed one, or crossed out with the new badge to its right (`S.strikePrice`)
     if (dp !== null) d.append(priceBadge(key, dp));
     const big = () => priceSrc(largeOf(c), key, dp);
     bindPreview(d, big, () => !!d.closest('#dock'));                                    // (a card of the hand is shown in the middle of the screen)

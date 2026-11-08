@@ -22,8 +22,10 @@ LOG_DIR = Path(__file__).resolve().parents[1] / "log_examples"
 def _remote_index(settings: Settings):
     """BigQuery / GCS for the tables that are not in log_examples (needs the `gcp` extra and gcloud credentials); None when unavailable."""
     try:
-        from ark_nova.storage.index import BigQueryIndex
+        from ark_nova.storage.index import BigQueryIndex, gcp_credentials_ok
         from ark_nova.storage.logs import GcsLogStore
+        if not gcp_credentials_ok():
+            raise RuntimeError("no Google credentials (`gcloud auth application-default login`)")
         return BigQueryIndex(settings.bq_table, settings.bq_logs_table), GcsLogStore(settings.gcs_bucket)
     except Exception as ex:                                  # noqa: BLE001
         print(f"BigQuery / GCS not available ({ex}): only the tables in log_examples work")

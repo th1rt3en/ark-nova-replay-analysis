@@ -89,6 +89,7 @@ export const S = {
   drawerSeats: {},                                       // 'drawer': seat -> true while that board's sheet is open
   zooTab: null,                                          // 'tabs': the seat on show (null = the first of seatOrder())
   applyDiscounts: true,        // animals show their price after the partner zoo / Expert discounts (price.js; settings pop-up, Cards tab)
+  strikePrice: true,           // when a discount applies, slash the printed price and put the new badge to its right (price.js; settings pop-up, Cards tab)
   endgameLive: true,           // the live count of the endgame points (violet +X under the appeal and conservation tiles, side-panel.js; settings pop-up, settings.js)
   showTimeline: false,         // the timeline row in the control panel (settings pop-up, settings.js)
   sbSeat: null,        // sandbox: the seat whose tools are shown

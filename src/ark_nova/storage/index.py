@@ -3,11 +3,30 @@
 A table is *indexed* when it has a row (game, config and result acknowledged) and *logged* when that row points at a processed
 log in GCS. Sources: `freestyle-190711.ark_nova.all_games_stat` and `freestyle-190711.ark_nova_processing.logs_archive_mapping`.
 """
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import Protocol
 
 from ark_nova.storage.cache import TTLCache
+
+log = logging.getLogger(__name__)
+
+_AUTH_ERRORS = {"DefaultCredentialsError", "RefreshError"}
+
+
+class IndexUnavailable(Exception):
+    """BigQuery is configured but the client cannot run (usually missing Application Default Credentials)."""
+
+
+def gcp_credentials_ok() -> bool:
+    """True when the GCP extra is installed and Application Default Credentials exist (Cloud Run, or `gcloud auth application-default login`)."""
+    try:
+        import google.auth
+        google.auth.default()
+        return True
+    except Exception:  # noqa: BLE001 - missing extra, missing ADC, or no default project
+        return False
 
 
 @dataclass(frozen=True)
@@ -70,22 +89,31 @@ class BigQueryIndex:
     def _run(self, sql: str, table_id: int | str) -> list:
         from google.cloud import bigquery  # the `gcp` extra
 
-        self._client = self._client or bigquery.Client()
-        config = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("table_id", "INT64" if isinstance(table_id, int) else "STRING", table_id)])
-        return [dict(r) for r in self._client.query(sql, job_config=config).result()]
+        try:
+            self._client = self._client or bigquery.Client()
+            config = bigquery.QueryJobConfig(query_parameters=[bigquery.ScalarQueryParameter("table_id", "INT64" if isinstance(table_id, int) else "STRING", table_id)])
+            return [dict(r) for r in self._client.query(sql, job_config=config).result()]
+        except Exception as e:
+            if type(e).__name__ not in _AUTH_ERRORS:
+                raise
+            raise IndexUnavailable("Google credentials were not found. Locally: `gcloud auth application-default login`.") from e
 
     def find(self, table_id: int) -> TableRecord | None:
-        stats = self._query(f"SELECT table_id, player_id, map, is_mw, elo, thinking_time FROM `{self._stats_table}` WHERE table_id = @table_id", table_id)
-        if not stats:
+        try:
+            stats = self._query(f"SELECT table_id, player_id, map, is_mw, elo, thinking_time FROM `{self._stats_table}` WHERE table_id = @table_id", table_id)
+            if not stats:
+                return None
+            logs = self._query(f"SELECT table_id, file_name FROM `{self._logs_table}` WHERE table_id = @table_id LIMIT 1", str(table_id))
+            after, change = self._elo_after(table_id)
+            return TableRecord(table_id=table_id, gcs_path=logs[0]["file_name"] if logs else None,
+                               player_maps={str(r["player_id"]): map_id(str(r["map"])) for r in stats},
+                               marine_worlds=any(bool(r["is_mw"]) for r in stats),
+                               elos={str(r["player_id"]): round(r["elo"]) for r in stats if r.get("elo") is not None},
+                               thinking_times={str(r["player_id"]): round(r["thinking_time"]) for r in stats if r.get("thinking_time") is not None},
+                               elos_after=after, elo_changes=change)
+        except IndexUnavailable as e:
+            log.warning("BigQuery index unavailable for table %s: %s", table_id, e)
             return None
-        logs = self._query(f"SELECT table_id, file_name FROM `{self._logs_table}` WHERE table_id = @table_id LIMIT 1", str(table_id))
-        after, change = self._elo_after(table_id)
-        return TableRecord(table_id=table_id, gcs_path=logs[0]["file_name"] if logs else None,
-                           player_maps={str(r["player_id"]): map_id(str(r["map"])) for r in stats},
-                           marine_worlds=any(bool(r["is_mw"]) for r in stats),
-                           elos={str(r["player_id"]): round(r["elo"]) for r in stats if r.get("elo") is not None},
-                           thinking_times={str(r["player_id"]): round(r["thinking_time"]) for r in stats if r.get("thinking_time") is not None},
-                           elos_after=after, elo_changes=change)
 
     def _elo_after(self, table_id: int) -> tuple[dict[str, int], dict[str, int]]:
         """({player id: Elo after the game}, {player id: change of the game}) from `post_match_elo` / `pre_match_elo`. A query of its own, so a table without
