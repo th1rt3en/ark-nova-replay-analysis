@@ -303,9 +303,14 @@ function turnOver(wasG, nowG, dir, index, oldHref) {
   if (rs.some((r) => !r.width)) return false;
   const left = Math.min(rs[0].left, rs[1].left), top = Math.min(rs[0].top, rs[1].top), right = Math.max(rs[0].right, rs[1].right), bottom = Math.max(rs[0].bottom, rs[1].bottom);
   const cx = (left + right) / 2, cy = (top + bottom) / 2, MS = 1000, lift = Math.max(right - left, bottom - top);
-  const o = document.createElementNS(SVG_NS, 'svg');
-  o.setAttribute('class', 'cm-building');
-  Object.assign(o.style, { position: 'absolute', left: '0', top: '0', width: '1px', height: '1px', overflow: 'visible', transformOrigin: cx + 'px ' + cy + 'px', zIndex: '3' });
+  // Four stacked layers (outer svg elements, so transform and opacity can run on the compositor): the shadows of both sides below, then the old and the new side. No filter is animated:
+  // the shadow is a flat, dark, blurred copy of the sprite (a static filter) that only moves and fades, and the sides are swapped by the opacity of their own layer, not of a child of one svg.
+  const layer = (k, extra) => {
+    const o = document.createElementNS(SVG_NS, 'svg');
+    o.setAttribute('class', 'cm-building');
+    Object.assign(o.style, { position: 'absolute', left: '0', top: '0', width: '1px', height: '1px', overflow: 'visible', transformOrigin: cx + 'px ' + cy + 'px', zIndex: '3', willChange: 'transform, opacity', opacity: '0', ...extra });
+    o.append(k); return o;
+  };
   const ids = new Map(), copy = ({ g, ctm }, href) => {
     const k = g.cloneNode(true);
     k.removeAttribute('class'); k.removeAttribute('style'); k.removeAttribute('data-bid'); k.removeAttribute('data-bseat'); k.querySelector('.frame')?.remove();
@@ -315,18 +320,31 @@ function turnOver(wasG, nowG, dir, index, oldHref) {
     if (href) k.querySelectorAll('image').forEach((im) => im.setAttribute('href', href(im.getAttribute('href') || '')));
     return k;
   };
-  const was = copy(parts[0], oldHref), now = copy(parts[1], null);
-  now.style.opacity = '0';
-  o.append(was, now); root().append(o); hide(nowG);
+  const shade = ({ ctm, img }, href) => {               // (the sprite alone: the shadow needs no mask)
+    const im = img.cloneNode(true), k = document.createElementNS(SVG_NS, 'g');
+    im.querySelector('title')?.remove();
+    if (href) im.setAttribute('href', href(im.getAttribute('href') || ''));
+    k.setAttribute('transform', 'matrix(' + [ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f].join(' ') + ')');
+    k.append(im); return k;
+  };
+  const dark = { filter: 'brightness(0) blur(' + (lift * .04).toFixed(1) + 'px)' };
+  const layers = [
+    { el: layer(shade(parts[0], oldHref), dark), first: true, shadow: true }, { el: layer(shade(parts[1], null), dark), first: false, shadow: true },
+    { el: layer(copy(parts[0], oldHref)), first: true }, { el: layer(copy(parts[1], null)), first: false }];
+  layers.forEach((l) => root().append(l.el)); hide(nowG);
   const persp = 'perspective(' + Math.round(lift * 3.5) + 'px) ', ease = (t) => t * t, out = (t) => 1 - (1 - t) * (1 - t);
-  const at = (a, l) => ({ transform: persp + 'rotateY(' + a.toFixed(2) + 'deg) scale(' + (1 + .09 * l).toFixed(3) + ')', filter: l ? 'drop-shadow(0 ' + (lift * .05).toFixed(1) + 'px ' + (lift * .04).toFixed(1) + 'px rgba(0,0,0,' + (.4 * l).toFixed(2) + '))' : 'none' });
-  const frames = [];
-  for (let i = 0; i <= 20; i++) { const t = i / 20, u = ease(t); frames.push({ offset: t / 2, ...at(90 * dir * u, u) }); }
-  for (let i = 0; i <= 20; i++) { const t = i / 20, u = out(t); frames.push({ offset: .5 + t / 2, ...at(-90 * dir * (1 - u), 1 - u) }); }
-  const swap = (a, b) => [{ opacity: a, offset: 0 }, { opacity: a, offset: .4999 }, { opacity: b, offset: .5 }, { opacity: b, offset: 1 }];
-  animate(was, swap(1, 0), MS, index * 130, 'linear');
-  animate(now, swap(0, 1), MS, index * 130, 'linear');
-  finish(animate(o, frames, MS, index * 130, 'linear'), () => { o.remove(); show(nowG); });
+  const framesOf = ({ first, shadow }) => {
+    const frames = [];
+    for (let h = 0; h < 2; h++) for (let i = 0; i <= 20; i++) {
+      const t = i / 20, u = h ? out(t) : ease(t), tau = (h * 20 + i) / 40, l = Math.sin(Math.PI * tau), a = h ? -90 * dir * (1 - u) : 90 * dir * u;       // (the lift has a curve of its own: no peak at the edge-on moment)
+      const shown = (h === 0) === first ? 1 : 0;
+      frames.push({ offset: h === 0 && i === 20 ? .4999 : tau, opacity: shadow ? shown * .4 * l : shown,
+        transform: persp + 'rotateY(' + a.toFixed(2) + 'deg) scale(' + (1 + .09 * l).toFixed(3) + ')' + (shadow ? ' translateY(' + (lift * .05 * l).toFixed(1) + 'px)' : '') });
+    }
+    return frames;
+  };
+  const anims = layers.map((l) => animate(l.el, framesOf(l), MS, index * 130, 'linear'));
+  finish(anims[3], () => { layers.forEach((l) => l.el.remove()); show(nowG); });
   return true;
 }
 function buildingFlight(g, appear, index) {
