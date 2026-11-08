@@ -24,7 +24,8 @@
   let waiting = null;                                     // review page: { slow } while a replay page collects the projects
   let slowTimer = null;
   let found = {};                                         // replay page: what was read on this visit ({ projects, maps })
-  let collectStart = 0;                                   // replay page: when it first looked for the Elo
+  let friendly = null;                                    // replay page: whether the table was a friendly game (not rated: no Elo is used)
+  let collectStart = 0;                                  // replay page: when it first looked for the Elo
   let lastNote = 0;                                       // the time of the last console note while looking for the board
   let ui = null, dlg = null;
 
@@ -96,7 +97,7 @@
 
   async function refresh() {
     const page = pageOf(), id = pageKey(page);
-    if (id !== lastPage) { lastPage = id; dismissed = null; found = {}; collectStart = 0; stopWaiting(); }
+    if (id !== lastPage) { lastPage = id; dismissed = null; found = {}; collectStart = 0; friendly = null; stopWaiting(); }
     if (id !== checked) {                                 // another page (or none): look at the storage again
       checked = id;
       const mine = ++loadSeq;
@@ -182,6 +183,20 @@
     return ids.length > 0 && ids.every((id) => seen.has(id));
   }
 
+  // BGA's table option 201 "Game mode" (1 = Friendly, 2 = Arena, else normal) is in the replay page's own data; a friendly game is not rated, so its Elo is not used (measured: scripts/recon/bga_recon.py)
+  function friendlyMode(doc = document, depth = 0) {
+    for (const s of doc.scripts) {
+      const m = /"id":201,"name":"Game mode","value":(\d+)/.exec(s.textContent || '');
+      if (m) return m[1] === '1';
+    }
+    if (depth <= 3) {
+      for (const f of doc.querySelectorAll('iframe')) {
+        try { if (f.contentDocument) { const r = friendlyMode(f.contentDocument, depth + 1); if (r !== null) return r; } } catch (e) { /* another origin */ }
+      }
+    }
+    return null;
+  }
+
   async function collect() {
     const page = pageOf();
     if (!page || page.kind === 'review' || !pair || pair.table !== page.table) return;
@@ -190,7 +205,8 @@
     const wantElos = pair.needsElo && !pair.elos && !pair.noElo && !found.elos && !found.noElo;
     if (!wantProjects && !wantMaps && !wantElos) return;
     if (wantElos && !collectStart) collectStart = Date.now();
-    const seen = wantProjects ? readBoard() : null, maps = wantMaps ? readMaps(pair.players) : null, elos = wantElos ? readElos(pair.players) : null;
+    if (wantElos && friendly === null) friendly = friendlyMode();
+    const seen = wantProjects ? readBoard() : null, maps = wantMaps ? readMaps(pair.players) : null, elos = wantElos && friendly !== true ? readElos(pair.players) : null;
     if (wantProjects && !seen || wantMaps && !maps || wantElos && !elos) {
       if (Date.now() - lastNote > 10000) {                // (for a bug report: what this frame can see; F12 console, filter "ark-nova")
         lastNote = Date.now();
@@ -214,7 +230,7 @@
       await api.storage.local.set({ [key('elo', page.table)]: { table: page.table, elos, savedAt: Date.now() } }).catch(() => {});
     }
     const waited = Date.now() - collectStart;
-    const eloGone = wantElos && !elos && (waited > ELO_GRACE || (waited > NO_ELO_AFTER && panelsShown(pair.players)));       // (a friendly game has no Elo to show)
+    const eloGone = wantElos && (friendly === true || (!elos && (waited > ELO_GRACE || (waited > NO_ELO_AFTER && panelsShown(pair.players)))));       // (a friendly game is not rated: its Elo is left out; else a missing Elo is waited for)
     if (eloGone && !found.noElo) {
       found.noElo = true;
       console.debug('[ark-nova] no Elo on the player panels (a friendly game?), going on without it');
