@@ -123,6 +123,7 @@ export function slotGlyph(root, sl, y) {
   const bn = sl.bonus || {};
   const add = (tag, attrs, text) => { const e = svg(tag, attrs); if (text !== undefined) e.textContent = text; root.append(e); return e; };
   if (sl.kind === 'instant_income') add('rect', { x: 78, y: y - 31, width: 62, height: 62, rx: 12, fill: '#9a4ba7', stroke: '#5e2a6b', 'stroke-width': 3 });
+  else if (bn.type === 'bonus-kiosk-pavilion') { /* BGA's own pentagon with the 3x icon is drawn below: no second pentagon behind it */ }
   else if (bn.type === 'border-capacity') add('rect', { x: 78, y: y - 31, width: 62, height: 62, rx: 12, fill: '#6cc6ee', stroke: '#2a7fa8', 'stroke-width': 3 });          // BDW4: the blue passive space
   else add('image', { href: iconUrl(ICON_IDS.pentagon), x: 74, y: y - 36, width: 72, height: 71 });
   let icon = SLOT_ICON[bn.type] || ICON_IDS['bonus:' + bn.type];
@@ -132,7 +133,8 @@ export function slotGlyph(root, sl, y) {
   const nd = sl.kind !== 'instant_income' && (bn.type === 'money' || bn.type === 'xtoken') ? 2 : 0;          // money (12) and X tokens (3) in the pentagon: 2 units lower, so the corners of the tile / X clear the sloping top edges as far as the bottom ones (measured: they touched the top ones, 5 units free at the bottom)
   if (bn.type === 'money') moneyTile(root, 109, y + 1 + nd, size);
   else if (bn.type === 'bonus-kiosk-pavilion' && sl.kind !== 'instant_income') {            // BDW3 / Posturing 3: BGA's own pentagon with the 3 and the kiosk / pavilion, in place of the plain pentagon
-    add('image', { href: iconUrl(ICON_IDS['bonus:bonus-kiosk-pavilion']), x: 74, y: y - 36, width: 72, height: 71 });
+    const [kw, kh] = S.iconSizes[ICON_IDS['bonus:bonus-kiosk-pavilion']] || [72, 71], kh2 = 82, kw2 = kw * kh2 / kh;
+    add('image', { href: iconUrl(ICON_IDS['bonus:bonus-kiosk-pavilion']), x: 110 - kw2 / 2, y: y + 1 - kh2 / 2, width: kw2, height: kh2 });
   } else if (bn.type === 'size-5') {                     // BDW2: a free size 5 enclosure, the five hexes of a large enclosure with the 5
     const hs = 9.5, RT3 = Math.sqrt(3);                                                  // five flat-topped hexes in the shape of a size 5 enclosure (build_action.SHAPES), the 5 on the middle one
     for (const [q, r] of [[-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1]]) {
