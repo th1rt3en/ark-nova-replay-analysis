@@ -313,7 +313,7 @@ def upgradable(p) -> list:
     return [c.type for c in p.action_cards if c.level < 2]
 
 
-KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor", "species_bonus", "crane_move")
+KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor", "species_bonus")
 
 
 def open_break_prompt(state, seat: int, pending: list, resume: dict) -> None:
@@ -359,12 +359,6 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         out.append(Action(seat, "skip_effect", {"index": i}))
     elif k == "search_sponsor":                         # maps 8 / 8a: the first sponsor of the deck joins the hand
         out.append(Action(seat, "choose_effect", {"index": i, "apply": "search_sponsor"}))
-    elif k == "crane_move":                             # BDW2: the occupied enclosure next to the crane may stand somewhere else
-        from ark_nova.engine import map_rules
-        b = next((b for b in p.buildings if [b.x, b.y] == e["building"]), None)
-        if b is not None and map_rules.crane_hex(p) is not None:
-            out += [Action(seat, "choose_effect", {"index": i, "x": x, "y": y, "rotation": r}) for x, y, r in map_rules.crane_targets(state, p, b)]
-        out.append(Action(seat, "skip_effect", {"index": i}))
     elif k == "species_bonus":                          # BDW1: the second icon of a species: 5 money, Snapping or Marketing
         from ark_nova.engine import map_rules
         out += [Action(seat, "choose_effect", {"index": i, "gain": name}) for name, _ in map_rules.SPECIES_BONUSES]
@@ -469,13 +463,6 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if not 0 <= j < len(opts):
             raise fx.IllegalEffect("the bonus of 16 reputation has been taken")
         apply_bonus(state, p.seat, opts.pop(j))
-    elif k == "crane_move":
-        from ark_nova.engine import map_rules
-        b = next((b for b in p.buildings if [b.x, b.y] == e["building"]), None)
-        target = (int(a.get("x", -1)), int(a.get("y", -1)), int(a.get("rotation", -1)))
-        if b is None or map_rules.crane_hex(p) is None or target not in map_rules.crane_targets(state, p, b):
-            raise fx.IllegalEffect("the enclosure cannot be moved there")
-        _g().reposition_building(state, p.seat, b, *target)
     elif k == "species_bonus":
         from ark_nova.engine import map_rules
         bonus = dict(map_rules.SPECIES_BONUSES).get(a.get("gain"))

@@ -238,27 +238,31 @@ def test_construction_yard_the_crane_is_a_place_to_build_next_to():
     assert map_rules.crane_hex(p) is None
 
 
+def _crane_effects(s):
+    return [e for e in (s.prompt.args["pending"] if s.prompt is not None and s.prompt.kind == "effects" else []) if (e.get("rules") or {}).get("reposition")]
+
+
 def test_construction_yard_a_flipped_enclosure_next_to_the_crane_may_be_repositioned():
     from tests.test_animal_abilities import _play
     s, p = _bdw2()
     p.buildings = [Building(id=1, type="size-2", x=3, y=10), Building(id=2, type="size-2", x=1, y=0)]      # the first one touches the crane
     s = _play(s, "A404", x=3, y=10, settle=False)
-    moves = [e for e in (s.prompt.args["pending"] if s.prompt.kind == "effects" else []) if e["kind"] == "crane_move"]
-    assert len(moves) == 1 and moves[0]["building"] == [3, 10]
-    i = s.prompt.args["pending"].index(moves[0])
-    options = [a for a in game.legal_actions(s) if a.kind == "choose_effect" and "rotation" in a.args and a.args["index"] == i]
+    moves = _crane_effects(s)
+    assert len(moves) == 1 and moves[0]["rules"]["reposition"] == [3, 10] and moves[0]["optional"]
+    options = [a for a in game.legal_actions(s) if a.kind == "place_building"]                 # the places are placements, like any building (the viewer draws them)
     assert options and any(a.kind == "skip_effect" for a in game.legal_actions(s))
-    far = next(a for a in options if a.args["y"] <= 2 and a.args["x"] >= 4)              # a free place that touches no building
+    far = next(a for a in options if a.args["y"] <= 2 and a.args["x"] >= 4)                  # a free place that touches no building
     s = game.apply(s, far)
     moved = next(b for b in s.players[0].buildings if b.id == 1)
     assert (moved.x, moved.y, moved.rotation) == (far.args["x"], far.args["y"], far.args["rotation"]) and moved.animal == "A404"     # it keeps its animal
+    assert len(s.players[0].buildings) == 2 and not _crane_effects(s)
 
 
 def test_construction_yard_a_far_enclosure_has_no_crane_effect():
     from tests.test_animal_abilities import _play
     s, p = _bdw2()
     s = _play(s, "A404", x=1, y=0, settle=False)
-    assert not [e for e in (s.prompt.args["pending"] if s.prompt is not None and s.prompt.kind == "effects" else []) if e["kind"] == "crane_move"]
+    assert not _crane_effects(s)
 
 
 def test_construction_yard_only_the_new_spaces_pay_placement_bonuses():

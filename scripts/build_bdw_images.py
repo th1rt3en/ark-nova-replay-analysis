@@ -109,6 +109,19 @@ def clean(img, rec, bd):
     return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)), done
 
 
+def cut_pavilion(img, dest):
+    """The pavilion placement bonus of BDW2 (the white hexagon with the carousel; BGA's icon sheet has no pavilion on its own) as `web/bonus/pavilion.webp`, the viewer puts it on its pentagon."""
+    cx, cy = centre(6, 7)
+    ox, oy = cx - 80 + 89, cy - 90 + 92                                      # (the middle of the hexagon in the artwork)
+    W, H, k = 86, 80, 4
+    mask = Image.new("L", (W * k, H * k), 0)
+    r = 43 * k
+    ImageDraw.Draw(mask).polygon([(W * k / 2 + r * math.cos(math.radians(a)), H * k / 2 + r * 0.9 * math.sin(math.radians(a))) for a in range(0, 360, 60)], fill=255)
+    out = img.crop((int(ox - W / 2), int(oy - H / 2), int(ox + W / 2), int(oy + H / 2))).convert("RGBA")
+    out.putalpha(mask.resize((W, H), Image.LANCZOS))
+    out.save(dest, quality=92)
+
+
 def main():
     import json
     ap = argparse.ArgumentParser()
@@ -123,6 +136,8 @@ def main():
             continue
         src = Path(a.src) / f"{mid}_{name}_high.png"
         img = Image.open(src).convert("RGB").resize(SCALE, Image.LANCZOS)
+        if mid == "BDW2":
+            cut_pavilion(img, ROOT / "web" / "bonus" / "pavilion.webp")
         out, done = clean(img, recs[mid], None)
         board = out.crop(CROP).resize(OUT_SIZE, Image.LANCZOS)
         dest = Path(a.out) / f"map-{mid}.jpg"

@@ -107,8 +107,11 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         i = args.pop("index", 0)
         e = pending[i] if isinstance(i, int) and 0 <= i < len(pending) else {}
         name = effect_name(e) or str(e.get("kind", "effect")).replace("_", " ").capitalize()
+        if e.get("kind") == "species_bonus":                                              # BDW1: the second icon of a species
+            name = f"Second {e.get('icon')} icon"
         rest = args.pop("args", None) or {}
-        return ("Skip: " if k == "skip_effect" else "") + name + "".join(f", {k2} {_fmt(v)}" for k2, v in rest.items())
+        choice = f": {args.pop('gain')}" if isinstance(args.get("gain"), str) else ""         # (an effect that offers a choice of gains: the options differ only in this)
+        return ("Skip: " if k == "skip_effect" else "") + name + choice + "".join(f", {k2} {_fmt(v)}" for k2, v in rest.items())
     if k == "choose_map":
         return "Select map " + str(args.pop("map", "?"))
     if k == "draft_pick":

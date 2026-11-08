@@ -104,6 +104,7 @@ export function zooBoard(map, player, seat) {
       iconBox(icon, cx + 9, cy + 3, 44);
       put('text', { x: cx - 15, y: cy + 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
     }
+    else if (bn.type === 'pavilion') put('image', { href: '/bonus/pavilion.webp', x: cx - 26, y: cy - 22, width: 52, height: 48 });          // BDW2: a free pavilion (the white hexagon with the carousel, cut from the artwork by scripts/build_bdw_images.py)
     else if (bn.type === 'bonus-sponsor') put('image', marketingAttrs(cx, cy + 5, 56));          // (Marketing: the HD picture on its optical centre, see marketingAttrs)
     else if (icon && FIT_H[bn.type]) put('image', fitImageAttrs(bn.type, cx, cy + 80 * FIT_DY, 80 * FIT_H[bn.type]));          // (university, partner zoo: the same share of the pentagon as in the association panel)
     else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)

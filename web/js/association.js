@@ -133,10 +133,12 @@ export function slotGlyph(root, sl, y) {
   else if (bn.type === 'bonus-kiosk-pavilion' && sl.kind !== 'instant_income') {            // BDW3 / Posturing 3: BGA's own pentagon with the 3 and the kiosk / pavilion, in place of the plain pentagon
     add('image', { href: iconUrl(ICON_IDS['bonus:bonus-kiosk-pavilion']), x: 74, y: y - 36, width: 72, height: 71 });
   } else if (bn.type === 'size-5') {                     // BDW2: a free size 5 enclosure, the five hexes of a large enclosure with the 5
-    const g = svg('g', { transform: 'translate(74 ' + (y - 36) + ')' });
-    g.append(svg('polygon', { points: SPECIAL_ENCLOSURE[0][2], fill: '#6b4a22', stroke: '#fff', 'stroke-width': 1.1, 'stroke-linejoin': 'round' }));
-    root.append(g);
-    add('text', { x: 100, y: y + 2, class: 'slot-number', style: 'font-size:22px' }, '5');
+    const hs = 9.5, RT3 = Math.sqrt(3);                                                  // five flat-topped hexes in the shape of a size 5 enclosure (build_action.SHAPES), the 5 on the middle one
+    for (const [q, r] of [[-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1]]) {
+      const hx = 109 + 1.5 * hs * q + 1, hy = y + 1 + RT3 * hs * (r + q / 2);
+      add('polygon', { points: [0, 1, 2, 3, 4, 5].map((i) => (hx + hs * Math.cos(i * Math.PI / 3)).toFixed(1) + ',' + (hy + hs * Math.sin(i * Math.PI / 3)).toFixed(1)).join(' '), fill: '#6b4a22', stroke: '#fff', 'stroke-width': 1.2, 'stroke-linejoin': 'round' });
+    }
+    add('text', { x: 110, y: y + 7, class: 'slot-number', style: 'font-size:17px' }, '5');
   } else if (bn.type === 'border-capacity') {            // BDW4: a standard enclosure on the border holds one more (a passive space once it is taken)
     add('polygon', { points: '109,' + (y - 20) + ' 124,' + (y - 11) + ' 124,' + (y + 7) + ' 109,' + (y + 16) + ' 94,' + (y + 7) + ' 94,' + (y - 11), fill: '#6b4a22', stroke: '#fff', 'stroke-width': 2, 'stroke-linejoin': 'round' });
     add('text', { x: 109, y: y + 7, class: 'slot-number', style: 'font-size:22px' }, '+1');

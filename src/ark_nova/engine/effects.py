@@ -44,6 +44,10 @@ def _buildings(p) -> list:
 
 def build_options(state, seat: int, t: str, rules: dict) -> list:
     p = state.players[seat]
+    if rules.get("reposition"):                              # BDW2: the occupied enclosure next to the crane moves (the places are the legal placements of this effect)
+        from ark_nova.engine import map_rules
+        b = next((b for b in p.buildings if [b.x, b.y] == list(rules["reposition"]) and b.type == t), None)
+        return map_rules.crane_targets(state, p, b) if b is not None and map_rules.crane_hex(p) is not None else []
     if t in build_action.UNIQUE and any(b.type == t for b in p.buildings):
         return []
     if t in build_action.AQUARIUMS and not state.config.marine_worlds:
@@ -343,6 +347,11 @@ def resolve_build(state, action: Action) -> None:
         if i is None:
             raise IllegalEffect("no matching pending build effect")
     e = state.prompt.args["pending"][i]
+    if e["rules"].get("reposition"):                # BDW2 (the crane): the enclosure moves, it keeps its animal
+        b = next(b for b in p.buildings if [b.x, b.y] == list(e["rules"]["reposition"]))
+        g.reposition_building(state, p.seat, b, x, y, k)
+        _done(state, i)
+        return
     if e.get("placeback"):                          # Reconstruction: a building that was picked up goes back on the map (no bonuses)
         from ark_nova.engine.state import Building
         pb = e["placeback"]

@@ -1,6 +1,7 @@
 """Self-play: random legal moves through the engine, to find where a live game could stop (docs/live_game_plan.md 5.5 and section 10, "fuzz").
 
-    python scripts/selfplay.py [--games 30] [--budget 2500] [--seed 1] [--mw] [--mode random-mirrored] [--workers 4]
+    python scripts/selfplay.py [--games 30] [--budget 2500] [--seed 1] [--mw] [--mode random-mirrored] [--bdw] [--workers 4]
+--bdw: the maps of the games are the Board Design Workshop maps BDW1..BDW4 only (docs/bdw_maps.md)
 
 Each game is played as a live game is (`confirm_turns`: a turn waits for its confirm; undo and restart are taken now and then). It stops when the game is over, when the
 move budget is used, or when the engine fails. Reported: how far the games got, the failures grouped by what failed (an unwritten rule = `NotImplementedError`, anything else =
@@ -52,12 +53,13 @@ def invariants(state) -> list[str]:
     return bad
 
 
-def play(seed: int, budget: int, mw: bool, mode: str) -> dict:
+def play(seed: int, budget: int, mw: bool, mode: str, bdw: bool = False) -> dict:
     rng = random.Random(seed)
     out = {"seed": seed, "moves": 0, "phase": None, "round": None, "turn": None, "end": None, "failure": None}
     t0 = time.time()
     try:
-        st = new_game({"game_mode": mode, "marine_worlds_flag": mw, "confirm_turns": True}, ["1", "2"], seed)
+        st = new_game({"game_mode": mode, "marine_worlds_flag": mw, "confirm_turns": True,
+                       **({"bdw_maps": True, "maps_to_exclude": [m["id"] for m in __import__("ark_nova.data", fromlist=["maps"]).maps()]} if bdw else {})}, ["1", "2"], seed)
         for _ in range(budget):
             if st.phase is Phase.OVER:
                 out["end"] = "over"
@@ -102,11 +104,12 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--mw", action="store_true")
     ap.add_argument("--mode", default="random-mirrored")
+    ap.add_argument("--bdw", action="store_true", help="play on the Board Design Workshop maps only")
     ap.add_argument("--workers", type=int, default=4)
     a = ap.parse_args()
     seeds = [a.seed + i for i in range(a.games)]
     with ProcessPoolExecutor(a.workers) as pool:
-        results = list(pool.map(play, seeds, [a.budget] * len(seeds), [a.mw] * len(seeds), [a.mode] * len(seeds)))
+        results = list(pool.map(play, seeds, [a.budget] * len(seeds), [a.mw] * len(seeds), [a.mode] * len(seeds), [a.bdw] * len(seeds)))
     ended = collections.Counter(r["end"] or "failed" for r in results)
     print(f"{len(results)} games, budget {a.budget} moves: {dict(ended)}; moves played {sum(r['moves'] for r in results)}; "
           f"the furthest game reached round {max((r['round'] or 0) for r in results)}, turn {max((r['turn'] or 0) for r in results)}")

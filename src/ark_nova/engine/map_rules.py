@@ -101,7 +101,7 @@ def crane_adjacent(p, b) -> bool:
 
 def crane_effects(p, b) -> list:
     """The enclosure `b` has just been flipped to its occupied side: when it stands next to the crane the player may reposition it."""
-    return [{"kind": "crane_move", "source": "BDW2", "building": [b.x, b.y], "optional": True, "player": p.seat}] if crane_adjacent(p, b) else []
+    return [{"kind": "build", "source": "BDW2", "type": b.type, "rules": {"reposition": [b.x, b.y]}, "optional": True, "double": False, "player": p.seat}] if crane_adjacent(p, b) else []
 
 
 def crane_targets(state, p, b, level: int | None = None) -> list:
