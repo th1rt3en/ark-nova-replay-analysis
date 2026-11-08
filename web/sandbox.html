@@ -19,6 +19,7 @@
   <p class="lobbytext">Play against a bot that only passes, on a board you set up and can edit at any time. You choose your seat and the maps in the game.</p>
   <form id="lobbyform">
     <label class="lobbyrow"><input type="checkbox" id="mw"> Marine Worlds</label>
+    <label class="lobbyrow"><input type="checkbox" id="bdw"> Include the Board Design Workshop maps (BDW1 Management Zoo, BDW2 Construction Yard, BDW3 Enigma Isle, BDW4 Vast Valley)</label>
     <button type="submit" id="start">Start the sandbox</button>
     <div id="lobbymsg" role="status" class="muted"></div>
   </form>
@@ -90,7 +91,7 @@
     $('start').disabled = true; $('lobbymsg').textContent = 'Starting…';
     try {
       const res = await fetch('/api/sandbox/new', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ marine_worlds: $('mw').checked, setup: true }) });
+        body: JSON.stringify({ marine_worlds: $('mw').checked, bdw_maps: $('bdw').checked, setup: true }) });
       const body = await res.json();
       if (!res.ok) throw new Error(body.message || 'could not start');
       sessionStorage.setItem('sandboxGame', JSON.stringify(body));

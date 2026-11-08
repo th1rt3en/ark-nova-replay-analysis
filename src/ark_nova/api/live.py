@@ -91,7 +91,7 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
             body = await body_of(request)
         except LiveError as e:
             return _map(e)
-        return await run(service.create, bool(body.get("marine_worlds")), None, body.get("game_mode"), body.get("time_control"), bool(body.get("rated")), account_of(request))
+        return await run(service.create, bool(body.get("marine_worlds")), None, body.get("game_mode"), body.get("time_control"), bool(body.get("rated")), account_of(request), None, None, None, bool(body.get("bdw_maps")))
 
     @app.get("/api/games/{game_id}")
     async def lobby(game_id: str):

@@ -656,6 +656,8 @@ def map_view(map_id: str, layout: list | None = None) -> dict:
     if data.is_custom_map(base):                                                  # a map made in the map editor: the blank board, the rock / water hexes drawn on it, its association spaces
         out.update(image="/map_editor/blank_map.png", custom_terrain=[h for h in geo.get("hexes", []) if h["terrain"] != "plain"], custom_association=m["association"],
                    **({"upgrade_sets": m["association"]["upgrade"]["sets"]} if m["association"]["upgrade"]["mode"] == "pairs" else {}))
+    elif data.is_bdw_map(base):                                                   # a Board Design Workshop map: its own picture, the association spaces of its record, the appeal for covering the map
+        out.update(custom_association=m["association"], full_map_appeal=m.get("full_map_appeal", 7), bdw=True)
     return out
 
 

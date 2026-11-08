@@ -35,14 +35,15 @@ class SandboxError(ValueError):
     pass
 
 
-def available_maps(marine_worlds: bool = True) -> list[dict]:
-    """Every map that has a geometry, whether or not the game has Marine Worlds (the sandbox lets the controller use any of them)."""
-    return [{"id": m["id"], "name": m["name"], "marine_worlds": m["id"] in MARINE_WORLDS_MAPS} for m in data.maps()
-            if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS]
+def available_maps(marine_worlds: bool = True, bdw_maps: bool = False) -> list[dict]:
+    """Every map that has a geometry, whether or not the game has Marine Worlds (the sandbox lets the controller use any of them); `bdw_maps` adds the four Board Design Workshop maps."""
+    out = [{"id": m["id"], "name": m["name"], "marine_worlds": m["id"] in MARINE_WORLDS_MAPS} for m in data.maps()
+           if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS]
+    return out + [{"id": m["id"], "name": m["name"], "marine_worlds": False, "bdw": True} for m in data.bdw_maps()] if bdw_maps else out
 
 
-def new_game(marine_worlds: bool, maps: list, controller: int, seed: int | None = None) -> tuple[GameState, dict]:
-    ids = {m["id"] for m in available_maps(marine_worlds)}
+def new_game(marine_worlds: bool, maps: list, controller: int, seed: int | None = None, bdw_maps: bool = False) -> tuple[GameState, dict]:
+    ids = {m["id"] for m in available_maps(marine_worlds, bdw_maps)}
     if len(maps) != 2 or any(str(m) not in ids for m in maps) or controller not in (0, 1):
         raise SandboxError("choose a map for both seats and the seat to play")
     base = deck_cards("base_project", marine_worlds)
@@ -50,7 +51,7 @@ def new_game(marine_worlds: bool, maps: list, controller: int, seed: int | None 
     if marine_worlds:
         initial["99"] = BONUS_POOL[4:5]
     config = GameConfig(marine_worlds=marine_worlds, player_ids=["1", "2"], maps=[str(m) for m in maps], base_projects=base[:3],
-                        conservation_bonuses=copy.deepcopy(initial), draft_action_cards=False, player_names=["You" if controller == 0 else "Bot", "You" if controller == 1 else "Bot"])
+                        conservation_bonuses=copy.deepcopy(initial), draft_action_cards=False, bdw_maps=bdw_maps, player_names=["You" if controller == 0 else "Bot", "You" if controller == 1 else "Bot"])
     state = start_game(config, SeedSpec(tail_seed=seed if seed is not None else random.SystemRandom().randrange(1, 2 ** 31)))
     meta = {"controller": controller, "bot": 1 - controller, "initial": initial,
             "unset": {"projects": [True] * 3, "b5": [True] * 2, "b8": [True] * 2, **({"b99": [True]} if marine_worlds else {})}}
@@ -65,7 +66,7 @@ def skeleton(state: GameState) -> dict:
     """What the viewer needs besides the steps (the same keys as a replay)."""
     mw = bool(state.config.marine_worlds)
     keys = set(deck_cards("main", mw)) | set(deck_cards("endgame", mw)) | set(deck_cards("base_project", mw))
-    return {"table_id": 0, "marine_worlds": bool(state.config.marine_worlds),
+    return {"table_id": 0, "marine_worlds": bool(state.config.marine_worlds), "bdw_maps": bool(state.config.bdw_maps),
             "players": [{"seat": i, "id": pid, "name": n, "color": COLORS[i]} for i, (pid, n) in enumerate(zip(state.config.player_ids, state.config.player_names))],
             "maps": [map_view(m, state.players[i].bonus_layout) for i, m in enumerate(state.config.maps)], "base_projects": list(state.base_projects), "result": [], "setup_steps": 0,
             "cards": card_catalog(keys, bool(state.config.marine_worlds)), "shapes": forking.shapes(), "base_pool": deck_cards("base_project", mw)}

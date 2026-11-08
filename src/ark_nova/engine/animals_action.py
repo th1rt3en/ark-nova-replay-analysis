@@ -170,6 +170,22 @@ def cost(state: GameState, seat: int, key: str, folder: int = 0) -> int:
     return max(0, price)
 
 
+OVERSIZE_DISCOUNT = 5                                     # BDW4 (Vast Valley): an animal placed in an oversized standard enclosure costs 5 less
+
+
+def oversize_discount(state: GameState, seat: int, key: str, b) -> int:
+    """BDW4: the discount for placing the animal in the standard enclosure `b` when that enclosure is larger than the animal needs (its capacity counts: the border space of the blue notepad space)."""
+    p = state.players[seat]
+    if p.map_id != "BDW4" or b is None or not b.type.startswith("size-"):
+        return 0
+    return OVERSIZE_DISCOUNT if effective_size(p, b, board_of(p)) > card(key)["size"] else 0
+
+
+def price_in(state: GameState, seat: int, key: str, folder: int, b) -> int:
+    """The price of the animal in the enclosure `b` (None: not known yet / no enclosure)."""
+    return max(0, cost(state, seat, key, folder) - oversize_discount(state, seat, key, b))
+
+
 def waza_allows(p, c: dict) -> bool:
     """Waza Special Assignment (S227): the kind that was not chosen (small 1-2 / large 4-5) can no longer be played."""
     chosen = p.flags.get("waza")
@@ -247,6 +263,8 @@ def effective_size(p, b, bd) -> int:
         n = 5
     if base_map_id(p.map_id) in ("2", "2a") and any(g in neighbours(c) for c in cells for g in _gates(p.map_id)):       # maps 2 / 2a: each standard enclosure next to the gate has +2 capacity (the logs show it on both)
         n += 2
+    if map_rules.border_capacity(p) and any(c in bd.border for c in cells):          # BDW4 (Vast Valley): with the blue space unlocked every standard enclosure on the border holds one more
+        n += 1
     return n
 
 
@@ -317,7 +335,10 @@ def _special_size(animal_key: str) -> int:
 
 
 def _cost_ok(state: GameState, seat: int, key: str, from_display: bool, folder: int) -> bool:
-    return cost(state, seat, key, folder if from_display else 0) <= state.players[seat].money
+    p = state.players[seat]
+    if p.map_id == "BDW4":                                    # the discount depends on the enclosure: the cheapest place decides
+        return any(price_in(state, seat, key, folder if from_display else 0, b) <= p.money for b, ok in hosts(state, seat, key) if ok)             or cost(state, seat, key, folder if from_display else 0) <= p.money
+    return cost(state, seat, key, folder if from_display else 0) <= p.money
 
 
 def playable(state: GameState, seat: int, level: int) -> list:
@@ -359,6 +380,12 @@ def small_extra(p, a) -> bool:
             and all(sponsor_extras.size_class(card(k)) == "small" for k in a["played"]))
 
 
+def _fits_money(state: GameState, p, key: str, from_display: bool, folder: int, x: int, y: int) -> bool:
+    """BDW4: whether the player can pay for the animal in the enclosure at (x, y) (the discount depends on the enclosure)."""
+    b = next(b for b in p.buildings if (b.x, b.y) == (x, y))
+    return price_in(state, p.seat, key, folder if from_display else 0, b) <= p.money
+
+
 def legal(state: GameState, p) -> list:
     a = state.prompt.args
     acts = []
@@ -370,12 +397,15 @@ def legal(state: GameState, p) -> list:
             if extra and (d or sponsor_extras.size_class(card(k)) != "small"):
                 continue
             for x, y in enclosure_options(state, p.seat, k):
+                if p.map_id == "BDW4" and not _fits_money(state, p, k, d, folder, x, y):
+                    continue
                 acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": d, "x": x, "y": y}))
             if flock_free(state, p.seat, k):                      # Flock Animal: no enclosure is flipped
                 acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": d, "flock": True}))
         for k in sorted(set(p.stored)):                          # map 11: an animal of the storage is played directly (the price is the same)
             if k.startswith("A") and conditions_met(state, p.seat, k, live_level(p, a)) and _cost_ok(state, p.seat, k, False, 0):
-                acts += [Action(p.seat, "play_animal", {"card": k, "from_display": False, "x": x, "y": y, "stored": True}) for x, y in enclosure_options(state, p.seat, k)]
+                acts += [Action(p.seat, "play_animal", {"card": k, "from_display": False, "x": x, "y": y, "stored": True}) for x, y in enclosure_options(state, p.seat, k)
+                         if p.map_id != "BDW4" or _fits_money(state, p, k, False, 0, x, y)]
                 if flock_free(state, p.seat, k):
                     acts.append(Action(p.seat, "play_animal", {"card": k, "from_display": False, "flock": True, "stored": True}))
     if a["played"] or not acts:                              # (with no animal that can be played the player can only end the action: found by self-play)
@@ -408,7 +438,10 @@ def play(state: GameState, action: Action) -> None:
     if state.current_action is not None:
         state.current_action.pop("camouflage", None)
     c = card(k)
-    price = cost(state, p.seat, k, state.display.index(k) + 1 if from_display else 0)
+    folder = state.display.index(k) + 1 if from_display else 0
+    price = cost(state, p.seat, k, folder)
+    if p.map_id == "BDW4" and not action.args.get("flock"):
+        price = price_in(state, p.seat, k, folder, next(b for b in p.buildings if (b.x, b.y) == (action.args["x"], action.args["y"])))
     if from_display:
         i = state.display.index(k)
         state.display[i] = None
@@ -450,6 +483,8 @@ def play(state: GameState, action: Action) -> None:
         if tower:
             printed.append({"kind": "gain", "source": "map1", "res": "appeal", "n": tower, "optional": False})
     pending = printed + ability_effects(state, k, pairs) + reef_effects(state, k, b) + fx.fire_icons(state, p.seat, k) + map_rules.continent_effects(state, p, k, b)
+    if b is not None and p.map_id == "BDW2":                                      # Construction Yard: the flipped enclosure next to the crane may be repositioned (an effect of its own)
+        pending += map_rules.crane_effects(p, b)
     if "S228" in p.sponsors and len(a["played"]) == max_animals(live_level(p, a), a["strength"]) + 1 and all(sponsor_extras.size_class(card(x)) == "small" for x in a["played"]) and not a.get("s228"):
         a["s228"] = True                                          # Waza Small Animal Program: the extra small animal is played, the snap is one of its effects (the player orders them: 889209922 turn 46)
         pending.append({"kind": "take", "source": "S228", "snap": True, "small": True, "optional": True})

@@ -128,6 +128,11 @@ GAME_MODES = {
 }
 
 
+def _pickable_maps() -> list:
+    """The maps a map pick can show: the maps of the game and the Board Design Workshop maps (a game only offers them when it asks for them)."""
+    return list(card_data.maps()) + list(card_data.bdw_maps())
+
+
 def options() -> dict:
     """The game modes of the engine (`engine/map_select.py` is the list), with a name and a line of text each."""
     return {"default": map_select.DEFAULT_MODE, "time_control": tc.options(),
@@ -168,7 +173,7 @@ class LiveService:
         return None
 
     def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None, rated: bool = False, account=None,
-               seat_accounts: list | None = None, creator_seat: int | None = None, custom_map_record: dict | None = None) -> dict:
+               seat_accounts: list | None = None, creator_seat: int | None = None, custom_map_record: dict | None = None, bdw_maps: bool = False) -> dict:
         """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`).
         With `seat_accounts` (the account ids by seat, from a lobby) the seats belong to those accounts: their keys are derived from them and no link carries a key."""
         if rated and self.ratings is None:
@@ -181,7 +186,8 @@ class LiveService:
             raise IllegalMove(f"the game mode must be one of {list(map_select.MODES)}", 422)
         if mode == custom_map.MODE and not custom_map_record:
             raise IllegalMove("choose a map for the game mode custom-map", 422)
-        options = {"game_mode": mode, "marine_worlds_flag": bool(marine_worlds), "confirm_turns": True, **({"custom_map": custom_map_record} if mode == custom_map.MODE else {})}
+        options = {"game_mode": mode, "marine_worlds_flag": bool(marine_worlds), "confirm_turns": True, **({"custom_map": custom_map_record} if mode == custom_map.MODE else {}),
+                   **({"bdw_maps": True} if bdw_maps and mode not in (custom_map.MODE, ark360.MODE) else {})}
         if mode == ark360.MODE:
             time_control = ark360.time_control()                              # (the time control is part of the mode)
         try:
@@ -283,13 +289,13 @@ class LiveService:
         study = {"seconds": ark360.study_seconds(), "started_at": s["config"].get("study_started_at"), "now": int(time.time() * 1000)} if ark else None
         return {"game_id": game_id, "study": study, "clock": tc.view(s["config"]["clock"], int(time.time() * 1000)) if s["config"].get("clock") else None, "status": s["status"], "version": s["version"], "seat": seat, "rated": bool(s["config"].get("rated")), "named": [bool(x["name"]) for x in s["seats"]], "marine_worlds": bool(v.get("marine_worlds")),
                 "first_player": 0, "players": [{"seat": i, "id": str(i + 1), "name": x["name"] or f"Seat {i + 1}", "color": (v.get("colors") or [None, None])[i]} for i, x in enumerate(s["seats"])],
-                "maps": [] if hidden else v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in card_data.maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in card_data.maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") and not hidden else {}, "cards": v.get("cards"), "base_projects": [] if no_projects else v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
+                "maps": [] if hidden else v.get("maps") or [], "map_names": {m["id"]: m["name"] for m in _pickable_maps() if m.get("geometry")}, "map_images": {m["id"]: f"/maps/map-{PICTURE_OF.get(m['id'], m['id'])}.jpg" for m in _pickable_maps() if m.get("geometry")}, "map_views": self._map_views() if not v.get("maps") and not hidden else {}, "cards": v.get("cards"), "base_projects": [] if no_projects else v.get("base_projects") or [], "shapes": fork.shapes(), "engine_version": s["engine_version"],
                 "abandon": self.abandon_view(s["config"])}
 
     def _map_views(self) -> dict:
         """The boards of the maps (picture, placement bonuses, bonus slots) for the map pick, which shows each map as it looks in play."""
         if not hasattr(self, "_map_view_cache"):
-            self._map_view_cache = {m["id"]: map_view(m["id"]) for m in card_data.maps() if m.get("geometry")}
+            self._map_view_cache = {m["id"]: map_view(m["id"]) for m in _pickable_maps() if m.get("geometry")}
         return self._map_view_cache
 
     def preview(self, game_id: str, token: str, version: int, action: dict) -> dict:

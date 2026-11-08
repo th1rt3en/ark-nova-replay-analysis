@@ -279,11 +279,14 @@ def slot_options(state, seat: int, key: str, extra: int = 0) -> list:
     return out
 
 
+NOT_PLAYABLE_SPACES = frozenset({"project-support"})      # notepad bonuses the engine cannot play yet (BDW1: a conservation project supported at once, without workers): the space is not offered
+
+
 def notepad_bonuses(state, p) -> list:
     """(index, bonus) of the notepad tokens still on the map."""
     slots = data.map_by_id(p.map_id)["geometry"]["bonus_slots"]
     used = p.flags.get("bonus_used", 0)
-    return [(s["index"], s["bonus"]) for s in slots if not used >> s["index"] & 1 and s.get("bonus")]
+    return [(s["index"], s["bonus"]) for s in slots if not used >> s["index"] & 1 and s.get("bonus") and s["bonus"]["type"] not in NOT_PLAYABLE_SPACES]
 
 
 # ---- the action --------------------------------------------------------------------------------------------------------------------
@@ -553,7 +556,7 @@ def space_bonuses(state, p, kind: str, k: int) -> None:
     n_p, n_u = len(partners(p)), len(universities(p))
     old_p, old_u = n_p - (kind == "partner"), n_u - (kind == "university")
     upgrade = {"kind": "upgrade", "player": p.seat, "optional": False}
-    if data.is_custom_map(p.map_id):                           # a map made in the map editor: the spaces are what its maker drew (engine/custom_map.py)
+    if data.has_association_record(p.map_id):                  # a map made in the map editor or a BDW map: the spaces are what its maker drew (engine/custom_map.py)
         cm = data.map_by_id(p.map_id)["association"]
         if cm["upgrade"]["mode"] == "second":
             if k == 2:

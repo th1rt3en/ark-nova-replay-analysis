@@ -454,12 +454,12 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         return JSONResponse(result)
 
     @app.get("/api/sandbox/maps")
-    async def sandbox_maps(marine_worlds: bool = False):
-        return JSONResponse({"maps": sandbox.available_maps(marine_worlds)})
+    async def sandbox_maps(marine_worlds: bool = False, bdw_maps: bool = False):
+        return JSONResponse({"maps": sandbox.available_maps(marine_worlds, bdw_maps)})
 
     @app.get("/api/sandbox/map/{map_id}")
     async def sandbox_map(map_id: str):
-        if map_id not in {m["id"] for m in sandbox.available_maps(True)}:
+        if map_id not in {m["id"] for m in sandbox.available_maps(True, True)}:
             return _error(404, "no_map", "No such map.")
         return JSONResponse(sandbox.map_view(map_id))
 
@@ -470,7 +470,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         try:
             body = json.loads(await request.body())
             setup = bool(body.get("setup"))
-            state, meta = sandbox.new_game(bool(body.get("marine_worlds")), ["1", "1"] if setup else [str(m) for m in body["maps"]], 0 if setup else int(body["controller"]))
+            state, meta = sandbox.new_game(bool(body.get("marine_worlds")), ["1", "1"] if setup else [str(m) for m in body["maps"]], 0 if setup else int(body["controller"]), bdw_maps=bool(body.get("bdw_maps")))
             steps = await run_in_threadpool(sandbox.first_step, state, meta)
         except (ValueError, KeyError, TypeError) as e:
             return _error(422, "invalid", str(e) if isinstance(e, sandbox.SandboxError) else "Send {marine_worlds, maps, controller}.")

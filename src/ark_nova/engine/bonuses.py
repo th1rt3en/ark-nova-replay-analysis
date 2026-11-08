@@ -86,7 +86,7 @@ def hire_worker(state, seat: int, where: str = "reserve") -> bool:
     if not supply:
         return False
     supply[0].location = where
-    if data.is_custom_map(p.map_id):                                  # a map made in the map editor: the 2nd, 3rd and last worker pay what the maker put on the space
+    if data.has_association_record(p.map_id):                         # a map made in the map editor or a BDW map: the 2nd, 3rd and last worker pay what the maker put on the space
         hired = len(worker_tokens(p, "reserve")) + len(worker_tokens(p, "association_"))
         row = data.map_by_id(p.map_id)["association"]["workers"]
         if 2 <= hired <= 1 + len(row) and row[hired - 2]:
@@ -253,6 +253,10 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             defer(state, {"kind": "take", "source": "bonus", "snap": True, "optional": False, "player": seat})      # (the bonus also gives one Snapping)
         elif k == "size-3":                              # a free size 3 enclosure
             defer(state, {"kind": "build", "source": "bonus", "type": "size-3", "rules": {}, "optional": True, "double": False, "player": seat})
+        elif k == "size-5":                              # a free size 5 enclosure (BDW2's notepad space)
+            defer(state, {"kind": "build", "source": "bonus", "type": "size-5", "rules": {}, "optional": True, "double": False, "player": seat})
+        elif k == "border-capacity":                     # BDW4's blue notepad space: a passive ability once it is unlocked (map_rules.border_capacity), nothing to gain
+            pass
         elif k == "bonus-kiosk-pavilion":                # Posturing 3: up to 3 free kiosks / pavilions, each one can be skipped
             for _ in range(3):
                 defer(state, {"kind": "build", "source": "bonus", "types": ["kiosk", "pavilion"], "type": "kiosk", "rules": {},
@@ -309,7 +313,7 @@ def upgradable(p) -> list:
     return [c.type for c in p.action_cards if c.level < 2]
 
 
-KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor")
+KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor", "species_bonus", "crane_move")
 
 
 def open_break_prompt(state, seat: int, pending: list, resume: dict) -> None:
@@ -355,6 +359,15 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         out.append(Action(seat, "skip_effect", {"index": i}))
     elif k == "search_sponsor":                         # maps 8 / 8a: the first sponsor of the deck joins the hand
         out.append(Action(seat, "choose_effect", {"index": i, "apply": "search_sponsor"}))
+    elif k == "crane_move":                             # BDW2: the occupied enclosure next to the crane may stand somewhere else
+        from ark_nova.engine import map_rules
+        b = next((b for b in p.buildings if [b.x, b.y] == e["building"]), None)
+        if b is not None and map_rules.crane_hex(p) is not None:
+            out += [Action(seat, "choose_effect", {"index": i, "x": x, "y": y, "rotation": r}) for x, y, r in map_rules.crane_targets(state, p, b)]
+        out.append(Action(seat, "skip_effect", {"index": i}))
+    elif k == "species_bonus":                          # BDW1: the second icon of a species: 5 money, Snapping or Marketing
+        from ark_nova.engine import map_rules
+        out += [Action(seat, "choose_effect", {"index": i, "gain": name}) for name, _ in map_rules.SPECIES_BONUSES]
     elif k == "pbonus":                                 # one of several placement bonuses of the same building: the player chooses the order
         out.append(Action(seat, "choose_effect", {"index": i, "apply": "pbonus", "bonus": e["bonus"]["type"]}))
     elif k == "search_category":                        # the search of a category university: the first card of the category leaves the deck (after the trigger effects of the new icons: 796946880 turn 23)
@@ -456,6 +469,19 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if not 0 <= j < len(opts):
             raise fx.IllegalEffect("the bonus of 16 reputation has been taken")
         apply_bonus(state, p.seat, opts.pop(j))
+    elif k == "crane_move":
+        from ark_nova.engine import map_rules
+        b = next((b for b in p.buildings if [b.x, b.y] == e["building"]), None)
+        target = (int(a.get("x", -1)), int(a.get("y", -1)), int(a.get("rotation", -1)))
+        if b is None or map_rules.crane_hex(p) is None or target not in map_rules.crane_targets(state, p, b):
+            raise fx.IllegalEffect("the enclosure cannot be moved there")
+        _g().reposition_building(state, p.seat, b, *target)
+    elif k == "species_bonus":
+        from ark_nova.engine import map_rules
+        bonus = dict(map_rules.SPECIES_BONUSES).get(a.get("gain"))
+        if bonus is None:
+            raise fx.IllegalEffect("choose 5 money, Snapping or Marketing")
+        apply_bonus(state, p.seat, bonus)
     elif k == "search_sponsor":
         from ark_nova.engine.cards import search_deck
         found = search_deck(state.main_deck, ("sponsor", None))

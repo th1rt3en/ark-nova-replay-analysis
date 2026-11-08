@@ -145,6 +145,7 @@
   if (!game) {                                                       // no game yet: make one
     $('lobbytext').textContent = 'Play a game against a friend. You get two links: keep one, send the other.';
     const mw = document.createElement('input'); mw.type = 'checkbox';
+    const bdw = document.createElement('input'); bdw.type = 'checkbox';
     const mode = document.createElement('select');
     const opts = await fetch('/api/live/options').then((r) => r.json()).catch(() => ({ game_modes: [], default: '' }));
     for (const m of opts.game_modes) { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; o.title = m.description; mode.append(o); }
@@ -177,12 +178,12 @@
     const syncTc = () => { const m = opts.game_modes.find((x) => x.id === mode.value); tcField.style.display = m && m.fixed_time_control ? 'none' : ''; };      // (a mode with its own time control, Ark360, has no choice)
     mode.addEventListener('change', syncTc); syncTc();
     const kind = await ratedChoice();
-    $('lobbyform').append(...(kind ? [kind.node] : []), stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), button('Create the game'));
+    $('lobbyform').append(...(kind ? [kind.node] : []), stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), check('Board Design Workshop maps', bdw, 'BDW1 Management Zoo, BDW2 Construction Yard, BDW3 Enigma Isle and BDW4 Vast Valley join the map pool (not in Ark360 or Custom map).'), button('Create the game'));
     $('lobbyform').onsubmit = async (e) => {
       e.preventDefault();
       const submit = e.submitter; if (submit) submit.disabled = true;                      // (one click, one game)
       const time_control = custom ? { start: Math.round(+startIn.value * 60), increment: Math.round(+incIn.value) } : { speed: speed.value };
-      const r = await api('', { marine_worlds: mw.checked, game_mode: mode.value, time_control, rated: kind ? kind.isRated() : false });
+      const r = await api('', { marine_worlds: mw.checked, bdw_maps: bdw.checked, game_mode: mode.value, time_control, rated: kind ? kind.isRated() : false });
       if (!r.ok) { $('lobbytext').textContent = r.body.message || 'The game could not be created.'; if (submit) submit.disabled = false; return; }
       const g = r.body, base = location.origin + '/play.html?game=' + g.game_id;
       $('lobbyform').hidden = true;

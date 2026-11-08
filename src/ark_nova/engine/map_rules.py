@@ -33,6 +33,106 @@ def strength_bonus(p, slot: int) -> int:
     return s - slot
 
 
+BDW4_BLUE_SLOT = 6                          # the blue notepad space of BDW4 (Vast Valley): once taken, standard enclosures on the border hold one more
+
+
+def border_capacity(p) -> bool:
+    """BDW4: the blue notepad space is unlocked."""
+    return p.map_id == "BDW4" and bool(p.flags.get("bonus_used", 0) >> BDW4_BLUE_SLOT & 1)
+
+
+# ---- BDW3 (Enigma Isle): anything may be built on water and rock, for 1 money a space -------------------------------------------------------
+
+TERRAIN_FEE = 1
+
+
+def terrain_fee(p, t: str, cells, free: int = 0) -> int:
+    """BDW3: the money for the water / rock spaces under a new building, whatever the building costs (a free one too): 1 a space. The Diversity Researcher (S219) covers them for nothing, so does
+    the underwater tunnel (it is built on water); `free` spaces are paid by a Water / Rock Build (level II: one space)."""
+    if p.map_id != "BDW3" or "S219" in p.sponsors or t == "underwater-tunnel":
+        return 0
+    bd = board(p.map_id)
+    return TERRAIN_FEE * max(0, sum(1 for c in cells if bd.terrain.get(c, "plain") != "plain") - free)
+
+
+def connected_terrain(p, terrain: str) -> set:
+    """Water / rock spaces that no building covers but one touches (the spaces of the connected zoo)."""
+    bd = board(p.map_id)
+    covered = {c for b in p.buildings if build_action.knows_shape(b.type) for c in build_action.footprint(b.type, b.x, b.y, b.rotation)}
+    return {n for c in covered for n in neighbours(c) if bd.terrain.get(n) == terrain and n not in covered}
+
+
+def terrain_pairs(p) -> int:
+    """BDW3: the income, 1 money per pair of a connected water space and a connected rock space."""
+    return min(len(connected_terrain(p, "water")), len(connected_terrain(p, "rock"))) if p.map_id == "BDW3" else 0
+
+
+# ---- BDW1 (Management Zoo): the second icon of a species ------------------------------------------------------------------------------------
+
+SPECIES_ICONS = ("Bird", "Predator", "Herbivore", "Bear", "Reptile", "Pet", "Primate", "SeaAnimal")      # the animal categories: not the continents, research, rock or water
+SPECIES_BONUSES = (("money", {"money": 5}), ("snapping", {"Snapping": 1}), ("marketing", {"bonus-sponsor": 1}))
+
+
+def species_effects(seat: int, before, after) -> list:
+    """BDW1: one effect (a choice of 5 money, Snapping or Marketing) for every species icon whose count has just reached 2 (it was 0 or 1 before). The 4th or 6th icon pays nothing; an icon that
+    is lost (a released animal) and gained again reaches 2 again and pays again."""
+    return [{"kind": "species_bonus", "source": "BDW1", "icon": icon, "optional": False, "player": seat} for icon in SPECIES_ICONS if before[icon] < 2 <= after[icon]]
+
+
+# ---- BDW2 (Construction Yard): the crane ------------------------------------------------------------------------------------------------------
+
+def crane_hex(p):
+    """The crane's hex while it works: BDW2, and no building covers its (rock) hex. Once the hex is covered (Terrain Build, Diversity Researcher) the ability stops."""
+    if p.map_id != "BDW2":
+        return None
+    cell = next((s for s in data.map_by_id(p.map_id)["geometry"]["special_hexes"] if s["kind"] == "crane"), None)
+    if cell is None:
+        return None
+    c = (cell["x"], cell["y"])
+    covered = {k for b in p.buildings if build_action.knows_shape(b.type) for k in build_action.footprint(b.type, b.x, b.y, b.rotation)}
+    return None if c in covered else c
+
+
+def crane_adjacent(p, b) -> bool:
+    """A standard enclosure with a space next to the crane."""
+    c = crane_hex(p)
+    return c is not None and b.type.startswith("size-") and any(c in neighbours(k) for k in build_action.footprint(b.type, b.x, b.y, b.rotation))
+
+
+def crane_effects(p, b) -> list:
+    """The enclosure `b` has just been flipped to its occupied side: when it stands next to the crane the player may reposition it."""
+    return [{"kind": "crane_move", "source": "BDW2", "building": [b.x, b.y], "optional": True, "player": p.seat}] if crane_adjacent(p, b) else []
+
+
+def crane_targets(state, p, b, level: int | None = None) -> list:
+    """[(x, y, rotation)] where the occupied enclosure `b` may be repositioned: free spaces, the animal's water / rock requirements met (the Diversity Researcher ignores them); it need not touch another
+    building. Spaces with an upgrade flag need the upgraded Build action, as for a new building."""
+    from ark_nova.engine.icons import requirement
+    bd = board(p.map_id)
+    if level is None:
+        level = max((c.level for c in p.action_cards if c.type == "build"), default=1)
+    here = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
+    occupied = {c for o in p.buildings if o is not b and build_action.knows_shape(o.type) for c in build_action.footprint(o.type, o.x, o.y, o.rotation)}
+    overbuild = "S219" in p.sponsors
+    out = []
+    for (x, y) in sorted(bd.cells):
+        for k in range(6):
+            cells = build_action.footprint(b.type, x, y, k)
+            if set(cells) == here or any(c not in bd.cells or c in occupied or c in bd.blocked for c in cells):
+                continue
+            if any(bd.terrain[c] != "plain" for c in cells) and not overbuild:
+                continue
+            if level < 2 and any(c in bd.flags for c in cells):
+                continue
+            if b.animal and not overbuild:
+                around = {n for c in cells for n in neighbours(c) if n not in cells} - occupied
+                if (sum(bd.terrain.get(n) == "water" for n in around) < requirement(b.animal, "water", state.config.marine_worlds)
+                        or sum(bd.terrain.get(n) == "rock" for n in around) < requirement(b.animal, "rock", state.config.marine_worlds)):
+                    continue
+            out.append((x, y, k))
+    return out
+
+
 def t1_discard_possible(p) -> bool:
     """Map T1: with the top-left bonus space unlocked, once in the turn a hand card may be discarded for +1 strength of an action."""
     return p.map_id == "T1" and bool(p.flags.get("bonus_used", 0) & 1) and not p.flags.get("t1_used") and bool(p.hand)

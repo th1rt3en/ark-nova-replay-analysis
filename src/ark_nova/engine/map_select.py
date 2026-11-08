@@ -6,7 +6,7 @@
 - `free-select`: both players pick any map of the pool (the same one is allowed);
 - `ark360`: like `random-mirrored`, on the maps that `ark360.applicable` allows, and the placement bonuses are at random places (`engine/ark360.py`).
 The pool is every map with a geometry (the beginner maps 0 / A are left out unless enabled), the Marine Worlds maps 10-14 only in a Marine Worlds game,
-minus `GameConfig.maps_to_exclude`. A game that is given its `maps` (a replay, a test) skips all this.
+minus `GameConfig.maps_to_exclude`; `GameConfig.bdw_maps` adds the four Board Design Workshop maps BDW1..BDW4. A game that is given its `maps` (a replay, a test) skips all this.
 
 `GameState.map_select` (JSON): `mode`, `pool`, `offers` (per seat what it chooses from), `chosen`, `stage` (pick | done). The players pick at the same
 time with `choose_map {map}`.
@@ -35,7 +35,11 @@ def pool(config) -> list:
     excluded = {str(m) for m in (config.maps_to_exclude or [])}
     ids = [m["id"] for m in data.maps() if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS and m["id"] not in excluded
            and (config.marine_worlds or m["id"] not in MARINE_WORLDS_MAPS)]
-    return [m for m in ids if ark360.applicable(m)] if getattr(config, "game_mode", None) == ark360.MODE else ids
+    if getattr(config, "game_mode", None) == ark360.MODE:
+        return [m for m in ids if ark360.applicable(m)]
+    if getattr(config, "bdw_maps", False):                           # the Board Design Workshop maps (not for Ark360: their bonuses are not at random places)
+        ids += [m["id"] for m in data.bdw_maps() if m["id"] not in excluded]
+    return ids
 
 
 def begin(state) -> None:

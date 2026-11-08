@@ -122,6 +122,7 @@ export function slotGlyph(root, sl, y) {
   const bn = sl.bonus || {};
   const add = (tag, attrs, text) => { const e = svg(tag, attrs); if (text !== undefined) e.textContent = text; root.append(e); return e; };
   if (sl.kind === 'instant_income') add('rect', { x: 78, y: y - 31, width: 62, height: 62, rx: 12, fill: '#9a4ba7', stroke: '#5e2a6b', 'stroke-width': 3 });
+  else if (bn.type === 'border-capacity') add('rect', { x: 78, y: y - 31, width: 62, height: 62, rx: 12, fill: '#6cc6ee', stroke: '#2a7fa8', 'stroke-width': 3 });          // BDW4: the blue passive space
   else add('image', { href: iconUrl(ICON_IDS.pentagon), x: 74, y: y - 36, width: 72, height: 71 });
   let icon = SLOT_ICON[bn.type] || ICON_IDS['bonus:' + bn.type];
   if (bn.type === 'xtoken' && bn.value) icon = ICON_IDS['bonus:xtoken_num'] || icon;        // (a number lies on it: no white squares)
@@ -129,7 +130,17 @@ export function slotGlyph(root, sl, y) {
   const size = fit ? fit * PENT_H : SLOT_FIT[bn.type] || (bn.type === 'money' ? (sl.kind === 'instant_income' ? 46 : 42) : (sl.kind === 'instant_income' ? 44 : 50));
   const nd = sl.kind !== 'instant_income' && (bn.type === 'money' || bn.type === 'xtoken') ? 2 : 0;          // money (12) and X tokens (3) in the pentagon: 2 units lower, so the corners of the tile / X clear the sloping top edges as far as the bottom ones (measured: they touched the top ones, 5 units free at the bottom)
   if (bn.type === 'money') moneyTile(root, 109, y + 1 + nd, size);
-  else if (bn.type === 'special-enclosure') {            // the choice of a large bird aviary / reptile house (/ large aquarium in a Marine Worlds game): the buildings drawn as hex outlines, as big as they fit in the pentagon
+  else if (bn.type === 'bonus-kiosk-pavilion' && sl.kind !== 'instant_income') {            // BDW3 / Posturing 3: BGA's own pentagon with the 3 and the kiosk / pavilion, in place of the plain pentagon
+    add('image', { href: iconUrl(ICON_IDS['bonus:bonus-kiosk-pavilion']), x: 74, y: y - 36, width: 72, height: 71 });
+  } else if (bn.type === 'size-5') {                     // BDW2: a free size 5 enclosure, the five hexes of a large enclosure with the 5
+    const g = svg('g', { transform: 'translate(74 ' + (y - 36) + ')' });
+    g.append(svg('polygon', { points: SPECIAL_ENCLOSURE[0][2], fill: '#6b4a22', stroke: '#fff', 'stroke-width': 1.1, 'stroke-linejoin': 'round' }));
+    root.append(g);
+    add('text', { x: 100, y: y + 2, class: 'slot-number', style: 'font-size:22px' }, '5');
+  } else if (bn.type === 'border-capacity') {            // BDW4: a standard enclosure on the border holds one more (a passive space once it is taken)
+    add('polygon', { points: '109,' + (y - 20) + ' 124,' + (y - 11) + ' 124,' + (y + 7) + ' 109,' + (y + 16) + ' 94,' + (y + 7) + ' 94,' + (y - 11), fill: '#6b4a22', stroke: '#fff', 'stroke-width': 2, 'stroke-linejoin': 'round' });
+    add('text', { x: 109, y: y + 7, class: 'slot-number', style: 'font-size:22px' }, '+1');
+  } else if (bn.type === 'special-enclosure') {            // the choice of a large bird aviary / reptile house (/ large aquarium in a Marine Worlds game): the buildings drawn as hex outlines, as big as they fit in the pentagon
     const g = svg('g', { transform: 'translate(74 ' + (y - 36) + ')' });
     for (const [, fill, pts] of (S.replay.marine_worlds ? SPECIAL_ENCLOSURE_MW : SPECIAL_ENCLOSURE)) {
       const poly = svg('polygon', { points: pts, fill, stroke: '#fff', 'stroke-width': 1.1, 'stroke-linejoin': 'round' });

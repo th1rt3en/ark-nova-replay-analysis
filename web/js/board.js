@@ -188,8 +188,8 @@ export function zooBoard(map, player, seat) {
   if (none) put('path', { d: pentagon(fmx, fmy, 64, 6), fill: '#c9323a', stroke: '#58545a', 'stroke-width': 4, 'stroke-linejoin': 'round', class: 'fullmap-pentagon' });
   else iconBox(ICON_IDS.pentagon, fmx, fmy, 74);                       // (the sprite has a transparent edge: 74 high draws a 64 high pentagon, like the red one)
   if (ICON_IDS['bonus:appeal']) iconBox(ICON_IDS['bonus:appeal'], fmx, fmy + 1, FULLMAP_TICKET);
-  put('text', { x: fmx, y: fmy + 12, class: 'bonus-number dk appeal', style: 'font-size:' + FULLMAP_FONT + 'px' }, none ? 0 : 7);
-  s.lastChild.append(Object.assign(svg('title'), { textContent: none ? 'No appeal for covering the whole map on this map' : 'Covering the whole map: 7 appeal' }));
+  put('text', { x: fmx, y: fmy + 12, class: 'bonus-number dk appeal', style: 'font-size:' + FULLMAP_FONT + 'px' }, none ? 0 : (map.full_map_appeal || 7));
+  s.lastChild.append(Object.assign(svg('title'), { textContent: none ? 'No appeal for covering the whole map on this map' : 'Covering the whole map: ' + (map.full_map_appeal || 7) + ' appeal' }));
 
   // the buildings; one that arrived (or changed: another rotation, turned over when an animal is placed / turned back when it is released) gets a green frame round its hexes, one that left (cut down, replaced) stays
   // as a ghost with a red frame; both fade like the cards

@@ -145,9 +145,9 @@ def assign_maps(state: GameState, maps: list) -> None:
 
 def new_game(options: dict, player_ids: list, tail_seed: int = 0) -> GameState:
     """A new game from the options of the lobby: `{"game_mode": "original" | "random-mirrored" | "free-select" (default random-mirrored),
-    "marine_worlds_flag": true | false (default true), "maps_to_exclude": [3, "3a", 11, "T1"] (default [])}`. The 3 base projects are drawn at random; a Marine
+    "marine_worlds_flag": true | false (default true), "maps_to_exclude": [3, "3a", 11, "T1"] (default []), "bdw_maps": true | false (default false: the BDW maps join the pool)}`. The 3 base projects are drawn at random; a Marine
     Worlds game drafts the action cards after the maps."""
-    unknown = set(options) - {"game_mode", "marine_worlds_flag", "maps_to_exclude", "confirm_turns", "custom_map"}
+    unknown = set(options) - {"game_mode", "marine_worlds_flag", "maps_to_exclude", "confirm_turns", "custom_map", "bdw_maps"}
     if unknown:
         raise ValueError(f"unknown options {sorted(unknown)}")
     mw = bool(options.get("marine_worlds_flag", True))
@@ -159,7 +159,7 @@ def new_game(options: dict, player_ids: list, tail_seed: int = 0) -> GameState:
         raise ValueError(f"game_mode must be one of {list(map_select.MODES)}")
     config = GameConfig(marine_worlds=mw, player_ids=list(player_ids), maps=[], base_projects=sorted(base[:3]), game_mode=mode, conservation_bonuses=bonuses.draw_conservation_bonuses(Rng(tail_seed + 31337), mw),
                         maps_to_exclude=[str(m) for m in options.get("maps_to_exclude") or []], draft_action_cards=mw, confirm_turns=bool(options.get("confirm_turns", False)),
-                        custom_map=options.get("custom_map"))
+                        custom_map=options.get("custom_map"), bdw_maps=bool(options.get("bdw_maps", False)))
     return start_game(config, SeedSpec(tail_seed=tail_seed))
 
 
@@ -361,7 +361,10 @@ def _build_actions(state: GameState, p, only=None) -> list[Action]:
         if not normal and not extra and not engineer:
             continue
         for x, y, k in build_action.valid_placements(bd, mine, t, a["level"], rules):
-            tcost = TERRAIN_COST if _covers_terrain(bd, t, x, y, k) and variant == 4 and a["level"] == 1 and "S219" not in p.sponsors else 0
+            if p.map_id == "BDW3":                                # the fee of the map; a Water / Rock Build of level II pays one space
+                tcost = map_rules.terrain_fee(p, t, build_action.footprint(t, x, y, k), 1 if variant == 4 and a["level"] >= 2 and not a.get("terrain_used") else 0)
+            else:
+                tcost = TERRAIN_COST if _covers_terrain(bd, t, x, y, k) and variant == 4 and a["level"] == 1 and "S219" not in p.sponsors else 0
             if normal and build_action.cost(t) + tcost <= p.money:
                 acts.append(Action(p.seat, "place_building", {"type": t, "x": x, "y": y, "rotation": k}))
             if extra and BUILD_EXTRA_COST[a["level"]] <= p.money:
@@ -615,13 +618,20 @@ def _place_building(state: GameState, action: Action) -> None:
         _pay(state, p, build_action.cost(t))
         a["remaining"] -= build_action.SIZES[t]
         a["placed"].append(t)
-    if variant == 4 and _covers_terrain(bd, t, x, y, k) and not ("S219" in p.sponsors and a["level"] == 1):  # Terrain Build: 2 more at level I (not with the Diversity Researcher, who may build over water and rock anyway: 854263310 turn 37), level II: gain 2 money
+    fee = None
+    if p.map_id == "BDW3":                                # Enigma Isle: the map pays for terrain; Water / Rock Build level I adds nothing, level II makes one space free and gives 2 money
+        free = 1 if variant == 4 and a["level"] >= 2 and not a.get("terrain_used") and _covers_terrain(bd, t, x, y, k) else 0
+        fee = map_rules.terrain_fee(p, t, build_action.footprint(t, x, y, k), free)
+        if free:
+            a["terrain_used"] = True
+            _gain(state, p.seat, money=2)
+    elif variant == 4 and _covers_terrain(bd, t, x, y, k) and not ("S219" in p.sponsors and a["level"] == 1):  # Terrain Build: 2 more at level I (not with the Diversity Researcher, who may build over water and rock anyway: 854263310 turn 37), level II: gain 2 money
         a["terrain_used"] = True
         if a["level"] == 1:
             _pay(state, p, TERRAIN_COST)
         else:
             _gain(state, p.seat, money=2)
-    _put_building(state, p.seat, t, x, y, k)
+    _put_building(state, p.seat, t, x, y, k, terrain_fee=fee)
     more = [x for x in _build_actions(state, p) if x.kind == "place_building"]
     if a["level"] < 2 and a["placed"]:                    # level I: one building, only the additional one of Pavilion / Kiosk Build may follow (the extra one may also come first)
         more = [x for x in more if x.args.get("extra") or x.args.get("engineer")]
@@ -643,7 +653,13 @@ def _place_building(state: GameState, action: Action) -> None:
 
 def _player_rules(p) -> dict:
     """Placement rules that come from the player's own cards: Diversity Researcher builds over water and rock and ignores their requirements."""
-    return {"overbuild": True} if "S219" in p.sponsors else {}
+    rules = {"overbuild": True} if "S219" in p.sponsors else {}
+    if p.map_id == "BDW3":                                       # Enigma Isle: anything may go on water and rock (for 1 money a space, `map_rules.terrain_fee`)
+        rules["terrain_ok"] = True
+    crane = map_rules.crane_hex(p)
+    if crane is not None:                                        # Construction Yard: a building may also touch the crane
+        rules["crane"] = crane
+    return rules
 
 
 PLACEMENT_VIA_BONUSES = ("bonus-sponsor", "Worker", "upgrade-card", "Partner-Zoo", "appeal", "Fac")
@@ -669,6 +685,8 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
             bonuses.defer(state, {**eff, "player": seat})
     if b["type"] == "kiosk":                                        # maps 7 / 7a: a free kiosk (the placement rules apply)
         bonuses.defer(state, {"kind": "build", "source": "bonus", "type": "kiosk", "rules": {}, "optional": True, "double": False, "player": seat})
+    if b["type"] == "pavilion":                                     # BDW2: a free pavilion (the placement rules apply)
+        bonuses.defer(state, {"kind": "build", "source": "bonus", "type": "pavilion", "rules": {}, "optional": True, "double": False, "player": seat})
     if b["type"] == "Digging":                                      # map 10 (Rescue Station): digging, or rescuing an animal
         bonuses.defer(state, {"kind": "digging", "source": "map10", "n": b["value"], "optional": False, "rescue": True, "player": seat})
     if b["type"] == "wave":                                         # map 14: a Wave effect: the first card of the display goes and the display is replenished
@@ -690,6 +708,33 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
         state.current_action.setdefault("after", []).append({"kind": "slot1", "source": "bonus", "optional": True})
 
 
+def reposition_building(state: GameState, seat: int, b, x: int, y: int, k: int) -> None:
+    """BDW2 (the crane): the occupied enclosure `b` moves to (x, y, k). Only the spaces it was not on before pay their placement bonuses and count for the Hydrologist / Geologist / Archeologist; it keeps its animal."""
+    p = state.players[seat]
+    bd = board_of(p)
+    before = [(o.type, o.x, o.y, o.rotation) for o in p.buildings]
+    old = set(build_action.footprint(b.type, b.x, b.y, b.rotation))
+    b.x, b.y, b.rotation = x, y, k
+    cells = build_action.footprint(b.type, x, y, k)
+    new = [c for c in cells if c not in old]
+    p.flags.setdefault("built_now", []).append(b.id)                     # (its spaces were not covered before this turn's move: the Hydrologist / Geologist count them)
+    gains = [] if "S280" in p.sponsors else build_action.placement_bonuses(bd, new)
+    if len(gains) > 1:
+        for g_ in gains:
+            bonuses.defer(state, {"kind": "pbonus", "bonus": g_, "optional": False, "player": seat})
+    else:
+        for g_ in gains:
+            apply_placement_bonus(state, seat, g_)
+    if "S221" in p.sponsors and "S280" not in p.sponsors:               # Archeologist: a border space with a bonus that is gained gives one more free placement bonus
+        for _ in range(sum(1 for c in new if c in bd.border for g_ in bd.bonuses.get(c, []) if g_)):
+            bonuses.defer(state, {"kind": "archaeologist", "source": "S221", "optional": False, "player": seat})
+    hydrologist_geologist(state, seat, new)
+    now = [(o.type, o.x, o.y, o.rotation) for o in p.buildings]
+    if not build_action.covers_map(bd, before) and build_action.covers_map(bd, now) and not p.flags.get("full_map_paid"):
+        _gain(state, seat, appeal=build_action.full_map_appeal(bd.map_id))                   # (BDW2: the bonus is paid once)
+        p.flags["full_map_paid"] = True
+
+
 def hydrologist_geologist(state: GameState, seat: int, cells) -> None:
     """Hydrologist / Geologist: 1 money for every space of a building just placed that is next to a water / rock space. A water / rock space that a
     building of an earlier turn covers is gone, except under an underwater tunnel (a building put back by Reconstruction pays too)."""
@@ -702,15 +747,18 @@ def hydrologist_geologist(state: GameState, seat: int, cells) -> None:
             _gain(state, seat, money=sum(any(bd.terrain.get(n) == terrain and n not in covered for n in neighbours(c)) for c in cells))
 
 
-def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, double: bool = False) -> None:
+def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, double: bool = False, terrain_fee: int | None = None) -> None:
     """A building goes on the map (paid or free is decided by the caller): placement bonuses (twice with `double`), pavilion appeal,
     the Landscape Gardener's X token, the +7 for covering the whole map."""
     p = state.players[seat]
     bd = board_of(p)
     cells = build_action.footprint(t, x, y, k)
+    fee = map_rules.terrain_fee(p, t, cells) if terrain_fee is None else terrain_fee             # BDW3: every building on water / rock pays for it, a free one too
+    if fee:
+        _pay(state, p, fee)
     gains = [] if "S280" in p.sponsors else build_action.placement_bonuses(bd, cells) * (2 if double else 1)      # Reconstruction: no bonuses
     for b in gains:
-        if b is None or b["type"] not in ("money", "xtoken", "reputation", "take-in-range-or-deck", "Clever", "conceal", "Digging", "Mark", "store", "wave", "shark-attack", "adapt", "Multiplier", "Scavenging", "kiosk") + PLACEMENT_VIA_BONUSES:
+        if b is None or b["type"] not in ("money", "xtoken", "reputation", "take-in-range-or-deck", "Clever", "conceal", "Digging", "Mark", "store", "wave", "shark-attack", "adapt", "Multiplier", "Scavenging", "kiosk", "pavilion") + PLACEMENT_VIA_BONUSES:
             raise NotImplementedError(f"placement bonus {b and b['type']} is not implemented yet")
     before = [(b.type, b.x, b.y, b.rotation) for b in p.buildings]
     areas_before = map_rules.quarters_done(p)
@@ -742,8 +790,9 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
         if "S276" in p.sponsors and state.current_action is not None and not state.current_action.get("gardener"):
             state.current_action["gardener"] = True                     # Landscape Gardener: 1 X token per action
             _gain(state, seat, x_tokens=1)
-    if bd.map_id not in build_action.NO_FULL_MAP_BONUS and not build_action.covers_map(bd, before)             and build_action.covers_map(bd, before + [(t, x, y, k)]):
-        _gain(state, seat, appeal=build_action.FULL_MAP_APPEAL)
+    if bd.map_id not in build_action.NO_FULL_MAP_BONUS and not build_action.covers_map(bd, before)             and build_action.covers_map(bd, before + [(t, x, y, k)])             and not (bd.map_id == "BDW2" and p.flags.get("full_map_paid")):
+        _gain(state, seat, appeal=build_action.full_map_appeal(bd.map_id))
+        p.flags["full_map_paid"] = True                                                      # (BDW2: the bonus is paid once, a repositioned enclosure cannot earn it again)
 
 
 def _put_sponsor_tokens(state: GameState, p, k: str) -> None:

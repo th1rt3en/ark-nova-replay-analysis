@@ -104,7 +104,7 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
             if any(c not in bd.cells or c in occupied or c in bd.blocked for c in cells):
                 continue
             wrong = [c for c in cells if bd.terrain[c] != wanted]
-            if wrong and (rules.get("on_water") or not overbuild) and not (rules.get("terrain_hexes") and len(wrong) == 1):          # (the tunnel needs water spaces, the Diversity Researcher does not change that)   # Terrain Build: 1 rock / water space
+            if wrong and (rules.get("on_water") or not (overbuild or rules.get("terrain_ok"))) and not (rules.get("terrain_hexes") and len(wrong) == 1):          # (the tunnel needs water spaces, the Diversity Researcher does not change that)   # Terrain Build: 1 rock / water space
                 continue
             if level < 2 and not rules.get("flags") and any(c in bd.flags for c in cells):
                 continue
@@ -127,7 +127,7 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
                 if not touches_building and not any(n in bd.start_cells for c in cells for n in neighbours(c)):
                     continue
             elif occupied:
-                if not touches_building:
+                if not touches_building and not (rules.get("crane") and any(rules["crane"] in neighbours(c) for c in cells)):      # BDW2: the crane counts as a place to build next to (not for the first building)
                     continue
             elif not any(c in bd.border for c in cells):
                 continue
@@ -137,6 +137,11 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
 
 FULL_MAP_APPEAL = 7
 NO_FULL_MAP_BONUS = {"13"}          # map 13 (drawing board) gives no appeal for covering the map
+
+
+def full_map_appeal(map_id: str) -> int:
+    """The appeal for covering the whole zoo map: 7, or what the map prints (BDW3 Enigma Isle: 5)."""
+    return data.map_by_id(map_id).get("full_map_appeal", FULL_MAP_APPEAL)
 
 
 def covers_map(bd: Board, buildings: list) -> bool:

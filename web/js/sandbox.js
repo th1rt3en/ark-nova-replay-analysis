@@ -275,7 +275,7 @@ export function sbSetupBar(bar) {
   bar.replaceChildren();
   if (!S.sbMapList) {
     S.sbMapList = [];
-    fetch('/api/sandbox/maps?marine_worlds=' + (S.replay.marine_worlds ? 'true' : 'false')).then((r) => r.json()).then((b) => { S.sbMapList = b.maps; if (S.replay.setup) render(); });
+    fetch('/api/sandbox/maps?marine_worlds=' + (S.replay.marine_worlds ? 'true' : 'false') + '&bdw_maps=' + (S.replay.bdw_maps ? 'true' : 'false')).then((r) => r.json()).then((b) => { S.sbMapList = b.maps; if (S.replay.setup) render(); });
   }
   if (set.stage === 'seat') {
     bar.append(el('b', '', 'Choose the seat you play'));
@@ -290,7 +290,7 @@ export function sbSetupBar(bar) {
   const head = el('b', '', 'Choose the map of seat ' + (seat + 1) + (seat === set.controller ? ' (you)' : ' (the bot)'));
   const list = el('div', 'sbmaps');
   for (const m of S.sbMapList) {
-    const b = el('button', 'forkmove sbmapbtn' + (set.maps[seat] === m.id ? ' on' : ''), 'Map ' + m.id + ': ' + m.name);
+    const b = el('button', 'forkmove sbmapbtn' + (set.maps[seat] === m.id ? ' on' : ''), (m.bdw ? '' : 'Map ') + m.id + ': ' + m.name);
     b.type = 'button';
     b.onclick = () => sbShowMap(seat, m.id);
     list.append(b);
@@ -299,7 +299,7 @@ export function sbSetupBar(bar) {
     if (seat === 0) { set.stage = 'map1'; set.maps[1] = null; render(); return; }
     ok.disabled = true;
     const res = await fetch('/api/sandbox/new', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                  body: JSON.stringify({ marine_worlds: S.replay.marine_worlds, maps: set.maps, controller: set.controller }) });
+                                                  body: JSON.stringify({ marine_worlds: S.replay.marine_worlds, bdw_maps: !!S.replay.bdw_maps, maps: set.maps, controller: set.controller }) });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) { ok.disabled = false; renderForkMoves(body.message || 'could not start'); return; }
     sessionStorage.setItem('sandboxGame', JSON.stringify(body));

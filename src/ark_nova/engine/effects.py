@@ -51,6 +51,14 @@ def build_options(state, seat: int, t: str, rules: dict) -> list:
     level = max((c.level for c in p.action_cards if c.type == "build"), default=1)      # flagged spaces need the upgraded Build action
     if "S219" in p.sponsors:
         rules = {**rules, "overbuild": True}
+    from ark_nova.engine import map_rules as _mr
+    if _mr.crane_hex(p) is not None:                             # Construction Yard: a building may also touch the crane
+        rules = {**rules, "crane": _mr.crane_hex(p)}
+    if p.map_id == "BDW3":                                       # Enigma Isle: anything may go on water and rock, for 1 money a space (a free building too)
+        from ark_nova.engine import map_rules
+        rules = {**rules, "terrain_ok": True}
+        return [(x, y, k) for x, y, k in build_action.valid_placements(board_of(p), _buildings(p), t, level, rules)
+                if map_rules.terrain_fee(p, t, build_action.footprint(t, x, y, k)) <= p.money]
     return build_action.valid_placements(board_of(p), _buildings(p), t, level, rules)
 
 
@@ -179,6 +187,9 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
     if explorer:
         new = [i for i in prog.EXPLORER_ICONS if own[i] and not before[i] and i not in EXPLORER_BUG.get(card_key, ())]
         g._gain(state, seat, appeal=len(new), money=2 * len(new))
+    if state.players[seat].map_id == "BDW1":                  # Management Zoo: the second icon of a species pays a bonus
+        from ark_nova.engine import map_rules
+        pending += map_rules.species_effects(seat, before, total)
     return pending
 
 
@@ -337,6 +348,9 @@ def resolve_build(state, action: Action) -> None:
         pb = e["placeback"]
         from ark_nova.engine import map_rules
         areas_before = map_rules.quarters_done(p)
+        fee = map_rules.terrain_fee(p, t, build_action.footprint(t, x, y, k))              # BDW3: the new location is paid for like any other
+        if fee:
+            g._pay(state, p, fee)
         p.buildings.append(Building(id=pb["id"], type=t, x=x, y=y, rotation=k, animal=pb["animal"], animals=list(pb["animals"])))
         p.flags.setdefault("built_now", []).append(pb["id"])
         g.hydrologist_geologist(state, p.seat, build_action.footprint(t, x, y, k))          # (the building that is put back pays the Hydrologist / Geologist again)

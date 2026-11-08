@@ -56,6 +56,7 @@ class GameConfig:
     draft_action_cards: bool = False      # a new game: the players draft their action card variants first (engine/draft.py); False = `action_cards` (or the standard cards) are given
     confirm_turns: bool = False           # live play: a turn ends with an explicit confirm, undo / restart turn are offered meanwhile (engine/turns.py)
     peaceful: bool = False                # the game variant where the hostile effects (Venom, Constriction, Pilfering, Hypnosis) are replaced
+    bdw_maps: bool = False                # a new game: the Board Design Workshop maps BDW1..BDW4 (data/bdw_maps.json) are in the pool of the map selection
     custom_map: Optional[dict[str, Any]] = None    # game_mode custom-map: the map made in the map editor that both players play (the normalized record of engine/custom_map.py; the state carries it so a reload needs no store)
 
 

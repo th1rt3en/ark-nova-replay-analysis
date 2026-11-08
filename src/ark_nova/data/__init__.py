@@ -61,6 +61,22 @@ def is_custom_map(map_id: str) -> bool:
     return str(map_id).startswith(CUSTOM_PREFIX)
 
 
+BDW_PREFIX = "BDW"                        # the Board Design Workshop maps BDW1..BDW4 (data/bdw_maps.json, docs/bdw_maps.md): not part of `maps()`, only in the pool of a game that asks for them
+
+
+def is_bdw_map(map_id: str) -> bool:
+    return str(map_id).startswith(BDW_PREFIX)
+
+
+def bdw_maps() -> list[dict]:
+    return _load("bdw_maps")
+
+
+def has_association_record(map_id: str) -> bool:
+    """Maps whose association board is described by their record (`association`) instead of data/association_bonuses.json: the maps of the map editor and the BDW maps."""
+    return is_custom_map(map_id) or is_bdw_map(map_id)
+
+
 def register_map(rec: dict) -> None:
     _CUSTOM[rec["id"]] = rec
 
@@ -72,6 +88,9 @@ def map_by_id(map_id: str) -> dict:
     if str(map_id) in _CUSTOM:
         return _CUSTOM[str(map_id)]
     for m in maps():
+        if m["id"] == str(map_id):
+            return m
+    for m in bdw_maps():
         if m["id"] == str(map_id):
             return m
     raise KeyError(map_id)

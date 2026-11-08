@@ -222,6 +222,9 @@ def map_ability_income(state, p) -> int:
         return sum(1 for n in neighbours((rest["x"], rest["y"])) if n in covered)
     if p.map_id == "11":
         return 2 * len(p.stored)
+    if p.map_id == "BDW3":                                 # Enigma Isle: 1 money per pair of connected water and rock spaces
+        from ark_nova.engine import map_rules
+        return map_rules.terrain_pairs(p)
     if p.map_id in ("7", "7a"):                            # all kiosk placement bonuses covered: 1 more for each kiosk
         from ark_nova.engine import map_rules
         return sum(1 for b in p.buildings if b.type == "kiosk") if map_rules.kiosk_hexes_covered(p) else 0
