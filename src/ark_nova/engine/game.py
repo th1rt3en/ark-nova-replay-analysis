@@ -891,6 +891,10 @@ def _resume_after_effects(state: GameState) -> None:
         _after_action(state, seat, resume.get("extra"))
     elif kind == "restore":                                        # a token used after the turn: the waiting prompt of the next player comes back
         later = (state.current_action or {}).get("after")
+        if later and (state.current_action or {}).get("pre_card"):
+            state.current_action["after"] = []                       # the token was used before the card is chosen: the Clever comes at the end of the action that follows (901779082 turn 48)
+            resume["args"].setdefault("carry", {}).setdefault("after", []).extend(later)
+            later = None
         if later:                                                  # (a Clever of the placement bonus of a sponsor played with the token)
             state.current_action["after"] = []
             effects.open_prompt(state, seat, later, resume)

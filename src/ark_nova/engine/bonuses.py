@@ -128,7 +128,8 @@ def use_token(state, action) -> None:
         _fx().open_prompt(state, p.seat, [eff], {"kind": "prompt", "prompt_kind": state.prompt.kind, "args": state.prompt.args})
     else:                                                  # the turn is over but the next player has not acted yet: BGA still lets the token be used
         pr = state.prompt
-        state.current_action = {"seat": p.seat, "type": "window", "strength": 0, "after": []}
+        state.current_action = {"seat": p.seat, "type": "window", "strength": 0, "after": [],
+                                "pre_card": pr.kind == "choose_action_card" and pr.player == p.seat and not p.flags.get("turn_window")}      # (used before the player's own card is chosen: a Clever waits for the end of that action)
         _fx().open_prompt(state, p.seat, [eff], {"kind": "restore", "player": pr.player, "prompt_kind": pr.kind, "args": pr.args})
 
 
