@@ -255,6 +255,8 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             defer(state, {"kind": "build", "source": "bonus", "type": "size-3", "rules": {}, "optional": True, "double": False, "player": seat})
         elif k == "size-5":                              # a free size 5 enclosure (BDW2's notepad space)
             defer(state, {"kind": "build", "source": "bonus", "type": "size-5", "rules": {}, "optional": True, "double": False, "player": seat})
+        elif k == "project-support":                     # BDW1: pick an unused base project and put it on the board (Assertion, but not into the hand and not supported by the player)
+            defer(state, {"kind": "assertion", "source": "BDW1", "play": True, "optional": False, "player": seat})
         elif k == "border-capacity":                     # BDW4's blue notepad space: a passive ability once it is unlocked (map_rules.border_capacity), nothing to gain
             pass
         elif k == "bonus-kiosk-pavilion":                # Posturing 3: up to 3 free kiosks / pavilions, each one can be skipped

@@ -1,7 +1,7 @@
 # Board Design Workshop maps (BDW1 - BDW4)
 
-Four fan-made zoo maps, played in a game that asks for them (the option "Board Design Workshop maps": `GameConfig.bdw_maps`, `bdw_maps` in `POST /api/games` and `POST /api/sandbox/new`; the maps then join the
-pool of the map selection of the modes original / random-mirrored / free-select, and the sandbox list). They are not in `maps()` (so no replay, test or coverage script ever meets them) but in
+Four fan-made zoo maps, played in a game that asks for them (the option "Include BDW map pack": `GameConfig.bdw_maps`, `bdw_maps` in `POST /api/games`, `POST /api/sandbox/new` and the lobby settings (`live/lobbies.py`, `cloudflare/src/lobbies.ts`); the maps then join the
+pool of the map selection of the modes original / random-mirrored / free-select / Ark360 (a layout of random bonus places), and the sandbox list; not in the custom-map mode, where the host's map is played). They are not in `maps()` (so no replay, test or coverage script ever meets them) but in
 `src/ark_nova/data/bdw_maps.json`, which `data.map_by_id` reads after `maps()`.
 
 | id | name | ability |
@@ -25,17 +25,19 @@ one, `border-capacity` (passive: `map_rules.border_capacity`).
 
 ## Rules (the code)
 - BDW1: `map_rules.species_effects` is called by `effects.fire_icon_counter` (every icon that enters the zoo goes through it): one effect `species_bonus` (`bonuses.py`) per species whose count goes from < 2 to >= 2.
-- BDW2: `map_rules.crane_hex` (the rock hex of the crane; the ability stops when a building covers it), `crane_adjacent`, the build rule `crane` (`build_action.valid_placements`: not for the first
-  building), the effect `crane_move` (`map_rules.crane_targets`, `game.reposition_building`: any rotation, no adjacency needed, the animal's water / rock requirements, spaces with an upgrade flag need the
+- BDW2: `map_rules.crane_hex` (the rock hex of the crane; the ability stops when a building covers it), `crane_adjacent`, the build rule `crane` (`build_action.valid_placements`: a building may be built next to the crane at any time, the first one too), the effect `crane_move` (`map_rules.crane_targets`, `game.reposition_building`: any rotation, no adjacency needed, the animal's water / rock requirements, spaces with an upgrade flag need the
   upgraded Build action; only the spaces it was not on pay placement bonuses and count for Hydrologist / Geologist / Archeologist). The map fill bonus is paid once (`PlayerState.flags["full_map_paid"]`).
 - BDW3: `map_rules.terrain_fee` is charged in `game._put_building` (every building, a free one too; the Diversity Researcher and the underwater tunnel pay nothing; a Reconstruction placeback pays), the rule
   `terrain_ok` lets every build go on water / rock, Water / Rock Build: level I adds nothing, level II one space free and 2 money; income in `breaks.map_ability_income` (`map_rules.terrain_pairs`).
 - BDW4: `animals_action.oversize_discount` / `price_in` / `effective_size` (the border space of the blue notepad space is part of the capacity).
 
-## Assumptions to confirm (the maker's notes did not say)
-- "Oversized standard enclosure" (BDW4) = a standard enclosure whose capacity (with the border +1) is larger than the animal's size.
-- "A pair of connected water and rock spaces" (BDW3) = one water and one rock space that no building covers but one touches; the income is the smaller of the two counts.
-- The crane (BDW2) counts as a place to build next to for every building except the first. Repositioning onto an upgrade-flag space needs the upgraded Build action.
+## Confirmed by the maker / the user
+- "Oversized" (BDW4) = a standard enclosure larger than the size the animal needs (its capacity counts, with the border +1).
+- A "pair of connected water and rock spaces" (BDW3) = one water and one rock space that no building covers but one touches; the income is the smaller of the two counts.
+- BDW1's fourth notepad space (`project-support`): an Assertion that puts the chosen unused base project straight onto the board like a played one (`association.put_in_play`, the effect `assertion` with `play`): no cube
+  of the player's is on it, both players may support it.
+- The crane (BDW2) is a place to build next to for every building, the first too. Repositioning onto an upgrade-flag space needs the upgraded Build action. (6,7) of BDW3 is rock, with an X token bonus.
+
+## Still assumed
 - Species icons (BDW1) are the animal categories; a continent, research, rock or water icon is not a species.
 - The full map bonus counts the plain spaces only on every map (also BDW3, where water / rock may be covered).
-- BDW1's fourth notepad space (support a conservation project at once, without workers, no cube is put on it) is not built.

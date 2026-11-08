@@ -233,7 +233,9 @@ def test_construction_yard_the_crane_is_a_place_to_build_next_to():
     plain = {(x, y) for x, y, k in build_action.valid_placements(bd, mine, "size-1", 1, {})}
     assert near > plain and (3, 10) in near - plain or near - plain                       # a space next to the crane that touches no building
     first = {(x, y) for x, y, k in build_action.valid_placements(bd, [], "size-1", 1, {"crane": (4, 11)})}
-    assert first == {(x, y) for x, y, k in build_action.valid_placements(bd, [], "size-1", 1, {})}   # (the first building still touches the border)
+    border_first = {(x, y) for x, y, k in build_action.valid_placements(bd, [], "size-1", 1, {})}
+    from ark_nova.engine.board import neighbours
+    assert first > border_first and all((x, y) in border_first or (4, 11) in neighbours((x, y)) for x, y in first)            # the first building may also be built next to the crane
     p.buildings.append(Building(id=3, type="size-1", x=4, y=11))                          # the rock hex is covered (Terrain Build / Diversity Researcher): the crane stops
     assert map_rules.crane_hex(p) is None
 
@@ -289,12 +291,27 @@ def test_construction_yard_only_the_new_spaces_pay_placement_bonuses():
 
 # ---- the pool, the sandbox, the viewer -------------------------------------------------------------------------------------------------
 
-def test_the_notepad_space_of_bdw1_that_is_not_played_yet_is_not_offered():
+def test_the_fourth_notepad_space_of_each_map_is_offered():
     s = game.new_game({"game_mode": "free-select", "marine_worlds_flag": False, "bdw_maps": True}, ["1", "2"], tail_seed=3)
     s = game.apply(game.apply(s, Action(0, "choose_map", {"map": "BDW1"})), Action(1, "choose_map", {"map": "BDW2"}))
-    offered = lambda seat: [i for i, _ in association.notepad_bonuses(s, s.players[seat])]      # noqa: E731
-    assert 3 not in offered(0) and 3 in offered(1)                                              # (BDW2's fourth space is the free size 5 enclosure)
-    assert (3, {"type": "size-5", "value": 1}) in association.notepad_bonuses(s, s.players[1])
+    offered = lambda seat: dict(association.notepad_bonuses(s, s.players[seat]))             # noqa: E731
+    assert offered(0)[3] == {"type": "project-support", "value": 1} and offered(1)[3] == {"type": "size-5", "value": 1}
+
+
+def test_management_zoo_the_project_space_puts_an_unused_base_project_on_the_board_for_both_players():
+    from ark_nova.engine import bonuses
+    from tests.test_animal_abilities import _play
+    s = _play(_bdw1([]), "A404", settle=False)
+    assert s.base_projects_unused
+    bonuses.apply_bonus(s, 0, {"project-support": 1})
+    i = next(i for i, e in enumerate(s.prompt.args["pending"]) if e["kind"] == "assertion" and e.get("play"))
+    options = [a for a in game.legal_actions(s) if a.kind == "choose_effect" and a.args.get("index") == i]
+    assert {a.args["card"] for a in options} == set(s.base_projects_unused)
+    pick = options[0].args["card"]
+    left = len(s.base_projects_unused)
+    s = game.apply(s, options[0])
+    assert s.projects_in_play[0] == pick and pick not in s.players[0].hand and len(s.base_projects_unused) == left - 1
+    assert not any(t.location.startswith(pick + "_") for q in s.players for t in q.tokens)         # nobody's cube is on it: either player may support it
 
 
 def test_the_sandbox_offers_the_maps_only_when_asked_and_the_viewer_draws_them():
@@ -320,3 +337,18 @@ def test_a_live_game_can_ask_for_the_maps():
     snap = svc.keeper.get(g["game_id"]) if hasattr(svc.keeper, "get") else None
     plain = svc.create(game_mode="free-select")
     assert plain["game_id"] != g["game_id"]
+
+
+def test_ark360_can_have_the_maps_in_its_pool():
+    from ark_nova.engine import ark360
+    assert all(ark360.applicable(m) for m in ("BDW1", "BDW2", "BDW3", "BDW4"))
+    s = game.new_game({"game_mode": "ark360", "marine_worlds_flag": False, "bdw_maps": True, "maps_to_exclude": [m["id"] for m in data.maps()]}, ["1", "2"], tail_seed=9)
+    assert s.config.maps[0] == s.config.maps[1] and s.config.maps[0].startswith("BDW") and s.players[0].bonus_layout
+
+
+def test_a_lobby_game_can_ask_for_the_maps():
+    from ark_nova.live.lobbies import MemoryLobbies as Twin
+    lobbies = Twin()
+    acct = {"id": "A1", "username": "alice"}
+    v = lobbies.op_create(acct, {"game_mode": "ark360", "marine_worlds": False, "bdw_maps": True})
+    assert v["bdw_maps"] is True and lobbies.op_create({"id": "A2", "username": "bob"}, {"game_mode": "ark360"})["bdw_maps"] is False

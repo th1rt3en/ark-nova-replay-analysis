@@ -532,5 +532,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if c not in state.base_projects_unused:
             raise fx.IllegalEffect("that base project is not unused")
         state.base_projects_unused.remove(c)
-        p.hand.append(c)
+        if e.get("play"):                                          # BDW1's notepad space: the project goes straight onto the board like a played one, with no cube of the player's: both players may support it
+            from ark_nova.engine import association
+            for eff in association.put_in_play(state, p, c, association.project(c, state.config.marine_worlds)):
+                state.prompt.args["pending"].append({**eff, "player": p.seat})
+        else:
+            p.hand.append(c)
     fx._done(state, i)

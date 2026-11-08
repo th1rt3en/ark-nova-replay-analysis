@@ -17,7 +17,7 @@ type Account = { id: string; username: string };
 type Seat = Account | null;
 type Invite = { id: string; to_id: string; to_name: string; seat: number; status: "pending" | "declined" | "accepted" | "expired"; at: number };
 type Lobby = {
-    id: string; mode: string; custom_map?: { id: string; name: string } | null; marine_worlds: boolean; rated: boolean; status: "open" | "starting" | "started"; created_at: number; started_at?: number;
+    id: string; mode: string; custom_map?: { id: string; name: string } | null; marine_worlds: boolean; bdw_maps?: boolean; rated: boolean; status: "open" | "starting" | "started"; created_at: number; started_at?: number;
     seats: Seat[]; invites: Invite[]; game: { game_id: string; tokens: Record<string, string> } | null;
 };
 type Args = Record<string, any>;
@@ -253,14 +253,14 @@ export class Lobbies extends DurableObject<Env> {
         this.sweep(); this.heartbeat(a);
         if (this.lobbyOf(a.id)) throw new LobbyError("You are in a lobby already: leave it first.", 409, "in_lobby");
         this.next += 1;
-        const lob: Lobby = { id: `L${this.next}`, mode, custom_map: s.custom_map ? { id: String(s.custom_map.id), name: String(s.custom_map.name) } : null, marine_worlds: !!s.marine_worlds, rated: !!s.rated, status: "open", created_at: this.now(), seats: [{ id: a.id, username: a.username }, null], invites: [], game: null };
+        const lob: Lobby = { id: `L${this.next}`, mode, custom_map: s.custom_map ? { id: String(s.custom_map.id), name: String(s.custom_map.name) } : null, marine_worlds: !!s.marine_worlds, bdw_maps: !!s.bdw_maps, rated: !!s.rated, status: "open", created_at: this.now(), seats: [{ id: a.id, username: a.username }, null], invites: [], game: null };
         this.lobbies.set(lob.id, lob);
         return this.view(lob, a);
     }
 
     private row(lob: Lobby): any {
         const players = lob.seats.filter((m) => m).length;
-        return { id: lob.id, host: lob.seats[0]!.username, players, seats: SEATS, mode: lob.mode, mode_label: MODE_LABELS[lob.mode] ?? lob.mode, marine_worlds: lob.marine_worlds, rated: lob.rated, full: players >= SEATS, created_at: lob.created_at, map: lob.custom_map?.name ?? null };
+        return { id: lob.id, host: lob.seats[0]!.username, players, seats: SEATS, mode: lob.mode, mode_label: MODE_LABELS[lob.mode] ?? lob.mode, marine_worlds: lob.marine_worlds, bdw_maps: !!lob.bdw_maps, rated: lob.rated, full: players >= SEATS, created_at: lob.created_at, map: lob.custom_map?.name ?? null };
     }
 
     /** The open lobbies and the games in progress; anybody may look (`a` null = a visitor who is not logged in). */
@@ -393,7 +393,7 @@ export class Lobbies extends DurableObject<Env> {
         this.needHost(lob, a); this.needOpen(lob);
         if (!lob.seats.every((m) => m)) throw new LobbyError("Both seats must be taken before the game can start.", 409, "not_full");
         lob.status = "starting";
-        return { mode: lob.mode, custom_map: lob.custom_map ?? null, marine_worlds: lob.marine_worlds, rated: lob.rated, seats: lob.seats.map((m) => ({ ...m! })) };
+        return { mode: lob.mode, custom_map: lob.custom_map ?? null, marine_worlds: lob.marine_worlds, bdw_maps: !!lob.bdw_maps, rated: lob.rated, seats: lob.seats.map((m) => ({ ...m! })) };
     }
     private finishStart(id: string, gameId: string, tokens: Record<string, string>): any {
         const lob = this.get(id);

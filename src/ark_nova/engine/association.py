@@ -279,7 +279,7 @@ def slot_options(state, seat: int, key: str, extra: int = 0) -> list:
     return out
 
 
-NOT_PLAYABLE_SPACES = frozenset({"project-support"})      # notepad bonuses the engine cannot play yet (BDW1: a conservation project supported at once, without workers): the space is not offered
+NOT_PLAYABLE_SPACES: frozenset = frozenset()                # notepad bonuses the engine cannot play yet: the space is not offered
 
 
 def notepad_bonuses(state, p) -> list:
@@ -589,6 +589,19 @@ def space_bonuses(state, p, kind: str, k: int) -> None:
         g._gain(state, p.seat, conservation=map_bonus(p.map_id, "university3"))
 
 
+def put_in_play(state, p, key: str, card: dict) -> list:
+    """The project joins the projects in play on top (the rightmost one is discarded with its tokens); returns its place effects."""
+    state.projects_in_play.insert(0, key)
+    while len(state.projects_in_play) > PROJECTS_IN_PLAY:
+        gone = state.projects_in_play.pop()
+        for q in state.players:
+            mine = [t for t in q.tokens if t.location.startswith(gone + "_") and t.type == "token"]
+            q.flags["supports_gone"] = q.flags.get("supports_gone", 0) + len(mine)         # the supports still count at the end of the game
+            q.tokens = [t for t in q.tokens if t not in mine]
+        state.main_discard.append(gone)
+    return project_effects.place_effects(state, p.seat, key, card)
+
+
 def start_project(state, p, args: dict) -> None:
     """The project is chosen: a card from the hand / display joins the projects in play (the rightmost one is discarded with its tokens) and
     has its place bonus (release projects: 1 reputation; management plans: their keyword), an effect that waits for the end of the choices."""
@@ -604,15 +617,7 @@ def start_project(state, p, args: dict) -> None:
         gamestats.spent(state, p.seat, i + 1)
         state.display[i] = None
     if src in ("hand", "display"):
-        state.projects_in_play.insert(0, key)
-        while len(state.projects_in_play) > PROJECTS_IN_PLAY:
-            gone = state.projects_in_play.pop()
-            for q in state.players:
-                mine = [t for t in q.tokens if t.location.startswith(gone + "_") and t.type == "token"]
-                q.flags["supports_gone"] = q.flags.get("supports_gone", 0) + len(mine)         # the supports still count at the end of the game
-                q.tokens = [t for t in q.tokens if t not in mine]
-            state.main_discard.append(gone)
-        pending_place = project_effects.place_effects(state, p.seat, key, card)
+        pending_place = put_in_play(state, p, key, card)
     state.prompt.args["project"] = {"key": key, "source": src, "step": "slot", "place": pending_place}
 
 

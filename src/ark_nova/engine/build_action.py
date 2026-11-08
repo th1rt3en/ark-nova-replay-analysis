@@ -120,6 +120,7 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
             if t == "kiosk" and any(hex_distance(cells[0], o) < KIOSK_DISTANCE for o in kiosks):
                 continue
             touches_building = any(n in occupied for c in cells for n in neighbours(c))
+            touches_crane = bool(rules.get("crane")) and any(rules["crane"] in neighbours(c) for c in cells)          # BDW2: the crane is a place to build next to, at any time
             if rules.get("free_position"):
                 out.append((x, y, k))
                 continue
@@ -127,9 +128,9 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
                 if not touches_building and not any(n in bd.start_cells for c in cells for n in neighbours(c)):
                     continue
             elif occupied:
-                if not touches_building and not (rules.get("crane") and any(rules["crane"] in neighbours(c) for c in cells)):      # BDW2: the crane counts as a place to build next to (not for the first building)
+                if not touches_building and not touches_crane:
                     continue
-            elif not any(c in bd.border for c in cells):
+            elif not any(c in bd.border for c in cells) and not touches_crane:                  # (BDW2: the first building may also be built next to the crane)
                 continue
             out.append((x, y, k))
     return out

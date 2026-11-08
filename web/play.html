@@ -178,7 +178,7 @@
     const syncTc = () => { const m = opts.game_modes.find((x) => x.id === mode.value); tcField.style.display = m && m.fixed_time_control ? 'none' : ''; };      // (a mode with its own time control, Ark360, has no choice)
     mode.addEventListener('change', syncTc); syncTc();
     const kind = await ratedChoice();
-    $('lobbyform').append(...(kind ? [kind.node] : []), stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), check('Include BDW map pack', bdw, 'BDW1 Management Zoo, BDW2 Construction Yard, BDW3 Enigma Isle and BDW4 Vast Valley join the map pool (not in Ark360 or Custom map).'), button('Create the game'));
+    $('lobbyform').append(...(kind ? [kind.node] : []), stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), check('Include BDW map pack', bdw, 'BDW1 Management Zoo, BDW2 Construction Yard, BDW3 Enigma Isle and BDW4 Vast Valley join the map pool (not in Custom map, where the map is chosen).'), button('Create the game'));
     $('lobbyform').onsubmit = async (e) => {
       e.preventDefault();
       const submit = e.submitter; if (submit) submit.disabled = true;                      // (one click, one game)

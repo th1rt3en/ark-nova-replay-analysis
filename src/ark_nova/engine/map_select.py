@@ -35,11 +35,9 @@ def pool(config) -> list:
     excluded = {str(m) for m in (config.maps_to_exclude or [])}
     ids = [m["id"] for m in data.maps() if m.get("geometry") and m["id"] not in UNSUPPORTED_MAPS and m["id"] not in excluded
            and (config.marine_worlds or m["id"] not in MARINE_WORLDS_MAPS)]
-    if getattr(config, "game_mode", None) == ark360.MODE:
-        return [m for m in ids if ark360.applicable(m)]
-    if getattr(config, "bdw_maps", False):                           # the Board Design Workshop maps (not for Ark360: their bonuses are not at random places)
+    if getattr(config, "bdw_maps", False):                           # the Board Design Workshop maps
         ids += [m["id"] for m in data.bdw_maps() if m["id"] not in excluded]
-    return ids
+    return [m for m in ids if ark360.applicable(m)] if getattr(config, "game_mode", None) == ark360.MODE else ids
 
 
 def begin(state) -> None:

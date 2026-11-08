@@ -187,7 +187,7 @@ class LiveService:
         if mode == custom_map.MODE and not custom_map_record:
             raise IllegalMove("choose a map for the game mode custom-map", 422)
         options = {"game_mode": mode, "marine_worlds_flag": bool(marine_worlds), "confirm_turns": True, **({"custom_map": custom_map_record} if mode == custom_map.MODE else {}),
-                   **({"bdw_maps": True} if bdw_maps and mode not in (custom_map.MODE, ark360.MODE) else {})}
+                   **({"bdw_maps": True} if bdw_maps and mode != custom_map.MODE else {})}
         if mode == ark360.MODE:
             time_control = ark360.time_control()                              # (the time control is part of the mode)
         try:

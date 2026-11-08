@@ -225,3 +225,16 @@ describe("the push", () => {
         s1.ws.close(); s2.ws.close();
     });
 });
+
+describe("the BDW map pack option", () => {
+    it("is kept with the lobby and handed over when the game starts", async () => {
+        const { A: a, B: b } = fresh("bdw");
+        const lob = await ok("create", { account: a, settings: { bdw_maps: true } });
+        expect(lob.bdw_maps).toBe(true);
+        await ok("join", { account: b, lobby_id: lob.id, seat: 1 });
+        const info = await ok("begin_start", { account: a, lobby_id: lob.id });
+        expect(info.bdw_maps).toBe(true);
+        const plain = await ok("create", { account: fresh("bdw2").A, settings: {} });
+        expect(plain.bdw_maps).toBe(false);
+    });
+});
