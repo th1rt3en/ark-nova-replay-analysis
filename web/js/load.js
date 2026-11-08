@@ -19,7 +19,7 @@ export async function fetchReplay() {
   const server = params.get('source') === 'upload' ? await keptOnServer() : { kept: false, complete: false };       // (what the server keeps of this table: nothing to send when it has the log, and nothing at all when it has the data too)
   if (FORK) {
     const seed = params.get('seed');
-    let log, kept = false, index = null, base_projects = null, maps = null, elos = null;              // a table without a collected log (opened with the extension): the log and the table info are in this browser, the server builds the fork from them
+    let log, kept = false, index = null, base_projects = null, maps = null;              // a table without a collected log (opened with the extension): the log and the table info are in this browser, the server builds the fork from them
     if (params.get('source') === 'upload') {
       kept = server.kept && !server.complete;                                // (a table whose log and data the server keeps opens like a logged one: nothing is sent)
       if (!server.complete) {
@@ -31,12 +31,10 @@ export async function fetchReplay() {
         base_projects = projects ? JSON.parse(projects) : null;
         const seen = await LogStore.get('maps:' + table);
         maps = seen ? JSON.parse(seen) : null;
-        const seenElos = await LogStore.get('elos:' + table);
-        elos = seenElos ? JSON.parse(seenElos) : null;
       }
     }
     const forkPost = async (withLog) => fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                                                  body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log: withLog ? log : undefined, kept: !withLog && kept, index, base_projects, maps, elos })) });
+                                                                                  body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log: withLog ? log : undefined, kept: !withLog && kept, index, base_projects, maps })) });
     res = await forkPost(!kept);
     if (kept && res.status === 409) {                                        // (the kept copy is gone: send the log)
       log = await LogStore.get(table);
@@ -50,9 +48,8 @@ export async function fetchReplay() {
     const info = await LogStore.get('index:' + table);                       // the table info of the extension (optional): the Elo of the players
     const projects = await LogStore.get('baseprojects:' + table);            // the base projects the extension read off BGA's replay (optional)
     const seenMaps = await LogStore.get('maps:' + table);                    // the maps of the players, read there when the table info masks them (optional)
-    const seenElos = await LogStore.get('elos:' + table);                    // their Elo, read there when there is no table info (optional)
     const send = async (extra) => fetch('/api/tables/' + encodeURIComponent(table) + '/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                                                                body: await packed('{"log":' + (kept ? 'null,"kept":true' : text) + ',"index":' + (info || 'null') + ',"base_projects":' + (projects || 'null') + ',"maps":' + (seenMaps || 'null') + ',"elos":' + (seenElos || 'null') + extra + '}') });
+                                                                                                body: await packed('{"log":' + (kept ? 'null,"kept":true' : text) + ',"index":' + (info || 'null') + ',"base_projects":' + (projects || 'null') + ',"maps":' + (seenMaps || 'null')  + extra + '}') });
     const post = async (extra) => {
       const r = await send(extra);
       if (!(kept && r.status === 409)) return r;                             // (the kept copy is gone: send the log as usual)

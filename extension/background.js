@@ -2,6 +2,7 @@
 //   'open-helper'  BGA's replay page of a player in a new background tab (it collects the base projects; the tab is ours to close)
 //   'open-import'  the replay tool's import page in a new tab (importer.js, running there, hands it the stored log)
 //   'board-read'   the helper tab has read the base projects: close it
+//   'table-read'   the helper tab (BGA's table page, opened for the table info) has seen the table info: close it
 const api = typeof browser !== 'undefined' ? browser : chrome;
 const area = () => api.storage.session || api.storage.local;       // (the tabs of an earlier browser session are gone: session storage where there is one)
 const KEY = 'ark:helperTabs';
@@ -22,7 +23,7 @@ api.runtime.onMessage.addListener((msg, sender) => {
     }).catch(() => {});
   } else if (msg.type === 'open-import' && typeof msg.url === 'string') {
     api.tabs.create({ url: msg.url, active: true }).catch(() => {});
-  } else if (msg.type === 'board-read' && from !== undefined) {
+  } else if ((msg.type === 'board-read' || msg.type === 'table-read') && from !== undefined) {
     helpers().then(async (list) => {
       if (!list.includes(from)) return;                           // (a replay tab the user opened is left alone)
       await setHelpers(list.filter((id) => id !== from));

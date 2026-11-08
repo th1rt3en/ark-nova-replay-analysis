@@ -33,7 +33,6 @@ from ark_nova.replay.sponsor_sources import sponsor_event_gains
 from ark_nova.replay.mapstats import map_stats, waza_large_events
 from ark_nova.replay.sponsor_stats import SponsorLogStats, diversity_gains, sponsor_source_hints, sponsor_state_gains, tracked_sponsors as _tracked_sponsors
 from ark_nova.storage.index import TableRecord
-from ark_nova.storage.tableinfo import estimate_elo_changes
 
 _PLACEHOLDER = re.compile(r"\$\{(\w+)\}")
 QUICK_MIN_MOVES = 20                                        # a quick view holds at least this many moves (the draft, the starting hands and the first turns), so the player can step around before the full replay arrives
@@ -1297,15 +1296,9 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     _card_keys([st.get("adapt") for st in steps], keys)
     _card_keys([st.get("resistance") for st in steps], keys)                     # (the card a Resistance effect discards is in no state)
     elos_after, elo_changes = dict(getattr(record, "elos_after", None) or {}), dict(getattr(record, "elo_changes", None) or {})
-    elo_estimated = False
-    if record.elos and not elo_changes:                                         # no table info (a review page opened directly): the Elo read off BGA's replay and the result give the change, K=20
-        elo_changes = estimate_elo_changes(record.elos, {str(r.get("id")): r["rank"] for r in parsed.result or [] if r.get("rank") is not None})
-        elos_after = {pid: record.elos[pid] + c for pid, c in elo_changes.items()}
-        elo_estimated = bool(elo_changes)
     view = {
         "table_id": parsed.table_id,
         "marine_worlds": config.marine_worlds,
-        "elo_estimated": elo_estimated,
         "tracked_sponsors": sorted(_tracked_sponsors().values()),                      # (the sponsors whose gains `state.sponsor_stats` adds up)
         "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid)), "elo_after": elos_after.get(str(pid)), "elo_change": elo_changes.get(str(pid)), "thinking_time": (getattr(record, "thinking_times", None) or {}).get(str(pid))} for i, pid in enumerate(config.player_ids)],
         "maps": [map_view(m) for m in config.maps],

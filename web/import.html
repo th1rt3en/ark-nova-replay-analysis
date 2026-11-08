@@ -52,9 +52,6 @@ if (!/^\d+$/.test(table || '') || !(window.opener || auto)) {
       // the maps of the players when BGA masks them in the table info (no BGA premium): {player id: "9"}, read off BGA's replay by the extension; else nothing stays from an earlier import
       const maps = d.maps && typeof d.maps === 'object' && !Array.isArray(d.maps) && Object.keys(d.maps).length && Object.entries(d.maps).every(([p, m]) => /^\d+$/.test(p) && typeof m === 'string' && /^[0-9A-Za-z]{1,3}$/.test(m)) ? d.maps : null;
       await LogStore.put('maps:' + table, maps ? JSON.stringify(maps) : '');
-      // the players' Elo as BGA's replay page shows it, read by the extension when the review page was opened without the table page (no table info): {player id: number}; else nothing stays from an earlier import
-      const elos = d.elos && typeof d.elos === 'object' && !Array.isArray(d.elos) && Object.keys(d.elos).length && Object.entries(d.elos).every(([p, v]) => /^\d+$/.test(p) && Number.isFinite(v) && v > 0 && v < 5000) ? d.elos : null;
-      await LogStore.put('elos:' + table, elos ? JSON.stringify(elos) : '');
       location.replace('/replay.html?table=' + table + '&source=upload');
     } catch (err) { show('Could not keep the log in this browser, try again.', 'error'); }
   });

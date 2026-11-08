@@ -197,11 +197,11 @@ def test_a_kept_table_opens_like_a_logged_one_and_is_cached():
     assert client.get("/api/tables/607674960/replay").status_code == 404                  # (nothing kept)
     c._gcs.objects["all_games_logs/607674960.txt"] = LOG.read_bytes()
     c._bq.rows.append(("t", {"table_id": 607674960, "base_0": "P101", "base_1": "P102", "base_2": "P103", "maps": json.dumps(_extras()["maps"]), "elos": json.dumps(_extras()["elos"]),
-                             "elos_after": None, "elo_changes": None, "same_map": False, "marine_worlds": _extras()["marine_worlds"]}))
+                             "elos_after": json.dumps({p: e + 5 for p, e in _extras()["elos"].items()}), "elo_changes": json.dumps({p: 5 for p in _extras()["elos"]}), "same_map": False, "marine_worlds": _extras()["marine_worlds"]}))
     assert client.get("/api/tables/607674960/kept").json() == {"kept": True, "complete": True}
     r = client.get("/api/tables/607674960/replay")
     assert r.status_code == 200 and r.headers["etag"]
     view = r.json()
     assert [p["elo"] for p in view["players"]] == [_extras()["elos"][p["id"]] for p in view["players"]]
-    assert view["elo_estimated"] is True and sorted(p["elo_change"] for p in view["players"])[0] == -sorted(p["elo_change"] for p in view["players"])[1]
+    assert [p["elo_change"] for p in view["players"]] == [5, 5] and [p["elo_after"] for p in view["players"]] == [p["elo"] + 5 for p in view["players"]]
     assert client.get("/api/tables/607674960/replay", headers={"If-None-Match": r.headers["etag"]}).status_code == 304

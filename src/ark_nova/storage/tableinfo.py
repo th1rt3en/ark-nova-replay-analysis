@@ -46,22 +46,6 @@ def elo_changes_from_tableinfo(info: dict) -> dict[str, int]:
     return {str(p["player_id"]): round(win) for p in _players(info) if (win := _number(p.get("point_win"))) is not None}
 
 
-ESTIMATE_K = 20                                         # BGA's K for an established player (accounts/rating.py: checked on 74,124 games)
-
-
-def estimate_elo_changes(elos: dict[str, int], ranks: dict[str, int]) -> dict[str, int]:
-    """{BGA player id: the change of the game} worked out for a game of two with the Elo before it (`elos`) and the result (`ranks`: 1 = won, equal ranks = a draw), with K=20.
-    Used when the table info is not there (a review page opened without the table page): the extension reads the Elo off BGA's replay. {} unless both players are known."""
-    pids = list(ranks)
-    if len(pids) != 2 or any(p not in elos for p in pids):
-        return {}
-    a, b = pids
-    score = 1.0 if ranks[a] < ranks[b] else 0.5 if ranks[a] == ranks[b] else 0.0
-    expected = 1.0 / (1.0 + 10 ** ((elos[b] - elos[a]) / 400.0))
-    change = round(ESTIMATE_K * (score - expected))
-    return {a: change, b: -change}
-
-
 def table_id_of(info: dict) -> str:
     return str(info.get("id") or "")
 

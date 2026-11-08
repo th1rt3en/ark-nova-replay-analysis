@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from ark_nova.storage.tableinfo import elo_changes_from_tableinfo, estimate_elo_changes, elos_after_from_tableinfo, elos_from_tableinfo, table_id_of
+from ark_nova.storage.tableinfo import elo_changes_from_tableinfo, elos_after_from_tableinfo, elos_from_tableinfo, table_id_of
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "tableinfos_607674960.json"
 
@@ -37,11 +37,3 @@ def test_a_friendly_game_has_no_rating_and_is_not_an_error():
     assert elo_changes_from_tableinfo(info) == {rated: 20}
     for broken in ({}, {"result": None}, {"result": {"player": None}}, {"result": {"player": [{"player_id": 5}]}}):
         assert elos_from_tableinfo(broken) == elos_after_from_tableinfo(broken) == elo_changes_from_tableinfo(broken) == {}
-
-
-def test_the_change_of_a_game_is_worked_out_with_k_20_when_there_is_no_table_info():
-    assert estimate_elo_changes({"1": 400, "2": 400}, {"1": 1, "2": 2}) == {"1": 10, "2": -10}          # equal Elo: the winner gains K / 2
-    assert estimate_elo_changes({"1": 400, "2": 400}, {"1": 1, "2": 1}) == {"1": 0, "2": 0}             # a draw between equals
-    assert estimate_elo_changes({"1": 600, "2": 200}, {"1": 1, "2": 2}) == {"1": 2, "2": -2}            # the favourite wins: little
-    assert estimate_elo_changes({"1": 600, "2": 200}, {"1": 2, "2": 1}) == {"1": -18, "2": 18}          # and loses: a lot
-    assert estimate_elo_changes({"1": 400}, {"1": 1, "2": 2}) == {}                                     # an Elo missing: no guess
