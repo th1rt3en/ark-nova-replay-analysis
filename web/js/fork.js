@@ -275,7 +275,14 @@ export function forkBar() {
   };
   const placeActs = acts.filter((a) => a.kind === 'place_building');
   for (const a of placeActs) S.forkClaimed.add(a);
-  if (placeActs.length) renderPlacementControls(bar, placeActs);
+  // BDW2's crane: the "Reposition (crane)" button of the effects starts the move; until then neither the pieces menu nor the skip button is shown, afterwards the skip button sits beside the placement controls
+  const moveOnly = placeActs.length > 0 && placeActs.every((a) => a.args.move);
+  if (placeActs.length && !(moveOnly && !S.placement)) renderPlacementControls(bar, placeActs);
+  const craneIdx = new Set((((cur.options && cur.options.effects) || [])).filter((e) => e.kind === 'build' && /^Crane:/.test(e.name || '')).map((e) => e.index));
+  for (const a of acts.filter((x) => x.kind === 'skip_effect' && craneIdx.has(x.args.index))) {
+    if (moveOnly && !(S.placement && S.placement.move)) { S.forkClaimed.add(a); continue; }
+    S.forkClaimed.add(a); bar.append(btn(a, 'Skip the reposition', false));
+  }
   const handActs = acts.filter((a) => a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind));
   const dispActs = acts.filter((a) => a.args && a.args.card && (a.args.from_display || (a.kind === 'take_cards' && a.args.mode !== 'deck')));
   const discardActs = acts.filter((a) => a.kind === 'discard_cards');

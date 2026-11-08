@@ -2982,3 +2982,5 @@ Section 148, addition: the copies of a building that flies or turns (card-motion
 Section 148, addition: debug log for the card / building flights: open any viewer page with ?cmdebug=1 (or localStorage.cmdebug = '1') and the console lists every stop() that cancelled running animations (with the caller), every main-thread task over 40 ms while an animation runs, and the key presses (card-motion.js, CM_DEBUG).
 
 Section 148, fix: Firefox leaves the page's CSS zoom (zoom on <body>, layout.js) out of getScreenCTM() for svg content (the scale came out 0.476 where Chrome gives 0.62 at zoom 1.30; the translation was right), so the copy of a building that flew or turned was too small and ended up-left of the real one, then snapped. card-motion.js screenMatrix scales the matrix by the ratio of the picture's real rectangle to the predicted one (scale terms only). Found by running the flight in Playwright Firefox at 2498 x 1198.
+
+Section 147, change: BDW2's crane in the fork bar (ork.js): the Place a building menu and the skip button of the crane effect are hidden until Reposition (crane) is clicked; then the placement controls and Skip the reposition appear.
