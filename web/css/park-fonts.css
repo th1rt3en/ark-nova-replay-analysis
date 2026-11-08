@@ -1,0 +1,11 @@
+/* The Park Poster fonts for the pages that do not load parkposter.css (lobbies, lobby): the same faces. */
+@font-face { font-family: 'Bowlby One'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/bowlby-one-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Park Head'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/bricolage-grotesque-800.woff2) format('woff2'); size-adjust: 112.453%; ascent-override: 80.589%; descent-override: 22.232%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Num'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/archivo-800-w90.woff2) format('woff2'); size-adjust: 108.191%; ascent-override: 83.764%; descent-override: 23.107%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Label'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/archivo-w78-500.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Label'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/archivo-w78-600.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Label'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/archivo-w78-700.woff2) format('woff2'); size-adjust: 102.041%; ascent-override: 102.900%; descent-override: 24.500%; line-gap-override: 0%; }
+@font-face { font-family: 'Park Mono'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/jetbrains-mono-700.woff) format('woff'); }   /* the prompt line of the keyboard pop-up (shortcuts.js); JetBrains Mono Bold, Latin subset + arrows */
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 500; font-display: swap; src: url(/fonts/barlow-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 600; font-display: swap; src: url(/fonts/barlow-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Barlow'; font-style: normal; font-weight: 700; font-display: swap; src: url(/fonts/barlow-latin-700-normal.woff2) format('woff2'); }

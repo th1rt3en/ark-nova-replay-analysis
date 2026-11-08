@@ -12,14 +12,15 @@
 <link rel="stylesheet" href="/css/replay.css">
 <link rel="stylesheet" href="/css/table.css">
 <link rel="stylesheet" href="/css/parkposter.css">
+<link rel="stylesheet" href="/css/poster-page.css">
 </head>
 <body class="viewer forkpage sandboxpage">
 <section id="lobby" class="lobby" hidden>
   <h1>Sandbox</h1>
   <p class="lobbytext">Play against a bot that only passes, on a board you set up and can edit at any time. You choose your seat and the maps in the game.</p>
   <form id="lobbyform">
-    <label class="lobbyrow"><input type="checkbox" id="mw"> Marine Worlds</label>
-    <label class="lobbyrow"><input type="checkbox" id="bdw"> Include BDW map pack (BDW1 Management Zoo, BDW2 Construction Yard, BDW3 Enigma Isle, BDW4 Vast Valley)</label>
+    <label class="lobbycheck"><input type="checkbox" id="mw"><span><b>Marine Worlds</b><small>Play with the Marine Worlds expansion: its cards, maps and projects.</small></span></label>
+    <label class="lobbycheck"><input type="checkbox" id="bdw"><span><b>BDW map pack</b><small>Adds Management Zoo, Construction Yard, Enigma Isle and Vast Valley to the maps you can pick.</small></span></label>
     <button type="submit" id="start">Start the sandbox</button>
     <div id="lobbymsg" role="status" class="muted"></div>
   </form>
