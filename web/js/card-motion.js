@@ -284,6 +284,22 @@ export function afterRender(st) {
 // an overlay svg (placed with the group's screen matrix, so it looks the same under any zoom); the real group is hidden until the copy has landed (a cut-down building's ghost stays hidden).
 const SVG_NS = 'http://www.w3.org/2000/svg';
 let copies = 0;
+// The screen matrix of a building group, in the pixels getBoundingClientRect reports. The page is zoomed with CSS `zoom` on <body> (layout.js), and some browsers (Firefox) leave that zoom out of
+// getScreenCTM() for svg content: a copy placed with it would be too small and too near the top left corner. The factor (applied to the scale only: the translation is right) is what the picture's real rectangle says against the one the matrix predicts.
+function screenMatrix(g) {
+  const ctm = g.getScreenCTM(), img = g.querySelector('image');
+  if (!ctm) return null;
+  const m = { a: ctm.a, b: ctm.b, c: ctm.c, d: ctm.d, e: ctm.e, f: ctm.f };
+  if (!img) return m;
+  try {
+    const bb = img.getBBox(), own = img.transform.baseVal.numberOfItems ? img.transform.baseVal.consolidate().matrix : null, t = own ? ctm.multiply(own) : ctm;
+    const xs = [[bb.x, bb.y], [bb.x + bb.width, bb.y], [bb.x, bb.y + bb.height], [bb.x + bb.width, bb.y + bb.height]].map(([x, y]) => t.a * x + t.c * y + t.e);
+    const predicted = Math.max(...xs) - Math.min(...xs), actual = img.getBoundingClientRect().width;
+    const k = predicted > 0 && actual > 0 ? actual / predicted : 1;
+    if (Math.abs(k - 1) > .03) for (const key of ['a', 'b', 'c', 'd']) m[key] *= k;               // (the translation is already in the real pixels)
+  } catch (e) { /* keep the matrix as it is */ }
+  return m;
+}
 // The masks of a building (board.js: the gap between neighbours) span the whole board (3000 x 3000 units), so a copy that moves would be masked and repainted over the area of the board on every frame:
 // each mask of the copy is cut down to the box of the building (the mask only matters where the building is).
 function fitMasks(k, g) {
@@ -315,7 +331,7 @@ function buildingTurn(g, occupied, index) {
 // and rotation, and each copy keeps its own screen matrix, so only the turn axis is shared: the vertical line through the middle of both pictures together. Returns false when a group has
 // no picture or matrix (nothing is animated then).
 function turnOver(wasG, nowG, dir, index, oldHref) {
-  const parts = [wasG, nowG].map((g) => ({ g, ctm: g.getScreenCTM(), img: g.querySelector('image') }));
+  const parts = [wasG, nowG].map((g) => ({ g, ctm: screenMatrix(g), img: g.querySelector('image') }));
   if (parts.some((p) => !p.ctm || !p.img)) return false;
   const rs = parts.map((p) => p.img.getBoundingClientRect());
   if (rs.some((r) => !r.width)) return false;
@@ -367,7 +383,7 @@ function turnOver(wasG, nowG, dir, index, oldHref) {
   return true;
 }
 function buildingFlight(g, appear, index) {
-  const ctm = g.getScreenCTM(), r = (g.querySelector('image') || g.querySelector('polygon') || g).getBoundingClientRect();     // (not the group: its masks span the whole board)
+  const ctm = screenMatrix(g), r = (g.querySelector('image') || g.querySelector('polygon') || g).getBoundingClientRect();     // (not the group: its masks span the whole board)
   if (!ctm || !r.width) return;
   const sc = scale(), d = deckPoint(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, dx = d.x - cx, dy = d.y - cy;
   const o = document.createElementNS(SVG_NS, 'svg');
