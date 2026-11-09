@@ -515,8 +515,8 @@ function effectButton(e) {
   if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
   const b = el('span', 'abtn deckbtn' + (e.enabled === false ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)
   const src = e.source && /^[ASPF]\d{3}$/.test(e.source) ? cardName(e.source) : '';
-  const pbName = e.kind === 'pbonus' ? placementBonusName(e.bonus) : '';                // (one of several placement bonuses of the building just placed)
-  b.title = (pbName ? 'Placement bonus: ' + pbName : e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
+  const pbName = (e.kind === 'pbonus' || e.kind === 'project_bonus') && e.bonus ? placementBonusName(e.bonus) : '';              // (one of several placement bonuses of the building just placed)
+  b.title = (pbName ? (e.kind === 'project_bonus' ? 'Project bonus: ' : 'Placement bonus: ') + pbName : e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
   const SEARCH_ICON = { bird: ['Bird', 'r2c3'], herbivore: ['Herbivore', 'r2c4'], predator: ['Predator', 'r2c5'], primate: ['Primate', 'r2c6'], reptile: ['Reptile', 'r2c7'], marine: ['Sea animal', 'r2c8'] };
   if (e.kind === 'gain') {
     const ai = amountIcon(e.res, e.n || 1);                                  // ("Gain" + the counter's icon with the amount inside)

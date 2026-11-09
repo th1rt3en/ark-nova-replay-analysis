@@ -37,6 +37,17 @@ def placement_bonus_name(bonus: dict) -> str:
     return f"Placement bonus: {value}{label}"
 
 
+def _bonus_entry(e: dict) -> dict:
+    """The bonus of a placement bonus / a project bonus effect as {type, value}, for the buttons of the bar (a project bonus is stored as {type: value})."""
+    b = e.get("bonus")
+    if e.get("kind") == "pbonus" and isinstance(b, dict):
+        return {"bonus": {"type": b.get("type"), "value": b.get("value")}}
+    if e.get("kind") == "project_bonus" and isinstance(b, dict) and len(b) == 1:
+        (t, v), = b.items()
+        return {"bonus": {"type": t, "value": v}}
+    return {}
+
+
 def effect_name(e: dict) -> str | None:
     """The name of the ability behind a pending effect, as the card writes it ("Perception 2"), None when it is not an ability."""
     kind, src = e.get("kind"), e.get("source")
@@ -44,6 +55,9 @@ def effect_name(e: dict) -> str | None:
         return "Crane: reposition the enclosure"                                  # BDW2
     if kind == "pbonus":
         return placement_bonus_name(e.get("bonus"))
+    if kind == "project_bonus" and isinstance(e.get("bonus"), dict) and len(e["bonus"]) == 1:
+        (t, v), = e["bonus"].items()
+        return placement_bonus_name({"type": t, "value": v}).replace("Placement bonus", "Project bonus", 1)
     if kind == "reveal":
         prefix = REVEAL_NAME.get(e.get("filter", "any"))
         return f"{prefix} {e['x']}" if prefix and e.get("x") is not None else None
@@ -168,6 +182,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}),
+                           **_bonus_entry(e),
                            **({"enabled": False} if e.get("cond") == "no_animals" and any(c.startswith("A") for c in state.players[who].hand) else {}),      # (Hunter Animals: not while the hand holds an animal)
                            "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
