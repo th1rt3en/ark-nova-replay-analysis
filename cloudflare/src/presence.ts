@@ -33,7 +33,7 @@ export class Presence extends DurableObject<Env> {
     private cached = new Map<number, { at: number; value: { perHour: any[]; day: number; samples: any[]; step: number } }>();        // (the history part of `online`, per `hours`: the page asks every 30 s)
 
     private now(): number { return Date.now() + this.clockOffset; }
-    async advance(ms: number): Promise<void> { this.clockOffset += ms; }
+    async advance(ms: number): Promise<void> { this.clockOffset += ms; this.counted = null; this.cached.clear(); }
 
     async fetch(request: Request): Promise<Response> {
         const op = new URL(request.url).pathname.replace(/^\//, "");
@@ -53,12 +53,22 @@ export class Presence extends DurableObject<Env> {
             if (this.seenSize >= MAX_IDS) return Response.json({ error: "full" }, { status: 429 });
             this.seenSize++;
         }
+        this.counted = null;
         this.ctx.storage.sql.exec("INSERT INTO seen (id, page, at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET page = excluded.page, at = excluded.at", id, page, this.now());
         if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now() + SAMPLE_MS);
         return Response.json({ ok: true });
     }
 
+    private counted: { at: number; value: { users: number } & Record<Page, number> } | null = null;       // (the count of the people online, kept for 15 s and dropped by every heartbeat)
+
     private count(): { users: number } & Record<Page, number> {
+        if (this.counted && Date.now() - this.counted.at < 15000) return this.counted.value;
+        const value = this.countNow();
+        this.counted = { at: Date.now(), value };
+        return value;
+    }
+
+    private countNow(): { users: number } & Record<Page, number> {
         const out = { users: 0, replay: 0, fork: 0, play: 0, sandbox: 0, other: 0 };
         for (const r of this.ctx.storage.sql.exec<{ page: Page; n: number }>("SELECT page, COUNT(*) AS n FROM seen WHERE at > ? GROUP BY page", this.now() - WINDOW_MS)) {
             out[r.page] = r.n;
@@ -69,7 +79,7 @@ export class Presence extends DurableObject<Env> {
 
     /** Keeps a sample of the count and forgets what is old. Returns whether anybody was seen lately (then the next sample is scheduled). */
     async sample(): Promise<boolean> {
-        const now = this.now(), c = this.count();
+        const now = this.now(), c = this.countNow();
         this.ctx.storage.sql.exec("INSERT OR REPLACE INTO history (at, users, replay, fork, play, sandbox, other) VALUES (?, ?, ?, ?, ?, ?, ?)", now, c.users, c.replay, c.fork, c.play, c.sandbox, c.other);
         const hour = Math.floor(now / 3600000) * 3600000;
         this.ctx.storage.sql.exec("INSERT INTO hourly (hour, users, replay, fork, play, sandbox, other) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(hour) DO UPDATE SET users = MAX(users, excluded.users), replay = MAX(replay, excluded.replay), fork = MAX(fork, excluded.fork), play = MAX(play, excluded.play), sandbox = MAX(sandbox, excluded.sandbox), other = MAX(other, excluded.other)", hour, c.users, c.replay, c.fork, c.play, c.sandbox, c.other);
@@ -92,7 +102,7 @@ export class Presence extends DurableObject<Env> {
     /** The part of `online` that comes from the stored samples. Short views read the 5-minute samples (at most 576 rows), long ones the hourly peaks (at most 336); the answer is kept for a while
      *  (30 s, 5 minutes for the long views) and dropped when a new sample is taken, so an open page that asks every 30 s does not read the same rows again and again. */
     private history(hours: number, now: number) {
-        const hit = this.cached.get(hours), ttl = hours > 48 ? 5 * 60 * 1000 : 30 * 1000;
+        const hit = this.cached.get(hours), ttl = SAMPLE_MS;                       // (the samples change only when sample() runs, which drops the cache: until then the answer is the same)
         if (hit && Date.now() - hit.at < ttl) return hit.value;
         const sql = this.ctx.storage.sql, since = now - hours * 3600 * 1000, step = hours > 48 ? 3600 * 1000 : SAMPLE_MS;
         type Row = { at: number; users: number; replay: number; fork: number; play: number; sandbox: number; other: number };
