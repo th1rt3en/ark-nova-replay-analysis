@@ -536,8 +536,10 @@ function effectButton(e) {
     if (e.label || src) b.append(el('i', 'gainsrc', '(' + (e.label || src) + ')'));          // (an ability: its name, "Gain 3 appeal (pack)")
   } else if (e.kind === 'slot1' && e.source === 'cards4') {                    // the Cards action's Clever (variant 4): side I pays 2 money, side II is free
     const ai = e.cost > 0 ? amountIcon('money', e.cost) : null;
-    if (ai) b.append(el('b', '', 'Pay'), ai, el('b', '', ': Clever ability'));
-    else b.append(el('b', '', e.cost > 0 ? 'Pay ' + e.cost + ' money: Clever ability' : 'Clever ability (free)'));
+    const ci = el('img', 'icon'); ci.decoding = 'sync'; ci.src = iconUrl(ICON_IDS['bonus:Clever']); ci.alt = 'Clever'; ci.height = 28;
+    if (ai) b.append(el('b', '', 'Pay'), ai, el('b', '', ':'), ci, el('b', '', 'Clever ability'));
+    else if (e.cost > 0) b.append(el('b', '', 'Pay ' + e.cost + ' money:'), ci, el('b', '', 'Clever ability'));
+    else b.append(ci, el('b', '', 'Clever ability (free)'));
     b.title = 'Clever: put any action card on slot 1' + (e.cost > 0 ? ', for ' + e.cost + ' money' : ', free') + ' - optional';
   } else if (e.kind === 'search_category' && SEARCH_ICON[e.category]) {        // a targeted search: "Find a {species}" with the species' search icon
     const [label, id] = SEARCH_ICON[e.category];
