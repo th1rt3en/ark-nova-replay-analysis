@@ -45,7 +45,7 @@ def test_cards_of_a_private_draw_or_discard_are_only_read_by_their_owner():
                 checked += 1
             assert t[theirs].startswith(f"{NAMES[a.player]} draws ") and "card(s) from the deck" in t[theirs]
         if a.kind == "initial_discard":                   # (short for everyone: "X discards 4 cards")
-            assert all(t[v] == f"{NAMES[a.player]} discards {len(a.args['cards'])} cards" for v in (mine, theirs, "spectator"))
+            assert all(t[v].split(chr(10))[0] == f"{NAMES[a.player]} discards {len(a.args['cards'])} cards" for v in (mine, theirs, "spectator"))       # (the display refill that follows the second discard has a line of its own)
         if a.kind == "discard_cards":
             for c in a.args["cards"]:
                 assert bgalog.card(c) in t[mine] and bgalog.card(c) not in t[theirs] and bgalog.card(c) not in t["spectator"]
