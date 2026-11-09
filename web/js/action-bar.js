@@ -365,9 +365,11 @@ function actionBadge(st) {
   const card = (st.players[ca.seat] && st.players[ca.seat].action_cards[ca.slot - 1]) || {};      // (the log-built state only knows the slot of the card)
   const type = ca.type || card.type, level = ca.level || card.level;
   const b = el('span', 'abtn acbtn' + (level === 2 ? ' lvl2' : ''));
-  b.title = (ACTION_NAMES[type] || '') + (level === 2 ? ' II' : '') + ', strength ' + ca.strength;
+  const o = (FORK && S.replay.steps[S.step].options) || {};          // (live / fork: what is left to spend in a Sponsors or Build action, in place of the card's strength)
+  const left = o.sponsors && typeof o.sponsors.left === 'number' ? o.sponsors.left : o.build && typeof o.build.remaining === 'number' ? o.build.remaining : ca.strength;
+  b.title = (ACTION_NAMES[type] || '') + (level === 2 ? ' II' : '') + ', strength ' + ca.strength + (left !== ca.strength ? ' (' + left + ' left)' : '');
   if (!type) return document.createTextNode('');                  // (a build from a bonus / effect has no action card: no empty chip)
-  b.append(pic(ACTION_ICON[type], 22), el('b', '', ca.strength));
+  b.append(pic(ACTION_ICON[type], 22), el('b', '', left));
   return b;
 }
 // the Association action: one button per kind of task that can be done now (not one per partner zoo / university)

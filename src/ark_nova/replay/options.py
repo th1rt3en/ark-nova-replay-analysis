@@ -177,12 +177,12 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
     if pieces:
         out["pieces"] = sorted(pieces, key=lambda q: not q.get("extra"))
         if pr.kind == "build_place":
-            out["build"] = {"variant": pr.args.get("variant", 0), "level": pr.args.get("level", 1)}
+            out["build"] = {"variant": pr.args.get("variant", 0), "level": pr.args.get("level", 1), "remaining": pr.args.get("remaining")}
     if pr.kind == "sponsors_play":                                      # the Sponsors action: the sponsors that can be played (the other cards of the hand are greyed out)
         sa = pr.args
         out["sponsors"] = {"hand": [a.args["card"] for a in acts if a.kind == "play_sponsor" and not a.args.get("from_display")],
                            "display": [a.args["card"] for a in acts if a.kind == "play_sponsor" and a.args.get("from_display")],
-                           "strength": sa.get("strength"), "gain": sa.get("strength", 0) * (2 if sa.get("level", 1) >= 2 else 1),
+                           "strength": sa.get("strength"), "left": sa.get("left"), "gain": sa.get("strength", 0) * (2 if sa.get("level", 1) >= 2 else 1),
                            "level": sa.get("level", 1), "variant": sa.get("variant", 0), "side_used": bool(sa.get("side_used")), "played": bool(sa.get("played")), "can_break": any(a.kind == "sponsor_break" for a in acts)}
     if pr.kind == "association_tasks":                                  # the tasks of the Association action that can be done (one entry per kind of task)
         tasks: dict[str, int] = {}
