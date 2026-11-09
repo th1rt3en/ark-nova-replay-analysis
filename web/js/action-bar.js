@@ -543,6 +543,10 @@ function effectButton(e) {
     const id = e.bonus && ICON_IDS['bonus:' + e.bonus.type];
     if (id) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
     b.append(el('b', '', pbName));
+  } else if ((e.kind === 'wave' || e.kind === 'shark') && e.source === 'map14') {          // the placement bonus of map 14 that is its own effect: the same button (icon + name) as when it is one of several bonuses
+    const id = ICON_IDS['bonus:' + (e.kind === 'wave' ? 'wave' : 'shark-attack')];
+    if (id) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
+    b.append(el('b', '', e.kind === 'wave' ? 'Wave' : 'Shark attack'));
   } else if (e.kind === 'multiplier') {                                          // the Multiplier icon, not the word
     const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(ICON_IDS['bonus:Multiplier']); i.alt = 'Multiplier'; i.height = 28;
     b.append(i);
