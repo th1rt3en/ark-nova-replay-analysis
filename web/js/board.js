@@ -14,7 +14,7 @@ import { animalSelection } from './action-bar.js';
 const toAxial = (x, y) => [x, (y - x - 1) / 2];
 const fromAxial = (q, r) => [q, 2 * r + q + 1];
 const rotateAxial = (a, k) => { let [q, r] = a; for (let i = 0; i < ((k % 6) + 6) % 6; i++) [q, r] = [-r, q + r]; return [q, r]; };
-const placementCells = (type, x, y, k) => {
+export const placementCells = (type, x, y, k) => {
   const [q0, r0] = toAxial(x, y);
   return (S.replay.shapes[type] || []).map((o) => { const [dq, dr] = rotateAxial(o, k); return fromAxial(q0 + dq, r0 + dr); });
 };

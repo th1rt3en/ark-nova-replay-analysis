@@ -2,7 +2,7 @@
 import { stageBreaks } from './break-stages.js';
 import { $, el, seatColor, seatName, seatText } from './util.js';
 import { PLAY, S, SANDBOX, params } from './state.js';
-import { legalPlacement, spriteOf, zooBoard } from './board.js';
+import { legalPlacement, placementCells, spriteOf, zooBoard } from './board.js';
 import { associationStrip, bonusPanel } from './association.js';
 import { curState, orientParam, povParam } from './pov.js';
 import { cardMarks, cardName, orderedKeys } from './cards.js';
@@ -10,7 +10,7 @@ import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
-import { render } from './main.js';
+import { render, renderZoos } from './main.js';
 import { amountIcon } from './log-labels.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
 import { buildMoveList, go } from './playback.js';
@@ -428,7 +428,16 @@ export function forkBar() {
     const [k, mine] = chosen[0];
     const withEnc = mine.filter((a) => a.kind === 'play_animal' && 'x' in a.args);
     if (withEnc.length) {                                                           // an animal: click an enclosure of the zoo that can take it, then confirm
-      const seatA = mine[0].player, enc = S.animalEnc && S.animalEnc.card === k ? S.animalEnc : null;
+      const seatA = mine[0].player;
+      if (!(S.animalEnc && S.animalEnc.card === k)) {                                // the smallest enclosure that takes the animal is selected for the player (one of them at random when several are equally small)
+        const size = (a) => { const b = st.players[seatA].buildings.find((q) => q.x === a.args.x && q.y === a.args.y); return b ? placementCells(b.type, b.x, b.y, b.rotation).length : 99; };
+        const sizes = withEnc.map(size), least = Math.min(...sizes);
+        const pool = withEnc.filter((a, i) => sizes[i] === least);
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        S.animalEnc = { card: k, x: pick.args.x, y: pick.args.y };
+        setTimeout(() => renderZoos(), 0);                                            // (the zoo is drawn before the bar: draw it again with the selection)
+      }
+      const enc = S.animalEnc && S.animalEnc.card === k ? S.animalEnc : null;
       const who2 = el('span', 'who', seatName(seatA));
       who2.style.color = seatText(seatA);
       bar.append(who2, el('b', '', ' must select an enclosure for this animal (' + cardName(k) + ')'));
