@@ -488,7 +488,7 @@ const EFFECT_TEXT = {
   assertion: 'Assertion', pilfer: 'Pilfer', venom: 'Venom', constrict: 'Constriction', hypnosis: 'Hypnosis', pay_appeal: 'Pay appeal', slot1: 'Card to slot 1', boost: 'Boost',
   waza: 'Waza', reposition: 'Reposition', pouch: 'Pouch a card', search_discard: 'Search the discard pile', upgrade: 'Upgrade an action card', threshold2: 'Upgrade or worker',
   threshold_bonus: 'Choose a bonus', endgame_discard: 'Discard an endgame card', adapt: 'Adapt', break_discard: 'Discard to the hand limit', take_tile: 'Take a tile',
-  move_in: 'Move an animal in', archaeologist: 'Archaeologist', species_bonus: 'Species bonus', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', reef: 'Reef', ability: 'Animal ability',
+  move_in: 'Move an animal in', archaeologist: 'Archaeologist', species_bonus: 'Species bonus', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', search_sponsor: 'Find a Sponsor', reef: 'Reef', ability: 'Animal ability',
 };
 const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
 // the option of an effect with several buttons (Marine Research Expedition: "send" a person sponsor away, or "scuba" Scuba Dive 3)
@@ -648,4 +648,18 @@ function genericBar(bar, st, o, seat) {
   if (!Object.keys(o.kinds).length) bar.append(el('span', 'abtn gen off', 'nothing to choose'));
   if (effectsOnly && bar.querySelector('.abtn')) who.after(el('b', '', (o.effects || []).length && (o.effects || []).every((x) => /^income_/.test(x.kind)) ? ' must select income bonus' : ' must choose an effect to resolve'));       // (an effect without a prompt of its own, or several waiting)
   if (effectsOnly && !bar.querySelector('.abtn') && !shown) bar.hidden = true;                // only automatic gains are pending: nothing for the player to do
+}
+
+// every button of the prompt bar is capitalised as a title ("Find a Sponsor", "Place a Kiosk"): the first letter of each word but the small ones; Undo / Restart turn keep their text
+const SMALL_WORDS = new Set(['a', 'an', 'the', 'of', 'to', 'for', 'in', 'on', 'at', 'or', 'and', 'with', 'from', 'by', 'as']);
+export const capTitle = (s, first = true) => s.replace(/(^|[\s(:])([a-z])([a-z']*)/g, (m, pre, c, rest, off) => ((!first || off > 0 || pre === '' && false) && SMALL_WORDS.has(c + rest) ? m : pre + c.toUpperCase() + rest));
+function capitaliseButtons(bar) {
+  for (const node of bar.querySelectorAll('button:not(.turnbtn), .abtn')) {
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+    for (let t = walker.nextNode(), first = true; t; t = walker.nextNode(), first = false) { const c = capTitle(t.data, first); if (c !== t.data) t.data = c; }
+  }
+}
+{
+  const bar = $('actionbar');
+  if (bar) new MutationObserver(() => capitaliseButtons(bar)).observe(bar, { childList: true, subtree: true });
 }
