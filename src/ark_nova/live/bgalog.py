@@ -84,6 +84,28 @@ def _gain_words(delta: dict) -> list:
     return words
 
 
+def _placement_gains(old: GameState, seat: int, a: dict) -> dict:
+    """The money / X tokens / reputation that the placement bonuses under a new building pay at once ({} with several bonuses: each is an effect of its own, or none)."""
+    from ark_nova.engine import build_action
+    from ark_nova.engine.board import board_of
+    p = old.players[seat]
+    if "S280" in p.sponsors or "x" not in a:
+        return {}
+    try:
+        cells = build_action.footprint(a["type"], a["x"], a["y"], a.get("rotation", 0))
+        gains = build_action.placement_bonuses(board_of(p), cells)
+    except Exception:                                                     # (a custom map or a piece that is not known here: no line rather than a wrong one)
+        return {}
+    pending = (old.prompt.args.get("pending") if old.prompt is not None else None) or []
+    mult = 2 if any(e.get("kind") == "build" and e.get("double") and a["type"] in e.get("types", [e.get("type")]) for e in pending) else 1
+    gains = gains * mult
+    if len(gains) != 1:
+        return {}
+    b = gains[0]
+    key = {"money": "money", "xtoken": "x_tokens", "reputation": "reputation"}.get((b or {}).get("type"))
+    return {key: int(b.get("value") or 1)} if key else {}
+
+
 def _delta(old: GameState, new: GameState, seat: int) -> dict:
     p0, p1 = old.players[seat], new.players[seat]
     return {k: getattr(p1, k) - getattr(p0, k) for k in ("money", "appeal", "reputation", "conservation", "x_tokens")}
@@ -208,11 +230,13 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
     if k == "place_building":
         t = a.get("type", "?")
         what = f"an additional {t}" if a.get("extra") else enclosure(t) if t.startswith("size-") else ("an " if t[:1] in "aeiou" else "a ") + t.replace("-", " ")
-        spent = -delta["money"]
+        bonus_gain = _placement_gains(old, seat, a)                       # what the covered placement bonuses pay at once (several under one building are effects of their own, logged when chosen)
+        spent = -delta["money"] + bonus_gain.get("money", 0)
         L.add(f"{who} pays {spent} for building {what}" if spent > 0 else f"{who} adds {what} for free")
-        got = _gain_words({kk: (delta[kk] if kk != "money" else max(delta[kk], 0) if spent <= 0 else 0) for kk in delta})            # (a pavilion brings 1 appeal, a placement bonus anything: said on a line of its own)
-        if got:
-            L.add(f"{who} gains {' and '.join(got)} ({'pavilion' if t == 'pavilion' else 'placement bonus'})")
+        for res, n in bonus_gain.items():
+            L.add(f"{who} gains {n} {'xtoken' if res == 'x_tokens' else res} (placement bonus)")
+        if t == "pavilion":
+            L.add(f"{who} gains 1 appeal (pavilion)")
     elif k == "play_animal":
         c = a.get("card", "?")
         spent = -delta["money"]

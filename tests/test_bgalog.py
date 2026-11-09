@@ -75,3 +75,19 @@ def test_a_played_sponsor_logs_every_gain_it_brings_even_when_money_is_gained():
                 assert f"gains {gained} money" in t["full"] or f"{gained} money" in t["full"], (seed, t["full"])
                 checked += 1
     assert checked, "no sponsor with a money gain was played in the sample games"
+
+
+def test_a_building_over_a_placement_bonus_logs_the_gain_and_the_real_price():
+    seen = 0
+    for seed in range(1, 40):
+        for old, a, new, t in _game(seed, 600):
+            if a.kind != "place_building":
+                continue
+            gain = bgalog._placement_gains(old, a.player, a.args)
+            for res, n in gain.items():
+                word = "xtoken" if res == "x_tokens" else res
+                assert f"gains {n} {word} (placement bonus)" in t["full"], (seed, t["full"])
+                seen += 1
+            if a.args["type"] == "pavilion":
+                assert "gains 1 appeal (pavilion)" in t["full"]
+    assert seen, "no building covered a simple placement bonus in the sample games"
