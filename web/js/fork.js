@@ -11,7 +11,7 @@ import { PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from '.
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
 import { render, renderZoos } from './main.js';
-import { amountIcon } from './log-labels.js';
+import { amountIcon, labelNode } from './log-labels.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
 import { buildMoveList, go } from './playback.js';
 import { expandLagoonDeal } from './lagoon-deal.js';
@@ -187,7 +187,7 @@ export const keepSel = new Map();                                              /
 // one), and the legal moves that no control stands for are listed at the end of the bar.
 export function forkBar() {
   const bar = $('actionbar'), cur = S.replay.steps[S.step], acts = cur.actions || [];
-  const DISCARDING = new Set(['sell', 'pouch', 'endgame_discard', 'adapt', 'break_discard']);          // effects that send the selected cards away: the selection is drawn as a trash mask, not as a check mark
+  const DISCARDING = new Set(['sell', 'pouch', 'endgame_discard', 'adapt', 'break_discard', 'digging']);          // effects that send the selected cards away: the selection is drawn as a trash mask, not as a check mark
   const effKinds = new Map((((cur.options && cur.options.effects) || [])).map((e) => [e.index, e.kind]));
   document.body.classList.toggle('discarding', acts.some((a) => a.kind === 'discard_cards' || (a.kind === 'choose_effect' && DISCARDING.has(effKinds.get(a.args.index)))));
   if (SANDBOX && S.replay.setup) { if (bar) sbSetupBar(bar); return; }          // the seat and the maps first
@@ -393,7 +393,9 @@ export function forkBar() {
         const b = el('button', 'forkmove forkchoice');
         b.type = 'button'; b.disabled = S.forkBusy; b.style.setProperty('--pc', seatColor(p0));
         b.title = 'Upgrade ' + ACTION_NAMES[a.args.upgrade];
-        b.append(pic(ACTION_ICON[a.args.upgrade], 34));
+        const mine = (st.players[p0].action_cards || []).find((c) => c.type === a.args.upgrade) || {};        // (the card as the player has it: its variant badge and side)
+        const icon = mine.type ? labelNode(`<ACARD:${mine.type}-${S.replay.marine_worlds ? mine.variant || 0 : 0}-${mine.level === 2 ? 2 : 1}>`) : null;
+        if (icon && icon.firstChild) b.append(icon); else b.append(pic(ACTION_ICON[a.args.upgrade], 34));
         b.onclick = () => playFork(a);
         bar.append(b);
       }
@@ -501,7 +503,12 @@ export function forkBar() {
     const eff = ((cur.options && cur.options.effects) || []).find((e) => e.index === idx) || {};
     const picked = marked(p + ':hand', st.players[p].hand).sort();
     const match = cardEff.find((a) => a.args.index === idx && [...a.args.cards].sort().join() === picked.join());
-    bar.append(el('b', '', 'Choose up to ' + max + ' card' + (max === 1 ? '' : 's') + (eff.kind === 'sell' ? ' to sunbathe' : '') + ' (' + picked.length + '/' + max + ')'));
+    if (eff.kind === 'break_discard') {                                               // the hand limit at a break: only this prompt
+      bar.replaceChildren();
+      const whoB = el('span', 'who', seatName(p));
+      whoB.style.color = seatText(p);
+      bar.append(whoB, el('b', '', ' must choose cards to discard during the break (' + picked.length + '/' + max + ')'));
+    } else bar.append(el('b', '', 'Choose up to ' + max + ' card' + (max === 1 ? '' : 's') + (eff.kind === 'sell' ? ' to sunbathe' : '') + ' (' + picked.length + '/' + max + ')'));
     const ok = match ? btn(match, 'Confirm', true) : el('button', 'forkmove forkconfirm', 'Confirm');
     ok.type = 'button'; ok.disabled = !match || S.forkBusy;
     bar.append(ok);

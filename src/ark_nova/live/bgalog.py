@@ -172,6 +172,9 @@ def texts(old: GameState, act: Action, new: GameState, names: list) -> dict:
         from ark_nova.live import stepdata
         full = fork.narrate(old, act, new, who)
         return {**stepdata.labels_for(act, full, who), "full": full}
+    moved = new.break_position - old.break_position
+    if moved > 0 and not any("advances the break" in item[2] for item in L.items):          # any effect that moves the break token says so (an action card, a sponsor, a sponsor's effect)
+        L.add(f"{who} advances the break by {moved}, now ({new.break_position}/9)")
     if not L.items and not L.quiet:
         L.fallback(old, act, new)
     return L.render()
@@ -284,6 +287,8 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         L.add(f"{who} advances the break token {sp} (now at {new.break_position}/9)" if new.break_position < 9 else f"{who} advances the break token {sp} to the last space of the Break track")
         if delta["money"] > 0:
             L.add(f"{who} gains {delta['money']} money (break)")
+        if delta["x_tokens"] > 0:
+            L.add(f"{who} gains {delta['x_tokens']} xtoken (causing the break)")
     elif k == "association_task":
         _association(old, act, new, L, who, delta)
     elif k == "skip_effect":

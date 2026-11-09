@@ -335,7 +335,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   const maxSpend = o ? Math.max(0, ...Object.values(o.cards).flat()) : p.x_tokens;       // the most X tokens the engine lets the player spend
   const x = el('span', 'abtn xbtn');
   x.title = 'X tokens that can raise the strength of the chosen card';
-  x.append(el('b', '', p.x_tokens), pic('xtoken_ns', 26));
+  x.append(el('b', '', FORK ? S.forkSpend : spent), pic('xtoken_ns', 26));          // (the X tokens that will be spent on this action, 0 to start with: not the ones the player has)
   const minus = xs('−', 'Spend one X token less', FORK ? S.forkSpend === 0 : spent === 0);
   const plus = xs('+', 'Spend one more X token to raise the strength', FORK ? !fa.some((x) => x.kind === 'choose_action_card' && x.args.spend > S.forkSpend) : o ? maxSpend - spent <= 0 : p.x_tokens === 0);
   if (FORK) {

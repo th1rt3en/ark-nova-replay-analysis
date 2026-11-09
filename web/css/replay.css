@@ -729,7 +729,8 @@ body.viewer { padding-bottom: 5rem; }
 .forkrow { display: flex; flex-wrap: wrap; gap: .35rem; padding: .3rem 0 .4rem; }
 .forkmove { padding: .3rem .65rem; border-radius: 6px; border: 2px solid var(--pc, #666); background: #fff8dc; color: #2b1d12; font: 600 .85rem system-ui, sans-serif; cursor: pointer; }
 .forkmove:hover:not(:disabled) { background: #fff; box-shadow: 0 0 0 2px var(--pc, #666); }
-.forkmove:disabled { opacity: .5; cursor: wait; }
+.forkmove:disabled { opacity: .5; cursor: default; }
+.xstep:disabled { cursor: default; }
 
 /* fork: placing a building (the hexes to click, the ghost, its border, the anchor, the buttons) */
 .board .pickhex { fill: rgba(255, 255, 255, 0); stroke: rgba(255, 255, 255, .28); stroke-width: 2; cursor: crosshair; }
