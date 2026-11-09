@@ -262,6 +262,11 @@ def legal(state, p0) -> list:
         elif k == "reveal" and venom.blocked(state, p.seat):
             out.append(Action(p.seat, "skip_effect", {"index": i}))            # drawing cards is not allowed before Venom is paid
             continue
+        elif k == "reveal" and state.config.confirm_turns and not e.get("revealed"):
+            out.append(Action(p.seat, "choose_effect", {"index": i, "reveal": True}))       # (live play: the cards are revealed first, which cannot be taken back; the choice among them can)
+            if e.get("optional"):
+                out.append(Action(p.seat, "skip_effect", {"index": i}))
+            continue
         elif k == "reveal":
             top = state.main_deck[:e["x"]]
             opts = [c for c in top if _reveal_ok(e, c)]
@@ -433,6 +438,9 @@ def resolve_choice(state, action: Action) -> None:
         return
     if k == "reveal":
         ensure_main_deck(state, e["x"])
+        if action.args.get("reveal"):
+            e["revealed"] = True
+            return
         if len(state.main_deck) < e["x"]:
             raise NotImplementedError("the deck would run out (reshuffling the discard pile is not implemented yet)")
         top = state.main_deck[:e["x"]]

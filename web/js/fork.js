@@ -325,6 +325,7 @@ export function forkBar() {
       bar.append(sb);
     }
   }
+  for (const a of acts) if (a.kind === 'choose_effect' && effKinds.get(a.args.index) === 'digging' && S.pickOpen !== a.args.index) S.forkClaimed.add(a);       // (Digging: its moves are chosen after its button has been clicked)
   const placeActs = acts.filter((a) => a.kind === 'place_building');
   for (const a of placeActs) S.forkClaimed.add(a);
   // BDW2's crane: the "Reposition (crane)" button of the effects starts the move; until then neither the pieces menu nor the skip button is shown, afterwards the skip button sits beside the placement controls

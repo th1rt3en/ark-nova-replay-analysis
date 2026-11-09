@@ -282,3 +282,36 @@ def test_the_player_who_concedes_loses_even_with_the_higher_score():
     assert over.result.winner == 1 and over.result.conceded == 0
     st.players[0].appeal = st.players[1].appeal = 7                    # equal scores: still no tie
     assert apply(st, Action(1, "concede", {})).result.winner == 0
+
+
+def test_a_reveal_effect_is_activated_first_and_the_choice_can_be_taken_back():
+    import copy
+    from ark_nova.engine import game, turns
+    from ark_nova.engine.actions import Action
+    from ark_nova.engine.state import Prompt
+    s = game.new_game({"confirm_turns": True}, ["a", "b"], 3)
+    e = {"kind": "reveal", "x": 3, "filter": "sponsor", "optional": False, "source": "A000"}
+    s.prompt = Prompt(kind="effects", player=0, args={"pending": [e], "resume": {"kind": "end", "seat": 0}})
+    from ark_nova.engine import effects
+    from ark_nova.engine.state import Phase
+    s.phase = Phase.TURN
+    acts = [a for a in effects.legal(s, s.players[0]) if a.kind == "choose_effect"]
+    assert acts == [Action(0, "choose_effect", {"index": 0, "reveal": True})]          # (no choice before the cards are shown)
+    after = game.apply(s, acts[0])
+    assert after.prompt.args["pending"][0].get("revealed") and len(after.main_deck) == len(s.main_deck)
+    assert turns.irreversible(s, acts[0], after)                                       # (the player learns the cards)
+    keeps = [a for a in effects.legal(after, after.players[0]) if a.kind == "choose_effect"]
+    assert keeps and all("keep" in a.args for a in keeps)
+    gone = copy.deepcopy(after)
+    del gone.main_deck[:3]
+    assert turns.irreversible(after, keeps[0], gone) == ""                              # (the choice among them is not)
+
+
+def test_the_animals_action_cannot_be_chosen_in_live_play_without_an_animal_to_play():
+    from ark_nova.engine import game
+    s = game.new_game({"confirm_turns": True}, ["a", "b"], 4)
+    while s.prompt.kind != "choose_action_card":
+        s = game.apply(s, game.legal_actions(s)[0])
+    s.players[s.prompt.player].hand = [c for c in s.players[s.prompt.player].hand if not c.startswith("A")]
+    types = {a.args["type"] for a in game.legal_actions(s) if a.kind == "choose_action_card"}
+    assert "animals" not in types and "cards" in types

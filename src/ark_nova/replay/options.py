@@ -108,6 +108,8 @@ def _expedition_buttons(state: GameState, pending: list, entry: dict) -> list:
 def _revealed_cards(state: GameState, e: dict) -> dict:
     """The cards of a reveal-and-keep effect, for the lightbox of the page: the topmost cards of the deck (Perception / Hunter / Scuba Dive) or the cards drawn from the discard pile (Scavenging)."""
     if e.get("kind") == "reveal" and isinstance(e.get("x"), int):
+        if state.config.confirm_turns and not e.get("revealed"):
+            return {}                                                    # (live play: the cards are shown after the effect is activated)
         return {"cards": list(state.main_deck[:e["x"]])}
     if e.get("kind") == "scavenge" and e.get("cards"):
         return {"cards": list(e["cards"])}

@@ -22,6 +22,14 @@ FREE_KINDS = ("undo_last", "restart_turn")
 
 def irreversible(before: GameState, action: Action, after: GameState) -> str:
     """Why the turn cannot be taken back past this action (cards drawn or shuffled, a secret choice), '' when it can."""
+    if action.kind == "choose_effect" and before.prompt is not None:
+        pending = before.prompt.args.get("pending") or []
+        i = action.args.get("index", -1)
+        e = pending[i] if isinstance(i, int) and 0 <= i < len(pending) else {}
+        if e.get("kind") == "reveal" and action.args.get("reveal"):
+            return "cards are revealed from the deck"                                  # (Hunter / Perception / Scuba Dive: the player learns the cards)
+        if e.get("kind") == "reveal" and e.get("revealed") and before.rng == after.rng:
+            return ""                                                                  # (the choice among the revealed cards: nothing new is learned, it can be taken back)
     if before.rng != after.rng or len(before.main_deck) != len(after.main_deck) or len(before.endgame_deck) != len(after.endgame_deck):
         return "cards are drawn from a deck"
     if action.kind in ("choose_effect", "skip_effect") and before.prompt is not None:

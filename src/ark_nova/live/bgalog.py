@@ -349,13 +349,25 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     elif kind == "break_discard":
         cards = list(a.get("cards", []))
         L.secret(f"{who} discards {names_of(cards)} during break", f"{who} discards {n_cards(len(cards))} during break", f"You discard {names_of(cards)} during break")
+    elif kind == "expedition":                                              # Marine Research Expedition: a person sponsor goes away, or Scuba Dive 3 is taken instead
+        if a.get("scuba"):
+            L.add(f"{who} chooses Scuba Dive 3 (Marine Research Expedition)")
+        elif a.get("send"):
+            L.add(f"{who} sends {card(a['send'])} away on an expedition (Marine Research Expedition)")
+            if delta["conservation"] > 0:
+                L.add(f"{who} gains {delta['conservation']} conservation (Marine Research Expedition)")
+        else:
+            L.fallback(old, act, new)
     elif kind == "reveal":
         x = int(e.get("x", 0) or 0)
         top = list(old.main_deck[:x])
         kept = _hand_change(old, new, seat)[0]
         rest = list((Counter(top) - Counter(kept)).elements())
         pname = {"animal": "hunter", "any": "perception", "sponsor": "scuba dive"}.get(e.get("filter", "any"), "reveal")
-        L.secret(f"{who} draws {names_of(top)} for {pname} effect", f"{who} draws {n_cards(len(top))} for {pname} effect", f"You draw {names_of(top)} for {pname} effect")
+        if not (e.get("revealed") and not a.get("reveal")):                       # (the draw is told when the effect is activated, the choice when it is made)
+            L.secret(f"{who} draws {names_of(top)} for {pname} effect", f"{who} draws {n_cards(len(top))} for {pname} effect", f"You draw {names_of(top)} for {pname} effect")
+        if a.get("reveal"):
+            return
         if pname == "perception":                                              # (the sheet: the opponent sees nothing of a Perception)
             L.secret(f"{who} keeps {names_of(kept)} and discards {names_of(rest)}", f"{who} keeps {n_cards(len(kept))}", f"You keep {names_of(kept)} and discard {names_of(rest)}")
         else:                                                                  # Hunter / Scuba Dive: the kept card is public

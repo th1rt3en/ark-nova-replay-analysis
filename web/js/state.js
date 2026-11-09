@@ -47,6 +47,7 @@ export const S = {
   forkClaimed: new Set(),
   forkMenu: null,
   tradeMode: false,
+  pickOpen: null,                                        // the Digging effect (its index) whose card choice is open: it opens when the player clicks the Digging button
   snapMode: null,                                        // Sponsors variant 4: null | 'discard' (choose the sponsor to discard) | 'snap' (choose the sponsor of the display)
   snapCard: null,
   forkError: '',

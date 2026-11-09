@@ -995,7 +995,10 @@ def _has_moves(state: GameState, action: Action) -> bool:
         p = new.players[pr.player]
         if any(x.kind == "place_building" for x in _build_actions(new, p, ("size-1", "pavilion", "kiosk"))):
             return True
-    return any(a.kind not in _FINISHING for a in legal_actions(new))
+    acts = legal_actions(new)
+    if pr.kind == "animals_play" and state.config.confirm_turns:   # live play: an animal has to be played (Ignore Animals alone is no move: nothing could be played); the logs of BGA have such turns
+        return any(a.kind == "play_animal" for a in acts)
+    return any(a.kind not in _FINISHING for a in acts)
 
 
 def _skip_action(state: GameState, action: Action) -> None:
