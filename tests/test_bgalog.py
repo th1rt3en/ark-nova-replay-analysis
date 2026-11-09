@@ -59,3 +59,19 @@ def test_a_card_that_is_played_or_taken_from_the_display_is_public():
             assert bgalog.card(a.args["card"]) in t[str(1 - a.player)] and bgalog.card(a.args["card"]) in t["spectator"]
         if a.kind == "take_cards" and a.args.get("mode") in ("snap", "range"):
             assert bgalog.card(a.args["card"]) in t[str(1 - a.player)]
+
+
+def test_a_played_sponsor_logs_every_gain_it_brings_even_when_money_is_gained():
+    """Federal Grants gives money on play: the line must not net the gain against a payment that was never made."""
+    checked = 0
+    for seed in range(1, 40):
+        for old, a, new, t in _game(seed, 600):
+            if a.kind != "play_sponsor":
+                continue
+            seat = a.player
+            paid = old.display.index(a.args["card"]) + 1 if a.args.get("from_display") else 0
+            gained = new.players[seat].money - old.players[seat].money + paid
+            if gained > 0:
+                assert f"gains {gained} money" in t["full"] or f"{gained} money" in t["full"], (seed, t["full"])
+                checked += 1
+    assert checked, "no sponsor with a money gain was played in the sample games"

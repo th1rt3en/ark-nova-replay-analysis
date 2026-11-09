@@ -222,7 +222,7 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         _display_refill(old, new, L)
     elif k == "play_sponsor":
         c = a.get("card", "?")
-        spent = -delta["money"]
+        spent = old.display.index(c) + 1 if a.get("from_display") and c in old.display else 0            # (money paid for a card of the display: the position; a sponsor's own money gain must not be netted against it)
         if a.get("from_display") and spent > 0:
             L.add(f"{who} pays {spent} to buy {card(c)} from display")
         else:
