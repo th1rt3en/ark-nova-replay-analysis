@@ -613,7 +613,19 @@ export function forkBar() {
   if (S.forkMenu) {                                                                   // the choices of a button with several moves
     const row = el('span', 'forkmenu');
     row.append(el('b', '', S.forkMenu.label ? S.forkMenu.label + ': ' : ''));
-    for (const a of S.forkMenu.acts) row.append(btn(a, a.text, false));
+    const tradeOf = S.forkMenu.acts.filter((a) => a.kind === 'choose_effect' && a.args.trade);
+    if (tradeOf.length) {                                                             // a Trade ability: the two trades with their icons, the one that cannot be afforded greyed out
+      const icon = ([k, n]) => amountIcon(k, n) || document.createTextNode(n + ' ' + k);
+      for (const [which, give, get] of [['money', ['xtoken', 1], ['money', 5]], ['xtoken', ['money', 5], ['xtoken', 1]]]) {
+        const a = tradeOf.find((x) => x.args.trade === which);
+        const b = el('button', 'forkmove');
+        b.type = 'button'; b.disabled = !a || S.forkBusy;
+        b.style.setProperty('--pc', seatColor(seat));
+        b.append('Trade ', icon(give), ' for ', icon(get));
+        if (a) b.onclick = () => playFork(a);
+        row.append(b);
+      }
+    } else for (const a of S.forkMenu.acts) row.append(btn(a, a.text, false));
     bar.append(row);
     if (S.forkMenu.acts.every((a) => a.kind === 'choose_effect')) {                   // the player committed to this effect: its choices and its Skip, nothing else
       bar.querySelectorAll('.abtn').forEach((n) => n.remove());
