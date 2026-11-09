@@ -67,7 +67,24 @@ function renderPlacementControls(box, placeActs) {
     if (!p) { p = { key, type: a.args.type, extra: !!a.args.extra, move: !!a.args.move, n: 0 }; pieces.push(p); }
     p.n += 1;
   }
-  if (!S.placement) {
+  if (!S.placement && pieces.length === 1) {                                         // a single piece (a sponsor's building: Expert Americas' kiosk...): its own button, no menu
+    const p = pieces[0];
+    const name = p.type.replace(/-/g, ' ');
+    const b = el('button', 'forkmove placeone');
+    b.type = 'button'; b.disabled = S.forkBusy;
+    b.style.setProperty('--pc', seatColor(seat));
+    b.title = 'Click a hex of the zoo for its anchor';
+    const sp = spriteOf({ type: p.type });
+    if (sp) { const img = el('img'); img.src = '/enclosures/' + sp.image; img.alt = ''; const k = Math.min(0.12, 28 / sp.size[1]); img.style.width = (sp.size[0] * k) + 'px'; img.style.height = (sp.size[1] * k) + 'px'; b.append(img); }
+    b.append(el('span', '', (p.move ? 'Reposition the ' : 'Place ' + (/^[aeiou]/.test(name) ? 'an ' : 'a ')) + name + (p.extra ? ' (additional)' : '') + (p.move ? ' (crane)' : '')));
+    b.onclick = () => {
+      S.placement = { seat, type: p.type, extra: p.extra, move: p.move, x: null, y: null, rot: 0 };
+      render();
+      const board = document.querySelectorAll('.zoo')[seat];
+      if (board) board.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    };
+    wrap.append(b);
+  } else if (!S.placement) {
     // one "Place building" button; its menu lists the pieces (a row of pieces would make the move bar tall)
     const row = el('div', 'forkrow placepick');
     const toggle = el('button', 'forkmove placetoggle', 'Place a building \u25BE');
