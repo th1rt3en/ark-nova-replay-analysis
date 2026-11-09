@@ -65,7 +65,7 @@ export function setupSettings() {
   S.handMode = st.handMode === 'fan' ? 'fan' : 'tray';                   // default: the floating tray
   S.s274 = st.s274 === 'mascot' ? 'mascot' : 'victory';                       // default: Victory Column (the BGA name)
   S.noSnake = NO_SNAKE_MODES.some(([v]) => v === st.noSnake) ? st.noSnake : 'show';        // default: show
-  S.zooLayout = ['side', 'tabs', 'stack'].includes(st.zoos) && !FORK && !SANDBOX && !PLAY && !MINIGAME ? st.zoos : 'side';       // default: side by side (only the replay: a fork needs both boards)
+  S.zooLayout = ['side', 'tabs', 'stack'].includes(st.zoos) && (!FORK || PLAY) && !SANDBOX && !MINIGAME ? st.zoos : 'side';       // default: side by side (only the replay: a fork needs both boards)
   S.playedMode = PLAYED_MODES.some(([v]) => v === st.played) ? st.played : 'drawer';          // (default: the slide-out drawer; the old value 'side' was the drawer too)
   S.drawerFull = st.drawerFull === true ? { 0: true, 1: true } : st.drawerFull && typeof st.drawerFull === 'object' ? { 0: st.drawerFull[0] === true, 1: st.drawerFull[1] === true } : {};      // the drawer of each board: narrow beside the map (default) or expanded over it; the last choice is kept (an old setting was one boolean for both boards)
   if (S.playedMode === 'tray' && S.handMode !== 'tray') S.playedMode = 'drawer';           // the tray needs the floating hand (default of the setting: the drawer)
@@ -183,7 +183,7 @@ export function setupSettings() {
   const playedRow = el('div', 'setrow');                                  // where the played cards are shown (zoo.js)
   const psel = el('select', 'setselect'); psel.setAttribute('aria-label', 'Played cards');
   const syncPlayedOptions = () => {                                       // the tabbed and the top / bottom layouts list only "Cards next to the map"; the side-by-side layout lists the first three (the tray is greyed without the floating hand)
-    const beside = !FORK && !SANDBOX && !PLAY && !MINIGAME && (S.zooLayout === 'tabs' || S.zooLayout === 'stack');      // (the same test as zoo.js `besideLayout`)
+    const beside = (!FORK || PLAY) && !SANDBOX && !MINIGAME && (S.zooLayout === 'tabs' || S.zooLayout === 'stack');      // (the same test as zoo.js `besideLayout`)
     psel.replaceChildren();
     for (const [v, t] of PLAYED_MODES) {
       if (beside ? v !== 'beside' : v === 'beside') continue;                // (the options that do not belong to the layout are not listed at all)

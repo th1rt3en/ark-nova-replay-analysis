@@ -41,7 +41,7 @@ function blankZoo(seat) {                                                // the 
   return box;
 }
 function zooBoards(st) {
-  const zoos = $('zoos'), order = seatOrder(), layout = FORK || SANDBOX || MINIGAME ? 'side' : S.zooLayout;                // (a live game follows the setting)
+  const zoos = $('zoos'), order = seatOrder(), layout = (FORK && !PLAY) || SANDBOX || MINIGAME ? 'side' : S.zooLayout;                // (a live game follows the setting)
   zoos.classList.toggle('zoos-tabs', layout === 'tabs');
   zoos.classList.toggle('zoos-stack', layout === 'stack');
   zoos.classList.toggle('zoos-beside', layout === 'tabs' || layout === 'stack');       // (tabbed and top / bottom: the zoo box in the display's column, the played cards in the association element's column)

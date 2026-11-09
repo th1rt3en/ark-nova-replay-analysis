@@ -61,8 +61,8 @@ function stacks(title, icon, keys, zone, after) {
 
 // ---- where the played cards are shown (setting "Played cards", settings.js): under the map (the default), in a tray of the hand dock (dock.js), or in a drawer ('drawer'): a sheet with the cards, narrow beside the map by default (the map slides left over the project rewards and uncovers the sheet, the association strip tucks under the map, `.zoo.nrw`) or expanded over the whole map, pulled out from the top edge (S.drawerFull, kept in the settings; the button next to the chip switches).
 // (the tray needs the floating hand container: with the fan the cards stay under the map; a mini game always shows them under the map)
-export const tabbedLayout = () => !FORK && !SANDBOX && !PLAY && !MINIGAME && S.zooLayout === 'tabs';      // (the replay's "Tabbed" layout of the Players' boards: one board at a time)
-export const besideLayout = () => !FORK && !SANDBOX && !PLAY && !MINIGAME && (S.zooLayout === 'tabs' || S.zooLayout === 'stack');      // (the replay's "Tabbed" and "Top / bottom" layouts: every board has its played cards in a box next to the map)
+export const tabbedLayout = () => (!FORK || PLAY) && !SANDBOX && !MINIGAME && S.zooLayout === 'tabs';      // (the replay's "Tabbed" layout of the Players' boards: one board at a time)
+export const besideLayout = () => (!FORK || PLAY) && !SANDBOX && !MINIGAME && (S.zooLayout === 'tabs' || S.zooLayout === 'stack');      // (the replay's "Tabbed" and "Top / bottom" layouts: every board has its played cards in a box next to the map)
 // (the tabbed and the top / bottom layouts have one mode only, 'beside': the cards in a box next to the map; the other three are for the side-by-side boards, and 'beside' is not offered there. S.playedMode keeps the choice for that layout)
 export const playedMode = () => (MINIGAME ? 'below' : besideLayout() ? 'beside' : S.playedMode === 'beside' ? 'drawer' : S.playedMode === 'tray' && S.handMode !== 'tray' ? 'drawer' : S.playedMode);
 const kindCount = (p) => p.animals.length + p.sponsors.length;
