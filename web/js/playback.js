@@ -173,7 +173,7 @@ export function go(n, phase = 0, animateCards = false) {
   S.phase = Math.max(0, Math.min(framesOf(S.step).length - 1, phase));
   autoClose(animateCards);
   personChain(animateCards);
-  if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.multiplierMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.tradeMode = false; S.snapMode = null; S.snapCard = null; S.pickOpen = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
+  if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.multiplierMode = null; S.slot1Mode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.tradeMode = false; S.snapMode = null; S.snapCard = null; S.pickOpen = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
   render();
 }
 // BGA's move numbers (the log's `move_id`): a step that joins several BGA moves has `move_from` (its first move) and `move_id` (its last); steps without one (a fork, the sandbox, a live

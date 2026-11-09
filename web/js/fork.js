@@ -487,6 +487,34 @@ export function forkBar() {
       if (others.length) { const back = el('button', 'forkmove', 'Back'); back.type = 'button'; back.onclick = () => { S.multiplierMode = null; refreshBar(); }; bar.append(back); }
     }
   }
+  const s1Effs = ((cur.options && cur.options.effects) || []);
+  const s1Acts = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.type === 'string' && s1Effs.some((e) => e.index === a.args.index && e.kind === 'slot1'));
+  for (const a of s1Acts) S.forkClaimed.add(a);
+  if (s1Acts.length) {                                                              // Clever: the player's action cards are shown in their order, click the one that goes to slot 1
+    const p0 = s1Acts[0].player;
+    const others = s1Effs.filter((e) => e.kind !== 'slot1' && !(e.kind === 'gain' && (e.res === 'money' || e.res === 'xtoken')) && !/^income_/.test(e.kind));
+    const idx = S.slot1Mode !== null && S.slot1Mode !== undefined && s1Acts.some((a) => a.args.index === S.slot1Mode) ? S.slot1Mode : !others.length ? s1Acts[0].args.index : null;
+    if (idx !== null) {
+      const mine = s1Acts.filter((a) => a.args.index === idx);
+      const skip = acts.find((a) => a.kind === 'skip_effect' && a.args.index === idx);
+      if (skip) S.forkClaimed.add(skip);
+      bar.replaceChildren();
+      const who0 = el('span', 'who', seatName(p0));
+      who0.style.color = seatText(p0);
+      bar.append(who0, el('b', '', ' must choose an action card to put on slot 1'));
+      (st.players[p0].action_cards || []).forEach((c, i) => {
+        const a = mine.find((x) => x.args.type === c.type);
+        const b = el('span', 'abtn acbtn' + (c.level === 2 ? ' lvl2' : '') + (a ? ' choosable' : ' off'));
+        b.title = 'Put ' + ACTION_NAMES[c.type] + (c.level === 2 ? ' II' : '') + ' on slot 1' + (i === 0 ? ' (it is there already)' : '');
+        b.append(pic(ACTION_ICON[c.type], 22), el('b', '', i + 1));
+        if (S.replay.marine_worlds && c.variant) { const v = el('img', 'variant'); v.src = '/action_icons/' + c.type + '_' + c.variant + '_' + (c.level === 2 ? 2 : 1) + '.webp'; v.alt = 'Variant ' + c.variant; b.append(v); }
+        if (a) b.onclick = () => { if (!S.forkBusy) playFork(a); };
+        bar.append(b);
+      });
+      if (skip) { const sk = el('button', 'forkmove', 'Skip'); sk.type = 'button'; sk.onclick = () => { if (!S.forkBusy) playFork(skip); }; bar.append(sk); }
+      if (others.length) { const back = el('button', 'forkmove', 'Back'); back.type = 'button'; back.onclick = () => { S.slot1Mode = null; refreshBar(); }; bar.append(back); }
+    }
+  }
   const cardEff = acts.filter((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards));      // an effect that takes cards of the hand (sunbathing)
   for (const a of [...handActs, ...dispActs, ...discardActs, ...cardEff]) S.forkClaimed.add(a);
   const pickGroups = [];                                                            // an effect that takes one card of the hand or the display: select it, then confirm

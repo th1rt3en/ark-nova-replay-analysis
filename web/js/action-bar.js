@@ -566,6 +566,9 @@ function effectButton(e) {
   if (FORK && e.kind === 'multiplier' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.multiplier === 'string').length) {
     b.classList.add('choosable');                                      // (click it: the action cards to put the token on, see forkBar)
     b.onclick = () => { S.multiplierMode = e.index; refreshBar(); };
+  } else if (FORK && e.kind === 'slot1' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.type === 'string').length) {
+    b.classList.add('choosable');                                      // (click it: the action cards to put on slot 1, see forkBar)
+    b.onclick = () => { S.slot1Mode = e.index; refreshBar(); };
   } else if (FORK && (e.kind === 'threshold2' || e.kind === 'upgrade') && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && (a.args.upgrade || a.args.hire)).length) {
     b.classList.add('choosable');                                      // (click it: gain a worker or an upgrade, see forkBar)
     b.onclick = () => { S.thresholdMode = { index: e.index, stage: e.kind === 'upgrade' ? 'upgrade' : 'choose' }; refreshBar(); };
