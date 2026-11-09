@@ -190,6 +190,9 @@ export const keepSel = new Map();                                              /
 // one), and the legal moves that no control stands for are listed at the end of the bar.
 export function forkBar() {
   const bar = $('actionbar'), cur = S.replay.steps[S.step], acts = cur.actions || [];
+  const DISCARDING = new Set(['sell', 'pouch', 'endgame_discard', 'adapt', 'break_discard']);          // effects that send the selected cards away: the selection is drawn as a trash mask, not as a check mark
+  const effKinds = new Map((((cur.options && cur.options.effects) || [])).map((e) => [e.index, e.kind]));
+  document.body.classList.toggle('discarding', acts.some((a) => a.kind === 'discard_cards' || (a.kind === 'choose_effect' && DISCARDING.has(effKinds.get(a.args.index)))));
   if (SANDBOX && S.replay.setup) { if (bar) sbSetupBar(bar); return; }          // the seat and the maps first
   if (SANDBOX && !sbReady()) {                                             // the empty spaces first
     if (bar) { bar.hidden = false; bar.replaceChildren(el('b', '', 'Set the base projects and the conservation bonuses (the empty spaces of the board) to start playing.')); }

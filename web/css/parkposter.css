@@ -1463,3 +1463,8 @@ body.viewer #settingsModal .setthree-opt[data-v="none"]:hover::after, body.viewe
 
 /* live play: no replay controls box and no "Live game" box in the sidebar (alerts and settings are in the Game menu) */
 body.playpage .sidebar #paneControl > header.bar, body.playpage .sidebar #forkinfo { display: none !important; }
+
+/* a selection of cards to discard (card draw, Sunbathing, Pouch, the endgame cards, Adapt): a grey mask with a trash can in the middle instead of the check tag */
+body.viewer.discarding .card.marked::before, body.viewer.discarding .draftcard.marked::before {
+  background: rgba(70, 76, 80, .62) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23F8EDCB' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 26 H82'/%3E%3Cpath d='M38 26 V17 H62 V26'/%3E%3Cpath d='M24 26 L29 84 H71 L76 26'/%3E%3Cpath d='M41 40 V70 M50 40 V70 M59 40 V70'/%3E%3C/g%3E%3C/svg%3E") center / 38% no-repeat; }
+body.viewer.discarding .card.marked::after, body.viewer.discarding .draftcard.marked::after, .forkpage.discarding .card.marked::after, .forkpage.discarding .draftcard.marked::after { content: none; }
