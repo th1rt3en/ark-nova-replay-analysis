@@ -210,7 +210,7 @@ export function forkBar() {
       const list = el('div', 'sbmaps');
       for (const a of picks) {
         const b = el('button', 'forkmove sbmapbtn' + (a.args.map === S.play.mapPick ? ' on' : ''), 'Map ' + a.args.map + ((S.replay.map_names || {})[a.args.map] ? ': ' + S.replay.map_names[a.args.map] : ''));
-        b.type = 'button'; b.disabled = S.forkBusy; b.onclick = () => { S.play.mapPick = a.args.map; forkBar(); };
+        b.type = 'button'; b.disabled = S.forkBusy; b.onclick = () => { S.play.mapPick = a.args.map; render(); };          // (the board below shows the map)
         list.append(b);
       }
       bar.append(list);
@@ -218,18 +218,7 @@ export function forkBar() {
       if (chosenMap) {
         const ok = el('button', 'forkmove forkconfirm', 'Confirm map ' + chosenMap.args.map);
         ok.type = 'button'; ok.disabled = S.forkBusy; ok.onclick = () => playFork(chosenMap);
-        const box = el('div', 'zoo mappreview');
-        const mv = (S.replay.map_views || {})[chosenMap.args.map];
-        if (mv) {                                                          // the map as it looks in play: picture, placement bonuses and the bonus slots of the player board
-          const stub = { buildings: [], flags: {}, tokens: [], animals: [], sponsors: [] };
-          try {                                                           // (the same row as in the zoo: bonus slots, board, partner zoos and universities, at the same proportions)
-            const row = el('div', 'zooRow');
-            row.append(zooBoard(mv, stub, chosenMap.player));                    // (only the map with its placement bonuses, as big as a zoo in the game: no bonus slots and no association board)
-            box.append(row);
-          } catch (err) { box.replaceChildren(); }
-        }
-        if (!box.childNodes.length) { const img = el('img'); img.src = (S.replay.map_images || {})[chosenMap.args.map] || '/maps/map-' + chosenMap.args.map + '.jpg'; img.alt = 'Layout of map ' + chosenMap.args.map; box.append(img); }
-        bar.append(ok, box);
+        bar.append(ok);
       }
       return;
     }

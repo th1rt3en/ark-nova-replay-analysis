@@ -1,7 +1,7 @@
 // [module] Entry point of replay.html / fork.html / sandbox.html: `render()` draws one step, `boot()` loads and wires everything.
 import { stageBreaks } from './break-stages.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
-import { $, el } from './util.js';
+import { $, el, seatColor } from './util.js';
 import { setupNoTips } from './notips.js';
 import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, refreshLabels, seatOrder } from './pov.js';
 import { fetchFullReplay, fetchReplay } from './load.js';
@@ -33,13 +33,21 @@ import { initFullscreen } from './fullscreen.js';
 
 // The players' boards by the layout setting (settings.js): side by side, one at a time with arrows (the seats go round in the order of the tracker), or one above the other
 // (also the order of the tracker: `seatOrder()`).
+function blankZoo(seat) {                                                // the zoo of a player whose map is not known to this page yet (the map choice of a live game)
+  const box = el('div', 'zoo seat' + seat + ' blankzoo'), h = el('h2', ''), name = el('span', 'zootab-name', (S.replay.players[seat] || {}).name || '');
+  h.style.setProperty('--pc', seatColor(seat));
+  h.append(name);
+  box.append(h, el('div', 'zooRow blankrow'));
+  return box;
+}
 function zooBoards(st) {
   const zoos = $('zoos'), order = seatOrder(), layout = FORK || SANDBOX || PLAY || MINIGAME ? 'side' : S.zooLayout;
   zoos.classList.toggle('zoos-tabs', layout === 'tabs');
   zoos.classList.toggle('zoos-stack', layout === 'stack');
   zoos.classList.toggle('zoos-beside', layout === 'tabs' || layout === 'stack');       // (tabbed and top / bottom: the zoo box in the display's column, the played cards in the association element's column)
-  if (layout === 'stack') return order.flatMap((seat) => [renderZoo(st, seat), renderCards(st, seat)]);       // (one row per player, no switch)
-  if (layout !== 'tabs') return order.map((seat) => renderZoo(st, seat));
+  const zoo = (seat) => (S.replay.maps[seat] ? renderZoo(st, seat) : blankZoo(seat));
+  if (layout === 'stack') return order.flatMap((seat) => [zoo(seat), renderCards(st, seat)]);       // (one row per player, no switch)
+  if (layout !== 'tabs') return order.map(zoo);
   const seat = order.includes(S.zooTab) ? S.zooTab : order[0];
   return [renderZoo(st, seat), renderCards(st, seat)];
 }
@@ -83,10 +91,28 @@ export function renderZoos() {
   window.scrollTo(scrollX, scrollY);
 }
 
+// While the maps are chosen (a live game): the game is drawn as if the players had picked, the viewer's own zoo with the map that is selected in the bar (it changes with the selection)
+// and the other zoo blank until both have confirmed; the base projects and the conservation rewards are empty. Only this page sees its own selection.
+function pickMaps() {
+  const seat = S.play && S.play.seat;
+  if (seat === null || seat === undefined) return null;
+  const mv = (S.replay.map_views || {})[S.play.mapPick];
+  const out = [null, null];
+  out[seat] = mv || null;
+  return out;
+}
 export function render() {
+  const real = S.replay.maps, tmp = PLAY && (!real || real.length < 2) ? pickMaps() : null;
+  if (!tmp) return renderBoards();
+  S.replay.maps = tmp;
+  try { return renderBoards(tmp); } finally { S.replay.maps = real; }
+}
+function renderBoards(picking) {
   if (S.preview && S.preview.step !== S.step) S.preview = null;           // (the building preview belongs to the step it was started on)
   const scrollY = window.scrollY, scrollX = window.scrollX;       // rebuilding the boards must not move the page
-  const s = S.replay.steps[S.step], st = povState(frameState());
+  const s = S.replay.steps[S.step];
+  let st = povState(frameState());
+  if (picking) st = { ...st, conservation_options: {}, projects_in_play: [], base_projects: [] };          // (nothing is known of the projects and the rewards of the board yet)
   const cur = $('current'), kind = frameKind();
   cur.replaceChildren();
   cur.hidden = kind !== 'text' && kind !== 'both' && (FORK || (kind !== 'draft' && kind !== 'reveal'));       // (the replay's draft frame shows the step text in the bar: the cards are in a lightbox)                 // replay: the step text and the bar are never shown together (frames.js)

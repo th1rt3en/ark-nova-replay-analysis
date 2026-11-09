@@ -1477,3 +1477,6 @@ img.labeluni { height: 1.9em; width: auto; vertical-align: middle; margin: 0 2px
 
 /* the map choice (Ark360 / map pick): the map alone, as big as one zoo of the game */
 body.viewer .zoo.mappreview { width: 940px; max-width: 100%; flex: 0 0 auto; margin-left: auto; margin-right: auto; }
+
+/* the zoo of a player whose map is not shown yet (the map choice of a live game) */
+body.viewer .zoo.blankzoo .blankrow { min-height: 320px; background: rgba(23, 38, 43, .12); border-radius: 12px; }
