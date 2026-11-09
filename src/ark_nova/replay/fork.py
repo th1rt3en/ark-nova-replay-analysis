@@ -115,6 +115,8 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
             name = f"Second {e.get('icon')} icon"
         rest = args.pop("args", None) or {}
         choice = f": {args.pop('gain')}" if isinstance(args.get("gain"), str) else ""         # (an effect that offers a choice of gains: the options differ only in this)
+        if e.get("kind") == "boost" and isinstance(args.get("slot"), int):                 # Boost: the two options differ only in the slot
+            choice = f" {args.pop('slot')}"
         return ("Skip: " if k == "skip_effect" else "") + name + choice + "".join(f", {k2} {_fmt(v)}" for k2, v in rest.items())
     if k == "choose_map":
         return "Select map " + str(args.pop("map", "?"))

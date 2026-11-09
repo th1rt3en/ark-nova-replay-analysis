@@ -460,14 +460,20 @@ export function forkBar() {
     ok.type = 'button'; ok.disabled = !match || S.forkBusy;
     bar.append(who1, el('b', '', ' must choose ' + keep + ' card' + (keep === 1 ? '' : 's') + ' to keep (' + picked.length + '/' + keep + ')'), ok);
   }
+  let committed = false;
   if (S.forkMenu) {                                                                   // the choices of a button with several moves
     const row = el('span', 'forkmenu');
     row.append(el('b', '', S.forkMenu.label ? S.forkMenu.label + ': ' : ''));
     for (const a of S.forkMenu.acts) row.append(btn(a, a.text, false));
     bar.append(row);
+    if (S.forkMenu.acts.every((a) => a.kind === 'choose_effect')) {                   // the player committed to this effect: its choices and its Skip, nothing else
+      bar.querySelectorAll('.abtn').forEach((n) => n.remove());
+      for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === S.forkMenu.acts[0].args.index)) { S.forkClaimed.add(a); bar.append(btn(a, 'Skip', false)); }
+      committed = true;
+    }
   }
   const usable = new Set(acts.filter((a) => a.kind === 'choose_effect').map((a) => a.args.index));          // (an effect that can be activated has no Skip button: it appears with the effect's own choices, or when the effect cannot be used)
-  const rest = acts.filter((a) => !S.forkClaimed.has(a) && !(a.kind === 'skip_effect' && usable.has(a.args.index)));                           // the moves that no control of the bar stands for
+  const rest = acts.filter((a) => !S.forkClaimed.has(a) && !(a.kind === 'skip_effect' && usable.has(a.args.index)) && !committed);                           // the moves that no control of the bar stands for
   if (rest.length) {
     const holder = rest.length > 10 ? el('details', 'forkmore') : el('span', 'forkmore');
     if (rest.length > 10) holder.append(el('summary', '', 'More moves (' + rest.length + ')'));
