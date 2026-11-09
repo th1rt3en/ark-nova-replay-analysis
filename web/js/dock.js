@@ -35,6 +35,11 @@ function handDim(seat) {
     const keys = forkActs((a) => a.player === seat && cardPickAct(a)).map(pickCardOf);
     if (keys.length) return (k) => !keys.includes(k);
   }
+  if (FORK && (S.snapMode === 'sun_money' || S.snapMode === 'sun_strength')) {                // Sponsors variant 3: the cards that can be discarded stay lit
+    const op = S.snapMode === 'sun_strength' ? 'discard_strength' : 'discard_money';
+    const keys = forkActs((a) => a.player === seat && a.kind === 'sponsor_side' && a.args.op === op).map((a) => a.args.card);
+    return (k) => !keys.includes(k);
+  }
   if (FORK && S.snapMode) {                                             // Sponsors variant 4: first the sponsor to discard (the other cards of the hand are greyed out), then the one of the display (the whole hand is)
     if (S.snapMode === 'snap') return () => true;
     const keys = forkActs((a) => a.player === seat && a.kind === 'sponsor_side' && a.args.op === 'discard_snap').map((a) => a.args.card);

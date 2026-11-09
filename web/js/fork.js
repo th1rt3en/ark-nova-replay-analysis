@@ -341,6 +341,46 @@ export function forkBar() {
       bar.append(sb);
     }
   }
+  const sunActs = acts.filter((a) => a.kind === 'sponsor_side' && (a.args.op === 'discard_money' || a.args.op === 'discard_strength'));
+  if (sideOpen.variant === 3 && !sideOpen.side_used) {                                    // Sponsors variant 3 (Sunbathing): discard a card of the hand for 4 money (level I: a sponsor) or, level II, for 2 action strength; before or after the sponsors are played
+    for (const a of sunActs) S.forkClaimed.add(a);
+    const who6 = el('span', 'who', seatName(seat));
+    who6.style.color = seatText(seat);
+    const op = S.snapMode === 'sun_strength' ? 'discard_strength' : 'discard_money';
+    const mine = sunActs.filter((a) => a.args.op === op);
+    const sunIcon = (kind) => { if (kind === 'strength') { const i = el('img', 'ico'); i.src = '/icons/strength.svg'; i.alt = 'strength'; i.style.cssText = 'height:1.2em;vertical-align:-.2em'; return i; } return amountIcon('money', 4) || document.createTextNode('4 money'); };
+    const clear = () => { for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); };
+    if (S.snapMode === 'sun_money' || S.snapMode === 'sun_strength') {
+      bar.replaceChildren();
+      const picked = marked(seat + ':hand', st.players[seat].hand).filter((k) => mine.some((a) => a.args.card === k));
+      const match = picked.length ? mine.find((a) => a.args.card === picked[0]) : null;
+      const ok = el('button', 'forkmove forkconfirm', 'Confirm');
+      ok.type = 'button'; ok.disabled = !match || S.forkBusy;
+      ok.onclick = () => { if (match) playFork(match); };
+      const back = el('button', 'forkmove', 'Back');
+      back.type = 'button'; back.onclick = () => { S.snapMode = null; clear(); render(); };
+      bar.append(who6, el('b', '', ' must choose ' + (sideOpen.level >= 2 ? 'a card' : 'a sponsors') + ' to discard' + (picked.length ? ': ' + cardName(picked[0]) : '')), ok, back);
+    } else {
+      const open = (mode) => { S.snapMode = mode; clear(); render(); };
+      const moneyActs = sunActs.filter((a) => a.args.op === 'discard_money'), strActs = sunActs.filter((a) => a.args.op === 'discard_strength');
+      const mb = el('button', 'forkmove');
+      mb.type = 'button'; mb.disabled = !moneyActs.length || S.forkBusy;
+      mb.style.setProperty('--pc', seatColor(seat));
+      mb.title = moneyActs.length ? 'Discard ' + (sideOpen.level >= 2 ? 'a card' : 'a sponsor') + ' of your hand for 4 money (once per action, before or after the sponsors you play)' : 'You have no card to discard';
+      if (sideOpen.level >= 2) mb.append('Discard a card to gain ', sunIcon('money')); else mb.append('Discard a sponsors to gain ', sunIcon('money'));
+      mb.onclick = () => open('sun_money');
+      bar.append(mb);
+      if (sideOpen.level >= 2) {
+        const sb2 = el('button', 'forkmove');
+        sb2.type = 'button'; sb2.disabled = !strActs.length || S.forkBusy;
+        sb2.style.setProperty('--pc', seatColor(seat));
+        sb2.title = strActs.length ? 'Discard a card of your hand to raise the action strength by 2' : 'You have no card to discard';
+        sb2.append('Discard a card to gain 2 ', sunIcon('strength'));
+        sb2.onclick = () => open('sun_strength');
+        bar.append(sb2);
+      }
+    }
+  }
   for (const a of acts) if (a.kind === 'choose_effect' && effKinds.get(a.args.index) === 'digging' && S.pickOpen !== a.args.index) S.forkClaimed.add(a);       // (Digging: its moves are chosen after its button has been clicked)
   const placeActs = acts.filter((a) => a.kind === 'place_building');
   for (const a of placeActs) S.forkClaimed.add(a);
