@@ -172,6 +172,11 @@ def texts(old: GameState, act: Action, new: GameState, names: list) -> dict:
         from ark_nova.live import stepdata
         full = fork.narrate(old, act, new, who)
         return {**stepdata.labels_for(act, full, who), "full": full}
+    if old.display != new.display and not any("display" in item[2] for item in L.items):          # the display is replenished as part of a break (an income, the end of the break): what went and what came
+        c0, c1 = Counter(c for c in old.display if c), Counter(c for c in new.display if c)
+        gone, came = list((c0 - c1).elements()), list((c1 - c0).elements())
+        if gone or came:
+            L.add(f"The display is replenished" + (f": {names_of(gone)} discarded" if gone else "") + (f"{',' if gone else ':'} {names_of(came)} revealed" if came else ""))
     moved = new.break_position - old.break_position
     if moved > 0 and not any("advances the break" in item[2] for item in L.items):          # any effect that moves the break token says so (an action card, a sponsor, a sponsor's effect)
         L.add(f"{who} advances the break by {moved}, now ({new.break_position}/9)")

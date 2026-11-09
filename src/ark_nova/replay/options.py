@@ -37,6 +37,33 @@ def placement_bonus_name(bonus: dict) -> str:
     return f"Placement bonus: {value}{label}"
 
 
+def _income_entry(state: GameState, e: dict, who: int) -> dict:
+    """The break income buttons say what they pay: {income: {name, res, n}}."""
+    k = e.get("kind", "")
+    if not k.startswith("income_"):
+        return {}
+    from ark_nova.engine import breaks, tracks
+    try:
+        p = state.players[e.get("player", who)]
+        if k == "income_appeal":
+            return {"income": {"name": "Appeal", "res": "money", "n": tracks.income_from_appeal(p.appeal)}}
+        if k == "income_kiosk":
+            return {"income": {"name": "Kiosk", "res": "money", "n": breaks.kiosk_income(p)}}
+        if k == "income_map":
+            return {"income": {"name": "Map", "res": "money", "n": breaks.map_ability_income(state, p)}}
+        if k == "income_sponsor":
+            inc = breaks.sponsor_income(state, p, only=[e["source"]])
+            res = next((r for r in ("money", "xtoken", "appeal", "conservation") if inc.get(r)), "money")
+            return {"income": {"name": _card_name(e["source"]), "res": res, "n": inc.get(res, 0)}}
+    except Exception:                                                  # (an income the engine cannot count here: the button keeps its plain name)
+        return {}
+    return {}
+
+
+def _card_name(key: str) -> str:
+    return str((data.cards_by_key().get(key) or {}).get("name") or key)
+
+
 def _bonus_entry(e: dict) -> dict:
     """The bonus of a placement bonus / a project bonus effect as {type, value}, for the buttons of the bar (a project bonus is stored as {type: value})."""
     b = e.get("bonus")
@@ -207,7 +234,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}),
-                           **_bonus_entry(e),
+                           **_bonus_entry(e), **_income_entry(state, e, who),
                            **({"enabled": False} if e.get("cond") == "no_animals" and any(c.startswith("A") for c in state.players[who].hand) else {}),      # (Hunter Animals: not while the hand holds an animal)
                            "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)

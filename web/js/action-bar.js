@@ -512,6 +512,13 @@ function effectButton(e) {
   if (FORK && e.kind === 'assertion' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) return null;       // (the base projects are chosen in the lightbox, reveal.js `forkReveal`)
   if (FORK && e.kind === 'search_discard' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) return null;       // (Horse Whisperer: the animal is taken in the lightbox, reveal.js `horseFork`)
   if (FORK && e.kind === 'adapt' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && Array.isArray(a.args.discard)).length) return null;       // (Adapt: the cards are discarded in the lightbox, reveal.js `adaptFork`)
+  if (/^income_/.test(e.kind) && FORK && e.income) {                              // the break income: the source and what it pays ("Appeal: 16 money")
+    const b = el('span', 'abtn deckbtn');
+    b.title = 'Income: ' + e.income.name;
+    const icon = amountIcon(e.income.res === 'xtoken' ? 'xtoken' : e.income.res, e.income.n);
+    b.append(el('b', '', e.income.name + ':'), icon || el('b', '', ' ' + e.income.n + ' ' + e.income.res));
+    return bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index));
+  }
   if (/^income_/.test(e.kind)) return null;                                       // the incomes of a break are paid by themselves (BGA shows them as log lines, not as a choice)
   if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
   const noMoveIn = FORK && e.kind === 'move_in' && !forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length;       // (a special enclosure with no animal of the zoo that could move in)
@@ -638,6 +645,6 @@ function genericBar(bar, st, o, seat) {
     bar.append(b);
   }
   if (!Object.keys(o.kinds).length) bar.append(el('span', 'abtn gen off', 'nothing to choose'));
-  if (effectsOnly && bar.querySelector('.abtn')) who.after(el('b', '', ' must choose an effect to resolve'));       // (an effect without a prompt of its own, or several waiting)
+  if (effectsOnly && bar.querySelector('.abtn')) who.after(el('b', '', (o.effects || []).length && (o.effects || []).every((x) => /^income_/.test(x.kind)) ? ' must select income bonus' : ' must choose an effect to resolve'));       // (an effect without a prompt of its own, or several waiting)
   if (effectsOnly && !bar.querySelector('.abtn') && !shown) bar.hidden = true;                // only automatic gains are pending: nothing for the player to do
 }
