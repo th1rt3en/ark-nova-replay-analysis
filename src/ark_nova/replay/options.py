@@ -231,7 +231,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
     elif pr.kind == "effects":
         pending = pr.args.get("pending", [])
         out["pending"] = [e.get("kind") for e in pending][:12]
-        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label") if k in e and isinstance(e[k], (str, int, bool))},
+        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}),
                            **_bonus_entry(e), **_income_entry(state, e, who),
