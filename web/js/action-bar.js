@@ -462,7 +462,7 @@ function takeBar(bar, o, seat) {
   let text;
   if (t.remaining !== undefined) {                      // the Cards action: draw (and discard) or snap
     const n = t.remaining, s = n === 1 ? ' card' : ' cards';
-    text = ' must ' + (t.all_at_once && n > 1 ? 'draw all ' + n + (t.taken ? ' more' : '') + s + ' from the deck at once' : 'take ' + n + (t.taken ? ' more' : '') + s + (t.range.length ? ' from deck or display in reputation range' : ' from deck')) + (t.discard ? ' (and discard ' + t.discard + ')' : '')
+    text = ' must ' + (t.all_at_once && n > 1 ? 'draw ' + n + (t.taken ? ' more' : '') + s + ' from the deck' : 'take ' + n + (t.taken ? ' more' : '') + s + (t.range.length ? ' from deck or display in reputation range' : ' from deck')) + (t.discard ? ' (and discard ' + t.discard + ')' : '')
       + (t.snapping && !t.taken ? ' or snap ' + t.snaps_left + ' card(s)' : '');
   }
   else {
@@ -473,7 +473,7 @@ function takeBar(bar, o, seat) {
   if (t.deck && !t.range_only) {
     const b = el('span', 'abtn deckbtn');
     b.title = 'Draw from the deck';
-    b.append(el('b', '', t.all_at_once && t.deck > 1 ? 'Draw all ' + t.deck + ' cards from deck' : t.deck > 1 ? 'Draw 1 to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
+    b.append(el('b', '', t.all_at_once && t.deck > 1 ? 'Draw ' + t.deck + ' cards from deck' : t.deck > 1 ? 'Draw 1 to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
     bindActs(b, forkActs((a) => a.kind === 'take_cards' && a.args.mode === 'deck'));
     bar.append(b);
   }
@@ -487,7 +487,7 @@ const EFFECT_TEXT = {
   assertion: 'Assertion', pilfer: 'Pilfer', venom: 'Venom', constrict: 'Constriction', hypnosis: 'Hypnosis', pay_appeal: 'Pay appeal', slot1: 'Card to slot 1', boost: 'Boost',
   waza: 'Waza', reposition: 'Reposition', pouch: 'Pouch a card', search_discard: 'Search the discard pile', upgrade: 'Upgrade an action card', threshold2: 'Upgrade or worker',
   threshold_bonus: 'Choose a bonus', endgame_discard: 'Discard an endgame card', adapt: 'Adapt', break_discard: 'Discard to the hand limit', take_tile: 'Take a tile',
-  archaeologist: 'Archaeologist', species_bonus: 'Species bonus', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', reef: 'Reef', ability: 'Animal ability',
+  move_in: 'Move an animal in', archaeologist: 'Archaeologist', species_bonus: 'Species bonus', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', reef: 'Reef', ability: 'Animal ability',
 };
 const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
 // the option of an effect with several buttons (Marine Research Expedition: "send" a person sponsor away, or "scuba" Scuba Dive 3)
@@ -514,7 +514,8 @@ function effectButton(e) {
   if (FORK && e.kind === 'adapt' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && Array.isArray(a.args.discard)).length) return null;       // (Adapt: the cards are discarded in the lightbox, reveal.js `adaptFork`)
   if (/^income_/.test(e.kind)) return null;                                       // the incomes of a break are paid by themselves (BGA shows them as log lines, not as a choice)
   if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
-  const b = el('span', 'abtn deckbtn' + (e.enabled === false ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)
+  const noMoveIn = FORK && e.kind === 'move_in' && !forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length;       // (a special enclosure with no animal of the zoo that could move in)
+  const b = el('span', 'abtn deckbtn' + (e.enabled === false || noMoveIn ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)
   const src = e.source && /^[ASPF]\d{3}$/.test(e.source) ? cardName(e.source) : '';
   const pbName = (e.kind === 'pbonus' || e.kind === 'project_bonus') && e.bonus ? placementBonusName(e.bonus) : '';              // (one of several placement bonuses of the building just placed)
   b.title = (pbName ? (e.kind === 'project_bonus' ? 'Project bonus: ' : 'Placement bonus: ') + pbName : e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');

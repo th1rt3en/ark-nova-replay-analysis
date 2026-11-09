@@ -311,7 +311,10 @@ def _association(old: GameState, act: Action, new: GameState, L: Lines, who: str
     if task == "partner":
         L.add(f"{who} takes a new partner zoo" + (f" ({a['continent']})" if a.get("continent") else ""))
     elif task == "university":
-        L.add(f"{who} takes a new university")
+        seat = act.player
+        before = Counter(t.type for t in old.players[seat].tokens if t.location.startswith("university_"))
+        added = [t.type for t in new.players[seat].tokens if t.location.startswith("university_") and not before.get(t.type)]
+        L.add(f"{who} takes <UNI:{added[0]}>" if added else f"{who} takes a new university")                 # (the tile that was taken, drawn by the page)
         if got:
             L.add(f"{who} gains {' and '.join(got)} (from university)")
     elif task == "hire":

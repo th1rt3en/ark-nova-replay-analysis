@@ -469,7 +469,7 @@ export function forkBar() {
       for (const a of mine) bar.append(btn(a, mine.length === 1 ? 'Confirm: ' + a.text : a.text, mine.length === 1));
     }
   } else if (handActs.length || dispActs.length) {
-    bar.append(el('span', 'muted', 'click a card of the hand' + (dispActs.length ? ' or of the display' : '') + ' to see its moves'));
+    // (no hint: the cards that can be clicked are lit)
   }
   if (discardActs.length) {                                                         // discards: pick the cards in the hand, then confirm
     const p = discardActs[0].player, need = (discardActs[0].args.cards || []).length;

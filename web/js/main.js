@@ -145,7 +145,7 @@ function renderBoards(picking) {
     if (prev && S.dockHandStep !== S.step) {
       S.dockHandStep = S.step;
       const seat = st.players.findIndex((p, i) => p.hand.join() !== prev.players[i].hand.join() && p.hand.length > prev.players[i].hand.length);      // (a hand that grew)
-      if (seat >= 0 && (S.dockSel.seat !== seat || S.dockSel.kind !== 'hand' || S.dockHidden)) { S.dockSel = { seat, kind: 'hand' }; S.dockHidden = false; renderDock(st); }
+      if (seat >= 0 && (!PLAY || seat === S.play.seat) && (S.dockSel.seat !== seat || S.dockSel.kind !== 'hand' || S.dockHidden)) { S.dockSel = { seat, kind: 'hand' }; S.dockHidden = false; renderDock(st); }
     }
     forkBar(); renderForkMoves();
     if (SANDBOX) renderSandboxTools(st);
@@ -166,7 +166,9 @@ function renderBoards(picking) {
   refreshLogFilter();                                                     // (the Players / Actions filter hides lines, log-filter.js)
   refreshLogSearch();                                                     // (the search finds only in the lines on show)
   followLog();
-  history.replaceState(null, '', '#' + moveHash(S.step, S.phase, S.results));       // (#641 = BGA's move 641, #641.1 = the second step of that move, #641.1.2 = its third frame)
+  if (!PLAY) history.replaceState(null, '', '#' + moveHash(S.step, S.phase, S.results));       // (a live game has no move number in the address)
+  else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  //       // (#641 = BGA's move 641, #641.1 = the second step of that move, #641.1.2 = its third frame)
   fitSidebar();
   fitDisplay();
   fitPlayed();

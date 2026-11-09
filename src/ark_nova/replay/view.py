@@ -788,6 +788,36 @@ def _follows(step: dict) -> bool:
     return bool(parts) and all(any(f.match(p) for f in _FOLLOW) and not _NOT_FOLLOW.search(p) for p in parts)
 
 
+_TAKES_UNIVERSITY = re.compile(r"takes a new university")
+
+
+def _university_tiles(steps: list) -> None:
+    """"X takes a new university" shows the tile that was taken: the university token that is new on the board in this step (or the next, where the log moves it), as `<UNI:type>`."""
+    def tiles(st):
+        return [t["type"] for p in st["players"] for t in p.get("tokens") or [] if str(t.get("location", "")).startswith("university_")]
+
+    def fresh(a, b):
+        left = list(tiles(a))
+        for t in tiles(b):
+            if t in left:
+                left.remove(t)
+            else:
+                return t
+        return None
+    for i, step in enumerate(steps):
+        texts = [step.get("label") or ""] + [t or "" for t in step.get("label_pov") or []]
+        if not any(_TAKES_UNIVERSITY.search(t) for t in texts):
+            continue
+        cur = step["state"]
+        tile = (fresh(steps[i - 1]["state"], cur) if i else None) or (fresh(cur, steps[i + 1]["state"]) if i + 1 < len(steps) else None)
+        if not tile:
+            continue
+        sub = lambda t: _TAKES_UNIVERSITY.sub(f"takes <UNI:{tile}>", t) if t else t
+        step["label"] = sub(step.get("label"))
+        if step.get("label_pov"):
+            step["label_pov"] = [sub(t) for t in step["label_pov"]]
+
+
 def _combine_action(steps: list, keep: list) -> list:
     """A sponsor bought / an animal played / a building built and everything that comes with it is one step (the text of the whole run in the order of the log). The step
     "X chooses action card ..." before it and the step "places action card ..." after it stay."""
@@ -1344,6 +1374,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     _horse_whisperer(steps, [names.get(pid, pid) for pid in config.player_ids])           # (the lightbox of Horse Whisperer: the whole discard pile, the Petting Zoo animals on top)
     mark_merges(steps, [names.get(pid, pid) for pid in config.player_ids])               # (runs of draws / digs / snaps of one player: one step for the viewer who follows the other one, replay/merge.py)
     _endgame_unscored(steps, [names.get(pid, pid) for pid in config.player_ids], bool(config.marine_worlds))
+    _university_tiles(steps)
     states = [st["state"] for st in steps]
     keys: set[str] = set()
     _card_keys(states, keys)
