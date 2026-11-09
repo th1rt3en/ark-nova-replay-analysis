@@ -4,8 +4,8 @@
 // `src/ark_nova/live/lobbies.py` (`MemoryLobbies`) is the twin of this file in Python for tests and the dev server: keep the two the same.
 import { DurableObject } from "cloudflare:workers";
 
-export const MODES = ["ark360", "custom-map"];
-const MODE_LABELS: Record<string, string> = { ark360: "Ark360", "custom-map": "Custom map" };
+export const MODES = ["original", "ark360", "custom-map"];           // ("original" is the Normal game: each player is dealt two maps and keeps one)
+const MODE_LABELS: Record<string, string> = { original: "Normal", ark360: "Ark360", "custom-map": "Custom map" };
 export const SEATS = 2;
 export const ONLINE_SECONDS = 45;          // a player whose page asked for the inbox this recently is online
 export const IDLE_SECONDS = 90;            // a lobby whose host (a member) has not been seen for this long is closed (the member is taken out)

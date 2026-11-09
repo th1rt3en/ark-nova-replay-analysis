@@ -5,9 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mini games - Ark Nova Park</title>
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/lobbies.css">
+<link rel="stylesheet" href="/css/park-fonts.css">
+<link rel="stylesheet" href="/css/poster-page.css">
+<link rel="stylesheet" href="/css/poster-content.css">
 </head>
-<body class="landing">
+<body class="poster">
 <p class="small"><a href="/">&larr; Ark Nova Park</a> &middot; <a href="/ratings.html">Ratings</a></p>
+<main class="pp">
 <h1>Mini games</h1>
 <p class="muted">A new puzzle every day at 00:00 UTC, played on a real finished game.</p>
 <div class="modes" id="games" aria-live="polite">
@@ -28,6 +33,7 @@
   <div id="lbpanel" class="lbpanel" role="tabpanel"></div>
 </section>
 <p id="err" class="muted" hidden></p>
+</main>
 <script type="module" src="/js/minigames/hub.js"></script>
 <script type="module" src="/js/account.js"></script>
 <script type="module" src="/js/notify.js"></script>

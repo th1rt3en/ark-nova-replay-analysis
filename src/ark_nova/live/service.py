@@ -121,7 +121,7 @@ def _ark360_description() -> str:
 
 GAME_MODES = {
     "random-mirrored": ("Same random map", "Both players play on the same map, drawn at random: nothing to choose."),
-    "original": ("Original: pick one of two", "Each player is dealt two maps and keeps the one they like better."),
+    "original": ("Normal", "A standard Ark Nova game: each player is dealt two maps and keeps the one they like better."),
     "free-select": ("Free choice", "Each player picks any map (the same one is allowed)."),
     ark360.MODE: ("Ark360", _ark360_description()),
     custom_map.MODE: ("Custom map", "Both players play a map made in the map editor, one of the host's saved maps. Everything else is as in a normal game."),

@@ -30,14 +30,13 @@
 <section id="creating">
   <h2>Create your own lobby</h2>
   <form class="create" id="createform">
-    <label>Game mode <select id="mode"></select></label>
-    <p class="hint" id="modehint"></p>
+    <label>Game mode <select id="mode"></select> <button type="button" class="helpmark" id="modehelp" hidden>?</button></label>
     <label id="mapbox" hidden>Your map <select id="mapsel"></select> <a href="/my_maps.html" class="small">My maps</a> &middot; <a href="/map_editor.html" class="small">Map editor</a></label>
-    <label class="tile"><input type="checkbox" id="mw" checked><span><b>Marine Worlds</b><small>Play with the Marine Worlds expansion: its cards, maps and projects.</small></span></label>
-    <label class="tile"><input type="checkbox" id="bdw"><span><b>BDW map pack</b><small>Adds Management Zoo, Construction Yard, Enigma Isle and Vast Valley to the maps you can draw.</small></span></label>
+    <label class="tile"><input type="checkbox" id="mw" checked><span><b>Marine Worlds</b><button type="button" class="helpmark" data-tip="Play with the Marine Worlds expansion: its cards, maps and projects.">?</button></span></label>
+    <label class="tile"><input type="checkbox" id="bdw"><span><b>BDW map pack</b><button type="button" class="helpmark" data-tip="Adds Management Zoo, Construction Yard, Enigma Isle and Vast Valley to the maps you can draw.">?</button></span></label>
     <div class="kind">
       <label><input type="radio" name="kind" id="friendly" checked> Friendly</label>
-      <label><input type="radio" name="kind" id="rated"> Rated <small>(counts for the ratings)</small></label>
+      <label><input type="radio" name="kind" id="rated"> Rated</label>
     </div>
     <div><button type="submit" class="go" id="createbtn">Create lobby</button></div>
   </form>

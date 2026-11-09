@@ -69,7 +69,9 @@ def test_a_lobby_is_listed_with_its_host_players_and_mode_and_only_ark360_can_be
     assert (row["host"], row["players"], row["seats"], row["mode_label"], row["full"]) == ("Alice", 1, 2, "Ark360", False)
     assert alice.get("/api/lobbies").json()["mine"] == made["id"]
     assert alice.post("/api/lobbies", json={}).status_code == 409                                    # one lobby at a time
-    assert w.browser("Carol").post("/api/lobbies", json={"game_mode": "original"}).status_code == 422
+    assert w.browser("Carol").post("/api/lobbies", json={"game_mode": "free-select"}).status_code == 422
+    normal = w.browser("Erin").post("/api/lobbies", json={"game_mode": "original"})                  # (Normal: the standard game, each player is dealt two maps)
+    assert normal.status_code == 200 and normal.json()["mode"] == "original" and normal.json()["mode_label"] == "Normal"
     assert w.browser("Dan").post("/api/lobbies", json={"rated": True}).status_code == 200            # (the account store is there: rated is allowed)
 
 

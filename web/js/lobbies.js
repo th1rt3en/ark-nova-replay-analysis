@@ -3,6 +3,7 @@
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 import { mapOptionControls } from '/js/mapopts.js';
+import { setHelp } from '/js/helpmark.js';
 import { onPush, pushReady } from './push.js';
 const POLL_MS = 5000, SAFETY_MS = 30000;
 let account = null, options = { game_modes: [] }, timer = 0, mine = null, showMapsLater = () => {};
@@ -67,11 +68,11 @@ function setAccount(a) {
 
 async function boot() {
   options = await fetch('/api/live/options').then((r) => r.json()).catch(() => ({ game_modes: [] }));
-  const ark = [...options.game_modes.filter((m) => m.id === 'ark360'),             // (the modes that can be played from a lobby; the options leave custom-map out: it is not for a table made by link)
+  const ark = [...options.game_modes.filter((m) => m.id === 'original' || m.id === 'ark360'),             // (the modes that can be played from a lobby: Normal first; the options leave custom-map out: it is not for a table made by link)
     { id: 'custom-map', label: 'Custom map', description: 'Both players play one of your own maps, made in the map editor. Everything else is as in a normal game.' }];
   const mode = $('mode');
   for (const m of ark) mode.append(el('option', { value: m.id, title: m.description }, m.label));
-  const hint = () => { const m = ark.find((x) => x.id === mode.value); $('modehint').textContent = m ? m.description : ''; };
+  const hint = () => { const m = ark.find((x) => x.id === mode.value); setHelp($('modehelp'), m ? m.description : ''); };
   showMapsLater = async () => {                                                    // custom map: the host picks one of their saved maps
     const custom = mode.value === 'custom-map';
     $('mapbox').hidden = !custom;

@@ -5,19 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ratings - Ark Nova Park</title>
 <link rel="stylesheet" href="/style.css">
-<style>
-  body.landing { max-width: 42rem; }
-  table.board { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-  table.board th, table.board td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--border); }
-  table.board th:nth-child(n+3), table.board td:nth-child(n+3) { text-align: right; }
-  table.board td:nth-child(3) { font-weight: 700; }
-</style>
+<link rel="stylesheet" href="/css/lobbies.css">
+<link rel="stylesheet" href="/css/park-fonts.css">
+<link rel="stylesheet" href="/css/poster-page.css">
+<link rel="stylesheet" href="/css/poster-content.css">
 </head>
-<body class="landing">
+<body class="poster slim">
 <p class="small"><a href="/">&larr; Ark Nova Park</a> &middot; <a href="/minigames/">Mini games</a></p>
+<main class="pp">
 <h1>Ratings</h1>
 <p class="muted">The best ratings of rated live games. A player is listed after 5 rated games; a rating that was copied from Board Game Arena at signup is not verified.</p>
-<div id="board" aria-live="polite">Loading…</div>
+<section>
+  <div id="board" aria-live="polite">Loading…</div>
+</section>
+</main>
 <script type="module">
 const box = document.getElementById('board');
 fetch('/api/leaderboard/ratings').then((r) => r.json()).then((d) => {
