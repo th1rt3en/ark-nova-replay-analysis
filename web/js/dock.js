@@ -35,8 +35,13 @@ function handDim(seat) {
     const keys = forkActs((a) => a.player === seat && cardPickAct(a)).map(pickCardOf);
     if (keys.length) return (k) => !keys.includes(k);
   }
+  if (FORK && S.snapMode) {                                             // Sponsors variant 4: first the sponsor to discard (the other cards of the hand are greyed out), then the one of the display (the whole hand is)
+    if (S.snapMode === 'snap') return () => true;
+    const keys = forkActs((a) => a.player === seat && a.kind === 'sponsor_side' && a.args.op === 'discard_snap').map((a) => a.args.card);
+    return (k) => !keys.includes(k);
+  }
   if (FORK) {                                                           // a card is to be played: the cards the engine does not let the player play (not an animal / a sponsor, a requirement, the price or an enclosure that cannot be met) are greyed out
-    const ok = forkActs((a) => a.player === seat && a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind)).map((a) => a.args.card);
+    const ok = forkActs((a) => a.player === seat && a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind) && a.args.op !== 'discard_snap').map((a) => a.args.card);
     if (ok.length) return (k) => !ok.includes(k);
   }
   const reveal = revealDim(seat);

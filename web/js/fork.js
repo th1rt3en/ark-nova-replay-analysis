@@ -307,6 +307,35 @@ export function forkBar() {
       bar.append(tb);
     }
   }
+  const snapActs = acts.filter((a) => a.kind === 'sponsor_side' && a.args.op === 'discard_snap');
+  if (sideOpen.variant === 4 && sideOpen.level < 2 && !sideOpen.side_used) {              // Sponsors variant 4 (level I): discard a sponsor of the hand to snap one of the display; before or after the sponsors are played
+    for (const a of snapActs) S.forkClaimed.add(a);
+    const who5 = el('span', 'who', seatName(seat));
+    who5.style.color = seatText(seat);
+    const back = (label) => { const b = el('button', 'forkmove', label); b.type = 'button'; b.onclick = () => { S.snapMode = null; S.snapCard = null; for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); render(); }; return b; };
+    if (S.snapMode === 'discard') {
+      bar.replaceChildren();
+      const picked = marked(seat + ':hand', st.players[seat].hand).filter((k) => snapActs.some((a) => a.args.card === k));
+      const ok = el('button', 'forkmove forkconfirm', 'Confirm');
+      ok.type = 'button'; ok.disabled = !picked.length || S.forkBusy;
+      ok.onclick = () => { S.snapCard = picked[0]; S.snapMode = 'snap'; for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); render(); };
+      bar.append(who5, el('b', '', ' must choose a sponsors to discard' + (picked.length ? ': ' + cardName(picked[0]) : '')), ok, back('Back'));
+    } else if (S.snapMode === 'snap') {
+      bar.replaceChildren();
+      const picked = marked('display', st.display).filter(Boolean).filter((k) => snapActs.some((a) => a.args.card === S.snapCard && a.args.take === k));
+      const match = picked.length ? snapActs.find((a) => a.args.card === S.snapCard && a.args.take === picked[0]) : null;
+      const ok = el('button', 'forkmove forkconfirm', 'Confirm');
+      ok.type = 'button'; ok.disabled = !match || S.forkBusy;
+      ok.onclick = () => { if (match) playFork(match); };
+      bar.append(who5, el('b', '', ' must choose a sponsors to snap' + (picked.length ? ': ' + cardName(picked[0]) : '')), ok, back('Back'));
+    } else {
+      const sb = el('button', 'forkmove', 'Discard a sponsors to snap a sponsor');
+      sb.type = 'button'; sb.disabled = !snapActs.length || S.forkBusy;
+      sb.title = snapActs.length ? 'Discard a sponsor of your hand and take a sponsor of the display (once per action, before or after the sponsors you play)' : 'You need a sponsor in the hand and a sponsor in the display';
+      sb.onclick = () => { S.snapMode = 'discard'; for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); render(); };
+      bar.append(sb);
+    }
+  }
   const placeActs = acts.filter((a) => a.kind === 'place_building');
   for (const a of placeActs) S.forkClaimed.add(a);
   // BDW2's crane: the "Reposition (crane)" button of the effects starts the move; until then neither the pieces menu nor the skip button is shown, afterwards the skip button sits beside the placement controls
@@ -317,7 +346,7 @@ export function forkBar() {
     if (moveOnly && !(S.placement && S.placement.move)) { S.forkClaimed.add(a); continue; }
     S.forkClaimed.add(a); bar.append(btn(a, 'Skip the reposition', false));
   }
-  const handActs = acts.filter((a) => a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind));
+  const handActs = acts.filter((a) => a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind) && a.args.op !== 'discard_snap');
   const dispActs = acts.filter((a) => a.args && a.args.card && (a.args.from_display || (a.kind === 'take_cards' && a.args.mode !== 'deck')));
   const discardActs = acts.filter((a) => a.kind === 'discard_cards');
   const marketActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.card === 'string' && ((cur.options && cur.options.effects) || []).some((e) => e.index === a.args.index && e.kind === 'marketing'));

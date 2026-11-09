@@ -1471,3 +1471,6 @@ body.viewer.discarding .card.marked::after, body.viewer.discarding .draftcard.ma
 
 /* the card behind a gain the player collects ("Gain [X token] (Inventive animal)") */
 .abtn i.gainsrc { margin-left: 6px; font: 600 .78em 'Park Label', system-ui, sans-serif; font-style: normal; opacity: .85; }
+
+/* the university tile in a log line ("X takes [tile]") */
+img.labeluni { height: 1.9em; width: auto; vertical-align: middle; margin: 0 2px; }

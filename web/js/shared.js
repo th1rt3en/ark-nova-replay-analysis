@@ -119,7 +119,8 @@ export function renderShared(st) {
     const allowed = (S.replay.steps[S.step].options || {}).take;                       // while taking cards, the cards that cannot be taken are greyed out
     const sps = (S.replay.steps[S.step].options || {}).sponsors;
     const pickKeys = FORK ? forkActs(cardPickAct).map(pickCardOf) : [];
-    const dim = (allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k)) || (sps && sps.level >= 2 && k && !sps.display.includes(k)) || (pickKeys.length && k && !pickKeys.includes(k));
+    const snapKeys = FORK && S.snapMode === 'snap' ? forkActs((a) => a.kind === 'sponsor_side' && a.args.op === 'discard_snap' && a.args.card === S.snapCard).map((a) => a.args.take) : (FORK && S.snapMode === 'discard' ? [] : null);       // (Sponsors variant 4: the sponsors that can be snapped; none while the sponsor to discard is chosen)
+    const dim = (allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k)) || (sps && sps.level >= 2 && k && !sps.display.includes(k)) || (pickKeys.length && k && !pickKeys.includes(k)) || (snapKeys && k && !snapKeys.includes(k));
     if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '') + (FORK && cardMarks.has('display#' + i) ? ' marked' : ''), 'display'));
     if (k && FORK) {                                                              // a card of the display can be chosen for a move
       f.classList.add('markable');

@@ -47,6 +47,8 @@ export const S = {
   forkClaimed: new Set(),
   forkMenu: null,
   tradeMode: false,
+  snapMode: null,                                        // Sponsors variant 4: null | 'discard' (choose the sponsor to discard) | 'snap' (choose the sponsor of the display)
+  snapCard: null,
   forkError: '',
   forkDockStep: -1,   // fork: the legal actions the controls of the bar stand for / the choices of a button with several / the last error
   forkGate: false,

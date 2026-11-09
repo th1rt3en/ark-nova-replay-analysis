@@ -209,6 +209,10 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         cards = list(a.get("cards", []))
         L.add(f"{who} discards {len(cards)} card{'' if len(cards) == 1 else 's'}")          # (short for everyone, like the replay: the cards are no use to the reader)
         return
+    if k == "sponsor_side" and a.get("op") == "discard_snap":                  # Sponsors, variant 4: the discarded sponsor is secret, the one snapped from the display is public
+        text = f"{who} discards {card(a['card'])} to snap {card(a['take'])}"
+        L.secret(text, f"{who} discards a sponsors to snap {card(a['take'])}", text)
+        return
     if k == "choose_action_card":
         slot = next((i for i, c in enumerate(p0.action_cards) if c.type == a.get("type")), 0)
         x = int(a.get("spend", 0) or 0)
