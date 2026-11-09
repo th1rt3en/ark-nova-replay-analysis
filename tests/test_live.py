@@ -206,3 +206,15 @@ def test_map14_found_person_sponsor_is_public():
     v = project(s, "0")
     assert v["players"][1]["found_person"] == "S202" and v["players"][1]["hand"][-1] == "?"
     assert "found_person" not in v["players"][0]
+
+
+def test_association_is_greyed_out_when_no_worker_is_left():
+    from ark_nova.engine import game
+    from ark_nova.replay.options import step_options
+    s = game.new_game({"confirm_turns": True}, ["a", "b"], 5)
+    while s.prompt.kind != "choose_action_card":
+        s = game.apply(s, game.legal_actions(s)[0])
+    assert "unusable" not in (step_options(s) or {})                      # (workers left: Association has something to do)
+    p = s.players[s.prompt.player]
+    p.tokens = [t for t in p.tokens if t.type != "worker"]
+    assert (step_options(s) or {}).get("unusable") == ["association"]

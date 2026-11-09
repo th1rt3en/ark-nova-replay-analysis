@@ -298,7 +298,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   who.style.color = seatText(seat);
   bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : hyp ? " may use one of the opponent's first three action cards" : ' must choose an action card'));
   cardsShown.forEach((a, i) => {
-    const b = el('span', 'abtn acbtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
+    const b = el('span', 'abtn acbtn' + (a.level === 2 ? ' lvl2' : '') + (o && (!o.cards[a.type] || (FORK && (o.unusable || []).includes(a.type))) ? ' off' : ''));       // (greyed out: the engine does not offer it)
     const cut = 2 * (a.tokens || []).filter((t) => t === 'Constriction').length;                     // (each Constriction token on the card takes 2 strength, never below 1: engine/venom.py)
     const str = Math.max(1, i + 1 + spent - cut);
     b.title = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + ', strength ' + str + ' (up to ' + (str + p.x_tokens) + ' with X tokens)' + (cut ? ', 2 less per Constriction token' : '');
@@ -308,7 +308,8 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       const tk = el('img', 'actoken'); tk.src = iconUrl(id); tk.alt = t; tk.title = CARD_TOKEN_TEXT[t] || t; tk.style.setProperty('--k', String(k));
       b.append(tk);
     });
-    if (FORK && (S.skipMode ? maySkip(a.type) : mayChoose(a.type))) {
+    const dead = !S.skipMode && o && (o.unusable || []).includes(a.type);                    // (Association with nothing to do)
+    if (FORK && !dead && (S.skipMode ? maySkip(a.type) : mayChoose(a.type))) {
       b.classList.add('choosable');
       b.title = S.skipMode ? 'Put ' + ACTION_NAMES[a.type] + ' back to slot 1 and gain an X token' : 'Choose ' + ACTION_NAMES[a.type] + (S.forkSpend ? ', spending ' + S.forkSpend + ' X token' + (S.forkSpend === 1 ? '' : 's') : '');
       b.onclick = () => {

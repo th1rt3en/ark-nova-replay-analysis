@@ -4,7 +4,7 @@ The viewer builds the bar at the top of the page from this (instead of guessing 
 of action with their counts, and for the choice of an action card the cards and the X tokens that can be spent on each.
 """
 from ark_nova import data
-from ark_nova.engine.game import legal_actions
+from ark_nova.engine.game import apply, legal_actions
 from ark_nova.engine.state import GameState, Phase
 
 FREE = {"use_token", "harbor_sell"}            # free actions of the notepad / zoo map: possible at any time, not the decision of the prompt
@@ -72,6 +72,26 @@ def effect_name(e: dict) -> str | None:
             return name if not value or str(value) in name else f"{name} {value}"
     n = e.get("n") or e.get("x")
     return f"{prefix} {n}" if isinstance(n, int) and n > 1 else prefix
+
+
+def _unusable_cards(state: GameState, acts: list) -> list:
+    """The action cards that offer nothing to do when chosen (Association with no worker left, or nothing the workers could do): the bar greys them out."""
+    out = []
+    mine = [a for a in acts if a.kind == "choose_action_card" and a.args["type"] == "association" and not a.args.get("hypnosis")]
+    if not mine:
+        return out
+    for a in mine:                                                       # (any spend of X tokens: more strength may allow a task)
+        try:
+            new = apply(state, a)
+            kinds = {x.kind for x in legal_actions(new)}
+        except Exception:                                                # (not known to the engine: leave it usable)
+            return out
+        ends = new.prompt is None or new.prompt.kind != "association_tasks"
+        if not ends and kinds & {"association_task", "donate"}:
+            return out
+        if ends and new.prompt is not None and new.prompt.kind != "choose_action_card":
+            return out                                                   # (effects or another prompt follow: something to do)
+    return ["association"]
 
 
 def _expedition_buttons(state: GameState, pending: list, entry: dict) -> list:
@@ -170,6 +190,9 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
             if a.kind == "choose_action_card":
                 cards.setdefault(a.args["type"], []).append(a.args.get("spend", 0))
         out["cards"] = {t: sorted(set(v)) for t, v in cards.items()}
+        unusable = _unusable_cards(state, acts)
+        if unusable:
+            out["unusable"] = unusable                                  # (greyed out in the bar: the card can be chosen but nothing could be done with it)
         out["skip"] = sorted({a.args["type"] for a in acts if a.kind == "skip_action" and not a.args.get("hypnosis")})
         out["skip_hypnosis"] = sorted({a.args["type"] for a in acts if a.kind == "skip_action" and a.args.get("hypnosis")})      # (the opponent's card: not the same as the own put-back)
         if pr.args.get("only"):
