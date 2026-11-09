@@ -478,7 +478,7 @@ export function forkBar() {
     const mine = picked.length ? grp.list.filter((a) => pickCardOf(a) === picked[0]) : [];
     const who3 = el('span', 'who', seatName(grp.p));
     who3.style.color = seatText(grp.p);
-    bar.append(who3, el('b', '', ' must select a card of the hand or the display' + (eff.kind === 'digging' ? ' to dig' : '') + (picked.length ? ': ' + cardName(picked[0]) : '')));
+    bar.append(who3, el('b', '', (eff.kind === 'mark' ? ' must select an animal of the display to mark, then confirm' : ' must select a card of the hand or the display' + (eff.kind === 'digging' ? ' to dig' : '')) + (picked.length ? ': ' + cardName(picked[0]) : '')));
     const confirmWith = (a, label) => {
       const ok = a ? btn(a, label, true) : el('button', 'forkmove forkconfirm', label);
       ok.type = 'button'; ok.disabled = !a || S.forkBusy;
@@ -486,7 +486,7 @@ export function forkBar() {
     };
     bar.append(confirmWith(mine.find((a) => !a.args.rescue), 'Confirm'));
     if (grp.list.some((a) => a.args.rescue)) bar.append(confirmWith(mine.find((a) => a.args.rescue), "Confirm and use map 10's effect"));
-    for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === grp.idx)) { S.forkClaimed.add(a); bar.append(btn(a, 'Skip', false)); }
+    for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === grp.idx)) { S.forkClaimed.add(a); bar.append(btn(a, eff.kind === 'mark' ? 'Pass' : 'Skip', false)); }
   }
   for (const seat0 of [...new Set(initActs.map((a) => a.player))]) {                 // the initial discard: pick the cards to keep in the hand, then confirm
     const mine = initActs.filter((a) => a.player === seat0);
@@ -521,7 +521,7 @@ export function forkBar() {
   if (rest.length) {
     const holder = rest.length > 10 ? el('details', 'forkmore') : el('span', 'forkmore');
     if (rest.length > 10) holder.append(el('summary', '', 'More moves (' + rest.length + ')'));
-    for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + a.text, false));
+    for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + (a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'mark' ? 'Pass: no animal can be marked' : a.text), false));
     bar.append(holder);
   }
   if (PLAY || SANDBOX) playTurnButtons(bar, acts);

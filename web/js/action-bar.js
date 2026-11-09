@@ -50,7 +50,7 @@ export function bindActs(node, acts) {
 // a card is chosen to be played (an animal, a sponsor, a Marketing sponsor...): only one can be selected at a time
 // an effect that takes one card of the hand or of the display (digging, ...): the card is selected with a click, then confirmed (see forkBar)
 export const effectKindOf = (a) => { const e = (((S.replay.steps[S.step].options || {}).effects) || []).find((x) => x.index === a.args.index); return e ? e.kind : ''; };
-export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.display : typeof a.args.hand === 'string' ? a.args.hand : null);
+export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.display : typeof a.args.hand === 'string' ? a.args.hand : a.kind === 'choose_effect' && typeof a.args.card === 'string' && effectKindOf(a) === 'mark' ? a.args.card : null);       // (Mark: the animal of the display to mark)
 export const cardPickAct = (a) => a.kind === 'choose_effect' && typeof a.args.index === 'number' && !Array.isArray(a.args.cards) && !!pickCardOf(a) && effectKindOf(a) !== 'marketing';
 export function animalSelection() {                                       // the animal selected in the hand / display with the enclosures it can go to
   if (!FORK) return null;
