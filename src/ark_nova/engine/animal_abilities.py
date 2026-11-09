@@ -98,6 +98,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
             return []                                    # (the peaceful Venom is the Inventive X token: a card with both pays it once, 801244007 T24)
         return peaceful_effects(state, seat, key, name, value)
     if name == "Pack":
+        if state.config.confirm_turns:                              # live: the player collects the appeal with a button of its own, in the order he likes (replays pay it at once)
+            return [{"kind": "gain", "source": key, "res": "appeal", "n": icons["Predator"], "label": "pack", "optional": False}] if icons["Predator"] else []
         g._gain(state, seat, appeal=icons["Predator"])
     elif name in ("Appeal", "Money", "Reputation", "Conservation Point"):        # Reef Dweller effects
         return [{"kind": "gain", "source": key, "res": {"Appeal": "appeal", "Money": "money", "Reputation": "reputation",

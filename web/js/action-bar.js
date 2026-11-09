@@ -533,7 +533,7 @@ function effectButton(e) {
   if (e.kind === 'gain') {
     const ai = amountIcon(e.res, e.n || 1);                                  // ("Gain" + the counter's icon with the amount inside)
     if (ai) b.append(el('b', '', 'Gain'), ai); else b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
-    if (src) b.append(el('i', 'gainsrc', '(' + src + ')'));
+    if (e.label || src) b.append(el('i', 'gainsrc', '(' + (e.label || src) + ')'));          // (an ability: its name, "Gain 3 appeal (pack)")
   } else if (e.kind === 'search_category' && SEARCH_ICON[e.category]) {        // a targeted search: "Find a {species}" with the species' search icon
     const [label, id] = SEARCH_ICON[e.category];
     const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28;

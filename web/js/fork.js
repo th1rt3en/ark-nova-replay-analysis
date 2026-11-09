@@ -581,7 +581,7 @@ export function forkBar() {
     const eff = ((cur.options && cur.options.effects) || []).find((e) => e.index === grp.idx) || {};
     const picked = [...marked(grp.p + ':hand', st.players[grp.p].hand), ...marked('display', st.display).filter(Boolean)].filter((k) => grp.list.some((a) => pickCardOf(a) === k));
     const mine = picked.length ? grp.list.filter((a) => pickCardOf(a) === picked[0]) : [];
-    if (eff.kind === 'digging') bar.replaceChildren();                                // (the Digging button was clicked: only its prompt is left)
+    if (eff.kind === 'digging' || eff.kind === 'mark') bar.replaceChildren();         // (the Digging button was clicked / a Mark is to be resolved: only its prompt is left)
     const who3 = el('span', 'who', seatName(grp.p));
     who3.style.color = seatText(grp.p);
     const yours = seatName(grp.p) === 'You';
