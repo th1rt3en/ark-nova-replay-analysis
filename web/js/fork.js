@@ -224,7 +224,7 @@ export function forkBar() {
           const stub = { buildings: [], flags: {}, tokens: [], animals: [], sponsors: [] };
           try {                                                           // (the same row as in the zoo: bonus slots, board, partner zoos and universities, at the same proportions)
             const row = el('div', 'zooRow');
-            row.append(bonusPanel(mv, stub, chosenMap.player), zooBoard(mv, stub, chosenMap.player), associationStrip(stub, mv, chosenMap.player));
+            row.append(zooBoard(mv, stub, chosenMap.player));                    // (only the map with its placement bonuses, as big as a zoo in the game: no bonus slots and no association board)
             box.append(row);
           } catch (err) { box.replaceChildren(); }
         }
