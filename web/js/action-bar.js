@@ -21,7 +21,7 @@ import { centerNav, clearReveal, forkReveal, noteLightbox, openFx, revealAt, sho
 // steps the bar is guessed from the log-built state (only the choice of an action card).
 export const PROMPT_TEXT = {
   build_place: 'must place a building', cards_take: 'must take cards', cards_discard: 'must discard cards', sponsors_play: 'may play a sponsor',
-  animals_play: 'may play an animal', association_tasks: 'may perform an association task', effects: 'must resolve an effect', confirm_turn: 'must confirm the turn or take it back',
+  animals_play: 'may play an animal', association_tasks: 'may perform an association task', effects: 'must resolve an effect', confirm_turn: 'must confirm the turn',
 };
 const KIND_LABEL = {
   draft_pick: 'Pick an action card', draft_keep: 'Keep two action cards', initial_discard: 'Initial discard',
