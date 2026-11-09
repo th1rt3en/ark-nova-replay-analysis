@@ -247,6 +247,12 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         text = f"{who} discards {card(a['card'])} to snap {card(a['take'])}"
         L.secret(text, f"{who} discards a sponsors to snap {card(a['take'])}", text)
         return
+    if k == "sponsor_side" and a.get("op") in ("discard_money", "discard_strength"):          # Sponsors, variant 3 (Sunbathing): the discarded card is secret
+        what = "4 money" if a["op"] == "discard_money" else "2 strength"
+        upgraded = (old.prompt.args.get("level", 1) if old.prompt is not None else 1) >= 2
+        text = f"{who} discards {card(a['card'])} for {what} (Sunbathing Sponsors effect)"
+        L.secret(text, f"{who} discards a {'card' if upgraded else 'sponsors'} for {what} (Sunbathing Sponsors effect)", text)
+        return
     if k == "choose_action_card":
         slot = next((i for i, c in enumerate(p0.action_cards) if c.type == a.get("type")), 0)
         x = int(a.get("spend", 0) or 0)
