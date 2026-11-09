@@ -119,6 +119,10 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         i = args.pop("index", 0)
         e = pending[i] if isinstance(i, int) and 0 <= i < len(pending) else {}
         name = effect_name(e) or str(e.get("kind", "effect")).replace("_", " ").capitalize()
+        if e.get("kind") == "gain" and e.get("res"):                                          # (a gain the player collects: say what it is, not just "Gain")
+            word = {"x_tokens": "X token", "xtoken": "X token"}.get(e["res"], str(e["res"]))
+            src = e.get("source")
+            name = f"Gain {e.get('n', 1)} {word}" + (f" ({_name(src)})" if isinstance(src, str) and src[:1] in "ASPF" and src[1:4].isdigit() else "")
         if e.get("kind") == "species_bonus":                                              # BDW1: the second icon of a species
             name = f"Second {e.get('icon')} icon"
         rest = args.pop("args", None) or {}

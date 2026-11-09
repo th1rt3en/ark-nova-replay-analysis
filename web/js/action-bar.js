@@ -493,7 +493,7 @@ const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
 // the option of an effect with several buttons (Marine Research Expedition: "send" a person sponsor away, or "scuba" Scuba Dive 3)
 const effectOption = (a, e) => (e.option === 'send' ? a.args.send !== undefined : e.option === 'scuba' ? !!a.args.scuba : true);
 function effectButton(e) {
-  if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res)) return null;
+  if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res) && !(FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length)) return null;       // (a money / X token gain that happens by itself has no button; one the player has to collect does)
   if (e.kind === 'build' && FORK && /^Crane:/.test(e.name || '')) {                 // BDW2: the enclosure next to the crane may be repositioned, in any order with the animal's ability and gains
     const moves = forkActs((a) => a.kind === 'place_building' && a.args.move);
     if (!moves.length) return null;
@@ -522,6 +522,7 @@ function effectButton(e) {
   if (e.kind === 'gain') {
     const ai = amountIcon(e.res, e.n || 1);                                  // ("Gain" + the counter's icon with the amount inside)
     if (ai) b.append(el('b', '', 'Gain'), ai); else b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
+    if (src) b.append(el('i', 'gainsrc', '(' + src + ')'));
   } else if (e.kind === 'search_category' && SEARCH_ICON[e.category]) {        // a targeted search: "Find a {species}" with the species' search icon
     const [label, id] = SEARCH_ICON[e.category];
     const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28;
