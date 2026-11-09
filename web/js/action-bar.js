@@ -1,5 +1,5 @@
 // [module] The action bar at the top (replay: current action; fork / sandbox: the playable controls), prompts and draft marks.
-import { $, el, seatColor, seatText } from './util.js';
+import { $, el, seatColor, seatName, seatText } from './util.js';
 import { FORK, PLAY, S, SANDBOX } from './state.js';
 import { curState, seatOrder } from './pov.js';
 import { bindPreview, cardMarks, cardName, orderedKeys } from './cards.js';
@@ -248,7 +248,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   if (!FORK && st.phase === 'setup') {                                          // the starting hand: 8 cards drawn, 4 to discard (initial selection)
     const seat = prioritySeat([0, 1].filter((i) => S.replay.steps[S.step].state.players[i].hand.length > 4));
     if (seat !== null) {
-      const who = el('span', 'who', S.replay.players[seat].name);
+      const who = el('span', 'who', seatName(seat));
       who.style.color = seatText(seat);
       bar.hidden = false;
       bar.append(who, el('b', '', ' must discard ' + (S.replay.steps[S.step].state.players[seat].hand.length - 4) + ' cards (initial selection)'));
@@ -261,7 +261,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   if (turnEnds(S.step) && kind !== 'decision' && !(FORK && S.forkConfirmed === S.step) && !PLAY && !SANDBOX) {
     bar.hidden = false;
     S.forkGate = FORK;
-    const who = el('span', 'who', S.replay.players[before.active_player].name);
+    const who = el('span', 'who', seatName(before.active_player));
     who.style.color = seatText(before.active_player);
     bar.append(who, el('b', '', ' must confirm or restart your turn'));
     if (FORK) turnButtons(bar, before.turn, before.active_player, true);
@@ -294,7 +294,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   const mayChoose = (type) => fa.some((x) => x.kind === 'choose_action_card' && x.args.spend === S.forkSpend && x.args.type === type && !!x.args.hypnosis === hyp);
   const maySkip = (type) => fa.some((x) => x.kind === 'skip_action' && x.args.type === type && !!x.args.hypnosis === hyp);
   if (FORK) spent += S.forkSpend;
-  const who = el('span', 'who', S.replay.players[seat].name);
+  const who = el('span', 'who', seatName(seat));
   who.style.color = seatText(seat);
   bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : hyp ? " may use one of the opponent's first three action cards" : ' must choose an action card'));
   cardsShown.forEach((a, i) => {
@@ -556,7 +556,7 @@ function effectButton(e) {
 
 // any other decision of the engine: who must do what, and the kinds of action it offers (with how many options each)
 function genericBar(bar, st, o, seat) {
-  const who = el('span', 'who', S.replay.players[seat].name);
+  const who = el('span', 'who', seatName(seat));
   who.style.color = seatText(seat);
   // The building pieces are not shown in the replay (they take a lot of space and say little): only the prompt, with the largest size that can be built, like BGA.
   if (!FORK && o.pieces && o.pieces.length) {
@@ -577,7 +577,7 @@ function genericBar(bar, st, o, seat) {
       }
       const over = st.players.map((q, i) => ({ i, n: q.hand.length - q.hand_limit })).filter((q) => q.n > 0);
       if (!inBreak || !over.length) { bar.hidden = true; return; }
-      who2 = el('span', 'who', S.replay.players[over[0].i].name);
+      who2 = el('span', 'who', seatName(over[0].i));
       who2.style.color = seatText(over[0].i);
       count = over[0].n;
     }

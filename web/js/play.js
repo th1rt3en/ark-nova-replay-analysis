@@ -429,7 +429,12 @@ export function gameMenu() {
     const r = await playApi('/concede', {});
     if (r.ok) { if (r.body.view) pushLive(r.body); P.status = 'conceded'; render(); playEndCheck(); } else renderForkMoves(r.body.message || 'could not concede');
   };
-  list.append(concede);
+  const alerts = alertToggle();                                          // (the boxes of the replay controls and of the game line are gone in a live game: their buttons live here)
+  alerts.className = 'gamemenuitem';
+  const settings = el('button', 'gamemenuitem', 'Settings');
+  settings.type = 'button'; settings.title = 'Settings (S)';
+  settings.onclick = () => { P.menuOpen = false; list.hidden = true; const g = $('settings'); if (g) g.click(); };
+  list.append(alerts, settings, concede);
   if (P.clock && P.status === 'playing') {                               // time control: win on overtime
     const ot = el('button', 'gamemenuitem', 'End the game: opponent out of time');
     ot.type = 'button'; ot.id = 'claimtime'; ot.disabled = !(clockLeft(1 - P.seat) <= 0);
@@ -488,7 +493,6 @@ export function initPlay() {
   playHeadline();
   if (P.seat !== null) { S.dockSel = { seat: P.seat, kind: 'hand' }; S.dockHidden = false; }
   document.body.classList.add('forkpage', 'playpage');
-  if (P.seat !== null) box.append(alertToggle());
   renderAbandon();
   playConnect();
   setInterval(tickClocks, 500);

@@ -1,6 +1,6 @@
 // [module] Fork mode: starts from a replay step, posts moves with their state to the server, placement controls, move flow.
 import { stageBreaks } from './break-stages.js';
-import { $, el, seatColor, seatText } from './util.js';
+import { $, el, seatColor, seatName, seatText } from './util.js';
 import { PLAY, S, SANDBOX, params } from './state.js';
 import { legalPlacement, spriteOf, zooBoard } from './board.js';
 import { associationStrip, bonusPanel } from './association.js';
@@ -251,7 +251,7 @@ export function forkBar() {
   if (bonusActs.length) {                                                          // the bonus of a supported project: click a bonus slot of the player board, then confirm
     for (const a of bonusActs) S.forkClaimed.add(a);
     bar.replaceChildren();
-    const who0 = el('span', 'who', S.replay.players[bonusActs[0].player].name);
+    const who0 = el('span', 'who', seatName(bonusActs[0].player));
     who0.style.color = seatText(bonusActs[0].player);
     const match = bonusActs.find((a) => a.args.bonus === S.forkBonus);
     const ok = el('button', 'forkmove forkconfirm', 'Confirm');
@@ -260,7 +260,7 @@ export function forkBar() {
     bar.append(who0, el('b', '', ' must choose a bonus to unlock'), ok);
   }
   if (!bar.children.length && !acts.some((x) => x.kind === 'initial_discard')) {
-    const who = el('span', 'who', S.replay.players[seat].name);
+    const who = el('span', 'who', seatName(seat));
     who.style.color = seatText(seat);
     bar.append(who, el('b', '', ' ' + ((cur.options && PROMPT_TEXT[cur.options.prompt]) || 'must decide')));
   }
@@ -282,7 +282,7 @@ export function forkBar() {
     const icon = ([k, n]) => amountIcon(k, n) || document.createTextNode(n + ' ' + k);
     if (S.tradeMode) {
       bar.replaceChildren();
-      const who4 = el('span', 'who', S.replay.players[seat].name);
+      const who4 = el('span', 'who', seatName(seat));
       who4.style.color = seatText(seat);
       bar.append(who4, el('b', '', ' must choose a trade'));
       for (const [op, give, get] of TRADES.slice(0, sideOpen.level >= 2 ? 4 : 2)) {
@@ -325,7 +325,7 @@ export function forkBar() {
   if (S.marketMode !== null && marketActs.some((a) => a.args.index === S.marketMode)) {   // Marketing: choose the sponsor in the hand (or pass), then confirm
     const mine = marketActs.filter((a) => a.args.index === S.marketMode), p0 = mine[0].player;
     bar.replaceChildren();
-    const who0 = el('span', 'who', S.replay.players[p0].name);
+    const who0 = el('span', 'who', seatName(p0));
     who0.style.color = seatText(p0);
     const pickedKey = marked(p0 + ':hand', st.players[p0].hand).find((k) => mine.some((a) => a.args.card === k));
     const match = mine.find((a) => a.args.card === pickedKey);
@@ -340,7 +340,7 @@ export function forkBar() {
     const mine = thrActs.filter((a) => a.args.index === S.thresholdMode.index), p0 = mine[0].player;
     const hire = mine.filter((a) => a.args.hire), ups = mine.filter((a) => a.args.upgrade);
     bar.replaceChildren();
-    const who0 = el('span', 'who', S.replay.players[p0].name);
+    const who0 = el('span', 'who', seatName(p0));
     who0.style.color = seatText(p0);
     bar.append(who0);
     const withIcon = (text, id, onclick) => {
@@ -378,8 +378,7 @@ export function forkBar() {
     if (idx !== null) {
       const mine = mulActs.filter((a) => a.args.index === idx);
       bar.replaceChildren();
-      const you = PLAY && S.play && S.play.seat === p0;
-      const who0 = el('span', 'who', you ? 'You' : S.replay.players[p0].name);
+      const who0 = el('span', 'who', seatName(p0));
       who0.style.color = seatText(p0);
       bar.append(who0, el('b', '', ' must choose an action to put a multiplier token on'));
       (st.players[p0].action_cards || []).forEach((c, i) => {
@@ -430,7 +429,7 @@ export function forkBar() {
     const withEnc = mine.filter((a) => a.kind === 'play_animal' && 'x' in a.args);
     if (withEnc.length) {                                                           // an animal: click an enclosure of the zoo that can take it, then confirm
       const seatA = mine[0].player, enc = S.animalEnc && S.animalEnc.card === k ? S.animalEnc : null;
-      const who2 = el('span', 'who', S.replay.players[seatA].name);
+      const who2 = el('span', 'who', seatName(seatA));
       who2.style.color = seatText(seatA);
       bar.append(who2, el('b', '', ' must select an enclosure for this animal (' + cardName(k) + ')'));
       const match = enc ? withEnc.find((a) => a.args.x === enc.x && a.args.y === enc.y) : null;
@@ -468,7 +467,7 @@ export function forkBar() {
     const eff = ((cur.options && cur.options.effects) || []).find((e) => e.index === grp.idx) || {};
     const picked = [...marked(grp.p + ':hand', st.players[grp.p].hand), ...marked('display', st.display).filter(Boolean)].filter((k) => grp.list.some((a) => pickCardOf(a) === k));
     const mine = picked.length ? grp.list.filter((a) => pickCardOf(a) === picked[0]) : [];
-    const who3 = el('span', 'who', S.replay.players[grp.p].name);
+    const who3 = el('span', 'who', seatName(grp.p));
     who3.style.color = seatText(grp.p);
     bar.append(who3, el('b', '', ' must select a card of the hand or the display' + (eff.kind === 'digging' ? ' to dig' : '') + (picked.length ? ': ' + cardName(picked[0]) : '')));
     const confirmWith = (a, label) => {
@@ -488,7 +487,7 @@ export function forkBar() {
     const picked = marked(seat0 + ':hand', st.players[seat0].hand).filter((k) => offer.has(k));
     const drop = hand0.filter((k) => !picked.includes(k)).sort().join();
     const match = picked.length === keep ? mine.find((a) => [...a.args.cards].sort().join() === drop) : null;
-    const who1 = el('span', 'who', S.replay.players[seat0].name);
+    const who1 = el('span', 'who', seatName(seat0));
     who1.style.color = seatText(seat0);
     const ok = match ? btn(match, 'Confirm', true) : el('button', 'forkmove forkconfirm', 'Confirm');
     ok.type = 'button'; ok.disabled = !match || S.forkBusy;

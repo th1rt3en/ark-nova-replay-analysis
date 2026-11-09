@@ -1460,3 +1460,6 @@ body.viewer #shortcutsModal { gap: 28px; background: radial-gradient(760px 520px
 
 /* the tooltip of the last field keeps to the frame's right edge (a centred one would leave the pop-up) */
 body.viewer #settingsModal .setthree-opt[data-v="none"]:hover::after, body.viewer #settingsModal .setthree-opt[data-v="none"]:focus-visible::after { left: auto; right: -4px; transform: none; }
+
+/* live play: no replay controls box and no "Live game" box in the sidebar (alerts and settings are in the Game menu) */
+body.playpage .sidebar #paneControl > header.bar, body.playpage .sidebar #forkinfo { display: none !important; }
