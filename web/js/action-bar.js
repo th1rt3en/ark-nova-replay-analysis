@@ -52,6 +52,7 @@ export function bindActs(node, acts) {
 export const effectKindOf = (a) => { const e = (((S.replay.steps[S.step].options || {}).effects) || []).find((x) => x.index === a.args.index); return e ? e.kind : ''; };
 export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.display : typeof a.args.hand === 'string' ? a.args.hand : a.kind === 'choose_effect' && typeof a.args.card === 'string' && effectKindOf(a) === 'mark' ? a.args.card : null);       // (Mark: the animal of the display to mark)
 export const cardPickAct = (a) => a.kind === 'choose_effect' && typeof a.args.index === 'number' && !Array.isArray(a.args.cards) && !!pickCardOf(a) && effectKindOf(a) !== 'marketing' && !(effectKindOf(a) === 'digging' && S.pickOpen !== a.args.index);       // (Digging: the card is chosen once its button has been clicked)
+export const sharkActs = () => forkActs((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards) && effectKindOf(a) === 'shark');       // (Shark Attack: the animals of the display it can eat)
 export function animalSelection() {                                       // the animal selected in the hand / display with the enclosures it can go to
   if (!FORK) return null;
   const acts = forkActs((a) => a.kind === 'play_animal' && 'x' in a.args && !a.args.stored);

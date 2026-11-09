@@ -501,13 +501,19 @@ export function forkBar() {
   if (cardEff.length) {                                                             // up to X cards of the hand, then confirm or pass
     const p = cardEff[0].player, idx = cardEff[0].args.index, max = Math.max(...cardEff.map((a) => a.args.cards.length));
     const eff = ((cur.options && cur.options.effects) || []).find((e) => e.index === idx) || {};
-    const picked = marked(p + ':hand', st.players[p].hand).sort();
+    const fromDisplay = eff.kind === 'shark';                                         // (Shark Attack: the animals are chosen on the display, and only this prompt is left)
+    const picked = (fromDisplay ? marked('display', st.display).filter(Boolean) : marked(p + ':hand', st.players[p].hand)).sort();
     const match = cardEff.find((a) => a.args.index === idx && [...a.args.cards].sort().join() === picked.join());
     if (eff.kind === 'break_discard') {                                               // the hand limit at a break: only this prompt
       bar.replaceChildren();
       const whoB = el('span', 'who', seatName(p));
       whoB.style.color = seatText(p);
       bar.append(whoB, el('b', '', ' must choose cards to discard during the break (' + picked.length + '/' + max + ')'));
+    } else if (fromDisplay) {
+      bar.replaceChildren();
+      const whoS = el('span', 'who', seatName(p));
+      whoS.style.color = seatText(p);
+      bar.append(whoS, el('b', '', ' must choose up to ' + max + ' animal' + (max === 1 ? '' : 's') + ' in reach on the display to shark attack (' + picked.length + '/' + max + ')'));
     } else bar.append(el('b', '', 'Choose up to ' + max + ' card' + (max === 1 ? '' : 's') + (eff.kind === 'sell' ? ' to sunbathe' : '') + ' (' + picked.length + '/' + max + ')'));
     const ok = match ? btn(match, 'Confirm', true) : el('button', 'forkmove forkconfirm', 'Confirm');
     ok.type = 'button'; ok.disabled = !match || S.forkBusy;

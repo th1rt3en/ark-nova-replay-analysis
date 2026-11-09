@@ -6,7 +6,7 @@ import { PREVIEW_CARDS, card, cardMarks, ghost, zoneNew } from './cards.js';
 import { ICON_IDS, iconUrl, moneyTile, moneyTwo } from './icons.js';
 import { associationBoard } from './association.js';
 import { blockedCube, markCube, markOwner, projectPanel } from './projects.js';
-import { actionBar, afterMark, cardPickAct, forkActs, forkSingleSelect, pickCardOf } from './action-bar.js';
+import { actionBar, afterMark, cardPickAct, forkActs, forkSingleSelect, pickCardOf, sharkActs } from './action-bar.js';
 import { CT_BONUS_DX, CT_H, conservationTrackSvg, pentagonShape } from './ctrack.js';
 import { REP16_X, REP_W, reputationTrackSvg } from './reptrack.js';
 import { fitDisplay } from './layout.js';
@@ -119,12 +119,13 @@ export function renderShared(st) {
     const allowed = (S.replay.steps[S.step].options || {}).take;                       // while taking cards, the cards that cannot be taken are greyed out
     const sps = (S.replay.steps[S.step].options || {}).sponsors;
     const pickKeys = FORK ? forkActs(cardPickAct).map(pickCardOf) : [];
+    const sharks = FORK ? sharkActs() : [];
     const snapKeys = FORK && S.snapMode === 'snap' ? forkActs((a) => a.kind === 'sponsor_side' && a.args.op === 'discard_snap' && a.args.card === S.snapCard).map((a) => a.args.take) : (FORK && S.snapMode === 'discard' ? [] : null);       // (Sponsors variant 4: the sponsors that can be snapped; none while the sponsor to discard is chosen)
-    const dim = (allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k)) || (sps && sps.level >= 2 && k && !sps.display.includes(k)) || (pickKeys.length && k && !pickKeys.includes(k)) || (snapKeys && k && !snapKeys.includes(k));
+    const dim = (allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k)) || (sps && sps.level >= 2 && k && !sps.display.includes(k)) || (pickKeys.length && k && !pickKeys.includes(k)) || (snapKeys && k && !snapKeys.includes(k)) || (sharks.length && k && !sharks.some((a) => a.args.cards.includes(k)));
     if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '') + (FORK && cardMarks.has('display#' + i) ? ' marked' : ''), 'display'));
     if (k && FORK) {                                                              // a card of the display can be chosen for a move
       f.classList.add('markable');
-      f.addEventListener('click', () => { if (dim && forkSingleSelect()) return; const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if (x.startsWith('display#') || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); fitDisplay(); afterMark(); });
+      f.addEventListener('click', () => { if (dim && (forkSingleSelect() || sharks.length)) return; const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if ((x.startsWith('display#') && !sharks.length) || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); fitDisplay(); afterMark(); });
     }
     if (k && PREVIEW_CARDS.has(k)) {                                                // a sponsor building of the display: a right click previews it on either zoo (bpreview.js)
       if (S.preview && S.preview.seat === 'display' && S.preview.card === k) { const c = f.querySelector('.card'); if (c) c.classList.add('previewing'); }
