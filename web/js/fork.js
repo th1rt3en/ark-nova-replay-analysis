@@ -365,7 +365,7 @@ export function forkBar() {
     who6.style.color = seatText(seat);
     const op = S.snapMode === 'sun_strength' ? 'discard_strength' : 'discard_money';
     const mine = sunActs.filter((a) => a.args.op === op);
-    const sunIcon = (kind) => { if (kind === 'strength') { const i = el('img', 'ico'); i.src = '/icons/strength.svg'; i.alt = 'strength'; i.style.cssText = 'height:1.2em;vertical-align:-.2em'; return i; } return amountIcon('money', 4) || document.createTextNode('4 money'); };
+    const sunIcon = (kind) => { if (kind === 'strength') return amountIcon('strength', 2) || document.createTextNode('2 strength'); return amountIcon('money', 4) || document.createTextNode('4 money'); };
     const clear = () => { for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); };
     if (S.snapMode === 'sun_money' || S.snapMode === 'sun_strength') {
       bar.replaceChildren();
@@ -392,7 +392,7 @@ export function forkBar() {
         sb2.type = 'button'; sb2.disabled = !strActs.length || S.forkBusy;
         sb2.style.setProperty('--pc', seatColor(seat));
         sb2.title = strActs.length ? 'Discard a card of your hand to raise the action strength by 2' : 'You have no card to discard';
-        sb2.append('Discard a card to gain 2 ', sunIcon('strength'));
+        sb2.append('Discard a card to gain ', sunIcon('strength'));
         sb2.onclick = () => open('sun_strength');
         bar.append(sb2);
       }
