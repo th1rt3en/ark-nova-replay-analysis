@@ -28,7 +28,7 @@ from types import SimpleNamespace
 from ark_nova.engine import ark360, custom_map, map_select
 from ark_nova.live.keeper import USER_AGENT, LiveError, NoSuchTable, sign
 
-MODES = ("original", ark360.MODE, custom_map.MODE)                      # the game modes that can be played from a lobby (the other modes are for a table made by link)
+MODES = ("original", "random-mirrored", "free-select", ark360.MODE, custom_map.MODE)                     # the game modes that can be played from a lobby (the other modes are for a table made by link)
 SEATS = 2
 ONLINE_SECONDS = 45                          # a player who asked for the inbox this recently is online (the pages ask every few seconds)
 IDLE_SECONDS = 90                            # a lobby whose host (a member) has not been seen for this long is closed (the member is taken out)

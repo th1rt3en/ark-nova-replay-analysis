@@ -56,7 +56,7 @@ describe("lobbies", () => {
         expect(row).toMatchObject({ host: a.username, players: 1, seats: 2, mode_label: "Ark360", full: false });
         expect((await ok("list", { account: a })).mine).toBe(made.id);
         expect((await call("create", { account: a, settings: {} })).status).toBe(409);
-        expect((await call("create", { account: c, settings: { game_mode: "free-select" } })).status).toBe(422);
+        expect((await call("create", { account: c, settings: { game_mode: "no-such-mode" } })).status).toBe(422);
     });
 
     it("keeps the map of a custom map game and hands it to the start", async () => {
