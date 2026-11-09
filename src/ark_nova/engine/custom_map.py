@@ -19,6 +19,7 @@ MAX_NAME = 40
 
 # the placement bonuses the engine plays (`game.py` placement bonuses), by the name the editor gives them -> the name of the data
 PLACEMENT = {"money": "money", "xtoken": "xtoken", "reputation": "reputation", "take-in-range-or-deck": "take-in-range-or-deck", "Clever": "Clever", "conceal": "conceal", "rescue": "Digging",
+             "digging": "digging-plain", "extra-shift": "extra-shift",
              "Mark": "Mark", "store": "store", "wave": "wave", "shark-attack": "shark-attack", "adapt": "adapt", "Multiplier": "Multiplier", "Scavenging": "Scavenging", "kiosk": "kiosk",
              "bonus-sponsor": "bonus-sponsor", "Worker": "Worker", "upgrade-card": "upgrade-card", "Partner-Zoo": "Partner-Zoo", "appeal": "appeal", "Fac": "Fac"}
 # the bonuses of the project spaces and of the association spaces (`bonuses.apply_bonus`)

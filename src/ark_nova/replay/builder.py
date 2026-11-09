@@ -136,6 +136,7 @@ def _swap_placeholder_worker(p, destination: str) -> None:
 
 def h_choose_action_card(ctx: _Ctx, e: Event) -> None:
     ctx.support = None
+    ctx.__dict__["track_takes"] = 0
     a = e.args
     ac = a["actionCard"]
     ctx.state.current_action = {"seat": ctx.seat(a["player_id"]), "id": int(ac["id"]), "slot": int(ac["strength"]),
@@ -246,8 +247,10 @@ def h_take_bonus(ctx: _Ctx, e: Event) -> None:
     bd = (e.args.get("bonus_desc") or {}).get("args") or {}
     if bd.get("bonus_type") == "bonus-increased-hand" and bd.get("bonus_source_type") == "bonus":
         ctx.threshold_snaps += 1
+    if bd.get("bonus_source_type") == "bonus" and bd.get("bonus_type") == "take-in-range-or-deck" and e.args.get("remove"):
+        ctx.__dict__["track_takes"] = int(bd.get("bonus_n") or 1)          # (a conservation space reward: its cards, drawn or snapped, are no notepad bonus: 843469060 turn 46)
     if e.args.get("source") == "reputation track bonus" and bd.get("bonus_type") == "take-in-range-or-deck":
-        ctx.__dict__["rep_take"] = True                      # (the card of the reputation track that follows is no notepad bonus)
+        ctx.__dict__["rep_take"] = True                     # (the card of the reputation track that follows is no notepad bonus)
     if bd.get("bonus_source_type") == "incomeBonusSpace" and e.args.get("player_id") is not None:
         _mark_income_slot(ctx.player(e.args["player_id"]), bd.get("bonus_type"), bd.get("bonus_n"))
     th, _, _ = str(e.args.get("remove") or "").partition("-")
@@ -322,6 +325,8 @@ def h_draw_cards(ctx: _Ctx, e: Event) -> None:
     p = s.players[seat]
     kind, _ = classify_draw(e)
     keys = [_key(c["id"]) for c in e.args.get("cards", [])]
+    if ctx.__dict__.get("track_takes") and "from the deck" in e.log:          # (a card of a conservation space reward drawn from the deck counts for its number)
+        ctx.__dict__["track_takes"] = max(0, ctx.__dict__["track_takes"] - len(keys))
     for k in keys:
         if kind == "top":
             if s.main_deck and s.main_deck[0] == k:
@@ -399,6 +404,8 @@ def h_snap_card(ctx: _Ctx, e: Event) -> None:
         p.hand.append(k)
     if e.type == "snapCard" and ctx.threshold_snaps and "snaps" in e.log:
         ctx.threshold_snaps -= 1
+    elif e.type == "snapCard" and ctx.__dict__.get("track_takes"):
+        ctx.__dict__["track_takes"] -= 1
     elif e.type == "snapCard" and (ctx.__dict__.pop("rep_take", False) or ctx.__dict__.get("free_build")):
         pass
     elif e.type == "snapCard":

@@ -42,6 +42,7 @@ FIXED = {
     "688371482": "the same sale before an action card that is skipped (turn 51): the sale is kept in front of the skip",
     "941429583": "an enlarged enclosure (Conference on Australia) that completes an area of map 13 pays the area's bonus (turn 60)",
     "937181556": "the Polar Bear Exhibit played in the break by the player whose turn it is not: its own bear is an effect of the owner (turn 46)",
+    "823017370": "Kiosk Build: the first kiosk was taken for the additional one though it used strength (BGA's list after the next building shows it, turn 40)",
 }
 
 
@@ -98,6 +99,8 @@ REPLAYED = {
     "927683584": [64, 70],                  # a Mark with no animal in the display (C); the other player's Clever in the break (D)
     "920319154": [23],                      # Activate Reef without a reef dweller (C)
     "795215166": [78],                      # an endgame card discard is no sponsor play (E)
+    "843469060": [46],                      # map T1: the snaps of a conservation-5 reward are no notepad bonus, so the card bonus (slot 0) is still free
+    "901779082": [48],                      # a Marketing token plays the Amazon House before the card is chosen: its building covers a Clever hex, the Clever comes after the Association II (turns 48 + 49)
 }
 
 

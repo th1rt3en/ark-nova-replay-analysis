@@ -2,6 +2,8 @@
 // opening a lobby and, in a lobby, taking a seat or writing in the chat need an account: without one the page asks to log in.
 const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+import { mapOptionControls } from '/js/mapopts.js';
+import { setHelp } from '/js/helpmark.js';
 import { onPush, pushReady } from './push.js';
 const POLL_MS = 5000, SAFETY_MS = 30000;
 let account = null, options = { game_modes: [] }, timer = 0, mine = null, showMapsLater = () => {};
@@ -66,11 +68,11 @@ function setAccount(a) {
 
 async function boot() {
   options = await fetch('/api/live/options').then((r) => r.json()).catch(() => ({ game_modes: [] }));
-  const ark = [...options.game_modes.filter((m) => m.id === 'ark360'),             // (the modes that can be played from a lobby; the options leave custom-map out: it is not for a table made by link)
+  const ark = [...options.game_modes.filter((m) => ['original', 'random-mirrored', 'free-select', 'ark360'].includes(m.id)),             // (the modes that can be played from a lobby: Normal first; the options leave custom-map out: it is not for a table made by link)
     { id: 'custom-map', label: 'Custom map', description: 'Both players play one of your own maps, made in the map editor. Everything else is as in a normal game.' }];
   const mode = $('mode');
   for (const m of ark) mode.append(el('option', { value: m.id, title: m.description }, m.label));
-  const hint = () => { const m = ark.find((x) => x.id === mode.value); $('modehint').textContent = m ? m.description : ''; };
+  const hint = () => { const m = ark.find((x) => x.id === mode.value); setHelp($('modehelp'), m ? m.description : ''); };
   showMapsLater = async () => {                                                    // custom map: the host picks one of their saved maps
     const custom = mode.value === 'custom-map';
     $('mapbox').hidden = !custom;
@@ -78,14 +80,16 @@ async function boot() {
     const d = await fetch('/api/maps', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : { maps: [] })).catch(() => ({ maps: [] }));
     $('mapsel').replaceChildren(...(d.maps.length ? d.maps.map((m) => el('option', { value: m.id }, m.name + ' (' + m.id + ')')) : [el('option', { value: '' }, 'No saved maps yet: make one in the map editor')]));
   };
-  const syncPack = () => { $('bdw').parentElement.hidden = mode.value === 'custom-map'; };           // (a custom map game plays the host's own map: no pool)
+  const mapOpts = mapOptionControls();
+  $('mw').parentElement.after(...mapOpts.nodes);
+  const syncPack = () => { for (const n of [$('bdw').parentElement, ...mapOpts.nodes]) n.hidden = mode.value === 'custom-map'; };           // (a custom map game plays the host's own map: no pool)
   mode.onchange = () => { hint(); showMapsLater(); syncPack(); }; hint(); syncPack();
   $('loginbtn').onclick = () => { const b = document.querySelector('#acctbar button'); if (b) b.click(); };
   $('createform').onsubmit = async (e) => {
     e.preventDefault();
     $('msg').textContent = ''; $('createbtn').disabled = true;
     try {
-      const v = await call('', { game_mode: mode.value, marine_worlds: $('mw').checked, bdw_maps: $('bdw').checked, rated: $('rated').checked, ...(mode.value === 'custom-map' ? { map_id: $('mapsel').value } : {}) });
+      const v = await call('', { game_mode: mode.value, marine_worlds: $('mw').checked, bdw_maps: $('bdw').checked, map_options: mapOpts.value(), rated: $('rated').checked, ...(mode.value === 'custom-map' ? { map_id: $('mapsel').value } : {}) });
       location.href = '/lobby.html?id=' + encodeURIComponent(v.id);
     } catch (err) { $('msg').textContent = err.message; $('createbtn').disabled = !account; }
   };

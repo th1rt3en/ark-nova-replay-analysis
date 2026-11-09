@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/parkposter.css">
 <link rel="stylesheet" href="/css/endstats.css">
 <link rel="stylesheet" href="/css/chat.css">
+<link rel="stylesheet" href="/css/poster-page.css">
 </head>
 <body class="viewer">
 <section id="lobby" class="lobby" hidden>
@@ -101,19 +102,19 @@
     window.FORK_MODE = true; window.PLAY_MODE = true;
     const s = document.createElement('script'); s.type = 'module'; s.src = '/js/main.js'; document.body.append(s);
   };
-  // a labelled control on its own lines (the label above, an optional line of help below)
-  const stack = (label, input, help) => {
+  const { helpMark, setHelp } = await import('/js/helpmark.js');
+  // a labelled control on its own line (the label, with its "?" help on the same line, above the control)
+  const stack = (label, input, help) => {                                               // (`help`: a "?" from helpMark, on the line of the label)
     const d = document.createElement('div'); d.className = 'lobbyfield';
-    const l = document.createElement('span'); l.textContent = label;
+    const l = document.createElement('span'), t = document.createElement('span'); t.append(label); if (help) t.append(help); l.append(t);
     if (/^(INPUT|SELECT)$/.test(input.tagName)) input.setAttribute('aria-label', label);       // (the visible label is a plain span)
     d.append(l, input);
-    if (help) { help.classList.add('lobbyhelp'); d.append(help); }
     return d;
   };
   const check = (label, input, text) => {
     const l = document.createElement('label'); l.className = 'lobbycheck';
     const t = document.createElement('span'); const b = document.createElement('b'); b.textContent = label; t.append(b);
-    if (text) { const s = document.createElement('small'); s.textContent = text; t.append(document.createElement('br'), s); }
+    if (text) t.append(helpMark(text));
     l.append(input, t);
     return l;
   };
@@ -138,7 +139,7 @@
     document.addEventListener('account-changed', refresh);
     refresh();
     const box = document.createElement('div');
-    box.append(check('Friendly', friendly, 'Anyone can play, no account needed, no rating changes.'), check('Rated', rated, 'Counts for the ratings.'), note);
+    box.append(check('Friendly', friendly, 'Anyone can play, no account needed, no rating changes.'), check('Rated', rated), note);
     return { node: stack('Kind of game', box), isRated: () => rated.checked && !rated.disabled };
   }
 
@@ -150,8 +151,8 @@
     const opts = await fetch('/api/live/options').then((r) => r.json()).catch(() => ({ game_modes: [], default: '' }));
     for (const m of opts.game_modes) { const o = document.createElement('option'); o.value = m.id; o.textContent = m.label; o.title = m.description; mode.append(o); }
     mode.value = opts.default;
-    const hint = document.createElement('div');
-    const showHint = () => { const m = opts.game_modes.find((x) => x.id === mode.value); hint.textContent = m ? m.description : ''; };
+    const hint = helpMark('');
+    const showHint = () => { const m = opts.game_modes.find((x) => x.id === mode.value); setHelp(hint, m ? m.description : ''); };
     mode.onchange = showHint; showHint();
     // time control: a speed (simple) or a starting clock and an increment (fine-grained)
     const tcOpts = opts.time_control || { presets: [], default: 'normal', start_range: [180, 1800], increment_range: [0, 120] };
@@ -171,19 +172,20 @@
     const sw = document.createElement('label'); sw.className = 'lobbyswitch'; sw.title = 'Choose the starting clock and the increment yourself';
     const track = document.createElement('span'); track.className = 'switchtrack';
     sw.append(mode_label, toggle, track);
-    const hintTc = document.createElement('div'); hintTc.textContent = 'Each player has a clock; it gains the increment at the start of their turn (never more than the starting clock) and runs while they have to decide. A clock can go below zero; then the opponent may end the game and win on overtime.';
+    const hintTc = helpMark('Each player has a clock; it gains the increment at the start of their turn (never more than the starting clock) and runs while they have to decide. A clock can go below zero; then the opponent may end the game and win on overtime.');
     const tcBox = document.createElement('div'); tcBox.append(simple, fine);
     const tcField = stack('Time control', tcBox, hintTc);
     const tcHead = tcField.firstChild; tcHead.className = 'lobbyhead'; tcHead.append(sw);                // (the switch sits on the line of the label)
     const syncTc = () => { const m = opts.game_modes.find((x) => x.id === mode.value); tcField.style.display = m && m.fixed_time_control ? 'none' : ''; };      // (a mode with its own time control, Ark360, has no choice)
     mode.addEventListener('change', syncTc); syncTc();
     const kind = await ratedChoice();
-    $('lobbyform').append(...(kind ? [kind.node] : []), stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), check('Include BDW map pack', bdw, 'BDW1 Management Zoo, BDW2 Construction Yard, BDW3 Enigma Isle and BDW4 Vast Valley join the map pool (not in Custom map, where the map is chosen).'), button('Create the game'));
+    const { mapOptionControls } = await import('/js/mapopts.js'); const mo = mapOptionControls();
+    $('lobbyform').append(...(kind ? [kind.node] : []), stack('Game mode', mode, hint), tcField, check('Marine Worlds', mw), ...mo.nodes, check('Include BDW map pack', bdw, 'BDW1 Management Zoo, BDW2 Construction Yard, BDW3 Enigma Isle and BDW4 Vast Valley join the map pool (not in Custom map, where the map is chosen).'), button('Create the game'));
     $('lobbyform').onsubmit = async (e) => {
       e.preventDefault();
       const submit = e.submitter; if (submit) submit.disabled = true;                      // (one click, one game)
       const time_control = custom ? { start: Math.round(+startIn.value * 60), increment: Math.round(+incIn.value) } : { speed: speed.value };
-      const r = await api('', { marine_worlds: mw.checked, bdw_maps: bdw.checked, game_mode: mode.value, time_control, rated: kind ? kind.isRated() : false });
+      const r = await api('', { marine_worlds: mw.checked, bdw_maps: bdw.checked, map_options: mo.value(), game_mode: mode.value, time_control, rated: kind ? kind.isRated() : false });
       if (!r.ok) { $('lobbytext').textContent = r.body.message || 'The game could not be created.'; if (submit) submit.disabled = false; return; }
       const g = r.body, base = location.origin + '/play.html?game=' + g.game_id;
       $('lobbyform').hidden = true;

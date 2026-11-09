@@ -23,6 +23,13 @@ _SPONSOR_SOURCES = {None, "Map 13 quarter bonus", "Animals3 ability", "increasin
 _RESOURCE_BONUSES = {"xtoken", "money", "appeal", "reputation", "conservation"}   # plain gains the engine applies itself (pavilion, placement bonuses, X token payment)
 
 
+def _is_space_reward_gain(events: list, e) -> bool:
+    """The gain right after the `takeBonus` of a conservation space reward (5 / 8 / ...: "gets 5 x money"): a choice of its own, also in a free action before the card is chosen."""
+    i = events.index(e)
+    prev = events[i - 1] if i else None
+    return prev is not None and prev.type == "takeBonus" and isinstance(prev.args, dict) and ((prev.args.get("bonus_desc") or {}).get("args") or {}).get("bonus_source_type") == "bonus"
+
+
 @dataclass
 class TurnPlan:
     actions: list[Action]
@@ -654,7 +661,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             if chosen in ("animals", "association") and a.get("card_id") and _key(a["card_id"])[:1] == "A"                     and set(b) <= {"appeal", "reputation", "conservation", "money"}:
                 for res in b:                                      # printed gains and Reef Dweller gains: effects of their own
                     add(Action(seat, "choose_effect", {"apply": "gain", "res": res}), e)
-            if chosen in ("sponsors", "association", "animals"):
+            if chosen in ("sponsors", "association", "animals") or (chosen is None and any(x.type == "playSponsor" for x in events[:events.index(e)])):          # (also a sponsor played with a token before the card is chosen)
                 if a.get("card_id") and _key(a["card_id"]) == "S276" and "appeal" in b:
                     add(Action(seat, "choose_effect", {"apply": "gain", "res": "appeal"}), e)       # Landscape Gardener: the appeal for the pavilions is an effect of its own, in the order the log shows
                 elif a.get("card_id"):
@@ -669,7 +676,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             if a.get("source") == "Venom":                       # the 2 money of a Venom token that was not removed this turn
                 xdelta += 0
             elif not set(b) <= _RESOURCE_BONUSES or (set(b) != {"xtoken"} and not built and chosen not in ("sponsors", "association", "animals")
-                                                     and not (a.get("source") in _SPONSOR_SOURCES | {"Cards4 effect"} and a.get("source") is not None) and not a.get("card_id")):
+                                                     and not (a.get("source") in _SPONSOR_SOURCES | {"Cards4 effect"} and a.get("source") is not None) and not a.get("card_id")
+                                                     and not _is_space_reward_gain(events, e)):
                 return f"unsupported bonus {sorted(b)}"
             if a.get("source") not in ("triggering break", "reputation track bonus", "placement bonus", "maxing out reputation", "map bonus space", "last worker bonus") and not a.get("card_id"):
                 xdelta += b.get("xtoken", 0)                      # (X tokens that the engine grants itself do not count)
@@ -816,8 +824,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             add(Action(seat, "sponsor_break", {}), e)
         elif t == "buyBuilding":
             b = a["building"]
-            if chosen in ("sponsors", "association", "animals", "build", "cards") and "adds" in e.log and knows_shape(b["type"]):
-                pass
+            if (chosen in ("sponsors", "association", "animals", "build", "cards") or (chosen is None and any(x.type == "playSponsor" for x in events[:events.index(e)]))) and "adds" in e.log and knows_shape(b["type"]):
+                pass                                           # (a sponsor played with a token before the card is chosen: its building)
             elif "adds" in e.log or b["type"] not in SIZES:
                 return f"unsupported building: {b['type']}"
             built = True

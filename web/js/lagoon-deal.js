@@ -37,7 +37,7 @@ export function expandLagoonDeal(before, steps) {
     const quiet = { actions: [], options: null, engine_state: undefined, fork: false, irreversible: false };          // (what only the last step keeps)
     out.push({ ...step, ...quiet, state: strip(state, seats) });
     seats.forEach((seat, n) => {
-      const last = n === seats.length - 1, key = state.players[seat].hand.at(-1);
+      const last = n === seats.length - 1, key = state.players[seat].found_person || state.players[seat].hand.at(-1);      // (found_person: the live projection hides the other player's hand but the found sponsor is public)
       const who = (names[seat] && names[seat].name) || 'A player';
       const label = `${who} draws ${key && key !== '?' ? cardName(key) : 'a person sponsor'} (Map 14 effect)`;
       out.push({ ...step, ...(last ? {} : quiet), label, label_pov: null, log_only: true, merge_group: `person${seat}`, state: last ? state : strip(state, seats.slice(n + 1)) });

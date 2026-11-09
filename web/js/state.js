@@ -46,6 +46,7 @@ export const S = {
   sprites: {},   // web/enclosures/sprites.json: id -> {image, anchor: [x, y] of the anchor hex in the image, size}
   forkClaimed: new Set(),
   forkMenu: null,
+  tradeMode: false,
   forkError: '',
   forkDockStep: -1,   // fork: the legal actions the controls of the bar stand for / the choices of a button with several / the last error
   forkGate: false,

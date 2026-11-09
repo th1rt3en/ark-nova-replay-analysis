@@ -56,7 +56,7 @@ describe("lobbies", () => {
         expect(row).toMatchObject({ host: a.username, players: 1, seats: 2, mode_label: "Ark360", full: false });
         expect((await ok("list", { account: a })).mine).toBe(made.id);
         expect((await call("create", { account: a, settings: {} })).status).toBe(409);
-        expect((await call("create", { account: c, settings: { game_mode: "original" } })).status).toBe(422);
+        expect((await call("create", { account: c, settings: { game_mode: "no-such-mode" } })).status).toBe(422);
     });
 
     it("keeps the map of a custom map game and hands it to the start", async () => {
@@ -236,5 +236,17 @@ describe("the BDW map pack option", () => {
         expect(info.bdw_maps).toBe(true);
         const plain = await ok("create", { account: fresh("bdw2").A, settings: {} });
         expect(plain.bdw_maps).toBe(false);
+    });
+});
+
+describe("the map options", () => {
+    it("are kept with the lobby, cleaned up, and handed over when the game starts", async () => {
+        const { A: a, B: b } = fresh("mapopts");
+        const lob = await ok("create", { account: a, settings: { map_options: { pack1: true, pack2: 0, alt: "replace", junk: 1 } } });
+        expect(lob.map_options).toEqual({ pack1: true, alt: "replace" });
+        await ok("join", { account: b, lobby_id: lob.id, seat: 1 });
+        const info = await ok("begin_start", { account: a, lobby_id: lob.id });
+        expect(info.map_options).toEqual({ pack1: true, alt: "replace" });
+        expect((await ok("create", { account: fresh("mapopts2").A, settings: { map_options: { alt: "nonsense" } } })).map_options).toEqual({});
     });
 });

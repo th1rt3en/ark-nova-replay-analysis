@@ -195,6 +195,7 @@ def _placement_types(state: GameState, act: Action) -> Counter:
     return Counter(b["type"] for c in cells for b in bd.bonuses.get(c, []) if b)
 
 
+_BONUS_ALIAS = {"extrashift": "worker", "map10": "digging"}      # the log's names of a placement bonus -> the board's (the Extra Shift hex of map 11 is "Worker" in the logs)
 _ARCH_TAKEN: list = []       # the bonuses that `_archaeologist` picked for the turn that is being replayed
 
 
@@ -229,7 +230,7 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
             if i is None:
                 return state
             cell = next((c for c in bon.archaeologist_cells(state, state.players[seat])
-                        if any(b and b["type"].replace("-", "").lower() == {"extrashift": "worker", "map10": "digging"}.get(str(typ).replace("-", "").lower(), str(typ).replace("-", "").lower())
+                        if any(b and _BONUS_ALIAS.get(b["type"].replace("-", "").lower(), b["type"].replace("-", "").lower()) == _BONUS_ALIAS.get(str(typ).replace("-", "").lower(), str(typ).replace("-", "").lower())
                                and (amount is None or b["type"] not in ("money", "xtoken", "reputation") or b["value"] == amount) for b in bd.bonuses[c])), None)
             if cell is None:
                 break                                      # (not a bonus of a hex: the choice at conservation 5 / 8 is logged the same way)
@@ -789,8 +790,8 @@ def _is_free_part(events: list) -> bool:
             continue
         if e.type in ("pDiscardCards", "discardCards") and " sell" in (e.log or "") and ((e.args if isinstance(e.args, dict) else {}).get("bonuses") or {}).get("money") == 3:
             continue                                         # map 4, Commercial Harbor: a card sold for 3 money at any time of the turn, also before the action card is chosen (627776608 moves 107 and 483)
-        if token and (e.type == "playSponsor" or e.type == "getBonuses"):
-            continue
+        if token and (e.type in ("playSponsor", "getBonuses", "takeBonus", "buyBuilding", "pDrawCards")):
+            continue                                         # (the sponsor's gains, a conservation space reward it reaches, its free building: 901779082 turn 48)
         return False
     return True
 
@@ -1224,6 +1225,34 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             s2 = apply(state, a_)
                             return {t_ for t_ in engine_placements(s2)} if s2.prompt is not None and s2.prompt.kind == "build_place" else None
                         got_extra, got_plain = after(act), after(plain)
+                        theirs_full = {t_: sorted(map(tuple, v_)) for t_, v_ in build_checks[mv][0]["build"]["options"].items() if v_}
+
+                        def after_full(a_):
+                            s2 = apply(state, a_)
+                            return engine_placements(s2) if s2.prompt is not None and s2.prompt.kind == "build_place" else None
+                        full_extra, full_plain = after_full(act), after_full(plain)
+                        if full_plain == theirs_full and full_extra != theirs_full:          # the positions BGA lists afterwards say which one it was: an ordinary kiosk / pavilion uses strength, the additional one does not (823017370 turn 40)
+                            got_plain, got_extra = want, None
+                        elif full_extra == theirs_full and full_plain != theirs_full:
+                            got_plain, got_extra = None, want
+                        elif full_plain == theirs_full and full_extra == theirs_full:          # the same lists right after it: BGA's list after the next building tells (the strength that is left shows in what still fits)
+                            nxt = next(((a_, m_) for a_, m_, _ in items[ai + 1:] if a_.kind == "place_building" and build_checks.get(m_)), None)
+                            if nxt is not None:
+                                want2 = {t_: sorted(map(tuple, v_)) for t_, v_ in build_checks[nxt[1]][0]["build"]["options"].items() if v_}
+
+                                def ahead(a_):
+                                    try:
+                                        s2 = apply(state, a_)
+                                        cand = next((c_ for c_ in (_plain(nxt[0]), nxt[0]) if c_ in legal_actions(s2)), None)
+                                        s3 = apply(s2, cand) if cand is not None else None
+                                        return engine_placements(s3) if s3 is not None and s3.prompt is not None and s3.prompt.kind == "build_place" else None
+                                    except (IllegalAction, NotImplementedError):
+                                        return None
+                                ahead_plain, ahead_extra = ahead(plain), ahead(act)
+                                if ahead_plain == want2 and ahead_extra != want2:
+                                    got_plain, got_extra = want, None
+                                elif ahead_extra == want2 and ahead_plain != want2:
+                                    got_plain, got_extra = None, want
                         from ark_nova.engine.build_action import SIZES as _SIZES
 
                         def top_(types):                      # the strength that is left: the largest enclosure that can still be built (the additional kiosk / pavilion uses none of it: 823017370 turn 40)

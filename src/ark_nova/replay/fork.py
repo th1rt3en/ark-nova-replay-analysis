@@ -73,6 +73,10 @@ def _variant(v: str) -> str:
     return f"{v[:-1].capitalize()} {v[-1]}" if v and v[-1].isdigit() else v
 
 
+_TRADE_TEXT = {"trade_money": "Trade 1 X token for 5 money", "trade_x": "Trade 5 money for 1 X token",
+               "rep_x": "Trade 1 X token for 1 reputation", "rep_money": "Trade 5 money for 1 reputation"}      # (Sponsors variant 1)
+
+
 def describe_action(a: Action, state: GameState | None = None) -> str:
     """One line for a legal action."""
     args = dict(a.args)
@@ -93,8 +97,12 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         if move:
             return f"Move the {t_} to ({x_}, {y_}) rotation {r_} (crane)"
         return f"Place {t_} at ({x_}, {y_}) rotation {r_}{extra}"
+    if k == "choose_slot" and isinstance(args.get("slot"), int):                           # (players count the slots from 1)
+        return f"Slot {args.pop('slot') + 1}" + "".join(f", {k2} {_fmt(v)}" for k2, v in args.items())
+    if k == "sponsor_side" and args.get("op") in _TRADE_TEXT:
+        return _TRADE_TEXT[args.pop("op")]
     if k == "play_animal":
-        src = " from the display" if args.pop("from_display", False) else ""
+        src =" from the display" if args.pop("from_display", False) else ""
         card = _name(args.pop("card", "?"))
         where = f" at ({args.pop('x')}, {args.pop('y')})" if "x" in args and "y" in args else ""
         return f"Play {card}{src}{where}" + ("".join(f", {k2}={_fmt(v)}" for k2, v in args.items()))
@@ -111,10 +119,16 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         i = args.pop("index", 0)
         e = pending[i] if isinstance(i, int) and 0 <= i < len(pending) else {}
         name = effect_name(e) or str(e.get("kind", "effect")).replace("_", " ").capitalize()
+        if e.get("kind") == "gain" and e.get("res"):                                          # (a gain the player collects: say what it is, not just "Gain")
+            word = {"x_tokens": "X token", "xtoken": "X token"}.get(e["res"], str(e["res"]))
+            src = e.get("source")
+            name = f"Gain {e.get('n', 1)} {word}" + (f" ({_name(src)})" if isinstance(src, str) and src[:1] in "ASPF" and src[1:4].isdigit() else "")
         if e.get("kind") == "species_bonus":                                              # BDW1: the second icon of a species
             name = f"Second {e.get('icon')} icon"
         rest = args.pop("args", None) or {}
         choice = f": {args.pop('gain')}" if isinstance(args.get("gain"), str) else ""         # (an effect that offers a choice of gains: the options differ only in this)
+        if e.get("kind") == "boost" and isinstance(args.get("slot"), int):                 # Boost: the two options differ only in the slot
+            choice = f" {args.pop('slot')}"
         return ("Skip: " if k == "skip_effect" else "") + name + choice + "".join(f", {k2} {_fmt(v)}" for k2, v in rest.items())
     if k == "choose_map":
         return "Select map " + str(args.pop("map", "?"))

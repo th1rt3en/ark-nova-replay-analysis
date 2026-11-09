@@ -39,6 +39,8 @@ export const seatColor = (seat) => {
 // has a contrast of 4.5:1 with the paper, a dark one stays as it is.
 const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
 const luminance = (hex) => { const m = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16))); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+// the name a prompt shows for a seat: "You" for the viewer's own seat in a live game, the player's name for the opponent and for spectators
+export const seatName = (seat) => (S.play && S.play.seat === seat && S.play.seat !== null ? 'You' : (S.replay.players[seat] || {}).name || 'A player');
 const PAPER = '#F8EDCB';
 export const seatText = (seat) => {
   const c = seatColor(seat);

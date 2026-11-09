@@ -4,7 +4,7 @@ The viewer builds the bar at the top of the page from this (instead of guessing 
 of action with their counts, and for the choice of an action card the cards and the X tokens that can be spent on each.
 """
 from ark_nova import data
-from ark_nova.engine.game import legal_actions
+from ark_nova.engine.game import apply, legal_actions
 from ark_nova.engine.state import GameState, Phase
 
 FREE = {"use_token", "harbor_sell"}            # free actions of the notepad / zoo map: possible at any time, not the decision of the prompt
@@ -37,6 +37,17 @@ def placement_bonus_name(bonus: dict) -> str:
     return f"Placement bonus: {value}{label}"
 
 
+def _bonus_entry(e: dict) -> dict:
+    """The bonus of a placement bonus / a project bonus effect as {type, value}, for the buttons of the bar (a project bonus is stored as {type: value})."""
+    b = e.get("bonus")
+    if e.get("kind") == "pbonus" and isinstance(b, dict):
+        return {"bonus": {"type": b.get("type"), "value": b.get("value")}}
+    if e.get("kind") == "project_bonus" and isinstance(b, dict) and len(b) == 1:
+        (t, v), = b.items()
+        return {"bonus": {"type": t, "value": v}}
+    return {}
+
+
 def effect_name(e: dict) -> str | None:
     """The name of the ability behind a pending effect, as the card writes it ("Perception 2"), None when it is not an ability."""
     kind, src = e.get("kind"), e.get("source")
@@ -44,6 +55,9 @@ def effect_name(e: dict) -> str | None:
         return "Crane: reposition the enclosure"                                  # BDW2
     if kind == "pbonus":
         return placement_bonus_name(e.get("bonus"))
+    if kind == "project_bonus" and isinstance(e.get("bonus"), dict) and len(e["bonus"]) == 1:
+        (t, v), = e["bonus"].items()
+        return placement_bonus_name({"type": t, "value": v}).replace("Placement bonus", "Project bonus", 1)
     if kind == "reveal":
         prefix = REVEAL_NAME.get(e.get("filter", "any"))
         return f"{prefix} {e['x']}" if prefix and e.get("x") is not None else None
@@ -58,6 +72,26 @@ def effect_name(e: dict) -> str | None:
             return name if not value or str(value) in name else f"{name} {value}"
     n = e.get("n") or e.get("x")
     return f"{prefix} {n}" if isinstance(n, int) and n > 1 else prefix
+
+
+def _unusable_cards(state: GameState, acts: list) -> list:
+    """The action cards that offer nothing to do when chosen (Association with no worker left, or nothing the workers could do): the bar greys them out."""
+    out = []
+    mine = [a for a in acts if a.kind == "choose_action_card" and a.args["type"] == "association" and not a.args.get("hypnosis")]
+    if not mine:
+        return out
+    for a in mine:                                                       # (any spend of X tokens: more strength may allow a task)
+        try:
+            new = apply(state, a)
+            kinds = {x.kind for x in legal_actions(new)}
+        except Exception:                                                # (not known to the engine: leave it usable)
+            return out
+        ends = new.prompt is None or new.prompt.kind != "association_tasks"
+        if not ends and kinds & {"association_task", "donate"}:
+            return out
+        if ends and new.prompt is not None and new.prompt.kind != "choose_action_card":
+            return out                                                   # (effects or another prompt follow: something to do)
+    return ["association"]
 
 
 def _expedition_buttons(state: GameState, pending: list, entry: dict) -> list:
@@ -120,7 +154,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         out["sponsors"] = {"hand": [a.args["card"] for a in acts if a.kind == "play_sponsor" and not a.args.get("from_display")],
                            "display": [a.args["card"] for a in acts if a.kind == "play_sponsor" and a.args.get("from_display")],
                            "strength": sa.get("strength"), "gain": sa.get("strength", 0) * (2 if sa.get("level", 1) >= 2 else 1),
-                           "level": sa.get("level", 1), "played": bool(sa.get("played")), "can_break": any(a.kind == "sponsor_break" for a in acts)}
+                           "level": sa.get("level", 1), "variant": sa.get("variant", 0), "side_used": bool(sa.get("side_used")), "played": bool(sa.get("played")), "can_break": any(a.kind == "sponsor_break" for a in acts)}
     if pr.kind == "association_tasks":                                  # the tasks of the Association action that can be done (one entry per kind of task)
         tasks: dict[str, int] = {}
         for a in acts:
@@ -156,6 +190,9 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
             if a.kind == "choose_action_card":
                 cards.setdefault(a.args["type"], []).append(a.args.get("spend", 0))
         out["cards"] = {t: sorted(set(v)) for t, v in cards.items()}
+        unusable = _unusable_cards(state, acts)
+        if unusable:
+            out["unusable"] = unusable                                  # (greyed out in the bar: the card can be chosen but nothing could be done with it)
         out["skip"] = sorted({a.args["type"] for a in acts if a.kind == "skip_action" and not a.args.get("hypnosis")})
         out["skip_hypnosis"] = sorted({a.args["type"] for a in acts if a.kind == "skip_action" and a.args.get("hypnosis")})      # (the opponent's card: not the same as the own put-back)
         if pr.args.get("only"):
@@ -167,7 +204,10 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         out["pending"] = [e.get("kind") for e in pending][:12]
         out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
-                           **({"name": effect_name(e)} if effect_name(e) else {}), "index": i}
+                           **({"name": effect_name(e)} if effect_name(e) else {}),
+                           **_bonus_entry(e),
+                           **({"enabled": False} if e.get("cond") == "no_animals" and any(c.startswith("A") for c in state.players[who].hand) else {}),      # (Hunter Animals: not while the hand holds an animal)
+                           "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
         out["effects"] = [b for entry in out["effects"] for b in _expedition_buttons(state, pending, entry)]
     return out

@@ -120,9 +120,9 @@ def _ark360_description() -> str:
 
 
 GAME_MODES = {
-    "random-mirrored": ("Same random map", "Both players play on the same map, drawn at random: nothing to choose."),
-    "original": ("Original: pick one of two", "Each player is dealt two maps and keeps the one they like better."),
-    "free-select": ("Free choice", "Each player picks any map (the same one is allowed)."),
+    "random-mirrored": ("Same Map Random","Both players play on the same map, drawn at random: nothing to choose."),
+    "original": ("Normal", "A standard Ark Nova game: each player is dealt two maps and keeps the one they like better."),
+    "free-select": ("Free Select","Each player picks any map (the same one is allowed)."),
     ark360.MODE: ("Ark360", _ark360_description()),
     custom_map.MODE: ("Custom map", "Both players play a map made in the map editor, one of the host's saved maps. Everything else is as in a normal game."),
 }
@@ -173,7 +173,7 @@ class LiveService:
         return None
 
     def create(self, marine_worlds: bool = False, tail_seed: int | None = None, game_mode: str | None = None, time_control: dict | None = None, rated: bool = False, account=None,
-               seat_accounts: list | None = None, creator_seat: int | None = None, custom_map_record: dict | None = None, bdw_maps: bool = False) -> dict:
+               seat_accounts: list | None = None, creator_seat: int | None = None, custom_map_record: dict | None = None, bdw_maps: bool = False, map_options: dict | None = None) -> dict:
         """A new table: returns its id and the secret token of each seat (the tokens are never stored, only their hashes). Seat 0 plays first; the creator gets seat 0 or 1 by chance (`creator_seat`).
         With `seat_accounts` (the account ids by seat, from a lobby) the seats belong to those accounts: their keys are derived from them and no link carries a key."""
         if rated and self.ratings is None:
@@ -187,7 +187,8 @@ class LiveService:
         if mode == custom_map.MODE and not custom_map_record:
             raise IllegalMove("choose a map for the game mode custom-map", 422)
         options = {"game_mode": mode, "marine_worlds_flag": bool(marine_worlds), "confirm_turns": True, **({"custom_map": custom_map_record} if mode == custom_map.MODE else {}),
-                   **({"bdw_maps": True} if bdw_maps and mode != custom_map.MODE else {})}
+                   **({"bdw_maps": True} if bdw_maps and mode != custom_map.MODE else {}),
+                   **({"map_options": map_select.normalize(map_options)} if map_select.normalize(map_options) and mode != custom_map.MODE else {})}
         if mode == ark360.MODE:
             time_control = ark360.time_control()                              # (the time control is part of the mode)
         try:

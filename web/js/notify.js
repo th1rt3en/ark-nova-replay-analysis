@@ -6,17 +6,21 @@ const POLL_MS = 10000, SAFETY_MS = 120000;                                      
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 
 const css = el('style', {}, `
-#arknotify { position: fixed; right: 16px; bottom: 16px; z-index: 2000; display: flex; flex-direction: column; gap: 10px; width: min(340px, calc(100vw - 32px)); pointer-events: none; font: 14px/1.35 system-ui, sans-serif; }
-#arknotify .toast { pointer-events: auto; background: #fffaf0; color: #2b1d12; border: 2px solid #2e7d32; border-radius: 10px; padding: 10px 12px; box-shadow: 0 6px 20px rgba(0,0,0,.3); animation: toastin .25s ease-out; }
-#arknotify .toast.invite { border-color: #e9662a; }
-#arknotify .toast.bad { border-color: #b3261e; }
-#arknotify .toast b { display: block; margin-bottom: 2px; }
-#arknotify .toast .row { display: flex; gap: 8px; margin-top: 8px; }
-#arknotify .toast button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #2b1d12; padding: 4px 12px; background: #fff; color: #2b1d12; }
-#arknotify .toast button.go { background: #2e7d32; color: #fff; border-color: #2e7d32; }
-#arknotify .toast button:disabled { opacity: .5; cursor: default; }
-#arknotify .toast .x { float: right; border: 0; background: none; padding: 0 2px; font-size: 18px; line-height: 1; }
-#arknotify .toast .err { color: #b3261e; margin-top: 6px; }
+@import url(/css/park-fonts.css);
+#arknotify { position: fixed; right: 18px; bottom: 18px; z-index: 2000; display: flex; flex-direction: column; gap: 14px; width: min(360px, calc(100vw - 36px)); pointer-events: none; font: 600 15px/1.35 'Barlow', system-ui, sans-serif; }
+#arknotify .toast { pointer-events: auto; position: relative; background: #F8EDCB; color: #17262B; border: 4px solid #17262B; border-radius: 20px; padding: 12px 16px 14px; box-shadow: 0 5px 0 #17262B; animation: toastin .25s ease-out; }
+#arknotify .toast.invite { background: #F4B63F; }
+#arknotify .toast.bad { background: #F8EDCB; border-color: #A8321E; box-shadow: 0 5px 0 #A8321E; color: #A8321E; }
+#arknotify .toast b { display: block; margin: 0 22px 3px 0; font: 400 1.05rem/1.15 'Park Head', 'Bowlby One', system-ui, sans-serif; }
+#arknotify .toast .row { display: flex; gap: 10px; margin-top: 10px; }
+#arknotify .toast button { font: 700 .95rem 'Barlow', system-ui, sans-serif; cursor: pointer; padding: .25rem 1rem .3rem; background: #F8EDCB; color: #17262B; border: 3px solid #17262B; border-radius: 999px; box-shadow: 0 3px 0 #17262B; }
+#arknotify .toast button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 0 #17262B; }
+#arknotify .toast button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #17262B; }
+#arknotify .toast button.go { background: #EE6C2B; color: #fff; text-shadow: 0 2px 0 rgba(23, 38, 43, .45); }
+#arknotify .toast button:disabled { opacity: .55; cursor: default; }
+#arknotify .toast .x { position: absolute; top: 6px; right: 8px; width: 26px; height: 26px; padding: 0; border: 0; background: none; box-shadow: none; font-size: 22px; line-height: 1; }
+#arknotify .toast .x:hover:not(:disabled) { transform: none; box-shadow: none; color: #A8321E; }
+#arknotify .toast .err { color: #A8321E; margin-top: 6px; font-weight: 700; }
 @keyframes toastin { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
 `);
 const box = el('div', { id: 'arknotify', 'aria-live': 'polite' });

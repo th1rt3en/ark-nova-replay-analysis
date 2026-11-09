@@ -1,5 +1,5 @@
 // [module] The action bar at the top (replay: current action; fork / sandbox: the playable controls), prompts and draft marks.
-import { $, el, seatColor, seatText } from './util.js';
+import { $, el, seatColor, seatName, seatText } from './util.js';
 import { FORK, PLAY, S, SANDBOX } from './state.js';
 import { curState, seatOrder } from './pov.js';
 import { bindPreview, cardMarks, cardName, orderedKeys } from './cards.js';
@@ -21,7 +21,7 @@ import { centerNav, clearReveal, forkReveal, noteLightbox, openFx, revealAt, sho
 // steps the bar is guessed from the log-built state (only the choice of an action card).
 export const PROMPT_TEXT = {
   build_place: 'must place a building', cards_take: 'must take cards', cards_discard: 'must discard cards', sponsors_play: 'may play a sponsor',
-  animals_play: 'may play an animal', association_tasks: 'may perform an association task', effects: 'must resolve an effect', confirm_turn: 'must confirm the turn or take it back',
+  animals_play: 'may play an animal', association_tasks: 'may perform an association task', effects: 'must resolve an effect', confirm_turn: 'must confirm the turn',
 };
 const KIND_LABEL = {
   draft_pick: 'Pick an action card', draft_keep: 'Keep two action cards', initial_discard: 'Initial discard',
@@ -50,7 +50,7 @@ export function bindActs(node, acts) {
 // a card is chosen to be played (an animal, a sponsor, a Marketing sponsor...): only one can be selected at a time
 // an effect that takes one card of the hand or of the display (digging, ...): the card is selected with a click, then confirmed (see forkBar)
 export const effectKindOf = (a) => { const e = (((S.replay.steps[S.step].options || {}).effects) || []).find((x) => x.index === a.args.index); return e ? e.kind : ''; };
-export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.display : typeof a.args.hand === 'string' ? a.args.hand : null);
+export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.display : typeof a.args.hand === 'string' ? a.args.hand : a.kind === 'choose_effect' && typeof a.args.card === 'string' && effectKindOf(a) === 'mark' ? a.args.card : null);       // (Mark: the animal of the display to mark)
 export const cardPickAct = (a) => a.kind === 'choose_effect' && typeof a.args.index === 'number' && !Array.isArray(a.args.cards) && !!pickCardOf(a) && effectKindOf(a) !== 'marketing';
 export function animalSelection() {                                       // the animal selected in the hand / display with the enclosures it can go to
   if (!FORK) return null;
@@ -248,7 +248,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   if (!FORK && st.phase === 'setup') {                                          // the starting hand: 8 cards drawn, 4 to discard (initial selection)
     const seat = prioritySeat([0, 1].filter((i) => S.replay.steps[S.step].state.players[i].hand.length > 4));
     if (seat !== null) {
-      const who = el('span', 'who', S.replay.players[seat].name);
+      const who = el('span', 'who', seatName(seat));
       who.style.color = seatText(seat);
       bar.hidden = false;
       bar.append(who, el('b', '', ' must discard ' + (S.replay.steps[S.step].state.players[seat].hand.length - 4) + ' cards (initial selection)'));
@@ -261,7 +261,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   if (turnEnds(S.step) && kind !== 'decision' && !(FORK && S.forkConfirmed === S.step) && !PLAY && !SANDBOX) {
     bar.hidden = false;
     S.forkGate = FORK;
-    const who = el('span', 'who', S.replay.players[before.active_player].name);
+    const who = el('span', 'who', seatName(before.active_player));
     who.style.color = seatText(before.active_player);
     bar.append(who, el('b', '', ' must confirm or restart your turn'));
     if (FORK) turnButtons(bar, before.turn, before.active_player, true);
@@ -294,11 +294,11 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   const mayChoose = (type) => fa.some((x) => x.kind === 'choose_action_card' && x.args.spend === S.forkSpend && x.args.type === type && !!x.args.hypnosis === hyp);
   const maySkip = (type) => fa.some((x) => x.kind === 'skip_action' && x.args.type === type && !!x.args.hypnosis === hyp);
   if (FORK) spent += S.forkSpend;
-  const who = el('span', 'who', S.replay.players[seat].name);
+  const who = el('span', 'who', seatName(seat));
   who.style.color = seatText(seat);
   bar.append(who, el('b', '', o && o.only ? ' must choose the second action' : hyp ? " may use one of the opponent's first three action cards" : ' must choose an action card'));
   cardsShown.forEach((a, i) => {
-    const b = el('span', 'abtn acbtn' + (a.level === 2 ? ' lvl2' : '') + (o && !o.cards[a.type] ? ' off' : ''));       // (greyed out: the engine does not offer it)
+    const b = el('span', 'abtn acbtn' + (a.level === 2 ? ' lvl2' : '') + (o && (!o.cards[a.type] || (FORK && (o.unusable || []).includes(a.type))) ? ' off' : ''));       // (greyed out: the engine does not offer it)
     const cut = 2 * (a.tokens || []).filter((t) => t === 'Constriction').length;                     // (each Constriction token on the card takes 2 strength, never below 1: engine/venom.py)
     const str = Math.max(1, i + 1 + spent - cut);
     b.title = ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + ', strength ' + str + ' (up to ' + (str + p.x_tokens) + ' with X tokens)' + (cut ? ', 2 less per Constriction token' : '');
@@ -308,7 +308,8 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
       const tk = el('img', 'actoken'); tk.src = iconUrl(id); tk.alt = t; tk.title = CARD_TOKEN_TEXT[t] || t; tk.style.setProperty('--k', String(k));
       b.append(tk);
     });
-    if (FORK && (S.skipMode ? maySkip(a.type) : mayChoose(a.type))) {
+    const dead = !S.skipMode && o && (o.unusable || []).includes(a.type);                    // (Association with nothing to do)
+    if (FORK && !dead && (S.skipMode ? maySkip(a.type) : mayChoose(a.type))) {
       b.classList.add('choosable');
       b.title = S.skipMode ? 'Put ' + ACTION_NAMES[a.type] + ' back to slot 1 and gain an X token' : 'Choose ' + ACTION_NAMES[a.type] + (S.forkSpend ? ', spending ' + S.forkSpend + ' X token' + (S.forkSpend === 1 ? '' : 's') : '');
       b.onclick = () => {
@@ -492,7 +493,7 @@ const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
 // the option of an effect with several buttons (Marine Research Expedition: "send" a person sponsor away, or "scuba" Scuba Dive 3)
 const effectOption = (a, e) => (e.option === 'send' ? a.args.send !== undefined : e.option === 'scuba' ? !!a.args.scuba : true);
 function effectButton(e) {
-  if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res)) return null;
+  if (e.kind === 'gain' && AUTOMATIC_GAINS.has(e.res) && !(FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length)) return null;       // (a money / X token gain that happens by itself has no button; one the player has to collect does)
   if (e.kind === 'build' && FORK && /^Crane:/.test(e.name || '')) {                 // BDW2: the enclosure next to the crane may be repositioned, in any order with the animal's ability and gains
     const moves = forkActs((a) => a.kind === 'place_building' && a.args.move);
     if (!moves.length) return null;
@@ -515,12 +516,13 @@ function effectButton(e) {
   if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
   const b = el('span', 'abtn deckbtn' + (e.enabled === false ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)
   const src = e.source && /^[ASPF]\d{3}$/.test(e.source) ? cardName(e.source) : '';
-  const pbName = e.kind === 'pbonus' ? placementBonusName(e.bonus) : '';                // (one of several placement bonuses of the building just placed)
-  b.title = (pbName ? 'Placement bonus: ' + pbName : e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
+  const pbName = (e.kind === 'pbonus' || e.kind === 'project_bonus') && e.bonus ? placementBonusName(e.bonus) : '';              // (one of several placement bonuses of the building just placed)
+  b.title = (pbName ? (e.kind === 'project_bonus' ? 'Project bonus: ' : 'Placement bonus: ') + pbName : e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
   const SEARCH_ICON = { bird: ['Bird', 'r2c3'], herbivore: ['Herbivore', 'r2c4'], predator: ['Predator', 'r2c5'], primate: ['Primate', 'r2c6'], reptile: ['Reptile', 'r2c7'], marine: ['Sea animal', 'r2c8'] };
   if (e.kind === 'gain') {
     const ai = amountIcon(e.res, e.n || 1);                                  // ("Gain" + the counter's icon with the amount inside)
     if (ai) b.append(el('b', '', 'Gain'), ai); else b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
+    if (src) b.append(el('i', 'gainsrc', '(' + src + ')'));
   } else if (e.kind === 'search_category' && SEARCH_ICON[e.category]) {        // a targeted search: "Find a {species}" with the species' search icon
     const [label, id] = SEARCH_ICON[e.category];
     const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28;
@@ -556,7 +558,7 @@ function effectButton(e) {
 
 // any other decision of the engine: who must do what, and the kinds of action it offers (with how many options each)
 function genericBar(bar, st, o, seat) {
-  const who = el('span', 'who', S.replay.players[seat].name);
+  const who = el('span', 'who', seatName(seat));
   who.style.color = seatText(seat);
   // The building pieces are not shown in the replay (they take a lot of space and say little): only the prompt, with the largest size that can be built, like BGA.
   if (!FORK && o.pieces && o.pieces.length) {
@@ -577,7 +579,7 @@ function genericBar(bar, st, o, seat) {
       }
       const over = st.players.map((q, i) => ({ i, n: q.hand.length - q.hand_limit })).filter((q) => q.n > 0);
       if (!inBreak || !over.length) { bar.hidden = true; return; }
-      who2 = el('span', 'who', S.replay.players[over[0].i].name);
+      who2 = el('span', 'who', seatName(over[0].i));
       who2.style.color = seatText(over[0].i);
       count = over[0].n;
     }

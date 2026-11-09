@@ -9,9 +9,16 @@
 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
 <title>Open with the extension - Ark Nova Park</title>
 <link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/lobbies.css">
+<link rel="stylesheet" href="/css/park-fonts.css">
+<link rel="stylesheet" href="/css/poster-page.css">
+<link rel="stylesheet" href="/css/poster-content.css">
 </head>
-<body>
+<body class="poster slim">
+<p class="small"><a href="/">&larr; Ark Nova Park</a></p>
+<main class="pp">
 <h1>Open this game with the browser extension</h1>
+<section>
 <p>Table <strong id="tid"></strong> is known to us, but its log has not been collected yet. You can open it anyway with our browser extension, which takes the log from your Board Game Arena session:</p>
 <ol class="steps">
   <li>Install the extension for your browser:
@@ -22,7 +29,8 @@
   <li>Open the replay of this game on Board Game Arena (you need to be logged in there): <a id="bga" target="_blank" rel="noopener"></a></li>
   <li>The extension adds a button to that page: click it to open the replay on this website.</li>
 </ol>
-<p><a href="/">Back</a></p>
+</section>
+</main>
 <script>
 const table = new URLSearchParams(location.search).get('table');
 if (!/^\d+$/.test(table || '')) { location.replace('/'); }

@@ -17,6 +17,7 @@ from typing import Any
 
 from ark_nova.engine import ark360, gamestats
 from ark_nova.engine.game import legal_actions
+from ark_nova.engine.game import HAND_DEAL
 from ark_nova.engine.state import GameState, Phase
 from ark_nova.replay import fork
 from ark_nova.replay.options import step_options
@@ -54,6 +55,8 @@ def project(state: GameState, role: str) -> dict:
     v.pop("base_projects_unused", None)
     for p in v["players"]:
         mine = p["seat"] == seat
+        if not mine and str(p.get("map_id")) == "14" and len(p.get("hand") or []) == HAND_DEAL + 1 and not ark360.pre_draft(state):
+            p["found_person"] = p["hand"][-1]                               # (Map 14: the person sponsor searched out of the deck is public; it is the last card of the dealt hand)
         for k in OWNER_COUNT:
             if not mine:
                 p[k] = _mask(p.get(k) or [])

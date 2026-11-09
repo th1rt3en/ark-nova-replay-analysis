@@ -23,7 +23,14 @@ export class Presence extends DurableObject<Env> {
         super(ctx, env);
         ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS seen (id TEXT PRIMARY KEY, page TEXT NOT NULL, at INTEGER NOT NULL)");
         ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS history (at INTEGER PRIMARY KEY, users INTEGER NOT NULL, replay INTEGER NOT NULL, fork INTEGER NOT NULL, play INTEGER NOT NULL, sandbox INTEGER NOT NULL, other INTEGER NOT NULL)");
+        // The busiest sample of each hour, kept up to date by sample(): the long views of the online page read these (at most 336 rows) instead of every 5-minute sample (4032 rows).
+        const fresh = ctx.storage.sql.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'hourly'").toArray().length === 0;
+        ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS hourly (hour INTEGER PRIMARY KEY, users INTEGER NOT NULL, replay INTEGER NOT NULL, fork INTEGER NOT NULL, play INTEGER NOT NULL, sandbox INTEGER NOT NULL, other INTEGER NOT NULL)");
+        if (fresh) ctx.storage.sql.exec("INSERT INTO hourly SELECT (at / 3600000) * 3600000, MAX(users), MAX(replay), MAX(fork), MAX(play), MAX(sandbox), MAX(other) FROM history GROUP BY (at / 3600000)");       // (once: the samples taken before this table existed)
     }
+
+    private seenSize: number | null = null;                                  // (the number of ids in `seen`, kept in memory: counting them with every new id read the whole table)
+    private cached = new Map<number, { at: number; value: { perHour: any[]; day: number; samples: any[]; step: number } }>();        // (the history part of `online`, per `hours`: the page asks every 30 s)
 
     private now(): number { return Date.now() + this.clockOffset; }
     async advance(ms: number): Promise<void> { this.clockOffset += ms; }
@@ -41,7 +48,11 @@ export class Presence extends DurableObject<Env> {
         const page: Page = (PAGES as readonly string[]).includes(body.page as string) ? (body.page as Page) : "other";
         if (!ID.test(id)) return Response.json({ error: "bad id" }, { status: 422 });
         const known = this.ctx.storage.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM seen WHERE id = ?", id).one().n;
-        if (!known && this.ctx.storage.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM seen").one().n >= MAX_IDS) return Response.json({ error: "full" }, { status: 429 });
+        if (!known) {
+            this.seenSize ??= this.ctx.storage.sql.exec<{ n: number }>("SELECT COUNT(*) AS n FROM seen").one().n;
+            if (this.seenSize >= MAX_IDS) return Response.json({ error: "full" }, { status: 429 });
+            this.seenSize++;
+        }
         this.ctx.storage.sql.exec("INSERT INTO seen (id, page, at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET page = excluded.page, at = excluded.at", id, page, this.now());
         if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now() + SAMPLE_MS);
         return Response.json({ ok: true });
@@ -60,7 +71,12 @@ export class Presence extends DurableObject<Env> {
     async sample(): Promise<boolean> {
         const now = this.now(), c = this.count();
         this.ctx.storage.sql.exec("INSERT OR REPLACE INTO history (at, users, replay, fork, play, sandbox, other) VALUES (?, ?, ?, ?, ?, ?, ?)", now, c.users, c.replay, c.fork, c.play, c.sandbox, c.other);
+        const hour = Math.floor(now / 3600000) * 3600000;
+        this.ctx.storage.sql.exec("INSERT INTO hourly (hour, users, replay, fork, play, sandbox, other) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(hour) DO UPDATE SET users = MAX(users, excluded.users), replay = MAX(replay, excluded.replay), fork = MAX(fork, excluded.fork), play = MAX(play, excluded.play), sandbox = MAX(sandbox, excluded.sandbox), other = MAX(other, excluded.other)", hour, c.users, c.replay, c.fork, c.play, c.sandbox, c.other);
+        this.ctx.storage.sql.exec("DELETE FROM hourly WHERE hour < ?", now - KEEP_HISTORY_MS);
         this.ctx.storage.sql.exec("DELETE FROM seen WHERE at < ?", now - KEEP_SEEN_MS);
+        this.seenSize = null;
+        this.cached.clear();
         this.ctx.storage.sql.exec("DELETE FROM history WHERE at < ?", now - KEEP_HISTORY_MS);
         return c.users > 0;
     }
@@ -68,17 +84,32 @@ export class Presence extends DurableObject<Env> {
     private online(args: Record<string, unknown>) {
         const hours = Math.min(Math.max(Math.floor(Number(args.hours)) || 48, 1), 24 * 14), now = this.now();
         const c = this.count();
-        const perHour = this.ctx.storage.sql.exec<{ hour: number; peak: number }>(
-            "SELECT (at / 3600000) * 3600000 AS hour, MAX(users) AS peak FROM history WHERE at > ? GROUP BY hour ORDER BY hour", now - hours * 3600 * 1000).toArray();
-        const day = this.ctx.storage.sql.exec<{ peak: number | null }>("SELECT MAX(users) AS peak FROM history WHERE at > ?", now - 24 * 3600 * 1000).one().peak ?? 0;
-        // the timeline: every sample (5 minutes apart) for up to 2 days, the busiest sample of each hour beyond that. A gap is a time when nobody was there (sampling pauses then).
-        const step = hours > 48 ? 3600 * 1000 : SAMPLE_MS;
-        const samples = this.ctx.storage.sql.exec<{ at: number; users: number; replay: number; fork: number; play: number; sandbox: number; other: number }>(
-            "SELECT bucket * ? AS at, MAX(users) AS users, MAX(replay) AS replay, MAX(fork) AS fork, MAX(play) AS play, MAX(sandbox) AS sandbox, MAX(other) AS other " +
-            "FROM (SELECT CAST(at / ? AS INTEGER) AS bucket, users, replay, fork, play, sandbox, other FROM history WHERE at > ?) GROUP BY bucket ORDER BY bucket",
-            step, step, now - hours * 3600 * 1000).toArray();
+        const h = this.history(hours, now);
         return { now, window_s: WINDOW_MS / 1000, online: c.users, by_page: { replay: c.replay, fork: c.fork, play: c.play, sandbox: c.sandbox, other: c.other },
-                 peak_24h: Math.max(day, c.users), hourly_peaks: perHour, step_ms: step, samples };
+                 peak_24h: Math.max(h.day, c.users), hourly_peaks: h.perHour, step_ms: h.step, samples: h.samples };
+    }
+
+    /** The part of `online` that comes from the stored samples. Short views read the 5-minute samples (at most 576 rows), long ones the hourly peaks (at most 336); the answer is kept for a while
+     *  (30 s, 5 minutes for the long views) and dropped when a new sample is taken, so an open page that asks every 30 s does not read the same rows again and again. */
+    private history(hours: number, now: number) {
+        const hit = this.cached.get(hours), ttl = hours > 48 ? 5 * 60 * 1000 : 30 * 1000;
+        if (hit && Date.now() - hit.at < ttl) return hit.value;
+        const sql = this.ctx.storage.sql, since = now - hours * 3600 * 1000, step = hours > 48 ? 3600 * 1000 : SAMPLE_MS;
+        type Row = { at: number; users: number; replay: number; fork: number; play: number; sandbox: number; other: number };
+        const perHour = sql.exec<{ hour: number; peak: number }>("SELECT hour, users AS peak FROM hourly WHERE hour + 3600000 > ? ORDER BY hour", since).toArray();
+        const day = sql.exec<{ peak: number | null }>("SELECT MAX(users) AS peak FROM hourly WHERE hour + 3600000 > ?", now - 24 * 3600 * 1000).one().peak ?? 0;
+        // the timeline: every sample (5 minutes apart) for up to 2 days, the busiest sample of each hour beyond that. A gap is a time when nobody was there (sampling pauses then).
+        const rows: Row[] = hours > 48
+            ? sql.exec<Row>("SELECT hour AS at, users, replay, fork, play, sandbox, other FROM hourly WHERE hour + 3600000 > ? ORDER BY hour", since).toArray()
+            : sql.exec<Row>("SELECT at, users, replay, fork, play, sandbox, other FROM history WHERE at > ? ORDER BY at", since).toArray();
+        const buckets = new Map<number, Row>();
+        for (const r of rows) {
+            const b = Math.floor(r.at / step), m = buckets.get(b);
+            buckets.set(b, m ? { at: b * step, users: Math.max(m.users, r.users), replay: Math.max(m.replay, r.replay), fork: Math.max(m.fork, r.fork), play: Math.max(m.play, r.play), sandbox: Math.max(m.sandbox, r.sandbox), other: Math.max(m.other, r.other) } : { ...r, at: b * step });
+        }
+        const value = { perHour, day, samples: [...buckets.values()], step };
+        this.cached.set(hours, { at: Date.now(), value });
+        return value;
     }
 
     async alarm(): Promise<void> {

@@ -1,8 +1,8 @@
 // [module] Fork mode: starts from a replay step, posts moves with their state to the server, placement controls, move flow.
 import { stageBreaks } from './break-stages.js';
-import { $, el, seatColor, seatText } from './util.js';
+import { $, el, seatColor, seatName, seatText } from './util.js';
 import { PLAY, S, SANDBOX, params } from './state.js';
-import { legalPlacement, spriteOf, zooBoard } from './board.js';
+import { legalPlacement, placementCells, spriteOf, zooBoard } from './board.js';
 import { associationStrip, bonusPanel } from './association.js';
 import { curState, orientParam, povParam } from './pov.js';
 import { cardMarks, cardName, orderedKeys } from './cards.js';
@@ -10,7 +10,8 @@ import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
-import { render } from './main.js';
+import { render, renderZoos } from './main.js';
+import { amountIcon } from './log-labels.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
 import { buildMoveList, go } from './playback.js';
 import { expandLagoonDeal } from './lagoon-deal.js';
@@ -102,10 +103,7 @@ function renderPlacementControls(box, placeActs) {
   } else {
     const legal = legalPlacement(S.placement);
     const head = el('div', 'placehead');
-    head.append(el('b', '', (S.placement.move ? 'Reposition the ' : '') + S.placement.type.replace(/-/g, ' ') + (S.placement.extra ? ' (additional)' : '') + (S.placement.move ? ' (crane)' : '')),
-                document.createTextNode(S.placement.x === null ? ' - click a hex of ' + S.replay.players[S.placement.seat].name + "'s zoo to put the anchor there"
-                  : ' - anchor (' + S.placement.x + ', ' + S.placement.y + '), rotation ' + S.placement.rot + ' - '),
-                S.placement.x === null ? document.createTextNode('') : el('b', legal ? 'placeok' : 'placebad', legal ? 'legal' : 'not legal'));
+    head.append(el('b', '', (S.placement.move ? 'Reposition the ' : '') + S.placement.type.replace(/-/g, ' ') + (S.placement.extra ? ' (additional)' : '') + (S.placement.move ? ' (crane)' : '')));
     wrap.append(head);
     const row = el('div', 'forkrow');
     const ok = el('button', 'forkmove');
@@ -189,6 +187,9 @@ export const keepSel = new Map();                                              /
 // one), and the legal moves that no control stands for are listed at the end of the bar.
 export function forkBar() {
   const bar = $('actionbar'), cur = S.replay.steps[S.step], acts = cur.actions || [];
+  const DISCARDING = new Set(['sell', 'pouch', 'endgame_discard', 'adapt', 'break_discard']);          // effects that send the selected cards away: the selection is drawn as a trash mask, not as a check mark
+  const effKinds = new Map((((cur.options && cur.options.effects) || [])).map((e) => [e.index, e.kind]));
+  document.body.classList.toggle('discarding', acts.some((a) => a.kind === 'discard_cards' || (a.kind === 'choose_effect' && DISCARDING.has(effKinds.get(a.args.index)))));
   if (SANDBOX && S.replay.setup) { if (bar) sbSetupBar(bar); return; }          // the seat and the maps first
   if (SANDBOX && !sbReady()) {                                             // the empty spaces first
     if (bar) { bar.hidden = false; bar.replaceChildren(el('b', '', 'Set the base projects and the conservation bonuses (the empty spaces of the board) to start playing.')); }
@@ -250,7 +251,7 @@ export function forkBar() {
   if (bonusActs.length) {                                                          // the bonus of a supported project: click a bonus slot of the player board, then confirm
     for (const a of bonusActs) S.forkClaimed.add(a);
     bar.replaceChildren();
-    const who0 = el('span', 'who', S.replay.players[bonusActs[0].player].name);
+    const who0 = el('span', 'who', seatName(bonusActs[0].player));
     who0.style.color = seatText(bonusActs[0].player);
     const match = bonusActs.find((a) => a.args.bonus === S.forkBonus);
     const ok = el('button', 'forkmove forkconfirm', 'Confirm');
@@ -259,7 +260,7 @@ export function forkBar() {
     bar.append(who0, el('b', '', ' must choose a bonus to unlock'), ok);
   }
   if (!bar.children.length && !acts.some((x) => x.kind === 'initial_discard')) {
-    const who = el('span', 'who', S.replay.players[seat].name);
+    const who = el('span', 'who', seatName(seat));
     who.style.color = seatText(seat);
     bar.append(who, el('b', '', ' ' + ((cur.options && PROMPT_TEXT[cur.options.prompt]) || 'must decide')));
   }
@@ -273,6 +274,39 @@ export function forkBar() {
     b.onclick = () => playFork(a);
     return b;
   };
+  const TRADES = [['trade_money', ['xtoken', 1], ['money', 5]], ['trade_x', ['money', 5], ['xtoken', 1]], ['rep_x', ['xtoken', 1], ['reputation', 1]], ['rep_money', ['money', 5], ['reputation', 1]]];       // (Sponsors variant 1: what is paid, what is gained)
+  const tradeActs = acts.filter((a) => a.kind === 'sponsor_side' && TRADES.some((t) => t[0] === a.args.op));
+  const sideOpen = (cur.options && cur.options.sponsors) || {};
+  if (sideOpen.variant === 1 && !sideOpen.side_used) {                                  // one button "Trade"; its click shows the trades, the ones the player cannot afford greyed out
+    for (const a of tradeActs) S.forkClaimed.add(a);
+    const icon = ([k, n]) => amountIcon(k, n) || document.createTextNode(n + ' ' + k);
+    if (S.tradeMode) {
+      bar.replaceChildren();
+      const who4 = el('span', 'who', seatName(seat));
+      who4.style.color = seatText(seat);
+      bar.append(who4, el('b', '', ' must choose a trade'));
+      for (const [op, give, get] of TRADES.slice(0, sideOpen.level >= 2 ? 4 : 2)) {
+        const a = tradeActs.find((x) => x.args.op === op);
+        const b = el('button', 'forkmove');
+        b.type = 'button'; b.disabled = !a || S.forkBusy;
+        b.style.setProperty('--pc', seatColor(seat));
+        b.append('Trade ', icon(give), ' for ', icon(get));
+        if (a) b.onclick = () => playFork(a);
+        bar.append(b);
+      }
+      const back = el('button', 'forkmove', 'Back');
+      back.type = 'button';
+      back.onclick = () => { S.tradeMode = false; refreshBar(); };
+      bar.append(back);
+    } else {
+      const tb = el('button', 'forkmove', 'Trade');
+      tb.type = 'button'; tb.disabled = !tradeActs.length || S.forkBusy;
+      tb.style.setProperty('--pc', seatColor(seat));
+      tb.title = tradeActs.length ? 'Trade money, X tokens' + (sideOpen.level >= 2 ? ' and reputation' : '') : 'You cannot afford any trade';
+      tb.onclick = () => { S.tradeMode = true; refreshBar(); };
+      bar.append(tb);
+    }
+  }
   const placeActs = acts.filter((a) => a.kind === 'place_building');
   for (const a of placeActs) S.forkClaimed.add(a);
   // BDW2's crane: the "Reposition (crane)" button of the effects starts the move; until then neither the pieces menu nor the skip button is shown, afterwards the skip button sits beside the placement controls
@@ -291,7 +325,7 @@ export function forkBar() {
   if (S.marketMode !== null && marketActs.some((a) => a.args.index === S.marketMode)) {   // Marketing: choose the sponsor in the hand (or pass), then confirm
     const mine = marketActs.filter((a) => a.args.index === S.marketMode), p0 = mine[0].player;
     bar.replaceChildren();
-    const who0 = el('span', 'who', S.replay.players[p0].name);
+    const who0 = el('span', 'who', seatName(p0));
     who0.style.color = seatText(p0);
     const pickedKey = marked(p0 + ':hand', st.players[p0].hand).find((k) => mine.some((a) => a.args.card === k));
     const match = mine.find((a) => a.args.card === pickedKey);
@@ -306,7 +340,7 @@ export function forkBar() {
     const mine = thrActs.filter((a) => a.args.index === S.thresholdMode.index), p0 = mine[0].player;
     const hire = mine.filter((a) => a.args.hire), ups = mine.filter((a) => a.args.upgrade);
     bar.replaceChildren();
-    const who0 = el('span', 'who', S.replay.players[p0].name);
+    const who0 = el('span', 'who', seatName(p0));
     who0.style.color = seatText(p0);
     bar.append(who0);
     const withIcon = (text, id, onclick) => {
@@ -344,8 +378,7 @@ export function forkBar() {
     if (idx !== null) {
       const mine = mulActs.filter((a) => a.args.index === idx);
       bar.replaceChildren();
-      const you = PLAY && S.play && S.play.seat === p0;
-      const who0 = el('span', 'who', you ? 'You' : S.replay.players[p0].name);
+      const who0 = el('span', 'who', seatName(p0));
       who0.style.color = seatText(p0);
       bar.append(who0, el('b', '', ' must choose an action to put a multiplier token on'));
       (st.players[p0].action_cards || []).forEach((c, i) => {
@@ -395,8 +428,17 @@ export function forkBar() {
     const [k, mine] = chosen[0];
     const withEnc = mine.filter((a) => a.kind === 'play_animal' && 'x' in a.args);
     if (withEnc.length) {                                                           // an animal: click an enclosure of the zoo that can take it, then confirm
-      const seatA = mine[0].player, enc = S.animalEnc && S.animalEnc.card === k ? S.animalEnc : null;
-      const who2 = el('span', 'who', S.replay.players[seatA].name);
+      const seatA = mine[0].player;
+      if (!(S.animalEnc && S.animalEnc.card === k)) {                                // the smallest enclosure that takes the animal is selected for the player (one of them at random when several are equally small)
+        const size = (a) => { const b = st.players[seatA].buildings.find((q) => q.x === a.args.x && q.y === a.args.y); return b ? placementCells(b.type, b.x, b.y, b.rotation).length : 99; };
+        const sizes = withEnc.map(size), least = Math.min(...sizes);
+        const pool = withEnc.filter((a, i) => sizes[i] === least);
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        S.animalEnc = { card: k, x: pick.args.x, y: pick.args.y };
+        setTimeout(() => renderZoos(), 0);                                            // (the zoo is drawn before the bar: draw it again with the selection)
+      }
+      const enc = S.animalEnc && S.animalEnc.card === k ? S.animalEnc : null;
+      const who2 = el('span', 'who', seatName(seatA));
       who2.style.color = seatText(seatA);
       bar.append(who2, el('b', '', ' must select an enclosure for this animal (' + cardName(k) + ')'));
       const match = enc ? withEnc.find((a) => a.args.x === enc.x && a.args.y === enc.y) : null;
@@ -434,9 +476,9 @@ export function forkBar() {
     const eff = ((cur.options && cur.options.effects) || []).find((e) => e.index === grp.idx) || {};
     const picked = [...marked(grp.p + ':hand', st.players[grp.p].hand), ...marked('display', st.display).filter(Boolean)].filter((k) => grp.list.some((a) => pickCardOf(a) === k));
     const mine = picked.length ? grp.list.filter((a) => pickCardOf(a) === picked[0]) : [];
-    const who3 = el('span', 'who', S.replay.players[grp.p].name);
+    const who3 = el('span', 'who', seatName(grp.p));
     who3.style.color = seatText(grp.p);
-    bar.append(who3, el('b', '', ' must select a card of the hand or the display' + (eff.kind === 'digging' ? ' to dig' : '') + (picked.length ? ': ' + cardName(picked[0]) : '')));
+    bar.append(who3, el('b', '', (eff.kind === 'mark' ? ' must select an animal of the display to mark, then confirm' : ' must select a card of the hand or the display' + (eff.kind === 'digging' ? ' to dig' : '')) + (picked.length ? ': ' + cardName(picked[0]) : '')));
     const confirmWith = (a, label) => {
       const ok = a ? btn(a, label, true) : el('button', 'forkmove forkconfirm', label);
       ok.type = 'button'; ok.disabled = !a || S.forkBusy;
@@ -444,7 +486,7 @@ export function forkBar() {
     };
     bar.append(confirmWith(mine.find((a) => !a.args.rescue), 'Confirm'));
     if (grp.list.some((a) => a.args.rescue)) bar.append(confirmWith(mine.find((a) => a.args.rescue), "Confirm and use map 10's effect"));
-    for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === grp.idx)) { S.forkClaimed.add(a); bar.append(btn(a, 'Skip', false)); }
+    for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === grp.idx)) { S.forkClaimed.add(a); bar.append(btn(a, eff.kind === 'mark' ? 'Pass' : 'Skip', false)); }
   }
   for (const seat0 of [...new Set(initActs.map((a) => a.player))]) {                 // the initial discard: pick the cards to keep in the hand, then confirm
     const mine = initActs.filter((a) => a.player === seat0);
@@ -454,23 +496,32 @@ export function forkBar() {
     const picked = marked(seat0 + ':hand', st.players[seat0].hand).filter((k) => offer.has(k));
     const drop = hand0.filter((k) => !picked.includes(k)).sort().join();
     const match = picked.length === keep ? mine.find((a) => [...a.args.cards].sort().join() === drop) : null;
-    const who1 = el('span', 'who', S.replay.players[seat0].name);
+    const who1 = el('span', 'who', seatName(seat0));
     who1.style.color = seatText(seat0);
     const ok = match ? btn(match, 'Confirm', true) : el('button', 'forkmove forkconfirm', 'Confirm');
     ok.type = 'button'; ok.disabled = !match || S.forkBusy;
     bar.append(who1, el('b', '', ' must choose ' + keep + ' card' + (keep === 1 ? '' : 's') + ' to keep (' + picked.length + '/' + keep + ')'), ok);
   }
+  let committed = false;
   if (S.forkMenu) {                                                                   // the choices of a button with several moves
     const row = el('span', 'forkmenu');
     row.append(el('b', '', S.forkMenu.label ? S.forkMenu.label + ': ' : ''));
     for (const a of S.forkMenu.acts) row.append(btn(a, a.text, false));
     bar.append(row);
+    if (S.forkMenu.acts.every((a) => a.kind === 'choose_effect')) {                   // the player committed to this effect: its choices and its Skip, nothing else
+      bar.querySelectorAll('.abtn').forEach((n) => n.remove());
+      for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === S.forkMenu.acts[0].args.index)) { S.forkClaimed.add(a); bar.append(btn(a, 'Skip', false)); }
+      committed = true;
+    }
   }
-  const rest = acts.filter((a) => !S.forkClaimed.has(a));                             // the moves that no control of the bar stands for
+  const usable = new Set(acts.filter((a) => a.kind === 'choose_effect').map((a) => a.args.index));          // (an effect that can be activated has no Skip button: it appears with the effect's own choices, or when the effect cannot be used)
+  const buildSkips = acts.filter((a) => a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'build');       // (Posturing and the like: one Skip, only while a piece is being placed, not one per building)
+  const shownBuildSkip = S.placement ? buildSkips[0] : null;
+  const rest = acts.filter((a) => !S.forkClaimed.has(a) && !(a.kind === 'skip_effect' && usable.has(a.args.index)) && !committed && (!buildSkips.includes(a) || a === shownBuildSkip));                           // the moves that no control of the bar stands for
   if (rest.length) {
     const holder = rest.length > 10 ? el('details', 'forkmore') : el('span', 'forkmore');
     if (rest.length > 10) holder.append(el('summary', '', 'More moves (' + rest.length + ')'));
-    for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + a.text, false));
+    for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + (a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'mark' ? 'Pass: no animal can be marked' : a.text), false));
     bar.append(holder);
   }
   if (PLAY || SANDBOX) playTurnButtons(bar, acts);

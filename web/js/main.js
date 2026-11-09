@@ -7,7 +7,7 @@ import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povSta
 import { fetchFullReplay, fetchReplay } from './load.js';
 import { applyIconNames } from './icons.js';
 import { renderShared } from './shared.js';
-import { actionBar } from './action-bar.js';
+import { actionBar, refreshBar } from './action-bar.js';
 import { sidePanel } from './side-panel.js';
 import { cycleDockTab, renderDock, toggleDock } from './dock.js';
 import { beforeRender, afterRender } from './card-motion.js';
@@ -69,6 +69,18 @@ function redraw(root, draw) {
   const old = FORK || SANDBOX ? [] : [...root.childNodes];
   draw();
   if (old.length) [...root.childNodes].forEach((n, i) => { if (old[i]) { const keep = reconcile(old[i], n); if (keep !== n) n.replaceWith(keep); } });
+}
+
+// A click inside a zoo that only changes what is selected there (the rotation, the anchor of a building, an enclosure for an animal): the zoo boards and the bar are drawn again, nothing
+// else. Drawing the shared board (association board, display) and the side panel again for every click made them jitter.
+export function renderZoos() {
+  if (!FORK && !SANDBOX) { render(); return; }
+  const scrollY = window.scrollY, scrollX = window.scrollX;
+  const st = povState(frameState());
+  const zoos = $('zoos');
+  zoos.replaceChildren(...zooBoards(st));
+  refreshBar();
+  window.scrollTo(scrollX, scrollY);
 }
 
 export function render() {

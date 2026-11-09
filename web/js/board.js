@@ -7,14 +7,14 @@ import { hdPentagonSvg } from './ctrack.js';
 import { pentagon } from './handshake.js';
 import { FIT_DY, FIT_H, ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, moneyTwo, pieceUrl } from './icons.js';
 import { seatRawColor, svg } from './util.js';
-import { render } from './main.js';
+import { render, renderZoos } from './main.js';
 import { playFork } from './fork.js';
 import { animalSelection } from './action-bar.js';
 
 const toAxial = (x, y) => [x, (y - x - 1) / 2];
 const fromAxial = (q, r) => [q, 2 * r + q + 1];
 const rotateAxial = (a, k) => { let [q, r] = a; for (let i = 0; i < ((k % 6) + 6) % 6; i++) [q, r] = [-r, q + r]; return [q, r]; };
-const placementCells = (type, x, y, k) => {
+export const placementCells = (type, x, y, k) => {
   const [q0, r0] = toAxial(x, y);
   return (S.replay.shapes[type] || []).map((o) => { const [dq, dr] = rotateAxial(o, k); return fromAxial(q0 + dq, r0 + dr); });
 };
@@ -89,7 +89,7 @@ export function zooBoard(map, player, seat) {
     tip.textContent = bn.type ? bn.type + (bn.value ? ' ' + bn.value : '') : 'bonus';
     const icon = ICON_IDS['bonus:' + bn.type];
     if (bn.type === 'Digging') { iconBox(icon, cx, cy, 80); s.lastChild.append(tip); continue; }       // r9c13 already has its own background
-    if (bn.type === 'Worker' && map.id === '11') {                                                       // map 11 (Caves): the Worker hex takes a worker back (Extra Shift: 13 of 13 in the logs), the whole tile of the icon sheet
+    if (bn.type === 'extra-shift' || (bn.type === 'Worker' && map.id === '11')) {                       // Extra Shift (map 11's hex, custom maps; "Worker" on map 11 is the old name of it): a worker comes back (13 of 13 in the logs), the whole tile of the icon sheet
       tip.textContent = 'Extra Shift: take a worker back from the association board';
       s.append(hdPentagonSvg('bonus-extra-shift', 80, cx, cy)); s.lastChild.append(tip); continue;          // (the pentagon of the track's Extra Shift bonus, HD, ctrack.js)
     }
@@ -100,7 +100,7 @@ export function zooBoard(map, player, seat) {
     iconBox(ICON_IDS.pentagon, cx, cy, 80);
     if (bn.type === 'adapt') adaptIcon(s, cx, cy + 1, bn.value || 1);                    // (vector, bonusart.js)
     else if (bn.type === 'money') moneyTile(s, cx, cy + 3, 48);
-    else if (bn.type === 'Scavenging' && icon && bn.value > 1) {                 // Scavenging 3: the number to the left of the icon, overlapping it a little
+    else if ((bn.type === 'Scavenging' || bn.type === 'digging-plain') && icon && bn.value > 1) {                 // Scavenging 3 / Digging 2: the number to the left of the icon, overlapping it a little
       iconBox(icon, cx + 9, cy + 3, 44);
       put('text', { x: cx - 15, y: cy + 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
     }
@@ -282,7 +282,7 @@ export function zooBoard(map, player, seat) {
       const on = S.animalEnc && S.animalEnc.card === aSel.card && S.animalEnc.x === b.x && S.animalEnc.y === b.y;
       const pick = svg('path', { d: fillPath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'stroke: none' });
       encPicks.push(svg('path', { d: outlinePath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'fill: none; pointer-events: none' }));       // (the border, drawn apart from the clickable area)
-      pick.addEventListener('click', () => { S.animalEnc = { card: aSel.card, x: b.x, y: b.y }; render(); });
+      pick.addEventListener('click', () => { S.animalEnc = { card: aSel.card, x: b.x, y: b.y }; renderZoos(); });
       encPicks.push(pick);
     }
     if (params.has('debug')) {                  // ?debug: outline the cells the engine says the building covers
@@ -309,7 +309,7 @@ export function zooBoard(map, player, seat) {
     const hover = svg('g', { class: 'hoverplace', 'pointer-events': 'none' });
     for (const h of map.hexes || []) {
       const poly = svg('polygon', { points: hexPoints(h.x, h.y), class: 'pickhex' });
-      poly.addEventListener('click', () => { S.placement.x = h.x; S.placement.y = h.y; render(); });
+      poly.addEventListener('click', () => { S.placement.x = h.x; S.placement.y = h.y; renderZoos(); });
       poly.addEventListener('mouseenter', () => {
         if (S.placement.x !== null) return;
         const cells = placementCells(S.placement.type, h.x, h.y, S.placement.rot);
@@ -349,8 +349,8 @@ export function zooBoard(map, player, seat) {
         g.addEventListener('click', (e) => { e.stopPropagation(); onclick(); });
         s.append(g);
       };
-      button(minX - 105, midY, '\u21B6', 'Turn counter-clockwise', () => { S.placement.rot = (S.placement.rot + 5) % 6; render(); }, 'rot');
-      button(maxX + 105, midY, '\u21B7', 'Turn clockwise', () => { S.placement.rot = (S.placement.rot + 1) % 6; render(); }, 'rot');
+      button(minX - 105, midY, '\u21B6', 'Turn counter-clockwise', () => { S.placement.rot = (S.placement.rot + 5) % 6; renderZoos(); }, 'rot');
+      button(maxX + 105, midY, '\u21B7', 'Turn clockwise', () => { S.placement.rot = (S.placement.rot + 1) % 6; renderZoos(); }, 'rot');
       if (legal) button(midX - 48, maxY + 110, '\u2713', 'Place the building here', () => playFork(legalPlacement(S.placement)), 'okbtn');
       button(midX + (legal ? 48 : 0), maxY + 110, '\u2715', 'Cancel', () => { S.placement = null; render(); }, 'cancelbtn');
     }

@@ -1,0 +1,100 @@
+/* Park Poster look for the content pages: the profile, the ratings, the terms, my maps, the end of a game, the mini games hub, the extension pages and the account dialog.
+   Loaded after css/poster-page.css and css/lobbies.css, whose rules apply to `.pp` (the container of these pages) as they do to `.lobbies`: paper cards (every <section>), pill buttons, fields, tables, tags.
+   A page is `<body class="poster">` (+ `narrow` / `slim` for its width) with `<p class="small"><a href="/">...</a></p>`, an <h1> on the teal and a <main class="pp"> of sections. */
+body.poster.narrow { max-width: 46rem; }
+body.poster.slim { max-width: 42rem; }
+
+/* the old pieces (style.css colours) inside a card take the poster colours */
+body.poster :is(.lobbies, .pp) section { --fg: var(--ink); --muted: #52666B; --border: rgba(23, 38, 43, .28); --accent: var(--sun); --bg: var(--paper); --err: var(--rust); --ok: #1f7a45; color: var(--ink); }
+body.poster :is(.lobbies, .pp) section .muted { color: #52666B; }
+body.poster :is(.lobbies, .pp) section a:not(.btnlink) { color: #7a3b00; font-weight: 700; }
+body.poster .pp > p, body.poster .pp > .muted { max-width: 44rem; color: #E7F2EE; font-size: 1.05rem; text-shadow: 0 1px 0 rgba(0, 0, 0, .35); }
+body.poster .pp > p a { color: var(--gold); font-weight: 700; }
+body.poster .pp section > h2:first-child { margin-top: .1rem; }
+body.poster .pp section > p:last-child, body.poster .pp section > ul:last-child, body.poster .pp section > ol:last-child { margin-bottom: 0; }
+body.poster .pp li { margin: .2rem 0; }
+body.poster .pp .small { font-size: .9rem; }
+
+/* the status line of a page that loads (#msg): a paper pill */
+body.poster #msg { margin: 1.1rem 0; padding: .7rem 1.1rem; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 5px 0 var(--ink); font-weight: 700; }
+body.poster #msg.muted, body.poster #msg.loading { color: var(--ink); }
+body.poster #msg.error { border-color: var(--rust); color: var(--rust); box-shadow: 0 5px 0 var(--rust); }
+body.poster #msg.ok { border-color: #1f7a45; color: #1f7a45; box-shadow: 0 5px 0 #1f7a45; }
+body.poster #msg a { color: #7a3b00; }
+body.poster #msg[hidden] { display: none; }
+
+/* fields of a form in a card */
+body.poster :is(.lobbies, .pp) input[type=password] { padding: .4rem .75rem; background-color: var(--field); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; font: 600 16px 'Park Label', system-ui, sans-serif; }
+body.poster :is(.lobbies, .pp) input[type=password]:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+body.poster .pp section form { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin: .7rem 0 0; }
+body.poster .pp section form input[type=password] { flex: 1 1 14rem; }
+body.poster .pp a.btnlink.plain { background: var(--paper); color: var(--ink); text-shadow: none; }
+
+/* tables: the right-hand column is a number or a result */
+body.poster .pp table.hist th:last-child, body.poster .pp table.hist td:last-child { text-align: right; }
+body.poster .pp table.board th:nth-child(n+3), body.poster .pp table.board td:nth-child(n+3) { text-align: right; }
+body.poster .pp table.board td:nth-child(3) { font: 400 1.15rem 'Park Num', system-ui, sans-serif; }
+body.poster .pp .up { color: #1f7a45; font-weight: 700; }
+body.poster .pp .down { color: var(--rust); font-weight: 700; }
+
+/* the profile: the numbers are cards on the teal */
+body.poster .pp .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 1rem; margin: 1.4rem 0 0; }
+body.poster .pp .stat { padding: .8rem 1rem .85rem; background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 0 5px 0 var(--ink); }
+body.poster .pp .stat b { display: block; font: 400 2.1rem/1.1 'Park Num', system-ui, sans-serif; color: var(--ink); }
+body.poster .pp .stat b.word { font: 400 1.15rem/1.35 'Park Head', system-ui, sans-serif; padding: .45rem 0 .3rem; }
+body.poster .pp .stat span { display: block; margin-top: .1rem; font: 700 .78rem 'Park Label', system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #52666B; }
+body.poster .pp section.danger { border-color: var(--rust); box-shadow: 0 6px 0 var(--rust); }
+body.poster .pp section.danger h2 { color: var(--rust); }
+
+/* the end of a game */
+body.poster .pp .facts { margin-top: 1rem; text-align: center; color: #E7F2EE; font: 700 .95rem 'Park Label', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+body.poster .pp .actions { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; margin: 1.6rem 0 .4rem; }
+body.poster .pp section.ratings { max-width: 30rem; margin: 1.9rem auto 0; }
+body.poster .pp .ratings td:last-child { text-align: right; font-weight: 700; }
+body.poster .pp .endstats { margin: 0; padding: 1.2rem 1.4rem 1.5rem; color: var(--ink); background: var(--paper); border: 4px solid var(--ink); border-radius: 24px; box-shadow: 0 6px 0 var(--ink); --p0: #A8321E; --p1: #146577; --gold: #F4B63F; }
+body.poster .pp .eshead { font: 400 2rem/1.1 'Bowlby One', system-ui, sans-serif; }
+body.poster .pp .esnote, body.poster .pp .estag { color: #52666B; }
+body.poster .pp .esside { background: var(--field); border: 3px solid var(--ink); border-top: 8px solid var(--c); border-radius: 18px; }
+body.poster .pp .esside.winner { background: #FFEFB8; border-color: var(--ink); border-top-color: var(--gold); box-shadow: 0 4px 0 var(--ink); }
+body.poster .pp .esside.tie { background: #DCEBD2; border-color: var(--ink); box-shadow: 0 4px 0 var(--ink); }
+body.poster .pp .esscore { font: 400 3.2rem/1.1 'Park Num', system-ui, sans-serif; }
+body.poster .pp .esh3 { font: 400 1.3rem 'Park Head', system-ui, sans-serif; }
+body.poster .pp .escmp th, body.poster .pp .escmp td { border-bottom: 2px solid rgba(23, 38, 43, .18); }
+body.poster .pp .escmp tr.esgroup td { background: rgba(23, 38, 43, .09); }
+
+/* the mini games hub: a card per game, the leaderboards and the calendars */
+body.poster .pp .modes { gap: 1.2rem; margin-top: 1.4rem; }
+body.poster .pp .modes > section { margin: 0; }
+body.poster .pp .mode { gap: .6rem; }
+body.poster .pp .mode h2 { margin: 0; }
+body.poster .pp .mode.unavailable { background: rgba(248, 237, 203, .55); border-style: dashed; box-shadow: none; opacity: 1; }
+body.poster .pp .mode.unavailable h2, body.poster .pp .mode.unavailable p { color: #52666B; }
+body.poster .pp .badge { padding: .05rem .6rem; border: 2px solid var(--ink); background: var(--sand); color: var(--ink); font: 700 .72rem 'Park Label', system-ui, sans-serif; }
+body.poster .pp .lbtabs { gap: .5rem; border: 0; margin-top: .8rem; }
+body.poster .pp .lbpanel { padding: 1rem 0 .2rem; }
+body.poster .pp button.lbtab.on { background: var(--gold); margin: 0; }
+body.poster .pp .lbgrid h3, body.poster .pp .pastgame h3 { font: 400 1.15rem 'Park Head', system-ui, sans-serif; }
+body.poster .pp .cal { --c-ok: #1f7a45; --c-ok-bg: #DCEBD2; --c-bg: var(--field); --c-line: rgba(23, 38, 43, .3); }
+body.poster .pp .cal-title { font: 400 1.15rem 'Park Head', system-ui, sans-serif; }
+body.poster .pp button.cal-nav { width: 2.2rem; height: 2.2rem; padding: 0; border-width: 3px; border-radius: 50%; background: var(--paper); box-shadow: 0 2px 0 var(--ink); font-size: 1.3rem; line-height: 1; }
+body.poster .pp button.cal-day { padding: 0; border: 1px solid transparent; border-radius: 10px; background: transparent; box-shadow: none; text-shadow: none; color: color-mix(in srgb, var(--c-muted) 65%, transparent); font: 600 .92rem/1.05 'Park Label', system-ui, sans-serif; }
+body.poster .pp button.cal-day.has { background: var(--c-bg); border: 2px solid var(--ink); color: var(--ink); box-shadow: 0 2px 0 var(--ink); }
+body.poster .pp button.cal-day.has:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 0 var(--ink); border-color: var(--ink); }
+body.poster .pp button.cal-day.played { background: var(--c-ok-bg); }
+body.poster .pp button.cal-day.sel { background: var(--sun); color: #fff; text-shadow: 0 1px 0 rgba(23, 38, 43, .45); }
+body.poster .pp .cal-day.today { box-shadow: inset 0 0 0 3px var(--gold); }
+
+/* the account dialog (js/account.js), on every poster page */
+body.poster dialog.acctdlg { width: min(30rem, calc(100vw - 2rem)); padding: 1.1rem 1.4rem 1.3rem; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 24px; box-shadow: 0 6px 0 var(--ink);
+  --muted: #52666B; --border: rgba(23, 38, 43, .3); --accent: var(--sun); --err: var(--rust); font: 500 16px/1.45 'Barlow', system-ui, sans-serif; }
+body.poster dialog.acctdlg::backdrop { background: rgba(14, 75, 90, .72); }
+body.poster .accthead h2 { margin: 0; font: 400 1.5rem/1.1 'Park Head', system-ui, sans-serif; }
+body.poster .acctfield { font: 700 .95rem 'Park Label', system-ui, sans-serif; }
+body.poster .acctinput { padding: .45rem .75rem; background: var(--field); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; font: 600 16px 'Park Label', system-ui, sans-serif; }
+body.poster .acctinput:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+body.poster dialog.acctdlg button:not(.linkbtn) { padding: .45rem 1.1rem .5rem; background: var(--sun); color: #fff; border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink); text-shadow: 0 2px 0 rgba(23, 38, 43, .45); font: 700 16px 'Park Label', system-ui, sans-serif; }
+body.poster dialog.acctdlg button.linkbtn { color: #7a3b00; font-weight: 700; }
+body.poster .acctmsg { background: rgba(168, 50, 30, .08); border: 3px solid var(--rust); border-radius: 14px; color: var(--rust); font-weight: 700; }
+body.poster .acctopt { border: 3px solid var(--ink); border-radius: 14px; background: var(--field); }
+body.poster .acctwarn { background: #FFEFB8; border: 3px solid var(--ink); border-radius: 14px; }
+body.poster .acctcode { background: var(--field); border: 3px dashed var(--ink); border-radius: 14px; }

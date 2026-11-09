@@ -776,9 +776,9 @@ body.viewer { padding-bottom: 5rem; }
 .assoc .assocpick:hover { fill: rgba(255, 255, 255, .28); stroke: #f5c542; }
 .actionbar .tilebtn { padding: .2rem .4rem; }
 .actionbar .tilebtn.supply { opacity: .7; }
-.bonuspanel .bonuspick { fill: rgba(255, 255, 255, 0); stroke: transparent; stroke-width: 5; cursor: pointer; }
+.bonuspanel .bonuspick { fill: rgba(245, 197, 66, .14); stroke: #f5a800; stroke-width: 3; stroke-dasharray: 8 5; cursor: pointer; }      /* (the bonuses that can be chosen are outlined) */
 .bonuspanel .bonuspick:hover { fill: rgba(245, 197, 66, .2); }
-.bonuspanel .bonuspick.on { fill: rgba(245, 197, 66, .3); stroke: #f5a800; }
+.bonuspanel .bonuspick.on { fill: rgba(245, 197, 66, .3); stroke: #f5a800; stroke-dasharray: none; stroke-width: 5; }
 .modalback { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, .55); display: flex; align-items: center; justify-content: center; }
 .modalbox { background: #f3ead2; border: 3px solid #3b2a1c; border-radius: 12px; padding: 1.2rem 1.6rem; max-width: 30rem; font-family: system-ui, sans-serif; box-shadow: 0 8px 30px rgba(0, 0, 0, .6); }
 .modalbox h3 { margin: 0 0 .6rem; }
