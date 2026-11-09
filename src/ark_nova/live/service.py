@@ -328,6 +328,21 @@ class LiveService:
         return {"irreversible": bool(reason), "reason": reason}
 
     # ---- reading --------------------------------------------------------------------------------------------------------------------------
+    def log(self, game_id: str, token: str | None) -> dict:
+        """The lines of the game log so far, as the viewer of the token reads them ({version, label} per move), for a page that is opened (or reloaded) in the middle of a game."""
+        role = "spectator"
+        c = self._load(game_id)
+        if token:
+            role = str(self._seat_of(c, token))
+        rec = self.keeper.record(game_id)
+        out = []
+        for row in rec.get("steps") or []:
+            step = row.get("step") or {}
+            text = (step.get("labels") or {}).get(role)
+            if text:
+                out.append({"version": int(row["n"]), "label": text})
+        return {"log": out}
+
     def view(self, game_id: str, token: str | None) -> dict:
         """The stored view of the token's seat (a spectator without a token) with its decision."""
         role = "spectator"
@@ -404,13 +419,16 @@ class LiveService:
         written = bgalog.texts(c.state, act, new, names)                     # (the log of the step in BGA's words, one text per viewer)
         labels = {role: written[role] for role in bgalog.ROLES}
         step["label"] = written["full"]
+        step["labels"] = dict(labels)                                     # (what each viewer reads of the step: the log of a page opened later is built from these)
         if timeout:                                                        # (`seat` is the player who ran out of time)
             labels = {role: f"{names[seat]} ran out of time" for role in labels}
             step["label"] = f"{names[seat]} ran out of time"
+            step["labels"] = dict(labels)
         if over:                                                           # the end is announced in the game log of both players
             end = stepdata.announcement(new, names)
             labels = {role: f"{text}" + chr(10) + end for role, text in labels.items()}
             step["label"] = step["label"] + chr(10) + end
+            step["labels"] = dict(labels)
         end_status = "conceded" if conceded else "finished"
         all_views = projection.views(new, labels)
         clock_now = None

@@ -431,7 +431,31 @@ def legal(state, p) -> list:
                         and not any(Action(p.seat, "choose_slot", {"slot": i, **args}) == o for o in out)
                         and (n == 1 or (i, c, r) not in slot_options(state, p.seat, pr["key"], extra=n - 1))]
         return out
+    if pr["step"] == "release":                                    # a Release project (live play): the animal and the enclosure that is emptied, then the bonus
+        return _release_actions(state, p, pr)
     return [Action(p.seat, "choose_bonus", {"bonus": j}) for j, _ in notepad_bonuses(state, p)]
+
+
+def _release_actions(state, p, pr) -> list:
+    card = project(pr["key"], state.config.marine_worlds)
+    out = []
+    for animal in project_effects.releasable(state, p.seat, card["tag"], pr["slot"]):
+        where = project_effects.release_enclosures(state, p.seat, animal)
+        out += [Action(p.seat, "choose_release", {"release": animal, "building": [b.x, b.y]}) for b in where] or [Action(p.seat, "choose_release", {"release": animal})]
+    return out
+
+
+def choose_release(state, action: Action) -> None:
+    """The animal leaves the zoo at once (its appeal is lost) before the bonus of the project is chosen."""
+    fx = _fx()
+    p = state.players[action.player]
+    pr = state.prompt.args.get("project")
+    if pr is None or pr["step"] != "release" or action not in legal(state, p):
+        raise fx.IllegalEffect(f"that animal cannot be released now: {action.args}")
+    project_effects.release_animal(state, p.seat, action.args["release"], action.args.get("building"))
+    pr["released"], pr["step"] = True, "bonus"
+    if not notepad_bonuses(state, p):
+        _finish_project(state, p, None)
 
 
 def do_task(state, action: Action) -> None:
@@ -641,6 +665,9 @@ def choose_slot(state, action: Action) -> None:
     ids = [t.id for q in state.players for t in q.tokens]
     p.tokens.append(Token(max(ids, default=0) + 1, "token", project_location(pr["key"], slot, state.config.marine_worlds)))
     pr["slot"], pr["step"] = slot, "bonus"
+    if state.config.confirm_turns and project(pr["key"], state.config.marine_worlds)["type"] == "Release" and _release_actions(state, p, pr):
+        pr["step"] = "release"                                     # (live play: the release comes first, as part of choosing the project)
+        return
     if not notepad_bonuses(state, p):
         _finish_project(state, p, None)
 
@@ -666,6 +693,8 @@ def _finish_project(state, p, j) -> None:
         bonus = {b["type"]: b["value"]}
     card = project(pr["key"], state.config.marine_worlds)
     pending = project_effects.slot_effects(state, p.seat, pr["key"], card, pr["slot"], bonus) + pr["place"]
+    if pr.get("released"):
+        pending = [e for e in pending if e.get("kind") != "release"]              # (the animal has been released already)
     if g._open_effects(state, p.seat, pending, {"kind": "association_tasks", "args": a}):
         return
     after_step(state, p.seat)

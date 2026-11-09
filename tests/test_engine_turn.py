@@ -705,3 +705,25 @@ def test_an_unupgraded_cards_action_draws_all_its_cards_from_the_deck_at_once():
     s2.players[0].action_cards[3].level = 2                                                     # upgraded: one at a time is allowed
     s2 = apply(s2, Action(0, "choose_action_card", {"type": "cards", "spend": 0}))
     assert sorted(a.args["count"] for a in legal_actions(s2) if a.kind == "take_cards" and a.args["mode"] == "deck") == [1, 2, 3]
+
+
+def test_release_project_in_live_play_releases_before_the_bonus_is_chosen():
+    from ark_nova.engine import project_effects
+    from ark_nova.engine.state import Building
+    s = _association_state()
+    s.config.confirm_turns = True
+    p = s.players[0]
+    s.base_projects = ["P102", "P103", "P104"]
+    s.projects_in_play = ["P119"]                                                             # Release a bird
+    p.animals = ["A518"]
+    p.buildings = [Building(id=1, type="size-2", x=1, y=0, animal="A518")]
+    appeal = p.appeal
+    s = apply(s, Action(0, "choose_action_card", {"type": "association", "spend": 0}))
+    s = apply(s, Action(0, "association_task", {"task": "conservation", "project": "P119", "source": "play"}))
+    s = apply(s, Action(0, "choose_slot", {"slot": 2}))
+    rel = [a for a in legal_actions(s) if a.kind == "choose_release"]
+    assert rel and not any(a.kind == "choose_bonus" for a in legal_actions(s))                 # (first the animal)
+    s = apply(s, rel[0])
+    assert s.players[0].animals == [] and s.players[0].appeal == appeal - project_effects.data.cards_by_key()["A518"]["appeal"]       # (the appeal is lost at once)
+    s = apply(s, [a for a in legal_actions(s) if a.kind == "choose_bonus"][0])
+    assert "release" not in {e["kind"] for e in s.prompt.args["pending"]} and {"gain", "project_bonus"} <= {e["kind"] for e in s.prompt.args["pending"]}

@@ -209,6 +209,9 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         cards = list(a.get("cards", []))
         L.add(f"{who} discards {len(cards)} card{'' if len(cards) == 1 else 's'}")          # (short for everyone, like the replay: the cards are no use to the reader)
         return
+    if k == "choose_release":                                                  # a Release project: the animal leaves the zoo before the bonus is chosen
+        L.add(f"{who} releases {card(a['release'])}" + (f" ({delta['appeal']} appeal)" if delta["appeal"] else ""))
+        return
     if k == "sponsor_side" and a.get("op") == "discard_snap":                  # Sponsors, variant 4: the discarded sponsor is secret, the one snapped from the display is public
         text = f"{who} discards {card(a['card'])} to snap {card(a['take'])}"
         L.secret(text, f"{who} discards a sponsors to snap {card(a['take'])}", text)
@@ -410,7 +413,14 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
                  f"You discard {names_of(cards)} for the sunbathing ability and gained {m} money")
     elif kind == "digging":
         drawn, gone = _hand_change(old, new, seat)
-        if "display" in a:
+        if a.get("rescue"):                                                    # Map 10: the animal goes to the Rescued zone, which everybody sees: also a card of the hand is named
+            key = a.get("display") or a.get("hand") or (gone[0] if gone else "?")
+            L.add(f"{who} rescues {card(key)} (Map 10 effect)")
+            if "display" in a:
+                _display_refill(old, new, L)
+            if drawn:
+                L.secret(f"{who} draws {names_of(drawn)} from the deck", f"{who} draws {n_cards(len(drawn))} from the deck", f"You draw {names_of(drawn)} from the deck")
+        elif "display" in a:
             L.add(f"{who} digs {card(a['display'])} from the display")
             _display_refill(old, new, L)
         else:

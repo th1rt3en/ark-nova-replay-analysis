@@ -144,16 +144,13 @@ export async function playLoad() {
   setClock(setup.body.clock);
   setStudy(setup.body.study);
   P.started = P.status !== 'waiting';
-  let saved = [];                                                      // the log of the moves before this page was opened (kept in this browser: the server does not send the history of a game in progress)
-  try { saved = JSON.parse(localStorage.getItem('playLog.' + P.id) || '[]'); } catch (e) { saved = []; }
+  let saved = [];                                                      // the log of the moves before this page was opened: the server has it, each line as this viewer reads it
+  const logRes = await playApi('/log' + (P.token ? '?s=' + encodeURIComponent(P.token) : '')).catch(() => null);
+  if (logRes && logRes.ok && Array.isArray(logRes.body.log)) saved = logRes.body.log;
   saved = (Array.isArray(saved) ? saved : []).filter((e) => e && typeof e.label === 'string' && e.version < state.body.version);
   const past = saved.map((e, i) => ({ ...playStep(state.body, i), label: e.label, label_pov: e.label_pov || null, log_only: true, options: null, actions: [], version: e.version }));       // (text only: they show the current board)
   const steps = [...past, playStep(state.body, past.length)];
-  saveLog(steps);
   return { ...setup.body, table_id: P.id, result: [], setup_steps: 0, steps };
-}
-function saveLog(steps) {
-  try { localStorage.setItem('playLog.' + P.id, JSON.stringify(steps.slice(-600).map((s) => ({ label: s.label, label_pov: s.label_pov || null, version: s.version })))); } catch (e) { /* no storage / full */ }
 }
 // Ark360 reveals the base projects and the rewards of the conservation / reputation tracks after the action card draft: the page learns them from the first view that has them
 function learnReveal(view) {
@@ -174,7 +171,6 @@ export function pushLive(p) {
   const batch = expandLagoonDeal(lastState, [playStep(p, S.replay.steps.length)]);          // (Map 14: the starting hands come with the person sponsors, steps of their own)
   const firstNew = S.replay.steps.length, next = batch[batch.length - 1];
   for (const st of batch) { st.index = S.replay.steps.length; S.replay.steps.push(st); }
-  saveLog(S.replay.steps);
   stageBreaks(S.replay);
   buildMoveList();
   $('jump').max = S.replay.steps.length - 1;

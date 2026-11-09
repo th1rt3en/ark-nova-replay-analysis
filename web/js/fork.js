@@ -236,6 +236,22 @@ export function forkBar() {
   bar.querySelectorAll('.abtn.gen').forEach((n) => n.remove());                    // (the kinds of action are listed as buttons of their own below)
   bar.hidden = false;
   const st = cur.state, seat = cur.options ? cur.options.seat : acts.length ? acts[0].player : 0;
+  const releaseActs = acts.filter((a) => a.kind === 'choose_release');
+  if (releaseActs.length) {                                                          // a Release project: the animal to release, then the enclosure that is emptied when there are several
+    for (const a of releaseActs) S.forkClaimed.add(a);
+    bar.replaceChildren();
+    const whoR = el('span', 'who', seatName(releaseActs[0].player));
+    whoR.style.color = seatText(releaseActs[0].player);
+    bar.append(whoR, el('b', '', ' must choose an animal to release'));
+    const byAnimal = new Map();
+    for (const a of releaseActs) { if (!byAnimal.has(a.args.release)) byAnimal.set(a.args.release, []); byAnimal.get(a.args.release).push(a); }
+    for (const [key, list] of byAnimal) {
+      const b = el('button', 'forkmove', 'Release ' + cardName(key));
+      b.type = 'button'; b.disabled = S.forkBusy;
+      b.onclick = () => { if (list.length === 1) playFork(list[0]); else { S.forkMenu = { label: 'Release ' + cardName(key) + ': the enclosure to empty', acts: list }; refreshBar(); } };
+      bar.append(b);
+    }
+  }
   const bonusActs = acts.filter((a) => a.kind === 'choose_bonus');
   if (bonusActs.length) {                                                          // the bonus of a supported project: click a bonus slot of the player board, then confirm
     for (const a of bonusActs) S.forkClaimed.add(a);
@@ -495,9 +511,11 @@ export function forkBar() {
     const eff = ((cur.options && cur.options.effects) || []).find((e) => e.index === grp.idx) || {};
     const picked = [...marked(grp.p + ':hand', st.players[grp.p].hand), ...marked('display', st.display).filter(Boolean)].filter((k) => grp.list.some((a) => pickCardOf(a) === k));
     const mine = picked.length ? grp.list.filter((a) => pickCardOf(a) === picked[0]) : [];
+    if (eff.kind === 'digging') bar.replaceChildren();                                // (the Digging button was clicked: only its prompt is left)
     const who3 = el('span', 'who', seatName(grp.p));
     who3.style.color = seatText(grp.p);
-    bar.append(who3, el('b', '', (eff.kind === 'mark' ? ' must select an animal of the display to mark, then confirm' : ' must select a card of the hand or the display' + (eff.kind === 'digging' ? ' to dig' : '')) + (picked.length ? ': ' + cardName(picked[0]) : '')));
+    const yours = seatName(grp.p) === 'You';
+    bar.append(who3, el('b', '', (eff.kind === 'mark' ? ' must select an animal of the display to mark, then confirm' : ' must select a card from ' + (yours ? 'your' : 'the') + ' hand or on the display') + (picked.length ? ': ' + cardName(picked[0]) : '')));
     const confirmWith = (a, label) => {
       const ok = a ? btn(a, label, true) : el('button', 'forkmove forkconfirm', label);
       ok.type = 'button'; ok.disabled = !a || S.forkBusy;

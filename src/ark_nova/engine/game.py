@@ -1335,6 +1335,7 @@ _TURN_HANDLERS = {
     ("association_tasks", "association_task"): lambda st, act: association.do_task(st, act),
     ("association_tasks", "choose_slot"): lambda st, act: association.choose_slot(st, act),
     ("association_tasks", "choose_bonus"): lambda st, act: association.choose_bonus(st, act),
+    ("association_tasks", "choose_release"): lambda st, act: association.choose_release(st, act),
     ("association_tasks", "donate"): lambda st, act: association.donate(st, act),
     ("association_tasks", "finish_association"): lambda st, act: association.finish(st, act),
     ("association_tasks", "self_clever"): lambda st, act: association.self_clever(st, act),

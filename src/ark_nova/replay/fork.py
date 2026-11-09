@@ -97,6 +97,9 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         if move:
             return f"Move the {t_} to ({x_}, {y_}) rotation {r_} (crane)"
         return f"Place {t_} at ({x_}, {y_}) rotation {r_}{extra}"
+    if k == "choose_release":
+        where = args.get("building")
+        return f"Release {_name(args.get('release', '?'))}" + (f" (empty the enclosure at {where[0]}, {where[1]})" if where else "")
     if k == "choose_slot" and isinstance(args.get("slot"), int):                           # (players count the slots from 1)
         return f"Slot {args.pop('slot') + 1}" + "".join(f", {k2} {_fmt(v)}" for k2, v in args.items())
     if k == "sponsor_side" and args.get("op") in _TRADE_TEXT:
