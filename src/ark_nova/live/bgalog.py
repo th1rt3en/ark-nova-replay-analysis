@@ -133,8 +133,31 @@ def _hand_change(old: GameState, new: GameState, seat: int) -> tuple:
     return list((h1 - h0).elements()), list((h0 - h1).elements())
 
 
-def _display_refill(old: GameState, new: GameState, L: Lines) -> None:
-    c0, c1 = Counter(c for c in old.display if c), Counter(c for c in new.display if c)
+def _display_refill(old: GameState, new: GameState, L: Lines, start=None) -> None:
+    """The display is replenished; every Wave card among the new ones removes the leftmost card and the display is replenished again: one line for each of those
+    steps (replayed from the old deck, which the engine draws from in order). `start`: the cards left in the display when the replenishing begins."""
+    from ark_nova.engine.game import DISPLAY_SIZE, is_wave
+    cards = [c for c in old.display if c] if start is None else list(start)
+    deck, used, lines = old.main_deck, 0, []
+    while True:
+        missing = DISPLAY_SIZE - len(cards)
+        if missing <= 0 or used + missing > len(deck):
+            break
+        fresh = deck[used:used + missing]
+        used += missing
+        cards += fresh
+        lines.append(f"The display is replenished with {names_of(fresh)}")
+        waves = [c for c in fresh if is_wave(c)]
+        if not waves:
+            break
+        lines += [f"{card(c)} has a Wave icon and triggers another wave" for c in waves]
+        lines += [f"{card(c)} is removed from the display by the wave" for c in cards[:len(waves)]]
+        cards = cards[len(waves):]
+    if lines and cards == [c for c in new.display if c]:
+        for line in lines:
+            L.add(line)
+        return
+    c0, c1 = Counter(c for c in old.display if c), Counter(c for c in new.display if c)       # (the deck was reshuffled or extended: the plain line)
     added = list((c1 - c0).elements())
     removed = list((c0 - c1).elements())
     if added and (removed or any(c is None for c in old.display)):
@@ -392,6 +415,12 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         L.add(f"{who} gains a new Association worker (reputation track bonus)")
     elif kind == "slot1":
         L.add(f"{who} places action card {ACTION_NAMES.get(a.get('type'), a.get('type'))} at position 1 (Clever)")
+    elif kind == "wave" or (kind == "pbonus" and (e.get("bonus") or {}).get("type") == "wave"):
+        shown = [c for c in old.display if c]
+        L.add(f"{who} placement bonus: wave" if kind == "pbonus" else f"{who} wave")
+        if shown:
+            L.add(f"{card(shown[0])} is removed from the display by the wave")
+        _display_refill(old, new, L, start=shown[1:])
     elif kind in ("pbonus", "project_bonus", "threshold_bonus", "take_tile", "rep_bonus") and _gain_words(delta):
         label = {"pbonus": "placement bonus", "project_bonus": "project bonus", "threshold_bonus": "conservation bonus", "take_tile": "association", "rep_bonus": "reputation bonus"}[kind]
         L.add(f"{who} gains {' and '.join(_gain_words(delta))} ({label})")
@@ -415,6 +444,8 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         L.add(f"{who} marks {card(a['card'])} from display")
     elif kind == "shark" and a.get("cards"):
         L.add(f"{who} removes {names_of(a['cards'])} from the display (shark attack)")
+        if delta["appeal"] > 0:
+            L.add(f"{who} gains {delta['appeal']} appeal (shark attack)")
         _display_refill(old, new, L)
     elif kind == "sell":
         cards = list(a.get("cards", []))

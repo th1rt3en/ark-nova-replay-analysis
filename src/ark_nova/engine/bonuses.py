@@ -171,6 +171,15 @@ def token_actions(state, p) -> list:
     return out
 
 
+def _wave(state) -> None:
+    gone = next((c for c in state.display if c), None)
+    if gone is not None:                                                        # the first card of the display goes (to the owner of its mark, if any) and the display is replenished
+        state.display[state.display.index(gone)] = None
+        from ark_nova.engine import marks
+        marks.discard(state, gone)
+        _g()._refill_display(state)
+
+
 def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
     """A bonus of the map, the conservation track or a card (`{name: value}` as in the BGA logs and the map data)."""
     g = _g()
@@ -431,12 +440,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if not map_rules.continents_left(p):
             _g()._gain(state, p.seat, conservation=1)                           # the 5th and last marker
     elif k == "wave":
-        gone = next((c for c in state.display if c), None)
-        if gone is not None:                                                    # the first card of the display goes (to the owner of its mark, if any) and the display is replenished
-            state.display[state.display.index(gone)] = None
-            from ark_nova.engine import marks
-            marks.discard(state, gone)
-            _g()._refill_display(state)
+        _wave(state)
     elif k == "multiplier":
         card = next((c for c in p.action_cards if c.type == a.get("multiplier")), None)
         if card is None:
@@ -480,7 +484,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if found:
             p.hand.append(found)
     elif k == "pbonus":
-        _g().apply_placement_bonus(state, p.seat, e["bonus"])
+        if state.config.confirm_turns and e["bonus"].get("type") == "wave":      # (live: a Wave has no choice, so choosing it from several placement bonuses resolves it: one click, one warning)
+            _wave(state)
+        else:
+            _g().apply_placement_bonus(state, p.seat, e["bonus"])
     elif k == "search_category":
         fx.search_for_category(state, p.seat, e["category"])
     elif k == "income_map":

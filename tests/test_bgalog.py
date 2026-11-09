@@ -91,3 +91,17 @@ def test_a_building_over_a_placement_bonus_logs_the_gain_and_the_real_price():
             if a.args["type"] == "pavilion":
                 assert "gains 1 appeal (pavilion)" in t["full"]
     assert seen, "no building covered a simple placement bonus in the sample games"
+
+
+def test_a_wave_card_among_the_replenished_cards_triggers_its_own_wave_with_its_own_lines():
+    from types import SimpleNamespace
+    from ark_nova import data
+    from ark_nova.live.bgalog import Lines, _display_refill
+    plain = [k for k, c in data.cards_by_key().items() if k.startswith("A") and not c.get("wave")][:8]
+    wave = next(k for k, c in data.cards_by_key().items() if k.startswith("A") and c.get("wave"))
+    old = SimpleNamespace(display=plain[:3] + [None] * 3, main_deck=[plain[3], wave, plain[4], plain[5], plain[6]])
+    new = SimpleNamespace(display=[plain[2], plain[3], wave, plain[4], plain[5], plain[6]], main_deck=[])
+    L = Lines(0, 'X')
+    _display_refill(old, new, L, start=plain[1:3])
+    text = " | ".join(i[2] for i in L.items)
+    assert "has a Wave icon" in text and text.count("replenished with") == 2
