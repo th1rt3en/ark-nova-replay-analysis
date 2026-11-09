@@ -189,7 +189,7 @@ export function forkBar() {
   const bar = $('actionbar'), cur = S.replay.steps[S.step], acts = cur.actions || [];
   const DISCARDING = new Set(['sell', 'pouch', 'endgame_discard', 'adapt', 'break_discard', 'digging']);          // effects that send the selected cards away: the selection is drawn as a trash mask, not as a check mark
   const effKinds = new Map((((cur.options && cur.options.effects) || [])).map((e) => [e.index, e.kind]));
-  document.body.classList.toggle('discarding', acts.some((a) => a.kind === 'discard_cards' || (a.kind === 'choose_effect' && DISCARDING.has(effKinds.get(a.args.index)))));
+  document.body.classList.toggle('discarding', S.snapMode === 'sun_money' || S.snapMode === 'sun_strength' || acts.some((a) => a.kind === 'discard_cards' || (a.kind === 'choose_effect' && DISCARDING.has(effKinds.get(a.args.index)))));
   if (SANDBOX && S.replay.setup) { if (bar) sbSetupBar(bar); return; }          // the seat and the maps first
   if (SANDBOX && !sbReady()) {                                             // the empty spaces first
     if (bar) { bar.hidden = false; bar.replaceChildren(el('b', '', 'Set the base projects and the conservation bonuses (the empty spaces of the board) to start playing.')); }
@@ -392,7 +392,7 @@ export function forkBar() {
     if (moveOnly && !(S.placement && S.placement.move)) { S.forkClaimed.add(a); continue; }
     S.forkClaimed.add(a); bar.append(btn(a, 'Skip the reposition', false));
   }
-  const handActs = acts.filter((a) => a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind) && a.args.op !== 'discard_snap');
+  const handActs = acts.filter((a) => a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind) && a.args.op !== 'discard_snap' && a.args.op !== 'discard_money' && a.args.op !== 'discard_strength');
   const dispActs = acts.filter((a) => a.args && a.args.card && (a.args.from_display || (a.kind === 'take_cards' && a.args.mode !== 'deck')));
   const discardActs = acts.filter((a) => a.kind === 'discard_cards');
   const marketActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.card === 'string' && ((cur.options && cur.options.effects) || []).some((e) => e.index === a.args.index && e.kind === 'marketing'));

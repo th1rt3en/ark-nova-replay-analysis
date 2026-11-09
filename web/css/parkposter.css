@@ -1480,3 +1480,9 @@ body.viewer .zoo.mappreview { width: 940px; max-width: 100%; flex: 0 0 auto; mar
 
 /* the zoo of a player whose map is not shown yet (the map choice of a live game) */
 body.viewer .zoo.blankzoo .blankrow { min-height: 320px; background: rgba(23, 38, 43, .12); border-radius: 12px; }
+
+/* the buttons of the move bar's action prompt (Trade, Confirm, Pass, the discard buttons...) look like the effect buttons (.abtn): blue rectangle, ink edge, white text; Undo / Restart turn (.turnbtn) keep their own colours */
+body.viewer .movepill .forkmove { box-sizing: border-box; min-height: 2.04em; display: inline-flex; align-items: center; justify-content: center; gap: .35rem; padding: .15rem .6rem; border: 3px solid var(--ink); border-radius: 6px; background: var(--act1); color: #fff; font: inherit; font-weight: 800; box-shadow: none; }
+body.viewer .movepill .forkmove b, body.viewer .movepill .forkmove i { color: inherit; }
+body.viewer .movepill .forkmove:hover:not(:disabled) { background: var(--act1); filter: brightness(1.15); box-shadow: none; }
+body.viewer .movepill .forkmove:disabled { opacity: .4; filter: none; }
