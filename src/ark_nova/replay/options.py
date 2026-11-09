@@ -167,7 +167,9 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         out["pending"] = [e.get("kind") for e in pending][:12]
         out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
-                           **({"name": effect_name(e)} if effect_name(e) else {}), "index": i}
+                           **({"name": effect_name(e)} if effect_name(e) else {}),
+                           **({"enabled": False} if e.get("cond") == "no_animals" and any(c.startswith("A") for c in state.players[who].hand) else {}),      # (Hunter Animals: not while the hand holds an animal)
+                           "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
         out["effects"] = [b for entry in out["effects"] for b in _expedition_buttons(state, pending, entry)]
     return out

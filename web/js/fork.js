@@ -466,7 +466,8 @@ export function forkBar() {
     for (const a of S.forkMenu.acts) row.append(btn(a, a.text, false));
     bar.append(row);
   }
-  const rest = acts.filter((a) => !S.forkClaimed.has(a));                             // the moves that no control of the bar stands for
+  const usable = new Set(acts.filter((a) => a.kind === 'choose_effect').map((a) => a.args.index));          // (an effect that can be activated has no Skip button: it appears with the effect's own choices, or when the effect cannot be used)
+  const rest = acts.filter((a) => !S.forkClaimed.has(a) && !(a.kind === 'skip_effect' && usable.has(a.args.index)));                           // the moves that no control of the bar stands for
   if (rest.length) {
     const holder = rest.length > 10 ? el('details', 'forkmore') : el('span', 'forkmore');
     if (rest.length > 10) holder.append(el('summary', '', 'More moves (' + rest.length + ')'));
