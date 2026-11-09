@@ -515,7 +515,9 @@ export function forkBar() {
     }
   }
   const usable = new Set(acts.filter((a) => a.kind === 'choose_effect').map((a) => a.args.index));          // (an effect that can be activated has no Skip button: it appears with the effect's own choices, or when the effect cannot be used)
-  const rest = acts.filter((a) => !S.forkClaimed.has(a) && !(a.kind === 'skip_effect' && usable.has(a.args.index)) && !committed);                           // the moves that no control of the bar stands for
+  const buildSkips = acts.filter((a) => a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'build');       // (Posturing and the like: one Skip, only while a piece is being placed, not one per building)
+  const shownBuildSkip = S.placement ? buildSkips[0] : null;
+  const rest = acts.filter((a) => !S.forkClaimed.has(a) && !(a.kind === 'skip_effect' && usable.has(a.args.index)) && !committed && (!buildSkips.includes(a) || a === shownBuildSkip));                           // the moves that no control of the bar stands for
   if (rest.length) {
     const holder = rest.length > 10 ? el('details', 'forkmore') : el('span', 'forkmore');
     if (rest.length > 10) holder.append(el('summary', '', 'More moves (' + rest.length + ')'));

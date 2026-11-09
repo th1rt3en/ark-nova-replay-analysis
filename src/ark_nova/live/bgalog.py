@@ -210,6 +210,9 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         what = f"an additional {t}" if a.get("extra") else enclosure(t) if t.startswith("size-") else ("an " if t[:1] in "aeiou" else "a ") + t.replace("-", " ")
         spent = -delta["money"]
         L.add(f"{who} pays {spent} for building {what}" if spent > 0 else f"{who} adds {what} for free")
+        got = _gain_words({kk: (delta[kk] if kk != "money" else max(delta[kk], 0) if spent <= 0 else 0) for kk in delta})            # (a pavilion brings 1 appeal, a placement bonus anything: said on a line of its own)
+        if got:
+            L.add(f"{who} gains {' and '.join(got)} ({'pavilion' if t == 'pavilion' else 'placement bonus'})")
     elif k == "play_animal":
         c = a.get("card", "?")
         spent = -delta["money"]
