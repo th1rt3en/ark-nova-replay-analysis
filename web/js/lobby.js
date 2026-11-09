@@ -10,7 +10,7 @@ const $ = (id) => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 const id = new URLSearchParams(location.search).get('id') || '';
 const POLL_MS = 2000, SAFETY_MS = 30000;                  // (without a push socket a member sees a change within about two seconds; with one the page asks only as a safety net)
-let timer = 0, view = null, invitingSeat = null, searchBox = null, gone = false, chatMounted = false, starting = false;
+let timer = 0, view = null, invitingSeat = null, searchBox = null, gone = false, chatMounted = false, starting = false, inviteText = '';
 
 async function call(path, body) {
   const res = await fetch('/api/lobbies' + path, { method: body === undefined ? 'GET' : 'POST', headers: body === undefined ? {} : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store' });
@@ -59,7 +59,7 @@ function seatCard(s) {
   if (host) {                                                           // the host offers the seat to an online player
     if (invitingSeat !== s.index) {
       const open = el('button', { type: 'button', className: 'go' }, 'Invite a player');
-      open.onclick = () => { invitingSeat = s.index; draw(); if (searchBox) searchBox.focus(); };
+      open.onclick = () => { invitingSeat = s.index; inviteText = ''; draw(); if (searchBox) searchBox.focus(); };
       seat.append(el('span', { className: 'note' }, 'Waiting for a player to take this seat, or invite someone who is online.'), el('div', { className: 'row' }, open));
     } else seat.append(...inviteForm(s.index));
     const declined = (view.invites || []).filter((i) => i.status === 'declined' && i.seat === s.index);
@@ -75,9 +75,11 @@ function seatCard(s) {
 function inviteForm(index) {
   const input = el('input', { type: 'text', placeholder: 'Type a username', autocomplete: 'off', 'aria-label': 'Username to invite' });
   const list = el('div', { className: 'suggest', hidden: true });
-  const send = async (name) => { invitingSeat = null; await act('/' + id + '/invite', { username: name, seat: index }); };
+  const send = async (name) => { invitingSeat = null; inviteText = ''; await act('/' + id + '/invite', { username: name, seat: index }); };
   let seq = 0;
+  input.value = inviteText;                                              // (a redraw while the host types or the search runs keeps the text)
   input.oninput = async () => {
+    inviteText = input.value;
     const mine = ++seq;
     try {
       const d = await call('/online?q=' + encodeURIComponent(input.value));
@@ -87,9 +89,9 @@ function inviteForm(index) {
       if (!d.names.length && input.value.trim()) { list.replaceChildren(el('span', { className: 'note' }, 'Nobody online with that name.')); list.hidden = false; }
     } catch (e) { /* ignore */ }
   };
-  input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); if (input.value.trim()) send(input.value.trim()); } if (e.key === 'Escape') { invitingSeat = null; draw(); } };
+  input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); if (input.value.trim()) send(input.value.trim()); } if (e.key === 'Escape') { invitingSeat = null; inviteText = ''; draw(); } };
   const cancel = el('button', { type: 'button' }, 'Cancel');
-  cancel.onclick = () => { invitingSeat = null; draw(); };
+  cancel.onclick = () => { invitingSeat = null; inviteText = ''; draw(); };
   searchBox = input;
   setTimeout(() => input.oninput(), 0);
   return [input, list, el('div', { className: 'row' }, cancel)];
@@ -101,7 +103,9 @@ function draw() {
   $('title').textContent = `${view.host}'s lobby`;
   $('sub').replaceChildren(el('span', { className: 'tag' }, view.mode_label + (view.map ? ': ' + view.map : '')), el('span', { className: 'tag' }, view.marine_worlds ? 'Marine Worlds' : 'Base'), ...(view.bdw_maps ? [el('span', { className: 'tag' }, 'BDW map pack')] : []), ...mapOptionTags(view.map_options).map((t) => el('span', { className: 'tag' }, t)), el('span', { className: 'tag' }, view.rated ? 'Rated' : 'Friendly'), ` ${view.players}/${view.seats} players`,
     !view.is_member && view.status === 'open' ? el('span', { className: 'note' }, ' · You are looking at this lobby: click an empty seat to join.') : '');
+  const refocus = searchBox && document.activeElement === searchBox, caret = refocus ? searchBox.selectionStart : 0;
   $('seats').replaceChildren(...view.seats_detail.map(seatCard));
+  if (refocus && searchBox && searchBox.isConnected) { searchBox.focus(); searchBox.setSelectionRange(caret, caret); }
   const actions = [];
   if (view.is_host) {
     const busy = starting || view.status === 'starting';
