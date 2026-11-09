@@ -11,6 +11,7 @@ import { PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from '.
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
 import { render } from './main.js';
+import { amountIcon } from './log-labels.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
 import { buildMoveList, go } from './playback.js';
 import { expandLagoonDeal } from './lagoon-deal.js';
@@ -273,6 +274,39 @@ export function forkBar() {
     b.onclick = () => playFork(a);
     return b;
   };
+  const TRADES = [['trade_money', ['xtoken', 1], ['money', 5]], ['trade_x', ['money', 5], ['xtoken', 1]], ['rep_x', ['xtoken', 1], ['reputation', 1]], ['rep_money', ['money', 5], ['reputation', 1]]];       // (Sponsors variant 1: what is paid, what is gained)
+  const tradeActs = acts.filter((a) => a.kind === 'sponsor_side' && TRADES.some((t) => t[0] === a.args.op));
+  const sideOpen = (cur.options && cur.options.sponsors) || {};
+  if (sideOpen.variant === 1 && !sideOpen.side_used) {                                  // one button "Trade"; its click shows the trades, the ones the player cannot afford greyed out
+    for (const a of tradeActs) S.forkClaimed.add(a);
+    const icon = ([k, n]) => amountIcon(k, n) || document.createTextNode(n + ' ' + k);
+    if (S.tradeMode) {
+      bar.replaceChildren();
+      const who4 = el('span', 'who', S.replay.players[seat].name);
+      who4.style.color = seatText(seat);
+      bar.append(who4, el('b', '', ' must choose a trade'));
+      for (const [op, give, get] of TRADES.slice(0, sideOpen.level >= 2 ? 4 : 2)) {
+        const a = tradeActs.find((x) => x.args.op === op);
+        const b = el('button', 'forkmove');
+        b.type = 'button'; b.disabled = !a || S.forkBusy;
+        b.style.setProperty('--pc', seatColor(seat));
+        b.append('Trade ', icon(give), ' for ', icon(get));
+        if (a) b.onclick = () => playFork(a);
+        bar.append(b);
+      }
+      const back = el('button', 'forkmove', 'Back');
+      back.type = 'button';
+      back.onclick = () => { S.tradeMode = false; refreshBar(); };
+      bar.append(back);
+    } else {
+      const tb = el('button', 'forkmove', 'Trade');
+      tb.type = 'button'; tb.disabled = !tradeActs.length || S.forkBusy;
+      tb.style.setProperty('--pc', seatColor(seat));
+      tb.title = tradeActs.length ? 'Trade money, X tokens' + (sideOpen.level >= 2 ? ' and reputation' : '') : 'You cannot afford any trade';
+      tb.onclick = () => { S.tradeMode = true; refreshBar(); };
+      bar.append(tb);
+    }
+  }
   const placeActs = acts.filter((a) => a.kind === 'place_building');
   for (const a of placeActs) S.forkClaimed.add(a);
   // BDW2's crane: the "Reposition (crane)" button of the effects starts the move; until then neither the pieces menu nor the skip button is shown, afterwards the skip button sits beside the placement controls

@@ -120,7 +120,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         out["sponsors"] = {"hand": [a.args["card"] for a in acts if a.kind == "play_sponsor" and not a.args.get("from_display")],
                            "display": [a.args["card"] for a in acts if a.kind == "play_sponsor" and a.args.get("from_display")],
                            "strength": sa.get("strength"), "gain": sa.get("strength", 0) * (2 if sa.get("level", 1) >= 2 else 1),
-                           "level": sa.get("level", 1), "played": bool(sa.get("played")), "can_break": any(a.kind == "sponsor_break" for a in acts)}
+                           "level": sa.get("level", 1), "variant": sa.get("variant", 0), "side_used": bool(sa.get("side_used")), "played": bool(sa.get("played")), "can_break": any(a.kind == "sponsor_break" for a in acts)}
     if pr.kind == "association_tasks":                                  # the tasks of the Association action that can be done (one entry per kind of task)
         tasks: dict[str, int] = {}
         for a in acts:
