@@ -104,7 +104,7 @@ function renderPlacementControls(box, placeActs) {
     const legal = legalPlacement(S.placement);
     const head = el('div', 'placehead');
     head.append(el('b', '', (S.placement.move ? 'Reposition the ' : '') + S.placement.type.replace(/-/g, ' ') + (S.placement.extra ? ' (additional)' : '') + (S.placement.move ? ' (crane)' : '')),
-                document.createTextNode(S.placement.x === null ? ' - click a hex of ' + S.replay.players[S.placement.seat].name + "'s zoo to put the anchor there"
+                document.createTextNode(S.placement.x === null ? ''
                   : ' - anchor (' + S.placement.x + ', ' + S.placement.y + '), rotation ' + S.placement.rot + ' - '),
                 S.placement.x === null ? document.createTextNode('') : el('b', legal ? 'placeok' : 'placebad', legal ? 'legal' : 'not legal'));
     wrap.append(head);
