@@ -1,6 +1,6 @@
 // [module] The map options of a new game (the same rule as engine/map_select.py): the maps 1-8 are always in; Map Pack 1 (9, 10), Map Pack 2 (11-14, T1) and the alternative maps 1a-8a
 // (next to 1-8, or in their place) are added by the player. `mapOptionControls()` builds the controls (the tiles of the lobby pages); `value()` is what the API takes as `map_options`.
-export const ALT_LABELS = { off: 'Maps 1–8', include: 'Include alternative maps', replace: 'Replace maps 1–8' };
+export const ALT_LABELS = { off: 'Maps 1–8 only', replace: 'Maps 1a–8a only', include: 'Both 1–8 and 1a–8a' };
 
 export function mapOptionControls(name = 'mapAlt') {
   const tile = (title, text) => {
@@ -23,7 +23,7 @@ export function mapOptionControls(name = 'mapAlt') {
   }
   alt.append(head, kind);
   return {
-    nodes: [p1.label, p2.label, alt],
+    nodes: [alt, p1.label, p2.label],
     value: () => ({ pack1: p1.input.checked, pack2: p2.input.checked, alt: (alt.querySelector('input:checked') || {}).value || 'off' }),
   };
 }
