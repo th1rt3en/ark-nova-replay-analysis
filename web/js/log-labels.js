@@ -83,7 +83,7 @@ function labelIcon(name, amount) {
   }
   if (!src) return null;
   if (name === 'XTOKEN' && amount) src = iconUrl('r5c6_ns');       // (no white squares under a number)
-  const cls = 'icon labelicon' + (name === 'MONEY' ? ' labelmoney' : name === 'XTOKEN' && !amount ? ' labelxplain' : ''), title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
+  const cls = 'icon labelicon' + (BADGE[name] ? ' labelbadge' : '') + (name === 'MONEY' ? ' labelmoney' : name === 'XTOKEN' && !amount ? ' labelxplain' : ''), title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
   let img;
   if (src === 'inline') img = strengthIcon(cls, title);
   else { img = labelImg(cls, src); img.alt = name.toLowerCase(); img.title = title; }

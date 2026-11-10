@@ -27,6 +27,7 @@ const BONUS_ICON_NAME = {
 };
 export function applyIconNames(names) {
   for (const [type, name] of Object.entries(BONUS_ICON_NAME)) if (names[name] && type !== 'Digging') ICON_IDS['bonus:' + type] = names[name];       // (Digging keeps r9c13)
+  ICON_IDS.reef = names.coral;          // (the red coral: the Reef Dweller effects on the bar read "coral: bonus")
   ICON_IDS.money = names.money; ICON_IDS.appeal = names.appeal; ICON_IDS.conservation = names.conservation; ICON_IDS.reputation = names.reputation; ICON_IDS.xtoken_plain = names.xtoken;
   names.xtoken_ns = 'r5c6_ns';          // the X token without the white squares, for every place a number lies on it
   ICON_IDS['bonus:xtoken_num'] = 'r3c2_ns';   // the bordered one (placement / track bonus) without them

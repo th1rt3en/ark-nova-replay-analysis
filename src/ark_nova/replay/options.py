@@ -109,7 +109,8 @@ def effect_name(e: dict) -> str | None:
 def _unusable_cards(state: GameState, acts: list) -> list:
     """The action cards that offer nothing to do when chosen (Association with no worker left, or nothing the workers could do): the bar greys them out."""
     out = []
-    mine = [a for a in acts if a.kind == "choose_action_card" and a.args["type"] == "association" and not a.args.get("hypnosis")]
+    hyp = bool(state.prompt is not None and state.prompt.args.get("hypnosis"))          # (Hypnosis: the same rule for the other player's cards)
+    mine = [a for a in acts if a.kind == "choose_action_card" and a.args["type"] == "association" and bool(a.args.get("hypnosis")) == hyp]
     if not mine:
         return out
     for a in mine:                                                       # (any spend of X tokens: more strength may allow a task)
@@ -261,7 +262,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
     elif pr.kind == "effects":
         pending = pr.args.get("pending", [])
         out["pending"] = [e.get("kind") for e in pending][:12]
-        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost", "continent") if k in e and isinstance(e[k], (str, int, bool))},
+        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost", "continent", "reef") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}),
                            **_bonus_entry(e), **_income_entry(state, e, who), **_place_entry(state, e, who),

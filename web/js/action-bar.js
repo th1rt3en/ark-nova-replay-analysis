@@ -553,7 +553,12 @@ function effectButton(e) {
   const pbName = (e.kind === 'pbonus' || e.kind === 'project_bonus') && e.bonus ? placementBonusName(e.bonus) : '';              // (one of several placement bonuses of the building just placed)
   b.title = (pbName ? (e.kind === 'project_bonus' ? 'Project bonus: ' : 'Placement bonus: ') + pbName : e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '') + (e.optional ? ' - optional' : '');
   const SEARCH_ICON = { bird: ['Bird', 'r2c3'], herbivore: ['Herbivore', 'r2c4'], predator: ['Predator', 'r2c5'], primate: ['Primate', 'r2c6'], reptile: ['Reptile', 'r2c7'], marine: ['Sea animal', 'r2c8'] };
-  if (e.kind === 'gain') {
+  if (e.reef && ICON_IDS.reef) {                                             // a Reef Dweller effect: "coral icon: the bonus", without the animal it comes from
+    const ri = el('img', 'icon'); ri.decoding = 'sync'; ri.src = iconUrl(ICON_IDS.reef); ri.alt = 'Reef'; ri.height = 28;
+    const bonus = e.kind === 'gain' ? amountIcon(e.res, e.n || 1) : null;
+    b.append(ri, el('b', '', ':'), bonus || el('b', '', e.name || EFFECT_TEXT[e.kind] || e.kind.replace(/_/g, ' ')));
+    b.title = 'Reef Dweller effect: ' + (e.name || EFFECT_TEXT[e.kind] || e.kind) + (src ? ' (' + src + ')' : '');
+  } else if (e.kind === 'gain') {
     const ai = amountIcon(e.res, e.n || 1);                                  // ("Gain" + the counter's icon with the amount inside)
     if (ai) b.append(el('b', '', 'Gain'), ai); else b.append(el('b', '', 'Gain ' + (e.n || 1)), pic(e.res, 26));
     if (e.label || src) b.append(el('i', 'gainsrc', '(' + (e.label || src) + ')'));          // (an ability: its name, "Gain 3 appeal (pack)")
@@ -668,6 +673,7 @@ function genericBar(bar, st, o, seat) {
     if (o.prompt === 'cards_take') bar.append(actionBadge(st));
     bar.append(who);
     takeBar(bar, o, seat);
+    if (FORK) for (const e of o.effects || []) { const b = effectButton(e); if (b) bar.append(b); }          // (the other effects of the step are buttons too, not a list of sentences)
     return;
   }
   const effectsOnly = o.prompt === 'effects' && !o.take && !(o.pieces && o.pieces.length);       // (the effect buttons say it all)

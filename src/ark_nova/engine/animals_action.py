@@ -120,7 +120,7 @@ def reef_effects(state, key: str, b) -> list:
             pairs = reef_abilities(other)
             if any(not supported(n) for n, _ in pairs):
                 raise NotImplementedError(f"the Reef Dweller effect of {other}: {[n for n, _ in pairs if not supported(n)]} (see ISSUES.md)")
-            out += ability_effects(state, other, pairs)
+            out += [{**x, "reef": True} for x in ability_effects(state, other, pairs)]          # (marked: the bar shows these as "reef icon: bonus")
     return out
 
 

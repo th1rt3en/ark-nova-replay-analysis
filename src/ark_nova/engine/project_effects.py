@@ -186,7 +186,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             for other in b.animals:
                 pairs = animals_action.reef_abilities(other)
                 if pairs:
-                    extra += animals_action.ability_effects(state, other, pairs)
+                    extra += [{**x, "reef": True} for x in animals_action.ability_effects(state, other, pairs)]
         if not extra and not _reef_aquariums(state, p.seat):
             raise _fx().IllegalEffect("no aquarium with Reef Dwellers")
         state.prompt.args["pending"][i + 1:i + 1] = extra

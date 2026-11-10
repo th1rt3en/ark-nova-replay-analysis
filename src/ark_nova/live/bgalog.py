@@ -49,12 +49,13 @@ class Lines:
     def __init__(self, seat: int, who: str):
         self.seat, self.who, self.items, self.quiet = seat, who, [], False
 
-    def add(self, text: str, public: str | None = None, actor: str | None = None) -> None:
-        """`text`: the sentence everybody may read; `public`/`actor`: another wording for the opponent / for the acting player (None = the same)."""
-        self.items.append((text if public is None else public, text if actor is None else actor, text))
+    def add(self, text: str, public: str | None = None, actor: str | None = None, other: str | None = None) -> None:
+        """`text`: the sentence everybody may read; `public`/`actor`: another wording for the opponent / for the acting player (None = the same);
+        `other`: a wording for the other player of the game only (not for the spectators), who may know more than they do."""
+        self.items.append((text if public is None else public, text if actor is None else actor, text, other))
 
-    def secret(self, full: str, public: str, actor: str | None = None) -> None:
-        self.items.append((public, full if actor is None else actor, full))
+    def secret(self, full: str, public: str, actor: str | None = None, other: str | None = None) -> None:
+        self.items.append((public, full if actor is None else actor, full, other))
 
     def fallback(self, old, act, new) -> None:
         """The engine's own sentence, with the cards of a hidden choice left out for the viewers who may not read them."""
@@ -67,12 +68,13 @@ class Lines:
             from ark_nova.replay.options import effect_name
             nm = effect_name(e) or str(e.get("kind", "")).replace("_", " ")
             public = f"{self.who} resolved the {nm} effect" if nm else public
-        self.items.append((public, by_role[str(self.seat)], full))
+        self.items.append((public, by_role[str(self.seat)], full, None))
 
     def render(self) -> dict:
         def join(i: int, only_actor: bool = False):
             return "\n".join(x[i] for x in self.items if x[i])
-        out = {"full": join(2), str(self.seat): join(1), str(1 - self.seat): join(0), "spectator": join(0)}
+        theirs = "\n".join((x[3] if x[3] is not None else x[0]) for x in self.items if (x[3] if x[3] is not None else x[0]))
+        out = {"full": join(2), str(self.seat): join(1), str(1 - self.seat): theirs, "spectator": join(0)}
         return out
 
 
@@ -410,7 +412,7 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         oname = L.names[other] if 0 <= other < len(L.names) else "the opponent"
         word = token.lower() + (" token" if len(cards) <= 1 else " tokens")
         if cards:
-            tail = f" (and {cards[1]})" if len(cards) > 1 else ""
+            tail = f" and {cards[1]}" if len(cards) > 1 else ""
             L.add(f"{who} placed {word} on {oname} {cards[0]}{tail}", None, f"You placed {word} on {oname} {cards[0]}{tail}")
         else:
             L.add(f"{who} used {token}, but no token was placed", None, f"You used {token}, but no token was placed")
@@ -418,12 +420,21 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         L.add(f"{who} removed a marker from the <{str(a['continent']).upper()}> continent", None, f"You removed a marker from the <{str(a['continent']).upper()}> continent")
         if _gain_words(delta):
             L.add(f"{who} gains {' and '.join(_gain_words(delta))} (continent marker)")
+    elif kind == "hypnosis":
+        L.quiet = True                                                      # (the extra action says it all: "X hypnotize Y and use ...")
     elif kind == "pilfer" and not a.get("nothing"):
         what = "5 money" if a.get("pay") else "1 card"
         paid = max(-delta["money"], 0)
         if a.get("pay") and paid != 5:
             what = f"{paid} money"
-        L.add(f"{who} gave {what} for the Pilfering effect", None, f"You gave {what} for the Pilfering effect")
+        thief = e.get("to")
+        tname = L.names[thief] if isinstance(thief, int) and 0 <= thief < len(L.names) else "the other player"
+        if a.get("give"):                                                   # the victim names the card, so does the player who gets it; the spectators read a count
+            c = card(a["give"])
+            L.add(f"{who} gave {c} for the Pilfering effect", f"{who} gave {what} for the Pilfering effect", f"You gave {c} for the Pilfering effect",
+                  other=f"You get {c} from {who} for the Pilfer effect")
+        else:
+            L.add(f"{who} gave {what} for the Pilfering effect", None, f"You gave {what} for the Pilfering effect", other=f"You get {what} from {who} for the Pilfer effect")
     elif kind == "extra_shift" and a.get("worker") is not None:
         zones = {"association_2": "reputation", "association_3": "partner zoo", "association_4": "university", "association_5": "project"}
         t = next((t for t in old.players[seat].tokens if t.id == a["worker"]), None)

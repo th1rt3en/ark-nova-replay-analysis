@@ -244,7 +244,7 @@ export function forkBar() {
   if (!bar || S.forkGate || (!acts.length && !S.forkError)) return;
   if (acts.some((a) => a.kind === 'draft_pick' || a.kind === 'draft_keep')) return;      // (the draft is played in the bar itself)
   for (const a of acts) {                                                          // the action cards of the bar
-    if (a.kind === 'choose_action_card' && !a.args.hypnosis && !a.args.t1) S.forkClaimed.add(a);
+    if (a.kind === 'choose_action_card' && !a.args.t1) S.forkClaimed.add(a);                   // (Hypnosis too: the other player's cards are the same row of buttons, with its X token controls)
     if (a.kind === 'skip_action' && !a.args.repeat) S.forkClaimed.add(a);
   }
   for (const a of acts) {                                                          // the tiles of the association board that are clicked there
@@ -725,7 +725,7 @@ export function forkBar() {
   if (rest.length) {
     const holder = rest.length > 10 ? el('details', 'forkmore') : el('span', 'forkmore');
     if (rest.length > 10) holder.append(el('summary', '', 'More moves (' + rest.length + ')'));
-    for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + (a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'mark' ? 'Pass: no animal can be marked' : a.text), false));
+    for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + (a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'mark' ? 'Pass: no animal can be marked' : a.kind === 'skip_extra' && ((cur.options && cur.options.hypnosis) || false) ? 'Pass' : a.text), false));          // (Hypnosis: the button that gives the extra action up)
     bar.append(holder);
   }
   if (PLAY || SANDBOX) playTurnButtons(bar, acts);

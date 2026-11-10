@@ -1491,3 +1491,6 @@ body.viewer .movepill .forkmove:disabled { opacity: .4; filter: none; }
 .bppick { outline: 4px solid #F4B63F; outline-offset: -2px; cursor: pointer; position: relative; z-index: 2; box-shadow: 0 0 14px rgba(244, 182, 63, .9); }
 .bppick.on { outline-color: #EE6C2B; box-shadow: 0 0 18px rgba(238, 108, 43, 1); }
 .bpdim { opacity: .4; filter: grayscale(.6); }
+
+/* the continent and animal category badges of a log line are round, like in the player tracker */
+.labelbadge { border-radius: 50%; }
