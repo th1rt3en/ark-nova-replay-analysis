@@ -388,7 +388,10 @@ def apply(state: GameState, action: Action) -> GameState:
         return _concede(state, action)
     scores = gamestats.scores(state)
     booked = [st["booked"] for st in state.stats] or [0] * len(state.players)
+    carried = len(getattr(state, "auto_gains", ()))
     new = _apply(state, action)
+    if hasattr(new, "auto_gains"):                       # (the gains of sponsors that pay at once, for the log of this step only: they are not part of the saved state)
+        new.auto_gains = new.auto_gains[carried:]
     gamestats.account_points(new, scores, booked, state.current_action)
     turns.track(state, action, new)
     return new

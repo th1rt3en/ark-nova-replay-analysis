@@ -194,15 +194,30 @@ def texts(old: GameState, act: Action, new: GameState, names: list) -> dict:
     L.names = names
     try:
         _fill(old, act, new, names, L, who)
+        for ag in getattr(new, "auto_gains", ()):                           # a sponsor that pays at once when an icon enters a zoo (the Money sponsors): a line of its own
+            v, owner = ag["gain"], ag["seat"]
+            words = _gain_words({"money": v.get("money", 0), "appeal": v.get("appeal", 0), "reputation": v.get("reputation", 0), "conservation": v.get("conservation", 0), "x_tokens": v.get("xtoken", 0)})
+            if not words:
+                continue
+            label = "Money sponsors effect" if list(v) == ["money"] else card(ag["source"])
+            oname = names[owner] if 0 <= owner < len(names) else f"Player {owner + 1}"
+            text = f"{oname} gains {' and '.join(words)} ({label})"
+            if owner == seat:
+                L.add(text, None, f"You gains {' and '.join(words)} ({label})")
+            else:
+                L.add(text, None, None, other=f"You gains {' and '.join(words)} ({label})")
     except Exception:                                                       # noqa: BLE001 (a log line must never stop a game: fall back to the engine's sentence)
         from ark_nova.live import stepdata
         full = fork.narrate(old, act, new, who)
         return {**stepdata.labels_for(act, full, who), "full": full}
     if old.display != new.display and not any("display" in item[2] for item in L.items):          # the display is replenished as part of a break (an income, the end of the break): what went and what came
-        c0, c1 = Counter(c for c in old.display if c), Counter(c for c in new.display if c)
-        gone, came = list((c0 - c1).elements()), list((c1 - c0).elements())
-        if gone or came:
-            L.add(f"The display is replenished" + (f": {names_of(gone)} discarded" if gone else "") + (f"{',' if gone else ':'} {names_of(came)} revealed" if came else ""))
+        n0 = len(L.items)
+        _display_refill(old, new, L)                                         # the replenishing replayed from the deck: a Wave card that is revealed triggers another wave (its own lines)
+        if len(L.items) == n0:                                               # (the deck was reshuffled or extended: what went and what came)
+            c0, c1 = Counter(c for c in old.display if c), Counter(c for c in new.display if c)
+            gone, came = list((c0 - c1).elements()), list((c1 - c0).elements())
+            if gone or came:
+                L.add(f"The display is replenished" + (f": {names_of(gone)} discarded" if gone else "") + (f"{',' if gone else ':'} {names_of(came)} revealed" if came else ""))
     moved = new.break_position - old.break_position
     if moved > 0 and not any("advances the break" in item[2] for item in L.items):          # any effect that moves the break token says so (an action card, a sponsor, a sponsor's effect)
         L.add(f"{who} advances the break by {moved}, now ({new.break_position}/9)")
@@ -476,6 +491,9 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
             L.secret(f"{who} draws {names_of(top)} for {pname} effect", f"{who} draws {n_cards(len(top))} for {pname} effect", f"You draw {names_of(top)} for {pname} effect")
         if a.get("reveal"):
             return
+        if pname == "scuba dive" and not kept:                                 # none of the revealed cards is a sponsor: all of them are discarded
+            L.add(f"{who} discards {len(top)} cards from scuba dive effect (No sponsors)", None, f"You discard {len(top)} cards from scuba dive effect (No sponsors)")
+            return
         if pname == "perception":                                              # (the sheet: the opponent sees nothing of a Perception)
             L.secret(f"{who} keeps {names_of(kept)} and discards {names_of(rest)}", f"{who} keeps {n_cards(len(kept))}", f"You keep {names_of(kept)} and discard {names_of(rest)}")
         else:                                                                  # Hunter / Scuba Dive: the kept card is public
@@ -493,8 +511,17 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         if shown:
             L.add(f"{card(shown[0])} is removed from the display by the wave")
         _display_refill(old, new, L, start=shown[1:])
-    elif kind in ("pbonus", "project_bonus", "threshold_bonus", "take_tile", "rep_bonus") and _gain_words(delta):
-        label = {"pbonus": "placement bonus", "project_bonus": "project bonus", "threshold_bonus": "conservation bonus", "take_tile": "association", "rep_bonus": "reputation bonus"}[kind]
+    elif kind == "threshold_bonus" and a.get("option") is not None:         # the bonus that was chosen on the conservation space, named
+        from ark_nova.replay.options import placement_bonus_name
+        opts = list((old.conservation_options or {}).get(str(e.get("t"))) or [])
+        j = int(a["option"])
+        bonus = {"money": 5} if j == len(opts) else (opts[j] if 0 <= j < len(opts) else {})
+        label = ", ".join(placement_bonus_name({"type": t_, "value": v_}).replace("Placement bonus: ", "") for t_, v_ in bonus.items()) or "bonus"
+        L.add(f"{who} chooses the {label} bonus of conservation space {e.get('t')}", None, f"You choose the {label} bonus of conservation space {e.get('t')}")
+        if _gain_words(delta):
+            L.add(f"{who} gains {' and '.join(_gain_words(delta))} (conservation bonus)")
+    elif kind in ("pbonus", "project_bonus", "take_tile", "rep_bonus") and _gain_words(delta):
+        label = {"pbonus": "placement bonus", "project_bonus": "project bonus", "take_tile": "association", "rep_bonus": "reputation bonus"}[kind]
         L.add(f"{who} gains {' and '.join(_gain_words(delta))} ({label})")
     elif kind == "endgame_discard":
         c = a.get("card")
@@ -546,6 +573,12 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         L.add(f"{who} moved {card(a['move'])} into the {into}{freed}", None, f"You moved {card(a['move'])} into the {into}{freed}")
     elif kind == "reposition" and a.get("remove") is not None:
         L.quiet = True                                                      # (picking the buildings up says nothing: each one is logged when it is put back)
+    elif kind == "release" and a.get("release"):
+        src = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a.get("building") or [])), None)
+        where = f" from a {src.type} enclosure" if src is not None and src.type.startswith("size-") else (f" from the {src.type.replace('-', ' ')}" if src is not None else "")
+        lost = max(-delta["appeal"], 0)
+        tail = f" and lost {lost} appeal" if lost else ""
+        L.add(f"{who} released {card(a['release'])}{where}{tail}", None, f"You released {card(a['release'])}{where}{tail}")
     elif kind == "boost" and a.get("slot") is not None:
         name = ACTION_NAMES.get(e.get("type"), str(e.get("type")))
         L.add(f"{who} put the {name} action at {int(a['slot'])} (Boost effect)", None, f"You put the {name} action at {int(a['slot'])} (Boost effect)")

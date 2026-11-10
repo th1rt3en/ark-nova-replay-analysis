@@ -293,17 +293,18 @@ export function zooBoard(map, player, seat) {
   const bi = bpickInfo();
   if (bi && bi.seat === seat) {                                              // Cut Down / Enlarge / Reposition / Move in / Archaeologist: the enclosures to click, what is selected, and the result before it is confirmed
     const at = (b) => b.x + ',' + b.y, byAt = new Map(player.buildings.map((b) => [at(b), b]));
-    const movers = bi.kind === 'move_in' && bi.stage === 'enc' ? bi.acts.filter((a) => a.args.move === bi.sel[0] && a.args.from) : [];           // (Move in, second step: the enclosures the animal can leave)
-    const clickable = new Set(bi.kind === 'reposition' ? player.buildings.map(at) : ['cut_down', 'enlarge'].includes(bi.kind) ? bi.acts.filter((a) => a.args.building).map((a) => a.args.building.join(',')) : movers.map((a) => a.args.from.join(',')));
+    const animalPick = ['move_in', 'release'].includes(bi.kind), animalOf = (a) => a.args.move || a.args.release, srcOf = (a) => (bi.kind === 'move_in' ? a.args.from : a.args.building);          // (Move in / Release: the animal is chosen among the played cards, then the enclosure it leaves)
+    const movers = animalPick && bi.stage === 'enc' ? bi.acts.filter((a) => animalOf(a) === bi.sel[0] && srcOf(a)) : [];           // (the second step: the enclosures the animal can leave)
+    const clickable = new Set(bi.kind === 'reposition' ? player.buildings.map(at) : ['cut_down', 'enlarge'].includes(bi.kind) ? bi.acts.filter((a) => a.args.building).map((a) => a.args.building.join(',')) : movers.map((a) => srcOf(a).join(',')));
     const ring = (cells, ok) => s.append(svg('path', { d: outlinePath(cells), class: 'placeborder ' + (ok ? 'ok' : 'bad'), 'pointer-events': 'none' }));
     for (const b of player.buildings) {
       if (!clickable.has(at(b))) continue;
-      const on = bi.kind === 'move_in' ? (bi.enc || (movers.length === 1 ? movers[0].args.from.join(',') : null)) === at(b) : bi.sel.includes(at(b));
+      const on = animalPick ? (bi.enc || (movers.length === 1 ? srcOf(movers[0]).join(',') : null)) === at(b) : bi.sel.includes(at(b));
       s.append(svg('path', { d: outlinePath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'fill: none; pointer-events: none' }));
       const pick = svg('path', { d: fillPath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'stroke: none' });
       pick.addEventListener('click', () => {
         if (bi.kind === 'reposition') { const i = S.bpick.sel.indexOf(at(b)); if (i >= 0) S.bpick.sel.splice(i, 1); else if (S.bpick.sel.length < 3) S.bpick.sel.push(at(b)); }
-        else if (bi.kind === 'move_in') S.bpick.enc = at(b);
+        else if (animalPick) S.bpick.enc = at(b);
         else { S.bpick.sel = [at(b)]; S.bpick.opt = 0; }
         render();
       });
@@ -319,9 +320,10 @@ export function zooBoard(map, player, seat) {
         s.append(ghost); ring(cells, true);
       }
     }
-    if (bi.kind === 'move_in') {
-      const dest = (((S.replay.steps[S.step].options || {}).effects || []).find((e) => e.index === bi.index) || {}).dest, mine = bi.sel[0] ? bi.acts.filter((a) => a.args.move === bi.sel[0]) : [];
-      const src = bi.stage === 'enc' ? (bi.enc || (mine.length === 1 ? mine[0].args.from.join(',') : null)) : (mine.length === 1 ? mine[0].args.from.join(',') : null);
+    if (animalPick) {
+      const dest = bi.kind === 'move_in' ? (((S.replay.steps[S.step].options || {}).effects || []).find((e) => e.index === bi.index) || {}).dest : null, mine = bi.sel[0] ? bi.acts.filter((a) => animalOf(a) === bi.sel[0]) : [];
+      const sole = mine.length === 1 && srcOf(mine[0]) ? srcOf(mine[0]).join(',') : null;
+      const src = bi.stage === 'enc' ? (bi.enc || sole) : sole;
       const to = dest && byAt.get(dest.join(',')), from = src && byAt.get(src);
       if (to) ring(to.cells, true);
       if (from) ring(from.cells, false);

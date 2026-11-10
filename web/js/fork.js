@@ -68,6 +68,8 @@ function renderPlacementControls(box, placeActs) {
     if (!p) { p = { key, type: a.args.type, extra: !!a.args.extra, move: !!a.args.move, n: 0 }; pieces.push(p); }
     p.n += 1;
   }
+  const reefBuild = ((((S.replay.steps[S.step].options || {}).effects) || [])).some((e) => e.kind === 'build' && e.reef);          // (the building comes from a Reef Dweller effect)
+  const coralIcon = () => { const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS.reef); i.alt = 'Reef'; i.height = 26; return i; };
   if (!S.placement && pieces.length === 1) {                                         // a single piece (a sponsor's building: Expert Americas' kiosk...): its own button, no menu
     const p = pieces[0];
     const name = p.type.replace(/-/g, ' ');
@@ -77,6 +79,7 @@ function renderPlacementControls(box, placeActs) {
     b.title = 'Click a hex of the zoo for its anchor';
     const sp = spriteOf({ type: p.type });
     if (sp) { const img = el('img'); img.src = '/enclosures/' + sp.image; img.alt = ''; const k = Math.min(0.12, 28 / sp.size[1]); img.style.width = (sp.size[0] * k) + 'px'; img.style.height = (sp.size[1] * k) + 'px'; b.append(img); }
+    if (reefBuild && ICON_IDS.reef) b.append(coralIcon(), el('b', '', ':'));
     b.append(el('span', '', (p.move ? 'Reposition the ' : 'Place ' + (/^[aeiou]/.test(name) ? 'an ' : 'a ')) + name + (p.extra ? ' (additional)' : '') + (p.move ? ' (crane)' : '')));
     b.onclick = () => {
       S.placement = { seat, type: p.type, extra: p.extra, move: p.move, x: null, y: null, rot: 0 };
@@ -90,6 +93,7 @@ function renderPlacementControls(box, placeActs) {
     const row = el('div', 'forkrow placepick');
     const toggle = el('button', 'forkmove placetoggle', 'Place a building \u25BE');
     toggle.type = 'button'; toggle.disabled = S.forkBusy;
+    if (reefBuild && ICON_IDS.reef) { toggle.replaceChildren(coralIcon(), el('b', '', ':'), 'Place a building \u25BE'); }          // (a Reef Dweller effect: the coral icon)
     toggle.title = 'Choose a piece, then click a hex of the zoo for its anchor';
     const menu = el('div', 'placemenu');
     menu.hidden = true;
@@ -518,7 +522,7 @@ export function forkBar() {
     }
   }
   S.forkSolo = false;                                                                // (a prompt that stands alone: none of the other moves is listed beside it)
-  for (const a of acts) if (a.kind === 'choose_effect' && MAP_PICKS.has(effKinds.get(a.args.index))) S.forkClaimed.add(a);       // (Cut Down / Enlarge / Reposition / Move in / Archaeologist: chosen on the map after the effect's button)
+  for (const a of acts) if (a.kind === 'choose_effect' && (MAP_PICKS.has(effKinds.get(a.args.index)) || (effKinds.get(a.args.index) === 'expedition' && a.args.send !== undefined))) S.forkClaimed.add(a);       // (Cut Down / Enlarge / Reposition / Move in / Archaeologist: chosen on the map after the effect's button)
   const bp = bpickInfo();
   if (bp) bpickBar(bar, bp, cur, acts);
   const endActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.card === 'string' && effKinds.get(a.args.index) === 'endgame_discard');
@@ -725,7 +729,8 @@ export function forkBar() {
   if (rest.length) {
     const holder = rest.length > 10 ? el('details', 'forkmore') : el('span', 'forkmore');
     if (rest.length > 10) holder.append(el('summary', '', 'More moves (' + rest.length + ')'));
-    for (const a of rest) holder.append(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + (a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'mark' ? 'Pass: no animal can be marked' : a.kind === 'skip_extra' && ((cur.options && cur.options.hypnosis) || false) ? 'Pass' : a.text), false));          // (Hypnosis: the button that gives the extra action up)
+    const reefTake = !!(cur.options && cur.options.take && cur.options.take.reef) && !!ICON_IDS.reef;          // (the card to take comes from a Reef Dweller effect: its deck button carries the coral icon)
+    for (const a of rest) holder.append(((b) => { if (reefTake && a.kind === 'take_cards' && a.args.mode === 'deck') { const ri = el('img', 'icon'); ri.src = iconUrl(ICON_IDS.reef); ri.alt = 'Reef'; ri.height = 26; b.prepend(ri, ': '); } return b; })(btn(a, (new Set(rest.map((x) => x.player)).size > 1 ? S.replay.players[a.player].name + ': ' : '') + (a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'mark' ? 'Pass: no animal can be marked' : a.kind === 'skip_extra' && ((cur.options && cur.options.hypnosis) || false) ? 'Pass' : a.text), false)));          // (Hypnosis: the button that gives the extra action up)
     bar.append(holder);
   }
   if (PLAY || SANDBOX) playTurnButtons(bar, acts);
@@ -777,6 +782,24 @@ function bpickBar(bar, bp, cur, acts) {
       prompt = ' must choose the enclosure to free up for ' + cardName(sel);
       extra = [choice('Back', () => { S.bpick.stage = 'animal'; S.bpick.enc = null; render(); })];
       ok = confirm(act || null, 'Confirm');
+    }
+  } else if (bp.kind === 'release') {                                              // like Move in: the animal among the played cards, then (when it can leave several enclosures) the enclosure to empty
+    const sel = bp.sel[0], mine = sel ? bp.acts.filter((a) => a.args.release === sel) : [], sources = mine.filter((a) => a.args.building);
+    if (bp.stage !== 'enc') {
+      prompt = ' must choose an animal to release' + (sel ? ': ' + cardName(sel) : '');
+      ok = custom(!!mine.length, 'Confirm', () => { if (sources.length > 1) { S.bpick.stage = 'enc'; S.bpick.enc = null; render(); } else playFork(mine[0]); });
+    } else {
+      const at = bp.enc || (sources.length === 1 ? key(sources[0].args.building) : null), act = sources.find((a) => key(a.args.building) === at);
+      prompt = ' must choose the enclosure to empty for ' + cardName(sel);
+      extra = [choice('Back', () => { S.bpick.stage = 'animal'; S.bpick.enc = null; render(); })];
+      ok = confirm(act || null, 'Release');
+    }
+  } else if (bp.kind === 'expedition') {                                           // Marine Research Expedition: the person sponsor that goes away, named (1 conservation each)
+    prompt = ' must choose a person sponsor to send away (Marine Research Expedition)';
+    for (const a of bp.acts.filter((x) => x.args.send !== undefined)) {
+      const b = choice(cardName(a.args.send), () => playFork(a));
+      b.append(amountIcon('conservation', 1) || ' +1 conservation');
+      extra.push(b);
     }
   } else if (bp.kind === 'symbiosis') {                                            // the sea animal is clicked among the played cards, then its ability (a button for each when there are several)
     const sel = bp.sel[0], mine = sel ? bp.acts.filter((a) => a.args.animal === sel) : [], abilities = [...new Set(mine.map((a) => a.args.ability))];
@@ -831,6 +854,19 @@ function bpickBar(bar, bp, cur, acts) {
       });
       if (conts.length > 1) extra.push(choice('Back', () => { S.bpick.stage = 'continent'; render(); }));
     }
+  } else if (bp.kind === 'threshold_bonus') {                                      // the bonuses of the conservation space that are left, each as its icon (and the 5 money that is always there)
+    prompt = ' must choose a conservation bonus' + (eff.t ? ' (space ' + eff.t + ')' : '');
+    (eff.opts || []).forEach((opt, j) => {
+      const act = bp.acts.find((a) => a.args.option === j), b = choice('', () => act && playFork(act));
+      for (const bo of opt) {
+        const ai = amountIcon(bo.type, bo.value), id = ICON_IDS['bonus:' + bo.type];
+        if (ai) b.append(ai);
+        else if (id) { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = placementBonusName(bo); i.title = placementBonusName(bo); i.height = 30; b.append(i); }
+        else b.append(placementBonusName(bo));
+      }
+      b.disabled = !act || S.forkBusy;
+      extra.push(b);
+    });
   } else if (bp.kind === 'archaeologist') {
     prompt = ' must choose a bonus (Archaeologist)';
     for (const a of bp.acts.filter((x) => x.args.cell)) {

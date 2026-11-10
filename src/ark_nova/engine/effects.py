@@ -159,6 +159,9 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                             pending.append({"kind": "gain", "source": s, "res": res_, "n": n_, "optional": False, "player": owner})
                     elif eff[0] == "gain":
                         v = eff[1]
+                        if not hasattr(state, "auto_gains"):
+                            state.auto_gains = []
+                        state.auto_gains.append({"seat": owner, "source": s, "gain": dict(v)})             # (read by live/bgalog.py: this gain has no effect of its own to log)
                         g._gain(state, owner, money=v.get("money", 0), appeal=v.get("appeal", 0), x_tokens=v.get("xtoken", 0),
                                 reputation=v.get("reputation", 0), conservation=v.get("conservation", 0))
                     elif eff[0] == "build":

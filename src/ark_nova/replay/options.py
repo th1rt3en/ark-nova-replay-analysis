@@ -155,6 +155,9 @@ def _place_entry(state: GameState, e: dict, who: int) -> dict:
         if k == "extra_shift":                                           # the zones of the association board that hold a worker the player may take back
             zones = {"association_2": "reputation", "association_3": "partner zoo", "association_4": "university", "association_5": "project"}
             return {"workers": [{"worker": t.id, "zone": zones.get(t.location, t.location)} for t in p.tokens if t.type == "worker" and t.location.startswith("association_")]}
+        if k == "threshold_bonus":                                       # the bonuses of the conservation space that are left, and the 5 money that is always there (the order of the moves)
+            opts = list(state.conservation_options.get(str(e["t"])) or [])
+            return {"opts": [[{"type": t_, "value": v_} for t_, v_ in o.items()] for o in opts] + [[{"type": "money", "value": 5}]]}
         if k == "continent":
             from ark_nova.engine import map_rules
             return {"left": map_rules.continents_left(p)}
@@ -242,7 +245,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
             e = next((e for e in pr.args.get("pending", []) if e.get("kind") == "take" and e.get("player", pr.player) == who
                       and bool(e.get("snap")) == bool(take["snap"])), None)
             if e is not None:
-                take.update(source=e.get("source"), is_snap=bool(e.get("snap")), small=bool(e.get("small")), range_only=bool(e.get("range_only")))
+                take.update(source=e.get("source"), is_snap=bool(e.get("snap")), small=bool(e.get("small")), range_only=bool(e.get("range_only")), reef=bool(e.get("reef")))
         out["take"] = take
     if pr.kind == "choose_action_card":
         cards: dict[str, list[int]] = {}
@@ -262,7 +265,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
     elif pr.kind == "effects":
         pending = pr.args.get("pending", [])
         out["pending"] = [e.get("kind") for e in pending][:12]
-        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost", "continent", "reef") if k in e and isinstance(e[k], (str, int, bool))},
+        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost", "continent", "reef", "t") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}),
                            **_bonus_entry(e), **_income_entry(state, e, who), **_place_entry(state, e, who),

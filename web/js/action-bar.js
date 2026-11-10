@@ -56,12 +56,12 @@ export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.di
 export const cardPickAct = (a) => a.kind === 'choose_effect' && typeof a.args.index === 'number' && !Array.isArray(a.args.cards) && !!pickCardOf(a) && effectKindOf(a) !== 'marketing' && !(GATED_PICKS.has(effectKindOf(a)) && S.pickOpen !== a.args.index);       // (Digging / Pouch / Store: the card is chosen once its button has been clicked)
 export const sharkActs = () => forkActs((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards) && effectKindOf(a) === 'shark');       // (Shark Attack: the animals of the display it can eat)
 // effects whose choice is made on the zoo map or among the bonuses of the map: Cut Down / Enlarge / Reposition click the enclosures, Move in picks an animal, Archaeologist a bonus (fork.js `bpickBar`, board.js)
-export const MAP_PICKS = new Set(['cut_down', 'enlarge', 'reposition', 'move_in', 'archaeologist', 'continent', 'extra_shift', 'symbiosis', 'pilfer', 'waza']);
+export const MAP_PICKS = new Set(['cut_down', 'enlarge', 'reposition', 'move_in', 'archaeologist', 'continent', 'extra_shift', 'symbiosis', 'pilfer', 'waza', 'threshold_bonus', 'release']);          // (+ the person sponsor of the Marine Research Expedition, `expedition` with option `send`)
 // Move in / Symbiosis: the animals that can be chosen are lit among the played cards of the zoo (the stacks under the map), the others dimmed; a click selects one
 export function decorateBpick(row, seat) {
   const bi = bpickInfo();
-  if (!bi || bi.seat !== seat || !['move_in', 'symbiosis'].includes(bi.kind) || (bi.stage && bi.stage !== 'animal')) return row;
-  const ok = new Set(bi.acts.map((a) => a.args.move || a.args.animal).filter(Boolean));
+  if (!bi || bi.seat !== seat || !['move_in', 'symbiosis', 'release'].includes(bi.kind) || (bi.stage && bi.stage !== 'animal')) return row;
+  const ok = new Set(bi.acts.map((a) => a.args.move || a.args.animal || a.args.release).filter(Boolean));
   for (const c of row.querySelectorAll('.card[data-key]')) {
     const k = c.dataset.key;
     if (!k.startsWith('A')) continue;
@@ -500,6 +500,7 @@ function takeBar(bar, o, seat) {
   if (t.deck && !t.range_only) {
     const b = el('span', 'abtn deckbtn');
     b.title = 'Draw from the deck';
+    if (t.reef && ICON_IDS.reef) { const ri = el('img', 'icon'); ri.decoding = 'sync'; ri.src = iconUrl(ICON_IDS.reef); ri.alt = 'Reef'; ri.height = 28; b.append(ri, el('b', '', ':')); b.title = 'Reef Dweller effect: draw from the deck'; }          // (a Reef Dweller effect: the coral icon)
     b.append(el('b', '', t.all_at_once && t.deck > 1 ? 'Draw ' + t.deck + ' cards from deck' : t.deck > 1 ? 'Draw 1 to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
     bindActs(b, forkActs((a) => a.kind === 'take_cards' && a.args.mode === 'deck'));
     bar.append(b);
@@ -513,7 +514,7 @@ const EFFECT_TEXT = {
   scavenge: 'Scavenge', glide: 'Glide', glide_gain: 'Glide', shark: 'Shark attack', symbiosis: 'Symbiosis', cut_down: 'Cut down', trade: 'Trade', extra_shift: 'Extra Shift',
   assertion: 'Assertion', dominance: 'Dominance', pilfer: 'Pilfer', venom: 'Venom', constrict: 'Constriction', hypnosis: 'Hypnosis', pay_appeal: 'Pay appeal', slot1: 'Card to slot 1', boost: 'Boost',
   waza: 'Waza', reposition: 'Reposition', pouch: 'Pouch a card', search_discard: 'Search the discard pile', upgrade: 'Upgrade an action card', threshold2: 'Upgrade or worker',
-  threshold_bonus: 'Choose a bonus', endgame_discard: 'Discard an endgame card', adapt: 'Adapt', break_discard: 'Discard to the hand limit', take_tile: 'Take a tile',
+  threshold_bonus: 'Conservation bonus', endgame_discard: 'Discard an endgame card', adapt: 'Adapt', break_discard: 'Discard to the hand limit', take_tile: 'Take a tile',
   move_in: 'Move in', archaeologist: 'Archaeologist', species_bonus: 'Species bonus', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', search_sponsor: 'Find a Sponsor', reef: 'Reef', ability: 'Animal ability',
 };
 const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
@@ -601,11 +602,11 @@ function effectButton(e) {
   if (FORK && e.kind === 'multiplier' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.multiplier === 'string').length) {
     b.classList.add('choosable');                                      // (click it: the action cards to put the token on, see forkBar)
     b.onclick = () => { S.multiplierMode = e.index; refreshBar(); };
-  } else if (FORK && MAP_PICKS.has(e.kind) && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length) {
+  } else if (FORK && (MAP_PICKS.has(e.kind) || (e.kind === 'expedition' && e.option === 'send')) && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)).length) {
     b.classList.add('choosable');                                      // (click it: the choice opens, see fork.js `bpickBar`)
     b.onclick = () => {
       S.bpick = { kind: e.kind, index: e.index, sel: [], opt: 0 }; S.forkDockStep = -1;
-      if (e.kind === 'move_in' || e.kind === 'symbiosis') showPlayed(forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index)[0].player);          // (the animals are chosen among the played cards)
+      if (e.kind === 'move_in' || e.kind === 'symbiosis' || e.kind === 'release') showPlayed(forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index)[0].player);          // (the animals are chosen among the played cards)
       render();
     };
   } else if (FORK && e.kind === 'assertion' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) {

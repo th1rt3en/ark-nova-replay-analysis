@@ -1494,3 +1494,7 @@ body.viewer .movepill .forkmove:disabled { opacity: .4; filter: none; }
 
 /* the continent and animal category badges of a log line are round, like in the player tracker */
 .labelbadge { border-radius: 50%; }
+
+/* the live game page: the text of the last step is for the replay only (the log tab tells what happened) */
+body.playpage .movepill .current { display: none !important; }
+body.playpage .movepill .actionbar:not([hidden]) { margin: 0; }
