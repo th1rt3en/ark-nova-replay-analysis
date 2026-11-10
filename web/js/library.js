@@ -21,7 +21,13 @@ function chip(group, value, label, badge) {
   if (badge) { const i = document.createElement('img'); i.src = '/badges/' + badge + '.webp'; i.alt = ''; i.width = 26; i.height = 26; b.append(i); }
   b.append(label);
   const paint = () => { const on = sel[group].has(value); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); };
-  b.onclick = () => { if (sel[group].has(value)) sel[group].delete(value); else sel[group].add(value); paint(); apply(); };
+  b.onclick = () => {
+    if (GROUPS[group] && sel[group].size === GROUPS[group].length) sel[group] = new Set([value]);          // everything on: the click picks this one and switches the rest off
+    else if (sel[group].has(value)) sel[group].delete(value);
+    else sel[group].add(value);
+    document.querySelectorAll(`.chip[data-group="${group}"]`).forEach((c) => c.paint());
+    apply();
+  };
   b.paint = paint; paint();
   return b;
 }
