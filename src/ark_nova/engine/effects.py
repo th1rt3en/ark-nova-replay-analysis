@@ -115,7 +115,7 @@ def on_play(state, seat: int, card_key: str) -> list:
         bonuses.hire_worker(state, seat)
     if card_key in prog.DONATION:
         pending.append({"kind": "donation", "source": card_key, "optional": True})
-    if card_key in prog.SEARCH_DISCARD_PET and any(_is_pet(k) for k in state.main_discard):
+    if card_key in prog.SEARCH_DISCARD_PET and (any(_is_pet(k) for k in state.main_discard) or state.config.confirm_turns):         # (a live game tells the player when there was no animal to take)
         pending.append({"kind": "search_discard", "source": card_key, "optional": False})
     pending += fire_icons(state, seat, card_key)
     for e in pending:
@@ -297,7 +297,7 @@ def legal(state, p0) -> list:
             for c in sorted(set(state.main_discard)):
                 if _is_pet(c):
                     out.append(Action(p.seat, "choose_effect", {"index": i, "card": c}))
-        if e.get("optional"):
+        if e.get("optional") or (k == "search_discard" and not any(_is_pet(c) for c in state.main_discard)):          # (Horse Whisperer with no Petting Zoo animal in the discard pile: nothing to take)
             out.append(Action(p.seat, "skip_effect", {"index": i}))
     return out
 
@@ -527,6 +527,8 @@ def _nothing_to_do(state, e: dict, i: int) -> bool:
         return not marks.markable(state)
     if e["kind"] == "build":                             # no place for the building: nothing to do
         return not any(build_options(state, state.prompt.player, t, e["rules"]) for t in e.get("types", [e["type"]]))
+    if e["kind"] == "search_discard":                    # Horse Whisperer with no Petting Zoo animal in the discard pile
+        return not any(_is_pet(k) for k in state.main_discard)
     if e["kind"] in project_effects.KINDS:
         return not project_effects.legal(state, e, i, state.prompt.player)
     return e["kind"] in animal_abilities.KINDS and not animal_abilities.legal(state, e, i, state.prompt.player)

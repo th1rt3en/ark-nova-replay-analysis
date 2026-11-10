@@ -326,7 +326,12 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
     elif k == "association_task":
         _association(old, act, new, L, who, delta)
     elif k == "skip_effect":
-        L.quiet = True                                                       # (BGA logs nothing when a player passes on an effect)
+        e = _effect(old, act)
+        if e.get("kind") == "search_discard" and not e.get("optional"):          # Horse Whisperer with no Petting Zoo animal in the discard pile
+            L.secret(f"{who} couldn't take a petting zoo animal from the discard because there weren't any", f"{who} couldn't take a petting zoo animal from the discard because there weren't any",
+                     "You didn't keep a petting zoo from the discard because there weren't any")
+        else:
+            L.quiet = True                                                   # (BGA logs nothing when a player passes on an effect)
     elif k == "donate":
         got = _gain_words({kk: delta[kk] for kk in delta if kk != "money"})
         spent = -delta["money"]
@@ -453,6 +458,29 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         if delta["appeal"] > 0:
             L.add(f"{who} gains {delta['appeal']} appeal (shark attack)")
         _display_refill(old, new, L)
+    elif kind == "glide" and a.get("cards") is not None:
+        from ark_nova.engine.icons import card_icons
+        cards = list(a.get("cards", []))
+        n = sum(card_icons(c, old.config.marine_worlds)["SeaAnimal"] for c in cards)
+        icons = f"{n} sea animal icon" + ("" if n == 1 else "s")
+        L.secret(f"{who} glided {names_of(cards)} for {icons}", f"{who} glided {n_cards(len(cards))} for {icons}", f"You glided {names_of(cards)} for {icons}")
+    elif kind == "glide_gain":
+        words = {"reputation": "gained 1 reputation", "appeal": "gained 2 appeal", "kiosk": "will place a kiosk for free"}
+        L.add(f"{who} {words.get(a.get('gain'), 'gained a bonus')} (Glide effect)")
+    elif kind == "store":
+        c = a.get("store")
+        L.secret(f"{who} stored {card(c) if c else 'a card'}", f"{who} stored a card", f"You stored {card(c) if c else 'a card'}")
+    elif kind == "search_discard" and a.get("card"):
+        c = a["card"]
+        L.secret(f"{who} keeps {card(c)} from the discard", f"{who} keeps 1 petting zoo animal from the discard", f"You keep {card(c)} from the discard")
+    elif kind == "assertion" and a.get("card"):
+        c = a["card"]
+        L.secret(f"{who} kept {card(c)} with the assertion effect", f"{who} kept a card with the assertion effect", f"You kept {card(c)} with the assertion effect")
+    elif kind == "dominance":
+        if "P108" in old.base_projects_unused:
+            L.add(f"{who} put the Primates project into their hand", None, f"You put the Primates project into your hand")
+        else:
+            L.add(f"{who} couldn't take Primates project because it's not available", None, "You couldn't take Primates project because it's not available")
     elif kind == "sell":
         cards = list(a.get("cards", []))
         m = max(delta["money"], 0)

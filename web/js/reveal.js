@@ -306,12 +306,12 @@ function horseFork(o, acts, play) {
 }
 
 // The fork and the live game: the pending reveal / scavenge effect of the player (options.effects): `cards` are the cards of the effect, `n` how many are kept
-export function forkReveal(o, acts, play) {
+export function forkReveal(o, acts, play, cancel) {
   if (horseFork(o, acts, play)) return true;
   if (adaptFork(o, acts, play)) return true;
   let e = (o.effects || []).find((x) => (x.kind === 'reveal' || x.kind === 'scavenge') && Array.isArray(x.cards) && x.cards.length);
   if (!e) {                                                       // Assertion: the pending effect holds no cards, its choices (`choose_effect` with `card`) are the unused base projects
-    const as = (o.effects || []).find((x) => x.kind === 'assertion');
+    const as = (o.effects || []).find((x) => x.kind === 'assertion' && S.assertOpen === x.index);          // (opened by the Assertion button)
     const cards = as ? [...new Set(acts.filter((a) => a.kind === 'choose_effect' && a.args.index === as.index && a.args.card).map((a) => a.args.card))] : [];
     if (cards.length) e = { ...as, cards, n: 1 };
   }
@@ -348,6 +348,11 @@ export function forkReveal(o, acts, play) {
   confirm.onclick = () => { const a = match(); if (a && !S.forkBusy) play(a); };
   const buttons = el('div', 'revealbtns');
   buttons.append(confirm);
+  if (effect === 'assertion' && cancel) {                                                       // (the Assertion button opened the offer: Cancel closes it again)
+    const c = el('button', 'forkmove forkskip', 'Cancel');
+    c.type = 'button'; c.onclick = () => { if (!S.forkBusy) cancel(); };
+    buttons.append(c);
+  }
   const skip = acts.find((a) => a.kind === 'skip_effect' && a.args.index === e.index);          // (an optional effect: Hunter Animals)
   if (skip) {
     const s = el('button', 'forkmove forkskip', 'Skip ' + NAME[effect]);

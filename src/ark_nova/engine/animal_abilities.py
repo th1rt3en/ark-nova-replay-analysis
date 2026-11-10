@@ -16,7 +16,7 @@ from ark_nova.engine.actions import Action
 from ark_nova.engine.icons import card_icons, icon_counts
 from ark_nova.engine.rng import Rng
 
-KINDS = ("digging", "scavenge", "glide", "glide_gain", "shark", "symbiosis", "cut_down", "trade", "extra_shift", "assertion", "pilfer", "venom", "constrict", "gain", "ability", "hypnosis", "mark", "marketing", "pay_appeal", "jumping")
+KINDS = ("digging", "scavenge", "glide", "glide_gain", "shark", "symbiosis", "cut_down", "trade", "extra_shift", "assertion", "dominance", "pilfer", "venom", "constrict", "gain", "ability", "hypnosis", "mark", "marketing", "pay_appeal", "jumping")
 SIMPLE = {"Pack", "Petting Zoo Animal", "Iconic Animal", "Sprint", "Jumping", "Inventive", "Inventive: Bear", "Inventive: Primary", "Full-throated",
           "Helpful", "Posturing", "Peacocking", "Pouch", "Digging", "Scavenging", "Glide", "Shark Attack", "Symbiosis", "Cut Down", "Trade",
           "Extra Shift", "Assertion", "Dominance", "Resistance", "Adapt", "Scuba Dive X", "Monkey Gang", "Sea Animal Magnet", "Sponsor Magnet",
@@ -176,6 +176,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     elif name == "Assertion":
         return [{"kind": "assertion", "source": key, "optional": False}]
     elif name == "Dominance":
+        if state.config.confirm_turns:                                   # a live game / the sandbox: the player activates it (the log tells whether the Primates project was there)
+            return [{"kind": "dominance", "source": key, "optional": False}]
         if "P108" in state.base_projects_unused:
             state.base_projects_unused.remove("P108")
             p.hand.append("P108")
@@ -302,6 +304,8 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         return [Action(seat, "choose_effect", {"index": i, "worker": t.id}) for t in p.tokens if t.type == "worker" and t.location.startswith("association_")]
     if k == "assertion":
         return [Action(seat, "choose_effect", {"index": i, "card": c}) for c in state.base_projects_unused]
+    if k == "dominance":
+        return [Action(seat, "choose_effect", {"index": i, "apply": "dominance"})]
     if k == "pilfer":
         out = []
         if not pilfer_hits(state, e):                              # the victim is not behind (any more): nothing happens
@@ -540,4 +544,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
                 state.prompt.args["pending"].append({**eff, "player": p.seat})
         else:
             p.hand.append(c)
+    elif k == "dominance":
+        if "P108" in state.base_projects_unused:                  # the Primates base project, when nobody has taken it
+            state.base_projects_unused.remove("P108")
+            p.hand.append("P108")
     fx._done(state, i)

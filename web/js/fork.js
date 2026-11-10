@@ -7,7 +7,7 @@ import { associationStrip, bonusPanel } from './association.js';
 import { curState, orientParam, povParam } from './pov.js';
 import { cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
-import { PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
+import { GATED_PICKS, PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
 import { render, renderZoos } from './main.js';
@@ -398,7 +398,8 @@ export function forkBar() {
       }
     }
   }
-  for (const a of acts) if (a.kind === 'choose_effect' && effKinds.get(a.args.index) === 'digging' && S.pickOpen !== a.args.index) S.forkClaimed.add(a);       // (Digging: its moves are chosen after its button has been clicked)
+  for (const a of acts) if (a.kind === 'choose_effect' && GATED_PICKS.has(effKinds.get(a.args.index)) && S.pickOpen !== a.args.index) S.forkClaimed.add(a);       // (Digging / Pouch / Store: their moves are chosen after their button has been clicked)
+  for (const a of acts) if (a.kind === 'choose_effect' && typeof a.args.card === 'string' && ['assertion', 'search_discard'].includes(effKinds.get(a.args.index))) S.forkClaimed.add(a);       // (Assertion / Horse Whisperer: the cards are chosen in the lightbox)
   const placeActs = acts.filter((a) => a.kind === 'place_building');
   for (const a of placeActs) S.forkClaimed.add(a);
   // BDW2's crane: the "Reposition (crane)" button of the effects starts the move; until then neither the pieces menu nor the skip button is shown, afterwards the skip button sits beside the placement controls
@@ -493,7 +494,7 @@ export function forkBar() {
   if (s1Acts.length) {                                                              // Clever: the player's action cards are shown in their order, click the one that goes to slot 1
     const p0 = s1Acts[0].player;
     const others = s1Effs.filter((e) => e.kind !== 'slot1' && !(e.kind === 'gain' && (e.res === 'money' || e.res === 'xtoken')) && !/^income_/.test(e.kind));
-    const idx = S.slot1Mode !== null && S.slot1Mode !== undefined && s1Acts.some((a) => a.args.index === S.slot1Mode) ? S.slot1Mode : !others.length ? s1Acts[0].args.index : null;
+    const idx = S.slot1Mode !== null && S.slot1Mode !== undefined && s1Acts.some((a) => a.args.index === S.slot1Mode) ? S.slot1Mode : null;          // (opens only when the player clicks the Clever button, which shows the 2 money it costs)
     if (idx !== null) {
       const mine = s1Acts.filter((a) => a.args.index === idx);
       const skip = acts.find((a) => a.kind === 'skip_effect' && a.args.index === idx);
@@ -513,6 +514,24 @@ export function forkBar() {
       });
       if (skip) { const sk = el('button', 'forkmove', 'Skip'); sk.type = 'button'; sk.onclick = () => { if (!S.forkBusy) playFork(skip); }; bar.append(sk); }
       if (others.length) { const back = el('button', 'forkmove', 'Back'); back.type = 'button'; back.onclick = () => { S.slot1Mode = null; refreshBar(); }; bar.append(back); }
+    }
+  }
+  const glideActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.gain === 'string' && effKinds.get(a.args.index) === 'glide_gain');
+  for (const a of glideActs) S.forkClaimed.add(a);
+  if (glideActs.length) {                                                           // Glide: the bonuses are chosen one by one (one per sea animal icon), only this prompt is left
+    const first = Math.min(...glideActs.map((a) => a.args.index)), p0 = glideActs[0].player;
+    bar.replaceChildren();
+    const whoG = el('span', 'who', seatName(p0));
+    whoG.style.color = seatText(p0);
+    bar.append(whoG, el('b', '', ' must choose a bonus (Glide effect)'));
+    for (const [gain, label, icon] of [['reputation', '1 reputation', amountIcon('reputation', 1)], ['kiosk', '1 kiosk', (() => { const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS['bonus:kiosk']); i.alt = '1 kiosk'; i.height = 28; return i; })()], ['appeal', '2 appeal', amountIcon('appeal', 2)]]) {
+      const a = glideActs.find((x) => x.args.index === first && x.args.gain === gain);
+      const b = el('button', 'forkmove forkchoice');
+      b.type = 'button'; b.disabled = !a || S.forkBusy;
+      b.style.setProperty('--pc', seatColor(p0));
+      b.title = label; if (icon) b.append(icon); else b.append(el('span', '', label));          // (the icon alone: its number says how many)
+      if (a) b.onclick = () => playFork(a);
+      bar.append(b);
     }
   }
   const cardEff = acts.filter((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards));      // an effect that takes cards of the hand (sunbathing)
@@ -599,7 +618,12 @@ export function forkBar() {
       const whoS = el('span', 'who', seatName(p));
       whoS.style.color = seatText(p);
       bar.append(whoS, el('b', '', ' must choose up to ' + max + ' animal' + (max === 1 ? '' : 's') + ' in reach on the display to shark attack (' + picked.length + '/' + max + ')'));
-    } else bar.append(el('b', '', 'Choose up to ' + max + ' card' + (max === 1 ? '' : 's') + (eff.kind === 'sell' ? ' to sunbathe' : '') + ' (' + picked.length + '/' + max + ')'));
+    } else {                                                                          // Sunbathing / Glide: only this prompt is left, the other effects wait
+      bar.replaceChildren();
+      const whoC = el('span', 'who', seatName(p));
+      whoC.style.color = seatText(p);
+      bar.append(whoC, el('b', '', ' must choose up to ' + max + ' card' + (max === 1 ? '' : 's') + (eff.kind === 'sell' ? ' to sunbathe' : eff.kind === 'glide' ? ' to glide' : '') + ' (' + picked.length + '/' + max + ')'));
+    }
     const ok = match ? btn(match, 'Confirm', true) : el('button', 'forkmove forkconfirm', 'Confirm');
     ok.type = 'button'; ok.disabled = !match || S.forkBusy;
     bar.append(ok);
@@ -609,11 +633,15 @@ export function forkBar() {
     const eff = ((cur.options && cur.options.effects) || []).find((e) => e.index === grp.idx) || {};
     const picked = [...marked(grp.p + ':hand', st.players[grp.p].hand), ...marked('display', st.display).filter(Boolean)].filter((k) => grp.list.some((a) => pickCardOf(a) === k));
     const mine = picked.length ? grp.list.filter((a) => pickCardOf(a) === picked[0]) : [];
-    if (eff.kind === 'digging' || eff.kind === 'mark') bar.replaceChildren();         // (the Digging button was clicked / a Mark is to be resolved: only its prompt is left)
+    if (eff.kind === 'digging' || eff.kind === 'mark' || eff.kind === 'pouch' || eff.kind === 'store') bar.replaceChildren();         // (the Digging / Pouch / Store button was clicked / a Mark is to be resolved: only its prompt is left)
     const who3 = el('span', 'who', seatName(grp.p));
     who3.style.color = seatText(grp.p);
     const yours = seatName(grp.p) === 'You';
-    bar.append(who3, el('b', '', (eff.kind === 'mark' ? ' must select an animal of the display to mark, then confirm' : ' must select a card from ' + (yours ? 'your' : 'the') + ' hand or on the display') + (picked.length ? ': ' + cardName(picked[0]) : '')));
+    const promptText = eff.kind === 'mark' ? ' must select an animal of the display to mark, then confirm'
+      : eff.kind === 'pouch' ? ' must choose a card from ' + (yours ? 'your' : 'their') + ' hand to pouch'
+      : eff.kind === 'store' ? ' must choose a card from ' + (yours ? 'your' : 'their') + ' hand to store'
+      : ' must select a card from ' + (yours ? 'your' : 'the') + ' hand or on the display';
+    bar.append(who3, el('b', '', promptText + (picked.length ? ': ' + cardName(picked[0]) : '')));
     const confirmWith = (a, label) => {
       const ok = a ? btn(a, label, true) : el('button', 'forkmove forkconfirm', label);
       ok.type = 'button'; ok.disabled = !a || S.forkBusy;
@@ -621,7 +649,13 @@ export function forkBar() {
     };
     bar.append(confirmWith(mine.find((a) => !a.args.rescue), 'Confirm'));
     if (grp.list.some((a) => a.args.rescue)) bar.append(confirmWith(mine.find((a) => a.args.rescue), "Confirm and use map 10's effect"));
-    for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === grp.idx)) { S.forkClaimed.add(a); bar.append(btn(a, eff.kind === 'mark' ? 'Pass' : 'Skip', false)); }
+    if (eff.kind === 'pouch' || eff.kind === 'store') {                                // (Pouch / Store: Cancel goes back to the effects, the card choice closes)
+      const cancel = el('button', 'forkmove', 'Cancel');
+      cancel.type = 'button';
+      cancel.onclick = () => { S.pickOpen = null; for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); render(); };
+      bar.append(cancel);
+    }
+    for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === grp.idx)) { S.forkClaimed.add(a); bar.append(btn(a, eff.kind === 'mark' || eff.kind === 'pouch' || eff.kind === 'store' ? 'Pass' : 'Skip', false)); }
   }
   for (const seat0 of [...new Set(initActs.map((a) => a.player))]) {                 // the initial discard: pick the cards to keep in the hand, then confirm
     const mine = initActs.filter((a) => a.player === seat0);

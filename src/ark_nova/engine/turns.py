@@ -36,9 +36,22 @@ def irreversible(before: GameState, action: Action, after: GameState) -> str:
         pending = before.prompt.args.get("pending") or []
         i = action.args.get("index", -1)
         kind = str(pending[i].get("kind", "")) if isinstance(i, int) and 0 <= i < len(pending) else ""
+        if action.kind == "skip_effect" and kind == "search_discard":
+            return ""                                                                  # (Horse Whisperer with no Petting Zoo animal in the discard pile: nothing is learned)
         if any(w in kind for w in SECRET_EFFECTS):
             return "a hidden choice is made (" + kind.replace("_", " ") + ")"
+        if kind in ("assertion", "dominance") and action.kind == "choose_effect" and _opponent_holds_base_project(before, action.player):
+            return "it shows which base project the opponent took with Assertion or Dominance"
     return ""
+
+
+def _opponent_holds_base_project(state: GameState, seat: int) -> bool:
+    """The other player has taken a base project into their hand (Assertion / Dominance): the unused projects an Assertion lists, or whether the Primates project is
+    still there, would tell what it was."""
+    held = set(state.base_projects) | set(state.base_projects_unused)
+    from ark_nova import data
+    base = {k for k, c in data.cards_by_key().items() if k.startswith("P") and c.get("deck") == "base_project"}
+    return any(k in base and k not in held for k in state.players[1 - seat].hand)
 
 
 def make_checkpoint(state: GameState) -> dict:
