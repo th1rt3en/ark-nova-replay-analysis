@@ -7,7 +7,7 @@ import { associationStrip, bonusPanel } from './association.js';
 import { curState, orientParam, povParam } from './pov.js';
 import { cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
-import { GATED_PICKS, MAP_PICKS, PROMPT_TEXT, animalsChoicePending, bpickInfo, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
+import { CARD_PICKS, GATED_PICKS, MAP_PICKS, PROMPT_TEXT, animalsChoicePending, bpickInfo, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
 import { placementBonusName } from './bonus-names.js';
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
@@ -576,8 +576,9 @@ export function forkBar() {
       bar.append(b);
     }
   }
-  const cardEff = acts.filter((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards));      // an effect that takes cards of the hand (sunbathing)
-  for (const a of [...handActs, ...dispActs, ...discardActs, ...cardEff]) S.forkClaimed.add(a);
+  const cardActsAll = acts.filter((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards));      // an effect that takes cards of the hand or the display (Sunbathing, Glide, Shark Attack, the break discard)
+  const cardEff = cardActsAll.filter((a) => !CARD_PICKS.has(effKinds.get(a.args.index)) || S.pickOpen === a.args.index);          // (Sunbathing / Glide / Shark Attack: the choice is open once their button was clicked)
+  for (const a of [...handActs, ...dispActs, ...discardActs, ...cardActsAll]) S.forkClaimed.add(a);
   const pickGroups = [];                                                            // an effect that takes one card of the hand or the display: select it, then confirm
   {
     const byIdx = new Map();
@@ -670,6 +671,12 @@ export function forkBar() {
     const ok = match ? btn(match, 'Confirm', true) : el('button', 'forkmove forkconfirm', 'Confirm');
     ok.type = 'button'; ok.disabled = !match || S.forkBusy;
     bar.append(ok);
+    if (CARD_PICKS.has(eff.kind)) {                                                   // (Cancel goes back to the effects, the choice closes)
+      const cancel = el('button', 'forkmove', 'Cancel');
+      cancel.type = 'button';
+      cancel.onclick = () => { S.pickOpen = null; for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); render(); };
+      bar.append(cancel);
+    }
     for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === idx)) { S.forkClaimed.add(a); bar.append(btn(a, 'Pass', false)); }
   }
   for (const grp of pickGroups) {

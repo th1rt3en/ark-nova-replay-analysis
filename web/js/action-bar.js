@@ -56,6 +56,7 @@ export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.di
 export const cardPickAct = (a) => a.kind === 'choose_effect' && typeof a.args.index === 'number' && !Array.isArray(a.args.cards) && !!pickCardOf(a) && effectKindOf(a) !== 'marketing' && !(GATED_PICKS.has(effectKindOf(a)) && S.pickOpen !== a.args.index);       // (Digging / Pouch / Store: the card is chosen once its button has been clicked)
 export const sharkActs = () => forkActs((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards) && effectKindOf(a) === 'shark');       // (Shark Attack: the animals of the display it can eat)
 // effects whose choice is made on the zoo map or among the bonuses of the map: Cut Down / Enlarge / Reposition click the enclosures, Move in picks an animal, Archaeologist a bonus (fork.js `bpickBar`, board.js)
+export const CARD_PICKS = new Set(['sell', 'glide', 'shark']);          // effects that take cards (Sunbathing, Glide, Shark Attack): a button on the bar, the card choice opens when it is clicked (S.pickOpen)
 export const MAP_PICKS = new Set(['cut_down', 'enlarge', 'reposition', 'move_in', 'archaeologist', 'continent', 'extra_shift', 'symbiosis', 'pilfer', 'waza', 'threshold_bonus', 'release']);          // (+ the person sponsor of the Marine Research Expedition, `expedition` with option `send`)
 // Move in / Symbiosis: the animals that can be chosen are lit among the played cards of the zoo (the stacks under the map), the others dimmed; a click selects one
 export function decorateBpick(row, seat) {
@@ -549,7 +550,7 @@ function effectButton(e) {
     return bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.apply !== 'income_all'));
   }
   if (/^income_/.test(e.kind)) return null;                                      // the incomes of a break are paid by themselves (BGA shows them as log lines, not as a choice)
-  if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
+  if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length && !CARD_PICKS.has(e.kind)) return null;       // (the cards are chosen in the hand: see forkBar; Sunbathing / Glide / Shark Attack have a button that opens the choice)
   const noMoveIn = FORK && e.kind === 'move_in' && !forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length;       // (a special enclosure with no animal of the zoo that could move in)
   const b = el('span', 'abtn deckbtn' + (e.enabled === false || noMoveIn ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)
   const src = e.source && /^[ASPF]\d{3}$/.test(e.source) ? cardName(e.source) : '';
@@ -627,6 +628,9 @@ function effectButton(e) {
   } else if (FORK && e.kind === 'marketing' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && typeof a.args.card === 'string').length) {
     b.classList.add('choosable');                                      // (click it, then choose the sponsor in the hand: see forkBar)
     b.onclick = () => { S.marketMode = e.index; S.forkDockStep = -1; refreshBar(); renderDock(curState()); };
+  } else if (FORK && CARD_PICKS.has(e.kind) && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && Array.isArray(a.args.cards)).length) {
+    b.classList.add('choosable');                                      // (click it: the cards to take, see fork.js: Confirm / Cancel)
+    b.onclick = () => { S.pickOpen = e.index; S.forkDockStep = -1; render(); };
   } else if (FORK && GATED_PICKS.has(e.kind) && S.pickOpen !== e.index && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length) {
     b.classList.add('choosable');                                      // (Digging / rescue / Pouch / Store: click it, then choose the card of the hand or of the display)
     b.onclick = () => { S.pickOpen = e.index; render(); };
