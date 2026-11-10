@@ -60,7 +60,8 @@ def main() -> None:
             entry["normal"] = c.get("size") if c.get("canBeInStandardEnclosure", True) else None
             aqua = [s["size"] for s in c.get("specialEnclosures") or [] if s["type"] == "Aquarium"]
             entry["aqua"] = aqua[0] if aqua else None
-            entry["reputation"] = (c.get("reputation") or 0) > 0
+            entry["reef"] = bool(c.get("reefDwellerEffect"))                     # (a Reef Dweller: its effect is used again whenever its aquarium is activated)
+            entry["reputation"] =(c.get("reputation") or 0) > 0
             entry["conservation"] = (c.get("conservationPoint") or 0) > 0
             reqs = [str(r) for r in c.get("requirements") or []]
             entry["partner"] = "Partner Zoo" in reqs

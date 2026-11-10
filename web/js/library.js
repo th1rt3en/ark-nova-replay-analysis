@@ -26,6 +26,7 @@ function abilityIcon(a) {                                 // the icon of an abil
   if ((m = /^(?:Action|Boost): (\w+)/.exec(a))) return iconSrc(ACTION_ICON[m[1]]);
   if (a.startsWith('Multiplier')) return iconSrc('multiplier');
   if (a === 'Assertion') return '/icons/r11c6.webp';
+  if (a === 'Reef') return iconSrc('reef');
   if (a === 'Resistance') return '/icons/hourglass.svg';
   if (a === 'Petting Zoo Animal') return '/badges/Pet.webp';
   const key = Object.keys(ABILITY_ICON).find((k) => a === k || a.startsWith(k + ' '));
@@ -63,7 +64,7 @@ function buildFilters(abilities) {
     }
   }
   const box = document.querySelector('.abilities');
-  for (const a of abilities) box.append(chip('ability', a, a, null, abilityIcon(a)));
+  for (const a of [...abilities, 'Reef'].sort((x, y) => x.localeCompare(y))) box.append(chip('ability', a, a, null, abilityIcon(a)));          // ("Reef": every Reef Dweller, which has the effect of its aquarium instead of an ability of its own)
 }
 
 const TRI = ['any', 'yes', 'no'];                         // the gives / requires filters: one button that cycles Any -> Yes -> No
@@ -95,7 +96,7 @@ function passes(c, q) {
   const advanced = sel.ability.size || ['rep', 'cons', 'partner', 'uni'].some((id) => $(id).dataset.v !== 'any');
   if (advanced) {                                           // (these only describe animals: with one of them set, the other cards are out)
     if (c.type !== 'animal') return false;
-    if (sel.ability.size && !c.abilities.some((a) => sel.ability.has(a))) return false;
+    if (sel.ability.size && !c.abilities.some((a) => sel.ability.has(a)) && !(sel.ability.has('Reef') && c.reef)) return false;
     for (const [id, field] of [['rep', 'reputation'], ['cons', 'conservation'], ['partner', 'partner'], ['uni', 'university']]) {
       const v = $(id).dataset.v;
       if (v !== 'any' && (v === 'yes') !== !!c[field]) return false;
