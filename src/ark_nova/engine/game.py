@@ -201,7 +201,7 @@ def harbor_ready(state: GameState, seat: int) -> bool:
     p = state.players[seat]
     own = state.active_player == seat                      # the turn is running; otherwise it has just ended and the next player has not acted yet
     turn = state.turn if own else state.turn - 1
-    return (state.phase in (Phase.TURN, Phase.FINAL_TURNS) and (own or bool(p.flags.get("turn_window"))) and p.map_id in ("4", "4a") and bool(p.hand)
+    return (state.phase in (Phase.TURN, Phase.FINAL_TURNS) and (own or (bool(p.flags.get("turn_window")) and not state.config.confirm_turns)) and p.map_id in ("4", "4a") and bool(p.hand)
             and p.flags.get("harbor_turn", -1) != turn
             and any((0, 11) in build_action.footprint(b.type, b.x, b.y, b.rotation) for b in p.buildings if build_action.knows_shape(b.type)))
 
