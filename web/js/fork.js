@@ -908,7 +908,7 @@ function bpickBar(bar, bp, cur, acts) {
   bar.append(who, el('b', '', prompt), ...extra);
   if (ok) bar.append(ok);
   bar.append(cancel);
-  if (skip) { const sk = el('button', 'forkmove', bp.kind === 'move_in' ? 'Done' : 'Skip'); sk.type = 'button'; sk.onclick = () => { if (!S.forkBusy) playFork(skip); }; bar.append(sk); }
+  if (skip) { const sk = el('button', 'forkmove', bp.kind === 'move_in' ? 'Done' : bp.kind === 'continent' ? 'Pass' : 'Skip'); sk.type = 'button'; sk.onclick = () => { if (!S.forkBusy) playFork(skip); }; bar.append(sk); }
   S.forkSolo = true;
 }
 

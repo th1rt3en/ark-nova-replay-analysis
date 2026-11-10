@@ -587,6 +587,10 @@ function effectButton(e) {
     const id = ICON_IDS['bonus:' + (e.kind === 'wave' ? 'wave' : 'shark-attack')];
     if (id) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
     b.append(el('b', '', e.kind === 'wave' ? 'Wave' : 'Shark attack'));
+  } else if (e.kind === 'continent') {                                          // map 9: "Remove a cube from [continent badge]" (the badge is round)
+    b.append(el('b', '', 'Remove a cube' + (e.continent ? ' from' : '')));
+    if (e.continent) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = '/badges/' + e.continent + '.webp'; i.alt = e.continent; i.title = e.continent; i.height = 30; i.style.borderRadius = '50%'; b.append(i); }
+    b.title = 'Map 9: remove a continent marker' + (e.continent ? ' (' + e.continent + ')' : '') + ' for a bonus - optional';
   } else if (e.kind === 'pay_appeal') {                                          // "Pay 2 money: 1 appeal" with the icons
     const pay = amountIcon('money', 2), gain = amountIcon('appeal', 1);
     b.append(el('b', '', 'Pay'), pay || el('b', '', '2 money'), el('b', '', ':'), gain || el('b', '', '1 appeal'));
@@ -698,7 +702,16 @@ function genericBar(bar, st, o, seat) {
       continue;
     }
     const b = effectButton(e);
-    if (b) { bar.append(b); shown++; }
+    if (b) {
+      bar.append(b); shown++;
+      const sk = FORK && e.kind === 'continent' && e.optional ? forkActs((a) => a.kind === 'skip_effect' && a.args.index === e.index)[0] : null;
+      if (sk) {                                                                  // map 9: the removal can be passed, the marker stays and can be removed later
+        const pb = el('button', 'forkmove', 'Pass');
+        pb.type = 'button'; pb.title = 'Keep the marker: it can be removed later'; pb.disabled = S.forkBusy;
+        pb.onclick = () => { if (!S.forkBusy) playFork(sk); };
+        S.forkClaimed.add(sk); bar.append(pb);
+      }
+    }
   }
   for (const [kind, n] of Object.entries(o.kinds)) {
     if (kind === 'place_building' && o.pieces && o.pieces.length) continue;       // shown as the pieces themselves
