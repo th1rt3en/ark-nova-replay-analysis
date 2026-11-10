@@ -581,7 +581,10 @@ def _gain(state: GameState, seat: int, money: int = 0, appeal: int = 0, x_tokens
             if bonus.get("upgrade"):
                 bonuses.defer(state, {"kind": "upgrade", "player": seat, "source": "reputation track", "optional": False})
             if bonus.get("worker"):
-                bonuses.hire_worker(state, seat)
+                if state.config.confirm_turns:                      # live play and the sandbox: a button of its own, "Gain a worker"
+                    bonuses.defer(state, {"kind": "gain_worker", "player": seat, "source": "reputation track", "optional": False})
+                else:
+                    bonuses.hire_worker(state, seat)
             if bonus.get("take"):
                 bonuses.defer(state, {"kind": "take", "source": "reputation track", "optional": False, "player": seat})
         if old + reputation > bonuses.reputation_cap(p) == tracks.MAX_REPUTATION:      # beyond the end of the track: 1 appeal per point lost

@@ -57,6 +57,7 @@ export const S = {
   forkBonus: null,   // fork: the bonus slot of the player board the viewer picked to unlock
   thresholdMode: null,   // fork: the upgrade / worker choice the viewer opened ({index, stage: 'choose' | 'upgrade'})
   marketMode: null,
+  autoPlace: false,       // fork: the building bonus that was just clicked starts its placement by itself (set by the bonus button, used by fork.js renderPlacementControls)
   animalsMode: null,      // fork: 'two' once the player chose "Play 2 animals" with Ignore Animals (the choice is not asked again in the step)
   bpick: null,            // fork: the map choice that is open ({kind: cut_down | enlarge | reposition | move_in | archaeologist, index, sel, opt}), opened by the effect's button
   assertOpen: null,       // fork: the Assertion effect (its index) whose base projects are shown, opened by its button

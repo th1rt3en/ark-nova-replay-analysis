@@ -606,6 +606,10 @@ function effectButton(e) {
     const id = ICON_IDS['bonus:' + (e.kind === 'wave' ? 'wave' : 'shark-attack')];
     if (id) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
     b.append(el('b', '', e.kind === 'wave' ? 'Wave' : 'Shark attack'));
+  } else if (e.kind === 'gain_worker' && ICON_IDS['bonus:Worker']) {            // the worker of reputation 8
+    const wi = el('img', 'icon'); wi.decoding = 'sync'; wi.src = iconUrl(ICON_IDS['bonus:Worker']); wi.alt = 'Worker'; wi.height = 28;
+    b.append(el('b', '', 'Gain a worker'), wi);
+    b.title = 'Reputation track: gain a worker';
   } else if (e.kind === 'continent') {                                          // map 9: "Remove a cube from [continent badge]" (the badge is round)
     b.append(el('b', '', 'Remove a cube' + (e.continent ? ' from' : '')));
     if (e.continent) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = '/badges/' + e.continent + '.webp'; i.alt = e.continent; i.title = e.continent; i.height = 30; i.style.borderRadius = '50%'; b.append(i); }
@@ -655,6 +659,10 @@ function effectButton(e) {
   } else if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)).length && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)).every(cardPickAct)) {
     b.classList.add('choosable');                                      // (select the card in the hand / display, then confirm: see forkBar)
   } else bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)));
+  if (FORK && (e.kind === 'pbonus' || e.kind === 'project_bonus') && e.bonus && /^size-\d/.test(String(e.bonus.type || '')) && b.onclick) {          // a bonus that is a building: its placement starts when the button is clicked
+    const orig = b.onclick;
+    b.onclick = (ev) => { S.autoPlace = true; return orig.call(b, ev); };
+  }
   return b;
 }
 

@@ -73,6 +73,11 @@ function renderPlacementControls(box, placeActs) {
   if (!S.placement && pieces.length === 1) {                                         // a single piece (a sponsor's building: Expert Americas' kiosk...): its own button, no menu
     const p = pieces[0];
     const name = p.type.replace(/-/g, ' ');
+    if (S.autoPlace) {                                                               // the piece comes from a bonus the player just clicked (a project's size-2 enclosure...): the placement starts, no second button to click
+      S.autoPlace = false;
+      S.placement = { seat, type: p.type, extra: p.extra, move: p.move, x: null, y: null, rot: 0 };
+      setTimeout(() => { render(); const board = document.querySelectorAll('.zoo')[seat]; if (board) board.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 0);
+    }
     const b = el('button', 'forkmove placeone');
     b.type = 'button'; b.disabled = S.forkBusy;
     b.style.setProperty('--pc', seatColor(seat));
@@ -134,7 +139,7 @@ function renderPlacementControls(box, placeActs) {
     const cancel = el('button', 'forkmove');
     cancel.type = 'button'; cancel.textContent = 'Choose another piece';
     cancel.onclick = () => { S.placement = null; render(); };
-    row.append(ok, cancel);
+    if (pieces.length > 1) row.append(ok, cancel); else row.append(ok);                // (one piece only: nothing else to choose, the ✕ on the map cancels)
     wrap.append(row);
   }
   box.append(wrap);

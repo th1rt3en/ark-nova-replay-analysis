@@ -325,7 +325,7 @@ def upgradable(p) -> list:
     return [c.type for c in p.action_cards if c.level < 2]
 
 
-KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor", "species_bonus")
+KINDS = ("gain_worker", "upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor", "species_bonus")
 
 
 def open_break_prompt(state, seat: int, pending: list, resume: dict) -> None:
@@ -339,6 +339,8 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     if k == "break_discard":
         from ark_nova.engine import breaks
         return breaks.legal_discard(state, e, i, seat)
+    if k == "gain_worker":                                  # the worker of the reputation track (space 8): the player takes it
+        return [Action(seat, "choose_effect", {"index": i, "apply": "gain_worker"})] if worker_tokens(p, "supply_") else [Action(seat, "skip_effect", {"index": i})]
     if k in ("upgrade", "threshold2"):
         out += [Action(seat, "choose_effect", {"index": i, "upgrade": t}) for t in upgradable(p)]
         if k == "threshold2" and worker_tokens(p, "supply_"):
@@ -451,7 +453,9 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         i -= sum(1 for j in mine if j < i)                  # (the effects before it are gone: its place in the list moved)
         e = state.prompt.args["pending"][i]
         k = e["kind"]
-    if k in ("upgrade", "threshold2"):
+    if k == "gain_worker":
+        hire_worker(state, p.seat)
+    elif k in ("upgrade", "threshold2"):
         if "hire" in a and k == "threshold2":
             if not hire_worker(state, p.seat):
                 raise fx.IllegalEffect("no worker left to hire")

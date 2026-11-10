@@ -285,6 +285,9 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         if x:
             L.add(f"{who} pays {x} xtoken for increasing card strength")
         L.add(f"{who} chooses action card {ACTION_NAMES.get(c.type, c.type)}{LEVEL.get(c.level, '')} with strength {slot + 1 + x}")
+        got = _gain_words(delta)                                             # what the card gives at once (Animals II at strength 5: 1 reputation)
+        if got:
+            L.add(f"{who} gains {' and '.join(got)} ({ACTION_NAMES.get(c.type, c.type)}{LEVEL.get(c.level, '')})", None, f"You gain {' and '.join(got)} ({ACTION_NAMES.get(c.type, c.type)}{LEVEL.get(c.level, '')})")
         return
     if k == "skip_action" and a.get("hypnosis"):
         t = ACTION_NAMES.get(a.get("type"), str(a.get("type")))
@@ -354,6 +357,10 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
             L.add(f"{who} gains {delta['x_tokens']} xtoken (causing the break)")
     elif k == "association_task":
         _association(old, act, new, L, who, delta)
+    elif k == "choose_slot":                                                 # the project and its slot are one line, sent when the slot is chosen
+        pr = ((old.prompt.args.get("project") if old.prompt is not None else None) or {})
+        key = pr.get("key")
+        L.add(f"{who} supports a conservation project : {card(key)}" if key else f"{who} supports a conservation project")
     elif k == "skip_effect":
         e = _effect(old, act)
         if e.get("kind") == "search_discard" and not e.get("optional"):          # Horse Whisperer with no Petting Zoo animal in the discard pile
@@ -405,7 +412,10 @@ def _association(old: GameState, act: Action, new: GameState, L: Lines, who: str
     elif task == "hire":
         L.add(f"{who} gains a new Association worker")
     elif task == "conservation":
-        L.add(f"{who} supports a conservation project : {card(a['project'])}" if a.get("project") else f"{who} supports a conservation project")
+        if a.get("project"):
+            L.quiet = True                                                   # (the line comes with the slot: `choose_slot`)
+        else:
+            L.add(f"{who} supports a conservation project")
     elif task == "reputation":
         L.add(f"{who} gains {' and '.join(got) or '2 reputation'} (association)")
     else:
@@ -588,6 +598,13 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         lost = max(-delta["appeal"], 0)
         tail = f" and lost {lost} appeal" if lost else ""
         L.add(f"{who} released {card(a['release'])}{where}{tail}", None, f"You released {card(a['release'])}{where}{tail}")
+    elif kind == "magnet":
+        got = _hand_change(old, new, seat)[0]
+        nm = "Sponsors Magnet" if e.get("name") == "Sponsor Magnet" else str(e.get("name") or "Magnet")
+        listed = names_of(got) if got else "no card"
+        L.add(f"{who} draw {listed} with {nm} effect", None, f"You draw {listed} with {nm} effect")
+    elif kind == "gain_worker":
+        L.add(f"{who} get a worker ({e.get('source') or 'reputation track'})".replace("(reputation track)", "(8 reputation)"), None, f"You get a worker (8 reputation)")
     elif kind == "boost" and a.get("slot") is not None:
         name = ACTION_NAMES.get(e.get("type"), str(e.get("type")))
         L.add(f"{who} put the {name} action at {int(a['slot'])} (Boost effect)", None, f"You put the {name} action at {int(a['slot'])} (Boost effect)")
