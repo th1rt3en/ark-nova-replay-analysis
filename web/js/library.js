@@ -1,5 +1,5 @@
-// [module] The card library page (library.html): every card of web/library_data.json (scripts/build_library.py) with the filters. A filter that is a set of chips lets a card through when the
-// card has none of that kind of property, or one of the chips that are on; all chips on is no filter at all. The advanced filters and the search only look at what the cards have.
+// [module] The card library page (library.html): every card of web/library_data.json (scripts/build_library.py) with the filters. A group of chips with all of them on is no filter;
+// with one off, a card must have one of the chips that are on in that group (the groups are separate: Bird only hides the predators whatever their continent). The cost slider only looks at animals.
 const GROUPS = {
   type: [['animal', 'Animals'], ['sponsor', 'Sponsors'], ['project', 'Projects'], ['endgame', 'Endgame']],
   species: [['bird', 'Bird', 'Bird'], ['herbivore', 'Herbivore', 'Herbivore'], ['predator', 'Predator', 'Predator'], ['primate', 'Primate', 'Primate'], ['reptile', 'Reptile', 'Reptile'], ['seaAnimal', 'Sea animal', 'SeaAnimal'], ['bear', 'Bear', 'Bear'], ['pet', 'Petting zoo', 'Pet']],
@@ -44,11 +44,11 @@ function buildFilters(abilities) {
 
 function passes(c, q) {
   if (!sel.type.has(c.type)) return false;
-  if (c.icons.length && !c.icons.some((i) => ICON_GROUPS.some((g) => sel[g].has(i)))) return false;
+  for (const g of ICON_GROUPS) if (sel[g].size < GROUPS[g].length && !c.icons.some((i) => sel[g].has(i))) return false;          // (a group with a chip off: the card needs one of the chips that are on)
   if (c.price != null && (c.price < +$('cmin').value || c.price > +$('cmax').value)) return false;
-  const size = [];
-  if (c.normal != null) size.push(sel.normal.has(c.normal));
-  if (c.aqua != null) size.push(sel.aqua.has(c.aqua));
+  const size = [];                                                                                                                   // (the two size groups: with a chip off in either, the card needs a size that is on)
+  if (sel.normal.size < GROUPS.normal.length) size.push(c.normal != null && sel.normal.has(c.normal));
+  if (sel.aqua.size < GROUPS.aqua.length) size.push(c.aqua != null && sel.aqua.has(c.aqua));
   if (size.length && !size.some(Boolean)) return false;
   const advanced = sel.ability.size || ['rep', 'cons', 'partner', 'uni'].some((id) => $(id).value !== 'any');
   if (advanced) {                                           // (these only describe animals: with one of them set, the other cards are out)
