@@ -546,9 +546,9 @@ function effectButton(e) {
     b.title = 'Income: ' + e.income.name;
     const icon = amountIcon(e.income.res === 'xtoken' ? 'xtoken' : e.income.res, e.income.n);
     b.append(el('b', '', e.income.name + ':'), icon || el('b', '', ' ' + e.income.n + ' ' + e.income.res));
-    return bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index));
+    return bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.apply !== 'income_all'));
   }
-  if (/^income_/.test(e.kind)) return null;                                       // the incomes of a break are paid by themselves (BGA shows them as log lines, not as a choice)
+  if (/^income_/.test(e.kind)) return null;                                      // the incomes of a break are paid by themselves (BGA shows them as log lines, not as a choice)
   if (FORK && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e) && Array.isArray(a.args.cards)).length) return null;       // (the cards are chosen in the hand: see forkBar)
   const noMoveIn = FORK && e.kind === 'move_in' && !forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length;       // (a special enclosure with no animal of the zoo that could move in)
   const b = el('span', 'abtn deckbtn' + (e.enabled === false || noMoveIn ? ' off' : ''));          // (enabled: false = a button the rules do not allow now, e.g. the expedition without a person sponsor)
@@ -713,8 +713,16 @@ function genericBar(bar, st, o, seat) {
       }
     }
   }
+  const all = FORK ? (o.effects || []).find((x) => x.income_all) : null;               // the break: one button takes every money income at once
+  if (all) {
+    const ab = el('span', 'abtn deckbtn');
+    ab.title = 'Take all the money incomes of the break at once';
+    ab.append(el('b', '', 'Take all money income:'), amountIcon('money', all.income_all) || el('b', '', ' ' + all.income_all + ' money'));
+    bar.append(bindActs(ab, forkActs((a) => a.kind === 'choose_effect' && a.args.index === all.index && a.args.apply === 'income_all')));
+    shown++;
+  }
   for (const [kind, n] of Object.entries(o.kinds)) {
-    if (kind === 'place_building' && o.pieces && o.pieces.length) continue;       // shown as the pieces themselves
+    if (kind === 'place_building' && o.pieces && o.pieces.length) continue;      // shown as the pieces themselves
     if (!FORK && kind === 'skip_effect') continue;                                  // (an option of the engine; BGA has no such button)
     if (kind === 'choose_effect' || kind === 'take_cards' || (o.prompt === 'effects' && kind === 'place_building')) continue;      // shown as the effect buttons / cards
     const b = el('span', 'abtn gen');

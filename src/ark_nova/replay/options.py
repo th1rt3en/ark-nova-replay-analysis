@@ -273,4 +273,12 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
                            "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
         out["effects"] = [b for entry in out["effects"] for b in _expedition_buttons(state, pending, entry)]
+        if state.config.confirm_turns:                                   # the break: "Take all money income", on the first of the money incomes (live play and the sandbox)
+            from ark_nova.engine import bonuses
+            ids = bonuses.money_incomes(state, who)
+            if len(ids) >= 2:
+                total = sum(bonuses.income_money(state, state.players[who], pending[j]) for j in ids)
+                for entry in out["effects"]:
+                    if entry.get("index") == ids[0]:
+                        entry["income_all"] = total
     return out

@@ -399,7 +399,36 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         out += [Action(seat, "choose_effect", {"index": i, "card": c}) for c in sorted(set(p.endgame_hand))]
         if not p.endgame_hand:
             out.append(Action(seat, "skip_effect", {"index": i}))
+    if k in INCOME_KINDS and state.config.confirm_turns:    # live play and the sandbox: one button takes all the money incomes of the break (on the first of them)
+        mine = money_incomes(state, seat)
+        if len(mine) >= 2 and i == mine[0]:
+            out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_all"}))
     return out
+
+
+INCOME_KINDS = ("income_appeal", "income_kiosk", "income_map", "income_sponsor")
+
+
+def income_money(state, p, x: dict):
+    """The money a break income effect pays when it pays nothing but money (a sponsor that also pays X tokens, appeal or conservation is left out), else None."""
+    from ark_nova.engine import breaks
+    k = x["kind"]
+    if k == "income_appeal":
+        return tracks_module().income_from_appeal(p.appeal)
+    if k == "income_kiosk":
+        return breaks.kiosk_income(p)
+    if k == "income_map":
+        return breaks.map_ability_income(state, p)
+    if k == "income_sponsor":
+        inc = breaks.sponsor_income(state, p, only=[x["source"]])
+        return inc["money"] if not (inc["xtoken"] or inc["appeal"] or inc["conservation"]) else None
+    return None
+
+
+def money_incomes(state, seat: int) -> list:
+    """The indices of the pending break income effects of the player that pay money only (in the order of the list)."""
+    pending = state.prompt.args["pending"] if state.prompt is not None and state.prompt.kind == "effects" else []
+    return [j for j, x in enumerate(pending) if x["kind"] in INCOME_KINDS and x.get("player", state.prompt.player) == seat and income_money(state, state.players[seat], x) is not None]
 
 
 def resolve(state, action: Action, e: dict, i: int) -> None:
@@ -411,6 +440,17 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     p = state.players[action.player]
     k = e["kind"]
     a = action.args
+    if a.get("apply") == "income_all":                      # "Take all money income": the other money incomes of the player are paid and gone, the effect that was chosen goes on as usual
+        mine = money_incomes(state, p.seat)
+        if i not in mine:
+            raise fx.IllegalEffect("this income pays more than money")
+        for j in sorted(mine, reverse=True):
+            if j != i:
+                _g()._gain(state, p.seat, money=income_money(state, p, state.prompt.args["pending"][j]))
+                fx._done(state, j)
+        i -= sum(1 for j in mine if j < i)                  # (the effects before it are gone: its place in the list moved)
+        e = state.prompt.args["pending"][i]
+        k = e["kind"]
     if k in ("upgrade", "threshold2"):
         if "hire" in a and k == "threshold2":
             if not hire_worker(state, p.seat):

@@ -386,8 +386,15 @@ def _association(old: GameState, act: Action, new: GameState, L: Lines, who: str
     a = act.args
     task = a.get("task")
     got = _gain_words(delta)
+    def hired() -> int:
+        n = lambda s: sum(1 for t in s.players[act.player].tokens if t.type == "worker" and not t.location.startswith("supply_"))
+        return n(new) - n(old)
+    ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
     if task == "partner":
         L.add(f"{who} takes a new partner zoo" + (f" ({a['continent']})" if a.get("continent") else ""))
+        if hired() > 0:                                                  # the 3rd partner zoo brings a worker
+            k_ = sum(1 for t in new.players[act.player].tokens if t.location.startswith("partner_"))
+            L.add(f"{who} get a worker ({ordinal.get(k_, str(k_) + 'th')} Partner Zoo)", None, f"You get a worker ({ordinal.get(k_, str(k_) + 'th')} Partner Zoo)")
     elif task == "university":
         seat = act.player
         before = Counter(t.type for t in old.players[seat].tokens if t.location.startswith("university_"))
@@ -466,7 +473,7 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         else:
             L.fallback(old, act, new)
     elif a.get("apply", "").startswith("income_") or kind == "income":
-        name = {"income_kiosk": "kiosk income", "income_appeal": "appeal income"}.get(a.get("apply", ""), "map income")
+        name = {"income_kiosk": "kiosk income", "income_appeal": "appeal income", "income_all": "all the money income"}.get(a.get("apply", ""), "map income")
         if delta["money"] > 0:
             L.add(f"{who} gains {delta['money']} money ({name})")
         else:
