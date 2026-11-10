@@ -7,7 +7,8 @@ import { associationStrip, bonusPanel } from './association.js';
 import { curState, orientParam, povParam } from './pov.js';
 import { cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
-import { GATED_PICKS, PROMPT_TEXT, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
+import { GATED_PICKS, MAP_PICKS, PROMPT_TEXT, bpickInfo, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
+import { placementBonusName } from './bonus-names.js';
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
 import { render, renderZoos } from './main.js';
@@ -517,6 +518,9 @@ export function forkBar() {
     }
   }
   S.forkSolo = false;                                                                // (a prompt that stands alone: none of the other moves is listed beside it)
+  for (const a of acts) if (a.kind === 'choose_effect' && MAP_PICKS.has(effKinds.get(a.args.index))) S.forkClaimed.add(a);       // (Cut Down / Enlarge / Reposition / Move in / Archaeologist: chosen on the map after the effect's button)
+  const bp = bpickInfo();
+  if (bp) bpickBar(bar, bp, cur, acts);
   const endActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.card === 'string' && effKinds.get(a.args.index) === 'endgame_discard');
   for (const a of endActs) S.forkClaimed.add(a);
   if (endActs.length) {                                                             // conservation 10: the endgame card to discard is chosen in the endgame tab of the hand, then confirmed
@@ -727,6 +731,71 @@ export function forkBar() {
   else if (st.phase === 'turn' || st.phase === 'final_turns') turnButtons(bar, st.turn, st.active_player, false);       // undo / restart turn at every step of a turn
   if (!acts.length) bar.append(el('span', 'forkerror', 'The engine offers no move in this position (a rule that is not complete yet). Go back a step and play something else.'));
   if (S.forkError) bar.append(el('span', 'forkerror', S.forkError));
+}
+
+// The choice of Cut Down / Enlarge / Reposition / Move in / Archaeologist, opened by the effect's button: only this prompt is left. The enclosures are clicked on the zoo map (board.js
+// draws the clickable ones, what is selected and the preview of the result), then Confirm; Cancel closes it again.
+function bpickBar(bar, bp, cur, acts) {
+  const p0 = bp.seat, st = cur.state, effs = (cur.options && cur.options.effects) || [], eff = effs.find((e) => e.index === bp.index) || {};
+  const key = (b) => b.join(',');
+  const skip = acts.find((a) => a.kind === 'skip_effect' && a.args.index === bp.index);
+  bar.replaceChildren();
+  const who = el('span', 'who', seatName(p0));
+  who.style.color = seatText(p0);
+  const confirm = (act, label) => {
+    const ok = el('button', 'forkmove forkconfirm', label || 'Confirm');
+    ok.type = 'button'; ok.disabled = !act || S.forkBusy;
+    ok.onclick = () => { if (act && !S.forkBusy) playFork(act); };
+    return ok;
+  };
+  const cancel = el('button', 'forkmove', 'Cancel');
+  cancel.type = 'button'; cancel.onclick = () => { S.bpick = null; render(); };
+  const choice = (label, onclick, on) => { const b = el('button', 'forkmove forkchoice' + (on ? ' on' : ''), label); b.type = 'button'; b.disabled = S.forkBusy; b.style.setProperty('--pc', seatColor(p0)); b.onclick = onclick; return b; };
+  let prompt = '', extra = [], ok = null;
+  if (bp.kind === 'cut_down') {
+    const sel = bp.sel[0], cut = (eff.cuts || []).find((c) => key(c.building) === sel), act = sel ? bp.acts.find((a) => a.args.building && key(a.args.building) === sel) : null;
+    prompt = ' must choose an empty enclosure to cut down' + (cut ? ': size ' + cut.type.replace('size-', '') + ', you gain ' + cut.money + ' money' : '');
+    ok = confirm(act, 'Cut down');
+  } else if (bp.kind === 'enlarge') {
+    const sel = bp.sel[0], opts = sel ? bp.acts.filter((a) => a.args.building && key(a.args.building) === sel) : [], n = opts.length, i = n ? bp.opt % n : 0;
+    prompt = sel ? ' must choose the shape of the enlarged enclosure (' + (i + 1) + '/' + n + ')' : ' must choose an enclosure to enlarge';
+    if (n > 1) extra = [choice('‹ Previous shape', () => { S.bpick.opt = (i + n - 1) % n; render(); }), choice('Next shape ›', () => { S.bpick.opt = (i + 1) % n; render(); })];
+    ok = confirm(opts[i] || null, 'Enlarge');
+  } else if (bp.kind === 'reposition') {
+    const act = bp.sel.length ? bp.acts.find((a) => a.args.remove && a.args.remove.map(key).sort().join('|') === bp.sel.slice().sort().join('|')) : null;
+    prompt = ' must choose up to 3 buildings to pick up (' + bp.sel.length + '/3)';
+    ok = confirm(act, 'Pick up');
+  } else if (bp.kind === 'move_in') {
+    const keys = [...new Set(bp.acts.filter((a) => a.args.move).map((a) => a.args.move))], act = bp.sel[0] ? bp.acts.find((a) => a.args.move === bp.sel[0]) : null;
+    prompt = ' must choose an animal to move in' + (bp.sel[0] ? ': ' + cardName(bp.sel[0]) : '');
+    extra = keys.map((k) => choice(cardName(k), () => { S.bpick.sel = [k]; render(); }, bp.sel[0] === k));
+    ok = confirm(act, 'Move in');
+  } else if (bp.kind === 'archaeologist') {
+    prompt = ' must choose a bonus (Archaeologist)';
+    for (const a of bp.acts.filter((x) => x.args.cell)) {
+      const c = (eff.cells || []).find((q) => key(q.cell) === key(a.args.cell));
+      const b = el('button', 'forkmove forkchoice');
+      b.type = 'button'; b.disabled = S.forkBusy; b.style.setProperty('--pc', seatColor(p0));
+      for (const bo of (c && c.bonus) || []) {
+        const ai = amountIcon(bo.type, bo.value);
+        const id = ICON_IDS['bonus:' + bo.type];
+        if (ai) b.append(ai);
+        else if (id) { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i, el('span', '', placementBonusName(bo))); }
+        else b.append(el('span', '', placementBonusName(bo)));
+      }
+      if (!b.childNodes.length) b.textContent = 'Hex ' + key(a.args.cell);
+      b.title = 'Take the placement bonus of the hex ' + key(a.args.cell);
+      b.onmouseenter = () => { S.bpick.hover = a.args.cell; renderZoos(); };
+      b.onmouseleave = () => { S.bpick.hover = null; renderZoos(); };
+      b.onclick = () => playFork(a);
+      extra.push(b);
+    }
+  }
+  bar.append(who, el('b', '', prompt), ...extra);
+  if (ok) bar.append(ok);
+  bar.append(cancel);
+  if (skip) { const sk = el('button', 'forkmove', bp.kind === 'move_in' ? 'Done' : 'Skip'); sk.type = 'button'; sk.onclick = () => { if (!S.forkBusy) playFork(skip); }; bar.append(sk); }
+  S.forkSolo = true;
 }
 
 // The legal moves are played from the action bar (see forkBar); this clears the old panel under it and keeps the error of the last move.

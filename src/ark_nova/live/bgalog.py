@@ -467,6 +467,20 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     elif kind == "glide_gain":
         words = {"reputation": "gained 1 reputation", "appeal": "gained 2 appeal", "kiosk": "will place a kiosk for free"}
         L.add(f"{who} {words.get(a.get('gain'), 'gained a bonus')} (Glide effect)")
+    elif kind == "cut_down" and a.get("building") is not None:
+        b = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a["building"])), None)
+        size = b.type.replace("size-", "") if b is not None else "?"
+        gained = max(delta["money"], 0)
+        L.add(f"{who} used cutdown on an empty size {size} enclosure and gained {gained} money", None, f"You used cutdown on an empty size {size} enclosure and gained {gained} money")
+    elif kind == "enlarge" and a.get("building") is not None:
+        b = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a["building"])), None)
+        n = int(b.type.replace("size-", "")) if b is not None and b.type.startswith("size-") else 0
+        tail = " and gained 2 appeal" if b is not None and b.animal else ""
+        L.add(f"{who} enlarged an enclosure ({n} -> {n + 1}){tail}", None, f"You enlarged an enclosure ({n} -> {n + 1}){tail}")
+    elif kind == "move_in" and a.get("move"):
+        dest = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(e.get("building") or [])), None)
+        into = dest.type.replace("-", " ") if dest is not None else "special enclosure"
+        L.add(f"{who} moved {card(a['move'])} into the {into}", None, f"You moved {card(a['move'])} into the {into}")
     elif kind == "boost" and a.get("slot") is not None:
         name = ACTION_NAMES.get(e.get("type"), str(e.get("type")))
         L.add(f"{who} put the {name} action at {int(a['slot'])} (Boost effect)", None, f"You put the {name} action at {int(a['slot'])} (Boost effect)")

@@ -54,6 +54,13 @@ export const GATED_PICKS = new Set(['digging', 'pouch', 'store']);          // e
 export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.display : typeof a.args.hand === 'string' ? a.args.hand : a.kind === 'choose_effect' && typeof a.args.card === 'string' && ['mark', 'pouch'].includes(effectKindOf(a)) ? a.args.card : a.kind === 'choose_effect' && typeof a.args.store === 'string' ? a.args.store : null);       // (Mark: the animal of the display to mark; Pouch / Store: the card of the hand)
 export const cardPickAct = (a) => a.kind === 'choose_effect' && typeof a.args.index === 'number' && !Array.isArray(a.args.cards) && !!pickCardOf(a) && effectKindOf(a) !== 'marketing' && !(GATED_PICKS.has(effectKindOf(a)) && S.pickOpen !== a.args.index);       // (Digging / Pouch / Store: the card is chosen once its button has been clicked)
 export const sharkActs = () => forkActs((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards) && effectKindOf(a) === 'shark');       // (Shark Attack: the animals of the display it can eat)
+// effects whose choice is made on the zoo map or among the bonuses of the map: Cut Down / Enlarge / Reposition click the enclosures, Move in picks an animal, Archaeologist a bonus (fork.js `bpickBar`, board.js)
+export const MAP_PICKS = new Set(['cut_down', 'enlarge', 'reposition', 'move_in', 'archaeologist']);
+export function bpickInfo() {                                              // the open map choice with its legal moves, null when none is open
+  if (!FORK || !S.bpick) return null;
+  const acts = forkActs((a) => a.kind === 'choose_effect' && a.args.index === S.bpick.index);
+  return acts.length ? { ...S.bpick, seat: acts[0].player, acts } : null;
+}
 export function animalSelection() {                                       // the animal selected in the hand / display with the enclosures it can go to
   if (!FORK) return null;
   const acts = forkActs((a) => a.kind === 'play_animal' && 'x' in a.args && !a.args.stored);
@@ -491,7 +498,7 @@ const EFFECT_TEXT = {
   assertion: 'Assertion', dominance: 'Dominance', pilfer: 'Pilfer', venom: 'Venom', constrict: 'Constriction', hypnosis: 'Hypnosis', pay_appeal: 'Pay appeal', slot1: 'Card to slot 1', boost: 'Boost',
   waza: 'Waza', reposition: 'Reposition', pouch: 'Pouch a card', search_discard: 'Search the discard pile', upgrade: 'Upgrade an action card', threshold2: 'Upgrade or worker',
   threshold_bonus: 'Choose a bonus', endgame_discard: 'Discard an endgame card', adapt: 'Adapt', break_discard: 'Discard to the hand limit', take_tile: 'Take a tile',
-  move_in: 'Move an animal in', archaeologist: 'Archaeologist', species_bonus: 'Species bonus', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', search_sponsor: 'Find a Sponsor', reef: 'Reef', ability: 'Animal ability',
+  move_in: 'Move in', archaeologist: 'Archaeologist', species_bonus: 'Species bonus', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', search_sponsor: 'Find a Sponsor', reef: 'Reef', ability: 'Animal ability',
 };
 const AUTOMATIC_GAINS = new Set(['money', 'xtoken']);
 // the option of an effect with several buttons (Marine Research Expedition: "send" a person sponsor away, or "scuba" Scuba Dive 3)
@@ -569,6 +576,9 @@ function effectButton(e) {
   if (FORK && e.kind === 'multiplier' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.multiplier === 'string').length) {
     b.classList.add('choosable');                                      // (click it: the action cards to put the token on, see forkBar)
     b.onclick = () => { S.multiplierMode = e.index; refreshBar(); };
+  } else if (FORK && MAP_PICKS.has(e.kind) && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length) {
+    b.classList.add('choosable');                                      // (click it: the choice opens, see fork.js `bpickBar`)
+    b.onclick = () => { S.bpick = { kind: e.kind, index: e.index, sel: [], opt: 0 }; S.forkDockStep = -1; render(); };
   } else if (FORK && e.kind === 'assertion' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) {
     b.classList.add('choosable');                                      // (click it: the unused base projects open in the lightbox, reveal.js `forkReveal`)
     b.onclick = () => { S.assertOpen = e.index; refreshBar(); };

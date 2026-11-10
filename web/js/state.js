@@ -57,6 +57,7 @@ export const S = {
   forkBonus: null,   // fork: the bonus slot of the player board the viewer picked to unlock
   thresholdMode: null,   // fork: the upgrade / worker choice the viewer opened ({index, stage: 'choose' | 'upgrade'})
   marketMode: null,
+  bpick: null,            // fork: the map choice that is open ({kind: cut_down | enlarge | reposition | move_in | archaeologist, index, sel, opt}), opened by the effect's button
   assertOpen: null,       // fork: the Assertion effect (its index) whose base projects are shown, opened by its button
   slot1Mode: null,        // fork: the Clever effect (its index) whose action card the viewer is choosing
   multiplierMode: null,   // fork: the Multiplier effect (its index) whose action card the viewer is choosing

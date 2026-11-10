@@ -9,7 +9,7 @@ import { FIT_DY, FIT_H, ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, moneyTwo, piec
 import { seatRawColor, svg } from './util.js';
 import { render, renderZoos } from './main.js';
 import { playFork } from './fork.js';
-import { animalSelection } from './action-bar.js';
+import { animalSelection, bpickInfo } from './action-bar.js';
 
 const toAxial = (x, y) => [x, (y - x - 1) / 2];
 const fromAxial = (q, r) => [q, 2 * r + q + 1];
@@ -290,6 +290,41 @@ export function zooBoard(map, player, seat) {
     }
   }
   s.append(...encPicks);
+  const bi = bpickInfo();
+  if (bi && bi.seat === seat) {                                              // Cut Down / Enlarge / Reposition / Move in / Archaeologist: the enclosures to click, what is selected, and the result before it is confirmed
+    const at = (b) => b.x + ',' + b.y, byAt = new Map(player.buildings.map((b) => [at(b), b]));
+    const clickable = new Set(bi.kind === 'reposition' ? player.buildings.map(at) : ['cut_down', 'enlarge'].includes(bi.kind) ? bi.acts.filter((a) => a.args.building).map((a) => a.args.building.join(',')) : []);
+    const ring = (cells, ok) => s.append(svg('path', { d: outlinePath(cells), class: 'placeborder ' + (ok ? 'ok' : 'bad'), 'pointer-events': 'none' }));
+    for (const b of player.buildings) {
+      if (!clickable.has(at(b))) continue;
+      const on = bi.sel.includes(at(b));
+      s.append(svg('path', { d: outlinePath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'fill: none; pointer-events: none' }));
+      const pick = svg('path', { d: fillPath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'stroke: none' });
+      pick.addEventListener('click', () => {
+        if (bi.kind === 'reposition') { const i = S.bpick.sel.indexOf(at(b)); if (i >= 0) S.bpick.sel.splice(i, 1); else if (S.bpick.sel.length < 3) S.bpick.sel.push(at(b)); }
+        else { S.bpick.sel = [at(b)]; S.bpick.opt = 0; }
+        render();
+      });
+      s.append(pick);
+      if (on && ['cut_down', 'reposition'].includes(bi.kind)) s.append(svg('path', { d: fillPath(b.cells), style: 'fill: rgba(200, 40, 40, .55); stroke: none', 'pointer-events': 'none' }));          // (the enclosure that goes: shown cut away)
+    }
+    if (bi.kind === 'enlarge' && bi.sel[0]) {
+      const opts = bi.acts.filter((a) => a.args.building && a.args.building.join(',') === bi.sel[0]), o = opts.length ? opts[bi.opt % opts.length] : null, old = byAt.get(bi.sel[0]);
+      if (o && old) {
+        const type = 'size-' + (+old.type.slice(5) + 1), cells = placementCells(type, o.args.x, o.args.y, o.args.rotation);
+        const ghost = drawBuilding({ type, x: o.args.x, y: o.args.y, rotation: o.args.rotation, cells }, '');
+        ghost.setAttribute('class', 'ghost'); ghost.setAttribute('pointer-events', 'none');
+        s.append(ghost); ring(cells, true);
+      }
+    }
+    if (bi.kind === 'move_in') {
+      const dest = (((S.replay.steps[S.step].options || {}).effects || []).find((e) => e.index === bi.index) || {}).dest, act = bi.sel[0] ? bi.acts.find((a) => a.args.move === bi.sel[0]) : null;
+      const to = dest && byAt.get(dest.join(',')), from = act && byAt.get((act.args.from || []).join(','));
+      if (to) ring(to.cells, true);
+      if (from) ring(from.cells, false);
+    }
+    if (bi.kind === 'archaeologist' && bi.hover) s.append(svg('polygon', { points: hexPoints(bi.hover[0], bi.hover[1]), class: 'placeborder ok', fill: 'rgba(255,255,255,.25)', 'pointer-events': 'none' }));
+  }
   const nowIds = new Set(player.buildings.map((b) => b.type + '|' + b.x + '|' + b.y));        // a building of the last drawing that is gone (cut down, replaced): drawn invisible, only so that card-motion.js can fly a copy of it to the deck
   for (const old of Object.values(S.prevZoneData[zone] || {})) {
     if (nowIds.has(old.type + '|' + old.x + '|' + old.y)) continue;

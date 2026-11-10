@@ -132,6 +132,25 @@ def _expedition_buttons(state: GameState, pending: list, entry: dict) -> list:
             {**entry, "name": "Scuba Dive 3", "option": "scuba", "enabled": True}]
 
 
+def _place_entry(state: GameState, e: dict, who: int) -> dict:
+    """What the page needs to show the choices that are made on the zoo map: the bonus of each hex an Archaeologist may take, the enclosures a Cut Down may remove with what they pay,
+    the enclosure a Move in goes to."""
+    k, p = e.get("kind"), state.players[who]
+    try:
+        if k == "archaeologist":
+            from ark_nova.engine import bonuses
+            bd = bonuses._board(p)
+            return {"cells": [{"cell": list(c), "bonus": [{"type": b.get("type"), "value": b.get("value")} for b in bd.bonuses[c]]} for c in bonuses.archaeologist_cells(state, p)]}
+        if k == "cut_down":
+            from ark_nova.engine import build_action
+            return {"cuts": [{"building": [b.x, b.y], "type": b.type, "money": build_action.cost(b.type)} for b in p.buildings if b.type.startswith("size-") and not b.animal]}
+        if k == "move_in" and e.get("building"):
+            return {"dest": list(e["building"])}
+    except Exception:                                                    # (a map the engine cannot read here: the buttons keep their plain names)
+        return {}
+    return {}
+
+
 def _revealed_cards(state: GameState, e: dict) -> dict:
     """The cards of a reveal-and-keep effect, for the lightbox of the page: the topmost cards of the deck (Perception / Hunter / Scuba Dive) or the cards drawn from the discard pile (Scavenging)."""
     if e.get("kind") == "reveal" and isinstance(e.get("x"), int):
@@ -234,7 +253,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
         out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}),
-                           **_bonus_entry(e), **_income_entry(state, e, who),
+                           **_bonus_entry(e), **_income_entry(state, e, who), **_place_entry(state, e, who),
                            **({"enabled": False} if e.get("cond") == "no_animals" and any(c.startswith("A") for c in state.players[who].hand) else {}),      # (Hunter Animals: not while the hand holds an animal)
                            "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
