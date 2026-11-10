@@ -40,10 +40,7 @@ def main() -> None:
         value = a.get("value", "")
         return plain(f"{name} {body.replace('{}', str(value))}")
 
-    cards = []
-    for key, c in sorted(data.cards_by_key().items()):
-        if not c.get("active", True):                     # (cards that are not in the game: the promo Capybara and Promotion Team)
-            continue
+    def describe(key: str, c: dict) -> dict:
         kind = c["card_type"]
         icons = [t for t in dict.fromkeys(c.get("tags") or []) if t in ICONS]
         if kind == "project" and c.get("tag") in ICONS and c["tag"] not in icons:
@@ -79,6 +76,18 @@ def main() -> None:
         if c.get("source") == "marine_worlds":
             words.append("marine worlds")
         entry["text"] = plain(" ".join(str(w) for w in words if w)).lower()
+        return entry
+
+    variants = json.loads((ROOT / "data_manual" / "variants_mw.json").read_text(encoding="utf-8")).get("variants", {})
+    cards = []
+    for key, c in sorted(data.cards_by_key().items()):
+        if not c.get("active", True):                     # (cards that are not in the game: the promo Capybara and Promotion Team)
+            continue
+        entry = describe(key, c)
+        mw = (variants.get(key) or {}).get("marine_worlds")
+        if mw and (ROOT / "web" / "cards" / f"{key}_MW.webp").exists():              # a card that was reprinted for Marine Worlds: the page can switch between the two
+            other = describe(key, {**c, **mw})
+            entry["mw"] = {"icons": other["icons"], "text": other["text"]}
         cards.append(entry)
     abilities_all = sorted({a for e in cards for a in e.get("abilities", [])}, key=str.lower)
     OUT.write_text(json.dumps({"cards": cards, "abilities": abilities_all}, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")

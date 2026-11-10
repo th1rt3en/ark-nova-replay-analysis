@@ -44,6 +44,10 @@ body.poster.library #count { font-size: 1.4rem; }
 body.poster.library .libgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: 1rem; }
 body.poster.library .libcard { margin: 0; text-align: center; }
 body.poster.library .libcard[hidden] { display: none; }
+body.poster.library .vswitch { display: inline-flex; margin-top: .35rem; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; box-shadow: 0 2px 0 var(--ink); }
+body.poster.library .libcard .vswitch button { padding: .05rem .7rem .1rem; border: 0; border-radius: 0; box-shadow: none; background: #CDBE90; color: #52666B; font-size: 12.5px; }
+body.poster.library .libcard .vswitch button + button { border-left: 2px solid var(--ink); }
+body.poster.library .libcard .vswitch button.on { background: var(--gold); color: var(--ink); }
 body.poster.library .libcard > button { display: block; width: 100%; padding: 0; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); overflow: hidden; background: var(--field); line-height: 0; }
 body.poster.library .libcard > button img { width: 100%; height: auto; }
 body.poster.library .libcard figcaption { margin-top: .5rem; font: 700 .95rem/1.2 'Park Label', system-ui, sans-serif; }

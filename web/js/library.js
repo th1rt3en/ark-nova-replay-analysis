@@ -85,9 +85,10 @@ function initTri() {
   }
 }
 
-function passes(c, q) {
+const passes = (c, q) => (c.mw ? [c, c.mw] : [c]).some((v) => passesWith(c, v, q));          // (a card reprinted for Marine Worlds stays in when either of its two versions matches, so its switch stays in reach)
+function passesWith(c, v, q) {                                       // v: the icons and the text of the version that is looked at
   if (!sel.type.has(c.type)) return false;
-  for (const g of ICON_GROUPS) if (sel[g].size < GROUPS[g].length && !c.icons.some((i) => sel[g].has(i))) return false;          // (a group with a chip off: the card needs one of the chips that are on)
+  for (const g of ICON_GROUPS) if (sel[g].size < GROUPS[g].length && !v.icons.some((i) => sel[g].has(i))) return false;          // (a group with a chip off: the card needs one of the chips that are on)
   if (c.price != null && (c.price < +$('cmin').value || c.price > +$('cmax').value)) return false;
   const size = [];                                                                                                                   // (the two size groups: with a chip off in either, the card needs a size that is on)
   if (sel.normal.size < GROUPS.normal.length) size.push(c.normal != null && sel.normal.has(c.normal));
@@ -102,7 +103,7 @@ function passes(c, q) {
       if (v !== 'any' && (v === 'yes') !== !!c[field]) return false;
     }
   }
-  return q.every((w) => c.text.includes(w));
+  return q.every((w) => v.text.includes(w));
 }
 
 function apply() {
@@ -140,11 +141,25 @@ function build(d) {
     const img = document.createElement('img');
     img.src = '/cards/' + c.key + '.webp'; img.alt = c.name; img.loading = 'lazy'; img.width = 360; img.height = 503;
     b.append(img);
-    b.onclick = () => { $('bigimg').src = '/cards_large/' + c.key + '.webp'; $('bigimg').alt = c.name; dlg.showModal(); };
+    c.view = 'base';
+    const file = () => c.key + (c.view === 'mw' ? '_MW' : '') + '.webp';
+    b.onclick = () => { $('bigimg').src = '/cards_large/' + file(); $('bigimg').alt = c.name; dlg.showModal(); };
     const cap = document.createElement('figcaption');
     cap.textContent = c.name;
     if (c.source === 'marine_worlds') { const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'Marine Worlds'; cap.append(t); }
     f.append(b, cap);
+    if (c.mw) {                                            // the base game card and its Marine Worlds reprint: a switch under the card
+      const sw = document.createElement('div');
+      sw.className = 'vswitch'; sw.setAttribute('role', 'group'); sw.setAttribute('aria-label', c.name + ' version');
+      const pick = (view, quiet) => { c.view = view; img.src = '/cards/' + file(); for (const x of sw.children) { const on = x.dataset.view === view; x.classList.toggle('on', on); x.setAttribute('aria-pressed', String(on)); } if (!quiet) apply(); };
+      for (const [view, label] of [['base', 'Base'], ['mw', 'Marine Worlds']]) {
+        const x = document.createElement('button');
+        x.type = 'button'; x.dataset.view = view; x.textContent = label; x.onclick = () => pick(view);
+        sw.append(x);
+      }
+      pick('base', true);
+      f.append(sw);
+    }
     grid.append(f);
     return f;
   });

@@ -4321,7 +4321,11 @@
             "type": "project",
             "source": "base",
             "icons": [],
-            "text": "large animals p131 requires large animals <br> in your zoo. normal conservation point conservation point conservation point"
+            "text": "large animals p131 requires large animals <br> in your zoo. normal conservation point conservation point conservation point",
+            "mw": {
+                "icons": [],
+                "text": "large animals p131 requires large animals <br> in your zoo. normal conservation point conservation point conservation point"
+            }
         },
         {
             "key": "P132",
@@ -4927,7 +4931,15 @@
                 "water"
             ],
             "strength": 5,
-            "text": "sea turtle tank s250 each time you play a reptile icon into your zoo, you may sell up to 2 cards from your hand for each (sunbathing 2). sponsors.s250_desc2"
+            "text": "sea turtle tank s250 each time you play a reptile icon into your zoo, you may sell up to 2 cards from your hand for each (sunbathing 2). sponsors.s250_desc2",
+            "mw": {
+                "icons": [
+                    "reptile",
+                    "seaAnimal",
+                    "water"
+                ],
+                "text": "sea turtle tank s250 each time you play a reptile icon into your zoo, you may sell up to 2 cards from your hand for each (sunbathing 2). sponsors.s250_desc2"
+            }
         },
         {
             "key": "S251",
