@@ -15,10 +15,28 @@ for (const [g, list] of Object.entries(GROUPS)) sel[g] = new Set(list.map((c) =>
 sel.ability = new Set();                                  // (none selected = any)
 let cards = [], nodes = [];
 
-function chip(group, value, label, badge) {
+let names = {};                                           // BGA's icon names -> the ids of the icon sheet (web/icons/names.json)
+const iconSrc = (name) => (names[name] ? '/icons/' + names[name] + '.webp' : null);
+const ACTION_ICON = { Association: 'action-association', Building: 'action-build', Cards: 'action-cards', Card: 'action-cards', Sponsors: 'action-sponsors', Animal: 'action-animals' };
+const ABILITY_ICON = { Adapt: 'adapt', Clever: 'clever', Constriction: 'constriction', 'Cut Down': 'cut-down', Determination: 'determination', Digging: 'digging', 'Extra Shift': 'extra-shift', Hunter: 'hunter', Hypnosis: 'hypnosis',
+  Mark: 'mark', Marketing: 'bonus-sponsor', Perception: 'perception', Pilfering: 'pilfering', Pouch: 'pouch', Scavenging: 'scavenging', 'Scuba Dive': 'diving', 'Shark Attack': 'shark-attack', Snapping: 'snapping',
+  Sunbathing: 'sunbathing', Venom: 'venom', 'Sea Animal Magnet': 'animal-magnet', 'Sponsor Magnet': 'animal-magnet' };
+function abilityIcon(a) {                                 // the icon of an ability where the game has one (the rest stay words)
+  let m;
+  if ((m = /^(?:Action|Boost): (\w+)/.exec(a))) return iconSrc(ACTION_ICON[m[1]]);
+  if (a.startsWith('Multiplier')) return iconSrc('multiplier');
+  if (a === 'Assertion') return '/icons/r11c6.webp';
+  if (a === 'Resistance') return '/icons/hourglass.svg';
+  if (a === 'Petting Zoo Animal') return '/badges/Pet.webp';
+  const key = Object.keys(ABILITY_ICON).find((k) => a === k || a.startsWith(k + ' '));
+  return key ? iconSrc(ABILITY_ICON[key]) : null;
+}
+
+function chip(group, value, label, badge, icon) {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'chip'; b.dataset.group = group; b.dataset.value = String(value);
   if (badge) { const i = document.createElement('img'); i.src = '/badges/' + badge + '.webp'; i.alt = ''; i.width = 26; i.height = 26; b.append(i); }
+  else if (icon) { const i = document.createElement('img'); i.src = icon; i.alt = ''; i.className = 'ico'; i.height = 24; b.append(i); }
   b.append(label);
   const paint = () => { const on = sel[group].has(value); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); };
   b.onclick = () => {
@@ -45,7 +63,25 @@ function buildFilters(abilities) {
     }
   }
   const box = document.querySelector('.abilities');
-  for (const a of abilities) box.append(chip('ability', a, a));
+  for (const a of abilities) box.append(chip('ability', a, a, null, abilityIcon(a)));
+}
+
+const TRI = ['any', 'yes', 'no'];                         // the gives / requires filters: one button that cycles Any -> Yes -> No
+function paintTri(b) {
+  const v = b.dataset.v, src = iconSrc(b.dataset.icon);
+  b.replaceChildren();
+  if (src) { const i = document.createElement('img'); i.src = src; i.alt = ''; i.height = 24; b.append(i); }
+  const s = document.createElement('b'); s.textContent = v === 'any' ? 'Any' : v === 'yes' ? 'Yes' : 'No';
+  b.append(b.dataset.label + ': ', s);
+  b.className = 'tribtn ' + v;
+  b.setAttribute('aria-label', b.dataset.label + ': ' + s.textContent);
+}
+function initTri() {
+  for (const id of ['rep', 'cons', 'partner', 'uni']) {
+    const b = $(id);
+    b.onclick = () => { b.dataset.v = TRI[(TRI.indexOf(b.dataset.v) + 1) % TRI.length]; paintTri(b); apply(); };
+    paintTri(b);
+  }
 }
 
 function passes(c, q) {
@@ -56,12 +92,12 @@ function passes(c, q) {
   if (sel.normal.size < GROUPS.normal.length) size.push(c.normal != null && sel.normal.has(c.normal));
   if (sel.aqua.size < GROUPS.aqua.length) size.push(c.aqua != null && sel.aqua.has(c.aqua));
   if (size.length && !size.some(Boolean)) return false;
-  const advanced = sel.ability.size || ['rep', 'cons', 'partner', 'uni'].some((id) => $(id).value !== 'any');
+  const advanced = sel.ability.size || ['rep', 'cons', 'partner', 'uni'].some((id) => $(id).dataset.v !== 'any');
   if (advanced) {                                           // (these only describe animals: with one of them set, the other cards are out)
     if (c.type !== 'animal') return false;
     if (sel.ability.size && !c.abilities.some((a) => sel.ability.has(a))) return false;
     for (const [id, field] of [['rep', 'reputation'], ['cons', 'conservation'], ['partner', 'partner'], ['uni', 'university']]) {
-      const v = $(id).value;
+      const v = $(id).dataset.v;
       if (v !== 'any' && (v === 'yes') !== !!c[field]) return false;
     }
   }
@@ -112,19 +148,19 @@ function build(d) {
     return f;
   });
   buildFilters(d.abilities);
+  initTri();
   apply();
 }
 
 $('text').addEventListener('input', apply);
-for (const id of ['rep', 'cons', 'partner', 'uni']) $(id).addEventListener('change', apply);
 $('reset').onclick = () => {
   for (const [g, list] of Object.entries(GROUPS)) sel[g] = new Set(list.map((c) => c[0]));
   sel.ability = new Set();
-  for (const id of ['rep', 'cons', 'partner', 'uni']) $(id).value = 'any';
+  for (const id of ['rep', 'cons', 'partner', 'uni']) { $(id).dataset.v = 'any'; paintTri($(id)); }
   $('text').value = '';
   document.querySelectorAll('.chip').forEach((c) => c.paint());
   apply();
 };
 $('bigclose').onclick = () => $('big').close();
 $('big').addEventListener('click', (e) => { if (e.target === $('big')) $('big').close(); });
-fetch('/library_data.json').then((r) => r.json()).then(build).catch(() => { $('count').textContent = 'The cards could not be loaded.'; });
+Promise.all([fetch('/library_data.json').then((r) => r.json()), fetch('/icons/names.json').then((r) => r.json()).catch(() => ({}))]).then(([d, n]) => { names = n; build(d); }).catch(() => { $('count').textContent = 'The cards could not be loaded.'; });

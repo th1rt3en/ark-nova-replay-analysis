@@ -19,8 +19,6 @@
 <p class="small"><a href="/">&larr; Ark Nova Park</a> &middot; <a href="/minigames/">Mini games</a></p>
 <main class="pp">
 <h1>Card library</h1>
-<p class="muted">Every animal, sponsor, conservation project and endgame card, with the Marine Worlds ones. Click a filter to switch it on or off; click a card to see it large.</p>
-
 <section id="filters" aria-label="Filters">
   <div class="fgroup" data-group="type"><h2>Cards</h2><div class="chips" role="group" aria-label="Kind of card"></div></div>
   <div class="fgroup" data-group="species"><h2>Species</h2><div class="chips" role="group" aria-label="Species"></div></div>
@@ -32,12 +30,12 @@
   <div class="fgroup search"><h2>Search</h2><input id="text" type="text" placeholder="Name, text or ability" autocomplete="off" aria-label="Search the cards"></div>
   <details id="advanced">
     <summary>Advanced filters (animals)</summary>
-    <div class="fgroup" data-group="ability"><h2>Ability <small>none selected = any</small></h2><div class="chips abilities" role="group" aria-label="Animal ability"></div></div>
+    <div class="fgroup" data-group="ability"><h2>Ability</h2><div class="chips abilities" role="group" aria-label="Animal ability"></div></div>
     <div class="tri">
-      <label>Gives reputation <select id="rep"><option value="any">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
-      <label>Gives conservation <select id="cons"><option value="any">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
-      <label>Requires a partner zoo <select id="partner"><option value="any">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
-      <label>Requires a university <select id="uni"><option value="any">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+      <button type="button" class="tribtn" id="rep" data-v="any" data-icon="reputation" data-label="Gives reputation"></button>
+      <button type="button" class="tribtn" id="cons" data-v="any" data-icon="conservation" data-label="Gives conservation"></button>
+      <button type="button" class="tribtn" id="partner" data-v="any" data-icon="partner-zoo" data-label="Needs a partner zoo"></button>
+      <button type="button" class="tribtn" id="uni" data-v="any" data-icon="fac" data-label="Needs a university"></button>
     </div>
   </details>
   <p class="actions"><button type="button" id="reset">Reset filters</button></p>

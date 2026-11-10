@@ -4,10 +4,18 @@ body.poster.library #filters { display: flex; flex-wrap: wrap; align-items: flex
 body.poster.library .fgroup h2 { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; margin: 0 0 .25rem; font: 700 .72rem 'Park Label', system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #52666B; }
 body.poster.library .fgroup h2 small { font: 600 .72rem 'Park Label', system-ui, sans-serif; text-transform: none; letter-spacing: 0; }
 body.poster.library .chips { display: flex; flex-wrap: wrap; gap: .3rem; }
-body.poster.library .chips.abilities { max-height: 9rem; overflow: auto; padding: .2rem .2rem .4rem; }
+body.poster.library .chips.abilities { padding: .2rem .2rem .4rem; }
 body.poster.library button.chip { display: inline-flex; align-items: center; gap: .3rem; padding: .08rem .7rem .12rem .2rem; border-width: 2px; background: #CDBE90; color: #52666B; font-size: 13.5px; box-shadow: 0 2px 0 var(--ink); }
 body.poster.library button.chip:not(:has(img)) { padding: .08rem .75rem .12rem; min-width: 1.9rem; justify-content: center; }
 body.poster.library button.chip img { width: 22px; height: 22px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 50%; filter: grayscale(.8); opacity: .75; }
+body.poster.library button.chip img.ico { width: auto; height: 22px; border: 0; border-radius: 0; }
+body.poster.library button.tribtn { display: inline-flex; align-items: center; gap: .35rem; padding: .1rem .85rem .14rem .3rem; border-width: 2px; font-size: 14px; box-shadow: 0 2px 0 var(--ink); }
+body.poster.library button.tribtn:not(:has(img)) { padding-left: .85rem; }
+body.poster.library button.tribtn img { height: 22px; width: auto; filter: grayscale(.8); opacity: .75; }
+body.poster.library button.tribtn.any { background: #CDBE90; color: #52666B; }
+body.poster.library button.tribtn.yes { background: var(--gold); color: var(--ink); }
+body.poster.library button.tribtn.no { background: #EBB5A8; color: var(--rust); }
+body.poster.library button.tribtn.yes img, body.poster.library button.tribtn.no img { filter: none; opacity: 1; }
 body.poster.library .fgroup.cost { flex: 0 0 13rem; }
 body.poster.library .fgroup.cost h2 span { font-weight: 700; color: var(--ink); letter-spacing: 0; }
 body.poster.library .dual { --lo: 0%; --hi: 100%; position: relative; height: 26px; margin: 0 .4rem; }
