@@ -1276,7 +1276,7 @@ def _finish_turn_now(state: GameState, seat: int) -> None:
     state.players[seat].flags.pop("t1_used", None)
     state.players[seat].flags.pop("built_now", None)
     venom.finish_turn(state, seat)
-    if bonuses.token_uses(state, state.players[seat]) and state.break_position < BREAK_AT and not endgame.last_turn_done(state, seat):
+    if not state.config.confirm_turns and bonuses.token_uses(state, state.players[seat]) and state.break_position < BREAK_AT and not endgame.last_turn_done(state, seat):
         state.players[seat].flags["refill_pending"] = 1       # a sponsor played with a notepad token after the action: BGA refills the display after it (744430246 turn 43)
     else:
         _refill_display(state)
@@ -1286,7 +1286,7 @@ def _finish_turn_now(state: GameState, seat: int) -> None:
     state.active_player = 1 - seat
     endgame.check_trigger(state, [seat, 1 - seat], True, 1 - seat)
     if endgame.last_turn_done(state, seat) and state.break_position < BREAK_AT:       # no break after the last turn, unless that turn brought it (BGA plays it: 801093493)
-        if bonuses.token_uses(state, state.players[seat]):                  # a token of the notepad may still be used before the game is scored (logs)
+        if not state.config.confirm_turns and bonuses.token_uses(state, state.players[seat]):                  # a token of the notepad may still be used before the game is scored (logs)
             state.prompt = Prompt(kind="final_window", player=seat, args={})
             return
         _end_game(state)

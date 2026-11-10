@@ -147,6 +147,8 @@ def _token_window(state, p) -> bool:
         return True                                        # the player's turn has begun, no action card chosen yet
     if state.prompt.kind == "effects" and state.prompt.player == p.seat and state.active_player == p.seat and (state.prompt.args.get("resume") or {}).get("kind") == "end":
         return True                                        # the effects after the action (Clever, Boost, marks): the token may be used before them
+    if state.config.confirm_turns:
+        return False                                       # (live play: a token is used on the player's own turn only, never after it has been confirmed)
     return bool(p.flags.get("turn_window")) and state.prompt.kind == "choose_action_card"
 
 
