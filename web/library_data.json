@@ -1,29 +1,6 @@
 {
     "cards": [
         {
-            "key": "A341",
-            "name": "Capybara",
-            "type": "animal",
-            "source": "promo",
-            "icons": [
-                "pet"
-            ],
-            "abilities": [
-                "Petting Zoo Animal",
-                "Water Affinity"
-            ],
-            "normal": null,
-            "aqua": null,
-            "reputation": false,
-            "conservation": false,
-            "partner": false,
-            "university": false,
-            "size": 1,
-            "price": 7,
-            "appeal": 0,
-            "text": "capybara a341 hydrochoerus hydrochaeris petting zoo animal gain appeal for each petting zoo animal icon in your zoo. water affinity gain appeal if the petting zoo is adjacent to a water space. petting zoo"
-        },
-        {
             "key": "A401",
             "name": "Cheetah",
             "type": "animal",
@@ -5115,15 +5092,6 @@
             "icons": [],
             "strength": 3,
             "text": "arcade s281 income: gain money per appeal . gain 2 appeal for each zoo with less appeal (score first)."
-        },
-        {
-            "key": "S282",
-            "name": "Promotion Team",
-            "type": "sponsor",
-            "source": "promo",
-            "icons": [],
-            "strength": 5,
-            "text": "promotion team s282 find a person sponsor card. each time a person sponsor card is played into any zoo , gain money and appeal ."
         }
     ],
     "abilities": [
@@ -5184,7 +5152,6 @@
         "Sunbathing",
         "Symbiosis",
         "Trade",
-        "Venom",
-        "Water Affinity"
+        "Venom"
     ]
 }

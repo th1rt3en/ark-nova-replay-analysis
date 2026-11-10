@@ -42,6 +42,8 @@ def main() -> None:
 
     cards = []
     for key, c in sorted(data.cards_by_key().items()):
+        if not c.get("active", True):                     # (cards that are not in the game: the promo Capybara and Promotion Team)
+            continue
         kind = c["card_type"]
         icons = [t for t in dict.fromkeys(c.get("tags") or []) if t in ICONS]
         if kind == "project" and c.get("tag") in ICONS and c["tag"] not in icons:

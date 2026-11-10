@@ -7,7 +7,18 @@ body.poster.library .chips { display: flex; flex-wrap: wrap; gap: .3rem; }
 body.poster.library .chips.abilities { max-height: 9rem; overflow: auto; padding: .2rem .2rem .4rem; }
 body.poster.library button.chip { display: inline-flex; align-items: center; gap: .3rem; padding: .08rem .7rem .12rem .2rem; border-width: 2px; background: #CDBE90; color: #52666B; font-size: 13.5px; box-shadow: 0 2px 0 var(--ink); }
 body.poster.library button.chip:not(:has(img)) { padding: .08rem .75rem .12rem; min-width: 1.9rem; justify-content: center; }
-body.poster.library button.chip img { width: 20px; height: 20px; filter: grayscale(.8); opacity: .75; }
+body.poster.library button.chip img { width: 22px; height: 22px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 50%; filter: grayscale(.8); opacity: .75; }
+body.poster.library .fgroup.cost { flex: 0 0 13rem; }
+body.poster.library .fgroup.cost h2 span { font-weight: 700; color: var(--ink); letter-spacing: 0; }
+body.poster.library .dual { --lo: 0%; --hi: 100%; position: relative; height: 26px; margin: 0 .4rem; }
+body.poster.library .dual::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 10px; margin-top: -5px; border: 2px solid var(--ink); border-radius: 999px; box-sizing: border-box;
+  background: linear-gradient(to right, #CDBE90 var(--lo), var(--gold) var(--lo), var(--gold) var(--hi), #CDBE90 var(--hi)); }
+body.poster.library .dual input[type=range] { position: absolute; left: -.4rem; width: calc(100% + .8rem); top: 0; height: 26px; margin: 0; padding: 0; background: none; border: 0; box-shadow: none; appearance: none; -webkit-appearance: none; pointer-events: none; }
+body.poster.library .dual input[type=range]::-webkit-slider-runnable-track { background: none; border: 0; height: 26px; }
+body.poster.library .dual input[type=range]::-moz-range-track { background: none; border: 0; height: 26px; }
+body.poster.library .dual input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 20px; height: 20px; margin-top: 3px; border-radius: 50%; border: 3px solid var(--ink); background: var(--paper); cursor: pointer; }
+body.poster.library .dual input[type=range]::-moz-range-thumb { pointer-events: auto; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--ink); background: var(--paper); cursor: pointer; }
+body.poster.library .dual input[type=range]:focus-visible::-webkit-slider-thumb { outline: 3px solid var(--gold); outline-offset: 2px; }
 body.poster.library button.chip.on { background: var(--gold); color: var(--ink); }
 body.poster.library button.chip.on img { filter: none; opacity: 1; }
 body.poster.library button.mini { padding: 0 .45rem .02rem; font-size: 10.5px; box-shadow: 0 1px 0 var(--ink); border-width: 2px; letter-spacing: 0; }

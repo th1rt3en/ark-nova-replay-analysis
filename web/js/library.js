@@ -45,6 +45,7 @@ function buildFilters(abilities) {
 function passes(c, q) {
   if (!sel.type.has(c.type)) return false;
   if (c.icons.length && !c.icons.some((i) => ICON_GROUPS.some((g) => sel[g].has(i)))) return false;
+  if (c.price != null && (c.price < +$('cmin').value || c.price > +$('cmax').value)) return false;
   const size = [];
   if (c.normal != null) size.push(sel.normal.has(c.normal));
   if (c.aqua != null) size.push(sel.aqua.has(c.aqua));
@@ -68,8 +69,25 @@ function apply() {
   $('count').textContent = shown + ' of ' + cards.length + ' cards';
 }
 
+function costRange(lo, hi, from) {                        // the double slider: two range inputs on one track, the lower one never above the other
+  const a = $('cmin'), b = $('cmax');
+  for (const i of [a, b]) { i.min = lo; i.max = hi; i.step = 1; }
+  if (from === 'reset') { a.value = lo; b.value = hi; }
+  if (from === 'min' && +a.value > +b.value) b.value = a.value;
+  if (from === 'max' && +b.value < +a.value) a.value = b.value;
+  const span = Math.max(1, hi - lo);
+  $('dual').style.setProperty('--lo', ((+a.value - lo) / span * 100) + '%');
+  $('dual').style.setProperty('--hi', ((+b.value - lo) / span * 100) + '%');
+  $('costlabel').textContent = a.value + ' - ' + b.value;
+}
+
 function build(d) {
   cards = d.cards;
+  const prices = cards.filter((c) => c.price != null).map((c) => c.price), lo = Math.min(...prices), hi = Math.max(...prices);
+  costRange(lo, hi, 'reset');
+  $('cmin').addEventListener('input', () => { costRange(lo, hi, 'min'); apply(); });
+  $('cmax').addEventListener('input', () => { costRange(lo, hi, 'max'); apply(); });
+  $('reset').addEventListener('click', () => { costRange(lo, hi, 'reset'); apply(); });
   const grid = $('grid'), dlg = $('big');
   nodes = cards.map((c) => {
     const f = document.createElement('figure');
