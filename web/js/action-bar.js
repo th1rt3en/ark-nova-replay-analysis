@@ -315,7 +315,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
   }
   const fa = FORK ? (cur.actions || []) : [];                           // the fork: the bar is the way to play (the engine's legal actions are compiled from the clicks)
   const hyp = !!(o && o.hypnosis);                                       // Hypnosis: the cards to choose from (or to put back for an X token) are the first 3 of the other player
-  const cardsShown = hyp ? st.players[1 - seat].action_cards.slice(0, 3) : p.action_cards;
+  const cardsShown = hyp ? st.players[1 - seat].action_cards : p.action_cards;          // (Hypnosis: all five cards of the other player; only the first three, at strength 1-3, can be used, the other two are greyed out)
   const mayChoose = (type) => fa.some((x) => x.kind === 'choose_action_card' && x.args.spend === S.forkSpend && x.args.type === type && !!x.args.hypnosis === hyp);
   const maySkip = (type) => fa.some((x) => x.kind === 'skip_action' && x.args.type === type && !!x.args.hypnosis === hyp);
   if (FORK) spent += S.forkSpend;

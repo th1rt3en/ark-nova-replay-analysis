@@ -88,6 +88,8 @@ def effect_name(e: dict) -> str | None:
     if kind == "reveal":
         prefix = REVEAL_NAME.get(e.get("filter", "any"))
         return f"{prefix} {e['x']}" if prefix and e.get("x") is not None else None
+    if kind == "hypnosis":
+        return "Hypnosis"                                                         # (the button of the effect says just that: the cards follow)
     if kind == "ability" and e.get("name"):                                       # a deferred draw (Sprint, Monkey Gang...) is named like its ability
         value = e.get("value")
         return str(e["name"]) if not value or str(value) in str(e["name"]) else f"{e['name']} {value}"

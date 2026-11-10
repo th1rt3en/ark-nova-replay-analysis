@@ -189,6 +189,7 @@ def _break_lines(old: GameState, new: GameState, L: Lines) -> None:
 def texts(old: GameState, act: Action, new: GameState, names: list) -> dict:
     seat, who = act.player, names[act.player] if 0 <= act.player < len(names) else f"Player {act.player + 1}"
     L = Lines(seat, who)
+    L.names = names
     try:
         _fill(old, act, new, names, L, who)
     except Exception:                                                       # noqa: BLE001 (a log line must never stop a game: fall back to the engine's sentence)
@@ -252,6 +253,13 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         upgraded = (old.prompt.args.get("level", 1) if old.prompt is not None else 1) >= 2
         text = f"{who} discards {card(a['card'])} for {what} (Sunbathing Sponsors effect)"
         L.secret(text, f"{who} discards a {'card' if upgraded else 'sponsors'} for {what} (Sunbathing Sponsors effect)", text)
+        return
+    if k == "choose_action_card" and a.get("hypnosis"):                         # Hypnosis: one of the first 3 action cards of the other player is used
+        other = old.players[1 - seat]
+        slot = next((i for i, c in enumerate(other.action_cards) if c.type == a.get("type")), 0)
+        oname = names[1 - seat] if 0 <= 1 - seat < len(names) else "the opponent"
+        L.add(f"{who} hypnotize {oname} and use {ACTION_NAMES.get(a.get('type'), a.get('type'))} action at strength {slot + 1}", None,
+              f"You hypnotize {oname} and use {ACTION_NAMES.get(a.get('type'), a.get('type'))} action at strength {slot + 1}")
         return
     if k == "choose_action_card":
         slot = next((i for i, c in enumerate(p0.action_cards) if c.type == a.get("type")), 0)
@@ -395,6 +403,21 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     elif kind == "ability" and e.get("name"):
         L.add(f"{who} activated {e['name']}" + (f" {e['value']}" if e.get("value") and str(e["value"]) not in str(e["name"]) else ""), None,
               f"You activated {e['name']}" + (f" {e['value']}" if e.get("value") and str(e["value"]) not in str(e["name"]) else ""))
+    elif kind in ("venom", "constrict"):                                    # the tokens that went on the other player's action cards
+        token = "Venom" if kind == "venom" else "Constriction"
+        other = 1 - seat
+        cards = [ACTION_NAMES.get(n.type, n.type) for o, n in zip(old.players[other].action_cards, new.players[other].action_cards) if n.tokens.count(token) > o.tokens.count(token)]
+        oname = L.names[other] if 0 <= other < len(L.names) else "the opponent"
+        word = token.lower() + (" token" if len(cards) <= 1 else " tokens")
+        if cards:
+            tail = f" (and {cards[1]})" if len(cards) > 1 else ""
+            L.add(f"{who} placed {word} on {oname} {cards[0]}{tail}", None, f"You placed {word} on {oname} {cards[0]}{tail}")
+        else:
+            L.add(f"{who} used {token}, but no token was placed", None, f"You used {token}, but no token was placed")
+    elif kind == "continent" and a.get("continent"):
+        L.add(f"{who} removed a marker from the <{str(a['continent']).upper()}> continent", None, f"You removed a marker from the <{str(a['continent']).upper()}> continent")
+        if _gain_words(delta):
+            L.add(f"{who} gains {' and '.join(_gain_words(delta))} (continent marker)")
     elif kind == "pilfer" and not a.get("nothing"):
         what = "5 money" if a.get("pay") else "1 card"
         paid = max(-delta["money"], 0)

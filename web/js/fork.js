@@ -804,14 +804,14 @@ function bpickBar(bar, bp, cur, acts) {
       extra.push(b);
     }
   } else if (bp.kind === 'pilfer') {                                               // what the victim sees: pay 5 money or give a card of the hand
-    prompt = ' must pay or give a card (Pilfering)';
+    prompt = ' must give 5 money or a card';
     const pay = bp.acts.find((a) => a.args.pay), give = bp.acts.filter((a) => typeof a.args.give === 'string'), nothing = bp.acts.find((a) => a.args.nothing);
-    if (pay) { const b = choice('Pay', () => playFork(pay)); b.append(amountIcon('money', 5) || '5 money'); extra.push(b); }
+    if (pay) { const b = choice('Give', () => playFork(pay)); b.append(amountIcon('money', 5) || '5 money'); extra.push(b); }
     if (give.length) extra.push(choice('Give a card', () => { S.pickOpen = bp.index; S.bpick = null; S.forkDockStep = -1; render(); }));
     if (nothing) extra.push(choice('Nothing happens', () => playFork(nothing)));
   } else if (bp.kind === 'continent') {                                            // map 9: the continent marker to remove (a badge each), then the bonus it pays
     const conts = [...new Set(bp.acts.filter((a) => a.args.continent).map((a) => a.args.continent))], stage = bp.stage || (conts.length === 1 ? 'bonus' : 'continent'), c = bp.sel[0] || conts[0];
-    const ico = (id, alt) => { const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS[id]); i.alt = alt; i.title = alt; i.height = 28; return i; };
+    const ico = (id, alt) => { const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS[id] || id); i.alt = alt; i.title = alt; i.height = 28; return i; };
     if (stage === 'continent') {
       prompt = ' must choose a continent marker to remove';
       for (const name of conts) {
@@ -821,7 +821,7 @@ function bpickBar(bar, bp, cur, acts) {
       }
     } else {
       prompt = ' must choose a bonus for the ' + c + ' marker';
-      const bonuses = [() => amountIcon('reputation', 1), () => amountIcon('appeal', 2), () => amountIcon('money', 4), () => ico('bonus:Clever', 'Clever'), () => ico('bonus:bonus-kiosk-pavilion', 'Kiosk or pavilion')];
+      const bonuses = [() => amountIcon('reputation', 1), () => amountIcon('appeal', 2), () => amountIcon('money', 4), () => ico('bonus:Clever', 'Clever'), () => ico('r1c9', 'Kiosk / pavilion')]          // (r1c9: the kiosk and the pavilion with a slash between them);
       bonuses.forEach((mk, j) => {
         const act = bp.acts.find((a) => a.args.continent === c && a.args.pick === j);
         const b = choice('', () => act && playFork(act));
