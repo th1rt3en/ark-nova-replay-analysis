@@ -367,6 +367,8 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         L.add(f"{who} donates {spent} money to get {' and '.join(got)}" if spent > 0 else f"{who} donates for free to get {' and '.join(got)}")
     elif k == "choose_effect":
         _effect_line(old, act, new, L, who, delta)
+    elif k == "animals_single":
+        L.add(f"{who} chooses to play 1 animal and ignore 1 condition", None, "You choose to play 1 animal and ignore 1 condition")
     elif k == "finish_build" or k in ("finish_sponsors", "finish_animals", "finish_association"):
         pass
     else:

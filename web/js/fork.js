@@ -7,7 +7,7 @@ import { associationStrip, bonusPanel } from './association.js';
 import { curState, orientParam, povParam } from './pov.js';
 import { cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
-import { GATED_PICKS, MAP_PICKS, PROMPT_TEXT, bpickInfo, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
+import { GATED_PICKS, MAP_PICKS, PROMPT_TEXT, animalsChoicePending, bpickInfo, cardPickAct, pickCardOf, refreshBar, turnButtons } from './action-bar.js';
 import { placementBonusName } from './bonus-names.js';
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
@@ -525,6 +525,23 @@ export function forkBar() {
   for (const a of acts) if (a.kind === 'choose_effect' && (MAP_PICKS.has(effKinds.get(a.args.index)) || (effKinds.get(a.args.index) === 'expedition' && a.args.send !== undefined))) S.forkClaimed.add(a);       // (Cut Down / Enlarge / Reposition / Move in / Archaeologist: chosen on the map after the effect's button)
   const bp = bpickInfo();
   if (bp) bpickBar(bar, bp, cur, acts);
+  const singleActs = acts.filter((a) => a.kind === 'animals_single');
+  for (const a of singleActs) S.forkClaimed.add(a);
+  if (singleActs.length && animalsChoicePending()) {                                 // Ignore Animals: how the animals are played, asked before the first one
+    const pS = singleActs[0].player;
+    bar.replaceChildren();
+    const whoS = el('span', 'who', seatName(pS));
+    whoS.style.color = seatText(pS);
+    const two = el('button', 'forkmove forkchoice', 'Play 2 animals'), one = el('button', 'forkmove forkchoice', 'Play 1 animal and ignore 1 condition');
+    for (const b of [two, one]) { b.type = 'button'; b.disabled = S.forkBusy; b.style.setProperty('--pc', seatColor(pS)); }
+    two.onclick = () => { S.animalsMode = 'two'; render(); };
+    one.onclick = () => { if (!S.forkBusy) playFork(singleActs[0]); };
+    bar.append(whoS, el('b', '', ' must choose how to play animals'), two, one);
+    S.forkSolo = true;
+    if (PLAY || SANDBOX) playTurnButtons(bar, acts);
+    else if (st.phase === 'turn' || st.phase === 'final_turns') turnButtons(bar, st.turn, st.active_player, false);
+    return;
+  }
   const endActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.card === 'string' && effKinds.get(a.args.index) === 'endgame_discard');
   for (const a of endActs) S.forkClaimed.add(a);
   if (endActs.length) {                                                             // conservation 10: the endgame card to discard is chosen in the endgame tab of the hand, then confirmed

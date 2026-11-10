@@ -8,7 +8,7 @@ import { pointsBadge } from './egpoints.js';
 import { endgameDiscardAt } from './egdiscard.js';
 import { iconUrl } from './icons.js';
 import { motionOff } from './motion.js';
-import { cardPickAct, forkActs, pickCardOf } from './action-bar.js';
+import { animalsChoicePending, cardPickAct, forkActs, pickCardOf } from './action-bar.js';
 import { playedChips, playedMode, withCubes } from './zoo.js';
 
 
@@ -27,6 +27,7 @@ function revealDim(seat) {
 }
 // while a sponsor is to be played, everything in the hand of that player that is not a playable sponsor is greyed out
 function handDim(seat) {
+  if (animalsChoicePending()) return () => true;                         // Ignore Animals: nothing is played until the player has said how many animals they play
   if (FORK && S.marketMode !== null) {                                    // Marketing: the sponsors that cannot be played are greyed out
     const keys = forkActs((a) => a.kind === 'choose_effect' && a.player === seat && a.args.index === S.marketMode && typeof a.args.card === 'string').map((a) => a.args.card);
     if (keys.length) return (k) => !keys.includes(k);

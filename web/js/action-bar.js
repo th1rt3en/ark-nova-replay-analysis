@@ -72,6 +72,8 @@ export function decorateBpick(row, seat) {
   }
   return row;
 }
+// Ignore Animals (variant 1 of the Animals action, strength for 2 animals): before the first animal the player says how they play, "Play 2 animals" or "Play 1 animal and ignore 1 condition" (the engine's `animals_single`)
+export const animalsChoicePending = () => FORK && S.animalsMode !== 'two' && forkActs((a) => a.kind === 'animals_single').length > 0;
 export function bpickInfo() {                                              // the open map choice with its legal moves, null when none is open
   if (!FORK || !S.bpick) return null;
   const acts = forkActs((a) => a.kind === 'choose_effect' && a.args.index === S.bpick.index);
