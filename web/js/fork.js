@@ -12,6 +12,7 @@ import { placementBonusName } from './bonus-names.js';
 import { firstPlayerText, playLive, playTurnButtons, playWaitingBar, studyBar } from './play.js';
 import { renderDock } from './dock.js';
 import { render, renderZoos } from './main.js';
+import { bonusTile } from './shared.js';
 import { amountIcon, labelNode } from './log-labels.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
 import { buildMoveList, go } from './playback.js';
@@ -70,12 +71,16 @@ function renderPlacementControls(box, placeActs) {
   }
   const reefBuild = ((((S.replay.steps[S.step].options || {}).effects) || [])).some((e) => e.kind === 'build' && e.reef);          // (the building comes from a Reef Dweller effect)
   const coralIcon = () => { const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS.reef); i.alt = 'Reef'; i.height = 26; return i; };
-  if (!S.placement && pieces.length === 1) {                                         // a single piece (a sponsor's building: Expert Americas' kiosk...): its own button, no menu
+  if (S.autoPlace && !S.placement && pieces.length > 1) {                           // (a bonus that is a building: the matching piece, if the engine offers several)
+    const want = pieces.filter((q) => q.type === S.autoPlace && !q.move);
+    if (want.length === 1) pieces.splice(0, pieces.length, want[0]);
+  }
+  if (!S.placement && pieces.length === 1) {                                      // a single piece (a sponsor's building: Expert Americas' kiosk...): its own button, no menu
     const p = pieces[0];
     const name = p.type.replace(/-/g, ' ');
     if (S.autoPlace) {                                                               // the piece comes from a bonus the player just clicked (a project's size-2 enclosure...): the placement starts, no second button to click
       S.autoPlace = false;
-      S.placement = { seat, type: p.type, extra: p.extra, move: p.move, x: null, y: null, rot: 0 };
+      S.placement = { seat, type: p.type, extra: p.extra, move: p.move, x: null, y: null, rot: 0, locked: true };
       setTimeout(() => { render(); const board = document.querySelectorAll('.zoo')[seat]; if (board) board.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 0);
     }
     const b = el('button', 'forkmove placeone');
@@ -139,7 +144,7 @@ function renderPlacementControls(box, placeActs) {
     const cancel = el('button', 'forkmove');
     cancel.type = 'button'; cancel.textContent = 'Choose another piece';
     cancel.onclick = () => { S.placement = null; render(); };
-    if (pieces.length > 1) row.append(ok, cancel); else row.append(ok);                // (one piece only: nothing else to choose, the ✕ on the map cancels)
+    if (pieces.length > 1 && !S.placement.locked) row.append(ok, cancel); else row.append(ok);                // (one piece only: nothing else to choose, the ✕ on the map cancels)
     wrap.append(row);
   }
   box.append(wrap);
@@ -913,10 +918,9 @@ function bpickBar(bar, bp, cur, acts) {
     prompt = ' must choose a conservation bonus' + (eff.t ? ' (space ' + eff.t + ')' : '');
     (eff.opts || []).forEach((opt, j) => {
       const act = bp.acts.find((a) => a.args.option === j), b = choice('', () => act && playFork(act));
-      for (const bo of opt) {
-        const ai = amountIcon(bo.type, bo.value), id = ICON_IDS['bonus:' + bo.type];
-        if (ai) b.append(ai);
-        else if (id) { const i = el('img', 'icon'); i.src = iconUrl(id); i.alt = placementBonusName(bo); i.title = placementBonusName(bo); i.height = 30; b.append(i); }
+      for (const bo of opt) {                                                          // the bonus as it lies on the conservation track (its pentagon)
+        const t = bonusTile(bo.type, bo.value);
+        if (t) { t.style.cssText = 'position:static;transform:none;height:46px;width:auto;display:block;filter:none'; t.setAttribute('title', placementBonusName(bo)); b.append(t); }
         else b.append(placementBonusName(bo));
       }
       b.disabled = !act || S.forkBusy;

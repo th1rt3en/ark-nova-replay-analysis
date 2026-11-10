@@ -351,8 +351,9 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         moved = new.break_position - old.break_position
         sp = f"{moved} space" + ("" if moved == 1 else "s")
         L.add(f"{who} advances the break token {sp} (now at {new.break_position}/9)" if new.break_position < 9 else f"{who} advances the break token {sp} to the last space of the Break track")
-        if delta["money"] > 0:
-            L.add(f"{who} gains {delta['money']} money (break)")
+        paid = sum((ag["gain"].get("money", 0) for ag in getattr(new, "auto_gains", ()) if ag["seat"] == seat), 0)          # (the money sponsors' extra gets its own line)
+        if delta["money"] - paid > 0:
+            L.add(f"{who} gains {delta['money'] - paid} money (break)")
         if delta["x_tokens"] > 0:
             L.add(f"{who} gains {delta['x_tokens']} xtoken (causing the break)")
     elif k == "association_task":

@@ -661,7 +661,7 @@ function effectButton(e) {
   } else bindActs(b, forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && effectOption(a, e)));
   if (FORK && (e.kind === 'pbonus' || e.kind === 'project_bonus') && e.bonus && /^size-\d/.test(String(e.bonus.type || '')) && b.onclick) {          // a bonus that is a building: its placement starts when the button is clicked
     const orig = b.onclick;
-    b.onclick = (ev) => { S.autoPlace = true; return orig.call(b, ev); };
+    b.onclick = (ev) => { S.autoPlace = String(e.bonus.type); return orig.call(b, ev); };
   }
   return b;
 }
