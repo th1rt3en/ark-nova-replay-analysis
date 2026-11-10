@@ -274,13 +274,17 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
     if k == "place_building":
         t = a.get("type", "?")
         what = f"an additional {t}" if a.get("extra") else enclosure(t) if t.startswith("size-") else ("an " if t[:1] in "aeiou" else "a ") + t.replace("-", " ")
-        bonus_gain = _placement_gains(old, seat, a)                       # what the covered placement bonuses pay at once (several under one building are effects of their own, logged when chosen)
-        spent = -delta["money"] + bonus_gain.get("money", 0)
-        L.add(f"{who} pays {spent} for building {what}" if spent > 0 else f"{who} adds {what} for free")
-        for res, n in bonus_gain.items():
-            L.add(f"{who} gains {n} {'xtoken' if res == 'x_tokens' else res} (placement bonus)")
-        if t == "pavilion":
-            L.add(f"{who} gains 1 appeal (pavilion)")
+        pending = (old.prompt.args.get("pending") if old.prompt is not None else None) or []
+        if any(e.get("placeback") and e.get("type") == t for e in pending):         # Reconstruction: a building that was picked up goes back on the map
+            L.add(f"{who} reposition {what}", None, f"You reposition {what}")
+        else:
+            bonus_gain = _placement_gains(old, seat, a)                       # what the covered placement bonuses pay at once (several under one building are effects of their own, logged when chosen)
+            spent = -delta["money"] + bonus_gain.get("money", 0)
+            L.add(f"{who} pays {spent} for building {what}" if spent > 0 else f"{who} adds {what} for free")
+            for res, n in bonus_gain.items():
+                L.add(f"{who} gains {n} {'xtoken' if res == 'x_tokens' else res} (placement bonus)")
+            if t == "pavilion":
+                L.add(f"{who} gains 1 appeal (pavilion)")
     elif k == "play_animal":
         c = a.get("card", "?")
         spent = -delta["money"]
@@ -379,9 +383,32 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     e = _effect(old, act)
     kind = e.get("kind")
     src = _source(old, act)
+    if kind == "gain" and e.get("label"):
+        src = str(e["label"]).capitalize()                                  # an ability's gain: "(Pack)", not the card that has it
     sfx = f" ({src})" if src else ""
     seat = act.player
-    if kind == "gain":
+    if kind == "pay_appeal":
+        L.add(f"{who} spend 2 money to gain 1 appeal", None, "You spend 2 money to gain 1 appeal")
+    elif kind == "waza" and a.get("waza"):
+        size = "small" if a["waza"] == "small" else "large"
+        L.add(f"{who} focuses on {size} animals and can no longer play the other type", None, f"You focus on {size} animals and can no longer play the other type")
+    elif kind == "ability" and e.get("name"):
+        L.add(f"{who} activated {e['name']}" + (f" {e['value']}" if e.get("value") and str(e["value"]) not in str(e["name"]) else ""), None,
+              f"You activated {e['name']}" + (f" {e['value']}" if e.get("value") and str(e["value"]) not in str(e["name"]) else ""))
+    elif kind == "pilfer" and not a.get("nothing"):
+        what = "5 money" if a.get("pay") else "1 card"
+        paid = max(-delta["money"], 0)
+        if a.get("pay") and paid != 5:
+            what = f"{paid} money"
+        L.add(f"{who} gave {what} for the Pilfering effect", None, f"You gave {what} for the Pilfering effect")
+    elif kind == "extra_shift" and a.get("worker") is not None:
+        zones = {"association_2": "reputation", "association_3": "partner zoo", "association_4": "university", "association_5": "project"}
+        t = next((t for t in old.players[seat].tokens if t.id == a["worker"]), None)
+        zone = zones.get(t.location, "association") if t is not None else "association"
+        L.add(f"{who} take back a worker from the {zone} zone", None, f"You take back a worker from the {zone} zone")
+    elif kind == "symbiosis" and a.get("ability"):
+        L.add(f"{who} activated {a['ability']} (Symbiosis effect)", None, f"You activated {a['ability']} (Symbiosis effect)")
+    elif kind == "gain":
         got = _gain_words(delta)
         if got:
             L.add(f"{who} gains {' and '.join(got)}{sfx}")
@@ -479,8 +506,12 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         L.add(f"{who} enlarged an enclosure ({n} -> {n + 1}){tail}", None, f"You enlarged an enclosure ({n} -> {n + 1}){tail}")
     elif kind == "move_in" and a.get("move"):
         dest = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(e.get("building") or [])), None)
+        src = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a.get("from") or [])), None)
         into = dest.type.replace("-", " ") if dest is not None else "special enclosure"
-        L.add(f"{who} moved {card(a['move'])} into the {into}", None, f"You moved {card(a['move'])} into the {into}")
+        freed = f" and free up a {src.type if src.type.startswith('size-') else src.type.replace('-', ' ')} enclosure" if src is not None and src.type.startswith("size-") else (f" and free up space in the {src.type.replace('-', ' ')}" if src is not None else "")
+        L.add(f"{who} moved {card(a['move'])} into the {into}{freed}", None, f"You moved {card(a['move'])} into the {into}{freed}")
+    elif kind == "reposition" and a.get("remove") is not None:
+        L.quiet = True                                                      # (picking the buildings up says nothing: each one is logged when it is put back)
     elif kind == "boost" and a.get("slot") is not None:
         name = ACTION_NAMES.get(e.get("type"), str(e.get("type")))
         L.add(f"{who} put the {name} action at {int(a['slot'])} (Boost effect)", None, f"You put the {name} action at {int(a['slot'])} (Boost effect)")

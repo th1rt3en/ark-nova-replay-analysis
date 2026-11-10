@@ -10,6 +10,7 @@ import { render, zooStep } from './main.js';
 import { zooBoard } from './board.js';
 import { associationStrip, bonusPanel, stripUnits } from './association.js';
 import { assocBar } from './assocbar.js';
+import { decorateBpick } from './action-bar.js';
 
 
 // The cubes that lie on a sponsor card: Okapi Stable 3, Breeding Program 2, Breeding Cooperation 2 (a cube that was used is an empty ring), and Waza Special Assignment's one cube on the
@@ -49,7 +50,7 @@ export function withCubes(row, p, seat) {
 function stacks(title, icon, keys, zone, after) {
   const cols = el('div', 'pstacks');
   for (let c = 0; c < 2; c++) {
-    const row = cardRow(keys.filter((_, i) => i % 2 === c), 'small', 'none', zone + ':c' + c);
+    const row = decorateBpick(cardRow(keys.filter((_, i) => i % 2 === c), 'small', 'none', zone + ':c' + c), parseInt(zone, 10));          // (Move in / Symbiosis: the animals that can be chosen are lit)
     cols.append(after ? after(row) : row);
   }
   const s = el('div', 'sect pg pkind');
@@ -65,6 +66,11 @@ export const tabbedLayout = () => (!FORK || PLAY) && !SANDBOX && !MINIGAME && S.
 export const besideLayout = () => (!FORK || PLAY) && !SANDBOX && !MINIGAME && (S.zooLayout === 'tabs' || S.zooLayout === 'stack');      // (the replay's "Tabbed" and "Top / bottom" layouts: every board has its played cards in a box next to the map)
 // (the tabbed and the top / bottom layouts have one mode only, 'beside': the cards in a box next to the map; the other three are for the side-by-side boards, and 'beside' is not offered there. S.playedMode keeps the choice for that layout)
 export const playedMode = () => (MINIGAME ? 'below' : besideLayout() ? 'beside' : S.playedMode === 'beside' ? 'drawer' : S.playedMode === 'tray' && S.handMode !== 'tray' ? 'drawer' : S.playedMode);
+export function showPlayed(seat) {                                      // Move in / Symbiosis: the played cards of the player are brought into view (the drawer opens, the tray shows them)
+  const m = playedMode();
+  if (m === 'drawer' && !S.drawerSeats[seat]) { S.drawerSeats[seat] = true; S.drawerAnim = null; S.lastBoard = null; }
+  else if (m === 'tray') { S.dockSel = { seat, kind: 'played' }; S.dockHidden = false; }
+}
 const kindCount = (p) => p.animals.length + p.sponsors.length;
 function kindChip(icon, label, n) {                                       // the icon of the action card, the name (when asked for) and the count
   const c = el('span', 'gchip');

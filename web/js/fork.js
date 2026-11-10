@@ -655,13 +655,14 @@ export function forkBar() {
     const eff = ((cur.options && cur.options.effects) || []).find((e) => e.index === grp.idx) || {};
     const picked = [...marked(grp.p + ':hand', st.players[grp.p].hand), ...marked('display', st.display).filter(Boolean)].filter((k) => grp.list.some((a) => pickCardOf(a) === k));
     const mine = picked.length ? grp.list.filter((a) => pickCardOf(a) === picked[0]) : [];
-    if (eff.kind === 'digging' || eff.kind === 'mark' || eff.kind === 'pouch' || eff.kind === 'store') bar.replaceChildren();         // (the Digging / Pouch / Store button was clicked / a Mark is to be resolved: only its prompt is left)
+    if (eff.kind === 'digging' || eff.kind === 'mark' || eff.kind === 'pouch' || eff.kind === 'store' || eff.kind === 'pilfer') bar.replaceChildren();         // (the Digging / Pouch / Store / Pilfering button was clicked / a Mark is to be resolved: only its prompt is left)
     const who3 = el('span', 'who', seatName(grp.p));
     who3.style.color = seatText(grp.p);
     const yours = seatName(grp.p) === 'You';
     const promptText = eff.kind === 'mark' ? ' must select an animal of the display to mark, then confirm'
       : eff.kind === 'pouch' ? ' must choose a card from ' + (yours ? 'your' : 'their') + ' hand to pouch'
       : eff.kind === 'store' ? ' must choose a card from ' + (yours ? 'your' : 'their') + ' hand to store'
+      : eff.kind === 'pilfer' ? ' must choose a card from ' + (yours ? 'your' : 'their') + ' hand to give (Pilfering)'
       : ' must select a card from ' + (yours ? 'your' : 'the') + ' hand or on the display';
     bar.append(who3, el('b', '', promptText + (picked.length ? ': ' + cardName(picked[0]) : '')));
     const confirmWith = (a, label) => {
@@ -671,10 +672,10 @@ export function forkBar() {
     };
     bar.append(confirmWith(mine.find((a) => !a.args.rescue), 'Confirm'));
     if (grp.list.some((a) => a.args.rescue)) bar.append(confirmWith(mine.find((a) => a.args.rescue), "Confirm and use map 10's effect"));
-    if (eff.kind === 'pouch' || eff.kind === 'store') {                                // (Pouch / Store: Cancel goes back to the effects, the card choice closes)
+    if (eff.kind === 'pouch' || eff.kind === 'store' || eff.kind === 'pilfer') {                                // (Pouch / Store / Pilfering: Cancel goes back to the effects, the card choice closes)
       const cancel = el('button', 'forkmove', 'Cancel');
       cancel.type = 'button';
-      cancel.onclick = () => { S.pickOpen = null; for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); render(); };
+      cancel.onclick = () => { S.pickOpen = null; S.bpick = eff.kind === 'pilfer' ? { kind: 'pilfer', index: grp.idx, sel: [], opt: 0 } : null; for (const m of [...cardMarks]) if (/:hand#|^display#/.test(m)) cardMarks.delete(m); render(); };
       bar.append(cancel);
     }
     for (const a of acts.filter((x) => x.kind === 'skip_effect' && x.args.index === grp.idx)) { S.forkClaimed.add(a); bar.append(btn(a, eff.kind === 'mark' || eff.kind === 'pouch' || eff.kind === 'store' ? 'Pass' : 'Skip', false)); }
@@ -748,6 +749,7 @@ function bpickBar(bar, bp, cur, acts) {
     ok.onclick = () => { if (act && !S.forkBusy) playFork(act); };
     return ok;
   };
+  const custom = (enabled, label, fn) => { const b = el('button', 'forkmove forkconfirm', label); b.type = 'button'; b.disabled = !enabled || S.forkBusy; b.onclick = () => { if (!S.forkBusy) fn(); }; return b; };
   const cancel = el('button', 'forkmove', 'Cancel');
   cancel.type = 'button'; cancel.onclick = () => { S.bpick = null; render(); };
   const choice = (label, onclick, on) => { const b = el('button', 'forkmove forkchoice' + (on ? ' on' : ''), label); b.type = 'button'; b.disabled = S.forkBusy; b.style.setProperty('--pc', seatColor(p0)); b.onclick = onclick; return b; };
@@ -765,11 +767,70 @@ function bpickBar(bar, bp, cur, acts) {
     const act = bp.sel.length ? bp.acts.find((a) => a.args.remove && a.args.remove.map(key).sort().join('|') === bp.sel.slice().sort().join('|')) : null;
     prompt = ' must choose up to 3 buildings to pick up (' + bp.sel.length + '/3)';
     ok = confirm(act, 'Pick up');
-  } else if (bp.kind === 'move_in') {
-    const keys = [...new Set(bp.acts.filter((a) => a.args.move).map((a) => a.args.move))], act = bp.sel[0] ? bp.acts.find((a) => a.args.move === bp.sel[0]) : null;
-    prompt = ' must choose an animal to move in' + (bp.sel[0] ? ': ' + cardName(bp.sel[0]) : '');
-    extra = keys.map((k) => choice(cardName(k), () => { S.bpick.sel = [k]; render(); }, bp.sel[0] === k));
-    ok = confirm(act, 'Move in');
+  } else if (bp.kind === 'move_in') {                                              // the animal is clicked among the played cards (lit there), confirmed, then the enclosure it leaves is clicked on the map and confirmed
+    const sel = bp.sel[0], mine = sel ? bp.acts.filter((a) => a.args.move === sel) : [], enc = bp.stage === 'enc';
+    if (!enc) {
+      prompt = ' must choose an animal to move in' + (sel ? ': ' + cardName(sel) : '');
+      ok = custom(!!mine.length, 'Confirm', () => { S.bpick.stage = 'enc'; S.bpick.enc = mine.length === 1 ? key(mine[0].args.from) : null; render(); });
+    } else {
+      const at = bp.enc || (mine.length === 1 ? key(mine[0].args.from) : null), act = mine.find((a) => key(a.args.from) === at);
+      prompt = ' must choose the enclosure to free up for ' + cardName(sel);
+      extra = [choice('Back', () => { S.bpick.stage = 'animal'; S.bpick.enc = null; render(); })];
+      ok = confirm(act || null, 'Confirm');
+    }
+  } else if (bp.kind === 'symbiosis') {                                            // the sea animal is clicked among the played cards, then its ability (a button for each when there are several)
+    const sel = bp.sel[0], mine = sel ? bp.acts.filter((a) => a.args.animal === sel) : [], abilities = [...new Set(mine.map((a) => a.args.ability))];
+    if (bp.stage !== 'ability') {
+      prompt = ' must choose a sea animal to copy the ability of' + (sel ? ': ' + cardName(sel) : '');
+      ok = custom(!!mine.length, 'Confirm', () => { if (abilities.length === 1) playFork(mine[0]); else { S.bpick.stage = 'ability'; render(); } });
+    } else {
+      prompt = ' must choose the ability of ' + cardName(sel) + ' to copy';
+      extra = [...abilities.map((n) => choice(n, () => playFork(mine.find((a) => a.args.ability === n)))), choice('Back', () => { S.bpick.stage = 'animal'; render(); })];
+    }
+  } else if (bp.kind === 'extra_shift') {                                          // the zone of the association board to take a worker back from
+    prompt = ' must choose a zone to take a worker back from';
+    const icons = { reputation: 'bonus:reputation', 'partner zoo': 'bonus:Partner-Zoo', university: 'bonus:Fac', project: 'bonus:project-support' };
+    for (const zone of [...new Set((eff.workers || []).map((w) => w.zone))]) {
+      const w = eff.workers.find((x) => x.zone === zone), act = bp.acts.find((a) => a.args.worker === w.worker);
+      const b = choice(zone.charAt(0).toUpperCase() + zone.slice(1), () => act && playFork(act));
+      if (icons[zone] && ICON_IDS[icons[zone]]) { const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS[icons[zone]]); i.alt = ''; i.height = 26; b.prepend(i); }
+      extra.push(b);
+    }
+  } else if (bp.kind === 'waza') {
+    prompt = ' must choose the animals to focus on';
+    for (const [w, label, badge] of [['small', 'Small', 'ANIMAL-SIZE-2'], ['large', 'Large', 'ANIMAL-SIZE-4']]) {
+      const act = bp.acts.find((a) => a.args.waza === w), b = choice(label, () => act && playFork(act));
+      const i = el('img', 'icon'); i.src = '/badges/' + badge + '.webp'; i.alt = ''; i.height = 28; b.prepend(i);
+      extra.push(b);
+    }
+  } else if (bp.kind === 'pilfer') {                                               // what the victim sees: pay 5 money or give a card of the hand
+    prompt = ' must pay or give a card (Pilfering)';
+    const pay = bp.acts.find((a) => a.args.pay), give = bp.acts.filter((a) => typeof a.args.give === 'string'), nothing = bp.acts.find((a) => a.args.nothing);
+    if (pay) { const b = choice('Pay', () => playFork(pay)); b.append(amountIcon('money', 5) || '5 money'); extra.push(b); }
+    if (give.length) extra.push(choice('Give a card', () => { S.pickOpen = bp.index; S.bpick = null; S.forkDockStep = -1; render(); }));
+    if (nothing) extra.push(choice('Nothing happens', () => playFork(nothing)));
+  } else if (bp.kind === 'continent') {                                            // map 9: the continent marker to remove (a badge each), then the bonus it pays
+    const conts = [...new Set(bp.acts.filter((a) => a.args.continent).map((a) => a.args.continent))], stage = bp.stage || (conts.length === 1 ? 'bonus' : 'continent'), c = bp.sel[0] || conts[0];
+    const ico = (id, alt) => { const i = el('img', 'icon'); i.src = iconUrl(ICON_IDS[id]); i.alt = alt; i.title = alt; i.height = 28; return i; };
+    if (stage === 'continent') {
+      prompt = ' must choose a continent marker to remove';
+      for (const name of conts) {
+        const b = choice('', () => { S.bpick.sel = [name]; S.bpick.stage = 'bonus'; render(); });
+        const i = el('img', 'icon'); i.src = '/badges/' + name + '.webp'; i.alt = name; i.title = name; i.height = 30; i.style.borderRadius = '50%'; b.append(i, name);
+        extra.push(b);
+      }
+    } else {
+      prompt = ' must choose a bonus for the ' + c + ' marker';
+      const bonuses = [() => amountIcon('reputation', 1), () => amountIcon('appeal', 2), () => amountIcon('money', 4), () => ico('bonus:Clever', 'Clever'), () => ico('bonus:bonus-kiosk-pavilion', 'Kiosk or pavilion')];
+      bonuses.forEach((mk, j) => {
+        const act = bp.acts.find((a) => a.args.continent === c && a.args.pick === j);
+        const b = choice('', () => act && playFork(act));
+        b.append(mk() || String(j));
+        b.disabled = !act || S.forkBusy;
+        extra.push(b);
+      });
+      if (conts.length > 1) extra.push(choice('Back', () => { S.bpick.stage = 'continent'; render(); }));
+    }
   } else if (bp.kind === 'archaeologist') {
     prompt = ' must choose a bonus (Archaeologist)';
     for (const a of bp.acts.filter((x) => x.args.cell)) {

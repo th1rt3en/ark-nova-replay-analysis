@@ -88,6 +88,9 @@ def effect_name(e: dict) -> str | None:
     if kind == "reveal":
         prefix = REVEAL_NAME.get(e.get("filter", "any"))
         return f"{prefix} {e['x']}" if prefix and e.get("x") is not None else None
+    if kind == "ability" and e.get("name"):                                       # a deferred draw (Sprint, Monkey Gang...) is named like its ability
+        value = e.get("value")
+        return str(e["name"]) if not value or str(value) in str(e["name"]) else f"{e['name']} {value}"
     prefix = ABILITY_PREFIX.get(kind)
     if prefix is None:
         return None
@@ -146,6 +149,12 @@ def _place_entry(state: GameState, e: dict, who: int) -> dict:
             return {"cuts": [{"building": [b.x, b.y], "type": b.type, "money": build_action.cost(b.type)} for b in p.buildings if b.type.startswith("size-") and not b.animal]}
         if k == "move_in" and e.get("building"):
             return {"dest": list(e["building"])}
+        if k == "extra_shift":                                           # the zones of the association board that hold a worker the player may take back
+            zones = {"association_2": "reputation", "association_3": "partner zoo", "association_4": "university", "association_5": "project"}
+            return {"workers": [{"worker": t.id, "zone": zones.get(t.location, t.location)} for t in p.tokens if t.type == "worker" and t.location.startswith("association_")]}
+        if k == "continent":
+            from ark_nova.engine import map_rules
+            return {"left": map_rules.continents_left(p)}
     except Exception:                                                    # (a map the engine cannot read here: the buttons keep their plain names)
         return {}
     return {}
@@ -250,7 +259,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
     elif pr.kind == "effects":
         pending = pr.args.get("pending", [])
         out["pending"] = [e.get("kind") for e in pending][:12]
-        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost") if k in e and isinstance(e[k], (str, int, bool))},
+        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost", "continent") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}),
                            **_bonus_entry(e), **_income_entry(state, e, who), **_place_entry(state, e, who),

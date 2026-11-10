@@ -13,6 +13,7 @@ import { render } from './main.js';
 import { atEnd, atStart, go, stepBy } from './playback.js';
 import { frameKind } from './frames.js';
 import { centerNav, clearReveal, forkReveal, noteLightbox, openFx, revealAt, showReveal } from './reveal.js';
+import { showPlayed } from './zoo.js';
 
 
 // the bar above the boards, like BGA's: what the active player can do now. Before an action card is chosen: the five action cards (the number is the
@@ -50,12 +51,27 @@ export function bindActs(node, acts) {
 // a card is chosen to be played (an animal, a sponsor, a Marketing sponsor...): only one can be selected at a time
 // an effect that takes one card of the hand or of the display (digging, ...): the card is selected with a click, then confirmed (see forkBar)
 export const effectKindOf = (a) => { const e = (((S.replay.steps[S.step].options || {}).effects) || []).find((x) => x.index === a.args.index); return e ? e.kind : ''; };
-export const GATED_PICKS = new Set(['digging', 'pouch', 'store']);          // effects whose card is chosen once their button has been clicked (S.pickOpen), with the rest of the bar out of the way
-export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.display : typeof a.args.hand === 'string' ? a.args.hand : a.kind === 'choose_effect' && typeof a.args.card === 'string' && ['mark', 'pouch'].includes(effectKindOf(a)) ? a.args.card : a.kind === 'choose_effect' && typeof a.args.store === 'string' ? a.args.store : null);       // (Mark: the animal of the display to mark; Pouch / Store: the card of the hand)
+export const GATED_PICKS = new Set(['digging', 'pouch', 'store', 'pilfer']);          // effects whose card is chosen once their button has been clicked (S.pickOpen), with the rest of the bar out of the way
+export const pickCardOf = (a) => (typeof a.args.display === 'string' ? a.args.display : typeof a.args.hand === 'string' ? a.args.hand : a.kind === 'choose_effect' && typeof a.args.card === 'string' && ['mark', 'pouch'].includes(effectKindOf(a)) ? a.args.card : a.kind === 'choose_effect' && typeof a.args.store === 'string' ? a.args.store : a.kind === 'choose_effect' && typeof a.args.give === 'string' ? a.args.give : null);       // (Mark: the animal of the display to mark; Pouch / Store: the card of the hand; Pilfering: the card the victim gives)
 export const cardPickAct = (a) => a.kind === 'choose_effect' && typeof a.args.index === 'number' && !Array.isArray(a.args.cards) && !!pickCardOf(a) && effectKindOf(a) !== 'marketing' && !(GATED_PICKS.has(effectKindOf(a)) && S.pickOpen !== a.args.index);       // (Digging / Pouch / Store: the card is chosen once its button has been clicked)
 export const sharkActs = () => forkActs((a) => a.kind === 'choose_effect' && Array.isArray(a.args.cards) && effectKindOf(a) === 'shark');       // (Shark Attack: the animals of the display it can eat)
 // effects whose choice is made on the zoo map or among the bonuses of the map: Cut Down / Enlarge / Reposition click the enclosures, Move in picks an animal, Archaeologist a bonus (fork.js `bpickBar`, board.js)
-export const MAP_PICKS = new Set(['cut_down', 'enlarge', 'reposition', 'move_in', 'archaeologist']);
+export const MAP_PICKS = new Set(['cut_down', 'enlarge', 'reposition', 'move_in', 'archaeologist', 'continent', 'extra_shift', 'symbiosis', 'pilfer', 'waza']);
+// Move in / Symbiosis: the animals that can be chosen are lit among the played cards of the zoo (the stacks under the map), the others dimmed; a click selects one
+export function decorateBpick(row, seat) {
+  const bi = bpickInfo();
+  if (!bi || bi.seat !== seat || !['move_in', 'symbiosis'].includes(bi.kind) || (bi.stage && bi.stage !== 'animal')) return row;
+  const ok = new Set(bi.acts.map((a) => a.args.move || a.args.animal).filter(Boolean));
+  for (const c of row.querySelectorAll('.card[data-key]')) {
+    const k = c.dataset.key;
+    if (!k.startsWith('A')) continue;
+    if (ok.has(k)) {
+      c.classList.add('bppick'); if (bi.sel[0] === k) c.classList.add('on');
+      c.addEventListener('click', () => { S.bpick.sel = [k]; S.bpick.enc = null; render(); });
+    } else c.classList.add('bpdim');
+  }
+  return row;
+}
 export function bpickInfo() {                                              // the open map choice with its legal moves, null when none is open
   if (!FORK || !S.bpick) return null;
   const acts = forkActs((a) => a.kind === 'choose_effect' && a.args.index === S.bpick.index);
@@ -563,6 +579,10 @@ function effectButton(e) {
     const id = ICON_IDS['bonus:' + (e.kind === 'wave' ? 'wave' : 'shark-attack')];
     if (id) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
     b.append(el('b', '', e.kind === 'wave' ? 'Wave' : 'Shark attack'));
+  } else if (e.kind === 'pay_appeal') {                                          // "Pay 2 money: 1 appeal" with the icons
+    const pay = amountIcon('money', 2), gain = amountIcon('appeal', 1);
+    b.append(el('b', '', 'Pay'), pay || el('b', '', '2 money'), el('b', '', ':'), gain || el('b', '', '1 appeal'));
+    b.title = 'Pay 2 money to gain 1 appeal - optional';
   } else if ((e.kind === 'pouch' || e.kind === 'store') && ICON_IDS[e.kind === 'pouch' ? 'bonus:Pouch' : 'bonus:store']) {          // the word and the icon of the ability
     const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(ICON_IDS[e.kind === 'pouch' ? 'bonus:Pouch' : 'bonus:store']); i.alt = ''; i.height = 28;
     b.append(el('b', '', e.kind === 'pouch' ? 'Pouch' : 'Store'), i);
@@ -578,7 +598,11 @@ function effectButton(e) {
     b.onclick = () => { S.multiplierMode = e.index; refreshBar(); };
   } else if (FORK && MAP_PICKS.has(e.kind) && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index).length) {
     b.classList.add('choosable');                                      // (click it: the choice opens, see fork.js `bpickBar`)
-    b.onclick = () => { S.bpick = { kind: e.kind, index: e.index, sel: [], opt: 0 }; S.forkDockStep = -1; render(); };
+    b.onclick = () => {
+      S.bpick = { kind: e.kind, index: e.index, sel: [], opt: 0 }; S.forkDockStep = -1;
+      if (e.kind === 'move_in' || e.kind === 'symbiosis') showPlayed(forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index)[0].player);          // (the animals are chosen among the played cards)
+      render();
+    };
   } else if (FORK && e.kind === 'assertion' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) {
     b.classList.add('choosable');                                      // (click it: the unused base projects open in the lightbox, reveal.js `forkReveal`)
     b.onclick = () => { S.assertOpen = e.index; refreshBar(); };

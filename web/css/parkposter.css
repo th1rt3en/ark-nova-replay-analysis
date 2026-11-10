@@ -1486,3 +1486,8 @@ body.viewer .movepill .forkmove { box-sizing: border-box; min-height: 2.04em; di
 body.viewer .movepill .forkmove b, body.viewer .movepill .forkmove i { color: inherit; }
 body.viewer .movepill .forkmove:hover:not(:disabled) { background: var(--act1); filter: brightness(1.15); box-shadow: none; }
 body.viewer .movepill .forkmove:disabled { opacity: .4; filter: none; }
+
+/* Move in / Symbiosis: the animals among the played cards that can be chosen (js/action-bar.js decorateBpick) */
+.bppick { outline: 4px solid #F4B63F; outline-offset: -2px; cursor: pointer; position: relative; z-index: 2; box-shadow: 0 0 14px rgba(244, 182, 63, .9); }
+.bppick.on { outline-color: #EE6C2B; box-shadow: 0 0 18px rgba(238, 108, 43, 1); }
+.bpdim { opacity: .4; filter: grayscale(.6); }
