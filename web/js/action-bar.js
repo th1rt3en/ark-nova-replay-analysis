@@ -420,6 +420,23 @@ function associationBar(bar, o) {
     bar.append(back);
     return;
   }
+  if (chosen && chosen.length && S.assocMode === 'conservation') {          // Support a conservation project, first step: the projects, a button each with the project's name (the slot is chosen next)
+    bar.append(el('b', '', ' must choose a project to support'));
+    const byProject = new Map();
+    for (const a of chosen) { if (!byProject.has(a.args.project)) byProject.set(a.args.project, []); byProject.get(a.args.project).push(a); }
+    for (const [project, list] of byProject) {
+      const b = el('span', 'abtn deckbtn');
+      b.append(el('b', '', cardName(project)));
+      b.title = 'Support ' + cardName(project);
+      bindActs(b, list);
+      bar.append(b);
+    }
+    const back = el('button', 'forkmove', 'Back');
+    back.type = 'button';
+    back.onclick = () => { S.assocMode = null; refreshBar(); };
+    bar.append(back);
+    return;
+  }
   if (chosen && chosen.length) {                                  // the fork: the tiles that can be taken, as buttons (the tiles of the board can be clicked too)
     bar.append(el('b', '', ' must choose a ' + (S.assocMode === 'partner' ? 'partner zoo' : 'university')));
     const groups = new Map();
@@ -453,7 +470,8 @@ function associationBar(bar, o) {
     else if (FORK && task === 'partner') { b.append(tile(ICON_IDS['bonus:Partner-Zoo'], TASK_TEXT.partner)); b.title = TASK_TEXT.partner + ': choose the partner zoo'; }
     else if (FORK && task === 'university') { b.append(tile(ICON_IDS['bonus:Fac'], TASK_TEXT.university)); b.title = TASK_TEXT.university + ': choose the university'; }
     else b.append(el('b', '', TASK_TEXT[task] || task));
-    if (FORK && (task === 'partner' || task === 'university')) {
+    if (FORK && task === 'conservation') for (const a of forkActs((x) => x.kind === 'association_task' && x.args.task === task)) S.forkClaimed.add(a);          // (the projects are chosen after the button was clicked)
+    if (FORK && (task === 'partner' || task === 'university' || task === 'conservation')) {
       b.classList.add('choosable');
       b.onclick = () => { S.assocMode = task; refreshBar(); };
     } else bindActs(b, forkActs((a) => a.kind === 'association_task' && a.args.task === task));

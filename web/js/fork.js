@@ -527,6 +527,32 @@ export function forkBar() {
   if (bp) bpickBar(bar, bp, cur, acts);
   const singleActs = acts.filter((a) => a.kind === 'animals_single');
   for (const a of singleActs) S.forkClaimed.add(a);
+  const slotActs = acts.filter((a) => a.kind === 'choose_slot');
+  for (const a of slotActs) S.forkClaimed.add(a);
+  if (slotActs.length && !S.placement) {                                             // Support a conservation project, second step: the slots that are free, "Slot 1 / 2 / 3"
+    const pSl = slotActs[0].player;
+    bar.replaceChildren();
+    const whoSl = el('span', 'who', seatName(pSl));
+    whoSl.style.color = seatText(pSl);
+    bar.append(whoSl, el('b', '', ' must choose a slot'));
+    const bySlot = new Map();
+    for (const a of slotActs) { if (!bySlot.has(a.args.slot)) bySlot.set(a.args.slot, []); bySlot.get(a.args.slot).push(a); }
+    for (const [slot, list] of [...bySlot].sort((x, y) => x[0] - y[0])) {
+      const b = el('button', 'forkmove forkchoice', 'Slot ' + (slot + 1));
+      b.type = 'button'; b.disabled = S.forkBusy; b.style.setProperty('--pc', seatColor(pSl));
+      b.onclick = () => { if (S.forkBusy) return; if (list.length === 1) playFork(list[0]); else { S.forkMenu = { label: 'Slot ' + (slot + 1), acts: list }; refreshBar(); } };
+      bar.append(b);
+    }
+    if (S.forkMenu) {                                                                // (a slot with several ways to pay / to cover it: the choices of the button)
+      const row = el('span', 'forkmenu');
+      for (const a of S.forkMenu.acts) { const mb = el('button', 'forkmove', a.text); mb.type = 'button'; mb.disabled = S.forkBusy; mb.onclick = () => playFork(a); row.append(mb); }
+      bar.append(row);
+    }
+    S.forkSolo = true;
+    if (PLAY || SANDBOX) playTurnButtons(bar, acts);
+    else if (st.phase === 'turn' || st.phase === 'final_turns') turnButtons(bar, st.turn, st.active_player, false);
+    return;
+  }
   if (singleActs.length && animalsChoicePending()) {                                 // Ignore Animals: how the animals are played, asked before the first one
     const pS = singleActs[0].player;
     bar.replaceChildren();
