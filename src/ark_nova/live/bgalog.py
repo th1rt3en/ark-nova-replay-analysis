@@ -467,6 +467,15 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     elif kind == "glide_gain":
         words = {"reputation": "gained 1 reputation", "appeal": "gained 2 appeal", "kiosk": "will place a kiosk for free"}
         L.add(f"{who} {words.get(a.get('gain'), 'gained a bonus')} (Glide effect)")
+    elif kind == "boost" and a.get("slot") is not None:
+        name = ACTION_NAMES.get(e.get("type"), str(e.get("type")))
+        L.add(f"{who} put the {name} action at {int(a['slot'])} (Boost effect)", None, f"You put the {name} action at {int(a['slot'])} (Boost effect)")
+    elif kind == "multiplier" and a.get("multiplier"):
+        name = ACTION_NAMES.get(a["multiplier"], str(a["multiplier"]))
+        L.add(f"{who} put a multiplier token on the {name} action", None, f"You put a multiplier token on the {name} action")
+    elif kind == "marketing" and isinstance(a.get("card"), str):                  # the sponsor and its price are public
+        spent = max(-delta["money"], 0)
+        L.add(f"{who} marketed {card(a['card'])} for {spent} money", None, f"You marketed {card(a['card'])} for {spent} money")
     elif kind == "store":
         c = a.get("store")
         L.secret(f"{who} stored {card(c) if c else 'a card'}", f"{who} stored a card", f"You stored {card(c) if c else 'a card'}")

@@ -516,6 +516,23 @@ export function forkBar() {
       if (others.length) { const back = el('button', 'forkmove', 'Back'); back.type = 'button'; back.onclick = () => { S.slot1Mode = null; refreshBar(); }; bar.append(back); }
     }
   }
+  S.forkSolo = false;                                                                // (a prompt that stands alone: none of the other moves is listed beside it)
+  const endActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.card === 'string' && effKinds.get(a.args.index) === 'endgame_discard');
+  for (const a of endActs) S.forkClaimed.add(a);
+  if (endActs.length) {                                                             // conservation 10: the endgame card to discard is chosen in the endgame tab of the hand, then confirmed
+    const p0 = endActs[0].player;
+    if (S.forkDockStep !== S.step) { S.forkDockStep = S.step; S.dockSel = { seat: p0, kind: 'endgame' }; S.dockHidden = false; renderDock(curState()); }
+    const picked = marked(p0 + ':endgame', st.players[p0].endgame_hand || []).find((k) => endActs.some((a) => a.args.card === k));
+    const match = endActs.find((a) => a.args.card === picked);
+    bar.replaceChildren();
+    const whoE = el('span', 'who', seatName(p0));
+    whoE.style.color = seatText(p0);
+    const ok = el('button', 'forkmove forkconfirm', 'Confirm');
+    ok.type = 'button'; ok.disabled = !match || S.forkBusy;
+    ok.onclick = () => { if (match) playFork(match); };
+    bar.append(whoE, el('b', '', ' must choose an endgame card to discard' + (picked ? ': ' + cardName(picked) : '')), ok);
+    S.forkSolo = true;
+  }
   const glideActs = acts.filter((a) => a.kind === 'choose_effect' && typeof a.args.gain === 'string' && effKinds.get(a.args.index) === 'glide_gain');
   for (const a of glideActs) S.forkClaimed.add(a);
   if (glideActs.length) {                                                           // Glide: the bonuses are chosen one by one (one per sea animal icon), only this prompt is left
@@ -613,6 +630,7 @@ export function forkBar() {
       const whoB = el('span', 'who', seatName(p));
       whoB.style.color = seatText(p);
       bar.append(whoB, el('b', '', ' must choose cards to discard during the break (' + picked.length + '/' + max + ')'));
+      S.forkSolo = true;
     } else if (fromDisplay) {
       bar.replaceChildren();
       const whoS = el('span', 'who', seatName(p));
@@ -698,7 +716,7 @@ export function forkBar() {
   const usable = new Set(acts.filter((a) => a.kind === 'choose_effect').map((a) => a.args.index));          // (an effect that can be activated has no Skip button: it appears with the effect's own choices, or when the effect cannot be used)
   const buildSkips = acts.filter((a) => a.kind === 'skip_effect' && effKinds.get(a.args.index) === 'build');       // (Posturing and the like: one Skip, only while a piece is being placed, not one per building)
   const shownBuildSkip = S.placement ? buildSkips[0] : null;
-  const rest = acts.filter((a) => !S.forkClaimed.has(a) && !(a.kind === 'skip_effect' && usable.has(a.args.index)) && !committed && (!buildSkips.includes(a) || a === shownBuildSkip));                           // the moves that no control of the bar stands for
+  const rest = acts.filter((a) => !S.forkClaimed.has(a) && !(a.kind === 'skip_effect' && usable.has(a.args.index)) && !committed && !S.forkSolo && (!buildSkips.includes(a) || a === shownBuildSkip));                           // the moves that no control of the bar stands for
   if (rest.length) {
     const holder = rest.length > 10 ? el('details', 'forkmore') : el('span', 'forkmore');
     if (rest.length > 10) holder.append(el('summary', '', 'More moves (' + rest.length + ')'));

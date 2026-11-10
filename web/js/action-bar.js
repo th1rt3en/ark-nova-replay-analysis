@@ -64,7 +64,7 @@ export function animalSelection() {                                       // the
   const card = picked.find((k) => acts.some((a) => a.args.card === k));
   return card ? { seat, card, acts: acts.filter((a) => a.args.card === card) } : null;
 }
-export const forkSingleSelect = () => S.marketMode !== null || !!S.snapMode || forkActs(cardPickAct).length > 0 || forkActs((a) => a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind)).length > 0;
+export const forkSingleSelect = () => S.marketMode !== null || !!S.snapMode || forkActs((a) => a.kind === 'choose_effect' && typeof a.args.card === 'string' && effectKindOf(a) === 'endgame_discard').length > 0 || forkActs(cardPickAct).length > 0 || forkActs((a) => a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind)).length > 0;
 export function afterMark() {                                             // a card was (de)selected: an animal's selection also changes the enclosures of the zoo
   if (forkActs((a) => a.kind === 'play_animal' && 'x' in a.args).length) render(); else refreshBar();
 }
