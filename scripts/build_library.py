@@ -85,8 +85,8 @@ def main() -> None:
             continue
         entry = describe(key, c)
         mw = (variants.get(key) or {}).get("marine_worlds")
-        if mw and (ROOT / "web" / "cards" / f"{key}_MW.webp").exists():              # a card that was reprinted for Marine Worlds: the page can switch between the two
-            other = describe(key, {**c, **mw})
+        if (ROOT / "web" / "cards" / f"{key}_MW.webp").exists():                     # a card that was reprinted for Marine Worlds (its own picture): the page can switch between the two
+            other = describe(key, {**c, **(mw or {})})                               # (the endgame cards whose scores changed differ in the picture only)
             entry["mw"] = {"icons": other["icons"], "text": other["text"]}
         cards.append(entry)
     abilities_all = sorted({a for e in cards for a in e.get("abilities", [])}, key=str.lower)

@@ -30,7 +30,9 @@ const renderCard0=(kind:string,idRaw:string)=>{
     const o=ourP.find((x:any)=>x.key==='P'+id);let slots=o?o.slots:c.slots;
     if(mw&&id==='131')slots=MW131;
     return renderToStaticMarkup(<ProjectCard project={{...c,slots}}/>);}
-  if(kind==='F'){const c=(EndGameData as any[]).find(x=>x.id===id);return c?renderToStaticMarkup(<BaseEndGameCard card={c}/>):null;}
+  if(kind==='F'){const c:any=(EndGameData as any[]).find(x=>x.id===id);if(!c)return null;
+    const d=!mw&&c.originalArray?{...c,scoreArray:c.originalArray}:c;                      // (the base game printing of a card whose scores changed in Marine Worlds: `originalArray`; F###_MW and the cards that did not change use `scoreArray`)
+    return renderToStaticMarkup(<BaseEndGameCard card={d}/>);}
 };
 import variants from '../../../data_manual/variants_mw.json';
 import nameFixes from '../../../data_manual/card_names.json';

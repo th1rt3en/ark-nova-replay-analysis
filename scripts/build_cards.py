@@ -27,7 +27,8 @@ STRIP = (1000, 412, 250)                               # the strip of a project 
 STRIP_OUT = (600, 247)
 SLOT_SCALE = 1.5                                       # (the slots as large as the strip allows up to this factor of the card)
 SLOT_HEIGHT = 0.8
-VARIANTS = ["P131_MW", "S274_VC"]                       # Marine Worlds reprint with other indicators (data_manual/variants_mw.json); S250_MW is made from S250 below; S274_VC = the Mascot Statue under its BGA name Victory Column (setting "Mascot Statue")
+ENDGAME_MW = ["F001_MW", "F003_MW", "F005_MW", "F008_MW", "F010_MW", "F011_MW"]       # endgame cards whose scores changed in Marine Worlds (`originalArray` in the card data = the base game printing, drawn for F###; `scoreArray` = Marine Worlds, drawn for F###_MW)
+VARIANTS = ["P131_MW", "S274_VC", *ENDGAME_MW]                       # Marine Worlds reprint with other indicators (data_manual/variants_mw.json); S250_MW is made from S250 below; S274_VC = the Mascot Statue under its BGA name Victory Column (setting "Mascot Statue")
 
 
 def trim(im: Image.Image) -> Image.Image:

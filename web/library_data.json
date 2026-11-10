@@ -3891,7 +3891,11 @@
             "type": "endgame",
             "source": "base",
             "icons": [],
-            "text": "large animal zoo f001 gain conservation point for large animals in your zoo."
+            "text": "large animal zoo f001 gain conservation point for large animals in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "large animal zoo f001 gain conservation point for large animals in your zoo."
+            }
         },
         {
             "key": "F002",
@@ -3907,7 +3911,11 @@
             "type": "endgame",
             "source": "base",
             "icons": [],
-            "text": "research zoo f003 gain conservation point for research icons in your zoo."
+            "text": "research zoo f003 gain conservation point for research icons in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "research zoo f003 gain conservation point for research icons in your zoo."
+            }
         },
         {
             "key": "F004",
@@ -3923,7 +3931,11 @@
             "type": "endgame",
             "source": "base",
             "icons": [],
-            "text": "conservation zoo f005 gain conservation point for supporting conservation projects"
+            "text": "conservation zoo f005 gain conservation point for supporting conservation projects",
+            "mw": {
+                "icons": [],
+                "text": "conservation zoo f005 gain conservation point for supporting conservation projects"
+            }
         },
         {
             "key": "F006",
@@ -3947,7 +3959,11 @@
             "type": "endgame",
             "source": "base",
             "icons": [],
-            "text": "sponsored zoo f008 gain conservation point for sponsors cards in your zoo."
+            "text": "sponsored zoo f008 gain conservation point for sponsors cards in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "sponsored zoo f008 gain conservation point for sponsors cards in your zoo."
+            }
         },
         {
             "key": "F009",
@@ -3963,7 +3979,11 @@
             "type": "endgame",
             "source": "base",
             "icons": [],
-            "text": "climbing park f010 gain conservation point for rock icons in your zoo."
+            "text": "climbing park f010 gain conservation point for rock icons in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "climbing park f010 gain conservation point for rock icons in your zoo."
+            }
         },
         {
             "key": "F011",
@@ -3971,7 +3991,11 @@
             "type": "endgame",
             "source": "base",
             "icons": [],
-            "text": "aquatic park f011 gain conservation point for water icons in your zoo."
+            "text": "aquatic park f011 gain conservation point for water icons in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "aquatic park f011 gain conservation point for water icons in your zoo."
+            }
         },
         {
             "key": "F012",
