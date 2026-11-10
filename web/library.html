@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card library - Ark Nova Park</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/css/lobbies.css">
+<link rel="stylesheet" href="/css/park-fonts.css">
+<link rel="stylesheet" href="/css/poster-page.css">
+<link rel="stylesheet" href="/css/poster-content.css">
+<link rel="stylesheet" href="/css/library.css">
+</head>
+<body class="poster library">
+<p class="small"><a href="/">&larr; Ark Nova Park</a> &middot; <a href="/minigames/">Mini games</a></p>
+<main class="pp">
+<h1>Card library</h1>
+<p class="muted">Every animal, sponsor, conservation project and endgame card, with the Marine Worlds ones. Click a filter to switch it on or off; click a card to see it large.</p>
+
+<section id="filters" aria-label="Filters">
+  <div class="fgroup" data-group="type"><h2>Cards</h2><div class="chips" role="group" aria-label="Kind of card"></div></div>
+  <div class="fgroup" data-group="species"><h2>Species</h2><div class="chips" role="group" aria-label="Species"></div></div>
+  <div class="fgroup" data-group="continent"><h2>Continents</h2><div class="chips" role="group" aria-label="Continents"></div></div>
+  <div class="fgroup" data-group="other"><h2>Science, rock, water</h2><div class="chips" role="group" aria-label="Science, rock and water icons"></div></div>
+  <div class="fgroup" data-group="normal"><h2>Enclosure size</h2><div class="chips" role="group" aria-label="Normal enclosure size"></div></div>
+  <div class="fgroup" data-group="aqua"><h2>Aquarium size</h2><div class="chips" role="group" aria-label="Aquarium enclosure size"></div></div>
+  <div class="fgroup search"><h2>Search</h2><input id="text" type="text" placeholder="Name, printed text or ability text" autocomplete="off" aria-label="Search the cards"></div>
+  <details id="advanced">
+    <summary>Advanced filters (animals)</summary>
+    <div class="fgroup" data-group="ability"><h2>Ability <small>none selected = any</small></h2><div class="chips abilities" role="group" aria-label="Animal ability"></div></div>
+    <div class="tri">
+      <label>Gives reputation <select id="rep"><option value="any">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+      <label>Gives conservation <select id="cons"><option value="any">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+      <label>Requires a partner zoo <select id="partner"><option value="any">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+      <label>Requires a university <select id="uni"><option value="any">Any</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+    </div>
+  </details>
+  <p class="actions"><button type="button" id="reset">Reset filters</button></p>
+</section>
+
+<section aria-live="polite">
+  <h2 id="count">Loading&hellip;</h2>
+  <div id="grid" class="libgrid"></div>
+</section>
+<dialog id="big"><button type="button" id="bigclose" aria-label="Close">&times;</button><img id="bigimg" alt=""></dialog>
+</main>
+<script type="module" src="/js/library.js"></script>
+<script type="module" src="/js/account.js"></script>
+<script type="module" src="/js/notify.js"></script>
+</body>
+</html>
