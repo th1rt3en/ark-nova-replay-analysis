@@ -53,11 +53,15 @@ def test_an_exported_fork_opens_as_a_replay_with_a_number_per_table(world):
     assert first.status_code == 200 and first.json()["id"] == 1 and second.json()["id"] == 2
     assert first.json()["url"] == f"/replay.html?table={world.tid}&fork=1"
     body = world.get(f"/api/tables/{world.tid}/forks/1/replay").json()
-    assert len(body["steps"]) == len(actions) + 1 and body["table_id"] == str(world.tid)
-    assert body["steps"][0]["label"].startswith("Fork of table") and body["steps"][0]["fork"] is True
+    step = fk["fork"]["step"]
+    assert len(body["steps"]) == step + 1 + len(actions) and body["table_id"] == str(world.tid)           # (the game from its start up to the fork point, then the moves of the fork)
+    assert body["steps"][0]["state"]["phase"] == "setup" and body["setup_steps"] > 0
+    original = world.get(f"/api/tables/{world.tid}/replay").json()["steps"]
+    assert [st["label"] for st in body["steps"][:step]] == [st["label"] for st in original[:step]]
+    assert body["steps"][step]["fork"] is True and body["steps"][step + 1]["label"] == body["steps"][step + 1]["label"].strip()
     assert body["fork_replay"]["id"] == 1 and body["fork_replay"]["step"] == fk["fork"]["step"] and body["fork_replay"]["stopped"] is True
     assert [p["name"] for p in body["players"]] == [p["name"] for p in fk["players"]]
-    assert all(st["state"]["players"][0]["score"] is not None for st in body["steps"])
+    assert all(st["state"]["players"][0]["score"] is not None for st in body["steps"]) and [st["index"] for st in body["steps"]] == list(range(len(body["steps"])))
 
 
 def test_a_fork_that_stops_early_still_has_its_statistics_and_a_result(world):
@@ -97,8 +101,9 @@ def test_an_exported_fork_can_be_forked_again_at_any_step(world):
     fk, start, actions = _fork(world, 6)
     n = _export(world, fk, start, actions).json()["id"]
     replay = world.get(f"/api/tables/{world.tid}/forks/{n}/replay").json()
-    forkable = [i for i, s in enumerate(replay["steps"]) if s["fork"]]
-    assert forkable and forkable[0] == 0                                          # (the start of the fork is a position too)
+    start_at = fk["fork"]["step"]
+    forkable = [i for i, s in enumerate(replay["steps"]) if s["fork"] and i >= start_at]
+    assert forkable and forkable[0] == start_at                                    # (the point the fork began at is a position too)
     step = forkable[len(forkable) // 2]
     r = world.post(f"/api/tables/{world.tid}/fork", json={"step": step, "fork_id": n})
     assert r.status_code == 200, r.text
@@ -117,7 +122,9 @@ def test_an_exported_fork_can_be_forked_again_at_any_step(world):
                                                               "origin": {"step": step, "seed": again["fork"]["seed"], "label": again["fork"]["label"], "parent_fork": n}})
     assert out.status_code == 200 and out.json()["id"] > n
     child = world.get(f"/api/tables/{world.tid}/forks/{out.json()['id']}/replay").json()
-    assert child["fork_replay"]["parent_fork"] == n and child["steps"][0]["label"].startswith(f"Fork of fork #{n} of table")
+    assert child["fork_replay"]["parent_fork"] == n and len(child["steps"]) == step + 1 + len(moves)
+    assert [st["label"] for st in child["steps"][:step + 1]] == [st["label"] for st in replay["steps"][:step + 1]]       # (the child shows the same game up to its fork point, the moves of the parent included)
+    assert world.post(f"/api/tables/{world.tid}/fork", json={"step": max(start_at - 1, 0), "fork_id": n}).status_code == 422       # (before the fork point: fork the table itself)
     assert world.post(f"/api/tables/{world.tid}/fork", json={"step": 999, "fork_id": n}).status_code == 422
     assert world.post(f"/api/tables/{world.tid}/fork", json={"step": 0, "fork_id": 9999}).status_code == 404
 

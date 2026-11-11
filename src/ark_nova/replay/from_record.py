@@ -39,7 +39,12 @@ def replay_from_record(record: dict, table_id: str | None = None) -> dict:
     players = [{"seat": i, "id": str((record.get("player_ids") or ["1", "2"])[i]), "name": names[i] if i < len(names) and names[i] else f"Player {i + 1}",
                 "color": (viewer.get("colors") or [None, None])[i]} for i in (0, 1)]
     view = viewer["initial_view"]
-    steps = [_step(0, viewer.get("initial_label") or "The game starts", view, viewer.get("initial_options"), None, record)]
+    steps = unpack_prefix(record.get("prefix") or [])                                    # (an exported fork: the steps of the game up to the fork point come first)
+    if steps:
+        steps[-1].update(_step(len(steps) - 1, steps[-1]["label"], view, viewer.get("initial_options"), None, record), label=steps[-1]["label"])        # (the last one is where the fork began: the position in the engine's own view)
+    else:
+        steps = [_step(0, viewer.get("initial_label") or "The game starts", view, viewer.get("initial_options"), None, record)]
+    start_at = len(steps) - 1
     prev_n = 0
     for item in effective_steps(record["steps"]):
         s = item["step"]
@@ -50,7 +55,7 @@ def replay_from_record(record: dict, table_id: str | None = None) -> dict:
             raise RecordError(f"the patches of the record do not reproduce its checkpoint at step {item['n']}")
         steps.append(_step(len(steps), s.get("label") or "", view, s.get("options"), s.get("actor"), record))
         prev_n = item["n"]
-    setup_steps = sum(1 for st in steps if st["state"].get("phase") == "setup")
+    setup_steps = record["prefix_setup_steps"] if record.get("prefix_setup_steps") is not None else sum(1 for st in steps if st["state"].get("phase") == "setup")
     out = {
         "table_id": table_id or record.get("game_id"), "marine_worlds": bool(viewer.get("marine_worlds")), "players": players, "maps": viewer["maps"],
         "base_projects": viewer.get("base_projects") or [], "result": _result(record, players), "setup_steps": setup_steps, "cards": viewer["cards"], "engine": None,
@@ -60,7 +65,7 @@ def replay_from_record(record: dict, table_id: str | None = None) -> dict:
     if record.get("kind") == "fork":                                                    # a fork that was exported: where it began, and the statistics the engine kept
         out["fork_replay"] = {"id": record.get("fork_id"), "created_at": record.get("created_at"), **(record.get("origin") or {}), "stopped": bool((record.get("result") or {}).get("stopped"))}
         out["post_stats"] = post_stats(record)
-        for st in steps:                                                                    # a fork of an exported fork can begin at any step where a decision waits (the server plays the moves again to get the position)
+        for st in steps[start_at:]:                                                         # a fork of an exported fork can begin at any step of its own moves where a decision waits (the steps before keep what the original replay said)
             st["fork"] = st["state"].get("phase") not in ("setup", "over", "scoring", None) and bool(st["options"])
     return out
 
@@ -87,6 +92,18 @@ def post_stats(record: dict) -> dict | None:
     stopped = bool(res.get("stopped"))
     end = record.get("end") or {}
     return {"players": players, "first": None, "ender": end.get("end_triggered_by"), "conceded": res.get("conceded") if stopped else None, "synthetic": stopped, "available": POST_STATS_AVAILABLE}
+
+
+def unpack_prefix(prefix: list) -> list:
+    """The steps stored by `fork_export.pack_prefix` as the viewer wants them: every state whole again."""
+    steps, view = [], None
+    for i, item in enumerate(prefix):
+        step = {k: v for k, v in item.items() if k not in ("state", "patch")}
+        view = item["state"] if "state" in item else jsonpatch.apply(view, item.get("patch"))
+        step["state"] = dict(view)
+        step["index"] = i
+        steps.append(step)
+    return steps
 
 
 def _step(index: int, label: str, view: dict, options, actor, record: dict) -> dict:

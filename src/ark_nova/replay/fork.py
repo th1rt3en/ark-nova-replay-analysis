@@ -9,6 +9,7 @@ so two forks with the same seed see the same cards come up in the same order.
 """
 import copy
 import json
+import secrets
 from collections import Counter
 import re
 
@@ -25,6 +26,11 @@ from ark_nova.replay.view import state_view
 DEFAULT_SEED = 1
 MAX_SEED = (1 << 63) - 1
 _CARD = re.compile(r"^[ASPF]\d{3}$")
+
+
+def random_seed() -> int:
+    """A new seed for a fork: random, so that every fork deals the cards nobody has seen in a new order (52 bits: the largest whole number a browser reads exactly; never the replay's own seed 1)."""
+    return 2 + secrets.randbelow(1 << 52)
 
 
 def reorder_decks(state: GameState, seed: int) -> GameState:

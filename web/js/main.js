@@ -240,7 +240,7 @@ function init() {
   else if (!MINIGAME) {
     initForkReplay();                                                      // (an exported fork: where it began and the way back to the table)
     const fb = $('fork');
-    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&at=' + moveHash(S.step, 0) + '&pov=' + povParam() + '&orient=' + orientParam() + (params.get('source') === 'upload' ? '&source=upload' : '') + (S.replay.fork_replay ? '&fork=' + encodeURIComponent(S.replay.fork_replay.id) : ''), '_blank'); };       // (an exported fork is forked from its own record)
+    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&at=' + moveHash(S.step, 0) + '&pov=' + povParam() + '&orient=' + orientParam() + (params.get('source') === 'upload' ? '&source=upload' : '') + (S.replay.fork_replay && S.step > S.replay.fork_replay.step ? '&fork=' + encodeURIComponent(S.replay.fork_replay.id) : ''), '_blank'); };       // (a step of an exported fork's own moves is forked from its record; the steps before it are the original game's)
   }
   const [h1, h2, hr] = PLAY ? [S.replay.steps.length - 1, 0] : FORK || MINIGAME ? [0, 0] : stepOfHash(location.hash);
   if (loadProgress) loadProgress.done();

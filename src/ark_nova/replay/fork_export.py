@@ -16,7 +16,7 @@ from ark_nova.engine.actions import Action
 from ark_nova.engine.game import IllegalAction, apply, legal_actions
 from ark_nova.engine.state import GameState, Phase
 from ark_nova.engine.version import ENGINE_VERSION
-from ark_nova.live import stepdata
+from ark_nova.live import jsonpatch, stepdata
 from ark_nova.replay import fork as forking
 from ark_nova.replay.options import step_options
 
@@ -33,8 +33,23 @@ def _canon(a: Action) -> str:
     return forking._canon(a)
 
 
-def build_record(table_id, start: GameState, actions: list, players: list, origin: dict) -> dict:
-    """The record of the fork that begins at `start` and plays `actions` (dicts {player, kind, args}); `players` = [{id, name, color}] of the two seats."""
+def pack_prefix(steps: list) -> list:
+    """The steps of the game up to the fork point as stored: every step of the replay but its state, which is a JSON patch against the step before (the first one has it whole)."""
+    out, prev = [], None
+    for st in steps:
+        item = {k: v for k, v in st.items() if k not in ("state", "index")}
+        if prev is None:
+            item["state"] = st["state"]
+        else:
+            item["patch"] = jsonpatch.diff(prev, st["state"])
+        prev = st["state"]
+        out.append(item)
+    return out
+
+
+def build_record(table_id, start: GameState, actions: list, players: list, origin: dict, prefix: list | None = None) -> dict:
+    """The record of the fork that begins at `start` and plays `actions` (dicts {player, kind, args}); `players` = [{id, name, color}] of the two seats. `prefix`: the steps of the
+    replay from the start of the game up to the step the fork began at (the last one is the position of `start`): the replay of the fork shows them first."""
     if len(players) != 2:
         raise ForkExportError("two players are needed")
     if len(actions) > MAX_ACTIONS:
@@ -68,6 +83,7 @@ def build_record(table_id, start: GameState, actions: list, players: list, origi
         "origin": {k: origin.get(k) for k in ("table_id", "step", "seed", "label", "parent_fork")}, "player_ids": [str(p.get("id", i + 1)) for i, p in enumerate(players)], "names": names,
         "start_state": start.to_dict(), "viewer": viewer, "viewer_schema_version": viewer["viewer_schema_version"], "actions": kept, "n_actions": len(kept), "steps": steps,
         "result": result_of(state), "stats": gamestats.final(state), "end": end_info(state),
+        **({"prefix": pack_prefix(prefix), "prefix_setup_steps": sum(1 for st in prefix if (st.get("state") or {}).get("phase") == "setup")} if prefix else {}),
     }
 
 

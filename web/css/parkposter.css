@@ -1499,6 +1499,11 @@ body.viewer .movepill .forkmove:disabled { opacity: .4; filter: none; }
 body.playpage .movepill .current, body.forkpage .movepill .current { display: none !important; }
 body.playpage .movepill .actionbar:not([hidden]), body.forkpage .movepill .actionbar:not([hidden]) { margin: 0; }
 /* the fork page: exporting the fork as a replay (the button, then the link) */
+.forkinfo .forkhead { display: flex; align-items: center; gap: 8px; }
+.forkinfo .forktoggle { flex: 0 0 auto; width: 28px; height: 28px; padding: 0; line-height: 1; border-radius: 8px; cursor: pointer; }
+.forkinfo .forktitle { min-width: 0; }
+.forkinfo .forkbody { margin-top: 8px; }
+.forkinfo .forkbody[hidden] { display: none; }
 .forkexport { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .forkexport .forkdone, .forkexport .forkerr { font-size: 0.9rem; }
 .forkexport .forkerr { color: #b3261e; font-weight: 700; }

@@ -550,7 +550,7 @@ function overview(D) {
   }
   rows.push(...mapRows(MAP_OVERVIEW));
   const t0 = Number(tt[0]), t1 = Number(tt[1]), known = tt[0] != null && tt[1] != null && isFinite(t0) && isFinite(t1) && t0 !== t1;
-  if (!S.replay.fork_replay) rows.push(['Thinking time', thinkingTime(tt[0]), thinkingTime(tt[1]), known ? (t0 < t1 ? 0 : 1) : -1]);       // (the lower time gets the pointer; a fork has no clock)
+  rows.push(['Thinking time', ...(S.replay.fork_replay ? ['N/A', 'N/A', -1] : [thinkingTime(tt[0]), thinkingTime(tt[1]), known ? (t0 < t1 ? 0 : 1) : -1])]);       // (the lower time gets the pointer; a fork has no clock)
   return ['Overview', rows];
 }
 function gsRow([label, a, b, pick]) {                                  // pick (optional): which seat gets the pointer (0 / 1 / -1 = none), else the larger number

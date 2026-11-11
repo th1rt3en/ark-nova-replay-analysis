@@ -20,28 +20,47 @@ import { expandLagoonDeal } from './lagoon-deal.js';
 import { packed } from './load.js';
 
 
+// The box on the side can be folded to one line (the choice is kept in this browser): `head` stays, `body` goes.
+function collapsible(box, head, body) {
+  let open = true;
+  try { open = localStorage.getItem('forkinfo') !== 'closed'; } catch (e) { /* the choice lasts for this visit only */ }
+  const toggle = el('button', 'forktoggle');
+  toggle.type = 'button';
+  const hd = el('div', 'forkhead'), bd = el('div', 'forkbody');
+  hd.append(toggle, el('span', 'forktitle'));
+  hd.lastChild.append(...head);
+  bd.append(...body);
+  const sync = () => { bd.hidden = !open; toggle.textContent = open ? '\u25BE' : '\u25B8'; toggle.title = open ? 'Fold this box' : 'Unfold this box'; toggle.setAttribute('aria-label', toggle.title); toggle.setAttribute('aria-expanded', String(open)); };
+  toggle.onclick = () => { open = !open; try { localStorage.setItem('forkinfo', open ? 'open' : 'closed'); } catch (e) { /* not kept */ } sync(); };
+  sync();
+  box.replaceChildren(hd, bd);
+}
+
 export function initFork() {
   document.title = 'Fork - Ark Nova Park';
   const box = $('forkinfo');
   box.hidden = false;
-  box.replaceChildren();
   const back = el('a', '', 'replay of table #' + S.replay.table_id);
   const parent = S.forkInfo.parent_fork;                                     // (a fork of an exported fork: the way back is that fork's replay)
   if (parent) back.textContent = 'replay of fork #' + parent + ' of table #' + S.replay.table_id;
   back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + (parent ? '&fork=' + encodeURIComponent(parent) : '') + '#' + (params.get('at') || S.forkInfo.step);
   const seedIn = el('input', 'seedinput');
   seedIn.type = 'number'; seedIn.min = 0; seedIn.value = S.forkInfo.seed; seedIn.setAttribute('aria-label', 'Seed');
-  const use = el('button', '', 'Fork again with this seed');
-  use.type = 'button';
-  use.title = 'Reload the fork from the same position with this seed (the moves made so far are lost)';
-  use.onclick = () => {
-    const v = String(seedIn.value).trim();
+  const again = (v) => {
     if (!/^\d+$/.test(v)) { seedIn.focus(); return; }
     if (S.replay.steps.length > 1 && !confirm('Start the fork again? The moves you made are lost.')) return;
     const q = new URLSearchParams(location.search);
     q.set('seed', v);
     location.search = q.toString();
   };
+  const use = el('button', '', 'Fork again with this seed');
+  use.type = 'button';
+  use.title = 'Reload the fork from the same position with this seed (the moves made so far are lost)';
+  use.onclick = () => again(String(seedIn.value).trim());
+  const shuffle = el('button', '', 'New random seed');
+  shuffle.type = 'button';
+  shuffle.title = 'Reload the fork from the same position with a new random seed (the moves made so far are lost)';
+  shuffle.onclick = () => again(String(2 + Math.floor(Math.random() * 2 ** 52)));
   const copy = el('button', '', 'Copy link');
   copy.type = 'button';
   copy.title = 'The link of this fork position with its seed: opening it gives the same position and deck order';
@@ -57,15 +76,18 @@ export function initFork() {
   const note = el('span', 'muted', S.forkInfo.seed === S.forkInfo.default_seed
     ? 'Seed ' + S.forkInfo.seed + ' is the order of the replay: the cards that were drawn in the game come up as they did; the rest was shuffled with this seed.'
     : 'Seed ' + S.forkInfo.seed + ': the cards never seen in the game are in the order of this seed (seed ' + S.forkInfo.default_seed + ' is the replay).');
-  box.append(el('b', '', 'Fork of the '), back, document.createTextNode(' after step ' + S.forkInfo.step + ' · Draw pile order seed: '), seedIn, use, copy, el('div', 'forknote', ''));
-  box.lastChild.append(note, document.createTextNode(' You play both seats; the same seed always gives the same deck order. Going back a step and playing another move replaces what came after.'));
+  const notes = el('div', 'forknote', '');
+  notes.append(note, document.createTextNode(' Every fork starts with a new random seed; the same seed always gives the same deck order. You play both seats. Going back a step and playing another move replaces what came after.'));
   const out = el('div', 'forkexport');                                      // stop anywhere and keep the fork as a replay that can be shared
   const exp = el('button', '', 'Stop and export as a replay');
   exp.type = 'button';
-  exp.title = 'Keep this fork up to the step on show as a replay of its own, with a link to share';
+  exp.title = 'Keep this game and this fork up to the step on show as a replay of its own, with a link to share';
   exp.onclick = () => exportFork(exp, out);
   out.append(exp);
-  box.append(out);
+  collapsible(box, [el('b', '', 'Fork of the '), back, document.createTextNode(' after step ' + S.forkInfo.step)],
+              [document.createTextNode('Draw pile order seed: '), seedIn, use, shuffle, copy, notes, out]);
+  const q = new URLSearchParams(location.search);                           // (the address keeps the seed: a reload of the page is the same fork)
+  if (q.get('seed') !== String(S.forkInfo.seed)) { q.set('seed', String(S.forkInfo.seed)); try { history.replaceState(null, '', location.pathname + '?' + q.toString()); } catch (e) { /* the address stays as it is */ } }
   document.body.classList.add('forkpage');
 }
 
@@ -79,7 +101,7 @@ async function exportFork(button, out) {
   try {
     const res = await fetch('/api/tables/' + encodeURIComponent(S.replay.table_id) + '/forks', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: await packed(JSON.stringify({ start_state: S.replay.steps[0].engine_state, actions: upTo.map((st) => st.action), origin: { step: S.forkInfo.step, seed: S.forkInfo.seed, label: S.forkInfo.label, parent_fork: S.forkInfo.parent_fork },
+      body: await packed(JSON.stringify({ ...(S.forkSource || {}), start_state: S.replay.steps[0].engine_state, actions: upTo.map((st) => st.action), origin: { step: S.forkInfo.step, seed: S.forkInfo.seed, label: S.forkInfo.label, parent_fork: S.forkInfo.parent_fork },
                                          players: S.replay.players.map((p) => ({ id: p.id, name: p.name, color: p.color })) })),
     });
     const body = await res.json().catch(() => ({}));
@@ -104,10 +126,10 @@ export function initForkReplay() {
   const fr = S.replay.fork_replay, box = $('forkinfo');
   if (!fr || !box) return;
   box.hidden = false;
-  box.replaceChildren();
-  const back = el('a', '', 'table #' + S.replay.table_id);
-  back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + '#' + (fr.step ?? 0);
-  box.append(el('b', '', 'Fork #' + fr.id + ' of '), back, document.createTextNode(' after step ' + fr.step + (fr.parent_fork ? ' of fork #' + fr.parent_fork : '') + (fr.stopped ? ' · the fork stops before the end of the game' : '')));
+  const back = el('a', '', fr.parent_fork ? 'fork #' + fr.parent_fork + ' of table #' + S.replay.table_id : 'table #' + S.replay.table_id);
+  back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + (fr.parent_fork ? '&fork=' + encodeURIComponent(fr.parent_fork) : '') + '#' + (fr.step ?? 0);
+  collapsible(box, [el('b', '', 'Fork #' + fr.id + ' of '), back, document.createTextNode(' after step ' + fr.step)],
+              [el('div', 'forknote', 'The game up to step ' + fr.step + ' is the original game; the moves after it are the fork' + (fr.stopped ? ', which stops before the end of the game' : '') + '. Fork it again from any step where the Fork button is lit.')]);
   document.title = 'Fork #' + fr.id + ' of table #' + S.replay.table_id + ' - Ark Nova Park';
 }
 

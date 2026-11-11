@@ -56,7 +56,10 @@ def test_a_fork_starts_from_the_step_with_its_legal_actions(client):
     assert r.status_code == 200
     body = r.json()
     first = body["steps"][0]
-    assert body["fork"]["seed"] == 1 == body["fork"]["default_seed"] and body["fork"]["step"] == step
+    assert body["fork"]["seed"] >= 2 and body["fork"]["default_seed"] == 1 and body["fork"]["step"] == step              # (a random seed each time; 1 is the order of the replay)
+    other = client.post(f"/api/tables/{client.tid}/fork", json={"step": step}).json()["fork"]["seed"]
+    assert other != body["fork"]["seed"]
+    assert client.post(f"/api/tables/{client.tid}/fork", json={"step": step, "seed": 1}).json()["fork"]["seed"] == 1
     assert first["actions"] and all({"player", "kind", "args", "text"} <= set(a) for a in first["actions"])
     assert first["engine_state"]["phase"] in ("turn", "break", "final_turns") and len(body["players"]) == 2 and body["cards"]
 

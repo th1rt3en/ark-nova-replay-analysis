@@ -38,6 +38,7 @@ export async function fetchReplay() {
         maps = seen ? JSON.parse(seen) : null;
       }
     }
+    S.forkSource = { kept: kept || undefined, log: kept ? undefined : log, index, base_projects, maps };          // (what the export needs to read the game up to the fork point again: nothing when the server has the log)
     const forkPost = async (withLog) => fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
                                                                                   body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, fork_id: params.get('fork') ? parseInt(params.get('fork'), 10) : undefined, log: withLog ? log : undefined, kept: !withLog && kept, index, base_projects, maps })) });
     res = await forkPost(!kept);
