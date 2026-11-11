@@ -433,8 +433,8 @@ def _printed_keys(k: str) -> set:
     return {r for r, v in list(printed.items()) + list(own.items()) if v}
 
 
-def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_of: dict[int, int], peaceful: bool = False, again: bool = False, extra_follows: bool = False) -> Union[TurnPlan, str]:
-    """`move_of` maps an event's `order` to its move index."""
+def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_of: dict[int, int], peaceful: bool = False, again: bool = False, extra_follows: bool = False, conceded: bool = False) -> Union[TurnPlan, str]:
+    """`move_of` maps an event's `order` to its move index. `conceded`: the other player conceded right after this turn, so its action card was never cleaned up."""
     actions: list[Action] = []
     moves: list[int] = []
     orders: list[int] = []
@@ -876,6 +876,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             add(Action(seat, "choose_effect", {"upgrade": parse_action_type(a["actionCard"]["type"])[0]}), e)
         elif t not in _PASSIVE:
             return f"unsupported event {t}"
+    if cleanup_type is None and conceded and chose:
+        return TurnPlan(actions, moves, True, orders=orders)             # the game ended in the middle of the turn (the opponent conceded): the action card stays where it is
     if cleanup_type is None:
         return "no cleanup"
     if chose and chosen == "association" and variant_of_chosen == 4 and not any(x.kind in ("association_task", "self_clever") for x in actions):
