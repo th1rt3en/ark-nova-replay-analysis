@@ -54,7 +54,7 @@ def test_an_exported_fork_opens_as_a_replay_with_a_number_per_table(world):
     assert first.json()["url"] == f"/replay.html?table={world.tid}&fork=1"
     body = world.get(f"/api/tables/{world.tid}/forks/1/replay").json()
     assert len(body["steps"]) == len(actions) + 1 and body["table_id"] == str(world.tid)
-    assert body["steps"][0]["label"].startswith("Fork of table") and all(s["fork"] is False for s in body["steps"])
+    assert body["steps"][0]["label"].startswith("Fork of table") and body["steps"][0]["fork"] is True
     assert body["fork_replay"]["id"] == 1 and body["fork_replay"]["step"] == fk["fork"]["step"] and body["fork_replay"]["stopped"] is True
     assert [p["name"] for p in body["players"]] == [p["name"] for p in fk["players"]]
     assert all(st["state"]["players"][0]["score"] is not None for st in body["steps"])
@@ -91,6 +91,35 @@ def test_an_illegal_move_is_not_stored(world):
     assert r.status_code == 422 and r.json()["status"] == "illegal"
     assert world.get(f"/api/tables/{world.tid}/forks/9999/replay").status_code == 404
     assert world.post(f"/api/tables/{world.tid}/forks", json={"nonsense": 1}).status_code == 422
+
+
+def test_an_exported_fork_can_be_forked_again_at_any_step(world):
+    fk, start, actions = _fork(world, 6)
+    n = _export(world, fk, start, actions).json()["id"]
+    replay = world.get(f"/api/tables/{world.tid}/forks/{n}/replay").json()
+    forkable = [i for i, s in enumerate(replay["steps"]) if s["fork"]]
+    assert forkable and forkable[0] == 0                                          # (the start of the fork is a position too)
+    step = forkable[len(forkable) // 2]
+    r = world.post(f"/api/tables/{world.tid}/fork", json={"step": step, "fork_id": n})
+    assert r.status_code == 200, r.text
+    again = r.json()
+    first = again["steps"][0]
+    assert again["fork"]["parent_fork"] == n and again["fork"]["step"] == step and first["actions"] and len(again["players"]) == 2
+    assert first["state"]["players"][0]["score"] == replay["steps"][step]["state"]["players"][0]["score"]       # (the same position the replay shows at that step)
+    cur, moves = first, []
+    for _ in range(3):
+        if not cur["actions"]:
+            break
+        act = {k: cur["actions"][0][k] for k in ("player", "kind", "args")}
+        cur = world.post("/api/fork/apply", json={"state": cur["engine_state"], "action": act, "names": [p["name"] for p in again["players"]]}).json()
+        moves.append(act)
+    out = world.post(f"/api/tables/{world.tid}/forks", json={"start_state": first["engine_state"], "actions": moves, "players": [{"id": p["id"], "name": p["name"], "color": p["color"]} for p in again["players"]],
+                                                              "origin": {"step": step, "seed": again["fork"]["seed"], "label": again["fork"]["label"], "parent_fork": n}})
+    assert out.status_code == 200 and out.json()["id"] > n
+    child = world.get(f"/api/tables/{world.tid}/forks/{out.json()['id']}/replay").json()
+    assert child["fork_replay"]["parent_fork"] == n and child["steps"][0]["label"].startswith(f"Fork of fork #{n} of table")
+    assert world.post(f"/api/tables/{world.tid}/fork", json={"step": 999, "fork_id": n}).status_code == 422
+    assert world.post(f"/api/tables/{world.tid}/fork", json={"step": 0, "fork_id": 9999}).status_code == 404
 
 
 def test_exporting_is_off_without_a_store():

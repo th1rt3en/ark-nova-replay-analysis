@@ -26,7 +26,9 @@ export function initFork() {
   box.hidden = false;
   box.replaceChildren();
   const back = el('a', '', 'replay of table #' + S.replay.table_id);
-  back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + '#' + (params.get('at') || S.forkInfo.step);
+  const parent = S.forkInfo.parent_fork;                                     // (a fork of an exported fork: the way back is that fork's replay)
+  if (parent) back.textContent = 'replay of fork #' + parent + ' of table #' + S.replay.table_id;
+  back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + (parent ? '&fork=' + encodeURIComponent(parent) : '') + '#' + (params.get('at') || S.forkInfo.step);
   const seedIn = el('input', 'seedinput');
   seedIn.type = 'number'; seedIn.min = 0; seedIn.value = S.forkInfo.seed; seedIn.setAttribute('aria-label', 'Seed');
   const use = el('button', '', 'Fork again with this seed');
@@ -46,6 +48,7 @@ export function initFork() {
   copy.onclick = async () => {
     const q = new URLSearchParams({ table: String(S.replay.table_id), step: String(S.forkInfo.step), seed: String(S.forkInfo.seed), pov: povParam(), orient: orientParam() });
     if (params.get('at')) q.set('at', params.get('at'));
+    if (S.forkInfo.parent_fork) q.set('fork', String(S.forkInfo.parent_fork));
     if (params.get('source') === 'upload') q.set('source', 'upload');            // (a log kept in this browser: the link opens here only)
     const link = location.origin + '/fork.html?' + q.toString();
     try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; } catch (e) { window.prompt('Link of this fork', link); }
@@ -76,7 +79,7 @@ async function exportFork(button, out) {
   try {
     const res = await fetch('/api/tables/' + encodeURIComponent(S.replay.table_id) + '/forks', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: await packed(JSON.stringify({ start_state: S.replay.steps[0].engine_state, actions: upTo.map((st) => st.action), origin: { step: S.forkInfo.step, seed: S.forkInfo.seed, label: S.forkInfo.label },
+      body: await packed(JSON.stringify({ start_state: S.replay.steps[0].engine_state, actions: upTo.map((st) => st.action), origin: { step: S.forkInfo.step, seed: S.forkInfo.seed, label: S.forkInfo.label, parent_fork: S.forkInfo.parent_fork },
                                          players: S.replay.players.map((p) => ({ id: p.id, name: p.name, color: p.color })) })),
     });
     const body = await res.json().catch(() => ({}));
@@ -104,7 +107,7 @@ export function initForkReplay() {
   box.replaceChildren();
   const back = el('a', '', 'table #' + S.replay.table_id);
   back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + '#' + (fr.step ?? 0);
-  box.append(el('b', '', 'Fork #' + fr.id + ' of '), back, document.createTextNode(' after step ' + fr.step + (fr.stopped ? ' · the fork stops before the end of the game' : '')));
+  box.append(el('b', '', 'Fork #' + fr.id + ' of '), back, document.createTextNode(' after step ' + fr.step + (fr.parent_fork ? ' of fork #' + fr.parent_fork : '') + (fr.stopped ? ' · the fork stops before the end of the game' : '')));
   document.title = 'Fork #' + fr.id + ' of table #' + S.replay.table_id + ' - Ark Nova Park';
 }
 

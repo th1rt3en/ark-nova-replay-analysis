@@ -60,6 +60,8 @@ def replay_from_record(record: dict, table_id: str | None = None) -> dict:
     if record.get("kind") == "fork":                                                    # a fork that was exported: where it began, and the statistics the engine kept
         out["fork_replay"] = {"id": record.get("fork_id"), "created_at": record.get("created_at"), **(record.get("origin") or {}), "stopped": bool((record.get("result") or {}).get("stopped"))}
         out["post_stats"] = post_stats(record)
+        for st in steps:                                                                    # a fork of an exported fork can begin at any step where a decision waits (the server plays the moves again to get the position)
+            st["fork"] = st["state"].get("phase") not in ("setup", "over", "scoring", None) and bool(st["options"])
     return out
 
 

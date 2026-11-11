@@ -42,7 +42,8 @@ def build_record(table_id, start: GameState, actions: list, players: list, origi
     names = [str(p.get("name") or f"Player {i + 1}") for i, p in enumerate(players)]
     viewer = stepdata.viewer_header(start)
     viewer["colors"] = [p.get("color") for p in players]
-    viewer["initial_label"] = f"Fork of table #{table_id} after step {origin.get('step')}" + (f": {origin['label']}" if origin.get("label") else "")
+    base = f"fork #{origin['parent_fork']} of table #{table_id}" if origin.get("parent_fork") else f"table #{table_id}"       # (a fork of an exported fork says so)
+    viewer["initial_label"] = f"Fork of {base} after step {origin.get('step')}" + (f": {origin['label']}" if origin.get("label") else "")
     viewer["initial_options"] = step_options(start)
     state, eff, steps, kept = start, [], [], []
     for n, item in enumerate(actions, 1):
@@ -64,10 +65,24 @@ def build_record(table_id, start: GameState, actions: list, players: list, origi
     return {
         "format": RECORD_FORMAT, "kind": "fork", "table_id": str(table_id), "engine_version": ENGINE_VERSION, "status": "finished" if over else "stopped",
         "end_reason": "the game was played to the end" if over else "the fork was stopped before the end", "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
-        "origin": {k: origin.get(k) for k in ("table_id", "step", "seed", "label")}, "player_ids": [str(p.get("id", i + 1)) for i, p in enumerate(players)], "names": names,
+        "origin": {k: origin.get(k) for k in ("table_id", "step", "seed", "label", "parent_fork")}, "player_ids": [str(p.get("id", i + 1)) for i, p in enumerate(players)], "names": names,
         "start_state": start.to_dict(), "viewer": viewer, "viewer_schema_version": viewer["viewer_schema_version"], "actions": kept, "n_actions": len(kept), "steps": steps,
         "result": result_of(state), "stats": gamestats.final(state), "end": end_info(state),
     }
+
+
+def position_at(record: dict, step: int) -> GameState:
+    """The engine state of an exported fork after `step` of its moves (0 = where it began): the start state with the moves played again."""
+    actions = record.get("actions") or []
+    if not 0 <= step <= len(actions):
+        raise ForkExportError("this fork has no such step")
+    state = GameState.from_dict(record["start_state"])
+    for item in actions[:step]:
+        a = item["action"]
+        state = apply(state, Action(int(a["player"]), a["kind"], dict(a.get("args") or {})))
+    if state.prompt is None or state.phase in (Phase.SETUP, Phase.OVER, Phase.SCORING):
+        raise ForkExportError("no decision is waiting at this step, so it cannot be forked")
+    return state
 
 
 def result_of(state: GameState) -> dict:

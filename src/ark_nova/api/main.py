@@ -388,6 +388,31 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
                 app.state.forks.popitem(last=False)
         return entry
 
+    async def _fork_of_fork(table_id: int, body: dict, step: int, seed):
+        if app.state.fork_store is None:
+            return _error(404, "coming_soon", "This feature is coming soon.")
+        try:
+            n = int(body["fork_id"])
+        except (ValueError, TypeError):
+            return _error(422, "invalid", "Send the number of the fork.", table_id=table_id)
+        record = await run_in_threadpool(app.state.fork_store.load, str(table_id), n)
+        if record is None:
+            return _error(404, "not_found", "There is no such fork.", table_id=table_id)
+        try:
+            state = await run_in_threadpool(fork_export.position_at, record, step)
+        except fork_export.ForkExportError as e:
+            return _error(422, "not_forkable", str(e), table_id=table_id)
+        default_seed = state.seed.tail_seed
+        seed = default_seed if seed in (None, "", 0) else int(seed)
+        if not 0 <= seed <= forking.MAX_SEED:
+            return _error(422, "invalid", "The seed must be a number between 0 and 2^63 - 1.", table_id=table_id)
+        replay = from_record.replay_from_record(record, table_id=str(table_id))
+        label = replay["steps"][step]["label"].split("\n")[0]
+        first = forking.step_payload(forking.reorder_decks(state, seed), f"Fork of fork #{n} of table #{table_id} after step {step}: {label}")
+        skeleton = {k: v for k, v in replay.items() if k not in ("steps", "post_stats", "fork_replay", "recorded", "engine")}
+        return JSONResponse({**skeleton, "setup_steps": 0, "steps": [first], "shapes": forking.shapes(),
+                             "fork": {"table_id": table_id, "step": step, "seed": seed, "default_seed": default_seed, "label": label, "parent_fork": n}})
+
     @app.post("/api/tables/{table_id}/fork")
     async def fork_table(table_id: int, request: Request):
         """Fork a replay: the position after `step` (where the engine played it) with the deck order of `seed`. Everything the viewer needs comes back; the engine state travels with each step."""
@@ -399,6 +424,8 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             return _error(422, "invalid", "Send {step, seed}.", table_id=table_id)
         if not 0 <= seed <= forking.MAX_SEED:
             return _error(422, "invalid", "The seed must be a number between 0 and 2^63 - 1.", table_id=table_id)
+        if body.get("fork_id") is not None:                    # a fork of an exported fork: the position is made by playing the moves of that fork again
+            return await _fork_of_fork(table_id, body, step, body.get("seed"))
         rec = app.state.index.find(table_id)
         key = None
         if body.get("log") or body.get("kept"):              # a log that the page brings (the extension, or a table that is not indexed) or that is kept in GCS: with the table info, when there is one
@@ -545,7 +572,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         try:
             body = json.loads(await _body(request))
             players = [{"id": str(p.get("id")), "name": str(p.get("name") or ""), "color": p.get("color")} for p in body["players"]]
-            origin = {**{k: body["origin"].get(k) for k in ("step", "seed", "label")}, "table_id": str(table_id)}
+            origin = {**{k: body["origin"].get(k) for k in ("step", "seed", "label", "parent_fork")}, "table_id": str(table_id)}
             actions = list(body["actions"])
             start = GameState.from_dict(body["start_state"])
         except (ValueError, KeyError, TypeError, AttributeError):

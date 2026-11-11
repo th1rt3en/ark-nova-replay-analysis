@@ -8,6 +8,11 @@ A fork (`fork.html`, see `docs/engine_design.md`) can be stopped anywhere and ke
 - The link is `/replay.html?table=<original table id>&fork=<n>`: `n` counts 1, 2, 3 ... per original table. The replay opens like any other replay (steps, log, spectate choice, results table).
 - A fork that stops before the end has results too: the score where it stands, as if the player who is behind had quit. The results switch says "Fork stopped" and names the leader. The table shows the numbers the engine counts (`engine/gamestats.py`); rows for what it does not count (income split, drawn from deck, ...) are left out, and so are the graph, the Elo chips and the thinking time.
 
+## Forking a fork
+In the replay of an exported fork the Fork button works at every step where a decision waits (`fork: true` on the step). `fork.html?table=<table>&step=<k>&fork=<n>` posts `{step, fork_id}` to `/api/tables/{table}/fork`;
+the server plays the moves of fork `n` again from its `start_state` up to step `k` (`fork_export.position_at`), so no log of the original game is needed. The new fork is exported as one more number of the same table;
+its record names the fork it came from (`origin.parent_fork`) and its first line says "Fork of fork #n of table #T after step k".
+
 ## What is stored
 `POST /api/tables/{table}/forks` with `{start_state, actions, players, origin}` (the engine state the fork began at and the moves made since). The server plays the moves again, refusing an illegal one, and writes `forks/<table>/<n>.json.gz`:
 the layout of a live game's record (`live/archive.py`): `viewer` (maps, cards, `initial_view`, the label of the first step), one `steps[]` item per move (log text, decision, view as a JSON patch), `actions`, `start_state`
