@@ -306,7 +306,7 @@ def _plain(act: Action) -> Action:
 
 
 def _flip_take(state: GameState, act: Action) -> Action:
-    for mode in ("snap", "range"):                        # BGA words a snap and a take within the reputation range alike: the card is what counts
+    for mode in ("range", "snap"):                        # BGA words a snap and a take within the reputation range alike: the card is what counts (a card in range uses the narrower take, so a snap that is left can still reach a card outside the range later: 943529882 turn 31)
         alt = Action(act.player, act.kind, {"mode": mode, "card": act.args["card"]})
         if alt in legal_actions(state):
             return alt
@@ -955,7 +955,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             queued = carry[0] == k and carry[1] is not None and carry[1].prompt is not None and (carry[1].prompt.args.get("carry") or {}).get("extra")      # (the next action is an extra action of another animal, not a notepad bonus)
             _normalise.cube_used = any(e_.type == "discardTokens" and any(str(m_.get("location", "")).startswith("S253") for m_ in (e_.args.get("meeples") or [])) for e_ in events)
             _normalise.maxing = any(e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "maxing out reputation" for e_ in events)          # (the notepad bonus of reputation shows only as this appeal)
-            plan = turn_actions(events, seat, seat_of, move_of, snaps[k].config.peaceful, again and not queued, extra_follows=again)
+            flat_ = [e for t_ in [events] + turns[last + 1:] for e in t_]
+            cc_ = next((i_ for i_, e in enumerate(flat_) if e.type == "playerConcedeGame"), None)
+            conceded_next = cc_ is not None and all(e.type.startswith("gameStateChange") or e.type in ("playerConcedeGame", "simpleNode", "updateReflexionTime") for e in flat_[cc_:])          # (the opponent conceded in or right after this turn and nothing but the end of the game follows)
+            plan = turn_actions(events, seat, seat_of, move_of, snaps[k].config.peaceful, again and not queued, extra_follows=again, conceded=conceded_next)
             if isinstance(plan, str):
                 rep.skipped[plan] += 1
                 continue
@@ -1159,6 +1162,20 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         act = _normalise(state, act, endsnap)      # the pending indexes moved
                     if act.kind == "take_cards" and act.args.get("card") and _plain(act) not in legal_actions(state):
                         act = _flip_take(state, act)
+                    elif act.kind == "take_cards" and act.args.get("mode") == "snap" and state.prompt is not None and state.prompt.kind == "effects" and any(
+                            x.kind == "take_cards" and x.player == act.player and x.args.get("mode") == "snap" and x.args["card"] in state.display
+                            and state.display.index(x.args["card"]) >= __import__("ark_nova.engine.cards_action", fromlist=["x"]).reputation_range(state.players[act.player].reputation)
+                            for x in _UPCOMING[0][:6]):               # (only when a snap of a card outside the range follows: otherwise a later deck take may need the snap-free pending take)
+                        narrow = Action(act.player, act.kind, {"mode": "range", "card": act.args["card"]})
+                        if narrow not in legal_actions(state):
+                            pb = next((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus" and e["bonus"]["type"] == "take-in-range-or-deck"
+                                       and e.get("player", act.player) == act.player), None)
+                            if pb is not None and any(e["kind"] == "take" and e.get("snap") and e.get("player", act.player) == act.player for e in state.prompt.args["pending"]):
+                                nxt = ap(state, Action(act.player, "choose_effect", {"index": pb, "apply": "pbonus", "bonus": "take-in-range-or-deck"}))      # the placement bonus' take comes first, so the free snap is left for a card outside the range
+                                if narrow in legal_actions(nxt):
+                                    state = nxt
+                        if narrow in legal_actions(state):      # BGA words both takes "snap": a card within the range uses the range take and keeps the free snap for a card outside it (943529882 turn 31)
+                            act = narrow
                     if state.prompt is not None and state.prompt.kind in ("sponsors_play", "build_place", "animals_play", "association_tasks")                         and act.kind == "choose_effect" and _plain(act) not in legal_actions(state):      # the skipped effects were the last ones of the action
                         state = ap(state, Action(seat, {"sponsors_play": "finish_sponsors", "build_place": "finish_build", "animals_play": "finish_animals",
                                                            "association_tasks": "finish_association"}[state.prompt.kind], {}))
@@ -1389,6 +1406,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     fin = Action(seat, {"build_place": "finish_build", "sponsors_play": "finish_sponsors", "animals_play": "finish_animals",
                                         "association_tasks": "finish_association"}[state.prompt.kind], {})
                     if fin not in legal_actions(state):
+                        if conceded_next and plan.actions and plan.actions[-1].kind != "skip_action":
+                            rep.skipped["conceded in the middle of the turn"] += 1          # (the action was left unfinished: nothing to compare)
+                            raise _Stop
                         rep.illegal.append(f"turn {k}: {fin.kind} not legal")
                         raise _Stop
                     state = ap(state, fin)
@@ -1451,6 +1471,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             for pl_ in d["players"]:                       # (the game ends in the middle of the break: neither player's remaining income is logged)
                                 for f in ("appeal", "conservation", "x_tokens", "money", "hand", "marks", "tokens", "buildings"):
                                     pl_.pop(f, None)
+                if conceded_next and not plan.actions[-1].kind == "skip_action":      # the game ended in the middle of the turn: the log never moved the action card, the engine did
+                    for d in (mine, theirs):
+                        for pl_ in d["players"]:
+                            pl_.pop("action_cards", None)
                 diffs = _diff(mine, theirs) + oracle_notes
                 rep.checked += 1
                 for act in acts:
