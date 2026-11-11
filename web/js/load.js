@@ -16,6 +16,11 @@ export async function fetchReplay() {
     game.steps.forEach((st, i) => { st.index = i; });
     return game;
   }
+  if (!FORK && params.get('fork')) {                                       // an exported fork (replay.html?table=<original table>&fork=<number>): a replay made from the engine's record, with its own statistics
+    const body = await readReplay(await fetch(url.replace(/\/replay$/, '/forks/' + encodeURIComponent(params.get('fork')) + '/replay')));
+    S.postStats = body.post_stats || null;
+    return body;
+  }
   const server = params.get('source') === 'upload' ? await keptOnServer() : { kept: false, complete: false };       // (what the server keeps of this table: nothing to send when it has the log, and nothing at all when it has the data too)
   if (FORK) {
     const seed = params.get('seed');
@@ -90,7 +95,7 @@ export async function fetchFullReplay() {
 }
 
 // A log is some 10 MB of text and 30 times smaller gzipped: the upload of a slow connection took longer than anything else (the server unpacks a body that starts with the gzip bytes).
-async function packed(text) {
+export async function packed(text) {
   if (typeof CompressionStream === 'undefined') return text;
   try { return await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).blob(); } catch (e) { return text; }
 }

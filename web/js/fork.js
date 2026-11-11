@@ -17,6 +17,7 @@ import { amountIcon, labelNode } from './log-labels.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
 import { buildMoveList, go } from './playback.js';
 import { expandLagoonDeal } from './lagoon-deal.js';
+import { packed } from './load.js';
 
 
 export function initFork() {
@@ -55,7 +56,56 @@ export function initFork() {
     : 'Seed ' + S.forkInfo.seed + ': the cards never seen in the game are in the order of this seed (seed ' + S.forkInfo.default_seed + ' is the replay).');
   box.append(el('b', '', 'Fork of the '), back, document.createTextNode(' after step ' + S.forkInfo.step + ' · Draw pile order seed: '), seedIn, use, copy, el('div', 'forknote', ''));
   box.lastChild.append(note, document.createTextNode(' You play both seats; the same seed always gives the same deck order. Going back a step and playing another move replaces what came after.'));
+  const out = el('div', 'forkexport');                                      // stop anywhere and keep the fork as a replay that can be shared
+  const exp = el('button', '', 'Stop and export as a replay');
+  exp.type = 'button';
+  exp.title = 'Keep this fork up to the step on show as a replay of its own, with a link to share';
+  exp.onclick = () => exportFork(exp, out);
+  out.append(exp);
+  box.append(out);
   document.body.classList.add('forkpage');
+}
+
+// The fork up to the step on show goes to the server, which plays its moves again with the engine and keeps them as a replay (the engine's format). The answer is the link.
+async function exportFork(button, out) {
+  const seen = new Set();                                                   // (a deal that is shown as several steps shares one move: it counts once)
+  const upTo = S.replay.steps.slice(1, S.step + 1).filter((st) => st.action && !seen.has(st.action) && seen.add(st.action));
+  const say = (...nodes) => { out.replaceChildren(button, ...nodes); };
+  if (!upTo.length) { say(el('span', 'forkerr', 'Make at least one move first.')); return; }
+  button.disabled = true; button.textContent = 'Exporting…';
+  try {
+    const res = await fetch('/api/tables/' + encodeURIComponent(S.replay.table_id) + '/forks', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: await packed(JSON.stringify({ start_state: S.replay.steps[0].engine_state, actions: upTo.map((st) => st.action), origin: { step: S.forkInfo.step, seed: S.forkInfo.seed, label: S.forkInfo.label },
+                                         players: S.replay.players.map((p) => ({ id: p.id, name: p.name, color: p.color })) })),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 404 && body.status === 'coming_soon') throw new Error('Exporting a fork is not open on this site yet.');
+    if (!res.ok) throw new Error(body.message || 'The fork could not be exported.');
+    const link = location.origin + body.url;
+    const a = el('a', '', link);
+    a.href = body.url; a.target = '_blank'; a.rel = 'noopener';
+    const copy = el('button', '', 'Copy link');
+    copy.type = 'button';
+    copy.onclick = async () => { try { await navigator.clipboard.writeText(link); copy.textContent = 'Copied'; } catch (e) { window.prompt('Link of this replay', link); } setTimeout(() => { copy.textContent = 'Copy link'; }, 1500); };
+    button.disabled = false; button.textContent = 'Export again';
+    say(el('span', 'forkdone', 'Replay #' + body.id + ' of table #' + S.replay.table_id + ' (' + body.n_actions + ' moves): '), a, copy);
+  } catch (err) {
+    button.disabled = false; button.textContent = 'Stop and export as a replay';
+    say(el('span', 'forkerr', err.message));
+  }
+}
+
+// The replay of an exported fork (replay.html?table=<table>&fork=<number>): where it began, with a way back to the original.
+export function initForkReplay() {
+  const fr = S.replay.fork_replay, box = $('forkinfo');
+  if (!fr || !box) return;
+  box.hidden = false;
+  box.replaceChildren();
+  const back = el('a', '', 'table #' + S.replay.table_id);
+  back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + '#' + (fr.step ?? 0);
+  box.append(el('b', '', 'Fork #' + fr.id + ' of '), back, document.createTextNode(' after step ' + fr.step + (fr.stopped ? ' · the fork stops before the end of the game' : '')));
+  document.title = 'Fork #' + fr.id + ' of table #' + S.replay.table_id + ' - Ark Nova Park';
 }
 
 // the buildings that can be placed: a button per piece; once one is chosen the zoo map takes the clicks (see zooBoard)
@@ -199,6 +249,7 @@ export async function playFork(action) {
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.message || 'the move could not be played');
     const steps = SANDBOX ? body.steps : [body];
+    if (!SANDBOX) body.action = move;                                      // (the move that made the step: what an export plays again)
     const first = steps[0];
     if (first.irreversible && ['turn', 'final_turns'].includes(S.replay.steps[S.step].state.phase)) {          // (a fork changes nothing until the step is added: the move was only computed)
       S.forkBusy = false;

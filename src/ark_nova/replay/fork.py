@@ -176,7 +176,16 @@ def play(state_dict: dict, action_dict: dict, names: list[str]) -> dict:
         raise IllegalAction("that action is not legal in this position")
     who = names[action.player] if 0 <= action.player < len(names) else f"seat {action.player}"
     new = apply(state, action)
-    return step_payload(new, narrate(state, action, new, who), is_irreversible(state, action, new))
+    return step_payload(new, bga_label(state, action, new, names, who), is_irreversible(state, action, new))
+
+
+def bga_label(old: GameState, action: Action, new: GameState, names: list[str], who: str) -> str:
+    """The log of a move in BGA's words (as the replay of a logged table, a live game and the sandbox word it); the sentence of `narrate` if the wording fails."""
+    from ark_nova.live import bgalog
+    try:
+        return bgalog.texts(old, action, new, list(names) if len(names) >= 2 else [who, who])["full"]
+    except Exception:                                                        # noqa: BLE001 (a log line must never stop the fork)
+        return narrate(old, action, new, who)
 
 
 is_irreversible = turns.irreversible                                       # (the rule of what cannot be taken back lives in the engine: engine/turns.py)

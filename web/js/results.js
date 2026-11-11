@@ -19,7 +19,7 @@ const finalState = () => S.replay.steps[lastStep()].state;
 export function resultsAvailable() {
   if (FORK || PLAY || MINIGAME || !S.replay) return false;
   const st = finalState();
-  return st.phase === 'over' || (S.postStats && S.postStats.conceded !== null && S.postStats.conceded !== undefined);
+  return st.phase === 'over' || (S.postStats && S.postStats.synthetic) || (S.postStats && S.postStats.conceded !== null && S.postStats.conceded !== undefined);          // (synthetic: a fork that stopped before the end, scored where it stands)
 }
 const atLast = () => S.step === lastStep() && S.phase >= framesOf(S.step).length - 1;
 export function openResults() { if (!resultsAvailable()) return; S.results = true; loadStats(); render(); }
@@ -518,15 +518,17 @@ const incomeRow = () => {
 };
 function groups(D) {
   const [a, b] = D.players, hx = [hexes(0), hexes(1)];
-  const r = (label, f) => [label, f(a), f(b)];
-  return [
-    ['Actions', [r('Animals', (p) => p.act.animals), r('Association', (p) => p.act.association), r('Build', (p) => p.act.build), r('Cards', (p) => p.act.cards), r('Sponsors', (p) => p.act.sponsors), r('X-back', (p) => p.xPass), r('Clever', (p) => p.clever), ...mapRows([['Clever from map ability', 'clever_map']])]],
-    ['Association', [r('Projects', (p) => p.projects), r('Releases', (p) => p.released), r('Donations', (p) => p.donations), r('Universities', (p) => p.universities), r('Partner zoos', (p) => p.partners), r('Reputation', (p) => p.reputation), r('Workers', (p) => p.workers)]],
-    ['Cards', [r('Drawn from deck', (p) => p.drawn), r('Drawn from range', (p) => p.fromRange), r('Snapped', (p) => p.snapped), r('Manual snaps', (p) => p.manualSnaps), r('Bonus snaps', (p) => p.projectSnaps), r('Discarded', (p) => p.discarded), r('Animals played', (p) => p.animals), r('Sponsors played', (p) => p.sponsors)]],
-    ['Money', [r('Gained overall', (p) => p.money), r('Gained from income', (p) => p.income), r('Gained from kiosk income', (p) => p.kioskIncome), ...mapRows([['Gained from map ability', 'harbor_money']]), ...incomeRow(), r('Spent overall', (p) => p.onAnimals + p.onBuildings + p.onDonations + p.spentOther), r('Spent on animals', (p) => p.onAnimals), r('Spent on buildings', (p) => p.onBuildings), r('Spent on donations', (p) => p.onDonations), r('Spent on display cost', (p) => p.onRange)]],
-    ['X-tokens', [r('Gained', (p) => p.xGained), r('Used', (p) => p.xUsed)]],
-    ['Zoo', [r('Enclosures', (p) => p.enclosures), r('Free 2-sizes', (p) => p.freeTwos), r('Pavilions', (p) => p.pavilions), r('Kiosks', (p) => p.kiosks), r('Unique buildings', (p) => p.unique), ['Covered hexes', hx[0].covered, hx[1].covered], ['Empty hexes', hx[0].empty, hx[1].empty]]],
+  const has = (k) => !D.available || D.available.includes(k);                                                  // (an exported fork has the numbers of the engine only: no row for what it does not count)
+  const r = (label, f, key) => (key && !has(key) ? null : [label, f(a), f(b)]);
+  const out = [
+    ['Actions', [r('Animals', (p) => p.act.animals, 'act'), r('Association', (p) => p.act.association, 'act'), r('Build', (p) => p.act.build, 'act'), r('Cards', (p) => p.act.cards, 'act'), r('Sponsors', (p) => p.act.sponsors, 'act'), r('X-back', (p) => p.xPass, 'xPass'), r('Clever', (p) => p.clever, 'clever'), ...mapRows([['Clever from map ability', 'clever_map']])]],
+    ['Association', [r('Projects', (p) => p.projects, 'projects'), r('Releases', (p) => p.released, 'released'), r('Donations', (p) => p.donations, 'donations'), r('Universities', (p) => p.universities, 'universities'), r('Partner zoos', (p) => p.partners, 'partners'), r('Reputation', (p) => p.reputation, 'reputation'), r('Workers', (p) => p.workers, 'workers')]],
+    ['Cards', [r('Drawn from deck', (p) => p.drawn, 'drawn'), r('Drawn from range', (p) => p.fromRange, 'fromRange'), r('Snapped', (p) => p.snapped, 'snapped'), r('Manual snaps', (p) => p.manualSnaps, 'manualSnaps'), r('Bonus snaps', (p) => p.projectSnaps, 'projectSnaps'), r('Discarded', (p) => p.discarded, 'discarded'), r('Animals played', (p) => p.animals, 'animals'), r('Sponsors played', (p) => p.sponsors, 'sponsors')]],
+    ['Money', [r('Gained overall', (p) => p.money, 'money'), r('Gained from income', (p) => p.income, 'income'), r('Gained from kiosk income', (p) => p.kioskIncome, 'kioskIncome'), ...mapRows([['Gained from map ability', 'harbor_money']]), ...incomeRow(), r('Spent overall', (p) => p.onAnimals + p.onBuildings + p.onDonations + p.spentOther, 'spentOther'), r('Spent on animals', (p) => p.onAnimals, 'onAnimals'), r('Spent on buildings', (p) => p.onBuildings, 'onBuildings'), r('Spent on donations', (p) => p.onDonations, 'onDonations'), r('Spent on display cost', (p) => p.onRange, 'onRange')]],
+    ['X-tokens', [r('Gained', (p) => p.xGained, 'xGained'), r('Used', (p) => p.xUsed, 'xUsed')]],
+    ['Zoo', [r('Enclosures', (p) => p.enclosures, 'enclosures'), r('Free 2-sizes', (p) => p.freeTwos, 'freeTwos'), r('Pavilions', (p) => p.pavilions, 'pavilions'), r('Kiosks', (p) => p.kiosks, 'kiosks'), r('Unique buildings', (p) => p.unique, 'unique'), ['Covered hexes', hx[0].covered, hx[1].covered], ['Empty hexes', hx[0].empty, hx[1].empty]]],
   ];
+  return out.map(([title, rows]) => [title, rows.filter(Boolean)]).filter(([, rows]) => rows.length);
 }
 // The game stats (`.gs`): a split duel. Top row: the Compare / Graph icons (left), the scores in the two seat colours with a dark spine (right). Below: the categories as a
 // rail with a glowing dot that follows the scroll (left), every stat in one scrolling column (right): seat 0's value, the label in the spine, seat 1's value; the larger value
@@ -543,11 +545,12 @@ function overview(D) {
     if (D.first === 0 || D.first === 1) rows.push(['First player', ...yes(D.first === 0, D.first === 1)]);
     const end = D.ender !== null ? D.ender : finalState().end_triggered_by;
     if (end === 0 || end === 1) rows.push(['Triggered end', ...yes(end === 0, end === 1)]);
-    rows.push(['Breaks triggered', D.players[0].breaks, D.players[1].breaks], ['Break advancements', D.players[0].advances, D.players[1].advances]);
+    const hasAdv = !D.available || D.available.includes('advances');
+    rows.push(['Breaks triggered', D.players[0].breaks, D.players[1].breaks], ...(hasAdv ? [['Break advancements', D.players[0].advances, D.players[1].advances]] : []));
   }
   rows.push(...mapRows(MAP_OVERVIEW));
   const t0 = Number(tt[0]), t1 = Number(tt[1]), known = tt[0] != null && tt[1] != null && isFinite(t0) && isFinite(t1) && t0 !== t1;
-  rows.push(['Thinking time', thinkingTime(tt[0]), thinkingTime(tt[1]), known ? (t0 < t1 ? 0 : 1) : -1]);       // (the lower time gets the pointer)
+  if (!S.replay.fork_replay) rows.push(['Thinking time', thinkingTime(tt[0]), thinkingTime(tt[1]), known ? (t0 < t1 ? 0 : 1) : -1]);       // (the lower time gets the pointer; a fork has no clock)
   return ['Overview', rows];
 }
 function gsRow([label, a, b, pick]) {                                  // pick (optional): which seat gets the pointer (0 / 1 / -1 = none), else the larger number
@@ -581,6 +584,7 @@ function panel() {
   // log). Without them (a table the index has no Elo for) the chip is left out; only a local copy (no BigQuery) shows the placeholder (the winner 130 +7, the other 116 -7).
   const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   const eloAfter = (i) => {
+    if (S.replay.fork_replay) return null;                                                                 // (a fork changes no rating)
     const p = S.replay.players[i] || {};
     if (Number.isFinite(p.elo_after) && Number.isFinite(p.elo_change)) return { elo: p.elo_after, d: p.elo_change };
     if (!LOCAL) return null;
@@ -636,7 +640,8 @@ function panel() {
   };
   for (const ev of ['wheel', 'touchmove', 'keydown', 'pointerdown']) body.addEventListener(ev, () => { pick = null; }, { passive: true });
   body.addEventListener('scroll', () => { S.gsScroll = body.scrollTop; spy(); }, { passive: true });
-  box.append(tg, hd, rail, S.gsGraph ? graph : body);
+  if (S.replay.fork_replay) S.gsGraph = false;                                                           // (the graph needs the turns of a logged table)
+  box.append(...(S.replay.fork_replay ? [] : [tg]), hd, rail, S.gsGraph ? graph : body);
   requestAnimationFrame(() => { body.scrollTop = S.gsScroll || 0; act = -1; spy(); if (S.gsGraph) { act = S.gsCat || 0; lis.forEach((li, k) => li.classList.toggle('on', k === act)); dot.style.top = (lis[act].offsetTop + lis[act].offsetHeight / 2) + 'px'; } });
   return box;
 }
@@ -650,10 +655,11 @@ function resultsSwitch() {
   else { b.innerHTML = ICS + '<span>Game stats</span>' + AR; b.title = 'Game stats (→)'; b.onclick = openResults; }
   const O = outcome(), text = el('span', 'rsswitchtext');
   const hi = O.winner === null ? O.scores[0] : O.scores[O.winner], lo = O.winner === null ? O.scores[1] : O.scores[1 - O.winner];          // (the winner's score first: "Xiao Tsong wins 109-104")
-  text.append('Game over · ');
+  const stopped = !!(S.postStats && S.postStats.synthetic);                                      // (a fork that was stopped before the end: the score where it stands)
+  text.append(stopped ? 'Fork stopped · ' : 'Game over · ');
   if (O.winner === null) text.append('tie ');
-  else { const nm = el('span', 'rsswinner', O.names[O.winner]); nm.style.color = seatColor(O.winner); text.append(nm, ' wins '); }       // (the winner's name in the seat colour)
-  text.append(hi + '-' + lo);
+  else { const nm = el('span', 'rsswinner', O.names[O.winner]); nm.style.color = seatColor(O.winner); text.append(nm, stopped ? ' leads ' : ' wins '); }       // (the winner's name in the seat colour)
+  text.append(stopped ? hi + ' to ' + lo : hi + '-' + lo);
   const w = el('div', 'rsswitchrow'); w.append(b, text);
   return w;
 }

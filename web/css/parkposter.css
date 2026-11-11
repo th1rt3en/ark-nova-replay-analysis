@@ -1496,5 +1496,10 @@ body.viewer .movepill .forkmove:disabled { opacity: .4; filter: none; }
 .labelbadge { border-radius: 50%; }
 
 /* the live game page: the text of the last step is for the replay only (the log tab tells what happened) */
-body.playpage .movepill .current { display: none !important; }
-body.playpage .movepill .actionbar:not([hidden]) { margin: 0; }
+body.playpage .movepill .current, body.forkpage .movepill .current { display: none !important; }
+body.playpage .movepill .actionbar:not([hidden]), body.forkpage .movepill .actionbar:not([hidden]) { margin: 0; }
+/* the fork page: exporting the fork as a replay (the button, then the link) */
+.forkexport { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.forkexport .forkdone, .forkexport .forkerr { font-size: 0.9rem; }
+.forkexport .forkerr { color: #b3261e; font-weight: 700; }
+.forkexport a { word-break: break-all; }

@@ -1166,6 +1166,22 @@ def _endgame_unscored(steps: list, player_names: list, marine_worlds: bool) -> N
             p["endgame_unscored"] = 0 if over else sum(1 for k in p.get("endgame_hand") or [] if k not in scored[seat])
 
 
+def thinking_times_from_log(raw_log: dict) -> dict:
+    """Each player's thinking time in seconds, estimated from the packet times: BGA sends `updateReflexionTime` for a player when their turn ends, so the time since the
+    previous such event (the end of the other player's turn, or the start of the game) is spent by that player. {player id as text: seconds}; {} when the log has no events."""
+    try:
+        packets = raw_log["data"]["logs"]
+        events = sorted((int(p["time"]), str(e["args"]["player_id"])) for p in packets for e in p.get("data") or [] if e.get("type") == "updateReflexionTime")
+        last = int(packets[0]["time"])
+    except (KeyError, TypeError, ValueError, IndexError):
+        return {}
+    total: dict = {}
+    for t, pid in events:
+        total[pid] = total.get(pid, 0) + max(0, t - last)
+        last = t
+    return total
+
+
 def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False, first_moves: int | None = None, quick: bool = False):
     """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking.
     With `first_moves` only that many moves are replayed and the engine does not play them (the mini games need the first steps only; the table's setup is read from the whole log).
@@ -1384,11 +1400,13 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     _card_keys([st.get("adapt") for st in steps], keys)
     _card_keys([st.get("resistance") for st in steps], keys)                     # (the card a Resistance effect discards is in no state)
     elos_after, elo_changes = dict(getattr(record, "elos_after", None) or {}), dict(getattr(record, "elo_changes", None) or {})
+    thinking_from_log = thinking_times_from_log(raw_log)                                # (used when the stats table has no row for the table)
     view = {
         "table_id": parsed.table_id,
         "marine_worlds": config.marine_worlds,
         "tracked_sponsors": sorted(_tracked_sponsors().values()),                      # (the sponsors whose gains `state.sponsor_stats` adds up)
-        "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid)), "elo_after": elos_after.get(str(pid)), "elo_change": elo_changes.get(str(pid)), "thinking_time": (getattr(record, "thinking_times", None) or {}).get(str(pid))} for i, pid in enumerate(config.player_ids)],
+        "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid)), "elo_after": elos_after.get(str(pid)), "elo_change": elo_changes.get(str(pid)),
+                     "thinking_time": (getattr(record, "thinking_times", None) or {}).get(str(pid), thinking_from_log.get(str(pid)))} for i, pid in enumerate(config.player_ids)],
         "maps": [map_view(m) for m in config.maps],
         "base_projects": config.base_projects,
         "result": [{k: r.get(k) for k in ("id", "name", "score", "rank")} for r in parsed.result or []],

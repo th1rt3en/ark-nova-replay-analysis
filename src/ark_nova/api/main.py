@@ -25,6 +25,7 @@ from ark_nova.engine.game import IllegalAction
 from ark_nova.engine.state import GameState
 from ark_nova.live.keeper import LiveError
 from ark_nova.replay import fork as forking
+from ark_nova.replay import fork_export, from_record
 from ark_nova.replay import preview as building_preview
 from ark_nova.replay import sandbox
 from ark_nova.replay.view import build_replay_view
@@ -156,9 +157,13 @@ def _error(status: int, code: str, message: str, **extra) -> JSONResponse:
     return JSONResponse(status_code=status, content={"status": code, "message": message, **extra})
 
 
-def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None, minigames=None, accounts=None, contributions=None) -> FastAPI:
+def create_app(settings: Settings | None = None, index: TableIndex | None = None, logs: LogStore | None = None, live=None, minigames=None, accounts=None, contributions=None, fork_store=None) -> FastAPI:
     app = FastAPI(title="Ark Nova replay")
     app.state.settings = settings or Settings.from_env()
+    if fork_store is None and app.state.settings.fork_gcs_bucket:                # exporting a fork as a replay: only where a bucket is set (develop)
+        from ark_nova.storage.forks import GcsForkStore
+        fork_store = GcsForkStore(app.state.settings.fork_gcs_bucket)
+    app.state.fork_store = fork_store
     app.state.contributions = contributions or Contributions(app.state.settings.upload_gcs_bucket, app.state.settings.upload_bq_table)
     app.state.index = index or _default_index(app.state.settings)
     app.state.logs = logs or _default_logs(app.state.settings)
@@ -529,6 +534,48 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         except (ValueError, KeyError, TypeError) as e:
             return _error(422, "invalid", f"Could not read the state or the action ({type(e).__name__}).")
         return JSONResponse(step)
+
+    @app.post("/api/tables/{table_id}/forks")
+    async def export_fork(table_id: int, request: Request):
+        """Keep a fork as a replay of its own. The body carries the position the fork began at and the moves made since: {start_state, actions, players: [{id, name, color}], origin: {step, seed, label}}.
+        The engine plays the moves again (an illegal one is refused); the answer is {id, url}: the fork's number among the forks of this table and the address of its replay."""
+        if app.state.fork_store is None:
+            return _error(404, "coming_soon", "This feature is coming soon.")
+        raw_body = await request.body()
+        try:
+            body = json.loads(await _body(request))
+            players = [{"id": str(p.get("id")), "name": str(p.get("name") or ""), "color": p.get("color")} for p in body["players"]]
+            origin = {**{k: body["origin"].get(k) for k in ("step", "seed", "label")}, "table_id": str(table_id)}
+            actions = list(body["actions"])
+            start = GameState.from_dict(body["start_state"])
+        except (ValueError, KeyError, TypeError, AttributeError):
+            return _error(422, "invalid", "Send {start_state, actions, players, origin}.", table_id=table_id)
+        if len(raw_body) > fork_export.MAX_BODY:
+            return _error(413, "too_large", "That fork is too large.")
+        try:
+            record = await run_in_threadpool(fork_export.build_record, table_id, start, actions, players, origin)
+        except fork_export.ForkExportError as e:
+            return _error(422, "illegal", str(e), table_id=table_id)
+        except NotImplementedError as e:
+            return _error(422, "not_implemented", f"The engine does not implement this rule yet: {e}")
+        except (ValueError, KeyError, TypeError) as e:
+            return _error(422, "invalid", f"Could not read the fork ({type(e).__name__}).", table_id=table_id)
+        n = await run_in_threadpool(app.state.fork_store.save, str(table_id), record)
+        return JSONResponse({"id": n, "table_id": table_id, "url": f"/replay.html?table={table_id}&fork={n}", "n_actions": record["n_actions"], "stopped": record["result"]["stopped"]})
+
+    @app.get("/api/tables/{table_id}/forks/{n}/replay")
+    def get_fork_replay(table_id: int, n: int, request: Request):
+        """The replay of an exported fork: the same JSON as a replay of a logged table (steps with their states), made without the engine from the record."""
+        if app.state.fork_store is None:
+            return _error(404, "coming_soon", "This feature is coming soon.")
+        tag = _etag("fork", f"{table_id}-{n}")
+        if (cached := _not_modified(request, tag)) is not None:
+            return cached
+        record = app.state.fork_store.load(str(table_id), n)
+        if record is None:
+            return _error(404, "not_found", "There is no such fork.", table_id=table_id)
+        body = from_record.replay_from_record(record, table_id=str(table_id))
+        return Response(content=json.dumps(body, separators=(",", ":"), ensure_ascii=False), media_type="application/json", headers={"ETag": tag, "Cache-Control": CACHE_CONTROL})
 
     @app.post("/api/tables/{table_id}/replay")
     async def post_replay(table_id: int, request: Request):

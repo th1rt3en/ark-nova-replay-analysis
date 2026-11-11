@@ -22,7 +22,7 @@ import { atEnd, atStart, buildMoveList, buildTimeline, go, goRound, goRoundBy, m
 import { applyTimeline, settingsOpen, setupSettings, toggleSettings } from './settings.js';
 import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
-import { forkBar, initFork, renderForkMoves } from './fork.js';
+import { forkBar, initFork, initForkReplay, renderForkMoves } from './fork.js';
 import { initPlay } from './play.js';
 import './thin-numbers.js';
 import './bpreview.js';
@@ -238,6 +238,7 @@ function init() {
   else if (PLAY) initPlay();
   else if (FORK) initFork();
   else if (!MINIGAME) {
+    initForkReplay();                                                      // (an exported fork: where it began and the way back to the table)
     const fb = $('fork');
     if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&at=' + moveHash(S.step, 0) + '&pov=' + povParam() + '&orient=' + orientParam() + (params.get('source') === 'upload' ? '&source=upload' : ''), '_blank'); };
   }
