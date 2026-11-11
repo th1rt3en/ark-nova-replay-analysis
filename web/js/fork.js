@@ -129,7 +129,7 @@ export function initForkReplay() {
   const back = el('a', '', fr.parent_fork ? 'fork #' + fr.parent_fork + ' of table #' + S.replay.table_id : 'table #' + S.replay.table_id);
   back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + (fr.parent_fork ? '&fork=' + encodeURIComponent(fr.parent_fork) : '') + '#' + (fr.step ?? 0);
   collapsible(box, [el('b', '', 'Fork #' + fr.id + ' of '), back, document.createTextNode(' after step ' + fr.step)],
-              [el('div', 'forknote', 'The game up to step ' + fr.step + ' is the original game; the moves after it are the fork' + (fr.stopped ? ', which stops before the end of the game' : '') + '. Fork it again from any step where the Fork button is lit.')]);
+              [el('div', 'forknote', 'The game up to step ' + fr.step + (fr.parent_fork ? ' is the game of fork #' + fr.parent_fork : ' is the original game') + '; the moves after it are this fork' + (fr.stopped ? ', which stops before the end of the game' : '') + '. Fork it again from any step where the Fork button is lit.')]);
   document.title = 'Fork #' + fr.id + ' of table #' + S.replay.table_id + ' - Ark Nova Park';
 }
 
