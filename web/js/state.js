@@ -75,6 +75,7 @@ export const S = {
   // for each (hand: r4c7, endgame cards: r4c11, ringed in the colour of the player) opens that player's cards above the dock; the same button closes them.
   dockSel: null,
   dockHidden: false,   // the panel is folded away (the selection stays)
+  dockActive: null,    // fork: the seat whose turn it was at the last render (the hand of the seat whose turn starts opens by itself, dock.js `autoSeat`)
   // Scaled desktop mode (see fitScale in layout.js): the page is laid out at DESIGN_W px and zoomed by `scale` to fill the window. scale = 1 / scaled = false on phones.
   scale: 1,
   scaled: false,

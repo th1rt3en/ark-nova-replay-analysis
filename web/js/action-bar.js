@@ -117,7 +117,7 @@ export function turnButtons(bar, turn, active, confirm) {
     const b = el('button', 'turnbtn ' + cls, label);
     b.type = 'button'; b.title = tip;
     b.disabled = cls !== 'confirm' && target === null;
-    b.onclick = () => { if (cls === 'confirm') { S.forkConfirmed = S.step; refreshBar(); } else go(target); };
+    b.onclick = () => { if (cls === 'confirm') { S.forkConfirmed = S.step; refreshBar(); renderDock(curState()); } else go(target); };          // (the turn is passed on: the hand of the next seat opens, dock.js `autoSeat`)
     bar.append(b);
   }
 }

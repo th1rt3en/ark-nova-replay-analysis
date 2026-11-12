@@ -122,6 +122,14 @@ function autoEndgame() {
     if (a.prev && here) S.dockSel = a.prev;
   }
 }
+// A fork plays both seats: when the decision passes to the other seat (a turn is confirmed), that seat's hand opens (not saved: a reload keeps the viewer's own choice; a dock that is folded stays folded).
+function autoSeat(st) {
+  if (!FORK || SANDBOX || PLAY || MINIGAME || !S.replay || !st || S.forkGate) return;                 // (while the turn waits for its Confirm the seat that played it keeps its hand open)
+  const step = S.replay.steps[S.step], first = step && (step.actions || [])[0], a = first && Number.isInteger(first.player) ? first.player : null;       // (the seat that has the moves to make: it changes when a turn is confirmed)
+  if (a === null || S.dockActive === a) return;
+  S.dockActive = a;
+  if (st.players[a]) S.dockSel = { seat: a, kind: 'hand' };
+}
 export function renderDock(st) {
   let dock = $('dock');
   if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
@@ -130,6 +138,7 @@ export function renderDock(st) {
   if (SANDBOX && S.replay.setup) { dock.replaceChildren(); return; }                // (nothing to show before the game: the seat and the maps are chosen first)
   if (MINIGAME && S.pov === null) { dock.replaceChildren(); document.body.style.paddingBottom = ''; return; }      // (both hands are under the zoos, zoo.js)
   autoEndgame();
+  autoSeat(st);
   if (S.dockSel && S.dockSel.kind === 'played' && playedMode() !== 'tray') S.dockSel = { seat: S.dockSel.seat, kind: 'hand' };         // (the setting "Played cards" was changed away from the tray)
   const panel = el('div', 'dockpanel');
   const bar = el('div', 'dockbar');
