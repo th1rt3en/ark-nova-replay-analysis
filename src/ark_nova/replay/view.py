@@ -410,7 +410,7 @@ def _split_keep_and_draw(mv: Move, step: dict, before: dict | None, names: dict[
     keep_text = keep_label(None)
     lp = [keep_label(pid) for pid in pids]
     first = {**step, "label": keep_text, "label_pov": [t if t != keep_text else None for t in lp] if any(t != keep_text for t in lp) else None,
-             "state": {**copy.deepcopy(before), "draft": step["state"]["draft"]}, "options": None, "actor": None, "_obj": None}
+             "state": {**copy.deepcopy(before), "draft": step["state"]["draft"]}, "options": None, "actor": None, "_obj": step.get("_obj") if not any(found_keys.values()) else None}          # (the engine state of the deal, so that a fork can start from the keep and the first draw too; not with Lagoon's person sponsors)
 
     def without(st: dict, seats: list) -> dict:                       # the final state with the hands of `seats` still as before, and the person sponsors of the others not drawn yet
         out = copy.deepcopy(st)
@@ -454,7 +454,7 @@ def _split_keep_and_draw(mv: Move, step: dict, before: dict | None, names: dict[
     final = step["state"]
     mid_state = strip(without(final, [1]), persons)                   # after the first player's deal only
     deal_state = strip(final, persons)                                 # both deals, no person sponsor yet
-    middle = {**step, "label": draw_label(pids[0]), "label_pov": None, "state": mid_state, "options": None, "actor": None, "_obj": None, "log_only": True, "merge_group": "deal"}
+    middle = {**step, "label": draw_label(pids[0]), "label_pov": None, "state": mid_state, "options": None, "actor": None, "_obj": step.get("_obj") if not persons else None, "log_only": True, "merge_group": "deal"}
     last = {**step, "label": draw_label(pids[1]), "label_pov": None, "state": deal_state if persons else final, "log_only": True, "merge_group": "deal"}
     out = [first, middle, last]
     if persons:
@@ -1251,6 +1251,14 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         objs: list = [None] * len(views)                                   # the engine state of each step (forking starts from it)
         if mv.index in rep.draft_engine:                                    # the action card draft, played by the engine with the choices of the log
             objs[-1] = rep.draft_engine[mv.index]
+        elif rep.draft_engine and rep.setup_engine and mv.index < rep.setup_moves and mv.index > max(rep.draft_engine):          # after the draft: the deal and the initial discards (the engine has these states, the log builds the view)
+            dealt_, mid_, end_ = (rep.setup_engine[k] for k in ("dealt", "after_first", "final"))
+            if first_discard is None or mv.index < first_discard:
+                objs = [dealt_] * len(views)
+            elif mv.index == first_discard:
+                objs = [mid_, end_, end_][-len(views):] if len(views) <= 3 else [dealt_] * (len(views) - 2) + [mid_, end_]
+            else:
+                objs = [end_] * len(views)
         if me.end is not None:                                              # the engine played this move and agrees with the log
             logged = views[:]
             engine_vals: dict = {}
@@ -1385,7 +1393,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     for i, st in enumerate(steps):
         st["index"] = i
         o = objs_by_step[i]                                                  # a step can be forked where the engine played it and a decision is waiting
-        st["fork"] = o is not None and o.prompt is not None and (o.prompt.kind == "draft" or o.phase.value not in ("setup", "over", "scoring"))
+        st["fork"] = o is not None and o.prompt is not None and (o.prompt.kind in ("draft", "initial_discard") or o.phase.value not in ("setup", "over", "scoring"))
     _adapt_pools(steps)
     _horse_whisperer(steps, [names.get(pid, pid) for pid in config.player_ids])           # (the lightbox of Horse Whisperer: the whole discard pile, the Petting Zoo animals on top)
     mark_merges(steps, [names.get(pid, pid) for pid in config.player_ids])               # (runs of draws / digs / snaps of one player: one step for the viewer who follows the other one, replay/merge.py)

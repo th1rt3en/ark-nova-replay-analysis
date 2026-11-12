@@ -36,6 +36,7 @@ class Replay:
     turn_snapshots: list[GameState] = field(default_factory=list)      # state at each turn marker (start of every player turn)
     history_frames: list = field(default_factory=list)  # (normal lifecycle transition, state immediately before it)
     notes: list[tuple[int, str]] = field(default_factory=list)         # known-imprecise oracles (strength modifiers of Venom/Constriction/hypnosis)
+    setup_engine: dict = field(default_factory=dict)        # the engine states of the opening that the log does not play move by move: "dealt" (the hands as dealt, the initial discards waiting), "after_first" (one player has discarded), "final" (the setup is over): what a fork of those steps starts from
     draft_engine: dict = field(default_factory=dict)       # setup move index -> the engine state of the action card draft after it (engine/draft.py fed with the log's offers and choices)
     draft_rounds: dict = field(default_factory=dict)       # draft stage (pick1 | pick2 | keep) -> the engine state when that round starts (nothing chosen yet)
 
@@ -829,8 +830,10 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
     `Replay.substates[move index]` then holds the state before each of them, i.e. the states of all sub-steps but the last."""
     state = start_game(config, seed)
     dealt = copy.deepcopy(state)                                         # the hands as dealt (8 cards, 9 with Map 14's sponsor), before the initial discard
+    after_discards = []
     for pid in setup.seats:
         state = apply(state, Action(setup.seats.index(pid), "initial_discard", {"cards": setup.discarded[pid]}))
+        after_discards.append(copy.deepcopy(state))
     ctx = _Ctx(state, setup)
     ctx.markers = parsed.turn_markers
     ctx.timeline = parsed.normal_turns
@@ -838,6 +841,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
     first_order = markers[0][0] if markers else 10 ** 12
     first_turn = next((m.index for m in parsed.moves if any(e.order > first_order for e in m.events)), len(parsed.moves))
     rep = Replay(states=[], moves=parsed.moves, setup_moves=first_turn)
+    rep.setup_engine = {"dealt": dealt, "after_first": after_discards[0] if after_discards else dealt, "final": after_discards[-1] if after_discards else dealt}
     drafts = draft_states(parsed, [str(s) for s in setup.seats], first_turn)
     if drafts:                                                           # the moves after the draft keep showing its result
         last = None
