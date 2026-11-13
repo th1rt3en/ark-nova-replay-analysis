@@ -80,16 +80,29 @@ export const S = {
   scale: 1,
   scaled: false,
   // ---- autoplay: one step a second at 1x ------------------------------------------------------------------------
-  sbTab: 'control',   // sidebar tab: 'control' | 'log'
+  sbTab: 'control',   // sidebar tab: 'control' | 'log' | 'chat' (log below the info boxes: the part of the control pane on show, sidebar.js)
+  logPos: 'tab',      // setting "Log": 'tab' (a tab of its own) | 'below' (under the info boxes; sidebar.js `placeLog`)
+  logOrder: { tab: 'oldest', below: 'newest' },      // setting "Log order", one per place of the log: 'oldest' | 'newest' (the move listed first; sidebar.js `logNewest`)
   results: false,     // replay: the results of the finished game are on show instead of the boards (› on the last step, the switch in the move bar; results.js)
   postStats: null,    // replay: the statistics counted from the raw log once the last step is reached (results.js `loadStats`): {loading} | {error} | {players, first, ender, conceded}
   timer: null,
   speed: 1,
-  animationSpeed: 1,                                    // saved animation multiplier (.25/.5/1/1.25/1.5/1.75/2), independent of autoplay; 1x is half the original pace
+  animationSpeed: 1,                                    // saved animation multiplier (.25/.5/.75/1/1.25/1.5/1.75/2), independent of autoplay; 1x is half the original pace
   animations: 'all',                                    // 'all' | 'standard' (no thematic animations: sunbathing, pouching, gliding, targeted draw play like a plain draw / discard) | 'none' (nothing moves), settings.js / card-motion.js
+  backStep: false,                                      // one step back by the arrow key / Previous button (set around the `go` of `stepBy`, read by animal-sounds.js `stepSounds`: the step sound of the step that is taken back)
   cardMotionForward: false,                             // one forward navigation, consumed by card-motion after rendering (seeking stays instant)
   handScale: 1,                                          // size of the cards in the hand, 0.5 ... 2 (settings pop-up, settings.js; --hs on body)
   s274: 'victory',                                       // 'victory' | 'mascot': the sponsor S274 under its BGA name Victory Column (default) or as the Mascot Statue, see cards.js `info` / settings.js
+  vcSeason: null,                                       // the Emu Cup winner on the Victory Column: a season number, or null = the newest winner (the default), see winner-picker.js / cards.js `victoryOf`
+  animalSounds: false,
+  animalFor: 'all',                                      // the setting "Calls for" (Sound tab, More): 'all' players or 'me' (the followed / own seat only)
+  animalVolume: 0.5,                                     // the setting "Animal volume" (on top of Volume): 0-1, default 0.5 (= the level the calls had before)
+  shoebillKey: true,                                     // the setting "Ctrl + S" (Sound tab, More): Ctrl + S plays the Shoebill's call; on by default
+  snakeSounds: true,                                     // the setting "Snake sounds" (Sound tab, under Animal sounds): the calls of the snake animals; on by default
+  music: 'off',                                          // the setting "Ambience" (Sound tab): 'off' or a soundscape of ambience.js AMBIENCE
+  musicVolume: 0.5,                                      // the setting "Ambience volume" (on top of Volume): 0-1, default 0.5
+  soundVolume: 0.5,                                      // the volume of all sounds (setting "Volume", Sound tab): 0-1, default 0.5
+  stepSound: false,                                      // the setting "Animation sounds" (step-sound.js), off by default                                   // the setting "Animal sounds" (animal-sounds.js), off by default
   noSnake: 'show',                                       // 'show' | 'hide' | 'worm': the cards with a snake photo, see nosnake.js / settings.js
   handMode: 'tray',                                      // how the hand is shown: 'fan' (at the screen edge) or 'tray' (floating container), see settings.js
   zooLayout: 'side',                                     // the zoo boards: 'side' (side by side), 'tabs' (one, with arrows) or 'stack' (one above the other); settings.js, replay only
@@ -100,6 +113,8 @@ export const S = {
   zooTab: null,                                          // 'tabs': the seat on show (null = the first of seatOrder())
   applyDiscounts: true,        // animals show their price after the partner zoo / Expert discounts (price.js; settings pop-up, Cards tab)
   endgameLive: true,           // the live count of the endgame points (violet +X under the appeal and conservation tiles, side-panel.js; settings pop-up, settings.js)
+  keOrder: [0, 1, 2, 3, 4, 5, 6, 7, 8],  // the Key events graph of the results (results.js keView): the order of the nine event types (upgrades, workers, Association, placement bonuses, enclosures, species / continent / terrain / science icons), settings.js
+  keOpen: [],               // the open types (lanes); the others are folded to strips
   showTimeline: false,         // the timeline row in the control panel (settings pop-up, settings.js)
   sbSeat: null,        // sandbox: the seat whose tools are shown
   sbUnlocked: false,   // sandbox: the action card list can be reordered by dragging

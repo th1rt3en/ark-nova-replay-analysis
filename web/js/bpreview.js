@@ -86,7 +86,7 @@ export function openMenu(seat, clientX, clientY) {
     if (AQUARIUMS.includes(type) && !mw) continue;                          // (the aquariums belong to Marine Worlds)
     const b = el('button', 'bpmitem'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.title = label;
     const sp = S.sprites[/^size-\d$/.test(type) ? type + '_empty' : type];
-    if (sp) { const im = el('img'); im.src = '/enclosures/' + sp.image; im.alt = ''; im.draggable = false; b.append(im); }
+    if (sp) { const im = el('img'); im.src = '/enclosures/' + sp.image + '?v=art20261112'; im.alt = ''; im.draggable = false; b.append(im); }
     b.append(el('span', '', label));
     if (ONCE.includes(type) && built.has(type)) { b.disabled = true; b.classList.add('taken'); b.title = label + ': already built'; }                 // (greyed out)
     else b.onclick = () => { closeMenu(); begin(null, [seat], { enclosure: type }, label); };

@@ -11,7 +11,7 @@ import { CT_BONUS_DX, CT_H, conservationTrackSvg, pentagonShape } from './ctrack
 import { REP16_X, REP_W, reputationTrackSvg } from './reptrack.js';
 import { fitDisplay } from './layout.js';
 import { sbButton, sbEdit, sbMeta, sbPickProjects, sbSlotButtons } from './sandbox.js';
-import { drawHdBonus, hdBonus, marketingTile } from './bonusart.js';
+import { drawHdBonus, hdBonus, marketingTile, shieldNumberTransform, GROW, SHIELD_DY } from './bonusart.js';
 
 
 // zoo place printed on the tab of each display folder (BGA: folder 1..6)
@@ -34,7 +34,7 @@ export function bonusTile(name, value, po) {
     const t = svg('svg', { class: 'ctbonus ctcomposed', viewBox: '-4 -4 88 94' }), edge = (po && po.edge) ?? 2.2;
     pentagonShape(t, 40, 40, 80, { fill: hd.fill, edge, shadow: (po && po.shadow) ?? 2 });
     drawHdBonus(t, name, edge);
-    if (name === 'conservation' && value) t.append(Object.assign(svg('text', { x: 40, y: 55.5, class: 'bonus-number dk conservation' }), { textContent: value }));
+    if (name === 'conservation' && value) t.append(Object.assign(svg('text', { x: 40, y: 55.5, class: 'bonus-number dk conservation', transform: shieldNumberTransform() }), { textContent: value }));
     return t;
   }
   if (name.startsWith('bonus-') && S.iconNames[name]) {
@@ -55,8 +55,9 @@ export function bonusTile(name, value, po) {
     moneyTile(t, 40, 43, 48);
     if (value) t.append(Object.assign(svg('text', String(value).length > 1 ? { ...moneyTwo(value, 40, 43, 36, 8), class: 'bonus-number two' } : { x: 40, y: 56, class: 'bonus-number' }), { textContent: value }));      // on top of the money icon (two digits: smaller, tighter and centred, `moneyTwo`)
   } else if (name === 'reputation' || name === 'appeal' || name === 'conservation') {
-    picture(id, 40, 43, 48);
-    if (value) t.append(Object.assign(svg('text', { x: 40, y: name === 'conservation' ? 55.5 : 59, class: 'bonus-number' + (name === 'appeal' || name === 'conservation' ? ' dk ' + name : '') }), { textContent: value }));      // the amount over the icon, like the other reputation bonuses (on the shield of the conservation points it sits 3.5 higher: the shield narrows towards its tip, so the foot of a 1 would hang over it)
+    const cons = name === 'conservation';
+    picture(id, 40, cons ? 43 + SHIELD_DY : 43, cons ? 48 * GROW.conservation : 48);
+    if (value) t.append(Object.assign(svg('text', { x: 40, y: name === 'conservation' ? 55.5 : 59, class: 'bonus-number' + (name === 'appeal' || name === 'conservation' ? ' dk ' + name : ''), ...(cons ? { transform: shieldNumberTransform() } : {}) }), { textContent: value }));      // the amount over the icon, like the other reputation bonuses (on the shield of the conservation points it sits 3.5 higher: the shield narrows towards its tip, so the foot of a 1 would hang over it)
   } else if (name === 'take-in-range-or-deck' && value > 1) {
     picture(id, 52, 42, 38);
     t.append(Object.assign(svg('text', { x: 24, y: 53, class: 'bonus-number', style: 'font-size:32px' }), { textContent: value }));   // the amount to the left of a smaller card, both inside the pentagon
@@ -71,6 +72,7 @@ export function bonusTile(name, value, po) {
 function conservationTrack(st) {
   const wrap = el('div', 'ctrackwrap');                                // (always drawn, also when both players are past 10: then without cubes)
   wrap.append(conservationTrackSvg());
+  if (st.endgame_discard_done && st.players.every((q) => (q.endgame_hand || []).length <= 1)) { const sign = wrap.querySelector('.ctend'); if (sign) sign.remove(); }       // (the sign "discard an endgame card" at 10 goes once every player has discarded: the engine sets the flag when the discard is due, the log when it is done, so both are checked with the hands)
   wrap.style.setProperty('--ct-h', CT_H); 
   const first = SANDBOX ? sbMeta().initial : S.replay.steps[0].state.conservation_options || {};     // the options of the game as dealt: a taken one leaves its place empty
   for (const th of ['5', '8']) {   // (known from the start of the game, also during the action card draft)
@@ -122,7 +124,8 @@ export function renderShared(st) {
     const sharks = FORK ? sharkActs() : [];
     const snapKeys = FORK && S.snapMode === 'snap' ? forkActs((a) => a.kind === 'sponsor_side' && a.args.op === 'discard_snap' && a.args.card === S.snapCard).map((a) => a.args.take) : (FORK && (S.snapMode === 'discard' || S.snapMode === 'sun_money' || S.snapMode === 'sun_strength') ? [] : null);       // (Sponsors variant 4: the sponsors that can be snapped; none while the sponsor to discard is chosen)
     const dim = (allowed && k && !allowed.range.includes(k) && !allowed.snap.includes(k)) || (sps && sps.level >= 2 && k && !sps.display.includes(k)) || (pickKeys.length && k && !pickKeys.includes(k)) || (snapKeys && k && !snapKeys.includes(k)) || (sharks.length && k && !sharks.some((a) => a.args.cards.includes(k)));
-    if (k) f.append(card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '') + (FORK && cardMarks.has('display#' + i) ? ' marked' : ''), 'display'));
+    const shown = k ? card(k, (displayNew.isNew(k) ? 'card-new' : '') + (dim ? ' dim' : '') + (FORK && cardMarks.has('display#' + i) ? ' marked' : ''), 'display') : null;
+    if (shown) f.append(shown);
     if (k && FORK) {                                                              // a card of the display can be chosen for a move
       f.classList.add('markable');
       f.addEventListener('click', () => { if (dim && (forkSingleSelect() || sharks.length)) return; const m = 'display#' + i; if (cardMarks.has(m)) cardMarks.delete(m); else { for (const x of [...cardMarks]) if ((x.startsWith('display#') && !sharks.length) || /:hand#/.test(x)) cardMarks.delete(x); cardMarks.add(m); } renderShared(curState()); fitDisplay(); afterMark(); });
@@ -139,7 +142,7 @@ export function renderShared(st) {
     f.append(el('span', 'folname', FOLDER_PLACES[i] || ''));
     f.append(el('span', 'folnum', i + 1));
     const owner = k ? markOwner(st, k) : -1;                         // a Mark cube of a player lies on the animal
-    if (owner >= 0) f.append(markCube(owner));
+    if (owner >= 0 && shown) shown.append(markCube(owner));                   // (inside the card: it hides, slides and lands with it)
     row.append(f);
   });
   const box = el('div', 'displaybox');

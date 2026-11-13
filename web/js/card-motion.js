@@ -12,11 +12,12 @@ import { snakeSafe } from './nosnake.js';
 import { createWave } from './wave.js';
 import { runShark } from './shark-motion.js';
 import { motionOff, motionQuery } from './motion.js';
+import { openingLead, noteCard, noteBack, cardTick, animTick } from './step-sound.js';
 import { captureActionMotion, runActionMotion } from './action-motion.js';
 import { captureAssoc, runAssoc } from './assoc-motion.js';
 
 const EASE = 'cubic-bezier(.22,.65,.3,1)';
-export const ANIMATION_SPEEDS = [.25, .5, 1, 1.25, 1.5, 1.75, 2];
+export const ANIMATION_SPEEDS = [.25, .5, .75, 1, 1.25, 1.5, 1.75, 2];
 export const ANIMATION_MODES = ['all', 'standard', 'none'];
 // Animations = None behaves like the system setting "reduce motion"; Only standard keeps every move but turns the thematic ones into a plain draw / discard (`plainPlan`, `plainOther`).
 export function setAnimations(value) {
@@ -31,7 +32,7 @@ export function setAnimationSpeed(value) {
   for (const a of animations) a.updatePlaybackRate(a.playbackRate * next / before);
 }
 let previous = null, capture = null, capture2 = null, pending = null, layer = null;
-let actionCapture = null, assocCapture = null;
+let actionCapture = null, assocCapture = null, backCapture = null;
 const landings = new Map();          // project key (P###) -> when its card has settled in the strip (ms, absolute): the cube of the supporter glides after that
 let tabPrev = null, playedCapture = null, buildingCapture = null, displayCapture = null, tabVisit = null, tabReturnTimer = 0;
 const animations = new Set(), hidden = new Map();
@@ -43,7 +44,7 @@ const zoneKind = () => document.getElementById('dock')?.dataset.motionKind || ''
 const visibleZone = () => ['hand', 'endgame'].includes(zoneKind()) && (!S.dockHidden || S.handMode === 'tray') && !MINIGAME;          // (the cards of the hand / the endgame cards lie in the dock: open, or in the folded tray, where only their top strip shows above the window's edge and the flights are cut there like the cards)
 const visibleHand = () => document.getElementById('dock')?.dataset.motionKind === 'hand' && (!S.dockHidden || S.handMode === 'tray') && !MINIGAME;          // (the same: a folded tray keeps its cards, the flights play exactly as in the open tray)
 const dockSettling = () => { const d = document.getElementById('dock'); return !!d && d.getAnimations({ subtree: true }).some((a) => typeof CSSTransition !== 'undefined' && a instanceof CSSTransition && a.playState === 'running'); };          // (the hand is still sliding into its place: a flight measured now would start from the middle of that slide)
-export const cardAnimationsBusy = () => animations.size > 0 || !!tabVisit || dockSettling() || !!document.querySelector('#draftbox.lbopen');
+export const cardAnimationsBusy = () => animations.size > 0 || (!!tabVisit && !tabVisit.hold) || dockSettling() || !!document.querySelector('#draftbox.lbopen');
 const scale = () => S.scaled ? S.scale : 1;
 function geometry(node) {
   const r = node.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(node).transform);
@@ -87,6 +88,55 @@ function stop(redraw = true) {
   layer?.remove(); layer = null;
   if (restore && redraw) render();
 }
+// ---- The board visit of the Tabbed layout: the other player plays a card, the board of that player comes up for the card's flight and goes back about a second after the last animation. -----
+// A card often does its work on the map in a LATER step of the same player (Cable Car: "gains 4", the next step "adds a unique building for free"; an animal's trigger after money steps ...),
+// so the visit looks ahead through the steps of that player (up to his "finishing action" step or his next card choice, the replay has them all) for the last step that changes his map: a
+// building that came, went, grew or turned over (`buildingChanges` ...) or a partner zoo / university that was placed. Until that step has been animated the visit holds: the board stays
+// (`beforeRender` carries the visit over to the next step, the autoplay does not wait for it), and the return starts only after the last animation of the last step. A live game has no
+// later steps yet: the visit holds until the next step comes and looks again.
+const RETURN_MS = 1000;                                                          // (wall clock, after the last animation has landed)
+const slotsOf = (st, seat) => { const p = (st.players || [])[seat] || {}; return JSON.stringify([(p.tokens || []).filter((t) => /^(partner|university)_/.test(t.location)).map((t) => t.location + ':' + t.type).sort(), (p.flags || {}).bonus_used || 0]); };          // (a partner zoo / university taken, a cube off a bonus space: the association)
+const assocSeat = (a, b) => { const at = (b.players || []).findIndex((x, seat) => slotsOf(a, seat) !== slotsOf(b, seat)); return at < 0 ? undefined : at; };
+function mapEffect(a, b, seat) {
+  const { added, removed } = buildingChanges(a, b);
+  return [...added, ...removed, ...buildingFlips(a, b), ...buildingGrowths(a, b)].some((c) => c.seat === seat) || slotsOf(a, seat) !== slotsOf(b, seat);
+}
+function visitAhead(seat, from) {
+  const steps = (S.replay && S.replay.steps) || [];
+  let until = from, open = true;
+  for (let j = from + 1; j < steps.length && j <= from + 80; j++) {
+    const s = steps[j];
+    if (!s || s.actor !== seat || /chooses action card/.test(s.label || '')) { open = false; break; }          // (another player, the display's replenish, or his next action: the card's work is over)
+    if (steps[j - 1] && steps[j - 1].state && s.state && mapEffect(steps[j - 1].state, s.state, seat)) until = j;
+    if (/\(finishing action\)/.test(s.label || '')) { open = false; break; }
+  }
+  return { until, open: open && PLAY };
+}
+function visitCarries() {                                                         // (is this render the next step of a visit that holds?)
+  const v = tabVisit;
+  if (!v || !v.hold || !tabbedLayout() || S.zooTab !== v.seat || S.replay !== v.replay || reduced.matches || S.backStep) return false;
+  const forward = previous && previous.replay === S.replay && ((S.cardMotionForward && S.step >= previous.step) || (FORK && S.step === previous.step + 1) || (S.step === previous.step && S.phase > previous.phase));
+  return !!forward && S.step <= v.until;
+}
+function settleVisit() {                                                          // (end of `afterRender`: hold the visit for a later map effect, or go back after the last animation)
+  const visit = tabVisit; if (!visit) return;
+  clearTimeout(tabReturnTimer); tabReturnTimer = 0;
+  visit.step = S.step; visit.phase = S.phase; visit.fresh = false;
+  const ahead = visitAhead(visit.seat, S.step);
+  visit.until = ahead.open ? Infinity : ahead.until; visit.hold = ahead.open || ahead.until > S.step;
+  if (visit.hold) return;
+  const idle = () => { const running = [...animations]; return running.length ? Promise.all(running.map((a) => a.finished.catch(() => {}))).then(idle) : Promise.resolve(); };
+  idle().then(() => {
+    if (tabVisit !== visit) return;
+    tabReturnTimer = setTimeout(() => {
+      tabReturnTimer = 0;
+      if (tabVisit !== visit) return;
+      tabVisit = null;
+      if (S.replay !== visit.replay || S.step !== visit.step || S.phase !== visit.phase || !tabbedLayout() || S.zooTab !== visit.seat) return;
+      S.zooTab = visit.original; S.lastBoard = null; render();
+    }, RETURN_MS);
+  });
+}
 function hide(node) { if (!hidden.has(node)) hidden.set(node, node.style.visibility); node.style.visibility = 'hidden'; }
 function show(node) { if (hidden.has(node)) { node.style.visibility = hidden.get(node); hidden.delete(node); } }
 function root() {
@@ -103,18 +153,26 @@ function element(cls, css = {}, parent = root()) {
 // Animations start paused and are released together two frames later: a render of the page can block the main thread for a few hundred ms right after the animations are created,
 // and an animation that was already running would then have skipped its first part (the card "blinks" to its place).
 const startQueue = []; let startQueued = false;
-function releaseStarts() { startQueued = false; for (const a of startQueue.splice(0)) if (a.playState === 'paused') a.play(); }
+function releaseStarts() { startQueued = false; for (const a of startQueue.splice(0)) if (a.playState === 'paused') { a.play(); if (cardFlights.has(a)) cardTick(a, cardFlights.get(a)); for (const x of animSounds.get(a) || []) animTick(a, x.name, x.ms, x.gain, x.lead); } }
 // Sequencing: while `sequenced(shift, fn)` runs, every animation it creates starts `shift` ms (at speed 1) later, and the result is how long the whole group takes (the starting hands: one player's cards, then the other's).
 let shift = 0, spanEnd = 0, flightEnd = 0;
 function sequenced(by, fn) { const keep = shift; shift = by; spanEnd = by; try { fn(); } finally { shift = keep; } return spanEnd - by; }
 function animate(e, frames, duration, delay = 0, easing = EASE, fill = 'both') {
-  const speed = Math.max(.1, Number(S.animationSpeed) || 1), at = delay + shift;
-  spanEnd = Math.max(spanEnd, at + duration); flightEnd = Math.max(flightEnd, at + duration);
+  const speed = Math.max(.1, Number(S.animationSpeed) || 1), base = delay + shift, at = base + openingLead() * speed;          // (the very first deal waits for the shuffles: step-sound.js)
+  spanEnd = Math.max(spanEnd, base + duration); flightEnd = Math.max(flightEnd, at + duration);          // (the sequencing counts without that wait: every animation of the step gets it once)
   const a = e.animate(frames, { duration: duration / speed, delay: at / speed, easing, fill });
   a.pause(); startQueue.push(a);
   if (!startQueued) { startQueued = true; requestAnimationFrame(() => requestAnimationFrame(releaseStarts)); }
   animations.add(a); a.finished.then(() => animations.delete(a), () => animations.delete(a)); return a;
 }
+// Card sounds (step-sound.js, while the step sound is on): every card that comes into a hand (from the deck, the display, the other player) or onto the display strikes a draw hit, every
+// card that leaves a hand for the deck or the display for the discard (a discard, Sunbathing, pouching, Glide) a discard hit, exactly when its flight starts (`noteCard` counts it,
+// `cardTick` gets the animation once it is released).
+const cardFlights = new WeakMap();
+const animSounds = new WeakMap();                                // animation -> sounds struck at a moment of it (the Shark Attack's chomps): soundAt(a, name, ms, gain, lead), played when the animation is released
+const soundAt = (a, name, ms, gain = 1, lead = 0) => { animSounds.set(a, [...(animSounds.get(a) || []), { name, ms, gain, lead }]); return a; };
+const sounded = (kind, a) => { if (kind && noteCard(kind)) cardFlights.set(a, kind); return a; };
+const drawn = (yes, a) => sounded(yes ? 'draw' : null, a);
 function finish(a, fn) { a.finished.then(fn, () => {}); }
 // The invisible deck: one fixed point, the centre of the header row (the move bar), for every card dealt and every card discarded in the floating tray.
 function deckPoint() {
@@ -146,7 +204,10 @@ function boxPoint(seat) {                                          // the right 
   if (boxSpots.key !== key) { boxSpots.key = key; boxSpots.spot = {}; }
   const find = () => document.querySelector('.pp[data-seat="' + seat + '"]')?.getBoundingClientRect();
   let r = find();
-  if (r && r.width) boxSpots.spot[seat] = { x: r.right - 4 * scale(), y: Math.min(innerHeight - 20, Math.max(20, r.top + r.height / 2)) };
+  if (r && r.width) {                                             // (a box scrolled out of the control pane, e.g. with the log below the boxes: the spot is the pane's nearest edge, not off screen)
+    const pr = document.getElementById('paneControl')?.getBoundingClientRect(), lo = pr && pr.height ? Math.max(20, pr.top + 20) : 20, hi = pr && pr.height ? Math.min(innerHeight, pr.bottom) - 20 : innerHeight - 20;
+    boxSpots.spot[seat] = { x: r.right - 4 * scale(), y: Math.min(hi, Math.max(lo, r.top + r.height / 2)) };
+  }
   else if (!boxSpots.spot[seat]) {
     // The Log (or Chat) tab is open: the control pane with the info boxes is hidden. The cards still fly to / from the spot where the box would be on the Control tab: the pane is shown
     // for a moment (invisible, no frame is painted in between), the boxes of both seats are measured, and the pane is hidden again. Done once, not for every card (the log is a long list).
@@ -173,7 +234,13 @@ function backGhost(x, y, w, src = BACK) {
   const im = document.createElement('img'); im.src = src; im.alt = ''; e.append(im); return e;
 }
 export function beforeRender(st) {
+  const carried = visitCarries() ? tabVisit : null;          // (a visit that is waiting for a card's map effect goes on over the next step of that player: the board stays, `stop` would put the other board back)
+  if (carried) tabVisit = null;
   stop(false); flightEnd = 0;
+  if (carried) tabVisit = carried;
+  // One step BACK (arrow key / Previous, playback.js `stepBy` sets S.backStep): the cards of the step taken back fly back (`runBack`), measured here on the board of the newer step.
+  backCapture = S.backStep && previous && previous.replay === S.replay && previous.pov === S.pov && S.step < previous.step && !MINIGAME && !reduced.matches
+    ? { state: previous.state, seat: previous.seat, kind: previous.kind, mode: previous.mode, hand: visibleHand() ? cards().map(shot) : [], display: displayShots(previous.state), piles: playedShots() } : null;
   // The starting hand is dealt (the followed player's hand goes from nothing to its first cards): the hand stays open afterwards, tray and fan alike; it is the one moment every viewer wants to see, so nobody has to unfold it first.
   const me = shownSeat();
   if (!MINIGAME && !FORK && previous && previous.replay === S.replay && previous.pov === S.pov && S.cardMotionForward && S.step >= previous.step && Number.isInteger(me)
@@ -202,11 +269,14 @@ export function beforeRender(st) {
     plays, gone, before: previous.state, hand: visibleHand() ? cards().map(shot) : [], seat: shownSeat(),
     display: displayShots(previous.state), piles: playedShots(),
   } : null;
-  if (playedCapture?.plays.length && tabbedLayout()) {
-    const seat = playedCapture.plays[0].seat;
+  // The other player's board comes up for a card he plays AND for a build (a building comes, goes, grows or turns over) or for the association (a partner zoo / university taken, a cube taken off a bonus space when he supports a conservation project) in a step where no card is played.
+  const mapSeat = buildingCapture ? ([...buildingChanges(buildingCapture, st).added, ...buildingChanges(buildingCapture, st).removed, ...buildingFlips(buildingCapture, st), ...buildingGrowths(buildingCapture, st)][0]?.seat ?? assocSeat(buildingCapture, st)) : undefined;
+  const visitSeat = playedCapture?.plays.length ? playedCapture.plays[0].seat : mapSeat;
+  if (S.boardSwitch !== false && Number.isInteger(visitSeat) && tabbedLayout()) {          // (Settings, Board: "Switches to other board for key actions", only in the Tabbed layout, default on)
+    const seat = visitSeat;
     const original = S.zooTab, shown = document.querySelector('#zoos [data-zoo-seat]')?.dataset.zooSeat;
     if (Number(shown) !== seat) {
-      tabVisit = { original, seat, replay: S.replay, step: S.step, phase: S.phase };
+      tabVisit = { original, seat, replay: S.replay, step: S.step, phase: S.phase, fresh: true };
       S.zooTab = seat;
     }
   }
@@ -223,6 +293,8 @@ export function afterRender(st) {
   const played = playedCapture; playedCapture = null;
   const box = document.getElementById('draftbox'), blocked = box && !box.hidden;
   const targets = cards(), seat = shownSeat();
+  const back = backCapture; backCapture = null;
+  if (back && !blocked && !reduced.matches) runBack(back, st);
   let ownPlan = null;
   if (old && !blocked && !reduced.matches && visibleHand()) ownPlan = standard(movementPlan(old.state, st, seat, ownText(), pilferMoves()), plainPlan);
   else if (old && !blocked && !reduced.matches && visibleZone() && zoneKind() === 'endgame') ownPlan = endgamePlan(old.state, st, seat);
@@ -261,7 +333,7 @@ export function afterRender(st) {
   else if (seat === 0) handsEnd = doOther(doOwn(0));
   else handsEnd = doOwn(doOther(0));
   if (played && !blocked && !reduced.matches) runPlayed(played, st);
-  else if (tabVisit) stop();
+  else if (tabVisit && !tabVisit.hold && !tabVisit.fresh) stop();          // (a visit that this very step began, for a build, goes on: `settleVisit`)
   const dOld = displayCapture; displayCapture = null;
   if (dOld && !blocked && !reduced.matches) sequenced(handsEnd, () => runDisplay(dOld, st));
   const bOld = buildingCapture; buildingCapture = null;
@@ -277,6 +349,7 @@ export function afterRender(st) {
     }
   }
   if (assocGo) assocGo();
+  settleVisit();
   previous = { state: st, step: S.step, phase: S.phase, replay: S.replay, pov: S.pov, seat, kind: zoneKind(), mode: S.handMode, bar: (barHold && barHold.step === S.step ? barHold.keep : [...(document.getElementById('current')?.childNodes || [])]).map((n) => n.cloneNode(true)) };          // (while a search holds the bar on the text before, the step's own text is what the next step holds: two searches in a row, Lagoon's person sponsors)
   S.cardMotionForward = false;
 }
@@ -367,6 +440,7 @@ function turnOver(wasG, nowG, dir, index, oldHref) {
     { el: layer(shade(parts[0], oldHref), dark), first: true, shadow: true }, { el: layer(shade(parts[1], null), dark), first: false, shadow: true },
     { el: layer(copy(parts[0], oldHref)), first: true }, { el: layer(copy(parts[1], null)), first: false }];
   layers.forEach((l) => root().append(l.el)); hide(nowG);
+  const oldCells = new Set(String(wasG.dataset.cells || '').split(';')), release = wasG === nowG ? () => {} : uncover(nowG, String(nowG.dataset.cells || '').split(';').filter((c) => c && !oldCells.has(c)));       // (an enclosure that grows: the bonuses on the new hexes stay until it has turned over; a fill / release covers nothing new)
   const persp = 'perspective(' + Math.round(lift * 3.5) + 'px) ', ease = (t) => t * t, out = (t) => 1 - (1 - t) * (1 - t);
   const framesOf = ({ first, shadow }) => {
     const frames = [];
@@ -379,8 +453,22 @@ function turnOver(wasG, nowG, dir, index, oldHref) {
     return frames;
   };
   const anims = layers.map((l) => animate(l.el, framesOf(l), MS, index * 130, 'linear'));
-  finish(anims[3], () => { layers.forEach((l) => l.el.remove()); show(nowG); });
+  finish(anims[3], () => { layers.forEach((l) => l.el.remove()); show(nowG); release(); });
   return true;
+}
+// The placement bonuses / upgrade flags / H hexes under a building are drawn hidden (board.js, `cov-bonus`): a building that flies in (or grows over new hexes) shows them for the length of its
+// flight, so they are still there until it lands on them (they used to vanish when the flight started). The count per group lets several flights share a hex. Returns the release.
+function uncover(g, cells = null) {
+  const board = g.closest('.board');
+  if (!board) return () => {};
+  const want = new Set(cells || String(g.dataset.cells || '').split(';').filter(Boolean));
+  const held = [...board.querySelectorAll('.cov-bonus')].filter((n) => want.has(n.dataset.cell));
+  held.forEach((n) => { n.dataset.hold = String((Number(n.dataset.hold) || 0) + 1); n.style.display = ''; });
+  let released = false;
+  return () => {
+    if (released) return; released = true;
+    held.forEach((n) => { const k = (Number(n.dataset.hold) || 1) - 1; n.dataset.hold = String(k); if (!k) n.style.display = 'none'; });
+  };
 }
 function buildingFlight(g, appear, index) {
   const ctm = screenMatrix(g), r = (g.querySelector('image') || g.querySelector('polygon') || g).getBoundingClientRect();     // (not the group: its masks span the whole board)
@@ -397,6 +485,7 @@ function buildingFlight(g, appear, index) {
   fitMasks(k, g);
   k.setAttribute('transform', 'matrix(' + [ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f].join(' ') + ')');
   o.append(k); root().append(o); hide(g);
+  const release = uncover(g);                                    // (the bonuses under it show until it has landed / has gone)
   // A new building first shows itself at the deck (fades in, grows a little) before it sets off; the top of the viewport is where the eye has to catch it, so that part is not rushed.
   const ms = Math.min(1375, Math.max(812, 812 * Math.hypot(dx, dy) / sc / 850)) * (appear ? 1.3 : 1), HOLD = .26;         // (the card flights' 650-1100 ms, 25 % slower: a building is big)
   const frames = Array.from({ length: 41 }, (_, i) => {
@@ -405,7 +494,7 @@ function buildingFlight(g, appear, index) {
     const w = appear ? (t - HOLD) / (1 - HOLD) : t, u = glideEase(w), v = appear ? 1 - u : u;
     return { offset: t, transform: tr(dx * v, dy * v, 0, appear ? 1 - .43 * v : 1 - .55 * v), opacity: appear ? 1 : t > .85 ? 1 - (t - .85) / .15 : 1 };
   });
-  finish(animate(o, frames, ms, index * 130, 'linear'), () => { o.remove(); if (appear) show(g); });
+  finish(animate(o, frames, ms, index * 130, 'linear'), () => { o.remove(); if (appear) show(g); release(); });
 }
 // The display: a card that leaves it through a wave or a natural discard glides into the invisible deck, a card put in (replenish) glides out of it into its slot.
 // The number tabs of the display folders lie on top of the cards. The flights run in the overlay, above the whole page, so a card would cross the tab and then slip behind it when the real card appears.
@@ -434,7 +523,7 @@ function runDisplay(old, st) {
     const folders = [...document.querySelectorAll('.folders .folder')].map((f) => f.getBoundingClientRect()).filter((r) => r.width);
     const eaten = leaving.map((key) => old.display.find((c) => c.key === key)).filter(Boolean);
     if (folders.length && eaten.length === leaving.length) {
-      eatenFor = runShark({ animate, element, finish }, eaten, { x0: Math.min(...folders.map((r) => r.left)), x1: Math.max(...folders.map((r) => r.right)) });
+      eatenFor = runShark({ animate, element, finish, soundAt }, eaten, { x0: Math.min(...folders.map((r) => r.left)), x1: Math.max(...folders.map((r) => r.right)) });
       leaving = [];
     }
   }
@@ -443,7 +532,7 @@ function runDisplay(old, st) {
   leaving.forEach((key, i) => {
     const g = old.display.find((c) => c.key === key); if (!g) return;
     const e = ghost(g), dx = d.x - g.x, dy = d.y - g.y, tilt = i % 2 ? -9 : 9, ms = Math.min(800, Math.max(560, 320 + Math.hypot(dx, dy) / sc * .45));
-    finish(animate(e, [{ transform: tr(0, 0, g.angle), opacity: 1 }, { transform: tr(0, 6 * sc, 0), opacity: 1, offset: .2 }, { transform: tr(dx, dy, tilt, .5), opacity: 1, offset: .92 }, { transform: tr(dx, dy, tilt, .5), opacity: 0 }], ms, i * 100, 'ease-in-out'), () => e.remove());
+    finish(sounded('discard', animate(e, [{ transform: tr(0, 0, g.angle), opacity: 1 }, { transform: tr(0, 6 * sc, 0), opacity: 1, offset: .2 }, { transform: tr(dx, dy, tilt, .5), opacity: 1, offset: .92 }, { transform: tr(dx, dy, tilt, .5), opacity: 0 }], ms, i * 100, 'ease-in-out')), () => e.remove());
   });
   const nodes = [...document.querySelectorAll('.folders .folder')].map((f) => f.querySelector('.card')), rest = [...added];
   // the cards behind a gap slide left, like dominoes: each starts 70 ms after the one on its left (left to right), after the leaving / taken cards have gone
@@ -455,7 +544,14 @@ function runDisplay(old, st) {
     if (old.state.display.indexOf(key) === i) return;          // (the card kept its slot: if it is somewhere else on the screen, the board around it moved (a bar above the display grew or shrank), which is no slide and must not ripple through the cards)
     const to = shotOnScreen(node, key), dx = was.x - to.x, dy = was.y - to.y;
     if (Math.abs(dx) < 2 && Math.abs(dy) < 2) return;
-    const e = ghost(to), ms = Math.round(420 + 110 * Math.abs(dx) / Math.max(1, to.w));
+    const e = ghost(to), ms = Math.round(420 + 110 * Math.abs(dx) / Math.max(1, to.w)), mark = node.querySelector('.markcube');
+    if (mark) {                                                // (a Mark cube slides with its card, in the same place on it; the overlay is not zoomed with the page: its glow gets the zoom of the real cube, or it would be bigger than the real one and "blink" when the copy lands)
+      const c = mark.cloneNode(true), k = to.w / (node.offsetWidth || to.w);
+      c.style.filter = `drop-shadow(0 0 ${5 * k}px #fff) drop-shadow(0 0 ${2 * k}px #fff) drop-shadow(0 ${2 * k}px ${2 * k}px rgba(0, 0, 0, .5))`;
+      const mr = mark.getBoundingClientRect();                  // (the exact size and place of the real cube on the card: the copy and the real one are the same picture, nothing jumps when it lands)
+      Object.assign(c.style, { left: mr.left + mr.width / 2 - (to.x - to.w / 2) + 'px', top: mr.top + mr.height / 2 - (to.y - to.h / 2) + 'px', width: mr.width + 'px' });
+      e.append(c);
+    }
     hide(node);
     finish(animate(e, [{ transform: tr(dx, dy, 0, 1) }, { transform: tr() }], ms, t0 + rank++ * 70, 'cubic-bezier(.25,.8,.25,1)'), () => { show(node); e.remove(); });
   });
@@ -467,7 +563,7 @@ function runDisplay(old, st) {
     rest.splice(j, 1);
     const to = shotOnScreen(node, key), e = ghost(to), dx = d.x - to.x, dy = d.y - to.y, tilt = n % 2 ? -9 : 9, ms = Math.min(800, Math.max(560, 320 + Math.hypot(dx, dy) / sc * .45));
     hide(node);
-    finish(animate(e, [{ transform: tr(dx, dy, tilt, .5), opacity: 0 }, { opacity: 1, offset: .1 }, { transform: tr(0, 6 * sc, 0), opacity: 1, offset: .78 }, { transform: tr() }], ms, wait + n++ * 120, EASE), () => { show(node); e.remove(); });
+    finish(sounded('draw', animate(e, [{ transform: tr(dx, dy, tilt, .5), opacity: 0 }, { opacity: 1, offset: .1 }, { transform: tr(0, 6 * sc, 0), opacity: 1, offset: .78 }, { transform: tr() }], ms, wait + n++ * 120, EASE)), () => { show(node); e.remove(); });
   });
 }
 // A Wave (Marine Worlds) removes the first cards of the display; the log has the removal and "The display is replenished" as two steps of one move. The wave plays both as one motion on the removal step,
@@ -640,26 +736,14 @@ function runPlayed(old, st) {
       finish(animate(e, [{ transform: tr(from.x - to.x, from.y - to.y, from.angle) }, { transform: tr(0, 0, to.angle) }], longest), () => { show(node); e.remove(); });
     }
   }
-  const visit = tabVisit;
-  if (visit) Promise.all(flights).then(() => {
-    if (tabVisit !== visit) return;
-    // Deliberately one wall-clock second after every played-card flight has landed.
-    tabReturnTimer = setTimeout(() => {
-      tabReturnTimer = 0;
-      if (tabVisit !== visit) return;
-      tabVisit = null;
-      if (S.replay !== visit.replay || S.step !== visit.step || S.phase !== visit.phase || !tabbedLayout() || S.zooTab !== visit.seat) return;
-      S.zooTab = visit.original; S.lastBoard = null; render();
-    }, 1000);
-  }, () => {});
 }
 // The other seat. Display takes: the public card glides to the right edge of the player's info box (same glide as the followed player's display take, at the same speed per distance,
 // the card keeps its size until the last part of the flight, where it shrinks and fades). Deck draws and discards: card backs only, between the invisible deck and the info box.
 // A public card of the display glides to the right edge of a player's info box and shrinks / fades there.
 function displayTake(g, to, delay = 0) {
-  const sc = scale(), e = ghost(g), dx = to.x - g.x, dy = to.y - g.y, ms = Math.min(1500, Math.max(650, 650 * Math.hypot(dx, dy) / sc / 850));
+  const sc = scale(), e = ghost(g), dx = to.x - g.x, dy = to.y - g.y, ms = Math.min(800, Math.max(650, 650 * Math.hypot(dx, dy) / sc / 850));          // (the far info box of the other player used to take up to 1500 ms, twice the followed player's 650 ms: capped at 800)
   const frames = Array.from({ length: 31 }, (_, k) => { const t = k / 30, u = glideEase(t), v = Math.max(0, (t - .76) / .24); return { offset: t, transform: tr(dx * u, dy * u, 3 * u ** 4, 1 - .6 * v), opacity: t > .86 ? 1 - (t - .86) / .14 : 1 }; });
-  finish(animate(e, frames, ms, delay, 'linear'), () => e.remove());
+  finish(drawn(true, animate(e, frames, ms, delay, 'linear')), () => e.remove());
 }
 // Which seat a card that left the display was given to: the log line "<player> <verb> <card> from the display" (takes, snaps, digs ...); -1 for a card that was really discarded (a wave, the natural discard).
 const SHARK_ATTACK = /\bshark ?attack\b/i;                              // (replay: "X discards A for the Shark Attack effect", live: "X removes A from the display (shark attack)", fork: "X shark Attack 2, cards ...")
@@ -712,7 +796,7 @@ function tabFlights(tabs, shots = [], lead = 0) {
       const frames = out
         ? [{ transform: tr(0, 0, 0, k), opacity: 0 }, { transform: tr(dx * .06, dy * .06, 0, 1), opacity: 1, offset: .1 }, { transform: tr(dx, dy, tilt, 1), opacity: 1, offset: .92 }, { transform: tr(dx, dy, tilt, 1), opacity: 0 }]
         : [{ transform: tr(0, 0, tilt, 1), opacity: 0 }, { opacity: 1, offset: .1 }, { transform: tr(dx * .86, dy * .86, 0, 1), opacity: 1, offset: .78 }, { transform: tr(dx, dy, 0, k * .8), opacity: 0 }];          // (the card keeps the size of a card of the display until it is close to the button)
-      finish(animate(e, frames, ms, delay, 'ease-in-out'), () => e.remove());
+      finish(sounded(out ? 'discard' : 'draw', animate(e, frames, ms, delay, 'ease-in-out')), () => e.remove());
       blinkTab(btn, delay + ms * (out ? .1 : .78));
       end = Math.max(end, delay + ms);
       return delay + ms;
@@ -762,7 +846,7 @@ function runOther(plan, old, seat, text = '', name = '') {
     for (let k = 0; k < n; k++, i++) {
       const e = backGhost(from.x, from.y, w, src), dx = goal.x - from.x, dy = goal.y - from.y, tilt = k % 2 ? -9 : 9, ms = Math.min(800, Math.max(560, 320 + Math.hypot(dx, dy) / sc * .45));
       const s0 = fadeIn ? .55 : 1, s1 = fadeIn ? 1 : .55;
-      finish(animate(e, [{ transform: tr(0, 0, tilt, s0), opacity: 0 }, ...(fadeIn ? [] : [{ transform: tr(0, 0, tilt, s0), opacity: 1, offset: .02 }]), { transform: tr(dx * .5, dy * .5 - 14 * sc, tilt * .3, (s0 + s1) / 2 + .1), opacity: 1, offset: .5 }, { transform: tr(dx, dy, 0, fadeIn ? .55 : s1), opacity: 0 }], ms, late + i * 100, 'ease-in-out'), () => e.remove());
+      finish(sounded(from === deck ? 'draw' : 'discardO', animate(e, [{ transform: tr(0, 0, tilt, s0), opacity: 0 }, ...(fadeIn ? [] : [{ transform: tr(0, 0, tilt, s0), opacity: 1, offset: .02 }]), { transform: tr(dx * .5, dy * .5 - 14 * sc, tilt * .3, (s0 + s1) / 2 + .1), opacity: 1, offset: .5 }, { transform: tr(dx, dy, 0, fadeIn ? .55 : s1), opacity: 0 }], ms, late + i * 100, 'ease-in-out')), () => e.remove());
     }
   };
   if (plan.targeted) {                                            // a targeted draw is public: the card is turned face-up and glides to the info box
@@ -780,7 +864,7 @@ function runOther(plan, old, seat, text = '', name = '') {
     const ray = sunRay(deck, to, 1000 + (plan.sun - 1) * 140);
     for (let k = 0; k < plan.sun; k++, i++) {
       const e = backGhost(to.x, to.y, w), dx = deck.x - to.x, dy = deck.y - to.y;
-      finish(animate(e, [{ transform: tr(0, 0, 0, 1), opacity: 1, filter: 'brightness(1)' }, { transform: tr(dx * .08, dy * .08, -4, 1), filter: 'brightness(1.3)', opacity: 1, offset: .2 }, { transform: tr(dx * .95, dy * .95, -10, .35), opacity: 0, filter: 'brightness(1.5)' }], 1000, k * 140, 'ease-in'), () => e.remove());
+      finish(sounded('discardO', animate(e, [{ transform: tr(0, 0, 0, 1), opacity: 1, filter: 'brightness(1)' }, { transform: tr(dx * .08, dy * .08, -4, 1), filter: 'brightness(1.3)', opacity: 1, offset: .2 }, { transform: tr(dx * .95, dy * .95, -10, .35), opacity: 0, filter: 'brightness(1.5)' }], 1000, k * 140, 'ease-in')), () => e.remove());
     }
     void ray;
   }
@@ -792,7 +876,7 @@ function runOther(plan, old, seat, text = '', name = '') {
     for (let k = 0; k < plan.pouch; k++, i++) {
       const e = backGhost(to.x, to.y, w), f = stage.flight(from, k, k * TUCK_GAP);
       e.style.zIndex = '4';
-      finish(animate(e, f.frames, f.duration, k * TUCK_GAP, 'linear'), () => e.remove());
+      finish(sounded('discardO', animate(e, f.frames, f.duration, k * TUCK_GAP, 'linear')), () => e.remove());
     }
   }
 }
@@ -806,7 +890,7 @@ function sunRay(deck, card, ms, delay = 0, width = 150) {
 // a card (or back) flying from `from` to the invisible deck while it leaves a trail of bubbles
 function glideBack(e, from, deck, delay, sc) {
   const dx = deck.x - from.x, dy = deck.y - from.y, ms = Math.min(1100, Math.max(800, 380 + Math.hypot(dx, dy) / sc * .5));
-  finish(animate(e, [{ transform: tr(0, 0, 0, 1), opacity: 1 }, { transform: tr(dx * .12, dy * .12 - 8 * sc, 4, 1), opacity: 1, offset: .15 }, { transform: tr(dx * .9, dy * .9, -5, .55), opacity: .85, offset: .85 }, { transform: tr(dx, dy, 0, .45), opacity: 0 }], ms, delay, 'cubic-bezier(.35,.05,.55,1)'), () => e.remove());
+  finish(sounded('discardO', animate(e, [{ transform: tr(0, 0, 0, 1), opacity: 1 }, { transform: tr(dx * .12, dy * .12 - 8 * sc, 4, 1), opacity: 1, offset: .15 }, { transform: tr(dx * .9, dy * .9, -5, .55), opacity: .85, offset: .85 }, { transform: tr(dx, dy, 0, .45), opacity: 0 }], ms, delay, 'cubic-bezier(.35,.05,.55,1)')), () => e.remove());
   bubbleTrail(from, deck, ms, delay, sc);
 }
 // The trail of a glide: bubbles along the way (the focus), a thin faint streak under them, two ripple rings where the card leaves and, where it vanishes at the invisible deck, a ring and a burst of bubbles.
@@ -852,12 +936,13 @@ function run(plan, old, targets) {
   }
   // One card into the floating tray: the frame's edge opens with the card's flight and reaches the new slot as the card lands (instead of widening at once and leaving a gap)
   if (flights.length === 1 && flights[0] && !outgoing.length && !(plan.projects || []).length) openWith(flights[0], old.frameW);
-  else if (shift > 0 && S.handMode === 'tray') {
-    // This part of the step waits for another player's cards (the starting hands): the tray keeps its old width and its slide-in until the followed player's own cards start to move.
-    const wrap = document.querySelector('.handtray.enter'), speed = Math.max(.1, Number(S.animationSpeed) || 1);
+  else if ((shift > 0 || openingLead()) && S.handMode === 'tray') {
+    // This part of the step waits for another player's cards (the starting hands) or for the shuffles before the first deal (step-sound.js): the tray keeps its old width and its slide-in
+    // until the followed player's own cards start to move.
+    const wrap = document.querySelector('.handtray.enter'), speed = Math.max(.1, Number(S.animationSpeed) || 1), wait = shift + openingLead() * speed;
     if (wrap && plan.arrivals.some((p) => p.kind === 'deck')) {
-      wrap.style.animationDelay = shift / speed + 'ms'; wrap.style.animationFillMode = 'backwards';
-      animate(wrap, [{ opacity: 0 }, { opacity: 0 }], shift, -shift, 'linear', 'none');          // (until then nothing of it shows: the round buttons on its top edge would peek out of the bottom of the window)
+      wrap.style.animationDelay = wait / speed + 'ms'; wrap.style.animationFillMode = 'backwards';
+      animate(wrap, [{ opacity: 0 }, { opacity: 0 }], wait, -wait, 'linear', 'none');          // (until then nothing of it shows: the round buttons on its top edge would peek out of the bottom of the window)
     }
     const frame = document.querySelector('#dock .trayframe'), to = frameWidth(), real = flights.filter(Boolean);
     if (frame && old.frameW && to && Math.abs(to - old.frameW) >= 2 && (outgoing.length || real.length)) {
@@ -926,7 +1011,7 @@ function arrive(node, plan, index, source) {
     if (from) {
       const w = backWidth(), e = backGhost(from.x, from.y, w), dx = to.x - from.x, dy = to.y - from.y, end = to.w / w;
       hide(node);
-      finish(animate(e, [{ transform: tr(0, 0, 8, .55), opacity: 0 }, { transform: tr(dx * .5, dy * .45 - 60 * scale(), 4, (.55 + end) / 2), opacity: 1, offset: .45 }, { transform: tr(dx, dy, 0, end) }], 800, index * 120, 'ease-in-out'), () => { show(node); e.remove(); animate(node, [{ transform: 'scaleX(0)' }, { transform: 'none' }], 260); });
+      finish(drawn(true, animate(e, [{ transform: tr(0, 0, 8, .55), opacity: 0 }, { transform: tr(dx * .5, dy * .45 - 60 * scale(), 4, (.55 + end) / 2), opacity: 1, offset: .45 }, { transform: tr(dx, dy, 0, end) }], 800, index * 120, 'ease-in-out')), () => { show(node); e.remove(); animate(node, [{ transform: 'scaleX(0)' }, { transform: 'none' }], 260); });
       return;
     }
   }
@@ -935,7 +1020,7 @@ function arrive(node, plan, index, source) {
     // Every draw from the deck, one card or the whole starting hand, keeps the application's original deal (dock.js had it for the setup only).
     if (fan) {
       const hk = parseFloat(getComputedStyle(document.body).getPropertyValue('--hk')) || 1.5;
-      const a = animate(node, [{ transform: `translateY(${240 * hk * 1.2}px) rotate(0deg)`, opacity: 0 }, { opacity: 1, offset: .25 }, { transform: getComputedStyle(node).transform, opacity: 1 }], 520, delay, 'cubic-bezier(.2,.9,.3,1.08)');
+      const a = drawn(true, animate(node, [{ transform: `translateY(${240 * hk * 1.2}px) rotate(0deg)`, opacity: 0 }, { opacity: 1, offset: .25 }, { transform: getComputedStyle(node).transform, opacity: 1 }], 520, delay, 'cubic-bezier(.2,.9,.3,1.08)'));
       finish(a, () => a.cancel());
     } else {                                                  // the floating tray: the cards fall in from above, tilted to alternating sides, with a small bounce
       const slide = document.querySelector('.handtray.enter') ? 350 : 0;      // (a tray that has just been drawn slides up first)
@@ -945,7 +1030,7 @@ function arrive(node, plan, index, source) {
         const r = node.getBoundingClientRect(), k = sc;
         const fx = (d.x - (r.left + r.width / 2)) / k, fy = (d.y - (r.top + r.height / 2)) / k, dist = Math.max(260, Math.hypot(fx, fy));
         const ms = Math.min(800, Math.max(560, 320 + dist * .45));
-        const a = animate(node, [{ transform: `translate(${fx}px,${fy}px) rotate(${tilt}deg)`, opacity: 0 }, { opacity: 1, offset: .08 }, { transform: 'translateY(6px) rotate(0deg)', opacity: 1, offset: .78 }, { transform: 'none', opacity: 1 }], ms, slide + delay, 'ease-in-out');
+        const a = drawn(true, animate(node, [{ transform: `translate(${fx}px,${fy}px) rotate(${tilt}deg)`, opacity: 0 }, { opacity: 1, offset: .08 }, { transform: 'translateY(6px) rotate(0deg)', opacity: 1, offset: .78 }, { transform: 'none', opacity: 1 }], ms, slide + delay, 'ease-in-out'));
         finish(a, () => a.cancel());
         return { delay: slide + delay, duration: ms, ease: 'ease-in-out' };
       }
@@ -953,7 +1038,7 @@ function arrive(node, plan, index, source) {
       const g = shot(node), fx = d.x - g.x, fy = d.y - g.y, dist = Math.max(260 * sc, Math.hypot(fx, fy)) / sc;
       const ms = Math.min(800, Math.max(560, 320 + dist * .45)), e = ghost(g);
       hide(node);
-      const a = animate(e, [{ transform: tr(fx, fy, tilt), opacity: 0 }, { transform: tr(fx, fy, tilt), opacity: 0, offset: .01 }, { opacity: 1, offset: .08 }, { transform: tr(0, 6 * sc, 0), opacity: 1, offset: .78 }, { transform: tr(), opacity: 1 }], ms, slide + delay, 'ease-in-out');
+      const a = drawn(true, animate(e, [{ transform: tr(fx, fy, tilt), opacity: 0 }, { transform: tr(fx, fy, tilt), opacity: 0, offset: .01 }, { opacity: 1, offset: .08 }, { transform: tr(0, 6 * sc, 0), opacity: 1, offset: .78 }, { transform: tr(), opacity: 1 }], ms, slide + delay, 'ease-in-out'));
       finish(a, () => { show(node); e.remove(); });
       return { delay: slide + delay, duration: ms, ease: 'ease-in-out' };
     }
@@ -978,7 +1063,7 @@ function arrive(node, plan, index, source) {
       return { offset: t, transform: tr(dx * (1 - u), dy * (1 - u), to.angle * u ** 4, size + (1 - size) * u) };
     });
   } else frames = [{ transform: tr(dx, dy, 0, size) }, { transform: tr(dx * .38, dy * .42, 0, size + (1 - size) * .7), offset: .56 }, { transform: tr() }];
-  const a = animate(e, frames, duration, wait, fan && plan.kind !== 'deck' ? 'linear' : EASE);
+  const a = drawn(true, animate(e, frames, duration, wait, fan && plan.kind !== 'deck' ? 'linear' : EASE));
   finish(a, () => { show(node); e.remove(); });
   if (fan) return;
   return { delay: wait, duration, ease: EASE };
@@ -1038,7 +1123,7 @@ function searchFlight({ front, goal, angle = 0, fan = false, delay = 0, backGoal
   const glide = fan && front
     ? Array.from({ length: 31 }, (_, i) => { const t = i / 30, u = glideEase(t); return { offset: t, transform: tr(dx * u, dy * u, angle * u ** 4, 1.04 + (k - 1.04) * u) }; })
     : [{ transform: centre, opacity: 1 }, ...(backGoal ? [{ transform: tr(dx * .7, dy * .7, 0, 1.04 + (k - 1.04) * .7), opacity: 1, offset: .7 }] : []), { transform: tr(dx, dy, angle, k), opacity: backGoal ? 0 : 1 }];
-  const g = animate(chosen, glide, T, tG, fan && front ? 'linear' : EASE, 'forwards');
+  const g = drawn(true, animate(chosen, glide, T, tG, fan && front ? 'linear' : EASE, 'forwards'));          // (the found card goes to its owner: its draw sound)
   finish(g, () => els.forEach((e) => e.remove()));
   return { done: g, glide: { delay: tG, duration: T, ease: fan && front ? 'cubic-bezier(.22,.65,.3,1)' : EASE } };
 }
@@ -1088,7 +1173,7 @@ function depart(p, i, all) {
     frames = [{ transform: tr(0, 0, g.angle), opacity: 1 }, { transform: tr(0, 6 * sc, 0), opacity: 1, offset: .22 }, { transform: tr(fx, fy, tilt), opacity: 1, offset: .92 }, { transform: tr(fx, fy, tilt), opacity: 0 }];
     easing = 'ease-in-out';
   }
-  finish(animate(e, frames, duration, delay, easing), () => e.remove());
+  finish(sounded(['discard', 'sun', 'glide', 'pouch'].includes(kind) ? 'discard' : null, animate(e, frames, duration, delay, easing)), () => e.remove());
   return duration + delay;
 }
 // Pouching (as in the board game): the card is tucked under its source and peeks out below it. The source is the animal / sponsor card the cards go under (`under`), or, for a map
@@ -1148,3 +1233,121 @@ window.addEventListener('scroll', stop, { passive: true });
 document.addEventListener('pointerdown', (e) => { if (e.target.closest?.('#dock')) stop(); }, true);
 reduced.addEventListener('change', stop);
 const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/css/card-motion.css'; document.head.append(css);
+
+// ---- One step BACK: the cards of the step that is taken back fly back ------------------------------------------------------------------------------------------------------------------
+// `old` = the board of the newer step (captured in beforeRender), `st` = the older step, now drawn. Every card that moved going forward moves the other way, with the same glide:
+// a played card (animal, sponsor) from its zoo back into the hand (or the player's info box), a drawn card from the hand back to the display or to the invisible deck (a hand that is not on show: from its info box), a discarded card
+// from the deck back into the hand, a display card taken by the other player from its info box back onto the display, a card dealt onto the display back to the deck, the hidden cards
+// of the other player as backs between the deck and the info box; cards that stay in the hand or the display slide back to their old places. Sounds (step-sound.js `playBack`, `noteBack`):
+// a card that leaves a hand or the display for the deck strikes the discard sound (only the first such card per player, as forward), a card that comes into a hand or back onto the display from the deck the draw sound, each when its flight starts.
+function runBack(old, st) {
+  const P = old.state, N = st, sc = scale(), seat = shownSeat();
+  if (!P || !N || !P.players || !N.players) return;
+  const handOn = visibleHand() && old.kind === 'hand' && old.seat === seat && old.mode === S.handMode;
+  const pl = (x, s) => x.players[s] || {}, len = (a) => (a || []).length;
+  const minus = (a, b) => { const r = [...(a || [])]; for (const k of b || []) { const i = r.indexOf(k); if (i >= 0) r.splice(i, 1); } return r; };
+  const handNode = (k) => cards().find((e) => e.dataset.key === k && !hidden.has(e));
+  const folders = () => [...document.querySelectorAll('.folders .folder')];
+  const displayNode = (k) => { const i = (N.display || []).indexOf(k); return i >= 0 ? folders()[i]?.querySelector('.card') || null : null; };
+  const geo = (node) => { const r = node.getBoundingClientRect(), m = new DOMMatrix(getComputedStyle(node).transform); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, angle: Math.atan2(m.b, m.a) * 180 / Math.PI }; };
+  const img = (k) => snakeSafe(info(k).image);
+  const bw = backWidth(), bh = bw * 503 / 360;
+  const at = (p, w = bw * .45, h = bh * .45) => (p ? { x: p.x, y: p.y, w, h, angle: 0 } : null);
+  let i = 0;
+  const next = () => (i++) * 120;
+  // one glide from `from` to `to` (screen centres and sizes); emerge = fades in at the start (from the deck or a box), vanish = fades out at the end (into the deck or a box)
+  function glide(from, to, { image, target = null, emerge = false, vanish = false, sound = null } = {}) {
+    if (!from || !to || !image) { if (target) show(target); return; }
+    const e = ghost({ ...from, image }), delay = next();
+    if (target) hide(target);
+    const dx = to.x - from.x, dy = to.y - from.y, ms = Math.min(1500, Math.max(650, 650 * Math.hypot(dx, dy) / sc / 850)), fa = from.angle || 0, ta = to.angle || 0;
+    const frames = Array.from({ length: 31 }, (_, k) => {
+      const t = k / 30, u = glideEase(t), sx = 1 + (to.w / from.w - 1) * u, sy = 1 + (to.h / from.h - 1) * u;
+      let o = 1; if (emerge) o = Math.min(o, t / .16); if (vanish) o = Math.min(o, (1 - t) / .18);
+      return { offset: t, transform: `translate(${dx * u}px,${dy * u}px) rotate(${fa + (ta - fa) * u}deg) scale(${sx},${sy})`, opacity: Math.max(0, Math.min(1, o)) };
+    });
+    const a = animate(e, frames, ms, delay, 'linear');
+    if (sound && sound.startsWith('discard')) { if (struck.has(sound)) sound = null; else struck.add(sound); }          // (the global rule: several discards strike ONE discard sound, on the first card, per player: 'discard' = the followed player's hand and the display, 'discardO' = the other player)
+    if (sound && noteBack()) cardFlights.set(a, sound);
+    finish(a, () => { if (target) show(target); e.remove(); });
+  }
+  const struck = new Set();
+  const disc = (s) => (s === seat ? 'discard' : 'discardO');
+  const seats = [0, 1].filter((s) => P.players[s] && N.players[s]);
+  const boxSeats = seats.filter((s) => !(s === seat && handOn));          // (seats whose cards fly to / from the info box)
+  const usedNew = new Set(), usedOld = new Set();                          // (display cards of the older / newer step already given a flight)
+  const toBox = {}, fromBox = {};
+  for (const s of seats) { toBox[s] = 0; fromBox[s] = 0; }
+  // 1. played cards (animals, sponsors) back into the hand / the info box
+  for (const s of seats) {
+    const played = minus([...(pl(P, s).animals || []), ...(pl(P, s).sponsors || [])], [...(pl(N, s).animals || []), ...(pl(N, s).sponsors || [])]);
+    for (const k of played) {
+      let from = old.piles.find((g) => g.seat === s && g.key === k) || null;
+      if (!from) { const c = drawerChip(s); if (c) { const r = c.getBoundingClientRect(); from = { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width * .7, h: r.width * .7 * 503 / 360, angle: 0 }; } }
+      if (s === seat && handOn && (N.players[s].hand || []).includes(k)) { const t = handNode(k); if (t) { glide(from, geo(t), { image: img(k), target: t, emerge: !old.piles.some((g) => g.key === k), sound: 'draw' }); continue; } }
+      if ((N.display || []).includes(k) && !usedNew.has(k)) { usedNew.add(k); const t = displayNode(k); if (t) { glide(from, geo(t), { image: img(k), target: t, sound: 'draw' }); continue; } }
+      glide(from, at(boxPoint(s)), { image: img(k), vanish: true, sound: 'draw' }); fromBox[s]++;
+    }
+  }
+  // 2. the followed player's hand (open dock): drawn cards leave, played / discarded cards come back, the rest slide back
+  if (handOn) {
+    const me = seat, gone = minus(pl(P, me).hand, pl(N, me).hand), came = minus(minus(pl(N, me).hand, pl(P, me).hand), minus([...(pl(P, me).animals || []), ...(pl(P, me).sponsors || [])], [...(pl(N, me).animals || []), ...(pl(N, me).sponsors || [])]));
+    for (const k of gone) {
+      const from = old.hand.find((g) => g.key === k);
+      if (!from) continue;
+      if ((N.display || []).includes(k) && !(P.display || []).includes(k) && !usedNew.has(k)) { usedNew.add(k); const t = displayNode(k); if (t) { glide(from, geo(t), { image: from.image, target: t, sound: 'discard' }); continue; } }
+      glide(from, at(deckPoint(), from.w * .45, from.h * .45), { image: from.image, vanish: true, sound: 'discard' });
+    }
+    for (const k of came) {
+      const t = handNode(k);
+      if (!t) continue;
+      const to = geo(t);
+      if ((P.display || []).includes(k) && !(N.display || []).includes(k) && !usedOld.has(k)) { usedOld.add(k); const g = old.display.find((d) => d.key === k); if (g) { glide(g, to, { image: img(k), target: t, sound: 'draw' }); continue; } }
+      glide(at(deckPoint(), to.w * .45, to.h * .45), to, { image: t.querySelector('img')?.src || img(k), target: t, emerge: true, sound: 'draw' });
+    }
+    const moved = new Set([...gone, ...came]);
+    for (const node of cards()) {
+      const k = node.dataset.key, from = old.hand.find((g) => g.key === k);
+      if (!from || moved.has(k) || hidden.has(node)) continue;
+      const to = shot(node);
+      if (Math.abs(from.x - to.x) + Math.abs(from.y - to.y) + Math.abs(from.angle - to.angle) < .5) continue;
+      const e = ghost(to); hide(node);
+      finish(animate(e, [{ transform: tr(from.x - to.x, from.y - to.y, from.angle) }, { transform: tr(0, 0, to.angle) }], 450), () => { show(node); e.remove(); });
+    }
+  }
+  // 3. the display: cards that left it come back (from an info box or the deck), cards that arrived go back (to an info box or the deck), the others slide back
+  for (const k of minus(N.display, P.display)) {
+    if (usedNew.has(k)) continue;
+    usedNew.add(k);
+    const t = displayNode(k);
+    if (!t) continue;
+    const s = boxSeats.find((x) => len(pl(P, x).hand) - len(pl(N, x).hand) - toBox[x] > 0);          // (a seat whose hand is smaller in the older step: it had taken this card)
+    if (s !== undefined) { toBox[s]++; glide(at(boxPoint(s), bw, bh), geo(t), { image: img(k), target: t, emerge: true, sound: disc(s) }); }
+    else { const to = geo(t); glide(at(deckPoint(), to.w * .45, to.h * .45), to, { image: img(k), target: t, emerge: true, sound: 'draw' }); }
+  }
+  for (const k of minus(P.display, N.display)) {
+    if (usedOld.has(k)) continue;
+    usedOld.add(k);
+    const g = old.display.find((d) => d.key === k);
+    if (!g) continue;
+    glide(g, at(deckPoint(), g.w * .45, g.h * .45), { image: g.image, vanish: true, sound: 'discard' });          // (a card dealt onto the display goes back to the deck; cards never go from a hand to the display)
+  }
+  for (const [j, k] of (N.display || []).entries()) {
+    if (usedNew.has(k)) continue;
+    const g = old.display.find((d) => d.key === k), node = folders()[j]?.querySelector('.card');
+    if (!g || !node || hidden.has(node)) continue;
+    const to = geo(node);
+    if (Math.abs(g.x - to.x) + Math.abs(g.y - to.y) < .5) continue;
+    const e = ghost({ ...to, image: g.image }); hide(node);
+    finish(animate(e, [{ transform: tr(g.x - to.x, g.y - to.y) }, { transform: tr(0, 0) }], 450), () => { show(node); e.remove(); });
+  }
+  // 4. the hidden cards of the info-box seats: backs between the deck and the box
+  for (const s of boxSeats) {
+    const p = boxPoint(s);
+    if (!p) continue;
+    let left = len(pl(P, s).hand) - len(pl(N, s).hand) - toBox[s];                // (drawn going forward: back to the deck)
+    let get = len(pl(N, s).hand) - len(pl(P, s).hand) - fromBox[s];               // (discarded going forward: back from the deck)
+    for (; left > 0; left--) glide(at(p, bw, bh), at(deckPoint()), { image: BACK, vanish: true, sound: disc(s) });
+    for (; get > 0; get--) glide(at(deckPoint()), at(p, bw * .45, bh * .45), { image: BACK, emerge: true, vanish: true, sound: 'draw' });
+  }
+}

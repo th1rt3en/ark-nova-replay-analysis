@@ -33,7 +33,7 @@ export function applyIconNames(names) {
   ICON_IDS['bonus:xtoken_num'] = 'r3c2_ns';   // the bordered one (placement / track bonus) without them
 }
 export const SHOW_VALUE = new Set(['money', 'reputation', 'appeal']);     // BGA prints the number on these three only (appeal: 2 on the drawing board); the icon of every other bonus already says what it is
-export const iconUrl = (id) => '/icons/' + id + '.webp?v=art20261107c';
+export const iconUrl = (id) => '/icons/' + id + '.webp?v=art20261112';
 export function moneyTile(root, cx, cy, size) {
   const id = 'mt' + (S.clipCount += 1), r = size * 0.24;
   const clip = svg('clipPath', { id });

@@ -224,7 +224,7 @@ def _mark_income_slot(p, kind: str, value) -> bool:
 
 def _support_bonus(ctx: _Ctx, e: Event, kind: str) -> None:
     """The notepad bonus of a supported project that BGA only logs through its consequence (a snap, a free building, a card): the slot is used up."""
-    pid = str(e.args.get("player_id"))
+    pid = str(e.args.get("player_id", e.player))
     if ctx.support == pid and _mark_income_slot(ctx.player(pid), kind, None):
         ctx.support = None                                   # (an event that is no notepad bonus, e.g. a card of the reputation track, leaves the project waiting)
 
@@ -240,7 +240,8 @@ def h_get_bonuses(ctx: _Ctx, e: Event) -> None:
     _apply_bonuses(p, e.args.get("bonuses"))
     if e.args.get("source") == "map bonus space":
         for kind, value in (e.args.get("bonuses") or {}).items():
-            if _mark_income_slot(p, kind, value) and ctx.support == str(e.args.get("player_id")):
+            pid = str(e.args.get("player_id"))
+            if (_mark_income_slot(p, kind, value) or (ctx.support == pid and _mark_income_slot(p, kind, None))) and ctx.support == pid:      # (a capped gain, e.g. 2 of the 3 X tokens at 5, is still that space)
                 ctx.support = None                           # (this bonus is the notepad bonus of the project that was just supported)
 
 
@@ -287,6 +288,8 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
         ctx.__dict__["rep_task_old"] = p.reputation
         p.reputation = min(15, p.reputation + 2)
         ctx.rep_task = True
+    if e.type == "slideMeeples" and e.log.endswith("gains a new Association worker"):      # the Worker bonus of a supported project (map 7) is logged only as the new worker
+        _support_bonus(ctx, e, "Worker")
     if e.type == "discardTokens":                    # tokens leave the game (the hidden university tile that a player turns over, action card tokens)
         gone = {int(m["id"]) for m in a.get("meeples") or []}
         if a.get("continent") and a.get("player_id") is not None:        # map 9: "removes <EUROPE> marker from their map" (the markers themselves are not in the log before)
@@ -368,6 +371,8 @@ def h_discard_cards(ctx: _Ctx, e: Event) -> None:
     a = e.args
     p = s.players[ctx.seat(e.player)]
     _apply_bonuses(p, a.get("bonuses"))             # selling / pouching cards pays money
+    if a.get("pouch") == "mapPouched" or any(c.get("location") == "mapPouched" for c in a.get("cards", [])):      # map 7: the Pouch bonus of a supported project is logged only as the pouching
+        _support_bonus(ctx, e, "Pouch")
     if "Map T1 effect" in str(e.log):               # the discard for +1 strength needs the card space of the notepad (slot 0), taken before
         p.flags["bonus_used"] = p.flags.get("bonus_used", 0) | 1
     for c in a.get("cards", []):
@@ -886,6 +891,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
                 rep.mismatches.append((m.index, msg))
             ctx.mismatches = []
             _check_oracles(ctx, m, rep)
+            _apply_bonus_spaces(ctx, m)
         rep.states.append(_setup_state(parsed, first_turn, m.index, dealt, ctx.state, drafts) if m.index < first_turn else copy.deepcopy(ctx.state))
     _sync(ctx)
     history_before(getattr(parsed.normal_turns, "last_order", 0))
@@ -922,6 +928,18 @@ def _post_oracles(ctx: _Ctx, e: Event, m: Move, rep: Replay) -> None:
         if tracks.score(p.appeal, p.conservation) != a["score"]:
             rep.mismatches.append((m.index, f"score after {e.type}: state {tracks.score(p.appeal, p.conservation)}, log {a['score']} "
                                             f"(seat {ctx.seat(a['player_id'])}, appeal {p.appeal}, conservation {p.conservation})"))
+
+
+def _apply_bonus_spaces(ctx: _Ctx, m: Move) -> None:
+    """The association prompt of BGA lists the notepad bonus spaces whose cube is still on them: every other space has been used. Only ever adds bits (the prompt
+    can predate a support of the same move), so a bonus that the log shows only through its consequence (or not at all) is caught by the next prompt at the latest."""
+    for chk in m.checks:
+        spaces = chk.get("bonus_spaces")
+        if spaces is None or chk.get("active") not in ctx.seat_of:
+            continue
+        p = ctx.state.players[ctx.seat_of[chk["active"]]]
+        n = len(data.map_by_id(p.map_id)["geometry"]["bonus_slots"])
+        p.flags["bonus_used"] = p.flags.get("bonus_used", 0) | sum(1 << i for i in range(n) if i not in spaces)
 
 
 def _check_oracles(ctx: _Ctx, m: Move, rep: Replay) -> None:

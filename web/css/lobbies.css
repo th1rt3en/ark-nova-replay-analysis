@@ -13,11 +13,11 @@ body.landing { max-width: 56rem; }
 :is(.lobbies, .pp) .create label { display: flex; gap: .5rem; align-items: center; }
 :is(.lobbies, .pp) .create .hint { font-size: .85rem; opacity: .75; margin: 0; }
 :is(.lobbies, .pp) .msg { color: #b3261e; min-height: 1.3rem; margin: .4rem 0 0; }
-:is(.lobbies, .pp) button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #2b1d12; padding: .35rem .9rem; background: #fff; color: #2b1d12; }
+:is(.lobbies, .pp) button { font: inherit; cursor: var(--cur-hand); border-radius: 6px; border: 1px solid #2b1d12; padding: .35rem .9rem; background: #fff; color: #2b1d12; }
 :is(.lobbies, .pp) a.btnlink { display: inline-block; padding: .35rem .9rem; border-radius: 6px; background: #2e7d32; color: #fff; text-decoration: none; }
 :is(.lobbies, .pp) button.go { background: #2e7d32; color: #fff; border-color: #2e7d32; }
 :is(.lobbies, .pp) button.danger { border-color: #b3261e; color: #b3261e; }
-:is(.lobbies, .pp) button:disabled { opacity: .5; cursor: default; }
+:is(.lobbies, .pp) button:disabled { opacity: .5; cursor: var(--cur-arrow); }
 :is(.lobbies, .pp) input[type=text] { font: inherit; padding: .3rem .5rem; border: 1px solid #2b1d12; border-radius: 6px; }
 
 :is(.lobbies, .pp) .seats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }

@@ -4,7 +4,7 @@ import { FORK, S } from './state.js';
 import { zoneNew } from './cards.js';
 import { bindUniCard, UNI_CATS } from './unicard.js';
 import { BONUS_HD } from './bonus_hd_data.js';
-import { adaptIcon, binderSvg, fitImageAttrs, marketingAttrs } from './bonusart.js';
+import { adaptIcon, binderSvg, fitImageAttrs, marketingAttrs, shieldNumberTransform, GROW, SHIELD_DY } from './bonusart.js';
 import { hdPentagonSvg } from './ctrack.js';
 import { FIT_DY, FIT_H, ICON_IDS, SLOT_ICON, SLOT_NUMBER, iconUrl, moneyTile, moneyTwo, pieceUrl, workerUrl } from './icons.js';
 import { bindActs, forkActs } from './action-bar.js';
@@ -115,7 +115,8 @@ const SPECIAL_ENCLOSURE_MW = [
   ];
 // Icon heights of the bonus spaces that need their own size: the animal magnet sprite is wide and overflowed the pentagon at the usual 50, the snapping icon is 2 px bigger than the usual 44 of the
 // purple square. The university and the partner zoo use the shared fit of the placement bonuses (`FIT_H` / `FIT_DY` in icons.js, the pentagon here is 71 px high).
-const SLOT_FIT = { 'animal-magnet': 44, Snapping: 46 };
+const PANEL_GROW = 1.07;          // the panel's shield was already 50 of 71 high (the strip's 0.62 of its pentagon): 1.07 brings it to the strip's new share, 0.756 of the pentagon
+const SLOT_FIT = { 'animal-magnet': 44, Snapping: 46, conservation: 50 * PANEL_GROW };          // (the shield is bigger, like on the tracks: bonusart.js `GROW`)
 const PENT_H = 71;
 // the picture of one bonus space: the purple income square or the yellow pentagon with its icon, centred on x 109 at height y of `root` (an svg). The bonus panel draws a column of
 // them and the bar under the zoo (assocbar.js) a row, so a bonus looks the same in both.
@@ -175,7 +176,10 @@ export function slotGlyph(root, sl, y) {
   } else add('text', { x: 109, y: y + 8, class: 'slot-label' }, '?');
   if (SLOT_NUMBER.has(bn.type) && bn.value) {
     if (bn.type === 'money' && String(bn.value).length > 1) add('text', { ...moneyTwo(bn.value, 109, y + 1 + nd, 34, 6), class: 'slot-number two' }, bn.value);      // (two digits: smaller, tighter and centred on the tile, `moneyTwo`)
-    else add('text', { x: 109, y: y + 13 + nd, class: 'slot-number' + (bn.type === 'conservation' ? ' dk conservation' : '') + (bn.type === 'xtoken' ? ' xnum' : '') }, bn.value);
+    else {
+      const tx = add('text', { x: 109, y: y + 13 + nd, class: 'slot-number' + (bn.type === 'conservation' ? ' dk conservation' : '') + (bn.type === 'xtoken' ? ' xnum' : '') }, bn.value);
+      if (bn.type === 'conservation') tx.setAttribute('transform', 'translate(0 ' + SHIELD_DY + ') translate(109 ' + (y + 13) + ') scale(' + PANEL_GROW + ') translate(-109 ' + -(y + 13) + ')');          // (the number follows the bigger, lower shield)
+    }
   }
   if (bn.type === 'cut-down' && icon) {                  // the Cut Down ability: a white 1 with a black border near the left edge of the icon
     const [w0, h0] = S.iconSizes[icon] || [size, size];
@@ -188,12 +192,82 @@ export function slotGlyph(root, sl, y) {
 function bonusFill(g, bn, x, y, h) {
   const icon = SLOT_ICON[bn.type] || ICON_IDS['bonus:' + bn.type];
   if (bn.type === 'money') moneyTile(g, x, y, h);
-  else if (icon) { const [w0, h0] = S.iconSizes[icon] || [h, h], w = w0 * h / h0; g.append(svg('image', { href: iconUrl(icon), x: x - w / 2, y: y - h / 2, width: w, height: h })); }
+  else if (icon) { const k = bn.type === 'conservation' ? GROW.conservation : 1, [w0, h0] = S.iconSizes[icon] || [h, h], w = w0 * h * k / h0; g.append(svg('image', { href: iconUrl(icon), x: x - w / 2, y: y - h * k / 2 + (k > 1 ? SHIELD_DY : 0), width: w, height: h * k })); }
   else { const t = svg('text', { x, y: y + h * 0.15, class: 'slot-label', 'text-anchor': 'middle', style: 'font-size:' + (h * 0.4).toFixed(0) + 'px' }); t.textContent = bn.type; g.append(t); }
   if (bn.value > 1 || SLOT_NUMBER.has(bn.type)) {
     const t = svg('text', { x, y: y + h * 0.3, class: 'slot-number' + (bn.type === 'conservation' ? ' dk conservation' : ''), 'text-anchor': 'middle', style: 'font-size:' + (h * 0.62).toFixed(0) + 'px' });
-    t.textContent = bn.value; g.append(t);
+    t.textContent = bn.value; if (bn.type === 'conservation') t.setAttribute('transform', 'translate(0 ' + SHIELD_DY + ') translate(' + x + ' ' + y + ') scale(' + GROW.conservation + ') translate(' + -x + ' ' + -y + ')'); g.append(t);
   }
+}
+// The bonus of one partner zoo / university slot (key `partner_1..4`, `university_1..3`) as a small sharp tag for the bar under the open drawer (assocbar.js): the HD pentagon of the tracks with
+// the bonus on it, `size` px high; null when the slot has none. Same rules as the strip: the upgrade on the 2nd partner zoo / university unless the map has sets (they have no single slot), the worker on
+// the 3rd partner zoo, the map's conservation on the 4th partner zoo / 3rd university, map 12's binder on the 2nd university, a custom map's own bonuses.
+export function slotBonusTag(map, key, size = 26) {
+  const [kind, num] = key.split('_'), n = +num, custom = map.custom_association, bonuses = map.association_bonuses || {};
+  const sets = map.upgrade_sets || UPGRADE_SETS[map.id];
+  let name = null, value = 0, tip = '', bn = null, binder = false;
+  if (custom) {
+    bn = (kind === 'partner' ? custom.partner_zoos : custom.universities)[n - 1];
+    if (!bn) return null;
+    tip = bonusTip(bn);
+  } else if (kind === 'partner' && n === 3) { name = 'Worker'; tip = 'hire a worker'; }
+  else if (kind === 'partner' && n === 4 && bonuses.partner4) { name = 'conservation'; value = bonuses.partner4; tip = value + ' conservation'; }
+  else if (kind === 'university' && n === 3 && bonuses.university3) { name = 'conservation'; value = bonuses.university3; tip = value + ' conservation'; }
+  else if (kind === 'university' && n === 2 && map.id === '12') { binder = true; tip = 'cover a binder'; }
+  else if (n === 2 && !sets) { name = 'upgrade-card'; tip = 'upgrade an action card'; }
+  else return null;
+  const t = hdPentagonSvg(name || '-', size);
+  if (bn) bonusFill(t, bn, 40, 41, 50);
+  else if (binder) t.append(binderSvg(40, 41, 0.58));
+  else if (value) {
+    const x = svg('text', { x: 40, y: 55.5, 'text-anchor': 'middle', class: 'bonus-number dk conservation', style: 'font-size:36px', 'pointer-events': 'none' });          // (the number of the track's shield: same class, size 36 and place as `bonusTile`, shared.js)
+    x.textContent = String(value); x.setAttribute('transform', shieldNumberTransform()); t.append(x);
+  }
+  const tt = svg('title'); tt.textContent = (kind === 'partner' ? 'Partner zoo ' : 'University ') + n + ': ' + tip; t.append(tt);
+  t.classList.add('abtag');
+  return t;
+}
+// The upgrade sets of a map for the bar under the open drawer (assocbar.js): [{ n, kind, color }], n = the number of the set (a partner zoo + a university of that number), kind = `upgrade` /
+// `extra-shift` / `conservation` (map 11's second and third set), the colour is the one of the strip's lines. Empty when the map has no sets.
+export const SET_COLORS = ['#b98a34', '#3b8190', '#a2597f'];
+export function upgradeSetItems(map) {
+  const sets = map.upgrade_sets || UPGRADE_SETS[map.id];
+  if (!sets) return [];
+  const items = sets.map((n) => ({ n, kind: 'upgrade' }));
+  if (map.id === '11') items.push({ n: 2, kind: 'extra-shift' }, { n: 3, kind: 'conservation' });
+  return items.map((it) => ({ ...it, color: SET_COLORS[it.n - 1] }));
+}
+// the pentagon of one set's bonus for its line in the bar, `size` px high (same look as the slot tags)
+export function setBonusTag(kind, size = 20) {
+  const t = hdPentagonSvg(kind === 'upgrade' ? 'upgrade-card' : kind === 'extra-shift' ? 'bonus-extra-shift' : 'conservation', size);
+  if (kind === 'conservation') {
+    const x = svg('text', { x: 40, y: 55.5, 'text-anchor': 'middle', class: 'bonus-number dk conservation', style: 'font-size:36px', 'pointer-events': 'none' });
+    x.textContent = '1'; x.setAttribute('transform', shieldNumberTransform()); t.append(x);
+  }
+  const tt = svg('title'); tt.textContent = kind === 'upgrade' ? 'Upgrade an action card' : kind === 'extra-shift' ? 'Extra Shift' : '1 conservation'; t.append(tt);
+  t.classList.add('abset');
+  return t;
+}
+// The order in which a player uncovered the bonus spaces (the cube leaves its space): read once from the steps of the replay (a bit of `flags.bonus_used` that
+// appears in a step; bits set in the same step go by space number), kept on the replay object. A bit the steps do not explain (a fork's new moves) is numbered after the known ones.
+export function bonusOrder(seat, used) {
+  const r = S.replay;
+  if (!r || !r.steps) return [];
+  let cache = r._bonusOrder;
+  if (!cache || cache.n !== r.steps.length) {
+    cache = r._bonusOrder = { n: r.steps.length, seats: [[], []] };
+    const seen = [0, 0];
+    for (const st of r.steps) {
+      (st.state ? st.state.players : []).forEach((pl, sd) => {
+        const now = ((pl.flags || {}).bonus_used || 0), fresh = now & ~seen[sd];
+        for (let i = 0; i < 16; i++) if (fresh & (1 << i)) (cache.seats[sd] = cache.seats[sd] || []).push(i);
+        seen[sd] |= now;
+      });
+    }
+  }
+  const known = (cache.seats[seat] || []).filter((i) => used & (1 << i));
+  for (let i = 0; i < 16; i++) if ((used & (1 << i)) && !known.includes(i)) known.push(i);
+  return known;
 }
 const bonusTip = (bn) => bn.type.replace(/^bonus-/, '').replace(/-/g, ' ') + (bn.value > 1 ? ' ' + bn.value : '');
 
@@ -268,6 +342,7 @@ export function bonusPanel(map, p, seat) {
     list.forEach((sl, i) => {
       const y = rowY(i);
       slotGlyph(s, sl, y);
+      add('rect', { x: 20, y: y - 27, width: 52, height: 52, fill: 'none', 'pointer-events': 'none', 'data-bpos': sl.index, 'data-bpseat': seat });          // (where the cube sits, there or gone: the cube of a supported project flies from here, assoc-motion.js)
       const pick = FORK ? forkActs((a) => a.kind === 'choose_bonus' && a.player === seat && a.args.bonus === sl.index) : [];
       if (pick.length) {                                   // the fork: a bonus to unlock is chosen by clicking its slot
         const hit = add('rect', { x: 16, y: y - rowH / 2 + 1, width: 144, height: rowH - 2, rx: 12, class: 'bonuspick' + (S.forkBonus === sl.index ? ' on' : '') });
@@ -278,6 +353,15 @@ export function bonusPanel(map, p, seat) {
         const tip = svg('title');
         tip.textContent = S.replay.players[seat].name + ': bonus ' + (sl.index + 1) + ' not chosen yet';
         c.append(tip);
+      } else {                                             // the cube has left: a dashed footprint (40 px) with the number of the order it was taken in
+        const nth = bonusOrder(seat, used).indexOf(sl.index) + 1;
+        if (nth > 0) {
+          const g = add('g', { class: 'bonusorder', 'pointer-events': 'none' });
+          g.append(svg('rect', { x: 26, y: y - 20, width: 40, height: 40, rx: 7, fill: 'none', stroke: '#8f8a80', 'stroke-width': 3.5, 'stroke-dasharray': '6 4' }));
+          const t = svg('text', { x: 46, y: y + 9.4, 'text-anchor': 'middle', fill: '#8f8a80', 'font-size': 26, 'font-weight': 400, 'font-family': "'Park Num', system-ui, sans-serif" });
+          t.textContent = String(nth); g.append(t);
+          const tt = svg('title'); tt.textContent = S.replay.players[seat].name + ': bonus ' + (sl.index + 1) + ' was taken ' + (nth > 3 ? nth + 'th' : ['1st', '2nd', '3rd'][nth - 1]); g.append(tt);
+        }
       }
     });
   };
@@ -297,6 +381,7 @@ for (let n = 1; n <= 4; n++) STRIP.partner[n] = 24 + (4 - n) * STRIP_PITCH + STR
 for (let n = 1; n <= 3; n++) STRIP.university[n] = STRIP_BOX2 + (3 - n) * STRIP_PITCH + STRIP_PITCH / 2;
 export const SLOT_SIZE = { partner: [253, 198], university: [248, 175] };         // the silhouettes of the slots; a university has the proportions of its token (119 x 84)
 const BGA_PARTNER_Y = { 1: 855, 2: 619, 3: 383, 4: 147 };                // where the handshakes are on BGA's picture
+const CONS_GROW = GROW.conservation;          // the shield on the strip's raster pentagons (the HD ones grow in bonusart.js `nudged`)
 const UPGRADE_SETS = { '12': [1, 2], T1: [1, 2], '11': [1] };
 export const stripUnits = (map) => (map.upgrade_sets || UPGRADE_SETS[map.id] ? 507 : 351);          // the width of the strip's view box: 78 units on each side for the lines and bigger pentagons of the upgrade sets
 
@@ -337,6 +422,7 @@ export function associationStrip(p, map, seat) {
     svg('path', { d: 'M29 ' + (by + 8) + 'C29 ' + (by - 2) + ' 36 ' + (by - 3) + ' 41 ' + (by - 5) + 'H49C54 ' + (by - 3) + ' 61 ' + (by - 2) + ' 61 ' + (by + 8) + 'Z', fill: '#2B2427' }));
   const ii = svg('text', { x: 45, y: by + 24, 'text-anchor': 'middle', style: "font:400 19px 'Park Num',system-ui,sans-serif;fill:#F8EDCB" }); ii.textContent = 'II';
   bg.append(ii);
+  bg.setAttribute('transform', 'translate(45 ' + by + ') scale(1.07) translate(-45 ' + -by + ')');          // (a touch bigger)
   s.append(bg);
   // the bonuses of the slots (worker, conservation points) sit on a yellow pentagon, the same shape as the placement bonuses of the zoo map
   const bonusHex = (cx, cy, tip, cls, fillIn, Hh) => {
@@ -355,7 +441,7 @@ export function associationStrip(p, map, seat) {
     const g = svg('g', { class: cls }), t = hdPentagonSvg(name, H, cx, cy), tt = svg('title');
     tt.textContent = tip; g.append(t, tt); s.append(g); return g;
   };
-  const consInHex = (cx, cy, value, tip) => value && bonusHex(cx, cy, tip, 'consbonus', (g, x, y, h) => conservationBonus(g, x, y, h, value, null));
+  const consInHex = (cx, cy, value, tip) => value && bonusHex(cx, cy, tip, 'consbonus', (g, x, y, h) => conservationBonus(g, x, y + 1, h * CONS_GROW, value, null));
   const bonuses = map.association_bonuses || {};            // conservation points of the 4th partner zoo and the 3rd university, shown on their (empty) slots
   const custom = map.custom_association;                    // a map made in the map editor: the bonus its maker put on each space, whatever it is
   if (custom) {
@@ -392,12 +478,12 @@ export function associationStrip(p, map, seat) {
       const ex = side === 1 ? 15 : 351 - 15, cx = side === 1 ? (outer ? -80 : -50) : 351 + 50, PH = 118;          // the ends lie in the margin, clear of the frame of the zoo / university region (x 24 .. 327)
       const y1 = STRIP.partner[n], y2 = STRIP.university[n];
       const pt = (t) => [(1 - t) * (1 - t) * ex + 2 * (1 - t) * t * cx + t * t * ex, (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * ((y1 + y2) / 2) + t * t * y2];
-      const col = ['#b98a34', '#3b8190', '#a2597f'][n - 1], d = 'M' + ex + ' ' + y1 + ' Q' + cx + ' ' + (y1 + y2) / 2 + ' ' + ex + ' ' + y2;    // the colour is the number of the set
+      const col = SET_COLORS[n - 1], d = 'M' + ex + ' ' + y1 + ' Q' + cx + ' ' + (y1 + y2) / 2 + ' ' + ex + ' ' + y2;    // the colour is the number of the set
       s.append(svg('path', { d, fill: 'none', stroke: '#fff', 'stroke-opacity': .55, 'stroke-width': 13, 'stroke-linecap': 'round' }));     // light casing: lines stay apart where they cross
       s.append(svg('path', { d, fill: 'none', stroke: col, 'stroke-width': 10, 'stroke-linecap': 'round' }));
       for (const yy of [y1, y2]) s.append(svg('circle', { cx: ex, cy: yy, r: 8, fill: col }));
       const [mx, my] = pt(0.5);
-      if (kind === 'conservation') bonusHex(mx, my, '1 conservation for the third set: a 3rd partner zoo and a 3rd university', 'consbonus', (g, x, y, h) => conservationBonus(g, x, y, h, 1, null), PH);
+      if (kind === 'conservation') bonusHex(mx, my, '1 conservation for the third set: a 3rd partner zoo and a 3rd university', 'consbonus', (g, x, y, h) => conservationBonus(g, x, y + 1, h * CONS_GROW, 1, null), PH);
       else if (kind === 'extra-shift') {                                                  // the Extra Shift tile of the icon sheet (its own pentagon), the one of the Worker hex of map 11
         hdHex(mx, my, 'bonus-extra-shift', PH, 'Extra Shift for the second set: a 2nd partner zoo and a 2nd university', 'extrashiftbonus');
       }

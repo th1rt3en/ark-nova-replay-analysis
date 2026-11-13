@@ -1,5 +1,5 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
-import { $, el, seatColor, seatText } from './util.js';
+import { $, el, seatColor, seatRawColor, seatText } from './util.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { curState, hides as povHides, seatOrder, seesAll } from './pov.js';
 const hides = (seat) => povHides(seat) || (PLAY && S.play.seat !== null && seat !== S.play.seat);       // (a live game is between two real players: the dock only has the player's own hand and endgame cards, nothing of the opponent)
@@ -9,6 +9,8 @@ import { endgameDiscardAt } from './egdiscard.js';
 import { iconUrl } from './icons.js';
 import { motionOff } from './motion.js';
 import { animalsChoicePending, cardPickAct, forkActs, pickCardOf } from './action-bar.js';
+// the colour of the round buttons of the tray (and the water line of the fork's buttons): a white player is plain white there, not the grey the rest of the page uses so that the white font and the pale paper do not swallow it
+const discColor = (s) => { const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(seatRawColor(s) || ''); return m && Math.min(...[1, 2, 3].map((i) => parseInt(m[i], 16))) >= 235 ? '#ffffff' : seatColor(s); };
 import { playedChips, playedMode, withCubes } from './zoo.js';
 
 
@@ -305,7 +307,7 @@ function drawTray(dock, rows, shownSel, st) {
     const b = el('button', 'traydisc' + (shownSel.kind === kind ? ' on' : '')); b.type = 'button';
     const on = shownSel.seat === s && shownSel.kind === kind;
     const label = S.replay.players[s].name + ': ' + KIND_NAME[kind] + ' (' + cnt + ')';
-    b.classList.toggle('on', on); b.style.setProperty('--pc', seatColor(s)); b.dataset.seat = String(s); b.dataset.kind = kind;
+    b.classList.toggle('on', on); b.style.setProperty('--pc', discColor(s)); b.dataset.seat = String(s); b.dataset.kind = kind;
     b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
     const img = el('img', kind === 'played' ? 'tiles' : ''); img.src = iconUrl(KIND_ICON[kind]); img.alt = '';        // (the played-cards icon is built from the two tiles of the sheet, `scripts/build_played_icon.py`)
     b.append(img, el('span', 'traycount', cnt));

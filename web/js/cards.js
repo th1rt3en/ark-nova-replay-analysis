@@ -9,7 +9,8 @@ import { discounted, priceBadge, priceSrc, withPrice } from './price.js';
 
 // S274 is the Mascot Statue of the card data and the Victory Column on BGA (setting "Statue card", S.s274): its name and pictures (made by build_cards.py as S274_VC; the photo is a placeholder for now) are swapped here, so every name and picture in the viewer follows.
 const VICTORY = new WeakMap();
-const victoryOf = (c) => { if (!VICTORY.has(c)) VICTORY.set(c, { ...c, name: 'VICTORY COLUMN', image: c.image && c.image.replace('S274.webp', 'S274_VC.webp'), large: c.large ? c.large.replace('S274.webp', 'S274_VC.webp') : c.large }); return VICTORY.get(c); };
+const vcFile = () => (S.vcSeason ? 'S274_VC_' + String(S.vcSeason).padStart(2, '0') + '.webp' : 'S274_VC.webp');       // (setting "Statue card": which Emu Cup winner is on the Victory Column; no season = the newest, S274_VC.webp, see winner-picker.js)
+const victoryOf = (c) => { const f = vcFile(); if (!VICTORY.has(c)) VICTORY.set(c, new Map()); const m = VICTORY.get(c); if (!m.has(f)) m.set(f, { ...c, name: 'VICTORY COLUMN', image: c.image && c.image.replace('S274.webp', f), large: c.large ? c.large.replace('S274.webp', f) : c.large }); return m.get(f); };
 export const info = (key) => { const c = S.replay.cards[key]; return c ? (key === 'S274' && S.s274 !== 'mascot' ? victoryOf(c) : c) : { name: key, type: 'unknown' }; };
 // The image of the hover preview: the full size card (745 x 1040; every card has one since build_cards.py). Taken from `large` of the card catalog, else from the path of the small card
 // (/cards/X.webp -> /cards_large/X.webp), so a replay cached by the server before the large cards existed still shows them; else the small card itself.
@@ -103,13 +104,13 @@ function showStats(src, p, extra) {
 // (web/emu_cup_winners/thumbs/<season>.webp, made by scripts/build_emu_cup_thumbs.py; an initial while a winner has no photo). The list is web/emu_cup_winners/winners.json. When the panel has not room for every winner, the oldest are
 // summed up in "+ N earlier seasons" (the panel cannot be scrolled: the preview closes when the pointer leaves the card).
 let winnersData = null;
-const loadWinners = () => winnersData || (winnersData = fetch('/emu_cup_winners/winners.json').then((r) => (r.ok ? r.json() : { winners: [] })).catch(() => ({ winners: [] })));
+export const loadWinners = () => winnersData || (winnersData = fetch('/emu_cup_winners/winners.json').then((r) => (r.ok ? r.json() : { winners: [] })).catch(() => ({ winners: [] })));
 async function showRoll(src, p) {
   let box = $('previewroll');
-  const on = !MINIGAME && S.s274 !== 'mascot' && /\/S274_VC\.webp/.test(String(src));
+  const on = !MINIGAME && S.s274 !== 'mascot' && /\/S274_VC(_\d\d)?\.webp/.test(String(src));
   if (!on) { if (box) box.hidden = true; p.classList.remove('withroll'); return; }
   const data = await loadWinners();
-  if (p.hidden || !/S274_VC\.webp/.test(p.src) || !data.winners || !data.winners.length) return;               // (the card was left while the list loaded)
+  if (p.hidden || !/S274_VC(_\d\d)?\.webp/.test(p.src) || !data.winners || !data.winners.length) return;               // (the card was left while the list loaded)
   const list = [...data.winners].sort((a, b) => b.season - a.season);
   if (!box) { box = el('div', 'previewroll'); box.id = 'previewroll'; document.body.append(box); }
   const ol = el('ol');
@@ -117,11 +118,11 @@ async function showRoll(src, p) {
     const li = el('li', i === 0 ? 'cur' : '');
     const ph = el('span', 'ph', String(w.name || '?')[0].toUpperCase());
     if (w.thumb) { const img = el('img'); img.alt = ''; img.src = '/emu_cup_winners/thumbs/' + String(w.season).padStart(2, '0') + '.webp'; img.onload = () => { ph.textContent = ''; ph.append(img); }; }       // (`thumb` is set by build_emu_cup_thumbs.py; no photo yet: the initial stays)
-    const who = el('span', 'who'); who.append(el('span', 'nm', w.name), el('small', '', 'Season ' + w.season + (i === 0 ? ' · Chanpion' : '')));
+    const who = el('span', 'who'); who.append(el('span', 'nm', w.name), el('small', '', 'Season ' + w.season + (i === 0 ? ' · Champion' : '')));
     li.append(ph, who);
     ol.append(li);
   });
-  box.replaceChildren(el('b', 'psttitle', (data.event || 'Emu Cup') + ' Chanpions'), ol);
+  box.replaceChildren(el('b', 'psttitle', (data.event || 'Emu Cup') + ' Champions'), ol);
   p.classList.add('withroll');
   const place = () => {
     if (p.hidden) return;

@@ -2,9 +2,21 @@
 // One card: jaws come up out of the card's lower edge and bite twice (each bite cuts the shape of the closed teeth out of the card where the jaws close, throws a ripple and a few blue drops), then the card is pulled down
 // into its own slot. Two or more cards: one fin runs along the lower edge of the whole display, in front of every card, with a thin blue wake and ripples; each chosen card is pulled under
 // as the fin passes its middle. No water surface: the table is the water. Sizes are taken from the card on screen (`u` = card width / 130.25, the size the mock was drawn at).
-// `tools` comes from card-motion.js: { animate(e, frames, ms, delay, easing, fill), element(cls, css, parent), finish(animation, fn) }; times are ms at speed 1 from the start of the step.
+// `tools` comes from card-motion.js: { animate(e, frames, ms, delay, easing, fill), element(cls, css, parent), finish(animation, fn), soundAt(animation, name, ms, gain, lead) }; times are ms at speed 1 from the start of the step.
 
 const MOCK_W = 130.25;
+// When a sinking card has gone under completely (ms into its sinking): the progress at which it has moved down by its own height (the slot hides it below its lower edge), then the time of the timing curve at that progress.
+// The bite's card (`tilt`) sinks 0 -> h + 20u in 620 ms (ease-in); the fin's card first lifts 6u (at 15 %), then sinks to h + 20u in 560 ms (cubic-bezier(.5, 0, .8, .3)).
+function vanishAt(hu, tilt) {
+  const [x1, y1, x2, y2] = tilt ? [.42, 0, 1, 1] : [.5, 0, .8, .3], dur = tilt ? 620 : 560;
+  const goal = tilt ? hu / (hu + 20) : .15 + .85 * (hu + 6) / (hu + 26);
+  const at = (a, b, c, s) => 3 * (1 - s) ** 2 * s * a + 3 * (1 - s) * s * s * b + s ** 3 * c;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (at(y1, y2, 1, m) < goal) lo = m; else hi = m; }
+  return Math.round(at(x1, x2, 1, (lo + hi) / 2) * dur);
+}
+const DRIP_LEAD = 115, DRIP_GAIN = .4;                                    // water-drip.mp3 (0.42 s, trimmed): its impact is 115 ms in; its impact is struck when the sinking card has gone under completely (`vanishAt`), for every eaten card
+const CHOMP_LEAD = 60, CHOMP_GAIN = .8;                                  // chomp.mp3 (0.44 s, trimmed from the original): its impact is 60 ms in, so it starts 60 ms before the bite closes (450 ms and 1350 ms of the jaws' animation)
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const FIN = '<path d="M2 38 C10 30 18 12 30 2 C28 14 30 28 38 38 Z" fill="#6F8A96" stroke="#17262B" stroke-width="3" stroke-linejoin="round"/>';
 // The jaws (viewBox 120 x 90; the head and its lower jaw go on below the viewBox, down past the card's edge, which clips them): a tall grey head, rounded with only a soft point, and the mouth cut into it: a tall arch made of two quadratic curves that meet at the apex A at a gentle angle. The teeth stand on the mouth's edge:
@@ -118,7 +130,7 @@ export function runShark(tools, eaten, span) {
   if (!eaten.length) return 0;
   const T = sharkTimeline(eaten, span), u = eaten[0].w / MOCK_W;
   const slots = eaten.map((g) => ({ g, ...slot(tools, g) }));
-  const sink = (s, at, tilt) => gone(tools, tools.animate(s.card, [{ transform: 'none', opacity: 1 }, ...(tilt ? [] : [{ transform: `translateY(${-6 * u}px)`, opacity: 1, offset: .15 }]), { transform: `translateY(${s.g.h + 20 * u}px) rotate(${tilt}deg)`, opacity: 0 }], tilt ? 620 : 560, at, tilt ? 'ease-in' : 'cubic-bezier(.5,0,.8,.3)', 'both'), s.box);
+  const sink = (s, at, tilt) => { const a = tools.animate(s.card, [{ transform: 'none', opacity: 1 }, ...(tilt ? [] : [{ transform: `translateY(${-6 * u}px)`, opacity: 1, offset: .15 }]), { transform: `translateY(${s.g.h + 20 * u}px) rotate(${tilt}deg)`, opacity: 0 }], tilt ? 620 : 560, at, tilt ? 'ease-in' : 'cubic-bezier(.5,0,.8,.3)', 'both'); gone(tools, a, s.box); tools.soundAt?.(a, 'drip', vanishAt(s.g.h / u, tilt), DRIP_GAIN, DRIP_LEAD); return a; };
   if (T.kind === 'bite') {
     const s = slots[0], { g } = s, bottom = g.y + g.h / 2, jw = g.w * .82, jh = jw * JAW_H / JAW_W, up = -(jh + 6 * u);   // (the mouth's lower edge stays just below the card's edge, even at the bite: only the cone shows)
     const jaws = art(tools, JAWS, `0 0 ${JAW_W} ${JAW_H}`, { left: (g.w - jw) / 2 + 'px', top: g.h + 12 * u + 'px', width: jw + 'px', height: jh + 'px', zIndex: '4', transformOrigin: '50% 50%' }, s.box);
@@ -131,7 +143,10 @@ export function runShark(tools, eaten, span) {
         { offset: at(base + 570), transform: `translate(${x}px,${up + 8 * u}px) scaleY(.74)`, easing: 'ease-in' },
         { offset: at(base + 900), transform: `translate(${x}px,0) scaleY(1)`, easing: 'linear' });
     }
-    gone(tools, tools.animate(jaws, f, L, 0, 'linear', 'both'), jaws);
+    const jawAnim = tools.animate(jaws, f, L, 0, 'linear', 'both');
+    gone(tools, jawAnim, jaws);
+    for (const ms of [450, 1350]) tools.soundAt?.(jawAnim, 'chomp', ms, CHOMP_GAIN, CHOMP_LEAD);          // a chomp (chomp.mp3) when each bite closes, on the jaws' own clock
+
     // the hole of each bite is cut where the jaws are when they close (`ty` = up + 8u, `sy` = .74 about the box centre), on the same clock as the jaws (duration L)
     const box = { left: (g.w - jw) / 2, top: g.h + 12 * u, w: jw, h: jh, ty: up + 8 * u, sy: .74 };
     const p1 = biteHole([{ ...box, tx: x0 }], g.w, g.h), p2 = biteHole([{ ...box, tx: x0 }, { ...box, tx: x1 }], g.w, g.h), b1 = at(450), b2 = at(1350);

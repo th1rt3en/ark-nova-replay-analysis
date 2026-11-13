@@ -5,7 +5,7 @@ body.poster, .lobby {
 }
 body.poster {
   max-width: 60rem; min-height: 100vh; margin: 0 auto; padding: 1.1rem 1.2rem 3.5rem; box-sizing: border-box; color: var(--ink); font: 500 17px/1.45 'Barlow', system-ui, sans-serif;
-  background: radial-gradient(1200px 700px at 62% -8%, #1B7D8C 0%, var(--teal2) 40%, var(--teal) 100%) fixed var(--teal);
+  background: radial-gradient(1200px 700px at 62% -8%, var(--pg0, #1B7D8C) 0%, var(--pg1, var(--teal2)) 40%, var(--pg2, var(--teal)) 100%) fixed var(--pg2, var(--teal));          /* (the page colours of a mode: --pg0 / 1 / 2 from its body class in style.css; teal by default, as on the replay) */
 }
 html:has(body.poster) { background: var(--teal); }
 
@@ -35,18 +35,18 @@ body.poster :is(.lobbies, .pp) .tag { padding: .05rem .6rem; border: 2px solid v
 /* buttons and fields (also the lobby cards) */
 body.poster :is(.lobbies, .pp) button, body.poster :is(.lobbies, .pp) a.btnlink, .lobby button, .lobby a.btn {
   display: inline-block; box-sizing: border-box; padding: .4rem 1.1rem .45rem; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink);
-  font: 700 16px 'Park Label', system-ui, sans-serif; text-decoration: none; cursor: pointer; transition: transform .08s, box-shadow .08s;
+  font: 700 16px 'Park Label', system-ui, sans-serif; text-decoration: none; cursor: var(--cur-hand); transition: transform .08s, box-shadow .08s;
 }
 body.poster :is(.lobbies, .pp) button:hover:not(:disabled), body.poster :is(.lobbies, .pp) a.btnlink:hover, .lobby button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 0 var(--ink); }
 body.poster :is(.lobbies, .pp) button:active:not(:disabled), .lobby button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 body.poster :is(.lobbies, .pp) button.go, body.poster :is(.lobbies, .pp) a.btnlink, .lobby button[type=submit] { background: var(--sun); color: #fff; text-shadow: 0 2px 0 rgba(23, 38, 43, .45); border-color: var(--ink); }
 body.poster :is(.lobbies, .pp) button.danger { background: var(--paper); color: var(--rust); border-color: var(--rust); box-shadow: 0 3px 0 var(--rust); }
-body.poster :is(.lobbies, .pp) button:disabled, .lobby button:disabled { opacity: .55; cursor: default; box-shadow: 0 3px 0 var(--ink); }
+body.poster :is(.lobbies, .pp) button:disabled, .lobby button:disabled { opacity: .55; cursor: var(--cur-arrow); box-shadow: 0 3px 0 var(--ink); }
 body.poster :is(.lobbies, .pp) button:focus-visible, .lobby button:focus-visible, body.poster :is(.lobbies, .pp) a:focus-visible, .lobby a:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 body.poster :is(.lobbies, .pp) input[type=text], body.poster :is(.lobbies, .pp) select, .lobby input[type=text], .lobby select {
   padding: .4rem .75rem; background-color: var(--field); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; font: 600 16px 'Park Label', system-ui, sans-serif;
 }
-body.poster :is(.lobbies, .pp) select, .lobby select { appearance: none; padding-right: 2.2rem; cursor: pointer; background-repeat: no-repeat; background-position: right .8rem center;
+body.poster :is(.lobbies, .pp) select, .lobby select { appearance: none; padding-right: 2.2rem; cursor: var(--cur-hand); background-repeat: no-repeat; background-position: right .8rem center;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath d='M1 1l7 7 7-7' fill='none' stroke='%2317262B' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 body.poster :is(.lobbies, .pp) input:focus-visible, body.poster :is(.lobbies, .pp) select:focus-visible, .lobby input:focus-visible, .lobby select:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
@@ -56,12 +56,12 @@ body.poster :is(.lobbies, .pp) .create > label:first-child, body.poster :is(.lob
 body.poster :is(.lobbies, .pp) .create .hint:empty { display: none; }
 body.poster :is(.lobbies, .pp) .create select { min-width: 10rem; }
 body.poster :is(.lobbies, .pp) .create .hint { padding: .6rem .9rem; background: rgba(23, 38, 43, .07); border-left: 5px solid var(--sun); border-radius: 0 12px 12px 0; font-size: .95rem; opacity: 1; color: #2c3f45; }
-.lobbycheck, body.poster :is(.lobbies, .pp) .create label.tile { display: flex; align-items: center; gap: .9rem; padding: .75rem 1rem; background: var(--field); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+.lobbycheck, body.poster :is(.lobbies, .pp) .create label.tile { display: flex; align-items: center; gap: .9rem; padding: .75rem 1rem; background: var(--field); border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 3px 0 var(--ink); cursor: var(--cur-hand); }
 .lobbycheck:hover, body.poster :is(.lobbies, .pp) .create label.tile:hover { background: #FFF3C4; }
 .lobbycheck b, .tile b { font: 400 1.1rem 'Park Head', system-ui, sans-serif; }
 .lobbycheck small, .tile small { display: block; margin-top: .15rem; color: #52666B; font-size: .92rem; line-height: 1.3; }
 .lobbycheck > span, .tile > span { flex: 1 1 auto; }
-.lobbycheck input[type=checkbox], .tile input[type=checkbox] { appearance: none; -webkit-appearance: none; flex: 0 0 auto; order: 2; width: 3.1rem; height: 1.75rem; margin: 0; position: relative; cursor: pointer;
+.lobbycheck input[type=checkbox], .tile input[type=checkbox] { appearance: none; -webkit-appearance: none; flex: 0 0 auto; order: 2; width: 3.1rem; height: 1.75rem; margin: 0; position: relative; cursor: var(--cur-hand);
   background: #CDBE90; border: 3px solid var(--ink); border-radius: 999px; transition: background .15s; }
 .lobbycheck input[type=checkbox]::after, .tile input[type=checkbox]::after { content: ''; position: absolute; top: 50%; left: 2px; width: 1.15rem; height: 1.15rem; margin-top: -.575rem; border-radius: 50%;
   background: var(--paper); border: 3px solid var(--ink); box-sizing: border-box; transition: transform .15s; }
@@ -71,9 +71,9 @@ body.poster :is(.lobbies, .pp) .create .hint { padding: .6rem .9rem; background:
 .tile[hidden], .lobbycheck[hidden] { display: none !important; }
 .kind { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: .7rem; }
 .kind label { display: flex; text-align: center; align-items: center; justify-content: center; gap: .5rem; padding: .6rem .8rem; background: var(--field); border: 3px solid var(--ink); border-radius: 999px; box-shadow: 0 3px 0 var(--ink);
-  font: 700 1.05rem 'Park Label', system-ui, sans-serif; cursor: pointer; }
+  font: 700 1.05rem 'Park Label', system-ui, sans-serif; cursor: var(--cur-hand); }
 .kind label:has(input:checked) { background: var(--gold); }
-.kind label:has(input:disabled) { opacity: .55; cursor: default; }
+.kind label:has(input:disabled) { opacity: .55; cursor: var(--cur-arrow); }
 .kind input { accent-color: var(--ink); width: 1.1rem; height: 1.1rem; margin: 0; }
 
 /* the lobby: the two seats and the chat */
@@ -101,7 +101,7 @@ body.poster #acctbar { background: var(--paper); color: var(--ink); border: 3px 
 body.poster #acctbar a { color: #7a3b00; font-weight: 700; }
 body.poster #acctbar .muted { color: #52666B; }
 body.poster #acctbar button:not(.linkbtn) { border: 3px solid var(--ink); border-radius: 999px; background: var(--sun); color: #fff; box-shadow: 0 2px 0 var(--ink); font: 700 15px 'Park Label', system-ui, sans-serif; padding: .2rem .9rem; }
-body.poster #acctbar button.linkbtn { background: none; border: 0; box-shadow: none; color: #7a3b00; text-decoration: underline; font-weight: 700; cursor: pointer; padding: 0; }
+body.poster #acctbar button.linkbtn { background: none; border: 0; box-shadow: none; color: #7a3b00; text-decoration: underline; font-weight: 700; cursor: var(--cur-hand); padding: 0; }
 
 /* ---- the lobby cards of the sandbox and the live game page --------------------------------------------------------------------------------- */
 .lobby { max-width: 36rem; margin: 3.5rem auto; padding: 1.5rem 1.8rem 1.6rem; background: var(--paper); color: var(--ink); border: 4px solid var(--ink); border-radius: 29px; box-shadow: 0 6px 0 var(--ink);

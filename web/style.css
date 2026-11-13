@@ -8,7 +8,7 @@ h1 { margin-bottom: .25rem; }
 form { display: flex; gap: .5rem; margin: 1.5rem 0 1rem; flex-wrap: wrap; }
 input[type=text], button { font: inherit; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: inherit; }
 input[type=text] { flex: 1 1 14rem; }
-button { background: var(--accent); color: #fff; border-color: var(--accent); cursor: pointer; }
+button { background: var(--accent); color: #fff; border-color: var(--accent); cursor: var(--cur-hand); }
 button:disabled { opacity: .6; cursor: wait; }
 a { color: var(--accent); }
 #msg { padding: .75rem 1rem; border-radius: 6px; border: 1px solid var(--border); }
@@ -51,7 +51,7 @@ body.landing { max-width: 64rem; }
 #acctbar { position: fixed; top: .6rem; right: .8rem; z-index: 20; display: flex; gap: .5rem; align-items: center; padding: .3rem .6rem; border-radius: 8px; background: color-mix(in srgb, var(--bg) 88%, var(--fg)); border: 1px solid var(--border); }
 #acctbar button { padding: .3rem .7rem; }
 .acctname { font-weight: 600; }
-button.linkbtn { background: none; border: 0; color: var(--accent); padding: 0; text-decoration: underline; cursor: pointer; font: inherit; }
+button.linkbtn { background: none; border: 0; color: var(--accent); padding: 0; text-decoration: underline; cursor: var(--cur-hand); font: inherit; }
 dialog.acctdlg { width: min(30rem, calc(100vw - 2rem)); border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--fg); padding: 1rem 1.2rem 1.2rem; }
 dialog.acctdlg::backdrop { background: rgba(0, 0, 0, .55); }
 .accthead { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
@@ -71,7 +71,7 @@ dialog.acctdlg::backdrop { background: rgba(0, 0, 0, .55); }
 .lb { margin-top: 2rem; }
 .lb h2 { margin: 0 0 .2rem; font-size: 1.15rem; }
 .lbtabs { display: flex; gap: .3rem; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-top: .8rem; }
-.lbtab { background: transparent; color: var(--muted); border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; padding: .45rem .9rem; cursor: pointer; font: inherit; font-weight: 600; }
+.lbtab { background: transparent; color: var(--muted); border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; padding: .45rem .9rem; cursor: var(--cur-hand); font: inherit; font-weight: 600; }
 .lbtab:hover { color: var(--fg); }
 .lbtab.on { color: var(--fg); border-color: var(--border); background: color-mix(in srgb, var(--fg) 5%, var(--bg)); margin-bottom: -1px; border-bottom: 1px solid color-mix(in srgb, var(--fg) 5%, var(--bg)); }
 .lbpanel { padding: 1rem 0; }
@@ -88,15 +88,15 @@ dialog.acctdlg::backdrop { background: rgba(0, 0, 0, .55); }
 .cal.loading { opacity: .5; min-height: 16rem; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .6rem; }
 .cal-title { font-size: 1.05rem; font-weight: 700; letter-spacing: .01em; }
-.cal-nav { width: 2.1rem; height: 2.1rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--c-line); background: transparent; color: var(--c-fg); font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.cal-nav { width: 2.1rem; height: 2.1rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: 1px solid var(--c-line); background: transparent; color: var(--c-fg); font-size: 1.35rem; line-height: 1; cursor: var(--cur-hand); }
 .cal-nav:hover:not(:disabled) { background: var(--c-bg); border-color: var(--c-accent); }
-.cal-nav:disabled { opacity: .3; cursor: default; }
+.cal-nav:disabled { opacity: .3; cursor: var(--cur-arrow); }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
 .cal-dow { padding-bottom: .15rem; text-align: center; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--c-muted); }
 .cal-day { position: relative; aspect-ratio: 1; min-width: 0; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; border: 1px solid transparent; background: transparent;
   color: color-mix(in srgb, var(--c-muted) 65%, transparent); font: inherit; font-size: .92rem; line-height: 1.05; }
 .cal-day i { font-size: .6rem; font-style: normal; font-weight: 600; opacity: .85; }
-.cal-day.has { background: var(--c-bg); border-color: var(--c-line); color: var(--c-fg); font-weight: 600; cursor: pointer; transition: transform .1s, border-color .1s, box-shadow .1s; }
+.cal-day.has { background: var(--c-bg); border-color: var(--c-line); color: var(--c-fg); font-weight: 600; cursor: var(--cur-hand); transition: transform .1s, border-color .1s, box-shadow .1s; }
 .cal-day.has:hover { transform: translateY(-1px); border-color: var(--c-accent); box-shadow: 0 2px 6px rgba(0, 0, 0, .18); }
 .cal-day.played { background: var(--c-ok-bg); border-color: var(--c-ok); }
 .cal-day.played::after { content: "\2713"; position: absolute; top: 2px; right: 5px; font-size: .62rem; color: var(--c-ok); }
@@ -111,3 +111,16 @@ dialog.acctdlg::backdrop { background: rgba(0, 0, 0, .55); }
 .pastlist { display: flex; gap: 2rem; flex-wrap: wrap; margin-top: .8rem; }
 .pastgame { flex: 0 1 22rem; min-width: 0; }
 .pastgame h3 { margin: 0 0 .5rem; font-size: 1rem; }
+
+/* The site's own cursors (every page that loads style.css: replay, fork, sandbox, live play, the poster pages, the mini games): a black arrow and a black pointing hand with a white outline (web/cursors/arrow.svg, hand.svg, 32 x 32, hotspots 3 2 = the arrow's tip, 10 1 = the fingertip; the browser's own cursor is the fallback). Every `cursor: default` / `cursor: pointer` of the css uses the two variables; the page itself gets the arrow, links the hand, text fields keep the text cursor. Other cursors (grab, help, not-allowed, ...) are the browser's. */
+:root { --cur-arrow: url(/cursors/arrow.svg) 3 2, default; --cur-hand: url(/cursors/hand.svg) 10 1, pointer; }
+html { cursor: var(--cur-arrow); }
+a:any-link { cursor: var(--cur-hand); }
+input:not([type]), input[type="text"], input[type="search"], input[type="email"], input[type="password"], input[type="number"], input[type="url"], input[type="tel"], textarea, [contenteditable=""], [contenteditable="true"] { cursor: text; }
+/* the page background of each mode in its own colour, like on the front page (landing.js OPTS): the replay keeps the teal; the radial gradient is in
+   css/poster-page.css (body.poster) and css/parkposter.css (body.viewer), these set its three stops: --pg0 the light spot at the top, --pg1, --pg2 the dark edge */
+body.m-mini { --pg0: #4A2F80; --pg1: #36215F; --pg2: #2B1A4D; }       /* Mini games: purple (#8058C4) */
+body.m-lib { --pg0: #812138; --pg1: #5F1728; --pg2: #4D1220; }        /* Library: ruby (#C2344D) */
+body.m-custom { --pg0: #923F18; --pg1: #6C2D11; --pg2: #57240E; }     /* Custom games, the lobby, the live game, game over: orange (#E9662A) */
+body.m-sand { --pg0: #8C6216; --pg1: #67480F; --pg2: #533A0C; }       /* Sandbox: amber (#E0A02A) */
+body.m-editor { --pg0: #286B38; --pg1: #1D4E29; --pg2: #173F21; }     /* My maps (map editor): green (#3E9A55) */

@@ -265,8 +265,10 @@ def _fit_income_slots(state: GameState, events: list, seat_of: dict) -> None:
         slots = data.map_by_id(p.map_id)["geometry"]["bonus_slots"]
         income = [s for s in slots if s["kind"] == "instant_income" and s.get("bonus")]
         used = p.flags.get("bonus_used", 0)
+        optional = sum(1 << s["index"] for s in income if str(s["bonus"]["type"]).lower() == "pouch") & used       # (the Pouch of a space is optional: a player who does not pouch in a break is not paid, yet the cube is gone: 944222561)
         for s in income:
             used &= ~(1 << s["index"])
+        used |= optional
         for kind, n in got:
             for s in income:
                 if not used >> s["index"] & 1 and s["bonus"]["type"].lower().replace("-", "").replace("_", "") == kind and (n is None or s["bonus"]["value"] == n):

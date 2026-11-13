@@ -2,6 +2,7 @@
 // The bar and the list share one box (`#logBox`, built here); the funnel button is where the filter bar will open (not built yet, `FILTERS` below counts the active filters).
 import { $, el } from './util.js';
 import { S, MINIGAME } from './state.js';
+import { logNewest, showLine } from './sidebar.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const icon = (cls, vb, d) => {
@@ -48,22 +49,21 @@ export function refreshLogSearch(go) {
   if (!hits.includes(cur)) cur = hits.length ? hits[hits.length - 1] : null;      // (the hit nearest the move on show)
   lines().forEach((li) => li.classList.toggle('hitline', li === cur));
   cur?.querySelector('mark.hit')?.classList.add('cur');
-  const n = hits.indexOf(cur) + 1;
-  count.textContent = needle ? (hits.length ? n + '/' + hits.length : '0/0') : '';
+  const n = logNewest() ? hits.length - hits.indexOf(cur) : hits.indexOf(cur) + 1;          // (newest first: the hits are counted from the top as well)
+  count.innerHTML = !needle ? '' : hits.length ? `<b>${n}</b><s>of</s><b>${hits.length}</b><i>${hits.length === 1 ? 'match' : 'matches'}</i>` : '<i>No matches</i>';
   count.classList.toggle('none', !!needle && !hits.length);
   up.disabled = down.disabled = hits.length < 2;
-  $('logBox').classList.toggle('searching', !!hits.length);                  // (the arrows show only while there is a hit)
+  $('logBox').classList.toggle('searching', !!hits.length);
+  input.closest('.logsearch').classList.toggle('open', !!needle);                 // (typing opens the count line under the field; the field itself never changes size)
   fun.title = FILTERS.active ? FILTERS.active + ' filter' + (FILTERS.active > 1 ? 's' : '') + ' on' : 'Filters';
   funCount.textContent = FILTERS.active || ''; funCount.hidden = !FILTERS.active;
   fun.classList.toggle('on', !!FILTERS.active);
-  if (go && cur) {
-    const list = $('moves');
-    list.scrollTop = cur.offsetTop - (list.clientHeight - cur.offsetHeight) / 2;
-  }
+  if (go && cur) showLine(cur, true);                                     // (the list scrolls, or the control pane when the log lies below the info boxes, sidebar.js)
   refreshLogSearch.hits = hits;
 }
 function step(d) {
   const hits = refreshLogSearch.hits || [];
+  if (logNewest()) d = -d;                                                    // (newest first: "next" (down) is the older hit)
   if (hits.length < 2) return;
   cur = hits[(hits.indexOf(cur) + d + hits.length) % hits.length];
   refreshLogSearch(true);
@@ -80,18 +80,18 @@ export function setupLogSearch() {
   clear = el('button', 'ls-btn ls-clear'); clear.type = 'button'; clear.title = 'Clear the search'; clear.setAttribute('aria-label', 'Clear the search'); clear.hidden = true;
   clear.append(icon('ls-chev', '0 0 16 16', 'M4 4l8 8M12 4l-8 8'));
   count = el('span', 'ls-cnt');
-  const nav = el('span', 'ls-nav');
   up = el('button', 'ls-btn'); up.type = 'button'; up.title = 'Previous hit (Shift+Enter)'; up.setAttribute('aria-label', 'Previous hit');
   up.append(icon('ls-chev', '0 0 16 16', 'M3 10l5-5 5 5'));
   down = el('button', 'ls-btn'); down.type = 'button'; down.title = 'Next hit (Enter)'; down.setAttribute('aria-label', 'Next hit');
   down.append(icon('ls-chev', '0 0 16 16', 'M3 6l5 5 5-5'));
-  nav.append(up, down);
-  const zone = el('span', 'ls-grp'); zone.append(count, nav);                      // (the count and the arrows are one control, set apart from the X)
+  const line = el('div', 'ls-line'); line.append(count, up, down);                 // (the count line: "3 of 8 matches" and the arrows, under the field)
+  const more = el('div', 'ls-more'), moreIn = el('div', 'ls-more-in'); moreIn.append(line); more.append(moreIn);
+  const well = el('span', 'ls-well'); well.append(MAG(), input, clear);              // (the field: a recessed well with the magnifier and the X inside)
   fun = el('button', 'ls-fun'); fun.type = 'button'; fun.title = 'Filters'; fun.setAttribute('aria-label', 'Filters');
   fun.append(icon('ls-funnel', '0 0 24 24', 'M3 6h18M6 12h12M10 18h4'));
   funCount = el('b', 'ls-fk'); funCount.hidden = true; fun.append(funCount);
-  row.append(MAG(), input, clear, zone, el('i', 'ls-sep'), fun);
-  bar.append(row);
+  row.append(well, el('i', 'ls-sep'), fun);
+  bar.append(row, more);
   list.replaceWith(box); box.append(bar, list);
   const reset = () => { input.value = ''; q = ''; cur = null; clear.hidden = true; refreshLogSearch(); };
   clear.onclick = () => { reset(); input.focus(); };

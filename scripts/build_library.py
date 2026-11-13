@@ -1,4 +1,4 @@
-"""Writes web/library_data.json, the data of the card library page (web/library.html): one entry per card with the fields the filters read and the text the search looks through.
+"""Writes web/library_data.json, the data of the card library page (web/library/cards/index.html, js/library_cards.js): one entry per card with the fields the filters read and the text the search looks through.
 
 Usage: python scripts/build_library.py [path to the fan site's locales/en/common.json]
 The locale file is in the git-ignored vendor/ folder (default: vendor/Next-Ark-Nova-Cards/public/locales/en/common.json of this repository); it gives the printed text of the abilities.

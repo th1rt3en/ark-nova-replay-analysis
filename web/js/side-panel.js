@@ -9,6 +9,7 @@ import { clockBadge, gameMenu } from './play.js';
 import { hideIncome, showEndgame, showIncome } from './incomepop.js';
 import { hdPentagonSvg } from './ctrack.js';
 import { amountIcon } from './log-labels.js';
+import { bindChip } from './move-hover.js';
 
 // score = appeal + conservation points (-14 at 0, +2 per step to 10, then +3): same rule as engine/tracks.py, used when the server did not send it
 const trackScore = (p) => Math.max(0, Math.min(113, p.appeal)) + (p.conservation <= 10 ? 2 * p.conservation - 14 : 3 * Math.min(41, p.conservation) - 24);
@@ -156,7 +157,6 @@ function headerStats(st, flash) {
   if (!root) return;
   root.replaceChildren();
   const rnd = flash('round', st.round, el('div', 'pill rnd'), true);          // (the Round | Turn pill never animates)
-  rnd.title = 'Round ' + st.round + ': a new round starts when a break ends. Turn: the acting player’s normal turn number, counted when the turn starts. During a break or after play ends, the last turn number stays visible. Setup does not count';
   const rn = el('b', 'rn', st.round), tn = el('b', 'tn', turnNumber(st));
   const rh = el('div', 'half'), th = el('div', 'half');          // (two equal halves, the word small above the number, a dashed divider between them)
   rh.append(el('span', 'lab', 'Round'), rn);
@@ -172,6 +172,7 @@ function headerStats(st, flash) {
   const mug = el('img', 'brkicon'); mug.src = '/icons/r3c14.webp'; mug.alt = 'Break'; mug.draggable = false;            // (Ark Nova's symbol for the break: a coffee mug)
   brk.append(mug, num, pips);
   root.append(rnd, brk);
+  bindChip(rh, th, turnNumber);          // (hover: the move bar shows the breaks / the actions of the players, move-hover.js)
   hopBreak(brk, pips, num, S.lastNums.break, st.break_position);
   const menu = PLAY ? gameMenu() : null;                                 // concede / propose to abandon / end on overtime
   if (menu) root.append(menu);

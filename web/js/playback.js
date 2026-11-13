@@ -1,7 +1,7 @@
 // [module] Step navigation: timeline, autoplay, speed, keyboard, move list.
 import { $, el, seatColor } from './util.js';
 import { S } from './state.js';
-import { labelOf, mergedAway, mergedFrom, povState } from './pov.js';
+import { askSpectated, canChoosePov, labelOf, mergedAway, mergedFrom, povState } from './pov.js';
 import { cardMarks } from './cards.js';
 import { draftMarks } from './action-bar.js';
 import { engineBadge, labelNode, stepLabelNode } from './log-labels.js';
@@ -13,6 +13,7 @@ import { FORK, PLAY, SANDBOX, MINIGAME } from './state.js';
 import { groupsOf, NEUTRAL_COLOR } from './log-filter.js';
 import { closeResults, openResults, resultsAvailable } from './results.js';
 import { cardAnimationsBusy } from './card-motion.js';
+import { stepSounds } from './animal-sounds.js';
 
 const PLAY_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2l13 8-13 8z"/></svg>', PAUSE_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h4v14H4zM12 3h4v14h-4z"/></svg>';
 export function setPlaying(on) {
@@ -124,7 +125,8 @@ export function stepBy(d) {
   if (d > 0 && atEnd() && resultsAvailable()) { openResults(); return; }  // (› on the last step opens them, results.js)
   let f = frameAfter(S.step, S.phase, d);
   while (f && skipFrame(f[0], f[1])) { const g = frameAfter(f[0], f[1], d); if (!g) break; f = g; }
-  if (f) go(f[0], f[1], d > 0);
+  if (f) { S.backStep = d < 0 && f[0] < S.step; go(f[0], f[1], d > 0); S.backStep = false; }
+  else if (d < 0 && atStart() && canChoosePov()) askSpectated(true);       // (back from the very first step: the choice of the spectated player again, replay only)
 }
 
 // An unsuccessful Hunter / Scuba Dive (nothing of the revealed cards can be taken: the draw step is followed by the "discards ... (no animal)" step with no card kept): the replay
@@ -173,6 +175,7 @@ export function go(n, phase = 0, animateCards = false) {
   S.phase = Math.max(0, Math.min(framesOf(S.step).length - 1, phase));
   autoClose(animateCards);
   personChain(animateCards);
+  stepSounds(animateCards);                                              // (an animal that entered a zoo plays its call: one step forward only, animal-sounds.js)
   if (S.step !== before) { S.thresholdMode = null; S.marketMode = null; S.multiplierMode = null; S.slot1Mode = null; S.assertOpen = null; S.bpick = null; S.animalsMode = null; S.assocSpecies = null; S.forkBonus = null; S.assocMode = null; S.forkMenu = null; S.tradeMode = false; S.snapMode = null; S.snapCard = null; S.pickOpen = null; S.forkError = ''; draftMarks.clear(); cardMarks.clear(); keepSel.clear(); S.forkSpend = 0; S.skipMode = false; S.animalEnc = null; S.placement = null; }
   render();
 }
@@ -247,6 +250,7 @@ export function buildMoveList() {
     li.style.borderLeftColor = turns[i] && turns[i].owner === null ? NEUTRAL_COLOR : seatColor(actor);      // (a neutral step, no player's: the draft, the break, the final scoring, log-filter.js `groupsOf`)
     li.append(el('span', 'n', mv.show[i] ? mv.first[i] : ''), stepLabelNode(labelOf(s) || '…', s), engineBadge(s.engine));
     li._step = s;
+    li.style.setProperty('--i', String(i));                                         // (setting Log order = newest first: parkposter.css sorts the lines by it)
     if (mergedAway(s)) li.style.display = 'none';                                   // (inside a merged run: the last step of the run is the line)
     li.onclick = () => { go(i); };
     list.append(li);
