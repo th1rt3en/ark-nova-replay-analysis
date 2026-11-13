@@ -58,6 +58,8 @@ class _Ctx:
         self.threshold_snaps = 0                                  # snaps that belong to a conservation bonus (extra hand size), not to the notepad
         self.support = None                                        # player id whose supported project is still waiting for its notepad bonus
         self.rep_task = False                                      # a reputation task was counted at its worker move; newer logs add a getBonuses for it
+        self.board_worker = None                                   # player id who took the 3rd partner zoo in this move (its space pays a worker, which has not come yet)
+        self.rep8 = None                                           # player id whose reputation reached 8 in this move and whose worker (the 8 reputation bonus) has not come yet
         self.timeline = None                                    # normal turn owner, separate from borrowed card owner
         self.markers: list = []                                    # (order, player id) of every turn marker
         self.mismatches: list[str] = []
@@ -237,7 +239,10 @@ def h_get_bonuses(ctx: _Ctx, e: Event) -> None:
         if got is not None and got < 2:
             p.reputation = min(15, ctx.__dict__.get("rep_task_old", p.reputation) + got)
         return
+    old_rep = p.reputation
     _apply_bonuses(p, e.args.get("bonuses"))
+    if old_rep < 8 <= p.reputation:
+        ctx.rep8 = str(e.args["player_id"])                  # (the 8 reputation bonus, a worker, follows: it is no project reward)
     if e.args.get("source") == "map bonus space":
         for kind, value in (e.args.get("bonuses") or {}).items():
             pid = str(e.args.get("player_id"))
@@ -288,8 +293,18 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
         ctx.__dict__["rep_task_old"] = p.reputation
         p.reputation = min(15, p.reputation + 2)
         ctx.rep_task = True
+        if ctx.__dict__["rep_task_old"] < 8 <= p.reputation:
+            ctx.rep8 = str(a["player_id"])
+    if e.type == "slideMeeples" and any(m_.get("location") == "partner_3" and str(m_.get("type", "")).startswith("partner") for m_ in a.get("meeples") or []):
+        ctx.board_worker = str(a.get("player_id", e.player))              # the 3rd partner zoo hires a worker (its space bonus; association.space_bonuses)
     if e.type == "slideMeeples" and e.log.endswith("gains a new Association worker"):      # the Worker bonus of a supported project (map 7) is logged only as the new worker
-        _support_bonus(ctx, e, "Worker")
+        pid_w = str(a.get("player_id", e.player))
+        if ctx.rep8 is not None and ctx.rep8 == pid_w:
+            ctx.rep8 = None                                  # the player has just reached 8 reputation: this worker is that bonus, not the project's (806276023 move 113)
+        elif ctx.board_worker == pid_w:
+            ctx.board_worker = None                          # the player has just taken the 3rd partner zoo: the worker is that space's bonus, not the project's (823017370 move 134)
+        else:
+            _support_bonus(ctx, e, "Worker")
     if e.type == "discardTokens":                    # tokens leave the game (the hidden university tile that a player turns over, action card tokens)
         gone = {int(m["id"]) for m in a.get("meeples") or []}
         if a.get("continent") and a.get("player_id") is not None:        # map 9: "removes <EUROPE> marker from their map" (the markers themselves are not in the log before)
@@ -869,6 +884,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
 
     for m in parsed.moves:
         if m.index >= first_turn:
+            ctx.rep8 = ctx.board_worker = None                   # (both worker bonuses come in the move that earned them)
             for e in m.events:
                 history_before(e.order)
                 while next_marker < len(markers) and markers[next_marker][0] < e.order:
