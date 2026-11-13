@@ -116,3 +116,14 @@ def test_a_turn_that_used_to_be_skipped_is_replayed(table):
     rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)}, chain=True)
     bad = {k: (rep.results[k].status, rep.results[k].detail[:120]) for k in REPLAYED[table] if k in rep.results and rep.results[k].status != "ok"}
     assert not bad, bad
+
+@pytest.mark.skipif(not (LOGS / "715758234.json").exists(), reason="log not available")
+def test_a_release_that_frees_no_enclosure_is_replayed():
+    # 715758234 (map 5a, Marine Worlds): BGA lists {"type": "empty"} as the building of the 4th release ("frees no enclosure")
+    parsed = parse_log(str(LOGS / "715758234.json"))
+    seats = [str(p.id) for p in parsed.players]
+    setup, cfg, seed = game_from_log(parsed, maps=["5a", "5a"], marine_worlds=True)
+    replay = build_replay(parsed, setup, cfg, seed)
+    rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
+    assert not rep.illegal and not rep.mismatches, rep.illegal + rep.mismatches
+    assert all(r.status == "ok" for r in rep.results.values()), {k: r.detail for k, r in rep.results.items() if r.status != "ok"}

@@ -737,7 +737,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             add(Action(seat, "play_animal", {"card": _key(a["card"]["id"]), "from_display": bool(a.get("fromDisplay")),
                                              **({"x": bs[0]["x"], "y": bs[0]["y"]} if bs else {"flock": True}), **_cubes(bs)}), e)
         elif t == "releaseAnimal":
-            bl = a.get("buildings") or []
+            bl = [b_ for b_ in a.get("buildings") or [] if "x" in b_]      # (a release that frees no enclosure lists {"type": "empty"}: 715758234)
             add(Action(seat, "choose_effect", {"release": _key(a["card"]["id"]), **({"building": [bl[0]["x"], bl[0]["y"]]} if bl else {}),
                                                          **({"also": [[b_["x"], b_["y"]] for b_ in bl[1:]]} if len(bl) > 1 else {}), **_cubes(bl)}), e)      # (the log may name several enclosures that were emptied)    # Release projects
         elif t == "wazaSpecial":

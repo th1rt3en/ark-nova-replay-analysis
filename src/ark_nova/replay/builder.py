@@ -593,6 +593,8 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
     cubes.release(p, k, cube_totals(a.get("buildings")))
     emptied = False
     for b in a.get("buildings") or []:                       # the enclosure that was emptied (an animal is not tied to an enclosure)
+        if b.get("type") == "empty" or "id" not in b:        # "frees no enclosure": BGA lists a placeholder {"type": "empty"} (715758234)
+            continue
         for mine in p.buildings:
             if mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"]):          # (the starting enclosure has an id of its own in the engine)
                 if mine.type.startswith("size-"):
