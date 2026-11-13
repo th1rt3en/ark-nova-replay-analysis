@@ -117,7 +117,12 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
                 mv0 = by_move.get(key)                      # the association prompt lists the notepad bonus spaces whose cube is still on them (replay/builder.py: `_apply_bonus_spaces`)
                 if mv0 is None:
                     mv0 = by_move[key] = Move(index=-1, move_id=key, time=int(p["time"]))
-                mv0.checks.append({"player": player, "active": str(a.get("active_player")), "bonus_spaces": [int(x) for x in a["args"]["bonusesSpaces"] if isinstance(x, int)]})
+                mv0.checks.append({"player": player, "active": str(a.get("active_player")), "order": order, "bonus_spaces": [int(x) for x in a["args"]["bonusesSpaces"] if isinstance(x, int)]})
+            if t == "midmessage" and isinstance(a, dict) and a.get("source") == "map bonus space" and "extra action" in str(e.get("log", "")) and a.get("player_id") is not None:
+                mv0 = by_move.get(key)                      # "X gets an extra action (map bonus space)": the Determination space of maps 3 / 3a, sent right after the cleanup of the action that supported the project
+                if mv0 is None:
+                    mv0 = by_move[key] = Move(index=-1, move_id=key, time=int(p["time"]))
+                mv0.checks.append({"player": player, "active": str(a["player_id"]), "order": order, "extra_action": True})
             if t in NOISE and order not in protection_orders:
                 continue
             mv = by_move.get(key)

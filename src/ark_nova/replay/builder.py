@@ -38,6 +38,8 @@ class Replay:
     notes: list[tuple[int, str]] = field(default_factory=list)         # known-imprecise oracles (strength modifiers of Venom/Constriction/hypnosis)
     setup_engine: dict = field(default_factory=dict)        # the engine states of the opening that the log does not play move by move: "dealt" (the hands as dealt, the initial discards waiting), "after_first" (one player has discarded), "final" (the setup is over): what a fork of those steps starts from
     draft_engine: dict = field(default_factory=dict)       # setup move index -> the engine state of the action card draft after it (engine/draft.py fed with the log's offers and choices)
+    cube_checks: list = field(default_factory=list)          # notepad cubes: where BGA's association prompt disagrees with what the events made us mark (move, player id, bits at the start of the move, bits after the move, bits the prompt says): each one is a wrong or missing slot
+    cube_unresolved: list = field(default_factory=list)        # supports whose notepad space neither the prompts nor an event identify: (move of the support, player id, n-th support, bits used before, spaces still free). Nothing is marked for them
     draft_rounds: dict = field(default_factory=dict)       # draft stage (pick1 | pick2 | keep) -> the engine state when that round starts (nothing chosen yet)
 
 
@@ -56,6 +58,12 @@ class _Ctx:
                 t, v = setup.action_cards[pid][slot - 1]
                 self.card_of_id[by_slot[slot]] = (self.seat_of[pid], t, v)
         self.threshold_snaps = 0                                  # snaps that belong to a conservation bonus (extra hand size), not to the notepad
+        self.slot_plan: dict = {}                                  # (player id, n-th support) -> the notepad slot that BGA's prompts before and after the support show (`_lookahead_slots`)
+        self.unresolved: list = []
+        self.cur_move = -1
+        self.support_info = None                                   # (move index, player id, n-th support) of the support that still waits for its notepad bonus
+        self.extra_action: set = set()                             # (player id, n-th support) followed by the extra action of the Determination space
+        self.support_n: dict = {}                                  # player id -> supports seen so far
         self.support = None                                        # player id whose supported project is still waiting for its notepad bonus
         self.rep_task = False                                      # a reputation task was counted at its worker move; newer logs add a getBonuses for it
         self.board_worker = None                                   # player id who took the 3rd partner zoo in this move (its space pays a worker, which has not come yet)
@@ -137,7 +145,36 @@ def _swap_placeholder_worker(p, destination: str) -> None:
 
 # ---- turn flow -----------------------------------------------------------------------------------------------------
 
+UNLOGGED_SPACES = ("Fac", "Clever", "Pouch", "Partner-Zoo")      # the special notepad spaces whose bonus may be skipped, so a support that no event identifies took them (by elimination)
+
+
+def _note_unresolved(ctx: _Ctx, *others) -> None:
+    """The turn of a support is over and nothing identified the notepad space it took: recorded, not guessed."""
+    if ctx.support is None or ctx.support_info is None or ctx.support_info[1] != ctx.support:
+        return
+    mv, pid, n = ctx.support_info
+    p = ctx.player(pid)
+    slots = data.map_by_id(p.map_id)["geometry"]["bonus_slots"]
+    used = p.flags.get("bonus_used", 0)
+    pz = next((s["index"] for s in slots if (s.get("bonus") or {}).get("type") == "Partner-Zoo" and not used >> s["index"] & 1), None)
+    if pz is not None and ctx.__dict__.pop("partner_after_support", None) == pid:      # no other space of the map was identified by an event, and the turn placed a partner zoo: the Partner-Zoo space
+        p.flags["bonus_used"] = used | (1 << pz)
+        for st in others:
+            st.players[ctx.seat(pid)].flags["bonus_used"] = st.players[ctx.seat(pid)].flags.get("bonus_used", 0) | (1 << pz)
+        ctx.support = None
+        return
+    fac = next((s["index"] for s in slots if (s.get("bonus") or {}).get("type") in UNLOGGED_SPACES and not used >> s["index"] & 1), None)
+    if fac is not None:                                          # every other space has an event of its own (a snap, a free size-2 building, 5 or 12 money, a worker, 3 X tokens, ...); the special space of these maps may leave none (the university of 4 / 4a, the 2 Clever effects of 6 / 6a after the cleanup, the 0-2 cards of the Pouch of 7 / 7a, the partner zoo of 8 / 8a: each can be skipped): what is left is that space
+        p.flags["bonus_used"] = used | (1 << fac)
+        for st in others:                                        # (the snapshot of the last move, taken before the game was over)
+            st.players[ctx.seat(pid)].flags["bonus_used"] = st.players[ctx.seat(pid)].flags.get("bonus_used", 0) | (1 << fac)
+        ctx.support = None
+        return
+    ctx.unresolved.append((mv, pid, n, used, [s["index"] for s in slots if not used >> s["index"] & 1]))
+
+
 def h_choose_action_card(ctx: _Ctx, e: Event) -> None:
+    _note_unresolved(ctx)
     ctx.support = None
     ctx.__dict__["track_takes"] = 0
     a = e.args
@@ -195,6 +232,8 @@ def h_upgrade_card(ctx: _Ctx, e: Event) -> None:
     for c in ctx.state.players[seat].action_cards:
         if (c.type, c.variant) == (t, v):
             c.level = int(a["actionCard"]["level"])
+    if not ctx.__dict__.pop("reward_upgrade-card", False):
+        _support_bonus(ctx, e, "upgrade-card")               # an upgrade right after a support with no reward in front of it is the notepad's upgrade space (833146203 move 303)
 
 
 def h_advance_break(ctx: _Ctx, e: Event) -> None:
@@ -222,6 +261,62 @@ def _mark_income_slot(p, kind: str, value) -> bool:
             p.flags["bonus_used"] = used | (1 << s["index"])
             return True
     return False
+
+
+def _extra_action_supports(parsed) -> set:
+    """(player id, n-th support) of the supports that are followed, after the action card cleanup of their turn and before the player's next card choice, by BGA's
+    "X gets an extra action (map bonus space)": the Determination space of maps 3 / 3a (the only notepad space with an extra action)."""
+    supports, cleanups, choices, extra = {}, {}, {}, {}
+    for m in parsed.moves:
+        for c in m.checks:
+            if c.get("extra_action"):
+                extra.setdefault(c["active"], []).append(c["order"])
+        for e in m.events:
+            a = e.args if isinstance(e.args, dict) else {}
+            if e.type == "slideMeeples" and "supports a conservation project" in str(e.log):
+                supports.setdefault(str(e.args["meeples"][0]["pId"]), []).append(e.order)
+            elif e.type == "actionCardCleanup" and a.get("player_id") is not None:
+                cleanups.setdefault(str(a["player_id"]), []).append(e.order)
+            elif e.type == "chooseActionCard" and a.get("player_id") is not None:
+                choices.setdefault(str(a["player_id"]), []).append(e.order)
+    out = set()
+    for pid, orders in supports.items():
+        for k, o in enumerate(orders):
+            cl = next((x for x in sorted(cleanups.get(pid, [])) if x > o), None)
+            if cl is None:
+                continue
+            nxt = next((x for x in sorted(choices.get(pid, [])) if x > cl), 10 ** 12)
+            if any(cl < x < nxt for x in extra.get(pid, [])):
+                out.add((pid, k))
+    return out
+
+
+def _lookahead_slots(parsed) -> dict:
+    """(player id, n-th support) -> the notepad slot that support unlocked, from BGA's association prompts: they list the spaces whose cube is still on the notepad, so the prompt
+    before a support and the one after it differ by exactly the slot it took (when no other support lies between the two prompts). Nothing is guessed: a support that no
+    pair of prompts pins down (the last one of a player, or two supports between two prompts) is not in the plan."""
+    prompts, supports = {}, {}
+    for m in parsed.moves:
+        for c in m.checks:
+            if c.get("bonus_spaces") is not None and "order" in c:
+                prompts.setdefault(c["active"], []).append((c["order"], frozenset(i for i in range(7) if i not in c["bonus_spaces"])))
+        for e in m.events:
+            if e.type == "slideMeeples" and "supports a conservation project" in str(e.log):
+                supports.setdefault(str(e.args["meeples"][0]["pId"]), []).append(e.order)
+    plan = {}
+    for pid, orders in supports.items():
+        ps = sorted(prompts.get(pid, []), key=lambda x: x[0])
+        for k, o in enumerate(orders):
+            before = [x for x in ps if x[0] < o]
+            after = [x for x in ps if x[0] > o]
+            if not after:
+                continue
+            low = before[-1][0] if before else -1
+            used_before = before[-1][1] if before else frozenset()
+            new = after[0][1] - used_before
+            if len(new) == 1 and sum(1 for oo in orders if low < oo < after[0][0]) == 1:
+                plan[(pid, k)] = next(iter(new))
+    return plan
 
 
 def _support_bonus(ctx: _Ctx, e: Event, kind: str) -> None:
@@ -258,6 +353,8 @@ def h_take_bonus(ctx: _Ctx, e: Event) -> None:
         ctx.__dict__["track_takes"] = int(bd.get("bonus_n") or 1)          # (a conservation space reward: its cards, drawn or snapped, are no notepad bonus: 843469060 turn 46)
     if e.args.get("source") == "reputation track bonus" and bd.get("bonus_type") == "take-in-range-or-deck":
         ctx.__dict__["rep_take"] = True                     # (the card of the reputation track that follows is no notepad bonus)
+    if bd.get("bonus_source_type") == "bonus" and bd.get("bonus_type") in ("add-worker", "upgrade-card"):
+        ctx.__dict__["reward_" + bd["bonus_type"]] = True    # a reward of the supported project itself: the worker / upgrade that follows is not the notepad's space
     if bd.get("bonus_source_type") == "incomeBonusSpace" and e.args.get("player_id") is not None:
         _mark_income_slot(ctx.player(e.args["player_id"]), bd.get("bonus_type"), bd.get("bonus_n"))
     th, _, _ = str(e.args.get("remove") or "").partition("-")
@@ -295,6 +392,8 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
         ctx.rep_task = True
         if ctx.__dict__["rep_task_old"] < 8 <= p.reputation:
             ctx.rep8 = str(a["player_id"])
+    if e.type == "slideMeeples" and ctx.support is not None and str(a.get("player_id", e.player)) == ctx.support             and any(str(m_.get("type", "")).startswith("partner") for m_ in a.get("meeples") or []):
+        ctx.__dict__["partner_after_support"] = ctx.support      # a partner zoo placed after a support, in its turn (maps 8 / 8a: the Partner-Zoo space gives one)
     if e.type == "slideMeeples" and any(m_.get("location") == "partner_3" and str(m_.get("type", "")).startswith("partner") for m_ in a.get("meeples") or []):
         ctx.board_worker = str(a.get("player_id", e.player))              # the 3rd partner zoo hires a worker (its space bonus; association.space_bonuses)
     if e.type == "slideMeeples" and e.log.endswith("gains a new Association worker"):      # the Worker bonus of a supported project (map 7) is logged only as the new worker
@@ -303,6 +402,8 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
             ctx.rep8 = None                                  # the player has just reached 8 reputation: this worker is that bonus, not the project's (806276023 move 113)
         elif ctx.board_worker == pid_w:
             ctx.board_worker = None                          # the player has just taken the 3rd partner zoo: the worker is that space's bonus, not the project's (823017370 move 134)
+        elif ctx.__dict__.pop("reward_add-worker", False):
+            pass                                             # the project's own reward (a takeBonus "add-worker" came first), not the notepad's Worker space (833146203 move 38)
         else:
             _support_bonus(ctx, e, "Worker")
     if e.type == "discardTokens":                    # tokens leave the game (the hidden university tile that a player turns over, action card tokens)
@@ -313,6 +414,7 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
             name = str(a["continent"]).strip("<>").capitalize()
             if name in CONTINENTS:
                 q.flags["m9_removed"] = q.flags.get("m9_removed", 0) | 1 << CONTINENTS.index(name)
+                _support_bonus(ctx, e, "continent")                  # the continent space of the notepad (map 9) unlocks one of the remaining continents
         if e.log.startswith("All tokens are removed"):               # the break: every token on the action cards goes
             for q in ctx.state.players:
                 gone |= {t.id for t in q.tokens if t.location.startswith("actionCard_")}
@@ -322,8 +424,25 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
     if e.type == "slideMeeples":
         for m in a.get("meeples") or []:
             if m["type"] == "token" and re.match(r"^P\d{3}_.*_\d$", m["location"]) and m.get("pId") not in (None, 0, "0"):
-                ctx.support = str(m["pId"])
+                if ctx.__dict__.get("resolved") != str(m["pId"]):
+                    ctx.support = str(m["pId"])
                 ctx.__dict__["free_build"] = False
+        if "supports a conservation project" in str(e.log):
+            pid_s = str(a["meeples"][0]["pId"])
+            n = ctx.support_n.get(pid_s, 0)
+            ctx.support_n[pid_s] = n + 1
+            slot = ctx.slot_plan.get((pid_s, n))
+            if slot is None and (pid_s, n) in ctx.extra_action:      # no prompt pins it down: BGA's extra action after the cleanup is the Determination space
+                q0 = ctx.player(pid_s)
+                slot = next((s_["index"] for s_ in data.map_by_id(q0.map_id)["geometry"]["bonus_slots"]
+                             if (s_.get("bonus") or {}).get("type") == "Determination" and not q0.flags.get("bonus_used", 0) >> s_["index"] & 1), None)
+            ctx.support_info = (ctx.cur_move, pid_s, n)
+            ctx.__dict__.pop("partner_after_support", None)
+            if slot is not None:                                 # the prompts around this support say which space it took: marked now, no event needs to be read
+                q = ctx.player(pid_s)
+                q.flags["bonus_used"] = q.flags.get("bonus_used", 0) | (1 << slot)
+                ctx.support = None
+                ctx.__dict__["resolved"] = pid_s                  # (the token's own move event may follow: it must not wait for a bonus again)
     _place_meeples(ctx, a.get("meeples"))
     if isinstance(a.get("meeple"), dict):
         _place_meeples(ctx, [a["meeple"]])
@@ -344,6 +463,8 @@ def h_draw_cards(ctx: _Ctx, e: Event) -> None:
     p = s.players[seat]
     kind, _ = classify_draw(e)
     keys = [_key(c["id"]) for c in e.args.get("cards", [])]
+    if "for adapt effect" in str(e.log):                       # the scoring cards bonus of a supported project (Adapt 3, map 13) is logged only as the draw (941429583)
+        _support_bonus(ctx, e, "bonus-scoring-cards")
     if ctx.__dict__.get("track_takes") and "from the deck" in e.log:          # (a card of a conservation space reward drawn from the deck counts for its number)
         ctx.__dict__["track_takes"] = max(0, ctx.__dict__["track_takes"] - len(keys))
     for k in keys:
@@ -423,12 +544,14 @@ def h_snap_card(ctx: _Ctx, e: Event) -> None:
         k = _key(c["id"])
         _remove_from_display(s, k)
         p.hand.append(k)
+    if e.type == "sponsorMagnet" and "Animal magnet" in str(e.log):
+        _support_bonus(ctx, e, "animal-magnet")                  # the Animal magnet space of the notepad (map 12)
     if e.type == "snapCard" and ctx.threshold_snaps and "snaps" in e.log:
         ctx.threshold_snaps -= 1
     elif e.type == "snapCard" and ctx.__dict__.get("track_takes"):
         ctx.__dict__["track_takes"] -= 1
-    elif e.type == "snapCard" and (ctx.__dict__.pop("rep_take", False) or ctx.__dict__.get("free_build")):
-        pass
+    elif e.type == "snapCard" and (ctx.__dict__.pop("rep_take", False) or (ctx.__dict__.get("free_build") and "reputation range" in e.log)):
+        pass                                                 # (only the "takes ... in reputation range" wording is a placement bonus / track card; the notepad's Snapping space is always "snaps ... from the display": 729260343 move 226)
     elif e.type == "snapCard":
         _support_bonus(ctx, e, "take-in-range-or-deck" if "reputation range" in e.log else "Snapping")
 
@@ -553,6 +676,8 @@ def h_play_sponsor(ctx: _Ctx, e: Event) -> None:
     k = _key(a["card"]["id"])
     _take_from_source(s, p, k, bool(a.get("fromDisplay")))
     p.sponsors.append(k)
+    _support_bonus(ctx, e, "bonus-sponsor")                                 # maps 1 / 1a: the marketing space of the notepad plays a sponsor in the supporting turn
+    _support_bonus(ctx, e, "sponsor-person-card")                           # map 14: the person sponsor space of the notepad plays a sponsor in the supporting turn
     _place_meeples(ctx, a.get("meeples"))                                   # the 2 tokens of Breeding Cooperation / Breeding Program
 
 
@@ -620,6 +745,7 @@ def h_cut_down(ctx: _Ctx, e: Event) -> None:
     p = ctx.player(a["player_id"])
     p.buildings = [b for b in p.buildings if b.id != int(a["buildingId"])]
     _apply_bonuses(p, a.get("bonuses"))
+    _support_bonus(ctx, e, "cut-down")                           # the cut-down space of the notepad (map 13)
 
 
 def h_move_animal(ctx: _Ctx, e: Event) -> None:
@@ -857,6 +983,8 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
         state = apply(state, Action(setup.seats.index(pid), "initial_discard", {"cards": setup.discarded[pid]}))
         after_discards.append(copy.deepcopy(state))
     ctx = _Ctx(state, setup)
+    ctx.slot_plan = _lookahead_slots(parsed)
+    ctx.extra_action = _extra_action_supports(parsed)
     ctx.markers = parsed.turn_markers
     ctx.timeline = parsed.normal_turns
     markers = parsed.turn_markers
@@ -886,7 +1014,10 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
 
     for m in parsed.moves:
         if m.index >= first_turn:
+            ctx.__dict__.pop("reward_add-worker", None); ctx.__dict__.pop("reward_upgrade-card", None); ctx.__dict__.pop("resolved", None)
             ctx.rep8 = ctx.board_worker = None                   # (both worker bonuses come in the move that earned them)
+            ctx.cur_move = m.index
+            ctx.__dict__["used_at_start"] = [pl.flags.get("bonus_used", 0) for pl in ctx.state.players]
             for e in m.events:
                 history_before(e.order)
                 while next_marker < len(markers) and markers[next_marker][0] < e.order:
@@ -909,8 +1040,10 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
                 rep.mismatches.append((m.index, msg))
             ctx.mismatches = []
             _check_oracles(ctx, m, rep)
-            _apply_bonus_spaces(ctx, m)
+            _apply_bonus_spaces(ctx, m, rep)
         rep.states.append(_setup_state(parsed, first_turn, m.index, dealt, ctx.state, drafts) if m.index < first_turn else copy.deepcopy(ctx.state))
+    _note_unresolved(ctx, *rep.states[-1:])                             # (the last support of the game)
+    rep.cube_unresolved = list(ctx.unresolved)
     _sync(ctx)
     history_before(getattr(parsed.normal_turns, "last_order", 0))
     while next_marker < len(markers):                                   # markers after the last event: the final state
@@ -948,16 +1081,24 @@ def _post_oracles(ctx: _Ctx, e: Event, m: Move, rep: Replay) -> None:
                                             f"(seat {ctx.seat(a['player_id'])}, appeal {p.appeal}, conservation {p.conservation})"))
 
 
-def _apply_bonus_spaces(ctx: _Ctx, m: Move) -> None:
-    """The association prompt of BGA lists the notepad bonus spaces whose cube is still on them: every other space has been used. Only ever adds bits (the prompt
-    can predate a support of the same move), so a bonus that the log shows only through its consequence (or not at all) is caught by the next prompt at the latest."""
+def _apply_bonus_spaces(ctx: _Ctx, m: Move, rep: Replay = None) -> None:
+    """The association prompt of BGA lists the notepad bonus spaces whose cube is still on them: every other space has been used. It is the truth at that moment, so it
+    replaces what the events made us guess earlier (a bonus that the log shows only through its consequence, or not at all, is corrected by the next prompt at the latest);
+    only what this move marked itself is kept (the prompt can predate a support of the same move)."""
     for chk in m.checks:
         spaces = chk.get("bonus_spaces")
         if spaces is None or chk.get("active") not in ctx.seat_of:
             continue
         p = ctx.state.players[ctx.seat_of[chk["active"]]]
         n = len(data.map_by_id(p.map_id)["geometry"]["bonus_slots"])
-        p.flags["bonus_used"] = p.flags.get("bonus_used", 0) | sum(1 << i for i in range(n) if i not in spaces)
+        seat = ctx.seat_of[chk["active"]]
+        start = (ctx.__dict__.get("used_at_start") or [0, 0])[seat]
+        guess = p.flags.get("bonus_used", 0)
+        marked_now = guess & ~start                             # (the supports of this move: the prompt may come before them)
+        truth = sum(1 << i for i in range(n) if i not in spaces)
+        if rep is not None and truth != start and truth != guess:      # neither the state before this move's supports nor the one after them: the events marked the wrong space
+            rep.cube_checks.append((m.index, chk["active"], start, guess, truth))
+        p.flags["bonus_used"] = truth | marked_now
 
 
 def _check_oracles(ctx: _Ctx, m: Move, rep: Replay) -> None:
