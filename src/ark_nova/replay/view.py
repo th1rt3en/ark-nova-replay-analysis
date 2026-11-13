@@ -46,6 +46,17 @@ PRICE_BOXES = WEB_DIR / "price_badges" / "geometry.json"      # {animal key: [x,
 TIMED_BY_LOG = ("break_position", "round", "display", "main_deck_size", "main_deck", "main_discard_size", "main_discard", "endgame_deck", "endgame_deck_size", "current_action", "active_player", "turn")      # shown as the log has them at each step (the refill comes later than the engine's); likewise the order of the action cards
 GAIN_FIELDS = ("reputation", "appeal", "conservation")
 LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "income_total", "income_parts", "income_lines", "hand_limit")      # per player, same reason
+def log_timed_marks(engine_tokens: list, logged_tokens: list) -> list:
+    """The tokens of a player in an engine step, with the marks (cubes on animals of the display, `A###_Name`) as the log has them.
+    The viewer shows the display and the hands as the log has them at each step, but the engine marks a card and takes it out of the
+    display (a marked card goes to the owner's hand when the display is cleaned up) inside one action, so its own state has already lost the
+    cube while the log still shows the card in the display for a few steps: a cube went missing (944055156 move 250), and with two marks in one
+    action only the later cube was left (944650378 moves 207 and 211). The cubes follow the display, with the ids of the log."""
+    is_mark = lambda t: t["type"] == "token" and re.match(r"A\d{3}_", t["location"]) is not None
+    is_worker = lambda t: t["type"] == "worker"                      # (a worker the engine takes with the support of a project is gained at its own logged line: 937181556 move 254)
+    return [t for t in engine_tokens if not is_mark(t) and not is_worker(t)] + [t for t in logged_tokens if is_mark(t) or is_worker(t)]
+
+
 PICTURE_OF = {"6a": "6"}              # map 6a has the same board as map 6; its own picture has the placement bonuses baked in (bugged)
 STATE_DROP = ("endgame_discard", "seed", "config", "rng", "base_projects_unused", "version", "checkpoint")
 
@@ -64,7 +75,18 @@ def render_log(template: str, args: Any, depth: int = 0) -> str:
         return ""
 
     text = re.sub(r"\s+", " ", _PLACEHOLDER.sub(sub, template or "")).strip()
-    return _BREAK_SENTENCE.sub("", text)
+    return _break_words(_BREAK_SENTENCE.sub("", text))
+
+
+_BREAK_ADVANCE = re.compile(r"\badvances break token of (\d+) space\(s\)")
+_BREAK_REACH = re.compile(r"\band reach the last space of the Break track")
+
+
+def _break_words(text: str) -> str:
+    """BGA's two lines that move the break token, in plainer words (every replay text goes through here):
+    "X advances break token of 5 space(s), now at 7/9" -> "X advances break token by 5, now at 7/9",
+    "X advances break token of 5 space(s) and reach the last space of the Break track" -> "X advances break token by 5 and reaches the last space of the Break track"."""
+    return _BREAK_REACH.sub("and reaches the last space of the Break track", _BREAK_ADVANCE.sub(r"advances break token by \1", text))
 
 
 _BREAK_SENTENCE = re.compile(r"\.? ?At the end of the turn, all players must take a break\.?$")          # (BGA adds it to the line that moves the break token onto the last space: redundant, the break starts by itself)
@@ -741,6 +763,61 @@ def _join_labels(step: dict, folded: list) -> None:
     step["move_from"] = min(x.get("move_from", x["move_id"]) for x in group)       # (BGA's first move of the group: the number the move list shows)
 
 
+_WAVE_REMOVAL = re.compile(r"^Removing (\d+) cards? of the display due to Wave icons reveal:\s*(.*)$")
+_BREAK_REMOVAL = re.compile(r"^Removing first two cards of the display:\s*(.*)$")
+_MARK_GIVEN = re.compile(r"^(.+?) is not discarded and given to .+ \(Mark effect\)$")
+
+
+def wave_removal_text(count: int, names: list) -> str:
+    return f"Removing {count} {'card' if count == 1 else 'cards'} from the display due to Wave icons reveal: {', '.join(names)}"
+
+
+def _in_display_order(names: list, display: list) -> list:
+    """The names in the order the cards lay in the display (a name that is not there keeps its place at the end)."""
+    by_name = {str(c.get("name", "")).lower(): k for k, c in data.cards_by_key().items()}          # (the data has the names in capitals)
+    place = {name: display.index(by_name[name.lower()]) if by_name.get(name.lower()) in display else len(display) for name in names}
+    return sorted(names, key=lambda n: place[n])
+
+
+def wave_labels(steps: list) -> None:
+    """The text of a Wave (or of the break's removal of the first two cards) that takes a marked card: BGA counts only the cards that are really discarded ("Removing 0 cards of the display due to
+    Wave icons reveal:", no name; the break names only the unmarked one) and words the marked card in the next step ("A is not discarded and given to X (Mark effect)"), but the card does leave the
+    display. The removal says it like any other: the marked cards are counted and named in it ("Removing 1 card from the display due to Wave icons reveal: A"; BGA's "of the display" is "from the display" and its "1 cards" is "1 card");
+    "Removing first two cards from the display: B, A"), in the order of the display. The marked cards are those of the steps of the same move that follow. It rewrites the step label and every
+    per-seat text."""
+    for i, st in enumerate(steps):
+        parts = [p.strip() for p in st["label"].split(" · ")]
+        if not any(_WAVE_REMOVAL.match(p) or _BREAK_REMOVAL.match(p) for p in parts):
+            continue
+        marked = []
+        for nxt in steps[i + 1:]:
+            if nxt["move_id"] != st["move_id"]:
+                break
+            nparts = [p.strip() for p in nxt["label"].split(" · ")]
+            if any(_WAVE_REMOVAL.match(p) or _BREAK_REMOVAL.match(p) for p in nparts):
+                break
+            marked += [m.group(1) for m in map(_MARK_GIVEN.match, nparts) if m]
+        display = (steps[i - 1]["state"].get("display") or []) if i else []
+
+        def fix(text: str) -> str:
+            out = []
+            for part in text.split(" · "):
+                w, b = _WAVE_REMOVAL.match(part.strip()), _BREAK_REMOVAL.match(part.strip())
+                if w or b:
+                    names = [n.strip() for n in (w or b).group(2 if w else 1).split(",") if n.strip()]
+                    names = _in_display_order(names + [m for m in marked if m not in names], display)
+                    if names:
+                        part = wave_removal_text(int(w.group(1)) + len(marked), names) if w else "Removing first two cards from the display: " + ", ".join(names)
+                    else:
+                        part = part.replace(" of the display", " from the display")      # (nothing removed: BGA's text, in our words)
+                out.append(part)
+            return " · ".join(out)
+
+        st["label"] = fix(st["label"])
+        if st.get("label_pov"):
+            st["label_pov"] = [fix(t) if t else t for t in st["label_pov"]]
+
+
 _BARE_XTOKEN = re.compile(r"^.+ gains \d+ xtoken$")
 _PLACES_CARD = re.compile(r"^.+ places action card \w+ at position \d+ \(finishing action\)")
 _GAIN = re.compile(r"^.+ gains \d+ (?:appeal|reputation|conservation(?: points?)?) \((.+)\)$")
@@ -1282,6 +1359,8 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                         for f in LOG_TIMED_PLAYER_FIELDS:
                             mine[f] = theirs[f]
                         mine["flags"]["m9_removed"] = theirs["flags"].get("m9_removed", 0)           # map 9: the marker goes at the logged line
+                        mine["tokens"] = log_timed_marks(mine["tokens"], theirs["tokens"])          # the cubes of the marks go with the display (see log_timed_marks)
+                        mine["slot_numbers"] = theirs["slot_numbers"]                                # map 12: the third worker (a black square over an action strength) comes at the logged line, not when the engine takes the worker
         options = [None] * len(views)
         if me.end is not None:                                              # what the engine lets the player do next, at each engine step
             for i, src in enumerate(source):
@@ -1385,6 +1464,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     # (no step is joined to another any more: every effect / log line is a step of its own, like when the engine plays it; `_combine_runs` and `_fold_unchanged` are not called)
     setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])
     steps = [st for st, k in zip(steps, keep) if k]
+    wave_labels(steps)
     for st in steps:
         st["state"]["main_deck_known"] = max(0, min(len(st["state"]["main_deck"]), known_prefix - (full_deck - len(st["state"]["main_deck"]))))
     steps, extra = _draft_option_steps(steps, rep.draft_engine and rep.draft_rounds or {})

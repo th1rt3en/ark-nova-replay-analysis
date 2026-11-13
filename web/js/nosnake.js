@@ -3,7 +3,8 @@
 import { S } from './state.js';
 
 export const NO_SNAKE_MODES = [['show', 'Show snake images'], ['hide', 'Suppress snake images'], ['worm', 'Show Slow Worm instead']];
-const SNAKE = /\/(cards|cards_large)\/(A470|A474|A475|A482|A483|A485|A487|A492|P109|P125|S203)\.webp$/;
+export const SNAKE_KEYS = ['A470', 'A474', 'A475', 'A482', 'A483', 'A485', 'A487', 'A492', 'P109', 'P125', 'S203'];          // (also the snake animals that animal-sounds.js keeps silent)
+const SNAKE = new RegExp('/(cards|cards_large)/(' + SNAKE_KEYS.join('|') + ')\\.webp$');
 export function snakeSafe(url) {
   if (!url || S.noSnake === 'show' || !S.noSnake) return url;
   return url.replace(SNAKE, (m, dir, key) => `/${dir}/${key}${S.noSnake === 'worm' ? '_sw' : '_ns'}.webp`);

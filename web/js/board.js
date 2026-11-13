@@ -59,10 +59,15 @@ export function zooBoard(map, player, seat) {
   for (const b of player.buildings) for (const c of b.cells) covered.add(c[0] + ',' + c[1]);
 
   // printed bonuses and upgrade flags that no building covers
+  // The bonuses, upgrade flags and H hexes that a building covers are drawn too, in a hidden group of their own (`cov-bonus`, one per cell, under the buildings): card-motion.js shows them
+  // while a building flies in or grows over them, so they stay until the building lands on them instead of vanishing when the flight starts. A covered hex shows nothing otherwise.
+  const board = s;
+  let into = board;
+  const hold = (cell) => { const g = svg('g', { class: 'cov-bonus', 'data-cell': cell, style: 'display: none' }); board.append(g); return g; };
   const put = (tag, attrs, text) => {
     const e = svg(tag, attrs);
     if (text !== undefined) e.textContent = text;
-    s.append(e);
+    into.append(e);
   };
   const iconBox = (id, cx, cy, h, style) => {
     const [w0, h0] = S.iconSizes[id] || [h, h];
@@ -71,18 +76,22 @@ export function zooBoard(map, player, seat) {
   // hexes that need the upgraded Build action (`upgrade_flag`), as on BGA: a red parallelogram over the upper left of the hex and BGA's own Build II badge (web/badges/BuildII.webp) in a white ring.
   // On a hex without a bonus the badge lies over the right end of the wedge (big); on a hex that also has a placement bonus the wedge is drawn BEHIND the pentagon and a small badge is pinned to
   // the pentagon's upper-left shoulder, so the bonus (a 2 money on map 3 / 3a) stays readable. The wedge is drawn first so every bonus lies on top of it.
-  const flags = map.special_hexes.filter((q) => q.kind === 'upgrade_flag' && !covered.has(q.x + ',' + q.y));
-  const hasBonus = new Set(map.placement_bonuses.filter((q) => !covered.has(q.x + ',' + q.y)).map((q) => q.x + ',' + q.y));
+  const flags = map.special_hexes.filter((q) => q.kind === 'upgrade_flag');
+  const hasBonus = new Set(map.placement_bonuses.map((q) => q.x + ',' + q.y));
   const flagBadge = (bx, by, br) => {
     put('image', { href: '/badges/BuildII.webp', x: bx - br, y: by - br, width: 2 * br, height: 2 * br, class: 'flag-badge-img' });
     put('circle', { cx: bx, cy: by, r: br - 1, class: 'flag-ring' });
   };
+  const homeOf = (x, y) => (covered.has(x + ',' + y) ? hold(x + ',' + y) : board);                  // where the things of a hex go: the board, or the hidden group when a building covers it
   for (const sh of flags) {
+    into = homeOf(sh.x, sh.y);
     const [cx, cy] = cellCentre(sh.x, sh.y), R = MAP.dx / 1.5, h = R * 0.866;
     put('polygon', { points: [[cx - R * 0.95, cy], [cx - R * 0.475, cy - h * 0.95], [cx + R * 0.36, cy - h * 0.95], [cx - R * 0.115, cy]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '), class: 'flag-wedge' });
   }
+  into = board;
   for (const pb of map.placement_bonuses) {
-    if (covered.has(pb.x + ',' + pb.y)) continue;
+    const s = homeOf(pb.x, pb.y);                         // (the group of the hex shadows the board: everything below is drawn into it)
+    into = s;
     const [cx, cy] = cellCentre(pb.x, pb.y);
     const bn = pb.bonus || {};
     const tip = svg('title');
@@ -104,7 +113,7 @@ export function zooBoard(map, player, seat) {
       iconBox(icon, cx + 9, cy + 3, 44);
       put('text', { x: cx - 15, y: cy + 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
     }
-    else if (bn.type === 'pavilion') put('image', { href: '/bonus/pavilion.webp', x: cx - 26, y: cy - 22, width: 52, height: 48 });          // BDW2: a free pavilion (the white hexagon with the carousel, cut from the artwork by scripts/build_bdw_images.py)
+    else if (bn.type === 'pavilion') put('image', { href: '/bonus/pavilion.webp?v=art20261112', x: cx - 24 * 120 / 103.923, y: cy - 22, width: 48 * 120 / 103.923, height: 48 });          // Approved pavilion artwork; same regular-hexagon size as the kiosk bonus.
     else if (bn.type === 'bonus-sponsor') put('image', marketingAttrs(cx, cy + 5, 56));          // (Marketing: the HD picture on its optical centre, see marketingAttrs)
     else if (icon && FIT_H[bn.type]) put('image', fitImageAttrs(bn.type, cx, cy + 80 * FIT_DY, 80 * FIT_H[bn.type]));          // (university, partner zoo: the same share of the pentagon as in the association panel)
     else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)
@@ -113,19 +122,24 @@ export function zooBoard(map, player, seat) {
     else if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : ''), ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
     s.lastChild.append(tip);
   }
+  into = board;
   for (const sh of map.special_hexes) {            // maps 8 / 8a: the H hexes (a special placement bonus without the pentagon; the picture has empty hexes there, Ark360 moves them)
-    if (sh.kind !== 'hollywood_h' || covered.has(sh.x + ',' + sh.y)) continue;
+    if (sh.kind !== 'hollywood_h') continue;
+    into = homeOf(sh.x, sh.y);
     const [cx, cy] = cellCentre(sh.x, sh.y);
-    put('image', { href: '/bonus/hollywood_h.webp', x: cx - 34, y: cy - 46, width: 69, height: 82, class: 'hollywood-h' });
+    put('image', { href: '/bonus/hollywood_h.webp?v=art20261112', x: cx - 34, y: cy - 46, width: 69, height: 82, class: 'hollywood-h' });
     const tip = svg('title');
     tip.textContent = 'H: covering it reveals cards from the deck and adds the first sponsor to your hand';
-    s.lastChild.append(tip);
+    into.lastChild.append(tip);
   }
+  into = board;
   for (const sh of flags) {            // the Build II badges, over the bonuses
+    into = homeOf(sh.x, sh.y);
     const [cx, cy] = cellCentre(sh.x, sh.y), R = MAP.dx / 1.5;
     if (hasBonus.has(sh.x + ',' + sh.y)) flagBadge(cx - 27, cy - 29, 17);
     else flagBadge(cx + R * 0.02, cy - R * 0.42, R * 0.42);
   }
+  into = board;
 
   // map 9: a slot with the continent icon on the edge of the map holds the player's cube until the marker is removed (the log line "removes <ASIA> marker")
   if (map.id === '9') {
@@ -217,7 +231,7 @@ export function zooBoard(map, player, seat) {
   };
   const drawBuilding = (b, cls) => {
     const g = svg('g', cls ? { class: cls } : {});
-    g.setAttribute('data-bseat', seat); g.setAttribute('data-bid', b.type + '|' + b.x + '|' + b.y);          // (card-motion.js flies the building to / from the invisible deck)
+    g.setAttribute('data-bseat', seat); g.setAttribute('data-bid', b.type + '|' + b.x + '|' + b.y); g.setAttribute('data-cells', b.cells.map((c) => c[0] + ',' + c[1]).join(';'));          // (card-motion.js flies the building to / from the invisible deck)
     const sp = spriteOf(b);
     const animals = b.animal ? [b.animal] : b.animals;
     const title = svg('title');
@@ -228,7 +242,7 @@ export function zooBoard(map, player, seat) {
     } else {
       const [cx, cy] = cellCentre(b.x, b.y);
       const img = svg('image', {
-        href: '/enclosures/' + sp.image, x: cx - sp.anchor[0] * SPRITE_SCALE, y: cy - sp.anchor[1] * SPRITE_SCALE,
+        href: '/enclosures/' + sp.image + '?v=art20261112', x: cx - sp.anchor[0] * SPRITE_SCALE, y: cy - sp.anchor[1] * SPRITE_SCALE,
         width: sp.size[0] * SPRITE_SCALE, height: sp.size[1] * SPRITE_SCALE,
         transform: 'rotate(' + (b.rotation * 60) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')',
       });

@@ -2,6 +2,9 @@
 // and Sandbox (right); the kiosk is the mini games, the construction site the map editor. Hovering an option (dome, pin or label) shows its ticket, a click keeps it open.
 // Laid out at 1920 x 1080 and zoomed to the window like the viewer; a portrait window gets a plain list under the map. changelog.md "Start page (park map)".
 
+import { setAmbience } from './ambience.js';
+setAmbience('park-nova', 0.5);                                          // the front page's soundscape (Park Nova), always on for now: a mute button comes later (0.5 = the level of the game's default, Volume 50 % x Ambience volume 50 %)
+
 const INK = '#17262B';
 const f = (n) => Math.round(n * 10) / 10;
 const P = (pts) => pts.map((p) => f(p[0]) + ' ' + f(p[1])).join(' ');
@@ -34,6 +37,7 @@ const OPTS = [
   { id: 'sandbox', name: 'Sandbox', c: '#E0A02A', d: '#A9740F', short: 'Set up and edit any board', desc: 'Set up any board and edit the game whenever you like: cards, money, partner zoos, workers. The other seat only passes.', cta: 'Start a sandbox', href: '/sandbox.html', pin: [1270, 530], s: 1.28, lab: [1270, 776], card: [1398, 470] },
   { id: 'mini', name: 'Mini games', c: '#8058C4', d: '#5C3B98', short: 'Daily puzzles on real games', desc: 'Short daily puzzles on real finished games: guess what a player kept, or who is ahead.', cta: "Play today's puzzles", href: '/minigames/', note: 'New every day', pin: [318, 786], s: 1.28, lab: [318, 1000], card: [452, 806] },
   { id: 'editor', name: 'Map editor', c: '#3E9A55', d: '#2A6E3C', short: 'Design your own zoo map', desc: 'Design a zoo map: place rock and water hexes, placement bonuses and upgrade spaces on a blank board.', cta: 'Open the map editor', href: '/map_editor.html', pin: [1585, 806], s: 1.28, lab: [1585, 1000], card: [1410, 492] },
+  { id: 'library', name: 'Library', c: '#C2344D', d: '#8E2236', short: 'Every card, with filters', desc: 'Browse every card of the game: filter by kind, continents, icons and sizes, or search the card texts.', cta: 'Open the library', href: '/library', pin: [1796, 372], s: 1.28, lab: [1800, 612], card: [1336, 300] },
 ];
 const O = Object.fromEntries(OPTS.map((o) => [o.id, o]));
 
@@ -73,6 +77,10 @@ const ICON = {
       <path d="M-9.5 -6.5l3 -2.5 3 2.5" stroke="#fff" stroke-width="1.4" fill="none" opacity=".7"/>
       <path d="M4.2 -4.5q1.6 -1.6 3.2 0t3.2 0" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/>
       <g transform="translate(6.5 3.5) rotate(38)"><rect x="-3.2" y="-16" width="6.4" height="17" fill="#F6CF3C" stroke="${INK}" stroke-width="1.9"/><path d="M-3.2 1L3.2 1L0 7.6Z" fill="#EFD2A8" stroke="${INK}" stroke-width="1.9" stroke-linejoin="round"/><path d="M-1.1 5.3L1.1 5.3L0 7.6Z" fill="${INK}"/><rect x="-3.2" y="-20.5" width="6.4" height="4.5" rx="1.2" fill="#EE8FA0" stroke="${INK}" stroke-width="1.9"/></g></g>`;
+  },
+  library(c) {                                                            // an open book, its lines in the library's ruby
+    return `<path d="M-15 -9C-9 -12 -4 -11 0 -7C4 -11 9 -12 15 -9V11C9 8 4 9 0 12C-4 9 -9 8 -15 11Z" fill="#FFF7E6" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/><path d="M0 -7V12" stroke="${INK}" stroke-width="2.4"/>
+      <path d="M-11 -4C-8 -5 -5 -5 -3 -3M-11 1C-8 0 -5 0 -3 2M-11 6C-8 5 -5 5 -3 7M3 -3C5 -5 8 -5 11 -4M3 2C5 0 8 0 11 1M3 7C5 5 8 5 11 6" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/>`;
   },
 };
 const badge = (o, size = 48) => `<svg viewBox="-26 -26 52 52" width="${size}" height="${size}" aria-hidden="true"><circle r="24.5" fill="${o.c}" stroke="${INK}" stroke-width="2.6"/><circle r="19.6" fill="#FFF7E6" stroke="${INK}" stroke-width="2"/><g transform="scale(.86)">${ICON[o.id](o.c)}</g></svg>`;
@@ -179,6 +187,7 @@ const PATHS = {
   right: ['M960 862C1040 866 1150 842 1218 792C1238 778 1256 760 1268 728', 30],
   low: ['M300 905C470 966 720 962 960 944C1200 962 1440 966 1520 912', 28],
   west: ['M396 932C432 852 522 782 524 702C526 652 512 622 486 604', 22],
+  lib: ['M1614 526C1660 530 1700 526 1732 522', 20],                    // the short spur from the east path to the library's bookshelf
   east: ['M1500 926C1626 870 1706 760 1666 640C1636 560 1566 440 1560 290', 22],
 };
 function paths() {
@@ -374,6 +383,36 @@ function kiosk() {
     <g transform="translate(402 880)"><path d="M-14 22L0 -14L14 22" fill="none" stroke="${INK}" stroke-width="3"/><rect x="-15" y="-16" width="30" height="30" rx="3" fill="#2F4A3E" stroke="${INK}" stroke-width="2.4"/><path d="M-9 -6H9M-9 0H6M-9 6H8" stroke="#F3EAD6" stroke-width="1.8" stroke-linecap="round"/></g>
     ${parasol(214, 950, .85)}${parasol(186, 864, .62)}
     <circle class="hit" data-opt="mini" cx="318" cy="852" r="80" fill="transparent"/>
+  </g>`;
+}
+
+/* ================= the library: a public bookshelf ================= */
+// a tall cabinet with two glass doors and a little roof, full of books, like the open book cabinets of European towns; on a paved spot at the end of a spur off the east path, with a bench
+const SPINES = ['#E2453B', '#F6CF3C', '#1D8AA1', '#3E9A55', '#8058C4', '#E9662A', '#2F5DA8', '#F08BB0'];
+function books(x0, x1, yb, hmin, hmax, seed) {                            // a row of book spines standing on yb, from x0 to x1
+  const r = rng(seed); let s = '', x = x0;
+  while (x < x1 - 2) { const w = Math.min(x1 - x, 2.6 + r() * 2.6), h = hmin + r() * (hmax - hmin); s += `<rect x="${f(x)}" y="${f(yb - h)}" width="${f(w)}" height="${f(h)}" fill="${SPINES[Math.floor(r() * SPINES.length)]}" stroke="${INK}" stroke-width=".8"/>`; x += w; }
+  return s;
+}
+function bookshelf() {
+  const o = O.library, X = 1800, Y = 520;
+  let sh = '';
+  for (let j = 0; j < 4; j++) { const yb = -88 + j * 24; sh += books(-26, -3, yb, 13, 19, 10 + j) + books(3, 26, yb, 13, 19, 20 + j) + `<path d="M-27 ${yb}H-2M2 ${yb}H27" stroke="${C.woodD}" stroke-width="2.4"/>`; }
+  return `<g>
+    <ellipse cx="${X + 4}" cy="${Y - 2}" rx="72" ry="30" fill="url(#pave)" stroke="${C.pathE}" stroke-width="5"/>
+    <ellipse class="halo" data-opt="library" cx="${X + 4}" cy="${Y - 2}" rx="85" ry="43" fill="none" stroke="${o.c}" stroke-width="10"/>
+    <g transform="translate(${X} ${Y})">
+      <path d="M-34 -4H44L52 6H-26Z" fill="#3E5A1E" opacity=".22"/>
+      <rect x="-36" y="-126" width="72" height="124" rx="3" fill="${o.c}" stroke="${INK}" stroke-width="3"/>
+      <path d="M-46 -124L0 -152L46 -124Z" fill="${o.d}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M-30 -128L0 -146" stroke="#fff" stroke-width="2" opacity=".35"/>
+      <rect x="-29" y="-116" width="58" height="104" fill="#FFF7E6" stroke="${INK}" stroke-width="2"/>${sh}
+      <rect x="-29" y="-116" width="28" height="104" fill="${C.glass}" opacity=".35" stroke="${INK}" stroke-width="2.2"/><rect x="1" y="-116" width="28" height="104" fill="${C.glass}" opacity=".35" stroke="${INK}" stroke-width="2.2"/>
+      <path d="M-24 -96L-10 -110M-24 -80L-6 -98M8 -70L24 -86" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>
+      <circle cx="-4" cy="-62" r="2" fill="${INK}"/><circle cx="4" cy="-62" r="2" fill="${INK}"/>
+      <rect x="-36" y="-8" width="72" height="8" fill="${o.d}" stroke="${INK}" stroke-width="2.4"/>
+    </g>
+    ${bench(X + 70, Y + 26, -8)}
+    <circle class="hit" data-opt="library" cx="${X - 2}" cy="${Y - 70}" r="70" fill="transparent"/>
   </g>`;
 }
 
@@ -1463,10 +1502,10 @@ map.innerHTML = defs() + `<g class="intro">
   ${wattle(862, 700, .9, 7)}${wattle(1058, 706, .85, 8)}${wattle(806, 1020, .8, 9)}${wattle(1106, 760, .7, 10)}${wattle(520, 820, .7, 11)}${wattle(1395, 610, .75, 12)}${wattle(1880, 900, .8, 13)}${wattle(470, 470, .6, 14)}
   ${flowerBed(894, 724, 1, 3)}${flowerBed(1026, 724, 1, 4)}${picnic(1528, 628)}${termites(1158, 152, 1, 'cathedral')}${termites(1196, 166, .75, 'dome')}${termites(878, 134, .85, 'spire')}${termites(640, 190, .75, 'twin')}${bench(560, 900, 8)}${bench(1360, 900, -8)}
   ${entrance()}
-  ${kiosk()}${site()}
+  ${kiosk()}${site()}${bookshelf()}
   ${tunnel('M850 462Q780 500 730 582')}${tunnel('M1070 462Q1140 500 1190 582')}${dome(O.custom, ...AV.custom)}${dome(O.replay, ...AV.replay)}${dome(O.sandbox, ...AV.sandbox)}
-  ${tree(56, 470, .95, 3)}${tree(70, 770, 1.15, 4)}${tree(178, 716, .72, 5)}${tree(612, 358, .82, 6)}${tree(760, 268, .7, 7)}${tree(1166, 290, .78, 8)}${tree(1372, 368, .8, 9)}
-  ${tree(690, 1036, 1.0, 10)}${tree(1262, 1000, .85, 11)}${tree(560, 1058, .8, 12)}${tree(1434, 712, .72, 13)}${tree(1866, 470, .9, 14)}${tree(1900, 690, .8, 15)}${tree(1772, 604, 1.15, 16, true)}
+  ${tree(56, 470, .95, 3)}${tree(70, 770, 1.15, 4, true)}${tree(178, 716, .72, 5)}${tree(612, 358, .82, 6)}${tree(760, 268, .7, 7)}${tree(1166, 290, .78, 8)}${tree(1372, 368, .8, 9)}
+  ${tree(690, 1036, 1.0, 10)}${tree(1262, 1000, .85, 11)}${tree(560, 1058, .8, 12)}${tree(1434, 712, .72, 13)}${tree(1748, 702, .72, 14)}${tree(1884, 742, .95, 15)}
   ${tree(-60, 600, 1.2, 17)}${tree(2010, 560, 1.1, 18)}${tree(-40, 1000, 1.1, 19)}${tree(1990, 1010, 1.1, 20)}${tree(420, 1080, .9, 21)}${tree(1450, 1080, .9, 22)}
   <g class="deco">${animals()}${clouds()}${wildlife()}</g>
   ${hereDot()}
@@ -1554,7 +1593,7 @@ document.addEventListener('click', (e) => { if (!e.target.closest('#acctdlg, #ac
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !document.querySelector('#acctdlg[open]')) release(true); });
 
 /* ================= narrow screens: the options as a list under the map ================= */
-document.getElementById('plist').innerHTML = `<div class="brand"><img src="/brand/logo.svg" alt=""><div><h1>Ark Nova Park</h1><p>Maintained by the United Emu Friends Association</p></div></div>`
+document.getElementById('plist').innerHTML = `<div class="brand"><img src="/brand/logo.svg" alt=""><div><h1>Park Nova</h1><p>Maintained by the United Emu Friends Association</p></div></div>`
   + `<form class="tk-form" id="pform"><input id="pq" type="text" placeholder="BGA table id or url" aria-label="BGA table id or url" autocomplete="off" required><button class="btn" type="submit" style="--c:${O.replay.c}">Open replay</button></form>`
   + OPTS.filter((o) => o.id !== 'replay').map((o) => `<a class="row" href="${off(o.id) ? '#' : o.href}" style="--c:${o.c}">${badge(o)}<span><b>${o.name}</b><small>${off(o.id) ? 'Coming soon' : o.short}</small></span></a>`).join('')
   + '<p class="plinks"><a href="/terms.html">Terms and privacy</a></p>';

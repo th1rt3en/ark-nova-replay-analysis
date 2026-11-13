@@ -38,7 +38,7 @@ main { min-width: 0; }
 /* ---- sidebar ----------------------------------------------------------------------------------------------------------------------------------------- */
 aside.sidebar { position: fixed; top: .8rem; right: 1rem; width: var(--sidebar-w); z-index: 20; height: calc(var(--vh, 1vh) * 100 - 1.6rem); max-height: none; overflow: hidden; display: flex; flex-direction: column; gap: .5rem; }
 .sbtabs { flex: 0 0 50px; display: flex; gap: .4rem; }
-.sbtab { flex: 1 1 0; height: 50px; padding: 0 .6rem; border: 2px solid #1b110a; border-radius: 10px; background: rgba(40, 25, 14, .94); color: #e8dcb8; font: 700 1rem system-ui, sans-serif; cursor: pointer;
+.sbtab { flex: 1 1 0; height: 50px; padding: 0 .6rem; border: 2px solid #1b110a; border-radius: 10px; background: rgba(40, 25, 14, .94); color: #e8dcb8; font: 700 1rem system-ui, sans-serif; cursor: var(--cur-hand);
   box-shadow: 0 2px 8px rgba(0, 0, 0, .45); }
 .sbtab:hover { background: rgba(70, 45, 26, .96); }
 .sbtab.on { background: #e8dcb8; color: #3a2616; }
@@ -96,16 +96,16 @@ aside.sidebar { position: fixed; top: .8rem; right: 1rem; width: var(--sidebar-w
 .modal[hidden] { display: none; }
 .modalbox { min-width: 24rem; max-width: 90%; padding: 1rem 1.4rem 1.2rem; border: 2px solid #1b110a; border-radius: 12px; background: #ece3b4; color: #2b1d12; box-shadow: 0 10px 40px rgba(0, 0, 0, .7); }
 .modalhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: .9rem; font-size: 1.3rem; }
-.modalx { display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; margin: -.3rem -.4rem 0 0; padding: 0; border: 0; background: none; color: #3a2616; cursor: pointer; }
+.modalx { display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; margin: -.3rem -.4rem 0 0; padding: 0; border: 0; background: none; color: #3a2616; cursor: var(--cur-hand); }
 .modalx svg { width: 1.4rem; height: 1.4rem; display: block; }
 .modalx:hover { color: #000; }
-.setrow { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; padding: .6rem 0; border-top: 1px solid rgba(111, 87, 73, .45); font-size: 1.05rem; cursor: default; }
+.setrow { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; padding: .6rem 0; border-top: 1px solid rgba(111, 87, 73, .45); font-size: 1.05rem; cursor: var(--cur-arrow); }
 .setlabel { font-weight: 700; }
 .setspeed { display: inline-flex; gap: .3rem; margin: 0; }
-.setspeed button { min-width: 3rem; padding: .3rem .6rem; border: 1px solid #1b110a; border-radius: 6px; background: #e8dcb8; color: #3a2616; font: 700 1rem system-ui, sans-serif; cursor: pointer; }
+.setspeed button { min-width: 3rem; padding: .3rem .6rem; border: 1px solid #1b110a; border-radius: 6px; background: #e8dcb8; color: #3a2616; font: 700 1rem system-ui, sans-serif; cursor: var(--cur-hand); }
 .setspeed button:hover { background: #fff3cf; }
 .setspeed button.on { background: #8fd1a8; }
-.setswitch { appearance: none; -webkit-appearance: none; position: relative; width: 3rem; height: 1.6rem; margin: 0; border: 1px solid #1b110a; border-radius: 999px; background: #b9ab86; cursor: pointer; transition: background .15s; }
+.setswitch { appearance: none; -webkit-appearance: none; position: relative; width: 3rem; height: 1.6rem; margin: 0; border: 1px solid #1b110a; border-radius: 999px; background: #b9ab86; cursor: var(--cur-hand); transition: background .15s; }
 .setswitch::after { content: ""; position: absolute; top: 2px; left: 2px; width: calc(1.6rem - 6px); height: calc(1.6rem - 6px); border-radius: 50%; background: #fff3cf; border: 1px solid #1b110a; transition: left .15s; }
 .setswitch:checked { background: #5cae78; }
 .setswitch:checked::after { left: calc(3rem - 1.6rem + 2px); }

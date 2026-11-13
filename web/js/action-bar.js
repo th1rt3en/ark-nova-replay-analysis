@@ -1,7 +1,7 @@
 // [module] The action bar at the top (replay: current action; fork / sandbox: the playable controls), prompts and draft marks.
 import { $, el, seatColor, seatName, seatText } from './util.js';
 import { FORK, PLAY, S, SANDBOX } from './state.js';
-import { curState, seatOrder } from './pov.js';
+import { canChoosePov, curState, seatOrder } from './pov.js';
 import { bindPreview, cardMarks, cardName, orderedKeys } from './cards.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, iconUrl, pic } from './icons.js';
 import { placementBonusName } from './bonus-names.js';
@@ -144,7 +144,7 @@ const NAV_KEY = { '-1': '<path d="M19 12H6m5-6-6 6 6 6"/>', '1': '<path d="M5 12
 function draftNav(d, labels = true) {          // (`labels`: the word and the key cap under the button, only in the action card draft)
   const b = el('button', 'draftnav ' + (d < 0 ? 'back' : 'next'));
   b.type = 'button'; b.title = (d < 0 ? 'Back' : 'Next') + ' (arrow key ' + (d < 0 ? 'left' : 'right') + ')';
-  b.disabled = d < 0 ? atStart() : atEnd();
+  b.disabled = d < 0 ? atStart() && !canChoosePov() : atEnd();          // (the first step of a replay: Back goes on to the choice of the spectated player)
   b.innerHTML = '<span class="dnbtn"><svg class="dnglyph" viewBox="0 0 20 20" aria-hidden="true">' + NAV_ARROW[d] + '</svg></span>'
     + (labels ? '<span class="dnlab">' + (d < 0 ? 'Back' : 'Next') + '<kbd><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_KEY[d] + '</svg></kbd></span>' : '');
   b.onclick = () => { stepBy(d); };
@@ -334,6 +334,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     (a.tokens || []).forEach((t, k) => {                                 // the tokens that lie on the card (Venom, Constriction, Multiplier), as in the tracker
       const id = CARD_TOKEN_ICON[t]; if (!id) return;
       const tk = el('img', 'actoken'); tk.src = iconUrl(id); tk.alt = t; tk.title = CARD_TOKEN_TEXT[t] || t; tk.style.setProperty('--k', String(k));
+      tk.dataset.actionToken = t; tk.dataset.tokenIndex = k;          // (the Multiplier is drawn as BGA's blue disc, like in the player box: parkposter.css)
       b.append(tk);
     });
     const dead = !S.skipMode && o && (o.unusable || []).includes(a.type);                    // (Association with nothing to do)

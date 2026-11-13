@@ -181,7 +181,7 @@ def _break_lines(old: GameState, new: GameState, L: Lines) -> None:
     if new.round > old.round:
         first_two = [c for c in old.display[:2] if c]
         if first_two:
-            L.add(f"Removing first two cards of the display: {names_of(first_two)}")
+            L.add(f"Removing first two cards from the display: {names_of(first_two)}")
         L.add("All tokens are removed from player cards")
         L.add("Replenishing partner zoos and universities")
         _display_refill(old, new, L)

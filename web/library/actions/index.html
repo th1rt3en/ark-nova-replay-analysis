@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Action cards - Park Nova</title>
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/park-fonts.css">
+<link rel="stylesheet" href="/css/library_actions.css">
+</head>
+<body class="binderpage">
+<a class="plate" href="/library">&larr; Library</a>
+<main id="fit" aria-label="The action cards, a ring binder">
+  <div id="stage">
+    <div class="binder" aria-hidden="true"><div class="cover l"></div><div class="cover r"></div><div class="spine"></div></div>
+    <section class="sheet l" id="sl" aria-label="Level I"></section>
+    <section class="sheet r" id="sr" aria-label="Level II (upgraded)"></section>
+    <div class="rings" aria-hidden="true"><i></i><i></i><i></i></div>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Actions"></nav>
+  </div>
+</main>
+<dialog id="big" aria-label="Action card, both sides"><button type="button" id="bigclose" aria-label="Close">&times;</button><button type="button" class="step" id="bigprev" aria-label="Previous card">&lsaquo;</button><div class="pair" id="pair"></div><button type="button" class="step" id="bignext" aria-label="Next card">&rsaquo;</button></dialog>
+<script type="module" src="/js/library_actions.js"></script>
+</body>
+</html>

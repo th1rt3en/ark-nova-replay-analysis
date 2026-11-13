@@ -4,7 +4,7 @@ body.mapeditor { padding-bottom: 2rem; }
 .mebar h1 { margin: 0; font-size: 1.2rem; color: #f3e9d2; }
 .mebar .home { font-weight: 700; }
 .mebtns { display: flex; gap: .4rem; }
-.mebtns button, .meexporthead button { padding: .35rem .8rem; border: 1px solid #1b110a; border-radius: 6px; background: #f6efcf; color: #2b1d12; font: inherit; cursor: pointer; }
+.mebtns button, .meexporthead button { padding: .35rem .8rem; border: 1px solid #1b110a; border-radius: 6px; background: #f6efcf; color: #2b1d12; font: inherit; cursor: var(--cur-hand); }
 .mebtns button:disabled { opacity: .45; cursor: not-allowed; }
 .mebtns button:hover:not(:disabled), .meexporthead button:hover { background: #e3d49a; }
 .mebar { padding-right: 19rem; }               /* (the account box of account.js is fixed at the top right) */
@@ -19,7 +19,7 @@ body.mapeditor { padding-bottom: 2rem; }
 .mepalette h2 { margin: .5rem 0 .3rem; font-size: 1rem; color: #3a2616; border-bottom: 1px solid rgba(111, 87, 73, .45); }
 .mepalette .muted { color: #6f5749; margin: 0 0 .4rem; }
 .metools { display: flex; flex-wrap: wrap; gap: .4rem; }
-.metool { width: 4.4rem; min-height: 4.4rem; padding: .25rem; border: 2px solid #3b2a1c; border-radius: 8px; background: #fffaf0; color: #2b1d12; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem; font: inherit; font-size: .7rem; line-height: 1.1; text-align: center; }
+.metool { width: 4.4rem; min-height: 4.4rem; padding: .25rem; border: 2px solid #3b2a1c; border-radius: 8px; background: #fffaf0; color: #2b1d12; cursor: var(--cur-hand); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .1rem; font: inherit; font-size: .7rem; line-height: 1.1; text-align: center; }
 .metool svg { width: 3.2rem; height: 3.2rem; display: block; overflow: visible; }
 .metool:hover { background: #fff3d6; }
 .metool.on { outline: 3px solid #2f80e8; background: #dce9ff; }
@@ -27,7 +27,7 @@ body.mapeditor { padding-bottom: 2rem; }
 .mevalue input { width: 4.5rem; padding: .25rem; font: inherit; }
 .mecanvas { min-width: 0; }
 .mecanvas .board { width: 100%; max-width: 1122px; display: block; border-radius: 6px; user-select: none; -webkit-user-select: none; touch-action: none; }
-.mecanvas .cell { fill: rgba(255, 255, 255, 0); stroke: none; cursor: pointer; }
+.mecanvas .cell { fill: rgba(255, 255, 255, 0); stroke: none; cursor: var(--cur-hand); }
 .mecanvas .cell:hover { fill: rgba(255, 255, 255, .28); stroke: #fff; stroke-width: 3; }
 .mecanvas .cell.bad { cursor: not-allowed; }
 .mecanvas .cell.bad:hover { fill: rgba(222, 48, 38, .3); stroke: #de3026; }
@@ -53,10 +53,10 @@ body.mapeditor { padding-bottom: 2rem; }
 .mecount { display: flex; align-items: center; gap: .5rem; margin: .25rem 0; font-weight: 700; }
 .mecount span { min-width: 4.5rem; padding: .1rem .5rem; border-radius: 6px; color: #fff; }
 .mepurple { background: #9a4ba7; } .meyellow { background: #c79a00; }
-.mecount button { width: 2rem; height: 2rem; border: 2px solid #3b2a1c; border-radius: 6px; background: #fffaf0; font: inherit; font-weight: 800; cursor: pointer; }
+.mecount button { width: 2rem; height: 2rem; border: 2px solid #3b2a1c; border-radius: 6px; background: #fffaf0; font: inherit; font-weight: 800; cursor: var(--cur-hand); }
 .mecount button:disabled { opacity: .4; cursor: not-allowed; }
 .mecount b { min-width: 1.5rem; text-align: center; }
-.meradio { display: block; margin: .2rem 0; cursor: pointer; }
+.meradio { display: block; margin: .2rem 0; cursor: var(--cur-hand); }
 .mepairs { margin: .2rem 0 .2rem 1.4rem; display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: center; }
 .meholder .bonus-label { font: 700 34px system-ui, sans-serif; fill: #222; text-anchor: middle; pointer-events: none; }
 .meholder .bonus-number { font: 800 44px system-ui, sans-serif; fill: #fff; stroke: #222; stroke-width: 8px; paint-order: stroke; text-anchor: middle; pointer-events: none; }

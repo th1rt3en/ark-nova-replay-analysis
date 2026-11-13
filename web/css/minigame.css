@@ -6,19 +6,19 @@ body.minigame .sbtabs { display: none; }
 #puzzle p { margin: .3rem 0; }
 #puzzle .muted { color: #6f5749; }
 .pz-hand { display: flex; flex-wrap: wrap; gap: .6rem; margin: .8rem 0; }
-.pz-card { position: relative; width: 7.2rem; cursor: pointer; border-radius: 8px; border: 3px solid transparent; padding: 2px; background: transparent; }
+.pz-card { position: relative; width: 7.2rem; cursor: var(--cur-hand); border-radius: 8px; border: 3px solid transparent; padding: 2px; background: transparent; }
 .pz-card img { width: 100%; display: block; border-radius: 6px; }
 .pz-card .pz-name { font-size: .72rem; line-height: 1.15; text-align: center; margin-top: .15rem; }
 .pz-card.on { border-color: #2f80e8; background: rgba(47, 128, 232, .18); }
 .pz-card.on::after { content: "\2713"; position: absolute; top: 4px; right: 6px; color: #fff; background: #2f80e8; width: 1.3rem; height: 1.3rem; border-radius: 50%; font-size: .9rem; text-align: center; line-height: 1.3rem; }
-.pz-hand.done .pz-card { cursor: default; }
+.pz-hand.done .pz-card { cursor: var(--cur-arrow); }
 .pz-card.orig { border-color: #2e8b4a; background: rgba(46, 139, 74, .2); }
 .pz-card.orig.on { border-color: #2e8b4a; }
 .pz-card .pz-tag { font-size: .68rem; text-align: center; font-weight: 700; min-height: 1em; }
 .pz-card .pz-bar { height: .45rem; border-radius: 3px; background: rgba(0, 0, 0, .15); overflow: hidden; margin-top: .15rem; }
 .pz-card .pz-bar i { display: block; height: 100%; background: #6b5a8e; }
 .pz-actions { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
-.pz-actions button { padding: .5rem 1.2rem; border: 2px solid #1b110a; border-radius: 6px; background: #2f80e8; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.pz-actions button { padding: .5rem 1.2rem; border: 2px solid #1b110a; border-radius: 6px; background: #2f80e8; color: #fff; font: inherit; font-weight: 700; cursor: var(--cur-hand); }
 .pz-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .pz-login { padding: .5rem .8rem; border-radius: 6px; background: rgba(47, 128, 232, .14); border: 1px solid #2f80e8; font-size: .92rem; }
 .pz-result { font-size: 1.1rem; font-weight: 700; }
@@ -39,7 +39,7 @@ body.minigame .sbtabs { display: none; }
 .pz-prompt button.alt { background: transparent; color: #1f5fb8; border: 2px solid #1f5fb8; }
 
 /* Daily starting hand: the cards to click are the player's hand in the dock; picks and the reveal are drawn on those cards */
-.dock .cards .card.pz-dock-card { cursor: pointer; overflow: visible; }
+.dock .cards .card.pz-dock-card { cursor: var(--cur-hand); overflow: visible; }
 /* picking: the theme's `.marked` (green tint and check tag) is on the picked cards; after the answer: blue ring = your pick, green ring = what the original player kept */
 .dock .cards .card.pz-dock-card.pz-mine:not(.marked) { outline: 5px solid #2f80e8; outline-offset: 0; }
 .dock .cards .card.pz-dock-card.pz-orig { outline: 5px solid #2e8b4a; outline-offset: 0; }
@@ -53,4 +53,4 @@ body.minigame .sbtabs { display: none; }
 body.minigame aside.sidebar { top: max(90px, 4.4rem); height: calc(var(--vh, 1vh) * 100 - max(90px, 4.4rem) - 12px); }
 /* the calendar inside the cream puzzle panel: its own colours (the shared look is in style.css) */
 #puzzle .cal { --c-fg: #2b1d12; --c-muted: #7a6455; --c-line: #c9b98a; --c-bg: #f7f0d6; --c-accent: #2f6fd0; --c-ok: #3f9e66; --c-ok-bg: #dcefd9; --c-on-accent: #fff; margin: .4rem 0 .2rem; }
-#puzzle details > summary { cursor: pointer; font-weight: 700; margin: .4rem 0; }
+#puzzle details > summary { cursor: var(--cur-hand); font-weight: 700; margin: .4rem 0; }

@@ -1,4 +1,5 @@
 // [module] Entry point of replay.html / fork.html / sandbox.html: `render()` draws one step, `boot()` loads and wires everything.
+import { playShoebill } from './animal-sounds.js';
 import { stageBreaks } from './break-stages.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
 import { $, el, seatColor } from './util.js';
@@ -11,13 +12,13 @@ import { actionBar, refreshBar } from './action-bar.js';
 import { sidePanel } from './side-panel.js';
 import { cycleDockTab, renderDock, toggleDock } from './dock.js';
 import { beforeRender, afterRender } from './card-motion.js';
-import { fitPlayed, renderCards, renderZoo } from './zoo.js';
+import { fitPlayed, renderCards, renderZoo, tabbedLayout } from './zoo.js';
 import { engineBadge, labelNode, warmLabelIcons } from './log-labels.js';
 import { startPresence } from './presence.js';
 import { setupLogSearch, refreshLogSearch } from './log-search.js';
 import { setupLogFilter, refreshLogFilter } from './log-filter.js';
 import { fitDisplay, fitScale } from './layout.js';
-import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
+import { fitSidebar, followLog, logBelow, setupSidebar } from './sidebar.js';
 import { atEnd, atStart, buildMoveList, buildTimeline, go, goRound, goRoundBy, moveHash, moveNumbers, roundJumps, setPlaying, stepBy, stepOfHash, stepOfMove, updateTimeline } from './playback.js';
 import { applyTimeline, settingsOpen, setupSettings, toggleSettings } from './settings.js';
 import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
@@ -110,6 +111,7 @@ export function render() {
 function renderBoards(picking) {
   if (S.preview && S.preview.step !== S.step) S.preview = null;           // (the building preview belongs to the step it was started on)
   const scrollY = window.scrollY, scrollX = window.scrollX;       // rebuilding the boards must not move the page
+  const paneTop = $('paneControl')?.scrollTop;                     // (log below the info boxes: while the info boxes are drawn again the pane is shorter for a moment and the browser cuts its scroll; put back before the log follows)
   const s = S.replay.steps[S.step];
   let st = povState(frameState());
   if (picking) st = { ...st, conservation_options: {}, projects_in_play: [], base_projects: [] };          // (nothing is known of the projects and the rewards of the board yet)
@@ -165,6 +167,7 @@ function renderBoards(picking) {
   for (let i = 0; i < list.children.length; i++) list.children[i].hidden = i > S.seenStep;
   refreshLogFilter();                                                     // (the Players / Actions filter hides lines, log-filter.js)
   refreshLogSearch();                                                     // (the search finds only in the lines on show)
+  if (logBelow() && $('paneControl')) $('paneControl').scrollTop = paneTop;
   followLog();
   if (!PLAY) history.replaceState(null, '', '#' + moveHash(S.step, S.phase, S.results));       // (a live game has no move number in the address)
   else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -197,6 +200,7 @@ function init() {
   setupShortcuts();
   $('last').onclick = () => { go(S.replay.steps.length - 1, 99); };
   $('jump').oninput = fitJump;
+  $('jump').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };                   // (Enter jumps, then leaves the box: the arrow keys and the other hotkeys work again at once; the blur sends the change)
   $('jump').onchange = (e) => {                                          // a move number past the end jumps to the end (its last frame)
     const n = parseInt(e.target.value, 10) || 0;
     const at = stepOfMove(n);                                            // (the step that holds BGA's move n, or the next one when BGA has no such move)
@@ -204,6 +208,7 @@ function init() {
   };
   document.addEventListener('keydown', (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+    if ((e.key === 's' || e.key === 'S') && e.ctrlKey && !typing && !e.altKey && !e.metaKey && !e.shiftKey && S.shoebillKey) { e.preventDefault(); playShoebill(); return; }          // (Ctrl + S: the Shoebill's call, animal-sounds.js; the browser's "Save page" is kept off)
     if ((e.key === 's' || e.key === 'S') && !shortcutsOpen() && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
     if (!typing && roundJumps() && !settingsOpen() && !shortcutsOpen() && !povDialogOpen() && (e.ctrlKey || e.altKey) && !e.metaKey && !e.shiftKey) {          // round jumps (replay, sandbox)
       const dig = /^(?:Digit|Numpad)([1-9])$/.exec(e.code || '');
@@ -212,6 +217,7 @@ function init() {
     }
     if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === 'Tab' && !MINIGAME) { if (cycleDockTab(e.shiftKey ? -1 : 1)) e.preventDefault(); return; }       // (Tab / Shift + Tab: the tabs of the shown cards, dock.js)
+    if ((e.key === 'q' || e.key === 'Q') && tabbedLayout()) { e.preventDefault(); zooStep(e.shiftKey ? -1 : 1); return; }          // (Q / Shift + Q: the other player board, only while the boards are Tabbed; the arrows on the board's name tab do the same, `zooStep`)
     const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
     if (S.results && !FORK && !PLAY && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) keys[e.key] = () => { if (!!S.gsGraph === (e.key === 'ArrowDown')) return; S.gsGraph = e.key === 'ArrowDown'; syncResults(); };       // (on the game stats: ↑ Table, ↓ Graph; the key of the view that is already open does nothing, no redraw)
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)

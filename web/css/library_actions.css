@@ -1,0 +1,82 @@
+/* The action cards of the library as a ring binder (library/actions/index.html, js/library_actions.js): an office binder on the mahogany table of the card library, clean and cool (it is a folder, not an old book): slate covers, white sheets, clear pockets. */
+/* The site's own cursors, as everywhere else (style.css): a black arrow and a black hand with a white outline (web/cursors/). */
+:root { --cur-arrow: url(/cursors/arrow.svg) 3 2, default; --cur-hand: url(/cursors/hand.svg) 10 1, pointer; }
+html { cursor: var(--cur-arrow); }
+a:any-link { cursor: var(--cur-hand); }
+button { cursor: var(--cur-hand); } button:disabled { cursor: var(--cur-arrow); }
+:root { --ink: #2A1210; --slate: #34434C; --slate-d: #222D33; --sheet: #F5F8FA; --sheet-d: #E1E8ED; --line: #9FB0BC; --lv1: #229dd7; --lv2: #a72070;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='900' height='500'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.004 .11' numOctaves='4' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1  0 0 0 0 .03  0 0 0 0 .02  0 0 0 -1.5 1.05'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+body.binderpage { margin: 0; min-height: 100vh; overflow: hidden; display: grid; place-items: center; color: var(--ink); font: 15px/1.4 'Park Label', system-ui, sans-serif;
+  background: var(--grain), radial-gradient(120% 90% at 50% 40%, #7A3626 0%, #5C2A20 55%, #36150F 100%); background-size: 900px 500px, auto; }
+body.binderpage::before { content: ''; position: fixed; inset: 0; pointer-events: none; background: repeating-linear-gradient(90deg, rgba(0, 0, 0, 0) 0 318px, rgba(20, 6, 4, .5) 318px 321px), radial-gradient(90% 70% at 50% 45%, rgba(255, 190, 110, .13), rgba(0, 0, 0, 0) 70%); }          /* (the joints of the table's boards, the lamp light on it: as under the card library) */
+button { font: inherit; color: inherit; }
+.plate { position: fixed; z-index: 30; left: 12px; top: 10px; height: 30px; padding: 0 12px; display: inline-flex; align-items: center; border: 2px solid var(--ink); border-radius: 15px; background: linear-gradient(#F0CE7A, #B8862E); color: var(--ink); font: 700 13px/1 'Park Label', system-ui, sans-serif; text-decoration: none; box-shadow: 0 2px 0 var(--ink); }
+.plate:hover { filter: brightness(1.08); } .plate:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+/* the stage: 1600 x 900, scaled to the window by the script (#fit takes the scaled size) */
+#fit { position: relative; margin-top: 22px; }
+#stage { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; }
+#stage > * { position: absolute; }
+
+/* the binder: two slate covers and the spine; the sheets lie on them, the rings over the sheets */
+.binder { inset: 0; }
+.binder > div { position: absolute; top: 30px; height: 840px; }
+.cover { width: 720px; background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(0, 0, 0, .12)), var(--slate); box-shadow: 0 18px 34px rgba(0, 0, 0, .55), inset 0 0 0 2px rgba(255, 255, 255, .07); }
+.cover.l { left: 70px; border-radius: 14px 0 0 14px; } .cover.r { left: 810px; border-radius: 0 14px 14px 0; }
+.spine { left: 770px; width: 60px; background: linear-gradient(90deg, var(--slate), #4A5B66 30%, var(--slate-d) 50%, #4A5B66 70%, var(--slate)); }
+.sheet { top: 50px; width: 660px; height: 800px; box-sizing: border-box; padding: 24px 30px 30px; background: linear-gradient(160deg, var(--sheet), var(--sheet-d)); border-radius: 4px; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); display: flex; flex-direction: column; }
+.sheet.l { left: 100px; padding-right: 72px; } .sheet.r { left: 840px; padding-left: 72px; }          /* (the punched edge lies at the spine) */
+/* a turning sheet (the leaf): it swings over the rings about the middle of the spine (x 800), its front the page it leaves, its back the page it brings */
+#stage { perspective: 2600px; perspective-origin: 800px 450px; }
+.leaf { position: absolute; top: 50px; width: 660px; height: 800px; z-index: 5; pointer-events: none; transform-style: preserve-3d; animation: .62s cubic-bezier(.45, .05, .35, 1) both; }
+.leaf.fwd { left: 840px; transform-origin: -40px 50%; animation-name: leaffwd; } .leaf.back { left: 100px; transform-origin: 700px 50%; animation-name: leafback; }
+@keyframes leaffwd { from { transform: rotateY(0); } to { transform: rotateY(-180deg); } }
+@keyframes leafback { from { transform: rotateY(0); } to { transform: rotateY(180deg); } }
+.leaf .face { position: absolute; left: 0; top: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.leaf .rear { transform: rotateY(180deg); }
+.leaf .face::after { content: ''; position: absolute; inset: 0; border-radius: 4px; background: #0B1418; opacity: 0; animation: .62s cubic-bezier(.45, .05, .35, 1) both; }          /* (the shade of a sheet standing up from the binder) */
+.leaf .front::after { animation-name: shadeoff; } .leaf .rear::after { animation-name: shadeon; }
+@keyframes shadeoff { 0% { opacity: 0; } 50% { opacity: .38; } 100% { opacity: .38; } }
+@keyframes shadeon { 0% { opacity: .38; } 50% { opacity: .38; } 100% { opacity: 0; } }
+.holes { position: absolute; top: 0; bottom: 0; width: 26px; } .sheet.l .holes { right: 22px; } .sheet.r .holes { left: 22px; }
+.holes i { position: absolute; left: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--slate-d); box-shadow: inset 0 2px 3px rgba(0, 0, 0, .6); }
+.holes i:nth-child(1) { top: 147px; } .holes i:nth-child(2) { top: 387px; } .holes i:nth-child(3) { top: 627px; }
+.rings { left: 708px; top: 0; width: 184px; height: 900px; pointer-events: none; }
+.rings i { position: absolute; left: 0; width: 184px; height: 64px; box-sizing: border-box; border: 8px solid #C9CFD4; border-bottom-color: #858D94; border-top-color: #E4E8EB; border-radius: 50%; box-shadow: 0 4px 5px rgba(0, 0, 0, .45); }
+.rings i:nth-child(1) { top: 178px; } .rings i:nth-child(2) { top: 418px; } .rings i:nth-child(3) { top: 658px; }
+
+/* a sheet: the action's icon and name, the level, five pockets (three above, two below) */
+.sheet header { display: flex; align-items: center; gap: 14px; flex: none; height: 64px; margin-bottom: 0; border-bottom: 2px solid var(--line); }
+.sheet header .ico { width: 46px; height: 46px; }
+.sheet h2 { margin: 0; font: 400 32px/1 'Park Head', system-ui, sans-serif; letter-spacing: .02em; }
+.sheet .lv { margin-left: auto; min-width: 46px; height: 40px; padding: 0 8px; box-sizing: border-box; display: grid; place-items: center; border-radius: 6px; color: #fff; font: 700 26px/1 Georgia, 'Times New Roman', serif; }
+.lv.l1 { background: var(--lv1); } .lv.l2 { background: var(--lv2); }
+.pockets { flex: 1; display: grid; grid-template-columns: repeat(6, 1fr); align-content: space-evenly; gap: 30px 16px; }
+.pocket { grid-column: span 2; position: relative; padding: 9px; border: 0; background: none; }
+.pocket:nth-child(4) { grid-column: 2 / span 2; }
+.pocket img { position: relative; display: block; width: 100%; aspect-ratio: 745 / 1040; border-radius: 9px; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); transition: transform .18s; }
+.pocket::before { content: ''; position: absolute; inset: 0; border: 1.5px solid rgba(110, 132, 148, .55); border-radius: 7px; background: linear-gradient(180deg, rgba(190, 205, 215, .22), rgba(190, 205, 215, .12)); }          /* (the clear pocket behind the card) */
+.pocket::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; top: 46px; z-index: 1; border-top: 1.5px solid rgba(110, 132, 148, .6); border-radius: 0 0 7px 7px; background: linear-gradient(115deg, rgba(255, 255, 255, .38), rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, .14)); pointer-events: none; }          /* (its front film, with a sheen, over all but the top of the card) */
+.pocket:hover img, .pocket:focus-visible img { transform: translateY(-10px); }
+.pocket:focus-visible { outline: 3px solid var(--lv1); outline-offset: 3px; border-radius: 8px; }
+
+/* the tabs at the right edge, in the colours of the actions */
+.tabs { left: 1518px; top: 96px; display: flex; flex-direction: column; gap: 14px; }
+.tab { width: 70px; height: 118px; padding: 0 0 0 10px; border: 0; border-radius: 0 12px 12px 0; background: linear-gradient(90deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, 0) 22px), var(--c); box-shadow: 3px 3px 7px rgba(0, 0, 0, .4); display: grid; place-items: center; transition: width .18s, filter .18s; filter: saturate(.75) brightness(.9); }
+.tab img { width: 44px; height: 44px; border-radius: 8px; background: #fff; }
+.tab:hover { filter: none; } .tab.on { width: 88px; filter: none; }
+.tab:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+
+/* a card large, both sides */
+#big { max-width: none; max-height: none; padding: 0; border: 0; background: none; overflow: visible; }
+#big::backdrop { background: rgba(14, 6, 4, .78); }
+#big .pair { display: flex; gap: 3vh; }
+#big figure { margin: 0; }
+#big figure img { display: block; height: min(80vh, 39vw * 1040 / 745); border-radius: 18px; box-shadow: 0 12px 30px rgba(0, 0, 0, .6); }
+#big .step, #bigclose { position: absolute; border: 2px solid var(--ink); background: #F5F8FA; color: var(--ink); border-radius: 50%; width: 46px; height: 46px; font: 700 30px/1 system-ui, sans-serif; display: grid; place-items: center; padding: 0 0 4px; box-shadow: 0 2px 0 var(--ink); }
+#big .step { top: 50%; margin-top: -23px; } #bigprev { left: -64px; } #bignext { right: -64px; }
+#bigclose { top: -18px; right: -18px; z-index: 1; width: 40px; height: 40px; font-size: 26px; }
+#big .step:hover, #bigclose:hover { background: #fff; }
+@media (max-width: 760px) { #big .pair { flex-direction: column; } #big figure img { height: min(42vh, 78vw * 1040 / 745); } #bigprev { left: -6px; } #bignext { right: -6px; } }
+@media (prefers-reduced-motion: reduce) { .pocket img, .tab { transition: none; } }

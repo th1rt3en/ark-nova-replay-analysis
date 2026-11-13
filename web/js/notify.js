@@ -13,11 +13,11 @@ const css = el('style', {}, `
 #arknotify .toast.bad { background: #F8EDCB; border-color: #A8321E; box-shadow: 0 5px 0 #A8321E; color: #A8321E; }
 #arknotify .toast b { display: block; margin: 0 22px 3px 0; font: 400 1.05rem/1.15 'Park Head', 'Bowlby One', system-ui, sans-serif; }
 #arknotify .toast .row { display: flex; gap: 10px; margin-top: 10px; }
-#arknotify .toast button { font: 700 .95rem 'Barlow', system-ui, sans-serif; cursor: pointer; padding: .25rem 1rem .3rem; background: #F8EDCB; color: #17262B; border: 3px solid #17262B; border-radius: 999px; box-shadow: 0 3px 0 #17262B; }
+#arknotify .toast button { font: 700 .95rem 'Barlow', system-ui, sans-serif; cursor: var(--cur-hand); padding: .25rem 1rem .3rem; background: #F8EDCB; color: #17262B; border: 3px solid #17262B; border-radius: 999px; box-shadow: 0 3px 0 #17262B; }
 #arknotify .toast button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 0 #17262B; }
 #arknotify .toast button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #17262B; }
 #arknotify .toast button.go { background: #EE6C2B; color: #fff; text-shadow: 0 2px 0 rgba(23, 38, 43, .45); }
-#arknotify .toast button:disabled { opacity: .55; cursor: default; }
+#arknotify .toast button:disabled { opacity: .55; cursor: var(--cur-arrow); }
 #arknotify .toast .x { position: absolute; top: 6px; right: 8px; width: 26px; height: 26px; padding: 0; border: 0; background: none; box-shadow: none; font-size: 22px; line-height: 1; }
 #arknotify .toast .x:hover:not(:disabled) { transform: none; box-shadow: none; color: #A8321E; }
 #arknotify .toast .err { color: #A8321E; margin-top: 6px; font-weight: 700; }

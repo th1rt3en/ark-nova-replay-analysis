@@ -163,7 +163,7 @@ function renderPlacementControls(box, placeActs) {
     b.style.setProperty('--pc', seatColor(seat));
     b.title = 'Click a hex of the zoo for its anchor';
     const sp = spriteOf({ type: p.type });
-    if (sp) { const img = el('img'); img.src = '/enclosures/' + sp.image; img.alt = ''; const k = Math.min(0.12, 28 / sp.size[1]); img.style.width = (sp.size[0] * k) + 'px'; img.style.height = (sp.size[1] * k) + 'px'; b.append(img); }
+    if (sp) { const img = el('img'); img.src = '/enclosures/' + sp.image + '?v=art20261112'; img.alt = ''; const k = Math.min(0.12, 28 / sp.size[1]); img.style.width = (sp.size[0] * k) + 'px'; img.style.height = (sp.size[1] * k) + 'px'; b.append(img); }
     if (reefBuild && ICON_IDS.reef) b.append(coralIcon(), el('b', '', ':'));
     b.append(el('span', '', (p.move ? 'Reposition the ' : 'Place ' + (/^[aeiou]/.test(name) ? 'an ' : 'a ')) + name + (p.extra ? ' (additional)' : '') + (p.move ? ' (crane)' : '')));
     b.onclick = () => {
@@ -195,7 +195,7 @@ function renderPlacementControls(box, placeActs) {
       b.type = 'button'; b.disabled = S.forkBusy;
       b.style.setProperty('--pc', seatColor(seat));
       const sp = spriteOf({ type: p.type });
-      if (sp) { const img = el('img'); img.src = '/enclosures/' + sp.image; img.alt = ''; const k = Math.min(0.12, 70 / sp.size[1]); img.style.width = (sp.size[0] * k) + 'px'; img.style.height = (sp.size[1] * k) + 'px'; b.append(img); }
+      if (sp) { const img = el('img'); img.src = '/enclosures/' + sp.image + '?v=art20261112'; img.alt = ''; const k = Math.min(0.12, 70 / sp.size[1]); img.style.width = (sp.size[0] * k) + 'px'; img.style.height = (sp.size[1] * k) + 'px'; b.append(img); }
       b.append(el('span', '', (p.move ? 'Reposition the ' : '') + p.type.replace(/-/g, ' ') + (p.extra ? ' (additional)' : '') + (p.move ? ' (crane)' : '') + ' - ' + p.n + ' spots'));
       b.onclick = () => {
         S.placement = { seat, type: p.type, extra: p.extra, move: p.move, x: null, y: null, rot: 0 };

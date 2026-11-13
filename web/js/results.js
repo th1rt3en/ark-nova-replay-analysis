@@ -6,7 +6,8 @@ import { FORK, MINIGAME, PLAY, S, params, table } from './state.js';
 import { framesOf } from './frames.js';
 import { seatOrder } from './pov.js';
 import { render } from './main.js';
-import { ICON_IDS, iconUrl } from './icons.js';
+import { ICON_IDS, SHOW_VALUE, iconUrl, moneyTile } from './icons.js';
+import { adaptIcon, binderSvg } from './bonusart.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
@@ -162,7 +163,7 @@ export function loadStats() {
 
 // ---- the score race: the score of both players after every turn, the breaks as dashed lines ------------------------------------------------------------------------------
 // The graph categories (the rail in the graph view): [title, what is plotted per round]. 'score' is the score race; null = not drawn yet.
-const GRAPH_CATS = [['Points', 'score'], ['Key events', 'events'], ['Conservation', 'conservation'], ['Appeal', 'appeal'], ['Reputation', 'reputation'], ['Money', 'money'], ['X-tokens', 'x_tokens']];
+const GRAPH_CATS = [['Key events', 'events'], ['Points', 'score'], ['Points per turn', 'score_turn'], ['Conservation', 'conservation'], ['Appeal', 'appeal'], ['Reputation', 'reputation'], ['Money', 'money'], ['X-tokens', 'x_tokens']];
 const metric = (p, key) => (key === 'cards' ? (Array.isArray(p.hand) ? p.hand.length : NaN) : p[key]);
 function niceTicks(lo, hi) {
   const span = Math.max(1, hi - lo), raw = span / 5, mag = 10 ** Math.floor(Math.log10(raw));
@@ -202,6 +203,17 @@ function race(key = 'score') {
   const ticks = key === 'score' ? [0, 25, 50, 75, 100] : niceTicks(Math.min(0, ...all), Math.max(1, ...all));
   const lo = key === 'score' ? Math.min(-20, ...all) : ticks[0], hi = key === 'score' ? Math.max(105, ...all) : ticks[ticks.length - 1];
   return { turns, scores, breaks, end, ticks, lo, hi, goal: key === 'score' };
+}
+// Points per turn: the points each player gained in every normal turn (the score race differenced; the start and the End column - the final scoring - are not turns of their own)
+function racePerTurn() {
+  const R = race('score'), turns = R.turns.slice(), scores = R.scores.map((v) => v.slice());
+  if (turns[0] !== 0) { turns.unshift(0); scores.unshift([0, 0]); }
+  const last = turns.length - (R.end ? 1 : 0), t = [], sc = [];
+  const nt = S.replay.normal_turns, has = (p, n) => !Array.isArray(nt) || nt.some((x) => x.seat === p && x.number === n);          // (a player without a turn n - the starting player's extra last turn - has no point there)
+  for (let i = 1; i < last; i++) { t.push(turns[i]); sc.push(scores[i].map((v, p) => (has(p, turns[i]) ? v - scores[i - 1][p] : null))); }
+  if (!t.length) return null;
+  const all = sc.flat().filter((v) => v !== null), ticks = niceTicks(Math.min(0, ...all), Math.max(1, ...all));
+  return { noPill: true, axis: [turns[0], turns[turns.length - 1]], turns: t, scores: sc, breaks: R.breaks.filter((b) => b.turn >= t[0] - 1 && b.turn <= t[t.length - 1] + 1), end: false, ticks, lo: ticks[0], hi: ticks[ticks.length - 1], goal: false };
 }
 let raceSeq = 0;
 // ---- key events: when each player upgraded an action card, gained a worker, and what each Association action took --------------------------------------------------------------
@@ -263,102 +275,317 @@ function shield(g, bx, by, r, n) {                                              
   g.append(sv('image', { href: iconUrl(ICON_IDS.conservation), x: bx - r, y: by - r, width: r * 2, height: r * 2 }));
   const t = sv('text', { x: bx, y: by + r * .38, class: 'kecp', 'text-anchor': 'middle', style: `font-size:${r * 1.45}px` }); t.textContent = String(n); g.append(t);
 }
-function keSvg(w, h) {
-  const R = race('score'), ev = keyEvents().filter((e) => e.round >= R.turns[0] && e.round <= R.turns[R.turns.length - 1]);
-  const pad = { l: 60, r: 40, t: 50, b: 46 }, t0 = R.turns[0] || 0, t1 = R.turns[R.turns.length - 1] || 1;
-  const X = (t) => pad.l + (w - pad.l - pad.r) * (t - t0) / Math.max(1, t1 - t0);
-  const s = sv('svg', { viewBox: `0 0 ${w} ${h}`, class: 'rsrace-svg big kesvg' });
-  const uid = 'ke' + (++raceSeq), GS = [graphStyle(0), graphStyle(1)];
+// ---- key events as an accordion: six event types, each a strip (folded: a dot per event) or a lane (open: a row per player with the events as icons) --------------------------
+// The view (`keView`) is an HTML box the size of the graph area with three layers: at the back an SVG with what stays put (the break mugs and lines, the hover band, the base line and the
+// turn chip, all exactly where the other graphs have them: PAD, the time axis X of `raceSvg`), in the middle the list of the six items (scrolls when more than two lanes are open), in front an SVG
+// for the tooltip. Order and open types are kept in `S.keOrder` / `S.keOpen` while the page lives only (not saved: every new session starts with the default order and everything folded); the scroll position likewise.
+// Upgrades, workers and the Association are drawn exactly as before (`keDraw`, the sizes of the old lanes); the three new types (placement bonuses, enclosures, icons gained) are
+// placed by `kePlace` (all 36 px, stacks of more than three in two columns, overlapping when they do not fit).
+const KE_PAD = { l: 60, r: 78, t: 50, b: 46 };                                                    // (the big graphs' padding, raceSvg: the turns and breaks lie where they lie on the Points graph)
+const KE_TABW = 46, KE_STRIP = 40, KE_GAP = 8, KE_LL = 8, KE_TOP = 60;                             // tab width, strip height, gap between items, the list's left edge and top (the old lanes' top)
+const KE_TYPES = [                                                                                  // the tab icons are placeholders
+  { name: 'Upgrades', icon: () => iconUrl(ICON_IDS['bonus:upgrade-card']) },
+  { name: 'Workers', icon: () => iconUrl(ICON_IDS['bonus:Worker']) },
+  { name: 'Association', icon: () => iconUrl(ICON_IDS['bonus:Partner-Zoo']) },
+  { name: 'Placement bonuses', icon: () => iconUrl(ICON_IDS.pentagon) },
+  { name: 'Enclosures', icon: () => '/badges/Enclosure.webp' },
+  { name: 'Species icons', icon: () => '/badges/Species.webp' },
+  { name: 'Continent icons', icon: () => '/badges/Continents.webp' },
+  { name: 'Terrain icons', icon: () => '/badges/Terrain.webp', badge: true },
+  { name: 'Science icons', icon: () => '/badges/Science.webp', badge: true },
+];
+const KE_ICON_LANE = { Africa: 6, Americas: 6, Asia: 6, Australia: 6, Europe: 6, Water: 7, Rock: 7, Science: 8 };     // the icon lanes: continents, terrain, science; every other icon (the species) is lane 5
+const KE_OUTLINE = 1.5;                                                                            // the width (px) of the white outline round the tab icons
+const KE_OLD_ICON = 44;                                                                            // the size (px) of every upgrade, worker and Association event, the same in every window size
+const KE_ICON = 36;                                                                                // the size (px) of every event of the new lane types, the same in every window size
+const KE_ENCL = /^(size-[1-5]|petting-zoo|reptile-house|large-bird-aviary|small-aquarium|large-aquarium|kiosk|pavilion)$/;       // standard and special enclosures, kiosks and pavilions (no sponsor buildings)
+const KE_ENCL_NAME = { 'petting-zoo': 'Petting Zoo', 'reptile-house': 'Reptile House', 'large-bird-aviary': 'Large Bird Aviary', 'small-aquarium': 'Small Aquarium', 'large-aquarium': 'Large Aquarium', kiosk: 'Kiosk', pavilion: 'Pavilion' };
+const KE_LOGGED = new Set(['money', 'xtoken', 'reputation', 'appeal']);                          // placement bonuses the log names ("gains 5 money (placement bonus)"); the others are read off the covered hexes
+const KE_BONUS_NAME = { money: 'money', xtoken: 'X-token', reputation: 'reputation', appeal: 'appeal', 'take-in-range-or-deck': 'a card', Clever: 'Clever', 'bonus-sponsor': 'a sponsor', kiosk: 'a free kiosk', wave: 'Wave',
+  store: 'Store', conceal: 'Conceal', 'shark-attack': 'Shark Attack', Mark: 'Mark', adapt: 'Adapt', Fac: 'a university', 'extra-shift': 'Extra Shift', Multiplier: 'Multiplier', Scavenging: 'Scavenging', 'Partner-Zoo': 'a partner zoo' };
+const keRound = (st) => { const ctx = st.turn_context; return ctx ? (ctx.phase === 'turn' ? ctx.number : ctx.phase === 'break' ? ctx.display + .5 : null) : Math.ceil(st.turn / 2); };       // (the rule of keyEvents)
+// The three new types, from the steps: placement bonuses (lane 3), new enclosures (lane 4), icons gained (lane 5). The setup (the first state) gives none.
+function keMoreEvents() {
+  const names = S.replay.players.map((p) => p.name), seatOf = (n) => names.indexOf(n), ev = [];
+  const maps = S.replay.maps || [];
+  let prev = null; const ever = [new Set(), new Set()], built = [new Set(), new Set()];
+  S.replay.steps.forEach((s) => {
+    const st = s.state, label = s.label || '';
+    if (!st || !Number.isFinite(st.turn) || !st.players) return;
+    const round = keRound(st), first = !prev;
+    for (const m of label.matchAll(/(?:^|· )([^·\n]+?) gains (\d+) (money|xtoken|reputation|appeal) \(placement bonus\)/gm)) {
+      const seat = seatOf(m[1]);
+      if (seat >= 0 && round !== null) ev.push({ seat, round, lane: 3, kind: 'bonus', type: m[3], value: +m[2] });
+    }
+    const rebuilt = /\((?:Reconstruction|Cut Down|Conference)\)/i.test(label), cutDown = /\(Cut Down effect\)/i.test(label);
+    st.players.forEach((p, seat) => {
+      const lay = p.bonus_layout || (maps[seat] && maps[seat].placement_bonuses) || [], bon = new Map(lay.map((b) => [b.x + ',' + b.y, b.bonus || {}]));
+      const noBonus = (p.sponsors || []).some((k) => String(k).startsWith('S280'));                // (S280: no placement bonuses any more, engine/game.py)
+      if (cutDown && prev && prev.players[seat]) {                                                // an enclosure cut down: it is gone from the map, drawn paled in the Enclosures lane (like a lost icon)
+        const nowKeys = new Set((p.buildings || []).map((b) => b.type + ':' + b.x + ':' + b.y));
+        for (const b of prev.players[seat].buildings || []) {
+          const key = b.type + ':' + b.x + ':' + b.y;
+          if (nowKeys.has(key) || !KE_ENCL.test(b.type) || !built[seat].has(key)) continue;
+          built[seat].delete(key); if (round !== null) ev.push({ seat, round, lane: 4, kind: 'building', type: b.type, lost: true });
+        }
+      }
+      for (const b of p.buildings || []) {
+        for (const c of b.cells || []) {                                                          // a bonus hex covered for the first time (a building that is put back does not give it again)
+          const k = c[0] + ',' + c[1];
+          if (ever[seat].has(k)) continue;
+          ever[seat].add(k);
+          const bn = bon.get(k);
+          if (!first && !noBonus && round !== null && bn && bn.type && !KE_LOGGED.has(bn.type)) ev.push({ seat, round, lane: 3, kind: 'bonus', type: bn.type, value: bn.value || 1 });
+        }
+        const key = b.type + ':' + b.x + ':' + b.y;
+        if (built[seat].has(key)) continue;
+        built[seat].add(key);
+        if (!first && !rebuilt && round !== null && KE_ENCL.test(b.type)) ev.push({ seat, round, lane: 4, kind: 'building', type: b.type });
+      }
+      if (!first && round !== null && prev.players[seat]) {
+        const a = prev.players[seat].icons || {}, b = p.icons || {};
+        for (const ic of new Set([...Object.keys(a), ...Object.keys(b)])) {                     // gained and lost (a lost icon is drawn greyed)
+          const was = a[ic] || 0, now = b[ic] || 0, lane = KE_ICON_LANE[ic] || 5;
+          for (let i = was; i < now; i++) ev.push({ seat, round, lane, kind: 'icon', type: ic });
+          for (let i = now; i < was; i++) ev.push({ seat, round, lane, kind: 'icon', type: ic, lost: true });
+        }
+      }
+    });
+    prev = st;
+  });
+  return ev;
+}
+const keMix = (hex, k) => { const n = parseInt(String(hex).replace('#', ''), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (255 - v) * k)); return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join(''); };
+// One event of the three old types, drawn as keSvg drew it (sz: the icon size of its cell, wr: the row height of the workers lane, for the size of the shields)
+function keDraw(g, e, x, cy, sz, GS, wr) {
+  const c = GS[e.seat].df, ol = inkOn(c) === '#10222a' ? '#06222b' : '#f6edd3';                  // (the outline: cream, dark on the bright seat colours white / yellow)
+  if (e.kind === 'upgrade') {
+    const q = sz * .9;                                                                              // (a dark casing, the owner's colour as the frame, a cream II chip: readable on every seat colour)
+    g.append(sv('rect', { x: x - q / 2 - 2, y: cy - q / 2 - 2, width: q + 4, height: q + 4, rx: q * .24 + 2, fill: ol }), sv('rect', { x: x - q / 2, y: cy - q / 2, width: q, height: q, rx: q * .24, fill: c }),
+      sv('image', { href: iconUrl(KE_UP[e.type]), x: x - q * .4, y: cy - q * .4, width: q * .8, height: q * .8 }),
+      sv('rect', { x: x + q * .1, y: cy + q * .14, width: q * .52, height: q * .38, rx: q * .1, fill: '#f6edd3', stroke: '#06222b', 'stroke-width': 1.6 }));
+    const ii = sv('text', { x: x + q * .36, y: cy + q * .43, class: 'keii', 'text-anchor': 'middle', style: `font-size:${q * .3}px` }); ii.textContent = 'II'; g.append(ii);
+  } else if (e.kind === 'worker') {
+    const raw = String(seatRawColor(e.seat) || '').replace('#', '').toLowerCase();
+    g.append(sv('image', { href: '/workers/' + raw + '.webp', x: x - sz / 2, y: cy - sz / 2, width: sz, height: sz, class: GS[e.seat].black ? 'kerep' : '' }));
+    if (e.cp) shield(g, x + sz * .3, cy + sz * .3, KE_OLD_ICON * .27, 2);                // taken as the 2 conservation points bonus instead of an upgrade: a small shield with 2 at the bottom right
+  } else {
+    const hire = e.kind === 'hire', id = e.kind === 'project' ? 'r11c6' : e.kind === 'reputation' ? ICON_IDS['bonus:reputation'] : ICON_IDS[e.kind === 'partner' ? e.type.replace('partner-', '') : e.type] || ICON_IDS['bonus:Fac'];
+    g.append(sv('image', { href: hire ? '/action_icons/association_2_1.webp' : iconUrl(id), x: x - (hire ? sz * .4 : sz / 2), y: cy - (hire ? sz * .4 : sz / 2), width: hire ? sz * .8 : sz, height: hire ? sz * .8 : sz, class: e.kind === 'reputation' || hire ? 'kerep' : '' }));          // (no owner mark: the row already says whose it is)
+  }
+  if (e.lane === 2 && e.cp) shield(g, x + sz * .4, cy + sz * .4, KE_OLD_ICON * .27, e.cp);                  // a free gift of 5 / 8 conservation points, not an Association action
+}
+// One event of the new types: the placement bonus as its icon (no pentagon), the enclosure's picture, the icon's round badge
+function keDrawNew(g, e, x, cy, sz) {
+  if (e.lost && e.kind === 'building') { const root = g; g = sv('g', { class: 'kelostg' }); root.append(g); }          // (a cut down enclosure: everything in a paled group)
+  const num = (v, y, fs) => { const t = sv('text', { x, y, class: 'kebn', 'text-anchor': 'middle', style: `font-size:${fs}px;stroke-width:${fs * .2}px` }); t.textContent = String(v); g.append(t); };
+  if (e.kind === 'icon') g.append(sv('image', { href: '/badges/' + e.type + '.webp', x: x - sz / 2, y: cy - sz / 2, width: sz, height: sz, class: e.lost ? 'kebadge kelost' : 'kebadge' }));          // (the square badge cut to a round one)
+  else if (e.kind === 'building') {                                                       // drawn as the building's own icon (as on the cards), not the board piece
+    const T = e.type, ic = (href, w, h, st) => g.append(sv('image', { href, x: x - w / 2, y: cy - h / 2, width: w, height: h, preserveAspectRatio: 'xMidYMid meet', ...(st ? { style: st } : {}) }));
+    const num = (v, dx, st) => { const t = sv('text', { x: x + dx, y: cy + sz * .2, 'text-anchor': 'middle', style: `font-family:'Park Num',system-ui,sans-serif;font-size:${sz * .58}px;fill:#fff;pointer-events:none;${st}` }); t.textContent = String(v); g.append(t); };
+    if (/^size-/.test(T)) { ic(iconUrl('r9c3'), sz * 1.05, sz * .91); num(T.slice(5), 0, 'stroke:none'); }          // brown hexagon with its size
+    else if (T === 'large-bird-aviary') ic(iconUrl('r9c9'), sz * 1.3, sz * 1.3);
+    else if (T === 'petting-zoo') ic(iconUrl('r9c10'), sz * 1.3, sz * 1.3);
+    else if (T === 'reptile-house') ic(iconUrl('r9c11'), sz * 1.3, sz * 1.3);
+    else if (T === 'small-aquarium' || T === 'large-aquarium') { ic(iconUrl('r8c14'), sz * 1.1, sz * 1.25); num(T === 'small-aquarium' ? 2 : 5, -sz * .112, `stroke:#0a3a58;stroke-width:${sz * .075}px;paint-order:stroke;stroke-linejoin:round`); }   // 2 / 5 in the water, dark-blue outline
+    else if (T === 'kiosk') ic('/icons_hd/placement-approved/kiosk.svg', sz * 1.05, sz * .91, 'filter:brightness(.655)');   // the sharp approved hexagon, white turned grey
+    else if (T === 'pavilion') ic('/icons_hd/placement-approved/pavilion.svg', sz * 1.05, sz * .91);
+  }
+  else if (e.type === 'money') { moneyTile(g, x, cy, sz * .9); g.lastChild.style.strokeWidth = sz * .9 / 48 * 3.5; num(e.value, cy + sz * .26, sz * .66); }
+  else if (e.type === 'conceal') g.append(binderSvg(x, cy, sz / 82));
+  else if (e.type === 'adapt') adaptIcon(g, x, cy, e.value || 1, sz / 56);
+  else {
+    const id = e.type === 'xtoken' && e.value > 1 ? ICON_IDS['bonus:xtoken_num'] || ICON_IDS['bonus:xtoken'] : ICON_IDS['bonus:' + e.type];
+    if (id) g.append(sv('image', { href: iconUrl(id), x: x - sz / 2, y: cy - sz / 2, width: sz, height: sz, preserveAspectRatio: 'xMidYMid meet', class: e.type === 'reputation' ? 'kerep' : '' }));
+    if (SHOW_VALUE.has(e.type) || (e.type === 'xtoken' && e.value > 1) || (e.type === 'Scavenging' && e.value > 1)) num(e.value, cy + sz * .3, sz * .6);
+  }
+}
+const keTip = (e) => {
+  if (e.kind === 'bonus') return 'Placement bonus: ' + (e.value > 1 || KE_LOGGED.has(e.type) ? e.value + ' ' : '') + (KE_BONUS_NAME[e.type] || e.type);
+  if (e.kind === 'building') return (e.lost ? 'Cut down: ' : 'Built: ') + (/^size-/.test(e.type) ? 'size-' + e.type.slice(5) + ' enclosure' : KE_ENCL_NAME[e.type] || e.type);
+  if (e.kind === 'icon') return (e.lost ? 'Icon lost: ' : 'Icon: ') + (e.type === 'SeaAnimal' ? 'Sea Animal' : e.type);
+  let what = e.kind === 'upgrade' ? KE_TYPE[e.type] + ' upgraded to II' : e.kind === 'worker' ? (e.cp ? 'Gained a worker (2 CP bonus)' : 'Gained a worker') : e.kind === 'project' ? 'Supported a project: ' + e.name
+    : e.kind === 'hire' ? 'Hired a worker instead of a project' : e.kind === 'reputation' ? (e.cp ? 'Took reputation (' + e.cp + ' CP bonus)' : 'Took reputation') : e.kind === 'partner' ? 'Partner zoo: ' + e.type.replace('partner-', '') : 'University' + (KE_UNI[e.type] ? ': ' + KE_UNI[e.type] : '');
+  if (e.cp && (e.kind === 'partner' || e.kind === 'university')) what += ' (' + e.cp + ' CP bonus)';
+  return what;
+};
+let keScroll = 0, keDragging = false;
+function keLayout() {                                                                               // the order and the open types, checked (the stored values are used only when they are valid)
+  if (Array.isArray(S.keOrder) && S.keOrder.length === 6 && [0, 1, 2, 3, 4, 5].every((i) => S.keOrder.includes(i))) {        // saved before the icons were split in four: the old 'Icons gained' (5) becomes the four icon types in its place, species open if it was
+    S.keOrder = S.keOrder.flatMap((i) => (i === 5 ? [5, 6, 7, 8] : [i]));
+  }
+  const ord = Array.isArray(S.keOrder) && S.keOrder.length === KE_TYPES.length && KE_TYPES.every((_, i) => S.keOrder.includes(i)) ? S.keOrder.slice() : KE_TYPES.map((_, i) => i);
+  const open = new Set((Array.isArray(S.keOpen) ? S.keOpen : []).filter((i) => Number.isInteger(i) && i >= 0 && i < KE_TYPES.length));
+  return { ord, open };
+}
+const keSave = (ord, open) => { S.keOrder = ord.slice(); S.keOpen = [...open].sort((a, b) => a - b); document.dispatchEvent(new Event('kelayout')); };
+function keView(w, h) {
+  const R = race('score'), t0 = R.turns[0] || 0, t1 = R.turns[R.turns.length - 1] || 1, pad = KE_PAD;
+  const inPlot = (e) => e.round >= R.turns[0] && e.round <= R.turns[R.turns.length - 1];
+  const ev = keyEvents().filter(inPlot).concat(keMoreEvents().filter(inPlot));
+  const X = (t) => pad.l + (w - pad.l - pad.r) * (t - t0) / Math.max(1, t1 - t0), yb = h - pad.b;
+  const GS = [graphStyle(0), graphStyle(1)], uid = 'ke' + (++raceSeq);
+  const wrap = el('div', 'kewrap'); wrap.style.width = w + 'px'; wrap.style.height = h + 'px';
+  // the back: break lines and mugs as on the other graphs, the hover band, the base line, the chip
+  const back = sv('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h, class: 'rsrace-svg big keback' });
   const defs = sv('defs'), fade = sv('linearGradient', { id: uid + 'f', gradientUnits: 'userSpaceOnUse', x1: 0, x2: 0, y1: pad.t, y2: h - pad.b });
   fade.append(sv('stop', { offset: 0, 'stop-color': '#f8edcb', 'stop-opacity': .45 }), sv('stop', { offset: 1, 'stop-color': '#f8edcb', 'stop-opacity': .15 }));
-  defs.append(fade); s.append(defs);
-  // the lanes: Association gets the most room (several tasks of one turn stack in it)
-  const weights = [1, 1, 1.9], gap = 22, total = h - pad.t - pad.b - 10 - gap * 2, lanes = [];
-  let y = pad.t + 10;
-  weights.forEach((wt, i) => { const lh = total * wt / weights.reduce((a, b) => a + b); lanes.push({ y0: y, y1: y + lh }); y += lh + gap; });
-  const band = sv('g', { class: 'keband' }); s.append(band);
-  const hover = sv('rect', { class: 'kehov', visibility: 'hidden' }); s.append(hover);
-  [0, 1, 2].forEach((i) => {
-    const L = lanes[i];
-    s.append(sv('rect', { x: pad.l - 36, y: L.y0, width: w - pad.l - pad.r + 36, height: L.y1 - L.y0, rx: 12, class: 'kelane' }));
-    [0, 1].forEach((seat) => {
-      const ry0 = L.y0 + 6 + (L.y1 - L.y0 - 12) * Math.max(0, seatOrder().indexOf(seat)) / 2,         // (the seat of the left map / top info box is the top row)
-         rh = (L.y1 - L.y0 - 12) / 2 - 3;
-      s.append(sv('rect', { x: pad.l - 30, y: ry0, width: w - pad.l - pad.r + 30, height: rh, rx: 8, fill: GS[seat].c, class: 'kerow' }));
-      L['r' + seat] = ry0 + rh / 2; L['h' + seat] = rh;
-    });
-  });
+  defs.append(fade); back.append(defs);
+  const hover = sv('rect', { class: 'kehov', visibility: 'hidden' }); back.append(hover);
+  back.append(sv('line', { x1: KE_LL, x2: w - 4, y1: yb, y2: yb, class: 'kebase' }));
   R.breaks.forEach((b) => {
     const known = b.seat !== null && b.seat >= 0, x = X(b.turn), cy = pad.t - 22;
-    s.append(sv('line', { x1: x, x2: x, y1: pad.t - 2, y2: h - pad.b, class: 'rsbreak', stroke: `url(#${uid}f)` }));
-    s.append(sv('circle', { cx: x, cy, r: 16.8, fill: known ? GS[b.seat].df : '#f8edcb' }));
-    s.append(mugIcon(known ? GS[b.seat].mf : '#2a2a2a', x, cy, 21.8));
+    back.append(sv('line', { x1: x, x2: x, y1: pad.t - 2, y2: h - pad.b, class: 'rsbreak', stroke: `url(#${uid}f)` }));
+    back.append(sv('circle', { cx: x, cy, r: 16.8, fill: known ? GS[b.seat].df : '#f8edcb' }));
+    back.append(mugIcon(known ? GS[b.seat].mf : '#2a2a2a', x, cy, 21.8));
   });
-  const yb = h - pad.b;
-  // the events: one cell = one row of one lane in one round; several events of a cell stack downwards (a little overlap is fine)
-  const cells = new Map();
-  ev.forEach((e) => { const k = e.lane + ':' + e.seat + ':' + e.round; if (!cells.has(k)) cells.set(k, []); cells.get(k).push(e); });
-  const tip = sv('g', { class: 'ketip', visibility: 'hidden', 'pointer-events': 'none' }), tb = sv('rect', { rx: 10, class: 'ketipbg' }), t1el = sv('text', { class: 'ketip1' }), t2el = sv('text', { class: 'ketip2' });
-  tip.append(tb, t1el, t2el);
-  const items = [];
-  cells.forEach((list) => {
-    const e0 = list[0], L = lanes[e0.lane], rh = L['h' + e0.seat], sz = e0.lane === 2 ? Math.min(52, rh * .5) : Math.min(44, rh * .82), step = e0.lane === 2 ? Math.min(sz * 1.15, (rh - 8 - sz) / Math.max(1, list.length - 1)) : sz * .62;       // (the Association icons are bigger and several of one turn are spread over the row's height)
-    list.forEach((e, i) => {
-      const x = X(e.round), cy = L['r' + e.seat] + (i - (list.length - 1) / 2) * (list.length > 1 ? step : 0);
-      const g = sv('g', { class: 'keev' }), c = GS[e.seat].df, ol = inkOn(c) === '#10222a' ? '#06222b' : '#f6edd3';           // (the outline: cream, dark on the bright seat colours white / yellow)
-      if (e.kind === 'upgrade') {
-        const q = sz * .9;                                                                              // (a dark casing, the owner's colour as the frame, a cream II chip: readable on every seat colour)
-        g.append(sv('rect', { x: x - q / 2 - 2, y: cy - q / 2 - 2, width: q + 4, height: q + 4, rx: q * .24 + 2, fill: ol }), sv('rect', { x: x - q / 2, y: cy - q / 2, width: q, height: q, rx: q * .24, fill: c }),
-          sv('image', { href: iconUrl(KE_UP[e.type]), x: x - q * .4, y: cy - q * .4, width: q * .8, height: q * .8 }),
-          sv('rect', { x: x + q * .1, y: cy + q * .14, width: q * .52, height: q * .38, rx: q * .1, fill: '#f6edd3', stroke: '#06222b', 'stroke-width': 1.6 }));
-        const ii = sv('text', { x: x + q * .36, y: cy + q * .43, class: 'keii', 'text-anchor': 'middle', style: `font-size:${q * .3}px` }); ii.textContent = 'II'; g.append(ii);
-      } else if (e.kind === 'worker') {
-        const raw = String(seatRawColor(e.seat) || '').replace('#', '').toLowerCase();
-        g.append(sv('image', { href: '/workers/' + raw + '.webp', x: x - sz / 2, y: cy - sz / 2, width: sz, height: sz, class: GS[e.seat].black ? 'kerep' : '' }));
-        if (e.cp) shield(g, x + sz * .3, cy + sz * .3, Math.min(44, lanes[1].h0 * .82) * .27, 2);                                      // taken as the 2 conservation points bonus instead of an upgrade: a small shield with 2 at the bottom right
-      } else {
-        const hire = e.kind === 'hire', id = e.kind === 'project' ? 'r11c6' : e.kind === 'reputation' ? ICON_IDS['bonus:reputation'] : ICON_IDS[e.kind === 'partner' ? e.type.replace('partner-', '') : e.type] || ICON_IDS['bonus:Fac'];
-        g.append(sv('image', { href: hire ? '/action_icons/association_2_1.webp' : iconUrl(id), x: x - (hire ? sz * .4 : sz / 2), y: cy - (hire ? sz * .4 : sz / 2), width: hire ? sz * .8 : sz, height: hire ? sz * .8 : sz, class: e.kind === 'reputation' || hire ? 'kerep' : '' }),
-          sv('circle', { cx: x - sz * .4, cy: cy - sz * .4, r: sz * .17, fill: c, stroke: ol, 'stroke-width': 1.6 }));          // (owner mark: a corner pip in the seat colour)
-      }
-      if (e.lane === 2 && e.cp) shield(g, x + sz * .4, cy + sz * .4, Math.min(44, lanes[1].h0 * .82) * .27, e.cp);                  // a free gift of 5 / 8 conservation points, not an Association action
-      g.append(sv('rect', { x: x - sz / 2, y: cy - sz / 2, width: sz, height: sz, fill: 'transparent' }));
-      let what = e.kind === 'upgrade' ? KE_TYPE[e.type] + ' upgraded to II' : e.kind === 'worker' ? (e.cp ? 'Gained a worker (2 CP bonus)' : 'Gained a worker') : e.kind === 'project' ? 'Supported a project: ' + e.name
-        : e.kind === 'hire' ? 'Hired a worker instead of a project' : e.kind === 'reputation' ? (e.cp ? 'Took reputation (' + e.cp + ' CP bonus)' : 'Took reputation') : e.kind === 'partner' ? 'Partner zoo: ' + e.type.replace('partner-', '') : 'University' + (KE_UNI[e.type] ? ': ' + KE_UNI[e.type] : '');
-      const cpTxt = e.cp && (e.kind === 'partner' || e.kind === 'university') ? ' (' + e.cp + ' CP bonus)' : '';       // 
-      what += cpTxt;
-      g.addEventListener('pointerenter', () => {
-        t1el.textContent = what; t2el.textContent = 'Turn ' + e.round + ' · ' + S.replay.players[e.seat].name;
-        const wd = Math.max(t1el.getComputedTextLength(), t2el.getComputedTextLength()) + 28, th = 54;
-        let tx = x + sz / 2 + 10, ty = cy - th / 2; if (tx + wd > w - 4) tx = x - sz / 2 - 10 - wd; ty = Math.max(4, Math.min(h - th - 4, ty));
-        tb.setAttribute('x', tx); tb.setAttribute('y', ty); tb.setAttribute('width', wd); tb.setAttribute('height', th);
-        [t1el, t2el].forEach((t, k) => { t.setAttribute('x', tx + 14); t.setAttribute('y', ty + 24 + k * 20); });
-        tip.setAttribute('visibility', 'visible'); g.classList.add('on');
-      });
-      g.addEventListener('pointerleave', () => { tip.setAttribute('visibility', 'hidden'); g.classList.remove('on'); });
-      items.push({ g, round: e.round }); s.append(g);
-    });
-  });
-  // hover: the round under the pointer gets a faint band, its icons grow a little, the round in a chip on the axis
   const cw = (w - pad.l - pad.r) / Math.max(1, t1 - t0), chip = sv('g', { class: 'rschip', visibility: 'hidden' }), cr = sv('rect', { class: 'rschipbg' }), ct = sv('text', { class: 'rschipt', 'text-anchor': 'middle' }), tick = sv('line', { class: 'rsguide', y1: yb - 9, y2: yb + 7 });
-  chip.append(tick, cr, ct); s.append(chip, tip);
-  const show = (ev2) => {
-    const r = s.getBoundingClientRect(), px = (ev2.clientX - r.left) * w / r.width;
-    if (px < pad.l - 12 || px > w - pad.r + 12) return hide();
-    let k = 0, best = Infinity; R.turns.forEach((t, i) => { const d = Math.abs(X(t) - px); if (d < best) { best = d; k = i; } });
-    const x = X(R.turns[k]);
+  chip.append(tick, cr, ct); back.append(chip);
+  // the list
+  const list = el('div', 'kelist'), listH = yb - 4 - KE_TOP;
+  Object.assign(list.style, { left: KE_LL + 'px', top: KE_TOP + 'px', width: (w - KE_LL - 4) + 'px', height: listH + 'px' });
+  const laneH = Math.max(120, (listH - 4 * KE_STRIP - 5 * KE_GAP) / 2), iw = w - KE_LL - 4 - 10;       // (two lanes and four strips fill the list; 10: the scrollbar's room, kept even when it does not show)
+  const rowsOf = (H) => [0, 1].map((seat) => { const k = Math.max(0, seatOrder().indexOf(seat)), y0 = 6 + (H - 12) * k / 2, rh = (H - 12) / 2 - 3; return { seat, y0, rh, cy: y0 + rh / 2 }; });
+  const wr = (laneH - 12) / 2 - 3;
+  // the front: the tooltip
+  const front = sv('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h, class: 'rsrace-svg big kefront' });
+  const tip = sv('g', { class: 'ketip', visibility: 'hidden', 'pointer-events': 'none' }), tb = sv('rect', { rx: 10, class: 'ketipbg' }), t1el = sv('text', { class: 'ketip1' }), t2el = sv('text', { class: 'ketip2' });
+  tip.append(tb, t1el, t2el); front.append(tip);
+  const scaleOf = () => { const r = wrap.getBoundingClientRect(); return { r, k: r.width / w || 1 }; };
+  const showTip = (g, e) => {
+    const { r, k } = scaleOf(), b = g.getBoundingClientRect(), x0 = (b.left - r.left) / k, x1 = (b.right - r.left) / k, cy = ((b.top + b.bottom) / 2 - r.top) / k;
+    t1el.textContent = keTip(e); t2el.textContent = 'Turn ' + e.round + ' · ' + S.replay.players[e.seat].name;
+    const wd = Math.max(t1el.getComputedTextLength(), t2el.getComputedTextLength()) + 28, th = 54;
+    let tx = x1 + 10, ty = cy - th / 2; if (tx + wd > w - 4) tx = x0 - 10 - wd; ty = Math.max(4, Math.min(h - th - 4, ty));
+    tb.setAttribute('x', tx); tb.setAttribute('y', ty); tb.setAttribute('width', wd); tb.setAttribute('height', th);
+    [t1el, t2el].forEach((t, i) => { t.setAttribute('x', tx + 14); t.setAttribute('y', ty + 24 + i * 20); });
+    tip.setAttribute('visibility', 'visible'); g.classList.add('on');
+  };
+  const hideTip = (g) => { tip.setAttribute('visibility', 'hidden'); g.classList.remove('on'); };
+  const chev = (up) => { const b = el('button', 'kechev' + (up ? ' up' : '')); b.type = 'button'; b.tabIndex = -1; b.setAttribute('aria-hidden', 'true'); return b; };
+  function itemOf(t, open, ord) {
+    const lane = open.has(t), H = lane ? laneH : KE_STRIP, it = el('div', 'keitem ' + (lane ? 'lane' : 'strip')); it.dataset.t = t; it.style.height = H + 'px';
+    const tab = el('button', 'ketab'); tab.type = 'button'; tab.title = KE_TYPES[t].name;
+    tab.setAttribute('aria-expanded', String(lane)); tab.setAttribute('aria-label', KE_TYPES[t].name + (lane ? ', open' : ', folded'));
+    const disc = el('span', 'kedisc'), im = el('img'); im.src = KE_TYPES[t].icon(); if (KE_TYPES[t].badge) im.className = 'kebdg'; im.alt = ''; im.draggable = false; disc.append(im); tab.append(disc);
+    if (lane) tab.append(el('span', 'kegrip'));
+    const s = sv('svg', { class: 'keplot', width: iw, height: H }), g = sv('g', { transform: `translate(${-KE_LL} 0)` }); s.append(g);
+    const mine = ev.filter((e) => e.lane === t);
+    if (!lane) {
+      mine.forEach((e) => {
+        const k = Math.max(0, seatOrder().indexOf(e.seat)), c = GS[e.seat].black ? GS[e.seat].core : keMix(GS[e.seat].c, .28);
+        g.append(sv('circle', e.lost ? { cx: X(e.round), cy: k ? 27 : 13, r: 2.75, fill: 'none', stroke: c, 'stroke-width': 1.5, class: 'kedot' } : { cx: X(e.round), cy: k ? 27 : 13, r: 3.5, fill: c, class: 'kedot' }));          // (a lost icon: a ring)
+      });
+    } else {
+      rowsOf(H).forEach((row) => g.append(sv('rect', { x: KE_LL + KE_TABW + 6, y: row.y0, width: iw - KE_TABW - 12, height: row.rh, rx: 8, fill: GS[row.seat].c, class: 'kerow' })));
+      const rows = rowsOf(H), cells = new Map();
+      mine.forEach((e) => { const k = e.seat + ':' + e.round; if (!cells.has(k)) cells.set(k, []); cells.get(k).push(e); });
+      cells.forEach((cl) => {
+        const e0 = cl[0], row = rows.find((r) => r.seat === e0.seat), rh = row.rh, n = cl.length;
+        let place;
+        if (t <= 2) {                                                                                     // the old types: their sizes and stacking unchanged
+          const sz = KE_OLD_ICON, step = t === 2 ? Math.max(sz * .3, Math.min(sz * 1.15, (rh - 8 - sz) / Math.max(1, n - 1))) : sz * .62;          // (one size, whatever the window; an Association stack that does not fit overlaps more)
+          place = (i) => ({ x: X(e0.round), cy: row.cy + (i - (n - 1) / 2) * (n > 1 ? step : 0), sz });
+        } else {                                                                                          // the new ones: 36 px; more than three in two columns; overlapping when the stack does not fit
+          const cols = n > 3 ? 2 : 1, per = Math.ceil(n / cols), sz = KE_ICON;                                // (one size for every icon, whatever the window and the number in the turn: a stack that does not fit overlaps more)
+          const step = per > 1 ? Math.max(sz * .3, Math.min(sz * .95, (rh - 6 - sz) / (per - 1))) : 0;
+          place = (i) => { const c = Math.floor(i / per), k = i % per, m = Math.min(per, n - c * per); return { x: X(e0.round) + (cols > 1 ? (c - .5) * sz * .85 : 0), cy: row.cy + (k - (m - 1) / 2) * step, sz }; };
+        }
+        cl.forEach((e, i) => {
+          const p = place(i), eg = sv('g', { class: 'keev' }); eg.dataset.r = e.round;
+          if (t <= 2) keDraw(eg, e, p.x, p.cy, p.sz, GS, wr); else keDrawNew(eg, e, p.x, p.cy, p.sz);
+          eg.append(sv('rect', { x: p.x - p.sz / 2, y: p.cy - p.sz / 2, width: p.sz, height: p.sz, fill: 'transparent' }));
+          eg.addEventListener('pointerenter', () => { if (!keDragging) showTip(eg, e); });
+          eg.addEventListener('pointerleave', () => hideTip(eg));
+          g.append(eg);
+        });
+      });
+    }
+    it.append(s, tab, chev(lane));
+    // open / fold: a click on a strip, on a lane's tab or on the arrow; a press that moves more than 6 px drags the item (the whole strip, a lane by its tab)
+    const toggle = () => { if (open.has(t)) open.delete(t); else open.add(t); keSave(ord, open); fill(); };
+    it.querySelector('.kechev').addEventListener('click', (e2) => { e2.stopPropagation(); toggle(); });
+    tab.addEventListener('click', (e2) => { if (e2.detail === 0) toggle(); });                       // (Enter / Space on the focused tab; the pointer is handled below)
+    tab.addEventListener('keydown', (e2) => {
+      if (!e2.altKey || (e2.key !== 'ArrowUp' && e2.key !== 'ArrowDown')) return;
+      e2.preventDefault(); e2.stopPropagation();
+      const i = ord.indexOf(t), j = i + (e2.key === 'ArrowUp' ? -1 : 1); if (j < 0 || j >= ord.length) return;
+      ord.splice(i, 1); ord.splice(j, 0, t); keSave(ord, open); fill(); list.querySelector(`.keitem[data-t="${t}"] .ketab`)?.focus();
+    });
+    const handle = lane ? tab : it;
+    handle.addEventListener('pointerdown', (pd) => {
+      if (pd.button || pd.target.closest('.kechev') || (lane && !pd.target.closest('.ketab'))) return;
+      const y0 = pd.clientY; let moved = false, bar = null, target = null, ghost = null, grab = 0;
+      handle.setPointerCapture(pd.pointerId);
+      const items = () => [...list.querySelectorAll('.keitem')];
+      const move = (pm) => {
+        if (!moved && Math.abs(pm.clientY - y0) < 6) return;
+        if (!moved) {
+          moved = true; keDragging = true; hideHover(); bar = el('div', 'keins');
+          const wr = wrap.getBoundingClientRect(), ir = it.getBoundingClientRect(), k = wr.width / wrap.offsetWidth || 1;
+          grab = (y0 - ir.top) / k;
+          ghost = it.cloneNode(true); ghost.classList.add('keghost'); ghost.removeAttribute('data-t');          // the item itself follows the pointer (a see-through copy); the original stays behind, faded, as the gap
+          ghost.style.left = (list.offsetLeft + it.offsetLeft) + 'px'; ghost.style.width = it.offsetWidth + 'px'; ghost.style.height = it.offsetHeight + 'px';
+          wrap.append(ghost); it.classList.add('drag');
+        }
+        { const wr = wrap.getBoundingClientRect(), k = wr.width / wrap.offsetWidth || 1; ghost.style.top = Math.max(0, Math.min(wrap.offsetHeight - ghost.offsetHeight, (pm.clientY - wr.top) / k - grab)) + 'px'; }
+        const lr = list.getBoundingClientRect(), edge = 30 * (lr.height / listH || 1);
+        if (pm.clientY < lr.top + edge) list.scrollTop -= 12; else if (pm.clientY > lr.bottom - edge) list.scrollTop += 12;
+        const its = items(); target = its.length;
+        for (let i = 0; i < its.length; i++) { const r = its[i].getBoundingClientRect(); if (pm.clientY < r.top + r.height / 2) { target = i; break; } }
+        if (target < its.length) list.insertBefore(bar, its[target]); else list.append(bar);
+      };
+      const end = (commit) => {
+        handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); handle.removeEventListener('pointercancel', cancel); document.removeEventListener('keydown', esc, true);
+        keDragging = false; ghost?.remove();
+        if (!moved) { if (commit) toggle(); return; }
+        if (commit && target !== null) { const from = ord.indexOf(t); let to = target; ord.splice(from, 1); if (to > from) to--; ord.splice(to, 0, t); keSave(ord, open); }
+        fill();
+      };
+      const up = () => end(true), cancel = () => end(false), esc = (k) => { if (k.key === 'Escape') { k.preventDefault(); k.stopPropagation(); end(false); } };
+      handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up); handle.addEventListener('pointercancel', cancel); document.addEventListener('keydown', esc, true);
+    });
+    return it;
+  }
+  function fill() {
+    const { ord, open } = keLayout(), top = list.scrollTop || keScroll;
+    list.replaceChildren(...ord.map((t) => itemOf(t, open, ord)));
+    list.scrollTop = top;
+  }
+  list.addEventListener('scroll', () => { keScroll = list.scrollTop; }, { passive: true });
+  fill();
+  requestAnimationFrame(() => { list.scrollTop = keScroll; });                                     // (the list is measured once it is on the page)
+  const ol = sv('svg', { width: 0, height: 0, 'aria-hidden': 'true', style: 'position:absolute' }), fl = sv('filter', { id: 'keoutline', x: '-25%', y: '-25%', width: '150%', height: '150%', 'color-interpolation-filters': 'sRGB' });          // the white outline of the tab icons: the silhouette moved 16 ways by KE_OUTLINE px, all copies of the original (not of each other), so the width is the same all round, on every icon, in a strip and in a lane
+  const merge = sv('feMerge', {});
+  for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, n = 'o' + i; fl.append(sv('feOffset', { in: 'SourceAlpha', dx: (Math.cos(a) * KE_OUTLINE).toFixed(3), dy: (Math.sin(a) * KE_OUTLINE).toFixed(3), result: n })); merge.append(sv('feMergeNode', { in: n })); }
+  fl.append(merge); merge.setAttribute('result', 'ring');
+  fl.append(sv('feFlood', { 'flood-color': '#fff', result: 'w' }), sv('feComposite', { in: 'w', in2: 'ring', operator: 'in', result: 'wr' }));
+  const top = sv('feMerge', {}); top.append(sv('feMergeNode', { in: 'wr' }), sv('feMergeNode', { in: 'SourceGraphic' })); fl.append(top);
+  ol.append(fl); wrap.append(ol);
+  wrap.append(back, list, front);
+  // hover: anywhere over the plot (lanes, strips, gaps), the turn under the pointer gets the band, its icons grow, the turn in the chip on the base line
+  const hideHover = () => { hover.setAttribute('visibility', 'hidden'); chip.setAttribute('visibility', 'hidden'); wrap.querySelectorAll('.keev.now').forEach((g) => g.classList.remove('now')); };
+  wrap.addEventListener('pointermove', (pm) => {
+    if (keDragging) return;
+    const { r, k } = scaleOf(), px = (pm.clientX - r.left) / k, py = (pm.clientY - r.top) / k;
+    if (px < pad.l - 12 || px > w - pad.r + 12 || py < pad.t - 4 || py > yb + 40) return hideHover();
+    let i = 0, best = Infinity; R.turns.forEach((tt, j) => { const d = Math.abs(X(tt) - px); if (d < best) { best = d; i = j; } });
+    const x = X(R.turns[i]);
     hover.setAttribute('x', x - cw / 2); hover.setAttribute('y', pad.t); hover.setAttribute('width', cw); hover.setAttribute('height', yb - pad.t); hover.setAttribute('visibility', 'visible');
-    items.forEach((it) => it.g.classList.toggle('now', it.round === R.turns[k]));
-    ct.textContent = R.end && k === R.turns.length - 1 ? 'End' : k === 0 ? 'Start' : 'Turn ' + R.turns[k];
+    wrap.querySelectorAll('.keev').forEach((g) => g.classList.toggle('now', +g.dataset.r === R.turns[i]));
+    ct.textContent = R.end && i === R.turns.length - 1 ? 'End' : i === 0 ? 'Start' : 'Turn ' + R.turns[i];
     const w2 = ct.textContent.length * 15 * .62 + 24, cy = yb + 12;
     cr.setAttribute('x', x - w2 / 2); cr.setAttribute('y', cy); cr.setAttribute('width', w2); cr.setAttribute('height', 27); cr.setAttribute('rx', 13.5);
     ct.setAttribute('x', x); ct.setAttribute('y', cy + 19); tick.setAttribute('x1', x); tick.setAttribute('x2', x); chip.setAttribute('visibility', 'visible');
-  };
-  const hide = () => { hover.setAttribute('visibility', 'hidden'); chip.setAttribute('visibility', 'hidden'); items.forEach((it) => it.g.classList.remove('now')); };
-  s.addEventListener('pointermove', show); s.addEventListener('pointerleave', hide);
-  return s;
+  });
+  wrap.addEventListener('pointerleave', hideHover);
+  return wrap;
 }
-const graphFor = (key, w, h) => (key === 'events' ? keSvg(w, h) : raceSvg(race(key), w, h, true));
+const graphFor = (key, w, h) => {
+  if (key === 'events') return keView(w, h);
+  const R = key === 'score_turn' ? racePerTurn() : race(key);
+  return R ? raceSvg(R, w, h, true) : el('div', 'gsempty', 'Points per turn: nothing to show here yet.');
+};
 
 // How a seat is drawn on the dark graph (the colour the rest of the page uses is made for paper and info boxes). Every seat has the same parts: the line, a pill behind the numbers
 // and a disc behind the break mug (pf/ps/pt = pill fill / edge / text, df/mf = disc / mug). A seat colour fills pill and disc, with dark (or white) content. A white seat is an ice
@@ -390,7 +617,7 @@ function pillEl(p, GS) {                                                        
 function raceSvg(R, w, h, big) {
   const pad = big ? { l: 60, r: 78, t: 50, b: 46 } : { l: 40, r: 52, t: 36, b: 24 };
   const { lo, hi } = R, tickList = R.ticks;
-  const t0 = R.turns[0] || 0, t1 = R.turns[R.turns.length - 1] || 1;
+  const t0 = R.axis ? R.axis[0] : R.turns[0] || 0, t1 = R.axis ? R.axis[1] : R.turns[R.turns.length - 1] || 1;          // (Points per turn keeps the x axis of the Points graph, so the break lines stay where they are there)
   const X = (t) => pad.l + (w - pad.l - pad.r) * (t - t0) / Math.max(1, t1 - t0), Y = (v) => pad.t + (h - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
   const s = sv('svg', { viewBox: `0 0 ${w} ${h}`, class: 'rsrace-svg' + (big ? ' big' : '') });
   const uid = 'rs' + (++raceSeq), GS = [graphStyle(0), graphStyle(1)];
@@ -418,15 +645,15 @@ function raceSvg(R, w, h, big) {
     s.append(sv('circle', { cx: x, cy, r: sz * .6, fill: known ? GS[b.seat].df : '#f8edcb' }));
     s.append(mugIcon(known ? GS[b.seat].mf : '#2a2a2a', x, cy, sz * .78));
   });
-  const ends = [0, 1].map((p) => Y(R.scores[R.scores.length - 1][p]) + 5);
+  const ends = R.noPill ? [0, 0] : [0, 1].map((p) => Y(R.scores[R.scores.length - 1][p]) + 5);
   const minGap = big ? 34 : 22;
-  if (Math.abs(ends[0] - ends[1]) < minGap) { const top = ends[0] <= ends[1] ? 0 : 1, gap = (minGap - Math.abs(ends[0] - ends[1])) / 2; ends[top] -= gap; ends[1 - top] += gap; }
+  if (!R.noPill && Math.abs(ends[0] - ends[1]) < minGap) { const top = ends[0] <= ends[1] ? 0 : 1, gap = (minGap - Math.abs(ends[0] - ends[1])) / 2; ends[top] -= gap; ends[1 - top] += gap; }
   [0, 1].forEach((p) => {
-    const d = R.turns.map((t, i) => (i ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(R.scores[i][p]).toFixed(1)).join(' ');
+    const d = R.turns.map((t, i) => [t, R.scores[i][p]]).filter((q) => q[1] !== null).map((q, i) => (i ? 'L' : 'M') + X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' ');          // (a player without a turn there: the line stops)
     if (GS[p].cas) s.append(sv('path', { d, class: 'rsline rscase', stroke: GS[p].cas }));
     s.append(sv('path', { d, class: 'rsline' + (GS[p].black ? ' rsblk' : ''), stroke: GS[p].c }));
     if (GS[p].black) s.append(sv('path', { d, class: 'rsline rscore', stroke: GS[p].core }));
-    const pl = pillEl(p, GS); pl.set(w - pad.r + 8, ends[p] - 5, String(R.scores[R.scores.length - 1][p]), 'start', big ? 20 : 13); s.append(pl.g);
+    if (!R.noPill) { const pl = pillEl(p, GS); pl.set(w - pad.r + 8, ends[p] - 5, String(R.scores[R.scores.length - 1][p]), 'start', big ? 20 : 13); s.append(pl.g); }          // (the number at the line end; not in Points per turn)
   });
   const ax = sv('text', { x: (w + pad.l - pad.r) / 2, y: h - (big ? 6 : 3), class: 'rsax', 'text-anchor': 'middle' }); ax.textContent = '';                                                                                    // (no axis title: the hover chip names the round)
   // hover: a tick on the x-axis at the nearest round, a dot on each line, each score as a bare number next to its dot (the leader above, the trailer below, so they never touch; a tie keeps the
@@ -439,23 +666,24 @@ function raceSvg(R, w, h, big) {
   chip.append(cr, ct); hv.append(gl, ...dots, ...nums.map((n) => n.g), chip);
   const hit = sv('rect', { x: pad.l, y: pad.t - 4, width: w - pad.l - pad.r, height: h - pad.t - pad.b + 4, fill: 'transparent', class: 'rshit' });
   const fs = big ? 22 : 14, cf = big ? 15 : 10, last = R.turns.length - 1;
-  const leader = (k) => { for (let i = k; i >= 0; i--) if (R.scores[i][0] !== R.scores[i][1]) return R.scores[i][0] > R.scores[i][1] ? 0 : 1; return 0; };
+  const leader = (k) => { for (let i = k; i >= 0; i--) if (R.scores[i][0] !== R.scores[i][1] && R.scores[i][0] !== null && R.scores[i][1] !== null) return R.scores[i][0] > R.scores[i][1] ? 0 : 1; return 0; };
   const show = (ev) => {
     const r = s.getBoundingClientRect(), px = (ev.clientX - r.left) * w / r.width;
     let k = 0, best = Infinity;
     R.turns.forEach((t, i) => { const d = Math.abs(X(t) - px); if (d < best) { best = d; k = i; } });
-    const x = X(R.turns[k]), v = R.scores[k], top = leader(k), atEnd = R.end && k === last;
+    const x = X(R.turns[k]), v = R.scores[k], top = v[0] === null ? 1 : v[1] === null ? 0 : leader(k), atEnd = R.end && k === last;
     gl.setAttribute('x1', x); gl.setAttribute('x2', x);
-    dots.forEach((d, p) => { d.setAttribute('cx', x); d.setAttribute('cy', Y(v[p])); });
+    dots.forEach((d, p) => { d.setAttribute('cx', x); d.setAttribute('cy', v[p] === null ? 0 : Y(v[p])); d.style.display = v[p] === null ? 'none' : ''; });
     const left = x > w - pad.r - fs * 3.2;
     const ph = fs * .9 * 1.5, low = h - pad.b - ph / 2 - 3;                                           // (a pill never reaches the x-axis and its round chip: low scores near the axis push the trailer up, and the leader above it)
-    const pcy = [0, 1].map((p) => (p === top ? Y(v[p]) - fs * 1.2 : Math.min(Y(v[p]) + fs * 1.2, low)));
-    pcy[top] = Math.min(pcy[top], pcy[1 - top] - ph - 3);
+    const pcy = [0, 1].map((p) => (v[p] === null ? 0 : p === top ? Y(v[p]) - fs * 1.2 : Math.min(Y(v[p]) + fs * 1.2, low)));
+    if (v[0] !== null && v[1] !== null) pcy[top] = Math.min(pcy[top], pcy[1 - top] - ph - 3);
     nums.forEach((n, p) => {
-      n.g.style.display = atEnd ? 'none' : '';
+      n.g.style.display = atEnd || v[p] === null ? 'none' : '';
+      if (v[p] === null) return;
       n.set(left ? x - fs * .45 : x + fs * .45, pcy[p], v[p] < 0 ? '\u2212' + Math.abs(v[p]) : String(v[p]), left ? 'end' : 'start', fs * .9);
     });
-    ct.textContent = atEnd ? 'End' : k === 0 ? 'Start' : 'Turn ' + R.turns[k];
+    ct.textContent = atEnd ? 'End' : k === 0 && R.turns[0] === 0 ? 'Start' : 'Turn ' + R.turns[k];
     const cw = ct.textContent.length * cf * .62 + cf * 1.6, ch = cf * 1.8, cy = h - pad.b + cf * (big ? .8 : .5);
     cr.setAttribute('x', x - cw / 2); cr.setAttribute('y', cy); cr.setAttribute('width', cw); cr.setAttribute('height', ch); cr.setAttribute('rx', ch / 2);
     ct.setAttribute('x', x); ct.setAttribute('y', cy + ch * .7);
@@ -498,7 +726,7 @@ function outcome() {
 const MAP_OVERVIEW = [['Tower appeal', 'tower_appeal'], ['Sponsors marketed\nwith map ability', 'tower_marketed'], ['Overall points of\nmarketed sponsors', 'tower_marketed_points'],
   ['Animals played\nwith map ability', 'ignore_animals'], ['Cards pouched\nwith map ability', 'pouched'], ['Continent markers removed', 'cubes'],
   ['Quadrant reputation', 'quad_reputation'], ['Quadrant appeal', 'quad_appeal', 2], ['Quadrant hunter', 'quad_hunters'],
-  ['Shark Attack points', 'shark_points'], ['Person sponsors played with map ability', 'person_free'], ['Cards discarded for action strength', 't1_discards']];
+  ['Shark Attack points', 'shark_points'], ['Person sponsors played\nwith map ability', 'person_free'], ['Cards discarded\nfor action strength', 't1_discards']];
 const mapValue = (seat, key, factor = 1) => { const m = S.replay.map_stats && S.replay.map_stats[seat]; return m && m[key] !== undefined ? m[key] * factor : undefined; };
 function mapRows(defs) {
   const rows = [];

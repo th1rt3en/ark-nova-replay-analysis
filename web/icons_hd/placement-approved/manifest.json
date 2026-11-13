@@ -1,0 +1,156 @@
+[
+  {
+    "name": "clever",
+    "target": "icons/r6c6.webp",
+    "source": "icons_hd\\placement-approved\\clever.svg",
+    "pixels": [
+      344,
+      468
+    ]
+  },
+  {
+    "name": "rescue",
+    "target": "icons/r9c13.webp",
+    "source": "icons_hd\\placement-approved\\rescue.svg",
+    "pixels": [
+      396,
+      392
+    ]
+  },
+  {
+    "name": "mark",
+    "target": "icons/r3c3.webp",
+    "source": "icons_hd\\placement-approved\\mark.svg",
+    "pixels": [
+      396,
+      460
+    ]
+  },
+  {
+    "name": "scavenging",
+    "target": "icons/r4c10.webp",
+    "source": "icons_hd\\placement-approved\\scavenging.svg",
+    "pixels": [
+      472,
+      472
+    ]
+  },
+  {
+    "name": "appeal",
+    "target": "icons/r3c13.webp",
+    "source": "icons_hd\\placement-approved\\appeal.svg",
+    "pixels": [
+      364,
+      472
+    ]
+  },
+  {
+    "name": "kiosk",
+    "target": "icons/r7c3.webp",
+    "source": "icons_hd\\placement-approved\\kiosk.svg",
+    "pixels": [
+      480,
+      416
+    ]
+  },
+  {
+    "name": "shark-attack",
+    "target": "icons/r5c1.webp",
+    "source": "icons_hd\\placement-approved\\shark-attack.svg",
+    "pixels": [
+      472,
+      472
+    ]
+  },
+  {
+    "name": "store",
+    "target": "icons/r5c2.webp",
+    "source": "icons_hd\\placement-approved\\store.svg",
+    "pixels": [
+      472,
+      472
+    ]
+  },
+  {
+    "name": "wave",
+    "target": "icons/r11c14.webp",
+    "source": "icons_hd\\placement-approved\\wave.svg",
+    "pixels": [
+      548,
+      184
+    ]
+  },
+  {
+    "name": "search-sponsor",
+    "target": "icons/r4c13.webp",
+    "source": "icons_hd\\placement-approved\\search-sponsor.svg",
+    "pixels": [
+      472,
+      472
+    ]
+  },
+  {
+    "name": "digging",
+    "target": "icons/r4c2.webp",
+    "source": "icons_hd\\placement-approved\\digging.svg",
+    "pixels": [
+      472,
+      472
+    ]
+  },
+  {
+    "name": "pouch",
+    "target": "icons/r7c11.webp",
+    "source": "icons_hd\\placement-approved\\pouch.svg",
+    "pixels": [
+      460,
+      460
+    ]
+  },
+  {
+    "name": "perception",
+    "target": "icons/r7c10.webp",
+    "source": "icons_hd\\placement-approved\\perception.svg",
+    "pixels": [
+      460,
+      460
+    ]
+  },
+  {
+    "name": "pavilion",
+    "target": "enclosures/pavilion.webp",
+    "source": "icons_hd\\placement-approved\\pavilion.svg",
+    "pixels": [
+      1088,
+      944
+    ]
+  },
+  {
+    "name": "hollywood",
+    "target": "bonus/hollywood_h.webp",
+    "source": "icons_hd\\placement-approved\\hollywood.svg",
+    "pixels": [
+      276,
+      328
+    ]
+  },
+  {
+    "name": "pentagon",
+    "target": "icons/r5c14.webp",
+    "source": "icons_hd\\placement-approved\\pentagon.svg",
+    "pixels": [
+      468,
+      460
+    ]
+  },
+  {
+    "name": "adapt-1",
+    "target": "icons_hd/adapt-1.webp",
+    "source": "icons_hd/placement-approved/adapt-1.png"
+  },
+  {
+    "name": "pavilion-bonus-alias",
+    "target": "bonus/pavilion.webp",
+    "source": "icons_hd/placement-approved/pavilion.svg"
+  }
+]
