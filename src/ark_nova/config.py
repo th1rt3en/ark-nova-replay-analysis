@@ -37,6 +37,7 @@ class Settings:
     disabled_features: frozenset = frozenset()  # features switched off for the public ("live", "accounts", "minigames", "sandbox"): their routes answer coming soon (DISABLED_FEATURES)
     live_gcs_bucket: str = "temp-common-storage"  # where the records of finished / conceded games go (live/<yyyy>/<mm>/E12.json.gz); empty = nothing is exported and the keeper keeps the tables
     upload_gcs_bucket: str = ""  # logs the extension uploads are kept here as all_games_logs/<table>.txt (storage/contributions.py); empty = not kept
+    fork_gcs_bucket: str = ""  # forks that players export as replays are kept here as forks/<table>/<n>.json.gz (storage/forks.py); empty = exporting a fork is switched off (only on develop)
     upload_bq_table: str = ""  # and their three base projects go to this table (table_id, base_0..2, created_at), e.g. freestyle-190711.ark_nova.base_projects_appendix
 
     @classmethod
@@ -57,6 +58,7 @@ class Settings:
             live_gcs_bucket=os.environ.get("LIVE_GCS_BUCKET", "temp-common-storage"),
             upload_gcs_bucket=os.environ.get("UPLOAD_GCS_BUCKET", ""),
             upload_bq_table=os.environ.get("UPLOAD_BQ_TABLE", ""),
+            fork_gcs_bucket=os.environ.get("FORK_GCS_BUCKET", ""),
             turnstile_site_key=os.environ.get("TURNSTILE_SITE_KEY", ""),
             turnstile_secret=os.environ.get("TURNSTILE_SECRET", ""),
             store_backend=os.environ.get("STORE_BACKEND", "").strip().lower(),

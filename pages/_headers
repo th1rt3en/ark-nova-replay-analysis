@@ -1,24 +1,61 @@
-# Pictures: a day in the browser, a week stale-while-revalidate in the CDN
+# Pictures and sounds: 30 days in the browser, a week stale-while-revalidate in the CDN.
+# Art is rarely edited; when a picture changes, give the file a new name (or wait out the month).
+# The index .json files inside the picture folders are not listed here on purpose: they keep the default (always revalidated).
 /cards/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /cards_large/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /action_cards/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /action_icons/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /maps/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /enclosures/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /icons/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /badges/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /workers/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /map_editor/*
-  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/sounds/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/assets/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/brand/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/bonus/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/continents/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/cubes/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/cylinders/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/action_glyphs/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/icons_hd/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/cursors/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/card_back.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/card_back_endgame.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/price_badges/*.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/project_strips/*.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/maps_blank/*.jpg
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/emu_cup_winners/thumbs/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+# Fonts: the files never change under the same name
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
 # Code: always revalidate (Pages answers 304 from the ETag)
 /js/*
   Cache-Control: no-cache

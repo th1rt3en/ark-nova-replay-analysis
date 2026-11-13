@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card library - Park Nova</title>
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/park-fonts.css">
+<link rel="stylesheet" href="/css/library_cards.css">
+</head>
+<body class="bookpage">
+<a class="plate" href="/library">&larr; Library</a>
+<button id="glass" type="button" aria-label="Search the cards" aria-expanded="false"><svg viewBox="0 0 64 120" aria-hidden="true"><path d="M32 62V108" stroke="#2A1210" stroke-width="15" stroke-linecap="round"/><path d="M32 62V108" stroke="#7A3A2C" stroke-width="10" stroke-linecap="round"/><path d="M29 70V104" stroke="#B0623E" stroke-width="2.5" stroke-linecap="round"/><rect x="24" y="52" width="16" height="12" rx="3" fill="#D9A441" stroke="#2A1210" stroke-width="2.5"/><circle cx="32" cy="30" r="25" fill="#CFE6E2" fill-opacity=".34" stroke="#2A1210" stroke-width="9"/><circle cx="32" cy="30" r="25" fill="none" stroke="#D9A441" stroke-width="5"/><path d="M17 23a17 17 0 0 1 13 -11" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" opacity=".75"/></svg></button>
+<div id="search" hidden><input id="text" type="text" placeholder="Name or text" autocomplete="off" aria-label="Search the cards"></div>
+
+<main id="book" aria-label="The card library, a scrapbook">
+  <div class="stack l" aria-hidden="true"></div><div class="stack r" aria-hidden="true"></div>
+  <div class="spread">
+    <section class="page l" id="pl"><div class="cards"></div><span class="pn"></span></section>
+    <section class="page r" id="pr"><div class="cards"></div><span class="pn"></span></section>
+    <div class="gutter" aria-hidden="true"></div>
+    <button class="turn prev" id="prev" type="button" aria-label="Previous page"></button>
+    <button class="turn next" id="next" type="button" aria-label="Next page"></button>
+  </div>
+  <nav id="marks" aria-label="Sections"></nav>
+</main>
+
+<aside id="drawer" aria-label="Filters">
+  <div class="tray" id="tray" inert>
+    <div class="sheet" id="sheet" aria-live="polite"><div id="prints"></div><span id="count"></span><button id="wipe" type="button" aria-label="Clear all filters" title="Clear all filters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19"/></svg></button></div>
+    <div class="stamps" id="stamps"></div>
+    <div class="tools">
+      <div class="tool ruler" id="ruler" title="Animal size"></div>
+      <div class="tool sack" id="sack" title="Animal cost"></div>
+      <button class="seal" id="seal" type="button" aria-pressed="false" aria-label="Only sponsors that are people" title="Only sponsors that are people"><svg viewBox="0 0 80 80" aria-hidden="true"><path d="M40 4c8 0 10 6 17 8s13 1 15 9-4 11-3 18 7 11 3 18-11 5-16 10-6 11-15 10-9-7-16-9-13 1-17-6 2-11 1-18-7-11-3-18 11-6 16-11 9-11 18-11z" fill="#B3243A" stroke="#2A1210" stroke-width="2.5"/><circle cx="40" cy="40" r="24" fill="#8E1B2E" stroke="#6E1223" stroke-width="2"/><circle cx="40" cy="33" r="8.5" fill="#D8566A"/><path d="M23 56c1-11 8-15 17-15s16 4 17 15c-10 6-24 6-34 0z" fill="#D8566A"/><path d="M22 20c5-6 11-9 17-9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".35"/></svg></button>
+    </div>
+  </div>
+  <button id="pull" type="button" aria-expanded="false" aria-controls="tray" aria-label="Open the filter drawer"><span class="knob"></span></button>
+</aside>
+
+<dialog id="big"><button type="button" id="bigclose" aria-label="Close">&times;</button><img id="bigimg" alt=""></dialog>
+<script type="module" src="/js/library_cards.js"></script>
+</body>
+</html>

@@ -49,12 +49,13 @@ class Lines:
     def __init__(self, seat: int, who: str):
         self.seat, self.who, self.items, self.quiet = seat, who, [], False
 
-    def add(self, text: str, public: str | None = None, actor: str | None = None) -> None:
-        """`text`: the sentence everybody may read; `public`/`actor`: another wording for the opponent / for the acting player (None = the same)."""
-        self.items.append((text if public is None else public, text if actor is None else actor, text))
+    def add(self, text: str, public: str | None = None, actor: str | None = None, other: str | None = None) -> None:
+        """`text`: the sentence everybody may read; `public`/`actor`: another wording for the opponent / for the acting player (None = the same);
+        `other`: a wording for the other player of the game only (not for the spectators), who may know more than they do."""
+        self.items.append((text if public is None else public, text if actor is None else actor, text, other))
 
-    def secret(self, full: str, public: str, actor: str | None = None) -> None:
-        self.items.append((public, full if actor is None else actor, full))
+    def secret(self, full: str, public: str, actor: str | None = None, other: str | None = None) -> None:
+        self.items.append((public, full if actor is None else actor, full, other))
 
     def fallback(self, old, act, new) -> None:
         """The engine's own sentence, with the cards of a hidden choice left out for the viewers who may not read them."""
@@ -67,12 +68,13 @@ class Lines:
             from ark_nova.replay.options import effect_name
             nm = effect_name(e) or str(e.get("kind", "")).replace("_", " ")
             public = f"{self.who} resolved the {nm} effect" if nm else public
-        self.items.append((public, by_role[str(self.seat)], full))
+        self.items.append((public, by_role[str(self.seat)], full, None))
 
     def render(self) -> dict:
         def join(i: int, only_actor: bool = False):
             return "\n".join(x[i] for x in self.items if x[i])
-        out = {"full": join(2), str(self.seat): join(1), str(1 - self.seat): join(0), "spectator": join(0)}
+        theirs = "\n".join((x[3] if x[3] is not None else x[0]) for x in self.items if (x[3] if x[3] is not None else x[0]))
+        out = {"full": join(2), str(self.seat): join(1), str(1 - self.seat): theirs, "spectator": join(0)}
         return out
 
 
@@ -133,8 +135,31 @@ def _hand_change(old: GameState, new: GameState, seat: int) -> tuple:
     return list((h1 - h0).elements()), list((h0 - h1).elements())
 
 
-def _display_refill(old: GameState, new: GameState, L: Lines) -> None:
-    c0, c1 = Counter(c for c in old.display if c), Counter(c for c in new.display if c)
+def _display_refill(old: GameState, new: GameState, L: Lines, start=None) -> None:
+    """The display is replenished; every Wave card among the new ones removes the leftmost card and the display is replenished again: one line for each of those
+    steps (replayed from the old deck, which the engine draws from in order). `start`: the cards left in the display when the replenishing begins."""
+    from ark_nova.engine.game import DISPLAY_SIZE, is_wave
+    cards = [c for c in old.display if c] if start is None else list(start)
+    deck, used, lines = old.main_deck, 0, []
+    while True:
+        missing = DISPLAY_SIZE - len(cards)
+        if missing <= 0 or used + missing > len(deck):
+            break
+        fresh = deck[used:used + missing]
+        used += missing
+        cards += fresh
+        lines.append(f"The display is replenished with {names_of(fresh)}")
+        waves = [c for c in fresh if is_wave(c)]
+        if not waves:
+            break
+        lines += [f"{card(c)} has a Wave icon and triggers another wave" for c in waves]
+        lines += [f"{card(c)} is removed from the display by the wave" for c in cards[:len(waves)]]
+        cards = cards[len(waves):]
+    if lines and cards == [c for c in new.display if c]:
+        for line in lines:
+            L.add(line)
+        return
+    c0, c1 = Counter(c for c in old.display if c), Counter(c for c in new.display if c)       # (the deck was reshuffled or extended: the plain line)
     added = list((c1 - c0).elements())
     removed = list((c0 - c1).elements())
     if added and (removed or any(c is None for c in old.display)):
@@ -156,7 +181,7 @@ def _break_lines(old: GameState, new: GameState, L: Lines) -> None:
     if new.round > old.round:
         first_two = [c for c in old.display[:2] if c]
         if first_two:
-            L.add(f"Removing first two cards of the display: {names_of(first_two)}")
+            L.add(f"Removing first two cards from the display: {names_of(first_two)}")
         L.add("All tokens are removed from player cards")
         L.add("Replenishing partner zoos and universities")
         _display_refill(old, new, L)
@@ -166,12 +191,36 @@ def _break_lines(old: GameState, new: GameState, L: Lines) -> None:
 def texts(old: GameState, act: Action, new: GameState, names: list) -> dict:
     seat, who = act.player, names[act.player] if 0 <= act.player < len(names) else f"Player {act.player + 1}"
     L = Lines(seat, who)
+    L.names = names
     try:
         _fill(old, act, new, names, L, who)
+        for ag in getattr(new, "auto_gains", ()):                           # a sponsor that pays at once when an icon enters a zoo (the Money sponsors): a line of its own
+            v, owner = ag["gain"], ag["seat"]
+            words = _gain_words({"money": v.get("money", 0), "appeal": v.get("appeal", 0), "reputation": v.get("reputation", 0), "conservation": v.get("conservation", 0), "x_tokens": v.get("xtoken", 0)})
+            if not words:
+                continue
+            label = "Money sponsors effect" if list(v) == ["money"] else card(ag["source"])
+            oname = names[owner] if 0 <= owner < len(names) else f"Player {owner + 1}"
+            text = f"{oname} gains {' and '.join(words)} ({label})"
+            if owner == seat:
+                L.add(text, None, f"You gains {' and '.join(words)} ({label})")
+            else:
+                L.add(text, None, None, other=f"You gains {' and '.join(words)} ({label})")
     except Exception:                                                       # noqa: BLE001 (a log line must never stop a game: fall back to the engine's sentence)
         from ark_nova.live import stepdata
         full = fork.narrate(old, act, new, who)
         return {**stepdata.labels_for(act, full, who), "full": full}
+    if old.display != new.display and not any("display" in item[2] for item in L.items):          # the display is replenished as part of a break (an income, the end of the break): what went and what came
+        n0 = len(L.items)
+        _display_refill(old, new, L)                                         # the replenishing replayed from the deck: a Wave card that is revealed triggers another wave (its own lines)
+        if len(L.items) == n0:                                               # (the deck was reshuffled or extended: what went and what came)
+            c0, c1 = Counter(c for c in old.display if c), Counter(c for c in new.display if c)
+            gone, came = list((c0 - c1).elements()), list((c1 - c0).elements())
+            if gone or came:
+                L.add(f"The display is replenished" + (f": {names_of(gone)} discarded" if gone else "") + (f"{',' if gone else ':'} {names_of(came)} revealed" if came else ""))
+    moved = new.break_position - old.break_position
+    if moved > 0 and not any("advances the break" in item[2] for item in L.items):          # any effect that moves the break token says so (an action card, a sponsor, a sponsor's effect)
+        L.add(f"{who} advances the break by {moved}, now ({new.break_position}/9)")
     if not L.items and not L.quiet:
         L.fallback(old, act, new)
     return L.render()
@@ -209,6 +258,26 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         cards = list(a.get("cards", []))
         L.add(f"{who} discards {len(cards)} card{'' if len(cards) == 1 else 's'}")          # (short for everyone, like the replay: the cards are no use to the reader)
         return
+    if k == "choose_release":                                                  # a Release project: the animal leaves the zoo before the bonus is chosen
+        L.add(f"{who} releases {card(a['release'])}" + (f" ({delta['appeal']} appeal)" if delta["appeal"] else ""))
+        return
+    if k == "sponsor_side" and a.get("op") == "discard_snap":                  # Sponsors, variant 4: the discarded sponsor is secret, the one snapped from the display is public
+        text = f"{who} discards {card(a['card'])} to snap {card(a['take'])}"
+        L.secret(text, f"{who} discards a sponsors to snap {card(a['take'])}", text)
+        return
+    if k == "sponsor_side" and a.get("op") in ("discard_money", "discard_strength"):          # Sponsors, variant 3 (Sunbathing): the discarded card is secret
+        what = "4 money" if a["op"] == "discard_money" else "2 strength"
+        upgraded = (old.prompt.args.get("level", 1) if old.prompt is not None else 1) >= 2
+        text = f"{who} discards {card(a['card'])} for {what} (Sunbathing Sponsors effect)"
+        L.secret(text, f"{who} discards a {'card' if upgraded else 'sponsors'} for {what} (Sunbathing Sponsors effect)", text)
+        return
+    if k == "choose_action_card" and a.get("hypnosis"):                         # Hypnosis: one of the first 3 action cards of the other player is used
+        other = old.players[1 - seat]
+        slot = next((i for i, c in enumerate(other.action_cards) if c.type == a.get("type")), 0)
+        oname = names[1 - seat] if 0 <= 1 - seat < len(names) else "the opponent"
+        L.add(f"{who} hypnotize {oname} and use {ACTION_NAMES.get(a.get('type'), a.get('type'))} action at strength {slot + 1}", None,
+              f"You hypnotize {oname} and use {ACTION_NAMES.get(a.get('type'), a.get('type'))} action at strength {slot + 1}")
+        return
     if k == "choose_action_card":
         slot = next((i for i, c in enumerate(p0.action_cards) if c.type == a.get("type")), 0)
         x = int(a.get("spend", 0) or 0)
@@ -216,6 +285,9 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         if x:
             L.add(f"{who} pays {x} xtoken for increasing card strength")
         L.add(f"{who} chooses action card {ACTION_NAMES.get(c.type, c.type)}{LEVEL.get(c.level, '')} with strength {slot + 1 + x}")
+        got = _gain_words(delta)                                             # what the card gives at once (Animals II at strength 5: 1 reputation)
+        if got:
+            L.add(f"{who} gains {' and '.join(got)} ({ACTION_NAMES.get(c.type, c.type)}{LEVEL.get(c.level, '')})", None, f"You gain {' and '.join(got)} ({ACTION_NAMES.get(c.type, c.type)}{LEVEL.get(c.level, '')})")
         return
     if k == "skip_action" and a.get("hypnosis"):
         t = ACTION_NAMES.get(a.get("type"), str(a.get("type")))
@@ -230,13 +302,17 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
     if k == "place_building":
         t = a.get("type", "?")
         what = f"an additional {t}" if a.get("extra") else enclosure(t) if t.startswith("size-") else ("an " if t[:1] in "aeiou" else "a ") + t.replace("-", " ")
-        bonus_gain = _placement_gains(old, seat, a)                       # what the covered placement bonuses pay at once (several under one building are effects of their own, logged when chosen)
-        spent = -delta["money"] + bonus_gain.get("money", 0)
-        L.add(f"{who} pays {spent} for building {what}" if spent > 0 else f"{who} adds {what} for free")
-        for res, n in bonus_gain.items():
-            L.add(f"{who} gains {n} {'xtoken' if res == 'x_tokens' else res} (placement bonus)")
-        if t == "pavilion":
-            L.add(f"{who} gains 1 appeal (pavilion)")
+        pending = (old.prompt.args.get("pending") if old.prompt is not None else None) or []
+        if any(e.get("placeback") and e.get("type") == t for e in pending):         # Reconstruction: a building that was picked up goes back on the map
+            L.add(f"{who} reposition {what}", None, f"You reposition {what}")
+        else:
+            bonus_gain = _placement_gains(old, seat, a)                       # what the covered placement bonuses pay at once (several under one building are effects of their own, logged when chosen)
+            spent = -delta["money"] + bonus_gain.get("money", 0)
+            L.add(f"{who} pays {spent} for building {what}" if spent > 0 else f"{who} adds {what} for free")
+            for res, n in bonus_gain.items():
+                L.add(f"{who} gains {n} {'xtoken' if res == 'x_tokens' else res} (placement bonus)")
+            if t == "pavilion":
+                L.add(f"{who} gains 1 appeal (pavilion)")
     elif k == "play_animal":
         c = a.get("card", "?")
         spent = -delta["money"]
@@ -275,18 +351,32 @@ def _fill(old: GameState, act: Action, new: GameState, names: list, L: Lines, wh
         moved = new.break_position - old.break_position
         sp = f"{moved} space" + ("" if moved == 1 else "s")
         L.add(f"{who} advances the break token {sp} (now at {new.break_position}/9)" if new.break_position < 9 else f"{who} advances the break token {sp} to the last space of the Break track")
-        if delta["money"] > 0:
-            L.add(f"{who} gains {delta['money']} money (break)")
+        paid = sum((ag["gain"].get("money", 0) for ag in getattr(new, "auto_gains", ()) if ag["seat"] == seat), 0)          # (the money sponsors' extra gets its own line)
+        if delta["money"] - paid > 0:
+            L.add(f"{who} gains {delta['money'] - paid} money (break)")
+        if delta["x_tokens"] > 0:
+            L.add(f"{who} gains {delta['x_tokens']} xtoken (causing the break)")
     elif k == "association_task":
         _association(old, act, new, L, who, delta)
+    elif k == "choose_slot":                                                 # the project and its slot are one line, sent when the slot is chosen
+        pr = ((old.prompt.args.get("project") if old.prompt is not None else None) or {})
+        key = pr.get("key")
+        L.add(f"{who} supports a conservation project : {card(key)}" if key else f"{who} supports a conservation project")
     elif k == "skip_effect":
-        L.quiet = True                                                       # (BGA logs nothing when a player passes on an effect)
+        e = _effect(old, act)
+        if e.get("kind") == "search_discard" and not e.get("optional"):          # Horse Whisperer with no Petting Zoo animal in the discard pile
+            L.secret(f"{who} couldn't take a petting zoo animal from the discard because there weren't any", f"{who} couldn't take a petting zoo animal from the discard because there weren't any",
+                     "You didn't keep a petting zoo from the discard because there weren't any")
+        else:
+            L.quiet = True                                                   # (BGA logs nothing when a player passes on an effect)
     elif k == "donate":
         got = _gain_words({kk: delta[kk] for kk in delta if kk != "money"})
         spent = -delta["money"]
         L.add(f"{who} donates {spent} money to get {' and '.join(got)}" if spent > 0 else f"{who} donates for free to get {' and '.join(got)}")
     elif k == "choose_effect":
         _effect_line(old, act, new, L, who, delta)
+    elif k == "animals_single":
+        L.add(f"{who} chooses to play 1 animal and ignore 1 condition", None, "You choose to play 1 animal and ignore 1 condition")
     elif k == "finish_build" or k in ("finish_sponsors", "finish_animals", "finish_association"):
         pass
     else:
@@ -304,16 +394,29 @@ def _association(old: GameState, act: Action, new: GameState, L: Lines, who: str
     a = act.args
     task = a.get("task")
     got = _gain_words(delta)
+    def hired() -> int:
+        n = lambda s: sum(1 for t in s.players[act.player].tokens if t.type == "worker" and not t.location.startswith("supply_"))
+        return n(new) - n(old)
+    ordinal = {1: "1st", 2: "2nd", 3: "3rd", 4: "4th"}
     if task == "partner":
         L.add(f"{who} takes a new partner zoo" + (f" ({a['continent']})" if a.get("continent") else ""))
+        if hired() > 0:                                                  # the 3rd partner zoo brings a worker
+            k_ = sum(1 for t in new.players[act.player].tokens if t.location.startswith("partner_"))
+            L.add(f"{who} get a worker ({ordinal.get(k_, str(k_) + 'th')} Partner Zoo)", None, f"You get a worker ({ordinal.get(k_, str(k_) + 'th')} Partner Zoo)")
     elif task == "university":
-        L.add(f"{who} takes a new university")
+        seat = act.player
+        before = Counter(t.type for t in old.players[seat].tokens if t.location.startswith("university_"))
+        added = [t.type for t in new.players[seat].tokens if t.location.startswith("university_") and not before.get(t.type)]
+        L.add(f"{who} takes <UNI:{added[0]}>" if added else f"{who} takes a new university")                 # (the tile that was taken, drawn by the page)
         if got:
             L.add(f"{who} gains {' and '.join(got)} (from university)")
     elif task == "hire":
         L.add(f"{who} gains a new Association worker")
     elif task == "conservation":
-        L.add(f"{who} supports a conservation project : {card(a['project'])}" if a.get("project") else f"{who} supports a conservation project")
+        if a.get("project"):
+            L.quiet = True                                                   # (the line comes with the slot: `choose_slot`)
+        else:
+            L.add(f"{who} supports a conservation project")
     elif task == "reputation":
         L.add(f"{who} gains {' and '.join(got) or '2 reputation'} (association)")
     else:
@@ -325,16 +428,63 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     e = _effect(old, act)
     kind = e.get("kind")
     src = _source(old, act)
+    if kind == "gain" and e.get("label"):
+        src = str(e["label"]).capitalize()                                  # an ability's gain: "(Pack)", not the card that has it
     sfx = f" ({src})" if src else ""
     seat = act.player
-    if kind == "gain":
+    if kind == "pay_appeal":
+        L.add(f"{who} spend 2 money to gain 1 appeal", None, "You spend 2 money to gain 1 appeal")
+    elif kind == "waza" and a.get("waza"):
+        size = "small" if a["waza"] == "small" else "large"
+        L.add(f"{who} focuses on {size} animals and can no longer play the other type", None, f"You focus on {size} animals and can no longer play the other type")
+    elif kind == "ability" and e.get("name"):
+        L.add(f"{who} activated {e['name']}" + (f" {e['value']}" if e.get("value") and str(e["value"]) not in str(e["name"]) else ""), None,
+              f"You activated {e['name']}" + (f" {e['value']}" if e.get("value") and str(e["value"]) not in str(e["name"]) else ""))
+    elif kind in ("venom", "constrict"):                                    # the tokens that went on the other player's action cards
+        token = "Venom" if kind == "venom" else "Constriction"
+        other = 1 - seat
+        cards = [ACTION_NAMES.get(n.type, n.type) for o, n in zip(old.players[other].action_cards, new.players[other].action_cards) if n.tokens.count(token) > o.tokens.count(token)]
+        oname = L.names[other] if 0 <= other < len(L.names) else "the opponent"
+        word = token.lower() + (" token" if len(cards) <= 1 else " tokens")
+        if cards:
+            tail = f" and {cards[1]}" if len(cards) > 1 else ""
+            L.add(f"{who} placed {word} on {oname} {cards[0]}{tail}", None, f"You placed {word} on {oname} {cards[0]}{tail}")
+        else:
+            L.add(f"{who} used {token}, but no token was placed", None, f"You used {token}, but no token was placed")
+    elif kind == "continent" and a.get("continent"):
+        L.add(f"{who} removed a marker from the <{str(a['continent']).upper()}> continent", None, f"You removed a marker from the <{str(a['continent']).upper()}> continent")
+        if _gain_words(delta):
+            L.add(f"{who} gains {' and '.join(_gain_words(delta))} (continent marker)")
+    elif kind == "hypnosis":
+        L.quiet = True                                                      # (the extra action says it all: "X hypnotize Y and use ...")
+    elif kind == "pilfer" and not a.get("nothing"):
+        what = "5 money" if a.get("pay") else "1 card"
+        paid = max(-delta["money"], 0)
+        if a.get("pay") and paid != 5:
+            what = f"{paid} money"
+        thief = e.get("to")
+        tname = L.names[thief] if isinstance(thief, int) and 0 <= thief < len(L.names) else "the other player"
+        if a.get("give"):                                                   # the victim names the card, so does the player who gets it; the spectators read a count
+            c = card(a["give"])
+            L.add(f"{who} gave {c} for the Pilfering effect", f"{who} gave {what} for the Pilfering effect", f"You gave {c} for the Pilfering effect",
+                  other=f"You get {c} from {who} for the Pilfer effect")
+        else:
+            L.add(f"{who} gave {what} for the Pilfering effect", None, f"You gave {what} for the Pilfering effect", other=f"You get {what} from {who} for the Pilfer effect")
+    elif kind == "extra_shift" and a.get("worker") is not None:
+        zones = {"association_2": "reputation", "association_3": "partner zoo", "association_4": "university", "association_5": "project"}
+        t = next((t for t in old.players[seat].tokens if t.id == a["worker"]), None)
+        zone = zones.get(t.location, "association") if t is not None else "association"
+        L.add(f"{who} take back a worker from the {zone} zone", None, f"You take back a worker from the {zone} zone")
+    elif kind == "symbiosis" and a.get("ability"):
+        L.add(f"{who} activated {a['ability']} (Symbiosis effect)", None, f"You activated {a['ability']} (Symbiosis effect)")
+    elif kind == "gain":
         got = _gain_words(delta)
         if got:
             L.add(f"{who} gains {' and '.join(got)}{sfx}")
         else:
             L.fallback(old, act, new)
     elif a.get("apply", "").startswith("income_") or kind == "income":
-        name = {"income_kiosk": "kiosk income", "income_appeal": "appeal income"}.get(a.get("apply", ""), "map income")
+        name = {"income_kiosk": "kiosk income", "income_appeal": "appeal income", "income_all": "all the money income"}.get(a.get("apply", ""), "map income")
         if delta["money"] > 0:
             L.add(f"{who} gains {delta['money']} money ({name})")
         else:
@@ -342,13 +492,28 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     elif kind == "break_discard":
         cards = list(a.get("cards", []))
         L.secret(f"{who} discards {names_of(cards)} during break", f"{who} discards {n_cards(len(cards))} during break", f"You discard {names_of(cards)} during break")
+    elif kind == "expedition":                                              # Marine Research Expedition: a person sponsor goes away, or Scuba Dive 3 is taken instead
+        if a.get("scuba"):
+            L.add(f"{who} chooses Scuba Dive 3 (Marine Research Expedition)")
+        elif a.get("send"):
+            L.add(f"{who} sends {card(a['send'])} away on an expedition (Marine Research Expedition)")
+            if delta["conservation"] > 0:
+                L.add(f"{who} gains {delta['conservation']} conservation (Marine Research Expedition)")
+        else:
+            L.fallback(old, act, new)
     elif kind == "reveal":
         x = int(e.get("x", 0) or 0)
         top = list(old.main_deck[:x])
         kept = _hand_change(old, new, seat)[0]
         rest = list((Counter(top) - Counter(kept)).elements())
         pname = {"animal": "hunter", "any": "perception", "sponsor": "scuba dive"}.get(e.get("filter", "any"), "reveal")
-        L.secret(f"{who} draws {names_of(top)} for {pname} effect", f"{who} draws {n_cards(len(top))} for {pname} effect", f"You draw {names_of(top)} for {pname} effect")
+        if not (e.get("revealed") and not a.get("reveal")):                       # (the draw is told when the effect is activated, the choice when it is made)
+            L.secret(f"{who} draws {names_of(top)} for {pname} effect", f"{who} draws {n_cards(len(top))} for {pname} effect", f"You draw {names_of(top)} for {pname} effect")
+        if a.get("reveal"):
+            return
+        if pname == "scuba dive" and not kept:                                 # none of the revealed cards is a sponsor: all of them are discarded
+            L.add(f"{who} discards {len(top)} cards from scuba dive effect (No sponsors)", None, f"You discard {len(top)} cards from scuba dive effect (No sponsors)")
+            return
         if pname == "perception":                                              # (the sheet: the opponent sees nothing of a Perception)
             L.secret(f"{who} keeps {names_of(kept)} and discards {names_of(rest)}", f"{who} keeps {n_cards(len(kept))}", f"You keep {names_of(kept)} and discard {names_of(rest)}")
         else:                                                                  # Hunter / Scuba Dive: the kept card is public
@@ -360,8 +525,23 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         L.add(f"{who} gains a new Association worker (reputation track bonus)")
     elif kind == "slot1":
         L.add(f"{who} places action card {ACTION_NAMES.get(a.get('type'), a.get('type'))} at position 1 (Clever)")
-    elif kind in ("pbonus", "project_bonus", "threshold_bonus", "take_tile", "rep_bonus") and _gain_words(delta):
-        label = {"pbonus": "placement bonus", "project_bonus": "project bonus", "threshold_bonus": "conservation bonus", "take_tile": "association", "rep_bonus": "reputation bonus"}[kind]
+    elif kind == "wave" or (kind == "pbonus" and (e.get("bonus") or {}).get("type") == "wave"):
+        shown = [c for c in old.display if c]
+        L.add(f"{who} placement bonus: wave" if kind == "pbonus" else f"{who} wave")
+        if shown:
+            L.add(f"{card(shown[0])} is removed from the display by the wave")
+        _display_refill(old, new, L, start=shown[1:])
+    elif kind == "threshold_bonus" and a.get("option") is not None:         # the bonus that was chosen on the conservation space, named
+        from ark_nova.replay.options import placement_bonus_name
+        opts = list((old.conservation_options or {}).get(str(e.get("t"))) or [])
+        j = int(a["option"])
+        bonus = {"money": 5} if j == len(opts) else (opts[j] if 0 <= j < len(opts) else {})
+        label = ", ".join(placement_bonus_name({"type": t_, "value": v_}).replace("Placement bonus: ", "") for t_, v_ in bonus.items()) or "bonus"
+        L.add(f"{who} chooses the {label} bonus of conservation space {e.get('t')}", None, f"You choose the {label} bonus of conservation space {e.get('t')}")
+        if _gain_words(delta):
+            L.add(f"{who} gains {' and '.join(_gain_words(delta))} (conservation bonus)")
+    elif kind in ("pbonus", "project_bonus", "take_tile", "rep_bonus") and _gain_words(delta):
+        label = {"pbonus": "placement bonus", "project_bonus": "project bonus", "take_tile": "association", "rep_bonus": "reputation bonus"}[kind]
         L.add(f"{who} gains {' and '.join(_gain_words(delta))} ({label})")
     elif kind == "endgame_discard":
         c = a.get("card")
@@ -383,7 +563,72 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
         L.add(f"{who} marks {card(a['card'])} from display")
     elif kind == "shark" and a.get("cards"):
         L.add(f"{who} removes {names_of(a['cards'])} from the display (shark attack)")
+        if delta["appeal"] > 0:
+            L.add(f"{who} gains {delta['appeal']} appeal (shark attack)")
         _display_refill(old, new, L)
+    elif kind == "glide" and a.get("cards") is not None:
+        from ark_nova.engine.icons import card_icons
+        cards = list(a.get("cards", []))
+        n = sum(card_icons(c, old.config.marine_worlds)["SeaAnimal"] for c in cards)
+        icons = f"{n} sea animal icon" + ("" if n == 1 else "s")
+        L.secret(f"{who} glided {names_of(cards)} for {icons}", f"{who} glided {n_cards(len(cards))} for {icons}", f"You glided {names_of(cards)} for {icons}")
+    elif kind == "glide_gain":
+        words = {"reputation": "gained 1 reputation", "appeal": "gained 2 appeal", "kiosk": "will place a kiosk for free"}
+        L.add(f"{who} {words.get(a.get('gain'), 'gained a bonus')} (Glide effect)")
+    elif kind == "cut_down" and a.get("building") is not None:
+        b = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a["building"])), None)
+        size = b.type.replace("size-", "") if b is not None else "?"
+        gained = max(delta["money"], 0)
+        L.add(f"{who} used cutdown on an empty size {size} enclosure and gained {gained} money", None, f"You used cutdown on an empty size {size} enclosure and gained {gained} money")
+    elif kind == "enlarge" and a.get("building") is not None:
+        b = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a["building"])), None)
+        n = int(b.type.replace("size-", "")) if b is not None and b.type.startswith("size-") else 0
+        tail = " and gained 2 appeal" if b is not None and b.animal else ""
+        L.add(f"{who} enlarged an enclosure ({n} -> {n + 1}){tail}", None, f"You enlarged an enclosure ({n} -> {n + 1}){tail}")
+    elif kind == "move_in" and a.get("move"):
+        dest = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(e.get("building") or [])), None)
+        src = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a.get("from") or [])), None)
+        into = dest.type.replace("-", " ") if dest is not None else "special enclosure"
+        freed = f" and free up a {src.type if src.type.startswith('size-') else src.type.replace('-', ' ')} enclosure" if src is not None and src.type.startswith("size-") else (f" and free up space in the {src.type.replace('-', ' ')}" if src is not None else "")
+        L.add(f"{who} moved {card(a['move'])} into the {into}{freed}", None, f"You moved {card(a['move'])} into the {into}{freed}")
+    elif kind == "reposition" and a.get("remove") is not None:
+        L.quiet = True                                                      # (picking the buildings up says nothing: each one is logged when it is put back)
+    elif kind == "release" and a.get("release"):
+        src = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a.get("building") or [])), None)
+        where = f" from a {src.type} enclosure" if src is not None and src.type.startswith("size-") else (f" from the {src.type.replace('-', ' ')}" if src is not None else "")
+        lost = max(-delta["appeal"], 0)
+        tail = f" and lost {lost} appeal" if lost else ""
+        L.add(f"{who} released {card(a['release'])}{where}{tail}", None, f"You released {card(a['release'])}{where}{tail}")
+    elif kind == "magnet":
+        got = _hand_change(old, new, seat)[0]
+        nm = "Sponsors Magnet" if e.get("name") == "Sponsor Magnet" else str(e.get("name") or "Magnet")
+        listed = names_of(got) if got else "no card"
+        L.add(f"{who} draw {listed} with {nm} effect", None, f"You draw {listed} with {nm} effect")
+    elif kind == "gain_worker":
+        L.add(f"{who} get a worker ({e.get('source') or 'reputation track'})".replace("(reputation track)", "(8 reputation)"), None, f"You get a worker (8 reputation)")
+    elif kind == "boost" and a.get("slot") is not None:
+        name = ACTION_NAMES.get(e.get("type"), str(e.get("type")))
+        L.add(f"{who} put the {name} action at {int(a['slot'])} (Boost effect)", None, f"You put the {name} action at {int(a['slot'])} (Boost effect)")
+    elif kind == "multiplier" and a.get("multiplier"):
+        name = ACTION_NAMES.get(a["multiplier"], str(a["multiplier"]))
+        L.add(f"{who} put a multiplier token on the {name} action", None, f"You put a multiplier token on the {name} action")
+    elif kind == "marketing" and isinstance(a.get("card"), str):                  # the sponsor and its price are public
+        spent = max(-delta["money"], 0)
+        L.add(f"{who} marketed {card(a['card'])} for {spent} money", None, f"You marketed {card(a['card'])} for {spent} money")
+    elif kind == "store":
+        c = a.get("store")
+        L.secret(f"{who} stored {card(c) if c else 'a card'}", f"{who} stored a card", f"You stored {card(c) if c else 'a card'}")
+    elif kind == "search_discard" and a.get("card"):
+        c = a["card"]
+        L.secret(f"{who} keeps {card(c)} from the discard", f"{who} keeps 1 petting zoo animal from the discard", f"You keep {card(c)} from the discard")
+    elif kind == "assertion" and a.get("card"):
+        c = a["card"]
+        L.secret(f"{who} kept {card(c)} with the assertion effect", f"{who} kept a card with the assertion effect", f"You kept {card(c)} with the assertion effect")
+    elif kind == "dominance":
+        if "P108" in old.base_projects_unused:
+            L.add(f"{who} put the Primates project into their hand", None, f"You put the Primates project into your hand")
+        else:
+            L.add(f"{who} couldn't take Primates project because it's not available", None, "You couldn't take Primates project because it's not available")
     elif kind == "sell":
         cards = list(a.get("cards", []))
         m = max(delta["money"], 0)
@@ -391,7 +636,14 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
                  f"You discard {names_of(cards)} for the sunbathing ability and gained {m} money")
     elif kind == "digging":
         drawn, gone = _hand_change(old, new, seat)
-        if "display" in a:
+        if a.get("rescue"):                                                    # Map 10: the animal goes to the Rescued zone, which everybody sees: also a card of the hand is named
+            key = a.get("display") or a.get("hand") or (gone[0] if gone else "?")
+            L.add(f"{who} rescues {card(key)} (Map 10 effect)")
+            if "display" in a:
+                _display_refill(old, new, L)
+            if drawn:
+                L.secret(f"{who} draws {names_of(drawn)} from the deck", f"{who} draws {n_cards(len(drawn))} from the deck", f"You draw {names_of(drawn)} from the deck")
+        elif "display" in a:
             L.add(f"{who} digs {card(a['display'])} from the display")
             _display_refill(old, new, L)
         else:

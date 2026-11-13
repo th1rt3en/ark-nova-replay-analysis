@@ -85,24 +85,22 @@ function smallFive(root, cx, cy) {
   root.append(g);
 }
 
-// 10 conservation: BGA's sign "discard an end of game card" (two cards with an hourglass, the first crossed out), same pictures, redrawn sharp, on a cream plate
+// 10 conservation: BGA's sign "discard an end of game card" (two cards with an hourglass, the first crossed out), same pictures, redrawn sharp: no plate, the two cards bigger with a dark rim and a small drop shadow (the filter #ctegink, see conservationTrackSvg)
 function endSign(root, cx, cy0) {
-  const cy = cy0 + 2, w = 100, h = 70, cw = 30, ch = 42, top = cy - h / 2, g = svg('g', { class: 'ctend' });   // (endgame cards are portrait, about 5:7)
-  g.append(svg('rect', { x: cx - w / 2, y: top + 2, width: w, height: h, rx: 13, fill: INK }));
-  g.append(svg('rect', { x: cx - w / 2, y: top, width: w, height: h, rx: 13, fill: '#F8EDCB', stroke: INK, 'stroke-width': 2.2 }));
+  const cy = cy0 + 2, cw = 30, ch = 42, g = svg('g', { class: 'ctend', filter: 'url(#ctegink)' }), inner = svg('g', { transform: 'translate(' + cx + ' ' + cy + ') scale(1.35) translate(' + (-cx) + ' ' + (-cy) + ')' });   // (endgame cards are portrait, about 5:7)
   for (const [dx, cross] of [[-22, true], [22, false]]) {
     const x = cx + dx - cw / 2, y = cy - ch / 2, mx = cx + dx, my = cy;
-    g.append(svg('rect', { x, y, width: cw, height: ch, rx: 5, fill: '#B3402E', stroke: '#6E1F18', 'stroke-width': 2.4 }));
-    g.append(svg('rect', { x: x + 3, y: y + 3, width: cw - 6, height: ch - 6, rx: 3.5, fill: 'none', stroke: '#D0624B', 'stroke-width': 1.4 }));
+    inner.append(svg('rect', { x, y, width: cw, height: ch, rx: 5, fill: '#B3402E', stroke: '#6E1F18', 'stroke-width': 2.4 }));
+    inner.append(svg('rect', { x: x + 3, y: y + 3, width: cw - 6, height: ch - 6, rx: 3.5, fill: 'none', stroke: '#D0624B', 'stroke-width': 1.4 }));
     const hg = svg('g', { transform: 'translate(' + mx + ' ' + my + ') scale(1.2) translate(' + (-mx) + ' ' + (-(y + 13.5)) + ')' });   // the hourglass, centred on the card
     hg.append(svg('path', { d: 'M' + (mx - 7) + ' ' + (y + 5) + 'h14l-6 8.5 6 8.5h-14l6-8.5Z', fill: '#fff' }), svg('path', { d: 'M' + (mx - 3) + ' ' + (y + 19) + 'h6l3 3h-12Z M' + mx + ' ' + (y + 12) + 'l-3 -5h6Z', fill: '#111' }));
-    g.append(hg);
-    if (cross) {
-      const dd = 'M' + (x - 1) + ' ' + (y - 1) + 'L' + (x + cw + 1) + ' ' + (y + ch + 1) + 'M' + (x + cw + 1) + ' ' + (y - 1) + 'L' + (x - 1) + ' ' + (y + ch + 1);
-      g.append(svg('path', { d: dd, stroke: '#fff', 'stroke-width': 8, 'stroke-linecap': 'round' }), svg('path', { d: dd, stroke: '#E0402D', 'stroke-width': 4.6, 'stroke-linecap': 'round' }));
+    inner.append(hg);
+    if (cross) {                                                                                         // the red X: a bit smaller than the card (about 70%)
+      const dd = 'M' + (x + 4) + ' ' + (y + 8) + 'L' + (x + cw - 4) + ' ' + (y + ch - 8) + 'M' + (x + cw - 4) + ' ' + (y + 8) + 'L' + (x + 4) + ' ' + (y + ch - 8);
+      inner.append(svg('path', { d: dd, stroke: '#fff', 'stroke-width': 6.4, 'stroke-linecap': 'round' }), svg('path', { d: dd, stroke: '#E0402D', 'stroke-width': 3.6, 'stroke-linecap': 'round' }));
     }
   }
-  root.append(g);
+  g.append(inner); root.append(g);
 }
 
 export function conservationTrackSvg() {
@@ -113,6 +111,9 @@ export function conservationTrackSvg() {
   // a soft ink outline for the shield pictures
   const m = filt('ctink', {}, svg('feMorphology', { in: 'SourceAlpha', operator: 'dilate', radius: 1.1, result: 'd' }), svg('feFlood', { 'flood-color': INK, 'flood-opacity': .26, result: 'c' }), svg('feComposite', { in: 'c', in2: 'd', operator: 'in', result: 'o' }), svg('feMerge', {}));
   m.lastChild.append(svg('feMergeNode', { in: 'o' }), svg('feMergeNode', { in: 'SourceGraphic' }));
+  // the rim of the endgame discard sign: the silhouette grown by 2.6 in ink, with a small ink shadow 3 below
+  { const f = filt('ctegink', { x: '-30%', y: '-30%', width: '160%', height: '160%' }, svg('feMorphology', { in: 'SourceAlpha', operator: 'dilate', radius: 2.6, result: 'd' }), svg('feFlood', { 'flood-color': INK, result: 'c' }), svg('feComposite', { in: 'c', in2: 'd', operator: 'in', result: 'o' }), svg('feOffset', { in: 'o', dx: 0, dy: 3, result: 's' }), svg('feMerge', {}));
+    f.lastChild.append(svg('feMergeNode', { in: 's' }), svg('feMergeNode', { in: 'o' }), svg('feMergeNode', { in: 'SourceGraphic' })); }
   // a rough edge (felt / paint): a very small displacement
   filt('ctrough', {}, svg('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.09', numOctaves: 2, seed: 5, result: 'n' }), svg('feDisplacementMap', { in: 'SourceGraphic', in2: 'n', scale: 2.6, xChannelSelector: 'R', yChannelSelector: 'G' }));
   // the felt of the tabs: a fine, soft mottling

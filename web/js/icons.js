@@ -27,12 +27,13 @@ const BONUS_ICON_NAME = {
 };
 export function applyIconNames(names) {
   for (const [type, name] of Object.entries(BONUS_ICON_NAME)) if (names[name] && type !== 'Digging') ICON_IDS['bonus:' + type] = names[name];       // (Digging keeps r9c13)
+  ICON_IDS.reef = names.coral;          // (the red coral: the Reef Dweller effects on the bar read "coral: bonus")
   ICON_IDS.money = names.money; ICON_IDS.appeal = names.appeal; ICON_IDS.conservation = names.conservation; ICON_IDS.reputation = names.reputation; ICON_IDS.xtoken_plain = names.xtoken;
   names.xtoken_ns = 'r5c6_ns';          // the X token without the white squares, for every place a number lies on it
   ICON_IDS['bonus:xtoken_num'] = 'r3c2_ns';   // the bordered one (placement / track bonus) without them
 }
 export const SHOW_VALUE = new Set(['money', 'reputation', 'appeal']);     // BGA prints the number on these three only (appeal: 2 on the drawing board); the icon of every other bonus already says what it is
-export const iconUrl = (id) => '/icons/' + id + '.webp?v=art20261107c';
+export const iconUrl = (id) => '/icons/' + id + '.webp?v=art20261112';
 export function moneyTile(root, cx, cy, size) {
   const id = 'mt' + (S.clipCount += 1), r = size * 0.24;
   const clip = svg('clipPath', { id });

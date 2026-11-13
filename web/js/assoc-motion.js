@@ -147,7 +147,9 @@ export function runAssoc(cap, api) {
     const to = rectOf(node);
     if (!to) return;
     const bc = cap.bonusCubes[i], eye = eyeOf(c.seat), size = Math.min(to.w, to.h);
-    const barSize = Math.max(size * 1.2, 20), from = bc && bc.bar ? { x: bc.bar.x, y: bc.bar.y, w: barSize, h: barSize } : bc && bc.rect ? bc.rect : eye ? { x: eye.x, y: eye.y, w: size * .5, h: size * .5 } : { ...deck(), w: size * .5, h: size * .5 };
+    // (a board that was not shown before the step, e.g. the other player's board in the Tabbed layout: its panel did not exist when the cube was measured; the space where the cube sat is on the board now)
+    const here = !bc || !(bc.bar || bc.rect) ? (c.kind === 'project' && c.bonus >= 0 ? { panel: rectOf($('[data-bpos="' + c.bonus + '"][data-bpseat="' + c.seat + '"]')), bar: rectOf($('[data-abonus="' + c.bonus + '"][data-aseat="' + c.seat + '"]')) } : null) : null;
+    const barSize = Math.max(size * 1.2, 20), from = bc && bc.bar ? { x: bc.bar.x, y: bc.bar.y, w: barSize, h: barSize } : bc && bc.rect ? bc.rect : here && here.panel ? here.panel : here && here.bar ? { x: here.bar.x, y: here.bar.y, w: barSize, h: barSize } : eye ? { x: eye.x, y: eye.y, w: size * .5, h: size * .5 } : { ...deck(), w: size * .5, h: size * .5 };
     const content = node.tagName.toLowerCase() === 'image' ? imageGhost(node.getAttribute('href'), to) : plainSvg(node);
     fly({ content, from, to, delay: c.kind === 'project' ? () => api.projectLanding(c.key) : 0, hidden: [node], fadeIn: !(bc && bc.rect && !bc.bar), sync: c.kind === 'project' });          // (a project card played in this step: the cube waits until the card lies in its strip)
   });

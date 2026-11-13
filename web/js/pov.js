@@ -69,8 +69,10 @@ export function toggleEye(seat) {
   applyPov();
 }
 export const povDialogOpen = () => !!$('povChoice');
+export const canChoosePov = () => !FORK && !PLAY && !MINIGAME;          // (only a replay has the spectator choice)
 // The first time a replay is opened: a lightbox asks whom to spectate. The choice opens that player's eye and sets the orientation (left map, upper box); the eyes can be switched later.
-export function askSpectated() {
+// `again`: opened by going back from the first step (playback.js `stepBy`): the current player is preselected and Esc closes it without a change.
+export function askSpectated(again = false) {
   if ($('povChoice')) return;
   const modal = el('div', 'modal'); modal.id = 'povChoice';
   const box = el('div', 'povbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Choose which player to spectate');
@@ -85,10 +87,13 @@ export function askSpectated() {
     return b;
   });
   const done = () => { if (picked === null) return; document.removeEventListener('keydown', onKey, true); modal.remove(); chooseSpectated(picked); };
-  const onKey = (e) => { if (e.key === 'Enter' && picked !== null && !e.isComposing) { e.preventDefault(); e.stopPropagation(); done(); } };       // (Enter confirms once a player is selected, whichever button has the focus)
+  const onKey = (e) => {
+    if (again && e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); document.removeEventListener('keydown', onKey, true); modal.remove(); return; }
+    if (e.key === 'Enter' && picked !== null && !e.isComposing) { e.preventDefault(); e.stopPropagation(); done(); } };       // (Enter confirms once a player is selected, whichever button has the focus)
   ok.onclick = done;
   document.addEventListener('keydown', onKey, true);
   box.append(...chips, el('i', 'povdiv'), rib, ok); modal.append(box); document.body.append(modal);
+  if (again && chips[S.orient]) chips[S.orient].onclick();
 }
 function chooseSpectated(seat) {
   S.orient = seat; S.pov = seat;
@@ -108,8 +113,7 @@ export function eyeButton(seat) {                                          // op
   const open = eyeOpen(seat), locked = eyeLocked(seat), nm = S.replay.players[seat].name;
   const b = el('button', 'poveye' + (open ? '' : ' closed') + (locked ? ' only' : ''));
   b.type = 'button';
-  b.title = locked ? nm + "'s cards are shown" : 'Show ' + nm + "'s cards (and hide the other player's)";
-  b.setAttribute('aria-label', b.title); b.setAttribute('aria-pressed', String(open));
+  b.setAttribute('aria-label', locked ? nm + "'s cards are shown" : 'Show ' + nm + "'s cards (and hide the other player's)");          // (no title = no browser tooltip; the label is for screen readers) b.setAttribute('aria-pressed', String(open));
   const g = svg('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
   g.append(svg('path', { d: 'M2 12C5 6.5 8.5 4.5 12 4.5S19 6.5 22 12C19 17.5 15.5 19.5 12 19.5S5 17.5 2 12Z' }), svg('circle', { cx: 12, cy: 12, r: 3.2, fill: 'currentColor' }));
   if (!open) g.append(svg('path', { class: 'strike-under', d: 'M3.5 3.5L20.5 20.5' }), svg('path', { class: 'strike', d: 'M3.5 3.5L20.5 20.5', 'stroke-width': 2.6 }));         // closed: the same eye, struck through (the under-stroke is the outline of the line, see parkposter.css)

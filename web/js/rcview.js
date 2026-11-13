@@ -31,12 +31,12 @@ export function createPageView(onBack) {
 
   function finds() {                                                        // the spots, found in the copy (so a hand that lies below the fold of the real window is found too), in px of the shot
     const s = scale(), q = shot.getBoundingClientRect(), out = [];
-    const at = (e) => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > 8 ? { x: (r.left + r.width / 2 - q.left) / s - 3, y: (r.top + r.height / 2 - q.top) / s - 3 } : null; };
+    const at = (e, minH = 8) => { const r = e.getBoundingClientRect(); return r.width > 20 && r.height > minH ? { x: (r.left + r.width / 2 - q.left) / s - 3, y: (r.top + r.height / 2 - q.top) / s - 3 } : null; };
     const tl = document.getElementById('timeline');
-    if (roundJumps() && tl && !tl.hidden) { const e = clone.querySelector('#timeline'), p = e && at(e); if (p) out.push({ k: 'tl', ...p }); }
+    if (roundJumps() && tl && !tl.hidden) { const e = clone.querySelector('#timeline'), p = e && at(e, 2); if (p) out.push({ k: 'tl', ...p }); }
     if (S.previewBuilding) {
       const m = clone.querySelector('svg.board'), pm = m && at(m);
-      if (pm) { const mr = m.getBoundingClientRect(); pm.y = (mr.top - q.top) / s - 3 + mr.height / s * 0.07; out.push({ k: 'map', ...pm }); }   // (the very top of the map: lower down it would lie too close to the hand)
+      if (pm) { if (S.zooLayout !== 'stack') { const mr = m.getBoundingClientRect(); pm.y = (mr.top - q.top) / s - 3 + mr.height / s * 0.07; } out.push({ k: 'map', ...pm }); }   // (the very top of the map: lower down it would lie too close to the hand; in the top / bottom layout the first map is the upper one, far from the hand, so its spot stays in the middle of the map)
       const c = [...clone.querySelectorAll('.card.markable[data-key]')].find((e) => BIG.has(e.dataset.key) && getComputedStyle(e).visibility !== 'hidden' && at(e)), pc = c && at(c);
       if (pc) out.push({ k: 'card', ...pc });
     }

@@ -5,7 +5,7 @@
 // (`hexes`, `placement_bonuses`, `special_hexes` of the kind `upgrade_flag`, `bonus_slots`) and adds `association` (the spaces on the right and where the upgrade lies).
 import { $, el, svg } from './util.js';
 import { S } from './state.js';
-import { adaptIcon } from './bonusart.js';
+import { GROW, SHIELD_DY, adaptIcon } from './bonusart.js';
 import { ICON_IDS, SHOW_VALUE, applyIconNames, iconUrl, moneyTile } from './icons.js';
 import { SLOT_SIZE, STRIP, associationStrip, bonusPanel } from './association.js';
 
@@ -61,10 +61,11 @@ function drawBonus(g, bn) {                                              // as z
     iconBox(g, bn.type === 'xtoken' && bn.value > 1 ? (ICON_IDS['bonus:xtoken_num'] || icon) : icon, bn.value > 1 ? 9 : 0, 3, 44);
     if (bn.value > 1 || bn.type === 'perception' || bn.type === 'Pouch') put(g, 'text', { x: -15, y: 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
   }
-  else if (bn.type === 'pavilion') put(g, 'image', { href: '/enclosures/pavilion.webp', x: -23, y: -16, width: 46, height: 40 });
+  else if (bn.type === 'pavilion') put(g, 'image', { href: '/bonus/pavilion.webp?v=art20261112', x: -24 * 120 / 103.923, y: -20, width: 48 * 120 / 103.923, height: 48 });
+  else if (icon && bn.type === 'conservation') iconBox(g, icon, 0, 3 + SHIELD_DY, 48 * GROW.conservation);          // (the bigger, lower shield of the viewer)
   else if (icon) iconBox(g, icon, 0, 3, bn.type === 'wave' ? 21 : 48);
   if (bn.type === 'appeal' && !icon) put(g, 'text', { x: 0, y: 6, class: 'bonus-label' }, '★');
-  if (SHOW_VALUE.has(bn.type) || bn.type === 'conservation') put(g, 'text', { x: 0, y: bn.type === 'money' ? 14 : 16, class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);
+  if (SHOW_VALUE.has(bn.type) || bn.type === 'conservation') put(g, 'text', { x: 0, y: bn.type === 'money' ? 14 : 16, class: 'bonus-number', ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}), ...(bn.type === 'conservation' ? { transform: 'translate(0 ' + SHIELD_DY + ') translate(0 16) scale(' + GROW.conservation + ') translate(0 -16)' } : {}) }, bn.value);
 }
 function drawFlag(g, wedgeOnly) {                                         // as zooBoard draws a hex that needs the upgraded Build action (BGA's look): red parallelogram, BGA's Build II badge in a white ring (`wedgeOnly`: the hex has a bonus, its small badge comes after the bonus, `flagBadge`)
   const h = R * 0.866;

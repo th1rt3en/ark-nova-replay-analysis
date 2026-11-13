@@ -113,6 +113,11 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
                     if mv0 is None:
                         mv0 = by_move[key] = Move(index=-1, move_id=key, time=int(p["time"]))
                     mv0.offers.append({"player": player, "cards": list(ids)})
+            if t == "gameStateChange" and isinstance(a, dict) and isinstance(a.get("args"), dict) and isinstance(a["args"].get("bonusesSpaces"), list) and a.get("active_player") is not None:
+                mv0 = by_move.get(key)                      # the association prompt lists the notepad bonus spaces whose cube is still on them (replay/builder.py: `_apply_bonus_spaces`)
+                if mv0 is None:
+                    mv0 = by_move[key] = Move(index=-1, move_id=key, time=int(p["time"]))
+                mv0.checks.append({"player": player, "active": str(a.get("active_player")), "bonus_spaces": [int(x) for x in a["args"]["bonusesSpaces"] if isinstance(x, int)]})
             if t in NOISE and order not in protection_orders:
                 continue
             mv = by_move.get(key)

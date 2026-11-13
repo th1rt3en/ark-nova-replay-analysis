@@ -1,0 +1,18 @@
+[
+    {
+        "name": "keep-newest-3",
+        "action": {"type": "Keep"},
+        "mostRecentVersions": {
+            "packageNamePrefixes": ["ark-nova-replay-analysis"],
+            "keepCount": 3
+        }
+    },
+    {
+        "name": "delete-older-than-3-days",
+        "action": {"type": "Delete"},
+        "condition": {
+            "packageNamePrefixes": ["ark-nova-replay-analysis"],
+            "olderThan": "259200s"
+        }
+    }
+]

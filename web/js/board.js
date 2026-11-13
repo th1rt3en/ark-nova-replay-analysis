@@ -9,7 +9,7 @@ import { FIT_DY, FIT_H, ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, moneyTwo, piec
 import { seatRawColor, svg } from './util.js';
 import { render, renderZoos } from './main.js';
 import { playFork } from './fork.js';
-import { animalSelection } from './action-bar.js';
+import { animalSelection, bpickInfo } from './action-bar.js';
 
 const toAxial = (x, y) => [x, (y - x - 1) / 2];
 const fromAxial = (q, r) => [q, 2 * r + q + 1];
@@ -59,10 +59,15 @@ export function zooBoard(map, player, seat) {
   for (const b of player.buildings) for (const c of b.cells) covered.add(c[0] + ',' + c[1]);
 
   // printed bonuses and upgrade flags that no building covers
+  // The bonuses, upgrade flags and H hexes that a building covers are drawn too, in a hidden group of their own (`cov-bonus`, one per cell, under the buildings): card-motion.js shows them
+  // while a building flies in or grows over them, so they stay until the building lands on them instead of vanishing when the flight starts. A covered hex shows nothing otherwise.
+  const board = s;
+  let into = board;
+  const hold = (cell) => { const g = svg('g', { class: 'cov-bonus', 'data-cell': cell, style: 'display: none' }); board.append(g); return g; };
   const put = (tag, attrs, text) => {
     const e = svg(tag, attrs);
     if (text !== undefined) e.textContent = text;
-    s.append(e);
+    into.append(e);
   };
   const iconBox = (id, cx, cy, h, style) => {
     const [w0, h0] = S.iconSizes[id] || [h, h];
@@ -71,18 +76,22 @@ export function zooBoard(map, player, seat) {
   // hexes that need the upgraded Build action (`upgrade_flag`), as on BGA: a red parallelogram over the upper left of the hex and BGA's own Build II badge (web/badges/BuildII.webp) in a white ring.
   // On a hex without a bonus the badge lies over the right end of the wedge (big); on a hex that also has a placement bonus the wedge is drawn BEHIND the pentagon and a small badge is pinned to
   // the pentagon's upper-left shoulder, so the bonus (a 2 money on map 3 / 3a) stays readable. The wedge is drawn first so every bonus lies on top of it.
-  const flags = map.special_hexes.filter((q) => q.kind === 'upgrade_flag' && !covered.has(q.x + ',' + q.y));
-  const hasBonus = new Set(map.placement_bonuses.filter((q) => !covered.has(q.x + ',' + q.y)).map((q) => q.x + ',' + q.y));
+  const flags = map.special_hexes.filter((q) => q.kind === 'upgrade_flag');
+  const hasBonus = new Set(map.placement_bonuses.map((q) => q.x + ',' + q.y));
   const flagBadge = (bx, by, br) => {
     put('image', { href: '/badges/BuildII.webp', x: bx - br, y: by - br, width: 2 * br, height: 2 * br, class: 'flag-badge-img' });
     put('circle', { cx: bx, cy: by, r: br - 1, class: 'flag-ring' });
   };
+  const homeOf = (x, y) => (covered.has(x + ',' + y) ? hold(x + ',' + y) : board);                  // where the things of a hex go: the board, or the hidden group when a building covers it
   for (const sh of flags) {
+    into = homeOf(sh.x, sh.y);
     const [cx, cy] = cellCentre(sh.x, sh.y), R = MAP.dx / 1.5, h = R * 0.866;
     put('polygon', { points: [[cx - R * 0.95, cy], [cx - R * 0.475, cy - h * 0.95], [cx + R * 0.36, cy - h * 0.95], [cx - R * 0.115, cy]].map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' '), class: 'flag-wedge' });
   }
+  into = board;
   for (const pb of map.placement_bonuses) {
-    if (covered.has(pb.x + ',' + pb.y)) continue;
+    const s = homeOf(pb.x, pb.y);                         // (the group of the hex shadows the board: everything below is drawn into it)
+    into = s;
     const [cx, cy] = cellCentre(pb.x, pb.y);
     const bn = pb.bonus || {};
     const tip = svg('title');
@@ -104,7 +113,7 @@ export function zooBoard(map, player, seat) {
       iconBox(icon, cx + 9, cy + 3, 44);
       put('text', { x: cx - 15, y: cy + 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
     }
-    else if (bn.type === 'pavilion') put('image', { href: '/bonus/pavilion.webp', x: cx - 26, y: cy - 22, width: 52, height: 48 });          // BDW2: a free pavilion (the white hexagon with the carousel, cut from the artwork by scripts/build_bdw_images.py)
+    else if (bn.type === 'pavilion') put('image', { href: '/bonus/pavilion.webp?v=art20261112', x: cx - 24 * 120 / 103.923, y: cy - 22, width: 48 * 120 / 103.923, height: 48 });          // Approved pavilion artwork; same regular-hexagon size as the kiosk bonus.
     else if (bn.type === 'bonus-sponsor') put('image', marketingAttrs(cx, cy + 5, 56));          // (Marketing: the HD picture on its optical centre, see marketingAttrs)
     else if (icon && FIT_H[bn.type]) put('image', fitImageAttrs(bn.type, cx, cy + 80 * FIT_DY, 80 * FIT_H[bn.type]));          // (university, partner zoo: the same share of the pentagon as in the association panel)
     else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)
@@ -113,19 +122,24 @@ export function zooBoard(map, player, seat) {
     else if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : ''), ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
     s.lastChild.append(tip);
   }
+  into = board;
   for (const sh of map.special_hexes) {            // maps 8 / 8a: the H hexes (a special placement bonus without the pentagon; the picture has empty hexes there, Ark360 moves them)
-    if (sh.kind !== 'hollywood_h' || covered.has(sh.x + ',' + sh.y)) continue;
+    if (sh.kind !== 'hollywood_h') continue;
+    into = homeOf(sh.x, sh.y);
     const [cx, cy] = cellCentre(sh.x, sh.y);
-    put('image', { href: '/bonus/hollywood_h.webp', x: cx - 34, y: cy - 46, width: 69, height: 82, class: 'hollywood-h' });
+    put('image', { href: '/bonus/hollywood_h.webp?v=art20261112', x: cx - 34, y: cy - 46, width: 69, height: 82, class: 'hollywood-h' });
     const tip = svg('title');
     tip.textContent = 'H: covering it reveals cards from the deck and adds the first sponsor to your hand';
-    s.lastChild.append(tip);
+    into.lastChild.append(tip);
   }
+  into = board;
   for (const sh of flags) {            // the Build II badges, over the bonuses
+    into = homeOf(sh.x, sh.y);
     const [cx, cy] = cellCentre(sh.x, sh.y), R = MAP.dx / 1.5;
     if (hasBonus.has(sh.x + ',' + sh.y)) flagBadge(cx - 27, cy - 29, 17);
     else flagBadge(cx + R * 0.02, cy - R * 0.42, R * 0.42);
   }
+  into = board;
 
   // map 9: a slot with the continent icon on the edge of the map holds the player's cube until the marker is removed (the log line "removes <ASIA> marker")
   if (map.id === '9') {
@@ -217,7 +231,7 @@ export function zooBoard(map, player, seat) {
   };
   const drawBuilding = (b, cls) => {
     const g = svg('g', cls ? { class: cls } : {});
-    g.setAttribute('data-bseat', seat); g.setAttribute('data-bid', b.type + '|' + b.x + '|' + b.y);          // (card-motion.js flies the building to / from the invisible deck)
+    g.setAttribute('data-bseat', seat); g.setAttribute('data-bid', b.type + '|' + b.x + '|' + b.y); g.setAttribute('data-cells', b.cells.map((c) => c[0] + ',' + c[1]).join(';'));          // (card-motion.js flies the building to / from the invisible deck)
     const sp = spriteOf(b);
     const animals = b.animal ? [b.animal] : b.animals;
     const title = svg('title');
@@ -228,7 +242,7 @@ export function zooBoard(map, player, seat) {
     } else {
       const [cx, cy] = cellCentre(b.x, b.y);
       const img = svg('image', {
-        href: '/enclosures/' + sp.image, x: cx - sp.anchor[0] * SPRITE_SCALE, y: cy - sp.anchor[1] * SPRITE_SCALE,
+        href: '/enclosures/' + sp.image + '?v=art20261112', x: cx - sp.anchor[0] * SPRITE_SCALE, y: cy - sp.anchor[1] * SPRITE_SCALE,
         width: sp.size[0] * SPRITE_SCALE, height: sp.size[1] * SPRITE_SCALE,
         transform: 'rotate(' + (b.rotation * 60) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')',
       });
@@ -290,6 +304,46 @@ export function zooBoard(map, player, seat) {
     }
   }
   s.append(...encPicks);
+  const bi = bpickInfo();
+  if (bi && bi.seat === seat) {                                              // Cut Down / Enlarge / Reposition / Move in / Archaeologist: the enclosures to click, what is selected, and the result before it is confirmed
+    const at = (b) => b.x + ',' + b.y, byAt = new Map(player.buildings.map((b) => [at(b), b]));
+    const animalPick = ['move_in', 'release'].includes(bi.kind), animalOf = (a) => a.args.move || a.args.release, srcOf = (a) => (bi.kind === 'move_in' ? a.args.from : a.args.building);          // (Move in / Release: the animal is chosen among the played cards, then the enclosure it leaves)
+    const movers = animalPick && bi.stage === 'enc' ? bi.acts.filter((a) => animalOf(a) === bi.sel[0] && srcOf(a)) : [];           // (the second step: the enclosures the animal can leave)
+    const clickable = new Set(bi.kind === 'reposition' ? player.buildings.map(at) : ['cut_down', 'enlarge'].includes(bi.kind) ? bi.acts.filter((a) => a.args.building).map((a) => a.args.building.join(',')) : movers.map((a) => srcOf(a).join(',')));
+    const ring = (cells, ok) => s.append(svg('path', { d: outlinePath(cells), class: 'placeborder ' + (ok ? 'ok' : 'bad'), 'pointer-events': 'none' }));
+    for (const b of player.buildings) {
+      if (!clickable.has(at(b))) continue;
+      const on = animalPick ? (bi.enc || (movers.length === 1 ? srcOf(movers[0]).join(',') : null)) === at(b) : bi.sel.includes(at(b));
+      s.append(svg('path', { d: outlinePath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'fill: none; pointer-events: none' }));
+      const pick = svg('path', { d: fillPath(b.cells), class: 'encpick' + (on ? ' on' : ''), style: 'stroke: none' });
+      pick.addEventListener('click', () => {
+        if (bi.kind === 'reposition') { const i = S.bpick.sel.indexOf(at(b)); if (i >= 0) S.bpick.sel.splice(i, 1); else if (S.bpick.sel.length < 3) S.bpick.sel.push(at(b)); }
+        else if (animalPick) S.bpick.enc = at(b);
+        else { S.bpick.sel = [at(b)]; S.bpick.opt = 0; }
+        render();
+      });
+      s.append(pick);
+      if (on && ['cut_down', 'reposition'].includes(bi.kind)) s.append(svg('path', { d: fillPath(b.cells), style: 'fill: rgba(200, 40, 40, .55); stroke: none', 'pointer-events': 'none' }));          // (the enclosure that goes: shown cut away)
+    }
+    if (bi.kind === 'enlarge' && bi.sel[0]) {
+      const opts = bi.acts.filter((a) => a.args.building && a.args.building.join(',') === bi.sel[0]), o = opts.length ? opts[bi.opt % opts.length] : null, old = byAt.get(bi.sel[0]);
+      if (o && old) {
+        const type = 'size-' + (+old.type.slice(5) + 1), cells = placementCells(type, o.args.x, o.args.y, o.args.rotation);
+        const ghost = drawBuilding({ type, x: o.args.x, y: o.args.y, rotation: o.args.rotation, cells }, '');
+        ghost.setAttribute('class', 'ghost'); ghost.setAttribute('pointer-events', 'none');
+        s.append(ghost); ring(cells, true);
+      }
+    }
+    if (animalPick) {
+      const dest = bi.kind === 'move_in' ? (((S.replay.steps[S.step].options || {}).effects || []).find((e) => e.index === bi.index) || {}).dest : null, mine = bi.sel[0] ? bi.acts.filter((a) => animalOf(a) === bi.sel[0]) : [];
+      const sole = mine.length === 1 && srcOf(mine[0]) ? srcOf(mine[0]).join(',') : null;
+      const src = bi.stage === 'enc' ? (bi.enc || sole) : sole;
+      const to = dest && byAt.get(dest.join(',')), from = src && byAt.get(src);
+      if (to) ring(to.cells, true);
+      if (from) ring(from.cells, false);
+    }
+    if (bi.kind === 'archaeologist' && bi.hover) s.append(svg('polygon', { points: hexPoints(bi.hover[0], bi.hover[1]), class: 'placeborder ok', fill: 'rgba(255,255,255,.25)', 'pointer-events': 'none' }));
+  }
   const nowIds = new Set(player.buildings.map((b) => b.type + '|' + b.x + '|' + b.y));        // a building of the last drawing that is gone (cut down, replaced): drawn invisible, only so that card-motion.js can fly a copy of it to the deck
   for (const old of Object.values(S.prevZoneData[zone] || {})) {
     if (nowIds.has(old.type + '|' + old.x + '|' + old.y)) continue;

@@ -12,7 +12,7 @@ FREE = {"use_token", "harbor_sell"}            # free actions of the notepad / z
 
 # the keyword of the card ability that each kind of pending effect comes from (the button is named like the ability: "Perception 2", "Digging 3", ...)
 ABILITY_PREFIX = {"digging": "Digging", "scavenge": "Scavenging", "glide": "Glide", "glide_gain": "Glide", "shark": "Shark Attack", "symbiosis": "Symbiosis",
-                  "cut_down": "Cut Down", "trade": "Trade", "extra_shift": "Extra Shift", "assertion": "Assertion", "pilfer": "Pilfering", "venom": "Venom",
+                  "cut_down": "Cut Down", "trade": "Trade", "extra_shift": "Extra Shift", "assertion": "Assertion", "dominance": "Dominance", "pilfer": "Pilfering", "venom": "Venom",
                   "constrict": "Constriction", "jumping": "Jumping", "hypnosis": "Hypnosis", "pouch": "Pouch", "mark": "Mark", "boost": "Boost", "marketing": "Marketing", "sell": "Sunbathing"}
 REVEAL_NAME = {"animal": "Hunter", "any": "Perception", "sponsor": "Scuba Dive"}          # what a reveal-and-keep effect is called, by what it may keep
 
@@ -35,6 +35,33 @@ def placement_bonus_name(bonus: dict) -> str:
     v = (bonus or {}).get("value")
     value = f"{v} " if isinstance(v, int) and v > 0 and (t in VALUED or t == "money") else ""
     return f"Placement bonus: {value}{label}"
+
+
+def _income_entry(state: GameState, e: dict, who: int) -> dict:
+    """The break income buttons say what they pay: {income: {name, res, n}}."""
+    k = e.get("kind", "")
+    if not k.startswith("income_"):
+        return {}
+    from ark_nova.engine import breaks, tracks
+    try:
+        p = state.players[e.get("player", who)]
+        if k == "income_appeal":
+            return {"income": {"name": "Appeal", "res": "money", "n": tracks.income_from_appeal(p.appeal)}}
+        if k == "income_kiosk":
+            return {"income": {"name": "Kiosk", "res": "money", "n": breaks.kiosk_income(p)}}
+        if k == "income_map":
+            return {"income": {"name": "Map", "res": "money", "n": breaks.map_ability_income(state, p)}}
+        if k == "income_sponsor":
+            inc = breaks.sponsor_income(state, p, only=[e["source"]])
+            res = next((r for r in ("money", "xtoken", "appeal", "conservation") if inc.get(r)), "money")
+            return {"income": {"name": _card_name(e["source"]), "res": res, "n": inc.get(res, 0)}}
+    except Exception:                                                  # (an income the engine cannot count here: the button keeps its plain name)
+        return {}
+    return {}
+
+
+def _card_name(key: str) -> str:
+    return str((data.cards_by_key().get(key) or {}).get("name") or key)
 
 
 def _bonus_entry(e: dict) -> dict:
@@ -61,6 +88,13 @@ def effect_name(e: dict) -> str | None:
     if kind == "reveal":
         prefix = REVEAL_NAME.get(e.get("filter", "any"))
         return f"{prefix} {e['x']}" if prefix and e.get("x") is not None else None
+    if kind == "magnet":
+        return "Sponsors Magnet" if e.get("name") == "Sponsor Magnet" else str(e.get("name") or "Magnet")          # (the button of the effect: Sponsors Magnet / Sea Animal Magnet)
+    if kind == "hypnosis":
+        return "Hypnosis"                                                        # (the button of the effect says just that: the cards follow)
+    if kind == "ability" and e.get("name"):                                       # a deferred draw (Sprint, Monkey Gang...) is named like its ability
+        value = e.get("value")
+        return str(e["name"]) if not value or str(value) in str(e["name"]) else f"{e['name']} {value}"
     prefix = ABILITY_PREFIX.get(kind)
     if prefix is None:
         return None
@@ -77,7 +111,8 @@ def effect_name(e: dict) -> str | None:
 def _unusable_cards(state: GameState, acts: list) -> list:
     """The action cards that offer nothing to do when chosen (Association with no worker left, or nothing the workers could do): the bar greys them out."""
     out = []
-    mine = [a for a in acts if a.kind == "choose_action_card" and a.args["type"] == "association" and not a.args.get("hypnosis")]
+    hyp = bool(state.prompt is not None and state.prompt.args.get("hypnosis"))          # (Hypnosis: the same rule for the other player's cards)
+    mine = [a for a in acts if a.kind == "choose_action_card" and a.args["type"] == "association" and bool(a.args.get("hypnosis")) == hyp]
     if not mine:
         return out
     for a in mine:                                                       # (any spend of X tokens: more strength may allow a task)
@@ -105,9 +140,39 @@ def _expedition_buttons(state: GameState, pending: list, entry: dict) -> list:
             {**entry, "name": "Scuba Dive 3", "option": "scuba", "enabled": True}]
 
 
+def _place_entry(state: GameState, e: dict, who: int) -> dict:
+    """What the page needs to show the choices that are made on the zoo map: the bonus of each hex an Archaeologist may take, the enclosures a Cut Down may remove with what they pay,
+    the enclosure a Move in goes to."""
+    k, p = e.get("kind"), state.players[who]
+    try:
+        if k == "archaeologist":
+            from ark_nova.engine import bonuses
+            bd = bonuses._board(p)
+            return {"cells": [{"cell": list(c), "bonus": [{"type": b.get("type"), "value": b.get("value")} for b in bd.bonuses[c]]} for c in bonuses.archaeologist_cells(state, p)]}
+        if k == "cut_down":
+            from ark_nova.engine import build_action
+            return {"cuts": [{"building": [b.x, b.y], "type": b.type, "money": build_action.cost(b.type)} for b in p.buildings if b.type.startswith("size-") and not b.animal]}
+        if k == "move_in" and e.get("building"):
+            return {"dest": list(e["building"])}
+        if k == "extra_shift":                                           # the zones of the association board that hold a worker the player may take back
+            zones = {"association_2": "reputation", "association_3": "partner zoo", "association_4": "university", "association_5": "project"}
+            return {"workers": [{"worker": t.id, "zone": zones.get(t.location, t.location)} for t in p.tokens if t.type == "worker" and t.location.startswith("association_")]}
+        if k == "threshold_bonus":                                       # the bonuses of the conservation space that are left, and the 5 money that is always there (the order of the moves)
+            opts = list(state.conservation_options.get(str(e["t"])) or [])
+            return {"opts": [[{"type": t_, "value": v_} for t_, v_ in o.items()] for o in opts] + [[{"type": "money", "value": 5}]]}
+        if k == "continent":
+            from ark_nova.engine import map_rules
+            return {"left": map_rules.continents_left(p)}
+    except Exception:                                                    # (a map the engine cannot read here: the buttons keep their plain names)
+        return {}
+    return {}
+
+
 def _revealed_cards(state: GameState, e: dict) -> dict:
     """The cards of a reveal-and-keep effect, for the lightbox of the page: the topmost cards of the deck (Perception / Hunter / Scuba Dive) or the cards drawn from the discard pile (Scavenging)."""
     if e.get("kind") == "reveal" and isinstance(e.get("x"), int):
+        if state.config.confirm_turns and not e.get("revealed"):
+            return {}                                                    # (live play: the cards are shown after the effect is activated)
         return {"cards": list(state.main_deck[:e["x"]])}
     if e.get("kind") == "scavenge" and e.get("cards"):
         return {"cards": list(e["cards"])}
@@ -148,12 +213,12 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
     if pieces:
         out["pieces"] = sorted(pieces, key=lambda q: not q.get("extra"))
         if pr.kind == "build_place":
-            out["build"] = {"variant": pr.args.get("variant", 0), "level": pr.args.get("level", 1)}
+            out["build"] = {"variant": pr.args.get("variant", 0), "level": pr.args.get("level", 1), "remaining": pr.args.get("remaining")}
     if pr.kind == "sponsors_play":                                      # the Sponsors action: the sponsors that can be played (the other cards of the hand are greyed out)
         sa = pr.args
         out["sponsors"] = {"hand": [a.args["card"] for a in acts if a.kind == "play_sponsor" and not a.args.get("from_display")],
                            "display": [a.args["card"] for a in acts if a.kind == "play_sponsor" and a.args.get("from_display")],
-                           "strength": sa.get("strength"), "gain": sa.get("strength", 0) * (2 if sa.get("level", 1) >= 2 else 1),
+                           "strength": sa.get("strength"), "left": sa.get("left"), "gain": sa.get("strength", 0) * (2 if sa.get("level", 1) >= 2 else 1),
                            "level": sa.get("level", 1), "variant": sa.get("variant", 0), "side_used": bool(sa.get("side_used")), "played": bool(sa.get("played")), "can_break": any(a.kind == "sponsor_break" for a in acts)}
     if pr.kind == "association_tasks":                                  # the tasks of the Association action that can be done (one entry per kind of task)
         tasks: dict[str, int] = {}
@@ -182,7 +247,7 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
             e = next((e for e in pr.args.get("pending", []) if e.get("kind") == "take" and e.get("player", pr.player) == who
                       and bool(e.get("snap")) == bool(take["snap"])), None)
             if e is not None:
-                take.update(source=e.get("source"), is_snap=bool(e.get("snap")), small=bool(e.get("small")), range_only=bool(e.get("range_only")))
+                take.update(source=e.get("source"), is_snap=bool(e.get("snap")), small=bool(e.get("small")), range_only=bool(e.get("range_only")), reef=bool(e.get("reef")))
         out["take"] = take
     if pr.kind == "choose_action_card":
         cards: dict[str, list[int]] = {}
@@ -202,12 +267,20 @@ def step_options(state: GameState, seat: int | None = None) -> dict | None:
     elif pr.kind == "effects":
         pending = pr.args.get("pending", [])
         out["pending"] = [e.get("kind") for e in pending][:12]
-        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter") if k in e and isinstance(e[k], (str, int, bool))},
+        out["effects"] = [{**{k: e[k] for k in ("kind", "res", "n", "source", "optional", "type", "category", "tile", "filter", "label", "cost", "continent", "reef", "t") if k in e and isinstance(e[k], (str, int, bool))},
                            **_revealed_cards(state, e),
                            **({"name": effect_name(e)} if effect_name(e) else {}),
-                           **_bonus_entry(e),
+                           **_bonus_entry(e), **_income_entry(state, e, who), **_place_entry(state, e, who),
                            **({"enabled": False} if e.get("cond") == "no_animals" and any(c.startswith("A") for c in state.players[who].hand) else {}),      # (Hunter Animals: not while the hand holds an animal)
                            "index": i}
                           for i, e in enumerate(pending) if e.get("player", pr.player) == who][:12]               # what the player can resolve, in any order (`index`: the one of choose_effect)
         out["effects"] = [b for entry in out["effects"] for b in _expedition_buttons(state, pending, entry)]
+        if state.config.confirm_turns:                                   # the break: "Take all money income", on the first of the money incomes (live play and the sandbox)
+            from ark_nova.engine import bonuses
+            ids = bonuses.money_incomes(state, who)
+            if len(ids) >= 2:
+                total = sum(bonuses.income_money(state, state.players[who], pending[j]) for j in ids)
+                for entry in out["effects"]:
+                    if entry.get("index") == ids[0]:
+                        entry["income_all"] = total
     return out

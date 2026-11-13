@@ -10,10 +10,10 @@
 .chattag { opacity: .6; font-size: .8rem; }
 .chatform { display: flex; gap: .4rem; }
 .chatinput { flex: 1 1 auto; min-width: 0; font: inherit; padding: .35rem .5rem; border: 1px solid #2b1d12; border-radius: 6px; }
-.chatsend { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid #2e7d32; background: #2e7d32; color: #fff; padding: .35rem .8rem; }
-.chatsend:disabled { opacity: .5; cursor: default; }
+.chatsend { font: inherit; cursor: var(--cur-hand); border-radius: 6px; border: 1px solid #2e7d32; background: #2e7d32; color: #fff; padding: .35rem .8rem; }
+.chatsend:disabled { opacity: .5; cursor: var(--cur-arrow); }
 .chatnote { margin: 0; color: #b3261e; font-size: .85rem; }
 .chatnote[hidden] { display: none; }
-.chatnote .linkbtn { background: none; border: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; padding: 0; }
+.chatnote .linkbtn { background: none; border: 0; color: inherit; text-decoration: underline; cursor: var(--cur-hand); font: inherit; padding: 0; }
 #tabChat .badge { display: inline-block; min-width: 1.1em; padding: 0 .3em; margin-left: .3em; border-radius: 999px; background: #e9662a; color: #fff; font-size: .75em; line-height: 1.4; text-align: center; }
 #tabChat .badge[hidden] { display: none; }

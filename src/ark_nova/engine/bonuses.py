@@ -147,6 +147,8 @@ def _token_window(state, p) -> bool:
         return True                                        # the player's turn has begun, no action card chosen yet
     if state.prompt.kind == "effects" and state.prompt.player == p.seat and state.active_player == p.seat and (state.prompt.args.get("resume") or {}).get("kind") == "end":
         return True                                        # the effects after the action (Clever, Boost, marks): the token may be used before them
+    if state.config.confirm_turns:
+        return False                                       # (live play: a token is used on the player's own turn only, never after it has been confirmed)
     return bool(p.flags.get("turn_window")) and state.prompt.kind == "choose_action_card"
 
 
@@ -169,6 +171,15 @@ def token_actions(state, p) -> list:
     if any(t.type == "bonus-extra-shift" for t in p.tokens) and any(t.type == "worker" and t.location.startswith("association_") for t in p.tokens):
         out.append(Action(p.seat, "use_token", {"token": "bonus-extra-shift"}))
     return out
+
+
+def _wave(state) -> None:
+    gone = next((c for c in state.display if c), None)
+    if gone is not None:                                                        # the first card of the display goes (to the owner of its mark, if any) and the display is replenished
+        state.display[state.display.index(gone)] = None
+        from ark_nova.engine import marks
+        marks.discard(state, gone)
+        _g()._refill_display(state)
 
 
 def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
@@ -316,7 +327,7 @@ def upgradable(p) -> list:
     return [c.type for c in p.action_cards if c.level < 2]
 
 
-KINDS = ("upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor", "species_bonus")
+KINDS = ("gain_worker", "upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor", "species_bonus")
 
 
 def open_break_prompt(state, seat: int, pending: list, resume: dict) -> None:
@@ -330,6 +341,8 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     if k == "break_discard":
         from ark_nova.engine import breaks
         return breaks.legal_discard(state, e, i, seat)
+    if k == "gain_worker":                                  # the worker of the reputation track (space 8): the player takes it
+        return [Action(seat, "choose_effect", {"index": i, "apply": "gain_worker"})] if worker_tokens(p, "supply_") else [Action(seat, "skip_effect", {"index": i})]
     if k in ("upgrade", "threshold2"):
         out += [Action(seat, "choose_effect", {"index": i, "upgrade": t}) for t in upgradable(p)]
         if k == "threshold2" and worker_tokens(p, "supply_"):
@@ -390,7 +403,36 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         out += [Action(seat, "choose_effect", {"index": i, "card": c}) for c in sorted(set(p.endgame_hand))]
         if not p.endgame_hand:
             out.append(Action(seat, "skip_effect", {"index": i}))
+    if k in INCOME_KINDS and state.config.confirm_turns:    # live play and the sandbox: one button takes all the money incomes of the break (on the first of them)
+        mine = money_incomes(state, seat)
+        if len(mine) >= 2 and i == mine[0]:
+            out.append(Action(seat, "choose_effect", {"index": i, "apply": "income_all"}))
     return out
+
+
+INCOME_KINDS = ("income_appeal", "income_kiosk", "income_map", "income_sponsor")
+
+
+def income_money(state, p, x: dict):
+    """The money a break income effect pays when it pays nothing but money (a sponsor that also pays X tokens, appeal or conservation is left out), else None."""
+    from ark_nova.engine import breaks
+    k = x["kind"]
+    if k == "income_appeal":
+        return tracks_module().income_from_appeal(p.appeal)
+    if k == "income_kiosk":
+        return breaks.kiosk_income(p)
+    if k == "income_map":
+        return breaks.map_ability_income(state, p)
+    if k == "income_sponsor":
+        inc = breaks.sponsor_income(state, p, only=[x["source"]])
+        return inc["money"] if not (inc["xtoken"] or inc["appeal"] or inc["conservation"]) else None
+    return None
+
+
+def money_incomes(state, seat: int) -> list:
+    """The indices of the pending break income effects of the player that pay money only (in the order of the list)."""
+    pending = state.prompt.args["pending"] if state.prompt is not None and state.prompt.kind == "effects" else []
+    return [j for j, x in enumerate(pending) if x["kind"] in INCOME_KINDS and x.get("player", state.prompt.player) == seat and income_money(state, state.players[seat], x) is not None]
 
 
 def resolve(state, action: Action, e: dict, i: int) -> None:
@@ -402,7 +444,20 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     p = state.players[action.player]
     k = e["kind"]
     a = action.args
-    if k in ("upgrade", "threshold2"):
+    if a.get("apply") == "income_all":                      # "Take all money income": the other money incomes of the player are paid and gone, the effect that was chosen goes on as usual
+        mine = money_incomes(state, p.seat)
+        if i not in mine:
+            raise fx.IllegalEffect("this income pays more than money")
+        for j in sorted(mine, reverse=True):
+            if j != i:
+                _g()._gain(state, p.seat, money=income_money(state, p, state.prompt.args["pending"][j]))
+                fx._done(state, j)
+        i -= sum(1 for j in mine if j < i)                  # (the effects before it are gone: its place in the list moved)
+        e = state.prompt.args["pending"][i]
+        k = e["kind"]
+    if k == "gain_worker":
+        hire_worker(state, p.seat)
+    elif k in ("upgrade", "threshold2"):
         if "hire" in a and k == "threshold2":
             if not hire_worker(state, p.seat):
                 raise fx.IllegalEffect("no worker left to hire")
@@ -431,12 +486,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if not map_rules.continents_left(p):
             _g()._gain(state, p.seat, conservation=1)                           # the 5th and last marker
     elif k == "wave":
-        gone = next((c for c in state.display if c), None)
-        if gone is not None:                                                    # the first card of the display goes (to the owner of its mark, if any) and the display is replenished
-            state.display[state.display.index(gone)] = None
-            from ark_nova.engine import marks
-            marks.discard(state, gone)
-            _g()._refill_display(state)
+        _wave(state)
     elif k == "multiplier":
         card = next((c for c in p.action_cards if c.type == a.get("multiplier")), None)
         if card is None:
@@ -480,7 +530,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if found:
             p.hand.append(found)
     elif k == "pbonus":
-        _g().apply_placement_bonus(state, p.seat, e["bonus"])
+        if state.config.confirm_turns and e["bonus"].get("type") == "wave":      # (live: a Wave has no choice, so choosing it from several placement bonuses resolves it: one click, one warning)
+            _wave(state)
+        else:
+            _g().apply_placement_bonus(state, p.seat, e["bonus"])
     elif k == "search_category":
         fx.search_for_category(state, p.seat, e["category"])
     elif k == "income_map":

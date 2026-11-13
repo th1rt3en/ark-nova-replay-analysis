@@ -115,7 +115,7 @@ def on_play(state, seat: int, card_key: str) -> list:
         bonuses.hire_worker(state, seat)
     if card_key in prog.DONATION:
         pending.append({"kind": "donation", "source": card_key, "optional": True})
-    if card_key in prog.SEARCH_DISCARD_PET and any(_is_pet(k) for k in state.main_discard):
+    if card_key in prog.SEARCH_DISCARD_PET and (any(_is_pet(k) for k in state.main_discard) or state.config.confirm_turns):         # (a live game tells the player when there was no animal to take)
         pending.append({"kind": "search_discard", "source": card_key, "optional": False})
     pending += fire_icons(state, seat, card_key)
     for e in pending:
@@ -159,6 +159,9 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                             pending.append({"kind": "gain", "source": s, "res": res_, "n": n_, "optional": False, "player": owner})
                     elif eff[0] == "gain":
                         v = eff[1]
+                        if not hasattr(state, "auto_gains"):
+                            state.auto_gains = []
+                        state.auto_gains.append({"seat": owner, "source": s, "gain": dict(v)})             # (read by live/bgalog.py: this gain has no effect of its own to log)
                         g._gain(state, owner, money=v.get("money", 0), appeal=v.get("appeal", 0), x_tokens=v.get("xtoken", 0),
                                 reputation=v.get("reputation", 0), conservation=v.get("conservation", 0))
                     elif eff[0] == "build":
@@ -262,6 +265,11 @@ def legal(state, p0) -> list:
         elif k == "reveal" and venom.blocked(state, p.seat):
             out.append(Action(p.seat, "skip_effect", {"index": i}))            # drawing cards is not allowed before Venom is paid
             continue
+        elif k == "reveal" and state.config.confirm_turns and not e.get("revealed"):
+            out.append(Action(p.seat, "choose_effect", {"index": i, "reveal": True}))       # (live play: the cards are revealed first, which cannot be taken back; the choice among them can)
+            if e.get("optional"):
+                out.append(Action(p.seat, "skip_effect", {"index": i}))
+            continue
         elif k == "reveal":
             top = state.main_deck[:e["x"]]
             opts = [c for c in top if _reveal_ok(e, c)]
@@ -292,7 +300,7 @@ def legal(state, p0) -> list:
             for c in sorted(set(state.main_discard)):
                 if _is_pet(c):
                     out.append(Action(p.seat, "choose_effect", {"index": i, "card": c}))
-        if e.get("optional"):
+        if e.get("optional") or (k == "search_discard" and not any(_is_pet(c) for c in state.main_discard)):          # (Horse Whisperer with no Petting Zoo animal in the discard pile: nothing to take)
             out.append(Action(p.seat, "skip_effect", {"index": i}))
     return out
 
@@ -433,6 +441,9 @@ def resolve_choice(state, action: Action) -> None:
         return
     if k == "reveal":
         ensure_main_deck(state, e["x"])
+        if action.args.get("reveal"):
+            e["revealed"] = True
+            return
         if len(state.main_deck) < e["x"]:
             raise NotImplementedError("the deck would run out (reshuffling the discard pile is not implemented yet)")
         top = state.main_deck[:e["x"]]
@@ -519,6 +530,8 @@ def _nothing_to_do(state, e: dict, i: int) -> bool:
         return not marks.markable(state)
     if e["kind"] == "build":                             # no place for the building: nothing to do
         return not any(build_options(state, state.prompt.player, t, e["rules"]) for t in e.get("types", [e["type"]]))
+    if e["kind"] == "search_discard":                    # Horse Whisperer with no Petting Zoo animal in the discard pile
+        return not any(_is_pet(k) for k in state.main_discard)
     if e["kind"] in project_effects.KINDS:
         return not project_effects.legal(state, e, i, state.prompt.player)
     return e["kind"] in animal_abilities.KINDS and not animal_abilities.legal(state, e, i, state.prompt.player)

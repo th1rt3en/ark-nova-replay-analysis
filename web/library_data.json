@@ -1,0 +1,5353 @@
+{
+    "cards": [
+        {
+            "key": "A401",
+            "name": "Cheetah",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "africa"
+            ],
+            "abilities": [
+                "Sprint"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 17,
+            "appeal": 6,
+            "text": "cheetah a401 acinonyx jubatus vulnerable sprint draw 3 card(s) from the deck."
+        },
+        {
+            "key": "A402",
+            "name": "Lion",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "africa"
+            ],
+            "abilities": [
+                "Pack"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 16,
+            "appeal": 9,
+            "text": "lion a402 panthera leo vulnerable pack gain appeal for each predator icon in your zoo. predator predator predator"
+        },
+        {
+            "key": "A403",
+            "name": "Leopard",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "africa",
+                "rock"
+            ],
+            "abilities": [
+                "Hunter"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": true,
+            "university": false,
+            "size": 3,
+            "price": 20,
+            "appeal": 7,
+            "text": "leopard a403 panthera pardus vulnerable hunter reveal the 4 topmost card(s) of the deck. choose 1 animal card and add it to your hand. discard the other cards. partner zoo"
+        },
+        {
+            "key": "A404",
+            "name": "Caracal",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "africa"
+            ],
+            "abilities": [
+                "Hunter"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 9,
+            "appeal": 4,
+            "text": "caracal a404 caracal caracal hunter reveal the 2 topmost card(s) of the deck. choose 1 animal card and add it to your hand. discard the other cards."
+        },
+        {
+            "key": "A405",
+            "name": "Fennec Fox",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "africa"
+            ],
+            "abilities": [
+                "Clever"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 8,
+            "appeal": 3,
+            "text": "fennec fox a405 heteractis magnifica clever after finishing you may place any action card on slot ."
+        },
+        {
+            "key": "A406",
+            "name": "Siberian Tiger",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "asia"
+            ],
+            "abilities": [],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 30,
+            "appeal": 10,
+            "text": "siberian tiger a406 panthera tigris altaica endangered asia asia asia"
+        },
+        {
+            "key": "A407",
+            "name": "Sumatran Tiger",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "asia",
+                "water"
+            ],
+            "abilities": [],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 26,
+            "appeal": 8,
+            "text": "sumatran tiger a407 panthera tigris sumatrae science science"
+        },
+        {
+            "key": "A408",
+            "name": "Sloth Bear",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "bear",
+                "asia"
+            ],
+            "abilities": [
+                "Boost: Association"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 14,
+            "appeal": 6,
+            "text": "sloth bear a408 melursus ursinus boost: association after finishing this action, you may place your association action card association action card on slot or slot ."
+        },
+        {
+            "key": "A409",
+            "name": "Sun Bear",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "bear",
+                "asia"
+            ],
+            "abilities": [
+                "Action: Association"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 2,
+            "price": 16,
+            "appeal": 5,
+            "text": "sun bear a409 helarctos malayanus vulnerable action: association after finishing this action, you may take the association action association action card . partner zoo"
+        },
+        {
+            "key": "A410",
+            "name": "Yellow-Throated Marten",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "asia"
+            ],
+            "abilities": [
+                "Hunter"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 3,
+            "text": "yellow-throated marten a410 martes flavigula hunter reveal the 1 topmost card(s) of the deck. choose 1 animal card and add it to your hand. discard the other cards."
+        },
+        {
+            "key": "A411",
+            "name": "Grizzly Bear",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "bear",
+                "americas"
+            ],
+            "abilities": [
+                "Full-throated",
+                "Inventive: Bear"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 22,
+            "appeal": 9,
+            "text": "grizzly bear a411 ursus arctos horribilis inventive: bear gain x token -token for each bear icon in all zoos (max.3). full-throated hire an association worker. predator predator animalsii"
+        },
+        {
+            "key": "A412",
+            "name": "Jaguar",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "americas"
+            ],
+            "abilities": [
+                "Hunter"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 16,
+            "appeal": 8,
+            "text": "jaguar a412 panthera onca hunter reveal the 4 topmost card(s) of the deck. choose 1 animal card and add it to your hand. discard the other cards. americas"
+        },
+        {
+            "key": "A413",
+            "name": "Cougar",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "americas",
+                "rock"
+            ],
+            "abilities": [
+                "Jumping"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 10,
+            "appeal": 5,
+            "text": "cougar a413 puma concolor jumping advance the break token 3 spaces. gain money."
+        },
+        {
+            "key": "A414",
+            "name": "South American Coati",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "bear",
+                "americas",
+                "rock"
+            ],
+            "abilities": [
+                "Inventive"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 11,
+            "appeal": 4,
+            "text": "south american coati a414 nasua nasua inventive gain x token -token."
+        },
+        {
+            "key": "A415",
+            "name": "Raccoon",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "bear",
+                "americas"
+            ],
+            "abilities": [
+                "Boost: Association"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 11,
+            "appeal": 4,
+            "text": "raccoon a415 procyon lotor boost: association after finishing this action, you may place your association action card association action card on slot or slot ."
+        },
+        {
+            "key": "A416",
+            "name": "Eurasian Brown Bear",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "bear",
+                "europe",
+                "water"
+            ],
+            "abilities": [
+                "Full-throated",
+                "Multiplier: Association"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 20,
+            "appeal": 8,
+            "text": "eurasian brown bear a416 ursus arctos arctos multiplier: association place 1 multiplier token on your association action card association action card . full-throated hire an association worker. bear animalsii"
+        },
+        {
+            "key": "A417",
+            "name": "Wolf",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "europe"
+            ],
+            "abilities": [
+                "Pack"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 12,
+            "appeal": 4,
+            "text": "wolf a417 canis lupus pack gain appeal for each predator icon in your zoo."
+        },
+        {
+            "key": "A418",
+            "name": "Eurasian Lynx",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "europe"
+            ],
+            "abilities": [
+                "Iconic Animal"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 11,
+            "appeal": 2,
+            "text": "eurasian lynx a418 lynx lynx iconic animal gain appeal for each europe icon in all zoos (max. 8). europe europe"
+        },
+        {
+            "key": "A419",
+            "name": "European Badger",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "europe"
+            ],
+            "abilities": [
+                "Boost: Animal"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 5,
+            "appeal": 3,
+            "text": "european badger a419 meles meles boost: animal after finishing this action, you may place your animal action card animal action card on slot or slot ."
+        },
+        {
+            "key": "A420",
+            "name": "Stoat",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "europe"
+            ],
+            "abilities": [
+                "Hunter"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 4,
+            "appeal": 3,
+            "text": "stoat a420 mustela erminea hunter reveal the 1 topmost card(s) of the deck. choose 1 animal card and add it to your hand. discard the other cards. europe"
+        },
+        {
+            "key": "A421",
+            "name": "New Zealand Fur Seal",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "australia",
+                "rock",
+                "water"
+            ],
+            "abilities": [
+                "Full-throated"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 17,
+            "appeal": 8,
+            "text": "new zealand fur seal a421 arctocephalus forsteri full-throated hire an association worker. animalsii"
+        },
+        {
+            "key": "A422",
+            "name": "Australian Sea Lion",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "australia",
+                "water"
+            ],
+            "abilities": [
+                "Sunbathing"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": true,
+            "university": false,
+            "size": 4,
+            "price": 18,
+            "appeal": 7,
+            "text": "australian sea lion a422 neophoca cinerea sunbathing you may sell up to 3 card(s) from your hand for money each. partner zoo"
+        },
+        {
+            "key": "A423",
+            "name": "New Zealand Sea Lion",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "australia",
+                "water"
+            ],
+            "abilities": [
+                "Pack"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 17,
+            "appeal": 6,
+            "text": "new zealand sea lion a423 phocarctos hookeri pack gain appeal for each predator icon in your zoo."
+        },
+        {
+            "key": "A424",
+            "name": "Australian Dingo",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "australia"
+            ],
+            "abilities": [
+                "Pack"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 13,
+            "appeal": 3,
+            "text": "australian dingo a424 canis lupus dingo pack gain appeal for each predator icon in your zoo."
+        },
+        {
+            "key": "A425",
+            "name": "Tasmanian Devil",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "predator",
+                "australia"
+            ],
+            "abilities": [
+                "Pouch"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 11,
+            "appeal": 4,
+            "text": "tasmanian devil a425 sarcophilus harrisii pouch you may place 1 card(s) from your hand under this card to gain appeal . science"
+        },
+        {
+            "key": "A426",
+            "name": "African Bush Elephant",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "africa"
+            ],
+            "abilities": [
+                "Resistance"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 36,
+            "appeal": 10,
+            "text": "african bush elephant a426 loxodonta africana resistance draw 2 final scoring cards. keep 1 and discard the other. animalsii"
+        },
+        {
+            "key": "A427",
+            "name": "White Rhinoceros",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "africa",
+                "rock"
+            ],
+            "abilities": [
+                "Assertion"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 24,
+            "appeal": 9,
+            "text": "white rhinoceros a427 ceratotherium simum assertion you may add any 1 of the unused base conservation projects to your hand. science"
+        },
+        {
+            "key": "A428",
+            "name": "Northern Giraffe",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "africa"
+            ],
+            "abilities": [
+                "Boost: Sponsors"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 16,
+            "appeal": 7,
+            "text": "northern giraffe a428 giraffa boost: sponsors after finishing this action, you may place your sponsors action card sponsors action card on slot or slot ."
+        },
+        {
+            "key": "A429",
+            "name": "Grevy'S Zebra",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "africa"
+            ],
+            "abilities": [
+                "Boost: Sponsors",
+                "Flock Animal"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 12,
+            "appeal": 6,
+            "text": "grevy's zebra a429 equus grevyi boost: sponsors after finishing this action, you may place your sponsors action card sponsors action card on slot or slot . flock animal may share the existing enclosure of a herbivore tag with {size-x+}. africa africa africa"
+        },
+        {
+            "key": "A430",
+            "name": "Pygmy Hippopotamus",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "africa",
+                "water"
+            ],
+            "abilities": [
+                "Action: Sponsors"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 2,
+            "price": 15,
+            "appeal": 6,
+            "text": "pygmy hippopotamus a430 choeropsis liberiensis action: sponsors after finishing this action, you may take the sponsors action sponsors action card . partner zoo"
+        },
+        {
+            "key": "A431",
+            "name": "Asian Elephant",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "asia",
+                "water"
+            ],
+            "abilities": [
+                "Resistance"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 33,
+            "appeal": 8,
+            "text": "asian elephant a431 elephas maximus resistance draw 2 final scoring cards. keep 1 and discard the other. animalsii"
+        },
+        {
+            "key": "A432",
+            "name": "Indian Rhinoceros",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "asia"
+            ],
+            "abilities": [
+                "Assertion"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 25,
+            "appeal": 9,
+            "text": "indian rhinoceros a432 rhinoceros unicornis assertion you may add any 1 of the unused base conservation projects to your hand. animalsii"
+        },
+        {
+            "key": "A433",
+            "name": "Giant Panda",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "bear",
+                "asia"
+            ],
+            "abilities": [],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": true,
+            "partner": true,
+            "university": false,
+            "size": 3,
+            "price": 27,
+            "appeal": 10,
+            "text": "giant panda a433 ailuropoda melanoleuca herbivore bear partner zoo"
+        },
+        {
+            "key": "A434",
+            "name": "Red Panda",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "bear",
+                "asia"
+            ],
+            "abilities": [
+                "Multiplier: Sponsors"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 16,
+            "appeal": 6,
+            "text": "red panda a434 ailurus fulgens multiplier: sponsors place 1 multiplier token on your sponsors action card sponsors action card . science science"
+        },
+        {
+            "key": "A435",
+            "name": "Malayan Tapir",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "asia"
+            ],
+            "abilities": [
+                "Digging"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 17,
+            "appeal": 5,
+            "text": "malayan tapir a435 tapirus indicus digging choose up to 3x: discard 1 card from the display and replenish or discard 1 card from your hand and draw 1 other from the deck."
+        },
+        {
+            "key": "A436",
+            "name": "American Bison",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "americas"
+            ],
+            "abilities": [
+                "Iconic Animal"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 18,
+            "appeal": 4,
+            "text": "american bison a436 bos bison iconic animal gain appeal for each americas icon in all zoos (max. 8). americas americas americas"
+        },
+        {
+            "key": "A437",
+            "name": "Muskox",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "americas"
+            ],
+            "abilities": [
+                "Sponsor Magnet"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 13,
+            "appeal": 5,
+            "text": "muskox a437 ovibos moschatus sponsor magnet add all sponsors cards from the display to your hand. americas"
+        },
+        {
+            "key": "A438",
+            "name": "Reindeer",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "americas"
+            ],
+            "abilities": [
+                "Flock Animal"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 12,
+            "appeal": 5,
+            "text": "reindeer a438 rangifer tarandus flock animal may share the existing enclosure of a herbivore tag with {size-x+}."
+        },
+        {
+            "key": "A439",
+            "name": "Llama",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "americas"
+            ],
+            "abilities": [
+                "Flock Animal"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 10,
+            "appeal": 4,
+            "text": "llama a439 lama glama flock animal may share the existing enclosure of a herbivore tag with {size-x+}."
+        },
+        {
+            "key": "A440",
+            "name": "Mountain Tapir",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "americas",
+                "rock"
+            ],
+            "abilities": [
+                "Digging"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 15,
+            "appeal": 4,
+            "text": "mountain tapir a440 tapirus pinchaque digging choose up to 2x: discard 1 card from the display and replenish or discard 1 card from your hand and draw 1 other from the deck."
+        },
+        {
+            "key": "A441",
+            "name": "European Bison",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "europe"
+            ],
+            "abilities": [
+                "Sponsor Magnet"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 5,
+            "price": 19,
+            "appeal": 6,
+            "text": "european bison a441 bos bonasus sponsor magnet add all sponsors cards from the display to your hand. partner zoo"
+        },
+        {
+            "key": "A442",
+            "name": "Moose",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "europe"
+            ],
+            "abilities": [
+                "Flock Animal",
+                "Multiplier: Sponsors"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 19,
+            "appeal": 7,
+            "text": "moose a442 alces alces multiplier: sponsors place 1 multiplier token on your sponsors action card sponsors action card . flock animal may share the existing enclosure of a herbivore tag with {size-x+}. herbivore herbivore"
+        },
+        {
+            "key": "A443",
+            "name": "Red Deer",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "europe"
+            ],
+            "abilities": [
+                "Flock Animal"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 12,
+            "appeal": 5,
+            "text": "red deer a443 cervus elaphus flock animal may share the existing enclosure of a herbivore tag with {size-x+}."
+        },
+        {
+            "key": "A444",
+            "name": "Alpine Ibex",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "europe",
+                "rock"
+            ],
+            "abilities": [
+                "Jumping"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 10,
+            "appeal": 5,
+            "text": "alpine ibex a444 capra ibex jumping advance the break token 2 spaces. gain money."
+        },
+        {
+            "key": "A445",
+            "name": "Crested Porcupine",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "europe"
+            ],
+            "abilities": [
+                "Digging"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 8,
+            "appeal": 3,
+            "text": "crested porcupine a445 hystric cristata digging choose up to 2x: discard 1 card from the display and replenish or discard 1 card from your hand and draw 1 other from the deck."
+        },
+        {
+            "key": "A446",
+            "name": "Dugong",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "australia",
+                "water"
+            ],
+            "abilities": [
+                "Digging"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 25,
+            "appeal": 9,
+            "text": "dugong a446 dugong dugon digging choose up to 4x: discard 1 card from the display and replenish or discard 1 card from your hand and draw 1 other from the deck. animalsii"
+        },
+        {
+            "key": "A447",
+            "name": "Red Kangaroo",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "australia"
+            ],
+            "abilities": [
+                "Flock Animal",
+                "Pouch"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 23,
+            "appeal": 7,
+            "text": "red kangaroo a447 macropus rufus pouch you may place 2 card(s) from your hand under this card to gain appeal . flock animal may share the existing enclosure of a herbivore tag with {size-x+}."
+        },
+        {
+            "key": "A448",
+            "name": "Koala",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "bear",
+                "australia",
+                "rock"
+            ],
+            "abilities": [
+                "Pouch"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 21,
+            "appeal": 8,
+            "text": "koala a448 phascolarctos cinereus pouch you may place 2 card(s) from your hand under this card to gain appeal . australia"
+        },
+        {
+            "key": "A449",
+            "name": "Platypus",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "australia",
+                "water"
+            ],
+            "abilities": [
+                "Venom"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 10,
+            "appeal": 4,
+            "text": "platypus a449 ornithorhynchus anatinus venom each player ahead of you on the appeal track gains 1 venom token(s)."
+        },
+        {
+            "key": "A450",
+            "name": "Common Wombat",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "australia"
+            ],
+            "abilities": [
+                "Pouch"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 9,
+            "appeal": 4,
+            "text": "common wombat a450 vombatus ursinus pouch you may place 1 card(s) from your hand under this card to gain appeal ."
+        },
+        {
+            "key": "A451",
+            "name": "Proboscis Monkey",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "asia",
+                "rock"
+            ],
+            "abilities": [
+                "Dominance"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 32,
+            "appeal": 10,
+            "text": "proboscis monkey a451 nasalis larvatus dominance you may add the base conservation project primates to your hand if it is not already in the game. primate primate animalsii"
+        },
+        {
+            "key": "A452",
+            "name": "Senegal Bushbaby",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "africa"
+            ],
+            "abilities": [
+                "Iconic Animal"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 10,
+            "appeal": 1,
+            "text": "senegal bushbaby a452 galago senegalensis iconic animal gain appeal for each africa icon in all zoos (max. 8). africa africa"
+        },
+        {
+            "key": "A453",
+            "name": "Collared Mangabey",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "africa"
+            ],
+            "abilities": [
+                "Action: Cards"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 20,
+            "appeal": 8,
+            "text": "collared mangabey a453 cercocebus torquatus action: cards after finishing this action, you may take the card action cards action card . africa"
+        },
+        {
+            "key": "A454",
+            "name": "Ring-Tailed Lemur",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "africa",
+                "rock"
+            ],
+            "abilities": [
+                "Sunbathing"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 12,
+            "appeal": 6,
+            "text": "ring-tailed lemur a454 lemur catta sunbathing you may sell up to 3 card(s) from your hand for money each."
+        },
+        {
+            "key": "A455",
+            "name": "Mantled Guereza",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "africa"
+            ],
+            "abilities": [
+                "Clever"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 13,
+            "appeal": 6,
+            "text": "mantled guereza a455 colobus guereza clever after finishing you may place any action card on slot ."
+        },
+        {
+            "key": "A456",
+            "name": "Barbary Macaque",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "africa"
+            ],
+            "abilities": [
+                "Pilfering 1"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 2,
+            "price": 13,
+            "appeal": 6,
+            "text": "barbary macaque a456 macaca sylvanus pilfering 1 draw 1 card from the hand of or take money from the player with the most appeal. they decide. partner zoo"
+        },
+        {
+            "key": "A457",
+            "name": "Mandrill",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "africa"
+            ],
+            "abilities": [
+                "Multiplier: Card"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 28,
+            "appeal": 9,
+            "text": "mandrill a457 mandrillus sphinx multiplier: card place 1 multiplier token on your card action card cards action card . primate primate primate"
+        },
+        {
+            "key": "A458",
+            "name": "Japanese Macaque",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "asia",
+                "water"
+            ],
+            "abilities": [
+                "Pilfering 2"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 18,
+            "appeal": 7,
+            "text": "japanese macaque a458 macaca fuscata pilfering 2 from both the player with the highest appeal and the player with the most conservation point, draw 1 card from the hand of or take money from that player. they decide. asia"
+        },
+        {
+            "key": "A459",
+            "name": "Red-Shanked Douc",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "asia"
+            ],
+            "abilities": [
+                "Inventive: Primary"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 17,
+            "appeal": 7,
+            "text": "red-shanked douc a459 pygathrix nemaeus inventive: primary gain 1/2/3 x token -tokens for 1/3/5 primate icons in your zoo. science"
+        },
+        {
+            "key": "A460",
+            "name": "Dusky-Leaf Monkey",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "asia"
+            ],
+            "abilities": [
+                "Clever"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 12,
+            "appeal": 5,
+            "text": "dusky-leaf monkey a460 trachypithecus obscurus clever after finishing you may place any action card on slot ."
+        },
+        {
+            "key": "A461",
+            "name": "Horsfield'S Tarsier",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "asia"
+            ],
+            "abilities": [
+                "Jumping"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 1,
+            "price": 14,
+            "appeal": 3,
+            "text": "horsfield's tarsier a461 cephalopachus bancanus jumping advance the break token 4 spaces. gain money. partner zoo"
+        },
+        {
+            "key": "A462",
+            "name": "Northern Plains Gray Langur",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "asia",
+                "rock"
+            ],
+            "abilities": [
+                "Jumping"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 13,
+            "appeal": 6,
+            "text": "northern plains gray langur a462 semnopithecus entellus jumping advance the break token 3 spaces. gain money."
+        },
+        {
+            "key": "A463",
+            "name": "Panamanian White-Faced Capuchin",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "americas"
+            ],
+            "abilities": [
+                "Pilfering 1"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 2,
+            "price": 11,
+            "appeal": 5,
+            "text": "panamanian white-faced capuchin a463 cebus imitator pilfering 1 draw 1 card from the hand of or take money from the player with the most appeal. they decide. partner zoo"
+        },
+        {
+            "key": "A464",
+            "name": "Brown Spider Monkey",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "americas"
+            ],
+            "abilities": [
+                "Inventive: Primary"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 17,
+            "appeal": 6,
+            "text": "brown spider monkey a464 ateles hybridus inventive: primary gain 1/2/3 x token -tokens for 1/3/5 primate icons in your zoo. primate"
+        },
+        {
+            "key": "A465",
+            "name": "Golden Lion Tamarin",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "americas"
+            ],
+            "abilities": [
+                "Clever"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 10,
+            "appeal": 4,
+            "text": "golden lion tamarin a465 leontopithecus rosalia clever after finishing you may place any action card on slot ."
+        },
+        {
+            "key": "A466",
+            "name": "Bolivian Red Howler",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "americas"
+            ],
+            "abilities": [
+                "Boost: Card"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 12,
+            "appeal": 6,
+            "text": "bolivian red howler a466 alouatta sara boost: card after finishing this action, you may place your card action card cards action card on slot or slot ."
+        },
+        {
+            "key": "A467",
+            "name": "Ecuadorian Squirrel Monkey",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "americas"
+            ],
+            "abilities": [
+                "Clever"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 12,
+            "appeal": 5,
+            "text": "ecuadorian squirrel monkey a467 saimiri macrodon clever after finishing you may place any action card on slot ."
+        },
+        {
+            "key": "A468",
+            "name": "Cotton-Top Tamarin",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "primate",
+                "americas"
+            ],
+            "abilities": [],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 15,
+            "appeal": 4,
+            "text": "cotton-top tamarin a468 saguinus oedipus science science"
+        },
+        {
+            "key": "A469",
+            "name": "Nile Crocodile",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "africa",
+                "water"
+            ],
+            "abilities": [
+                "Snapping 2"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 13,
+            "appeal": 9,
+            "text": "nile crocodile a469 crocodylus niloticus snapping 2 2x: gain any 1 card from the display. you may replenish in between. reptile house reptile reptile reptile"
+        },
+        {
+            "key": "A470",
+            "name": "Western Green Mamba",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "africa"
+            ],
+            "abilities": [
+                "Venom"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 13,
+            "appeal": 6,
+            "text": "western green mamba a470 dendroaspis viridis venom each player ahead of you on the appeal track gains 2 venom token(s). reptile house africa reptile"
+        },
+        {
+            "key": "A471",
+            "name": "African Spurred Tortoise",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "africa"
+            ],
+            "abilities": [
+                "Sunbathing"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 22,
+            "appeal": 6,
+            "text": "african spurred tortoise a471 centrochelys sulcata sunbathing you may sell up to 3 card(s) from your hand for money each. reptile house"
+        },
+        {
+            "key": "A472",
+            "name": "Rock Monitor",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "africa",
+                "rock"
+            ],
+            "abilities": [
+                "Sunbathing"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 12,
+            "appeal": 5,
+            "text": "rock monitor a472 varanus albigularis sunbathing you may sell up to 3 card(s) from your hand for money each. reptile house"
+        },
+        {
+            "key": "A473",
+            "name": "Common Agama",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "africa"
+            ],
+            "abilities": [
+                "Sunbathing"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 9,
+            "appeal": 3,
+            "text": "common agama a473 agama agama sunbathing you may sell up to 2 card(s) from your hand for money each. reptile house"
+        },
+        {
+            "key": "A474",
+            "name": "Indian Rock Python",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "asia"
+            ],
+            "abilities": [
+                "Constriction"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 14,
+            "appeal": 7,
+            "text": "indian rock python a474 python molurus constriction each player ahead of you on a track gains 1 constriction token for each of those tracks ( appeal and conservation point ). reptile house reptile reptile"
+        },
+        {
+            "key": "A475",
+            "name": "Indian Cobra",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "asia"
+            ],
+            "abilities": [
+                "Hypnosis"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 13,
+            "appeal": 6,
+            "text": "indian cobra a475 ophiophagus hannah hypnosis after finishing this action, you may take 1 action action card from an action card in slot slot , slot or slot of the player with the most appeal. reptile house science science animalsii"
+        },
+        {
+            "key": "A476",
+            "name": "Komodo Dragon",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "asia"
+            ],
+            "abilities": [
+                "Iconic Animal"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 14,
+            "appeal": 2,
+            "text": "komodo dragon a476 varanus komodoensis iconic animal gain appeal for each asia icon in all zoos (max. 8). reptile house asia asia"
+        },
+        {
+            "key": "A477",
+            "name": "Veiled Chameleon",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "asia"
+            ],
+            "abilities": [
+                "Snapping 1"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 14,
+            "appeal": 4,
+            "text": "veiled chameleon a477 chamaeleo calyptratus snapping 1 gain any 1 card from the display. reptile house"
+        },
+        {
+            "key": "A478",
+            "name": "Chinese Water Dragon",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "asia",
+                "water"
+            ],
+            "abilities": [
+                "Sunbathing"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 8,
+            "appeal": 3,
+            "text": "chinese water dragon a478 physignathus cocincinus sunbathing you may sell up to 2 card(s) from your hand for money each. reptile house"
+        },
+        {
+            "key": "A479",
+            "name": "American Alligator",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "americas",
+                "water"
+            ],
+            "abilities": [
+                "Snapping 1"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 18,
+            "appeal": 7,
+            "text": "american alligator a479 alligator mississippiensis snapping 1 gain any 1 card from the display. reptile house"
+        },
+        {
+            "key": "A480",
+            "name": "Broad-Snouted Caiman",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "americas",
+                "water"
+            ],
+            "abilities": [
+                "Snapping 1"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 16,
+            "appeal": 6,
+            "text": "broad-snouted caiman a480 caiman latirostris snapping 1 gain any 1 card from the display. reptile house"
+        },
+        {
+            "key": "A481",
+            "name": "Galapagos Giant Tortoise",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "americas"
+            ],
+            "abilities": [
+                "Sunbathing"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 30,
+            "appeal": 8,
+            "text": "galapagos giant tortoise a481 chelonoidis nigra sunbathing you may sell up to 4 card(s) from your hand for money each. reptile house americas americas animalsii"
+        },
+        {
+            "key": "A482",
+            "name": "Anaconda",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "americas"
+            ],
+            "abilities": [
+                "Constriction"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 2,
+            "price": 13,
+            "appeal": 6,
+            "text": "anaconda a482 eunectes murinus constriction each player ahead of you on a track gains 1 constriction token for each of those tracks ( appeal and conservation point ). reptile house partner zoo"
+        },
+        {
+            "key": "A483",
+            "name": "Boa Constrictor",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "americas"
+            ],
+            "abilities": [
+                "Constriction"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 16,
+            "appeal": 7,
+            "text": "boa constrictor a483 boa constrictor constriction each player ahead of you on a track gains 1 constriction token for each of those tracks ( appeal and conservation point ). reptile house science science"
+        },
+        {
+            "key": "A484",
+            "name": "European Pond Turtle",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "europe",
+                "water"
+            ],
+            "abilities": [],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 9,
+            "appeal": 4,
+            "text": "european pond turtle a484 emys orbicularis reptile house"
+        },
+        {
+            "key": "A485",
+            "name": "Common European Adder",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "europe"
+            ],
+            "abilities": [
+                "Hypnosis"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 1,
+            "price": 10,
+            "appeal": 2,
+            "text": "common european adder a485 vipera berus hypnosis after finishing this action, you may take 1 action action card from an action card in slot slot , slot or slot of the player with the most appeal. reptile house partner zoo"
+        },
+        {
+            "key": "A486",
+            "name": "Common Wall Lizard",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "europe",
+                "rock"
+            ],
+            "abilities": [],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 4,
+            "appeal": 2,
+            "text": "common wall lizard a486 podarcis muralis reptile house"
+        },
+        {
+            "key": "A487",
+            "name": "European Grass Snake",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "europe",
+                "water"
+            ],
+            "abilities": [
+                "Clever"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 8,
+            "appeal": 3,
+            "text": "european grass snake a487 natrix natrix clever after finishing you may place any action card on slot . reptile house"
+        },
+        {
+            "key": "A488",
+            "name": "Slow Worm",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "europe",
+                "water"
+            ],
+            "abilities": [],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 4,
+            "appeal": 2,
+            "text": "slow worm a488 anguis fragilis reptile house"
+        },
+        {
+            "key": "A489",
+            "name": "Saltwater Crocodile",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "australia",
+                "water"
+            ],
+            "abilities": [
+                "Snapping 2"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 5,
+            "price": 23,
+            "appeal": 9,
+            "text": "saltwater crocodile a489 crocodylus porosus snapping 2 2x: gain any 1 card from the display. you may replenish in between. reptile house partner zoo"
+        },
+        {
+            "key": "A490",
+            "name": "Gould'S Monitor",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "australia"
+            ],
+            "abilities": [
+                "Scavenging"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 15,
+            "appeal": 6,
+            "text": "gould's monitor a490 varanus gouldii scavenging shuffle the discard pile and draw 2 cards. add 1 to your hand and discard the other. reptile house"
+        },
+        {
+            "key": "A491",
+            "name": "Frilled Lizard",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "australia",
+                "rock"
+            ],
+            "abilities": [
+                "Sprint"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 12,
+            "appeal": 5,
+            "text": "frilled lizard a491 chlamydosaurus kingii sprint draw 1 card(s) from the deck. reptile house"
+        },
+        {
+            "key": "A492",
+            "name": "Inland Taipan",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "australia",
+                "rock"
+            ],
+            "abilities": [
+                "Venom"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 10,
+            "appeal": 5,
+            "text": "inland taipan a492 oxyuranus microlepidotus venom each player ahead of you on the appeal track gains 2 venom token(s). reptile house australia science"
+        },
+        {
+            "key": "A493",
+            "name": "Thorny Devil",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "australia",
+                "rock"
+            ],
+            "abilities": [],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 6,
+            "appeal": 3,
+            "text": "thorny devil a493 moloch horridus reptile house"
+        },
+        {
+            "key": "A494",
+            "name": "African Ostrich",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "africa"
+            ],
+            "abilities": [
+                "Sprint"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 20,
+            "appeal": 8,
+            "text": "african ostrich a494 struthio camelus sprint draw 2 card(s) from the deck. large bird aviary"
+        },
+        {
+            "key": "A495",
+            "name": "Secretary Bird",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "africa"
+            ],
+            "abilities": [],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 14,
+            "appeal": 4,
+            "text": "secretary bird a495 sagittarius serpentarius large bird aviary"
+        },
+        {
+            "key": "A496",
+            "name": "Marabou",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "africa"
+            ],
+            "abilities": [
+                "Scavenging"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 10,
+            "appeal": 4,
+            "text": "marabou a496 leptoptilos crumenifer scavenging shuffle the discard pile and draw 2 cards. add 1 to your hand and discard the other. large bird aviary"
+        },
+        {
+            "key": "A497",
+            "name": "Lesser Flamingo",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "africa",
+                "water"
+            ],
+            "abilities": [
+                "Posturing"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 15,
+            "appeal": 6,
+            "text": "lesser flamingo a497 phoeniconaias minor posturing up to 1x: you may place 1 free kiosk or pavilion."
+        },
+        {
+            "key": "A498",
+            "name": "Shoebill",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "africa"
+            ],
+            "abilities": [],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 9,
+            "appeal": 3,
+            "text": "shoebill a498 balaeniceps rex large bird aviary science science"
+        },
+        {
+            "key": "A499",
+            "name": "Cinereous Vulture",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "asia"
+            ],
+            "abilities": [
+                "Scavenging"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 16,
+            "appeal": 6,
+            "text": "cinereous vulture a499 aegypius monachus scavenging shuffle the discard pile and draw 3 cards. add 1 to your hand and discard the other. large bird aviary"
+        },
+        {
+            "key": "A500",
+            "name": "Long-Billed Vulture",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "asia",
+                "rock"
+            ],
+            "abilities": [
+                "Scavenging"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 20,
+            "appeal": 5,
+            "text": "long-billed vulture a500 gyps indicus scavenging shuffle the discard pile and draw 3 cards. add 1 to your hand and discard the other. large bird aviary science"
+        },
+        {
+            "key": "A501",
+            "name": "Indian Peafowl",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "asia"
+            ],
+            "abilities": [
+                "Posturing"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 18,
+            "appeal": 7,
+            "text": "indian peafowl a501 pavo cristatus posturing up to 2x: you may place 1 free kiosk or pavilion. asia"
+        },
+        {
+            "key": "A502",
+            "name": "Great Hornbill",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "asia"
+            ],
+            "abilities": [
+                "Boost: Building"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 13,
+            "appeal": 6,
+            "text": "great hornbill a502 buceros bicornis boost: building after finishing this action, you may place your building action card build action card on slot or slot ."
+        },
+        {
+            "key": "A503",
+            "name": "Snowy Owl",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "asia"
+            ],
+            "abilities": [
+                "Perception 4"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 11,
+            "appeal": 4,
+            "text": "snowy owl a503 bubo scandiacus perception 4 draw 4 cards from the deck. add 2 to your hand and discard the rest. bird bird"
+        },
+        {
+            "key": "A504",
+            "name": "Andean Condor",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "americas",
+                "rock"
+            ],
+            "abilities": [
+                "Scavenging"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 17,
+            "appeal": 7,
+            "text": "andean condor a504 vultur gryphus scavenging shuffle the discard pile and draw 4 cards. add 1 to your hand and discard the other. large bird aviary bird"
+        },
+        {
+            "key": "A505",
+            "name": "Bald Eagle",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "americas",
+                "water"
+            ],
+            "abilities": [
+                "Determination"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 23,
+            "appeal": 8,
+            "text": "bald eagle a505 haliaeetus leucocephalus determination after finishing this action, you take 1 other action action card . large bird aviary animalsii"
+        },
+        {
+            "key": "A506",
+            "name": "King Vulture",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "americas"
+            ],
+            "abilities": [
+                "Scavenging"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 12,
+            "appeal": 9,
+            "text": "king vulture a506 sarcoramphus papa scavenging shuffle the discard pile and draw 5 cards. add 1 to your hand and discard the other. large bird aviary bird bird bird"
+        },
+        {
+            "key": "A507",
+            "name": "Greater Rhea",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "americas"
+            ],
+            "abilities": [
+                "Sprint"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 12,
+            "appeal": 5,
+            "text": "greater rhea a507 rhea americana sprint draw 1 card(s) from the deck."
+        },
+        {
+            "key": "A508",
+            "name": "Scarlet Macaw",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "americas"
+            ],
+            "abilities": [
+                "Posturing"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 1,
+            "price": 16,
+            "appeal": 4,
+            "text": "scarlet macaw a508 ara macao posturing up to 3x: you may place 1 free kiosk or pavilion. partner zoo"
+        },
+        {
+            "key": "A509",
+            "name": "Golden Eagle",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "europe",
+                "rock"
+            ],
+            "abilities": [
+                "Determination"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 20,
+            "appeal": 7,
+            "text": "golden eagle a509 aquila chrysaetos determination after finishing this action, you take 1 other action action card . large bird aviary animalsii"
+        },
+        {
+            "key": "A510",
+            "name": "White Stork",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "europe"
+            ],
+            "abilities": [
+                "Multiplier: Building"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 9,
+            "appeal": 4,
+            "text": "white stork a510 ciconia ciconia multiplier: building place 1 multiplier token on your building action card build action card . large bird aviary europe"
+        },
+        {
+            "key": "A511",
+            "name": "Greater Flamingo",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "europe",
+                "water"
+            ],
+            "abilities": [
+                "Posturing"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 16,
+            "appeal": 7,
+            "text": "greater flamingo a511 phoenicopterus roseus posturing up to 1x: you may place 1 free kiosk or pavilion."
+        },
+        {
+            "key": "A512",
+            "name": "Eurasian Eagle-Owl",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "europe"
+            ],
+            "abilities": [
+                "Perception 4"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 2,
+            "price": 10,
+            "appeal": 4,
+            "text": "eurasian eagle-owl a512 bubo bubo perception 4 draw 4 cards from the deck. add 2 to your hand and discard the rest. partner zoo"
+        },
+        {
+            "key": "A513",
+            "name": "Barn Owl",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "europe"
+            ],
+            "abilities": [
+                "Perception 4"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 12,
+            "appeal": 3,
+            "text": "barn owl a513 tyto alba perception 4 draw 4 cards from the deck. add 2 to your hand and discard the rest."
+        },
+        {
+            "key": "A514",
+            "name": "Emu",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "australia"
+            ],
+            "abilities": [
+                "Peacocking"
+            ],
+            "normal": 5,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 22,
+            "appeal": 7,
+            "text": "emu a514 dromaius novaehollandiae peacocking you may place a large bird aviary large bird aviary for free, if possible. australia australia"
+        },
+        {
+            "key": "A515",
+            "name": "Australian Pelican",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "australia",
+                "water"
+            ],
+            "abilities": [
+                "Action: Building"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 13,
+            "appeal": 5,
+            "text": "australian pelican a515 pelecaus conspicillatus action: building after finishing this action, you may take the building action build action card ."
+        },
+        {
+            "key": "A516",
+            "name": "Northern Cassowary",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "australia"
+            ],
+            "abilities": [
+                "Multiplier: Building"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": true,
+            "university": false,
+            "size": 3,
+            "price": 12,
+            "appeal": 6,
+            "text": "northern cassowary a516 casuarius unappendiculatus multiplier: building place 1 multiplier token on your building action card build action card . partner zoo"
+        },
+        {
+            "key": "A517",
+            "name": "Laughing Kookaburra",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "australia"
+            ],
+            "abilities": [
+                "Iconic Animal"
+            ],
+            "normal": 2,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 9,
+            "appeal": 0,
+            "text": "laughing kookaburra a517 dacelo novaeguineae iconic animal gain appeal for each australia icon in all zoos (max. 8). australia"
+        },
+        {
+            "key": "A518",
+            "name": "Lesser Bird-Of-Paradise",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "bird",
+                "australia"
+            ],
+            "abilities": [
+                "Posturing"
+            ],
+            "normal": 1,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 15,
+            "appeal": 5,
+            "text": "lesser bird-of-paradise a518 paradisaea minor posturing up to 1x: you may place 1 free kiosk or pavilion."
+        },
+        {
+            "key": "A519",
+            "name": "(Domestic) Goat",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "(domestic) goat a519 capra aegagrus hircus petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A520",
+            "name": "Sheep",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "sheep a520 ovis gmelini aries petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A521",
+            "name": "Horse",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "horse a521 equus caballus petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A522",
+            "name": "Donkey",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Inventive",
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "donkey a522 equus asinus asinus inventive gain x token -token. petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A523",
+            "name": "Domestic Rabbit",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "domestic rabbit a523 oryctolagus cuniculus petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A524",
+            "name": "Mangalica",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Digging",
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "mangalica a524 sus scrofa form. domestica digging choose up to 1x: discard 1 card from the display and replenish or discard 1 card from your hand and draw 1 other from the deck. petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A525",
+            "name": "Guinea Pig",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "guinea pig a525 cavia porcellus form. domestica petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A526",
+            "name": "Alpaca",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "alpaca a526 vicugna pacos petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A527",
+            "name": "Coconut Lorikeet",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "coconut lorikeet a527 trichoglossus haematodus petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A528",
+            "name": "Bennett'S Wallaby",
+            "type": "animal",
+            "source": "base",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal",
+                "Pouch"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "bennett's wallaby a528 macropus rufooriseus pouch you may place 1 card(s) from your hand under this card to gain appeal . petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo"
+        },
+        {
+            "key": "A529",
+            "name": "Magnificent Sea Anemone",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "australia"
+            ],
+            "abilities": [
+                "Mark"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 6,
+            "appeal": 3,
+            "text": "magnificent sea anemone a529 heteractis magnifica mark after finishing this action, mark 1 animal card in the display. mark after finishing this action, mark 1 animal card in the display. aquarium marine worlds"
+        },
+        {
+            "key": "A530",
+            "name": "Orange Clownfish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "australia"
+            ],
+            "abilities": [],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 10,
+            "appeal": 3,
+            "text": "orange clownfish a530 amphiprion percula appeal aquarium marine worlds"
+        },
+        {
+            "key": "A531",
+            "name": "Palette Surgeonfish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "asia"
+            ],
+            "abilities": [
+                "Trade"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 9,
+            "appeal": 4,
+            "text": "palette surgeonfish a531 paracanthurus hepatus trade you may trade exactly 1 x token -marker for money or vice versa. trade you may trade exactly 1 x token -marker for money or vice versa. aquarium marine worlds"
+        },
+        {
+            "key": "A532",
+            "name": "Zooplankton",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal"
+            ],
+            "abilities": [
+                "Sea Animal Magnet"
+            ],
+            "normal": null,
+            "aqua": 0,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 4,
+            "appeal": 1,
+            "text": "zooplankton a532 sea animal magnet add all cards with the sea animal tag icon from the display to your hand. aquarium marine worlds"
+        },
+        {
+            "key": "A533",
+            "name": "Blackside Hawkfish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "australia"
+            ],
+            "abilities": [
+                "Posturing"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 11,
+            "appeal": 4,
+            "text": "blackside hawkfish a533 paracirrhitforsteri posturing up to 1x: you may place 1 free kiosk or pavilion. posturing up to 1x: you may place 1 free kiosk or pavilion. aquarium marine worlds"
+        },
+        {
+            "key": "A534",
+            "name": "Southern Blue-Ringed Octopus",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "australia"
+            ],
+            "abilities": [
+                "Venom"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 12,
+            "appeal": 4,
+            "text": "southern blue-ringed octopus a534 hapalochlaena maculosa venom each player ahead of you on the appeal track gains 1 venom token(s). money aquarium marine worlds"
+        },
+        {
+            "key": "A535",
+            "name": "Sharknose Goby",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "americas"
+            ],
+            "abilities": [
+                "Helpful",
+                "Symbiosis"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 2,
+            "text": "sharknose goby a535 flacatinus evelynae symbiosis use 1 ability (not a reef dweller effect) of 1 other sea animal tag card in your zoo. helpful no reef dweller effect of its own. helpful no reef dweller effect of its own. aquarium marine worlds"
+        },
+        {
+            "key": "A536",
+            "name": "Longhorn Cowfish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "africa"
+            ],
+            "abilities": [
+                "Boost: Sponsors"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 9,
+            "appeal": 4,
+            "text": "longhorn cowfish a536 lactoria cornuta boost: sponsors after finishing this action, you may place your sponsors action card sponsors action card on slot or slot . boost: sponsors after finishing this action, you may place your sponsors action card sponsors action card on slot or slot . aquarium marine worlds"
+        },
+        {
+            "key": "A537",
+            "name": "Blackbar Triggerfish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "africa"
+            ],
+            "abilities": [
+                "Constriction"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": true,
+            "size": 2,
+            "price": 14,
+            "appeal": 5,
+            "text": "blackbar triggerfish a537 rhinecanthus aculeatus constriction each player ahead of you on a track gains 1 constriction token for each of those tracks ( appeal and conservation point ). take card in range aquarium university marine worlds"
+        },
+        {
+            "key": "A538",
+            "name": "Devil Firefish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "asia"
+            ],
+            "abilities": [
+                "Venom"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 16,
+            "appeal": 6,
+            "text": "devil firefish a538 pterois miles venom each player ahead of you on the appeal track gains 1 venom token(s). inventive gain x token -token. aquarium science marine worlds"
+        },
+        {
+            "key": "A539",
+            "name": "American Whitespotted Filefish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "americas"
+            ],
+            "abilities": [],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 12,
+            "appeal": 5,
+            "text": "american whitespotted filefish a539 cantherhinmacrocerus clever after finishing you may place any action card on slot . aquarium marine worlds"
+        },
+        {
+            "key": "A540",
+            "name": "Guineafowl Puffer",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "asia"
+            ],
+            "abilities": [
+                "Venom"
+            ],
+            "normal": null,
+            "aqua": 2,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 15,
+            "appeal": 5,
+            "text": "guineafowl puffer a540 arothron meleagris venom each player ahead of you on the appeal track gains 1 venom token(s). reputation aquarium marine worlds"
+        },
+        {
+            "key": "A541",
+            "name": "Bluespotted Ribbontail Ray",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "asia"
+            ],
+            "abilities": [
+                "Digging"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": true,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 2,
+            "price": 16,
+            "appeal": 7,
+            "text": "bluespotted ribbontail ray a541 jaeniura lymma digging choose up to 1x: discard 1 card from the display and replenish or discard 1 card from your hand and draw 1 other from the deck. digging choose up to 1x: discard 1 card from the display and replenish or discard 1 card from your hand and draw 1 other from the deck. aquarium marine worlds"
+        },
+        {
+            "key": "A542",
+            "name": "Humphead Wrasse",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "africa"
+            ],
+            "abilities": [
+                "Extra Shift"
+            ],
+            "normal": null,
+            "aqua": 2,
+            "reef": true,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": true,
+            "size": 3,
+            "price": 22,
+            "appeal": 6,
+            "text": "humphead wrasse a542 cheilinus undulatus extra shift you may return 1 of your association workers to your notepad. extra shift you may return 1 of your association workers to your notepad. aquarium university marine worlds"
+        },
+        {
+            "key": "A543",
+            "name": "Coastal Manta Ray",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "asia"
+            ],
+            "abilities": [
+                "Glide"
+            ],
+            "normal": null,
+            "aqua": 4,
+            "reef": true,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 23,
+            "appeal": 8,
+            "text": "coastal manta ray a543 mobula alfredi glide discard up to 3 cards from your hand: for every sea animal tag icon on them, gain 1 of these 3 effects: <br> reputation / appeal / kiosk . conservation point aquarium animalsii marine worlds"
+        },
+        {
+            "key": "A544",
+            "name": "Caribbean Reef Shark",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "predator",
+                "americas"
+            ],
+            "abilities": [
+                "Shark Attack"
+            ],
+            "normal": null,
+            "aqua": 3,
+            "reef": true,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 20,
+            "appeal": 5,
+            "text": "caribbean reef shark a544 carcharhinus perezii shark attack discard 1 animal card(s) in reputation range from the display: gain half the appeal of those cards (round down). shark attack discard 1 animal card(s) in reputation range from the display: gain half the appeal of those cards (round down). aquarium marine worlds"
+        },
+        {
+            "key": "A545",
+            "name": "Longcomb Sawfish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "africa"
+            ],
+            "abilities": [
+                "Cut Down"
+            ],
+            "normal": null,
+            "aqua": 3,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 21,
+            "appeal": 9,
+            "text": "longcomb sawfish a545 pristis zijsron cut down you may remove 1 empty standard enclosure from your zoo map and gain back its cost. aquarium seaanimal marine worlds"
+        },
+        {
+            "key": "A546",
+            "name": "Sand Tiger Shark",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "predator",
+                "australia",
+                "rock"
+            ],
+            "abilities": [
+                "Shark Attack"
+            ],
+            "normal": null,
+            "aqua": 4,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 5,
+            "price": 32,
+            "appeal": 8,
+            "text": "sand tiger shark a546 carcharias taurus shark attack discard 2 animal card(s) in reputation range from the display: gain half the appeal of those cards (round down). aquarium animalsii marine worlds"
+        },
+        {
+            "key": "A547",
+            "name": "Mediterranean Rainbow Wrasse",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "europe",
+                "rock"
+            ],
+            "abilities": [
+                "Symbiosis"
+            ],
+            "normal": null,
+            "aqua": 0,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 8,
+            "appeal": 3,
+            "text": "mediterranean rainbow wrasse a547 coris julis symbiosis use 1 ability (not a reef dweller effect) of 1 other sea animal tag card in your zoo. aquarium marine worlds"
+        },
+        {
+            "key": "A548",
+            "name": "Short-Snouted Seahorse",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "europe",
+                "rock"
+            ],
+            "abilities": [
+                "Camouflage",
+                "Pouch"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 2,
+            "text": "short-snouted seahorse a548 hippocampus hippocampus camouflage if you play 1 other animal during this turn, you may ignore 1 of its conditions pouch you may place 1 card(s) from your hand under this card to gain appeal . aquarium marine worlds"
+        },
+        {
+            "key": "A549",
+            "name": "Common Octopus",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "europe",
+                "rock"
+            ],
+            "abilities": [
+                "Camouflage"
+            ],
+            "normal": null,
+            "aqua": 2,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 9,
+            "appeal": 5,
+            "text": "common octopus a549 octopus vulgaris camouflage if you play 1 other animal during this turn, you may ignore 1 of its conditions aquarium science marine worlds"
+        },
+        {
+            "key": "A550",
+            "name": "Compass Jellyfish",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "europe"
+            ],
+            "abilities": [
+                "Glide"
+            ],
+            "normal": null,
+            "aqua": 2,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 10,
+            "appeal": 6,
+            "text": "compass jellyfish a550 chrysaora hysoscella glide discard up to 2 cards from your hand: for every sea animal tag icon on them, gain 1 of these 3 effects: <br> reputation / appeal / kiosk . aquarium reputation_3 marine worlds"
+        },
+        {
+            "key": "A551",
+            "name": "Loggerhead Sea Turtle",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "reptile",
+                "europe"
+            ],
+            "abilities": [
+                "Marketing",
+                "Scuba Dive X"
+            ],
+            "normal": null,
+            "aqua": 3,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 4,
+            "price": 23,
+            "appeal": 8,
+            "text": "loggerhead sea turtle a551 caretta caretta scuba dive x reveal the x topmost cards of the deck. choose 1 sponsor card and add it to your hand. discard the other cards. x is the number of sea animal tag + reptile tag in your zoo. marketing marketing . aquarium reptile house marine worlds"
+        },
+        {
+            "key": "A552",
+            "name": "Green Sea Turtle",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "reptile",
+                "americas"
+            ],
+            "abilities": [
+                "Scuba Dive X"
+            ],
+            "normal": null,
+            "aqua": 2,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 17,
+            "appeal": 6,
+            "text": "green sea turtle a552 chelonia mydas scuba dive x reveal the x topmost cards of the deck. choose 1 sponsor card and add it to your hand. discard the other cards. x is the number of sea animal tag + reptile tag in your zoo. aquarium reptile house marine worlds"
+        },
+        {
+            "key": "A553",
+            "name": "Tambaqui",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "herbivore",
+                "americas"
+            ],
+            "abilities": [
+                "Adapt"
+            ],
+            "normal": null,
+            "aqua": 1,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 15,
+            "appeal": 5,
+            "text": "tambaqui a553 colossoma macropomum adapt draw 1 final scoring cards, then discard 1 final scoring cards. aquarium marine worlds"
+        },
+        {
+            "key": "A554",
+            "name": "African Penguin",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "bird",
+                "africa",
+                "rock",
+                "water"
+            ],
+            "abilities": [
+                "Adapt"
+            ],
+            "normal": 3,
+            "aqua": 2,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 18,
+            "appeal": 6,
+            "text": "african penguin a554 spheniscus demersus adapt draw 2 final scoring cards, then discard 2 final scoring cards. aquarium animalsii marine worlds"
+        },
+        {
+            "key": "A555",
+            "name": "Golden Snub-Nosed Monkey",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "primate",
+                "asia",
+                "rock"
+            ],
+            "abilities": [
+                "Pilfering 1"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 18,
+            "appeal": 6,
+            "text": "golden snub-nosed monkey a555 rhinopithecus roxellana pilfering 1 draw 1 card from the hand of or take money from the player with the most appeal. they decide. science marine worlds"
+        },
+        {
+            "key": "A556",
+            "name": "Wolverine",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "bear",
+                "predator",
+                "europe",
+                "rock"
+            ],
+            "abilities": [
+                "Boost: Association"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": true,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 15,
+            "appeal": 5,
+            "text": "wolverine a556 gulo gulo boost: association after finishing this action, you may place your association action card association action card on slot or slot . marine worlds"
+        },
+        {
+            "key": "A557",
+            "name": "Vietnamese Pot-Bellied Pig",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "pet"
+            ],
+            "abilities": [
+                "Petting Zoo Animal"
+            ],
+            "normal": null,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 1,
+            "price": 7,
+            "appeal": 0,
+            "text": "vietnamese pot-bellied pig a557 sus scrofa f. domestica petting zoo animal gain appeal for each petting zoo animal icon in your zoo. petting zoo marine worlds"
+        },
+        {
+            "key": "A558",
+            "name": "Northern Muriqui",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "primate",
+                "americas",
+                "rock"
+            ],
+            "abilities": [
+                "Monkey Gang"
+            ],
+            "normal": 4,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": true,
+            "partner": false,
+            "university": true,
+            "size": 4,
+            "price": 16,
+            "appeal": 6,
+            "text": "northern muriqui a558 brachytelhypoxanthus monkey gang reveal cards from the deck. take the first card with primate tag into your hand. tuck the other cards under the deck. university marine worlds"
+        },
+        {
+            "key": "A559",
+            "name": "Coquerels Sifaka",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "primate",
+                "africa",
+                "rock"
+            ],
+            "abilities": [
+                "Jumping",
+                "Monkey Gang"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 17,
+            "appeal": 7,
+            "text": "coquerels sifaka a559 propithecus coquereli monkey gang reveal cards from the deck. take the first card with primate tag into your hand. tuck the other cards under the deck. jumping advance the break token 2 spaces. gain money. marine worlds"
+        },
+        {
+            "key": "A560",
+            "name": "Brahminy Kite",
+            "type": "animal",
+            "source": "marine_worlds",
+            "icons": [
+                "bird",
+                "australia",
+                "rock",
+                "water"
+            ],
+            "abilities": [
+                "Hunter"
+            ],
+            "normal": 3,
+            "aqua": null,
+            "reef": false,
+            "reputation": false,
+            "conservation": false,
+            "partner": false,
+            "university": false,
+            "size": 3,
+            "price": 12,
+            "appeal": 6,
+            "text": "brahminy kite a560 haliastur indus hunter reveal the 2 topmost card(s) of the deck. choose 1 animal card and add it to your hand. discard the other cards. large bird aviary marine worlds"
+        },
+        {
+            "key": "F001",
+            "name": "Large Animal Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "large animal zoo f001 gain conservation point for large animals in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "large animal zoo f001 gain conservation point for large animals in your zoo."
+            }
+        },
+        {
+            "key": "F002",
+            "name": "Small Animal Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "small animal zoo f002 gain conservation point for small animals in your zoo."
+        },
+        {
+            "key": "F003",
+            "name": "Research Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "research zoo f003 gain conservation point for research icons in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "research zoo f003 gain conservation point for research icons in your zoo."
+            }
+        },
+        {
+            "key": "F004",
+            "name": "Architectural Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "architectural zoo f004 gain conservation point for building of your zoo."
+        },
+        {
+            "key": "F005",
+            "name": "Conservation Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "conservation zoo f005 gain conservation point for supporting conservation projects",
+            "mw": {
+                "icons": [],
+                "text": "conservation zoo f005 gain conservation point for supporting conservation projects"
+            }
+        },
+        {
+            "key": "F006",
+            "name": "Naturalists Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "naturalists zoo f006 gain conservation point for empty building spaces in your zo0."
+        },
+        {
+            "key": "F007",
+            "name": "Favorite Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "favorite zoo f007 gain conservation point for the reputation of your zoo."
+        },
+        {
+            "key": "F008",
+            "name": "Sponsored Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "sponsored zoo f008 gain conservation point for sponsors cards in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "sponsored zoo f008 gain conservation point for sponsors cards in your zoo."
+            }
+        },
+        {
+            "key": "F009",
+            "name": "Diverse Species Zoo",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "diverse species zoo f009 endgame.desc9"
+        },
+        {
+            "key": "F010",
+            "name": "Climbing Park",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "climbing park f010 gain conservation point for rock icons in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "climbing park f010 gain conservation point for rock icons in your zoo."
+            }
+        },
+        {
+            "key": "F011",
+            "name": "Aquatic Park",
+            "type": "endgame",
+            "source": "base",
+            "icons": [],
+            "text": "aquatic park f011 gain conservation point for water icons in your zoo.",
+            "mw": {
+                "icons": [],
+                "text": "aquatic park f011 gain conservation point for water icons in your zoo."
+            }
+        },
+        {
+            "key": "F012",
+            "name": "Designer Zoo",
+            "type": "endgame",
+            "source": "marine_worlds",
+            "icons": [],
+            "text": "designer zoo f012 gain conservation point for different shaped buildings in your zoo. marine worlds"
+        },
+        {
+            "key": "F013",
+            "name": "Specialized Habitat Zoo",
+            "type": "endgame",
+            "source": "marine_worlds",
+            "icons": [],
+            "text": "specialized habitat zoo f013 choose 1 continent icon you did not support a base conservation project with. gain conservation point for those icons. marine worlds"
+        },
+        {
+            "key": "F014",
+            "name": "Specialized Species Zoo",
+            "type": "endgame",
+            "source": "marine_worlds",
+            "icons": [],
+            "text": "specialized species zoo f014 choose 1 animal category icon you did not support a base conservation project with. gain conservation point for those icons. marine worlds"
+        },
+        {
+            "key": "F015",
+            "name": "Catered Picnic Areas",
+            "type": "endgame",
+            "source": "marine_worlds",
+            "icons": [],
+            "text": "catered picnic areas f015 gain conservation point for sets of kiosk and pavilion (do not have to be adjacent). marine worlds"
+        },
+        {
+            "key": "F016",
+            "name": "Accessible Zoo",
+            "type": "endgame",
+            "source": "marine_worlds",
+            "icons": [],
+            "text": "accessible zoo f016 gain conservation point for conditions on cards in your zoo. marine worlds"
+        },
+        {
+            "key": "F017",
+            "name": "International Zoo",
+            "type": "endgame",
+            "source": "marine_worlds",
+            "icons": [],
+            "text": "international zoo f017 endgame.desc17 marine worlds"
+        },
+        {
+            "key": "P101",
+            "name": "Species Diversity",
+            "type": "project",
+            "source": "base",
+            "icons": [],
+            "text": "species diversity p101 requires different animal category icons in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P102",
+            "name": "Habitat Diversity",
+            "type": "project",
+            "source": "base",
+            "icons": [],
+            "text": "habitat diversity p102 requires different continent icons in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P103",
+            "name": "Africa",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "africa"
+            ],
+            "text": "africa p103 requires africa icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P104",
+            "name": "Americas",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "americas"
+            ],
+            "text": "americas p104 requires americas icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P105",
+            "name": "Australia",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "australia"
+            ],
+            "text": "australia p105 requires australia icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P106",
+            "name": "Asia",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "asia"
+            ],
+            "text": "asia p106 requires asia icons in <br> your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P107",
+            "name": "Europe",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "europe"
+            ],
+            "text": "europe p107 requires europe icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P108",
+            "name": "Primates",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "primate"
+            ],
+            "text": "primates p108 requires primate icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P109",
+            "name": "Reptiles",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "reptile"
+            ],
+            "text": "reptiles p109 requires reptile icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P110",
+            "name": "Predators",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "predator"
+            ],
+            "text": "predators p110 requires predator icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P111",
+            "name": "Herbivores",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "herbivore"
+            ],
+            "text": "herbivores p111 requires herbivore icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P112",
+            "name": "Birds",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "bird"
+            ],
+            "text": "birds p112 requires bird icons <br> in your zoo. base conservation point conservation point conservation point"
+        },
+        {
+            "key": "P113",
+            "name": "Bavarian Forest National Park",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "europe"
+            ],
+            "text": "bavarian forest national park p113 release 1 animal with <br> europe icon into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P114",
+            "name": "Yosemite National Park",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "americas"
+            ],
+            "text": "yosemite national park p114 release 1 animal with <br> americas icon into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P115",
+            "name": "Angthong National Park",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "asia"
+            ],
+            "text": "angthong national park p115 release 1 animal with <br> asia icon into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P116",
+            "name": "Serengeti National Park",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "africa"
+            ],
+            "text": "serengeti national park p116 release 1 animal with <br> africa icon into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P117",
+            "name": "Blue Mountains National Park",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "australia"
+            ],
+            "text": "blue mountains national park p117 release 1 animal with <br> australia icon into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P118",
+            "name": "Savanna",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "predator"
+            ],
+            "text": "savanna p118 release 1 predator <br> into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P119",
+            "name": "Low Mountain Range",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "bird"
+            ],
+            "text": "low mountain range p119 release 1 bird <br> into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P120",
+            "name": "Bamboo Forest",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "herbivore"
+            ],
+            "text": "bamboo forest p120 release 1 herbivore <br> into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P121",
+            "name": "Sea Cave",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "reptile"
+            ],
+            "text": "sea cave p121 release 1 reptile <br> into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P122",
+            "name": "Jungle",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "primate"
+            ],
+            "text": "jungle p122 release 1 primate <br> into the wild. release conservation point conservation point conservation point"
+        },
+        {
+            "key": "P123",
+            "name": "Bird Breeding Program",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "bird"
+            ],
+            "text": "bird breeding program p123 requires 1 bird and a partner <br> zoo of the same continent. breed conservation point reputation conservation point reputation conservation point"
+        },
+        {
+            "key": "P124",
+            "name": "Predator Breeding Program",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "predator"
+            ],
+            "text": "predator breeding program p124 requires 1 predator and a partner <br> zoo of the same continent. breed conservation point reputation conservation point reputation conservation point"
+        },
+        {
+            "key": "P125",
+            "name": "Reptile Breeding Program",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "reptile"
+            ],
+            "text": "reptile breeding program p125 requires 1 reptile and a partner <br> zoo of the same continent. breed conservation point reputation conservation point reputation conservation point"
+        },
+        {
+            "key": "P126",
+            "name": "Herbivore Breeding Program",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "herbivore"
+            ],
+            "text": "herbivore breeding program p126 requires 1 herbivore and a partner <br> zoo of the same continent. breed conservation point reputation conservation point reputation conservation point"
+        },
+        {
+            "key": "P127",
+            "name": "Primate Breeding Program",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "primate"
+            ],
+            "text": "primate breeding program p127 requires 1 primate and a partner <br> zoo of the same continent. breed conservation point reputation conservation point reputation conservation point"
+        },
+        {
+            "key": "P128",
+            "name": "Aquatic",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "water"
+            ],
+            "text": "aquatic p128 requires water icons <br> in your zoo. normal conservation point conservation point conservation point"
+        },
+        {
+            "key": "P129",
+            "name": "Geological",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "rock"
+            ],
+            "text": "geological p129 requires rock icons <br> in your zoo. normal conservation point conservation point conservation point"
+        },
+        {
+            "key": "P130",
+            "name": "Small Animals",
+            "type": "project",
+            "source": "base",
+            "icons": [],
+            "text": "small animals p130 requires small animals <br> in your zoo. normal conservation point conservation point conservation point"
+        },
+        {
+            "key": "P131",
+            "name": "Large Animals",
+            "type": "project",
+            "source": "base",
+            "icons": [],
+            "text": "large animals p131 requires large animals <br> in your zoo. normal conservation point conservation point conservation point",
+            "mw": {
+                "icons": [],
+                "text": "large animals p131 requires large animals <br> in your zoo. normal conservation point conservation point conservation point"
+            }
+        },
+        {
+            "key": "P132",
+            "name": "Research",
+            "type": "project",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "text": "research p132 requires research icons in your zoo. normal conservation point conservation point conservation point"
+        },
+        {
+            "key": "P133",
+            "name": "Sea Animals",
+            "type": "project",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal"
+            ],
+            "text": "sea animals p133 base conservation point conservation point conservation point marine worlds"
+        },
+        {
+            "key": "P134",
+            "name": "Predator Management Plan",
+            "type": "project",
+            "source": "marine_worlds",
+            "icons": [
+                "predator"
+            ],
+            "text": "predator management plan p134 management conservation point keyword conservation point reputation conservation point tutor marine worlds"
+        },
+        {
+            "key": "P135",
+            "name": "Bird Management Plan",
+            "type": "project",
+            "source": "marine_worlds",
+            "icons": [
+                "bird"
+            ],
+            "text": "bird management plan p135 management conservation point keyword conservation point reputation conservation point tutor marine worlds"
+        },
+        {
+            "key": "P136",
+            "name": "Reptile Management Plan",
+            "type": "project",
+            "source": "marine_worlds",
+            "icons": [
+                "reptile"
+            ],
+            "text": "reptile management plan p136 management conservation point keyword conservation point reputation conservation point tutor marine worlds"
+        },
+        {
+            "key": "P137",
+            "name": "Herbivore Management Plan",
+            "type": "project",
+            "source": "marine_worlds",
+            "icons": [
+                "herbivore"
+            ],
+            "text": "herbivore management plan p137 management conservation point keyword conservation point reputation conservation point tutor marine worlds"
+        },
+        {
+            "key": "P138",
+            "name": "Sea Animal Management Plan",
+            "type": "project",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal"
+            ],
+            "text": "sea animal management plan p138 management conservation point activate reef conservation point reputation conservation point tutor marine worlds"
+        },
+        {
+            "key": "P139",
+            "name": "Primate Management Plan",
+            "type": "project",
+            "source": "marine_worlds",
+            "icons": [
+                "primate"
+            ],
+            "text": "primate management plan p139 management conservation point keyword conservation point reputation conservation point tutor marine worlds"
+        },
+        {
+            "key": "S201",
+            "name": "Science Lab",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 5,
+            "text": "science lab s201 take 1 card from the deck or in reputation range. take 1 card from the deck or in reputation range. gain conservation point / conservation point for 3 / 6 research icons."
+        },
+        {
+            "key": "S202",
+            "name": "Spokesperson",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 5,
+            "text": "spokesperson s202 each time you play a research icon into your zoo, gain reputation ."
+        },
+        {
+            "key": "S203",
+            "name": "Veterinarian",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 4,
+            "text": "veterinarian s203 supporting a conservation project requires only slot ."
+        },
+        {
+            "key": "S204",
+            "name": "Science Museum",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 4,
+            "text": "science museum s204 each time you play a research icon into your zoo, gain conservation point ."
+        },
+        {
+            "key": "S205",
+            "name": "Gorilla Field Research",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 3,
+            "text": "gorilla field research s205"
+        },
+        {
+            "key": "S206",
+            "name": "Medical Breakthrough",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 5,
+            "text": "medical breakthrough s206 income: gain conservation point ."
+        },
+        {
+            "key": "S207",
+            "name": "Basic Research",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 4,
+            "text": "basic research s207 gain conservation point each for 2 different continent and/or animal category icons. for each conservation point that you gain this way, all other players gain money ."
+        },
+        {
+            "key": "S208",
+            "name": "Science Library",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 4,
+            "text": "science library s208 each time a research icon is played into any zoo, gain money . sponsors.s208_desc2 gain conservation point for 5 different animal category icons."
+        },
+        {
+            "key": "S209",
+            "name": "Technology Institute",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 5,
+            "text": "technology institute s209 income: gain 1 x token -token."
+        },
+        {
+            "key": "S210",
+            "name": "Expert On The Americas",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "americas"
+            ],
+            "strength": 4,
+            "text": "expert on the americas s210 each time you play an americas icon into your zoo, you may build 1 kiosk for free."
+        },
+        {
+            "key": "S211",
+            "name": "Expert On Europe",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "europe"
+            ],
+            "strength": 5,
+            "text": "expert on europe s211 each time you play a europe icon into your zoo, you may build a 1-space enclosure for free."
+        },
+        {
+            "key": "S212",
+            "name": "Expert On Australia",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "australia"
+            ],
+            "strength": 5,
+            "text": "expert on australia s212 each time you play an australia icon into your zoo, you may place 1 card from your hand under this card to gain appeal (pouch 1)."
+        },
+        {
+            "key": "S213",
+            "name": "Expert On Asia",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "asia"
+            ],
+            "strength": 5,
+            "text": "expert on asia s213 each time you play an asia icon into your zoo, you may build 1 pavilion for free."
+        },
+        {
+            "key": "S214",
+            "name": "Expert On Africa",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "africa"
+            ],
+            "strength": 4,
+            "text": "expert on africa s214 each time you play an africa icon into your zoo, you may place any action card on slot ."
+        },
+        {
+            "key": "S215",
+            "name": "Breeding Cooperation",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 4,
+            "text": "breeding cooperation s215 when playing this card, place 2 player tokens on it. when supporting a base conservation project, you may discard exactly 1 token as any icon. gain conservation point for 5 <br> supports of <br> conservation projects."
+        },
+        {
+            "key": "S216",
+            "name": "Talented Communicator",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 5,
+            "text": "talented communicator s216 hire 1 association worker. <br> (full-throated)."
+        },
+        {
+            "key": "S217",
+            "name": "Engineer",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 4,
+            "text": "engineer s217 each time you build at least 1 building with a build action build action card . you may build exactly 1 more of the same kind (except for special enclosures) <br> at the normal cost."
+        },
+        {
+            "key": "S218",
+            "name": "Breeding Program",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 4,
+            "text": "breeding program s218 when playing this card, place 2 player tokens on it. when supporting a base conservation project, you may discard exactly 1 token as any icon. gain conservation point for 5 <br> supports of <br> conservation projects."
+        },
+        {
+            "key": "S219",
+            "name": "Diversity Researcher",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 5,
+            "text": "diversity researcher s219 you may build over water and rock spaces. ignore all requirements for water and rock spaces. gain money for each water and rock requirement."
+        },
+        {
+            "key": "S220",
+            "name": "Federal Grants",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 4,
+            "text": "federal grants s220 income: gain money ."
+        },
+        {
+            "key": "S221",
+            "name": "Archaeologist",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 4,
+            "text": "archaeologist s221 each time you gain the placement bonus of a border space in your zoo, you additionally gain another free placement bonus."
+        },
+        {
+            "key": "S222",
+            "name": "Release Of Patents",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 5,
+            "text": "release of patents s222 gain conservation point each for each research icon. for each conservation point that you gain this way, all other players gain money ."
+        },
+        {
+            "key": "S223",
+            "name": "Science Institute",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 3,
+            "text": "science institute s223"
+        },
+        {
+            "key": "S224",
+            "name": "Migration Recording",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 4,
+            "text": "migration recording s224 each time you support a release into the wild conservation project, additionally gain conservation point . you may support every release into the wild conservation project more than once."
+        },
+        {
+            "key": "S225",
+            "name": "Quarantine Lab",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 3,
+            "text": "quarantine lab s225 the effects of venom, constriction, hypnosis, and pilfering do not affect you. gain conservation point for 5 different continent icons."
+        },
+        {
+            "key": "S226",
+            "name": "Foreign Institute",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "science"
+            ],
+            "strength": 6,
+            "text": "foreign institute s226 gain conservation point for 5 different continent icons."
+        },
+        {
+            "key": "S227",
+            "name": "Waza Special Assignment",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 6,
+            "text": "waza special assignment s227 choose and mark on this card. successively reveal cards from the deck and take the first card of the chosen kind. you must not play the other kind any more. each time you play a small or large animal, you gain appeal or appeal respectively."
+        },
+        {
+            "key": "S228",
+            "name": "Waza Small Animal Program",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 5,
+            "text": "waza small animal program s228 each time you play only small animals in the animals action animal action card , you may play 1 further small animal at the normal cost. after that, take 1 small animal from the <br> display (if available)."
+        },
+        {
+            "key": "S229",
+            "name": "Expert In Small Animals",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 5,
+            "text": "expert in small animals s229 your cost to play a small animal is reduced by money ."
+        },
+        {
+            "key": "S230",
+            "name": "Expert In Large Animals",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 4,
+            "text": "expert in large animals s230 your cost to play a large animal is reduced by money ."
+        },
+        {
+            "key": "S231",
+            "name": "Sponsorship: Primates",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "sponsorship: primates s231 income: <br> gain money / money / money for 1/3/5 primate icons in your zoo. sponsors.s231_desc2"
+        },
+        {
+            "key": "S232",
+            "name": "Sponsorship: Reptiles",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "sponsorship: reptiles s232 income: <br> gain money / money / money for 1/3/5 reptile icons in your zoo. sponsors.s232_desc2"
+        },
+        {
+            "key": "S233",
+            "name": "Sponsorship: Vultures",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "sponsorship: vultures s233 income: <br> gain money / money / money for 1/3/5 bird icons in your zoo. sponsors.s233_desc2"
+        },
+        {
+            "key": "S234",
+            "name": "Sponsorship: Lions",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "sponsorship: lions s234 income: <br> gain money / money / money for 1/3/5 predator icons in your zoo. sponsors.s234_desc2"
+        },
+        {
+            "key": "S235",
+            "name": "Sponsorship: Elephants",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "sponsorship: elephants s235 income: <br> gain money / money / money for 1/3/5 herbivore icons in your zoo. sponsors.s235_desc2"
+        },
+        {
+            "key": "S236",
+            "name": "Primatologist",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "primate"
+            ],
+            "strength": 4,
+            "text": "primatologist s236 each time a primate icon is played into any zoo, gain money ."
+        },
+        {
+            "key": "S237",
+            "name": "Herpetologist",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "reptile"
+            ],
+            "strength": 4,
+            "text": "herpetologist s237 each time a reptile icon is played into any zoo, gain money ."
+        },
+        {
+            "key": "S238",
+            "name": "Ornithologist",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "bird"
+            ],
+            "strength": 4,
+            "text": "ornithologist s238 each time a bird icon is played into any zoo, gain money ."
+        },
+        {
+            "key": "S239",
+            "name": "Expert In Predators",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "predator"
+            ],
+            "strength": 4,
+            "text": "expert in predators s239 each time a predator icon is played into any zoo, gain money ."
+        },
+        {
+            "key": "S240",
+            "name": "Expert In Herbivores",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "herbivore"
+            ],
+            "strength": 4,
+            "text": "expert in herbivores s240 each time a herbivore icon is played into any zoo, gain money ."
+        },
+        {
+            "key": "S241",
+            "name": "Hydrologist",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "water"
+            ],
+            "strength": 5,
+            "text": "hydrologist s241 for each space you cover that is next to a water space, gain money . sponsors.s241_desc2 gain conservation point , if all water spaces are connected."
+        },
+        {
+            "key": "S242",
+            "name": "Geologist",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "rock"
+            ],
+            "strength": 5,
+            "text": "geologist s242 for each space you cover that is next to a rock space, gain money . sponsors.s242_desc2 gain conservation point , if all rock spaces are connected."
+        },
+        {
+            "key": "S243",
+            "name": "Meerkat Den",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "herbivore",
+                "rock"
+            ],
+            "strength": 5,
+            "text": "meerkat den s243 each time you play a herbivore icon into your zoo, gain appeal . sponsors.s243_desc2 place next to at least 1 rock space."
+        },
+        {
+            "key": "S244",
+            "name": "Penguin Pool",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "bird",
+                "water"
+            ],
+            "strength": 5,
+            "text": "penguin pool s244 each time you play a bird icon into your zoo, gain appeal . sponsors.s243_desc2 place next to at least 1 water space."
+        },
+        {
+            "key": "S245",
+            "name": "Aquarium",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "water"
+            ],
+            "strength": 5,
+            "text": "aquarium s245 each time you play a water icon into your zoo, gain appeal . sponsors.s245_desc2 place next to at least 2 water spaces."
+        },
+        {
+            "key": "S246",
+            "name": "Cable Car",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "rock"
+            ],
+            "strength": 6,
+            "text": "cable car s246 each time you play a rock icon into your zoo, gain appeal . sponsors.s246_desc2 place next to at least 2 rock spaces."
+        },
+        {
+            "key": "S247",
+            "name": "Baboon Rock",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "primate",
+                "rock"
+            ],
+            "strength": 6,
+            "text": "baboon rock s247 each time you play a primate icon into your zoo, gain appeal . sponsors.s247_desc2 place next to at least 1 rock space."
+        },
+        {
+            "key": "S248",
+            "name": "Rhesus Monkey Park",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "primate"
+            ],
+            "strength": 5,
+            "text": "rhesus monkey park s248 each time you play a primate icon into your zoo, gain 1 x token -token. sponsors.s248_desc2"
+        },
+        {
+            "key": "S249",
+            "name": "Barred Owl Hut",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "bird"
+            ],
+            "strength": 6,
+            "text": "barred owl hut s249 each time you play a bird icon into your zoo, draw 2 cards from the deck. keep 1 and discard the other (perception 2). sponsors.s249_desc2"
+        },
+        {
+            "key": "S250",
+            "name": "Sea Turtle Tank",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "reptile",
+                "water"
+            ],
+            "strength": 5,
+            "text": "sea turtle tank s250 each time you play a reptile icon into your zoo, you may sell up to 2 cards from your hand for each (sunbathing 2). sponsors.s250_desc2",
+            "mw": {
+                "icons": [
+                    "reptile",
+                    "seaAnimal",
+                    "water"
+                ],
+                "text": "sea turtle tank s250 each time you play a reptile icon into your zoo, you may sell up to 2 cards from your hand for each (sunbathing 2). sponsors.s250_desc2"
+            }
+        },
+        {
+            "key": "S251",
+            "name": "Polar Bear Exhibit",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "bear",
+                "predator"
+            ],
+            "strength": 5,
+            "text": "polar bear exhibit s251 each time a bear icon is played into any zoo, gain appeal . sponsors.s251_desc2"
+        },
+        {
+            "key": "S252",
+            "name": "Spotted Hyena Compound",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "predator",
+                "rock"
+            ],
+            "strength": 5,
+            "text": "spotted hyena compound s252 each time you play a predator icon into your zoo, reveal the topmost x cards of the deck. add 1 animal card to your hand. discard the other cards. (x = number of your predator icons) . sponsors.s252_desc2"
+        },
+        {
+            "key": "S253",
+            "name": "Okapi Stable",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "herbivore"
+            ],
+            "strength": 6,
+            "text": "okapi stable s253 place 3 player tokens on this card. each time you play a herbivore icon into your zoo, you may remove 1 token and play a sponsors card for money ( money = slot ). sponsors.s253_desc2"
+        },
+        {
+            "key": "S254",
+            "name": "Zoo School",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 5,
+            "text": "zoo school s254 place on at least 2 border spaces. take 1 card from the deck or in reputation range."
+        },
+        {
+            "key": "S255",
+            "name": "Adventure Playground",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "rock"
+            ],
+            "strength": 3,
+            "text": "adventure playground s255 place next to at least 1 rock space."
+        },
+        {
+            "key": "S256",
+            "name": "Water Playground",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "water"
+            ],
+            "strength": 3,
+            "text": "water playground s256 place next to at least 1 water space."
+        },
+        {
+            "key": "S257",
+            "name": "Side Entrance",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "side entrance s257 place on 2 border spaces. need not be adjacent to other buildings. income: gain money for each building, except empty standard enclosures, next to the side entrance. gain appeal if zoo is completely covered."
+        },
+        {
+            "key": "S258",
+            "name": "Native Seabirds",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "bird"
+            ],
+            "strength": 5,
+            "text": "native seabirds s258 gain appeal for each connected water space. gain conservation point for each 2 unconnected water spaces."
+        },
+        {
+            "key": "S259",
+            "name": "Native Lizards",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "reptile"
+            ],
+            "strength": 5,
+            "text": "native lizards s259 gain appeal for each connected rock space. gain conservation point for each 2 unconnected rock spaces."
+        },
+        {
+            "key": "S260",
+            "name": "Native Farm Animals",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "herbivore"
+            ],
+            "strength": 5,
+            "text": "native farm animals s260 gain appeal for each connected border space without buildings. gain conservation point for each group of 6 spaces without buildings."
+        },
+        {
+            "key": "S261",
+            "name": "Guided School Tours",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "guided school tours s261 gain conservation point for 5 different animal category icons."
+        },
+        {
+            "key": "S262",
+            "name": "Explorer",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 5,
+            "text": "explorer s262 each time you gain a continent or animal category icon that is not yet in your zoo, gain appeal and money . money for each different continent or animal category icon in your zoo."
+        },
+        {
+            "key": "S263",
+            "name": "Waza Large Animal Program",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 5,
+            "text": "waza large animal program s263 if you play a large animal, you may ignore 1 condition of your choice. you may place 1 5-space enclosure for free."
+        },
+        {
+            "key": "S264",
+            "name": "Free-Range New World Monkeys",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [
+                "primate"
+            ],
+            "strength": 5,
+            "text": "free-range new world monkeys s264 gain appeal for each connected space with a placement bonus. gain conservation point for each 2 unconnected spaces with a placement bonus."
+        },
+        {
+            "key": "S265",
+            "name": "Franchise Business",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [],
+            "strength": 4,
+            "text": "franchise business s265 gain money for each kiosk in other zoos. place a kiosk. if you have 5 kiosks, gain conservation point . marine worlds"
+        },
+        {
+            "key": "S266",
+            "name": "Marine Biologist",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal"
+            ],
+            "strength": 4,
+            "text": "marine biologist s266 each time a sea animal icon <br> is played into any zoo, gain money . marine worlds"
+        },
+        {
+            "key": "S267",
+            "name": "Farm Cat",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "predator"
+            ],
+            "strength": 5,
+            "text": "farm cat s267 gain conservation point for each kiosk with at least 3 empty building spaces next to it (max. conservation point ). marine worlds"
+        },
+        {
+            "key": "S268",
+            "name": "Conference On Europe",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "europe"
+            ],
+            "strength": 5,
+            "text": "conference on europe s268 each time you play a europe icon into your zoo, you may mark 1 animal card after finishing the current action. gain conservation point if you did 3 donations. marine worlds"
+        },
+        {
+            "key": "S269",
+            "name": "Conference On Australia",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "australia"
+            ],
+            "strength": 5,
+            "text": "conference on australia s269 each time you play an australia icon into your zoo, you may increase the size of a standard enclosure by 1 for free. if the enclosure is occupied, gain appeal . gain appeal for each <br> card pouched (max. 5). marine worlds"
+        },
+        {
+            "key": "S270",
+            "name": "Marine Research Expedition",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "science",
+                "seaAnimal"
+            ],
+            "strength": 5,
+            "text": "marine research expedition s270 expedition | you may send a person <br> sponsor card in your zoo away (discard) to gain conservation point <br> or <br> scuba dive 3 | reveal the 3 topmost cards of the deck. choose 1 sponsor card and add it to your hand. discard the other cards. marine worlds"
+        },
+        {
+            "key": "S271",
+            "name": "Excavation Site",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "science"
+            ],
+            "strength": 5,
+            "text": "excavation site s271 gain placement bonuses twice for placing this building. gain conservation point if all placement bonuses are covered. marine worlds"
+        },
+        {
+            "key": "S272",
+            "name": "Expansion Area",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [],
+            "strength": 5,
+            "text": "expansion area s272 treat all 3-space enclosures on at least 1 border space as 5-space enclosures. gain conservation point if all border spaces are covered. marine worlds"
+        },
+        {
+            "key": "S273",
+            "name": "Publications",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "science"
+            ],
+            "strength": 4,
+            "text": "publications s273 when making a donation, pay money less for each science icon in your zoo. you may make 1 donation. marine worlds"
+        },
+        {
+            "key": "S274",
+            "name": "Mascot Statue",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "mascot statue s274 income: gain appeal . gain appeal for each zoo with higher appeal (score last)."
+        },
+        {
+            "key": "S275",
+            "name": "Horse Whisperer",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "pet"
+            ],
+            "strength": 3,
+            "text": "horse whisperer s275 each time a petting zoo animal icon is played into any zoo , gain money . search the discard pile for 1 petting zoo animal and take it into hand. marine worlds"
+        },
+        {
+            "key": "S276",
+            "name": "Landscape Gardener",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [],
+            "strength": 6,
+            "text": "landscape gardener s276 each time you build a pavilion, gain 1 x token -marker (max. 1 per action). sponsors.s276_desc2 marine worlds"
+        },
+        {
+            "key": "S277",
+            "name": "Field Research Type D Orcas",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "science"
+            ],
+            "strength": 3,
+            "text": "field research type d orcas s277 marine worlds"
+        },
+        {
+            "key": "S278",
+            "name": "Amazon House",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [
+                "seaAnimal",
+                "herbivore",
+                "primate",
+                "rock",
+                "water"
+            ],
+            "strength": 6,
+            "text": "amazon house s278 place next to at least 1 water space and 1 rock space. marine worlds"
+        },
+        {
+            "key": "S279",
+            "name": "Underwater Tunnel",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [],
+            "strength": 4,
+            "text": "underwater tunnel s279 can accommodate sea animal tag (max. 2 markers). place on 2 water spaces. gain appeal / appeal for 1/2 adjacent aquariums. marine worlds"
+        },
+        {
+            "key": "S280",
+            "name": "Reconstruction",
+            "type": "sponsor",
+            "source": "marine_worlds",
+            "icons": [],
+            "strength": 3,
+            "text": "reconstruction s280 do not gain placement bonuses anymore. you may reposition up to 3 buildings. you may build 1 pavilion and 1 kiosk. sponsors.s280_desc3 marine worlds"
+        },
+        {
+            "key": "S281",
+            "name": "Arcade",
+            "type": "sponsor",
+            "source": "base",
+            "icons": [],
+            "strength": 3,
+            "text": "arcade s281 income: gain money per appeal . gain 2 appeal for each zoo with less appeal (score first)."
+        }
+    ],
+    "abilities": [
+        "Action: Association",
+        "Action: Building",
+        "Action: Cards",
+        "Action: Sponsors",
+        "Adapt",
+        "Assertion",
+        "Boost: Animal",
+        "Boost: Association",
+        "Boost: Building",
+        "Boost: Card",
+        "Boost: Sponsors",
+        "Camouflage",
+        "Clever",
+        "Constriction",
+        "Cut Down",
+        "Determination",
+        "Digging",
+        "Dominance",
+        "Extra Shift",
+        "Flock Animal",
+        "Full-throated",
+        "Glide",
+        "Helpful",
+        "Hunter",
+        "Hypnosis",
+        "Iconic Animal",
+        "Inventive",
+        "Inventive: Bear",
+        "Inventive: Primary",
+        "Jumping",
+        "Mark",
+        "Marketing",
+        "Monkey Gang",
+        "Multiplier: Association",
+        "Multiplier: Building",
+        "Multiplier: Card",
+        "Multiplier: Sponsors",
+        "Pack",
+        "Peacocking",
+        "Perception 4",
+        "Petting Zoo Animal",
+        "Pilfering 1",
+        "Pilfering 2",
+        "Posturing",
+        "Pouch",
+        "Resistance",
+        "Scavenging",
+        "Scuba Dive X",
+        "Sea Animal Magnet",
+        "Shark Attack",
+        "Snapping 1",
+        "Snapping 2",
+        "Sponsor Magnet",
+        "Sprint",
+        "Sunbathing",
+        "Symbiosis",
+        "Trade",
+        "Venom"
+    ]
+}

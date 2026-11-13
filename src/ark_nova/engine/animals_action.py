@@ -120,7 +120,7 @@ def reef_effects(state, key: str, b) -> list:
             pairs = reef_abilities(other)
             if any(not supported(n) for n, _ in pairs):
                 raise NotImplementedError(f"the Reef Dweller effect of {other}: {[n for n, _ in pairs if not supported(n)]} (see ISSUES.md)")
-            out += ability_effects(state, other, pairs)
+            out += [{**x, "reef": True} for x in ability_effects(state, other, pairs)]          # (marked: the bar shows these as "reef icon: bonus")
     return out
 
 
@@ -483,7 +483,11 @@ def play(state: GameState, action: Action) -> None:
         tower = map_rules.tower_appeal(p, b)                                     # map 1: the Observation Tower (an effect of its own: a Venom of the same animal looks at the appeal before it)
         if tower:
             printed.append({"kind": "gain", "source": "map1", "res": "appeal", "n": tower, "optional": False})
-    pending = printed + ability_effects(state, k, pairs) + reef_effects(state, k, b) + fx.fire_icons(state, p.seat, k) + map_rules.continent_effects(state, p, k, b)
+    reef_pairs = reef_abilities(k) if b is not None and b.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") else []
+    own_effects = []
+    for pair in pairs:                                                           # (an effect that is the animal's Reef Dweller effect in an aquarium is marked: the bar shows the coral icon on it)
+        own_effects += [{**x, "reef": True} if pair in reef_pairs else x for x in ability_effects(state, k, [pair])]
+    pending = printed + own_effects + reef_effects(state, k, b) + fx.fire_icons(state, p.seat, k) + map_rules.continent_effects(state, p, k, b)
     if b is not None and p.map_id == "BDW2":                                      # Construction Yard: the flipped enclosure next to the crane may be repositioned (an effect of its own)
         pending += map_rules.crane_effects(p, b)
     if "S228" in p.sponsors and len(a["played"]) == max_animals(live_level(p, a), a["strength"]) + 1 and all(sponsor_extras.size_class(card(x)) == "small" for x in a["played"]) and not a.get("s228"):

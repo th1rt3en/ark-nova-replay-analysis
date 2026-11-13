@@ -16,7 +16,7 @@ from ark_nova.engine.actions import Action
 from ark_nova.engine.icons import card_icons, icon_counts
 from ark_nova.engine.rng import Rng
 
-KINDS = ("digging", "scavenge", "glide", "glide_gain", "shark", "symbiosis", "cut_down", "trade", "extra_shift", "assertion", "pilfer", "venom", "constrict", "gain", "ability", "hypnosis", "mark", "marketing", "pay_appeal", "jumping")
+KINDS = ("digging", "scavenge", "glide", "glide_gain", "shark", "symbiosis", "cut_down", "trade", "extra_shift", "assertion", "dominance", "magnet", "pilfer", "venom", "constrict", "gain", "ability", "hypnosis", "mark", "marketing", "pay_appeal", "jumping")
 SIMPLE = {"Pack", "Petting Zoo Animal", "Iconic Animal", "Sprint", "Jumping", "Inventive", "Inventive: Bear", "Inventive: Primary", "Full-throated",
           "Helpful", "Posturing", "Peacocking", "Pouch", "Digging", "Scavenging", "Glide", "Shark Attack", "Symbiosis", "Cut Down", "Trade",
           "Extra Shift", "Assertion", "Dominance", "Resistance", "Adapt", "Scuba Dive X", "Monkey Gang", "Sea Animal Magnet", "Sponsor Magnet",
@@ -98,6 +98,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
             return []                                    # (the peaceful Venom is the Inventive X token: a card with both pays it once, 801244007 T24)
         return peaceful_effects(state, seat, key, name, value)
     if name == "Pack":
+        if state.config.confirm_turns:                              # live: the player collects the appeal with a button of its own, in the order he likes (replays pay it at once)
+            return [{"kind": "gain", "source": key, "res": "appeal", "n": icons["Predator"], "label": "pack", "optional": False}] if icons["Predator"] else []
         g._gain(state, seat, appeal=icons["Predator"])
     elif name in ("Appeal", "Money", "Reputation", "Conservation Point"):        # Reef Dweller effects
         return [{"kind": "gain", "source": key, "res": {"Appeal": "appeal", "Money": "money", "Reputation": "reputation",
@@ -174,6 +176,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     elif name == "Assertion":
         return [{"kind": "assertion", "source": key, "optional": False}]
     elif name == "Dominance":
+        if state.config.confirm_turns:                                   # a live game / the sandbox: the player activates it (the log tells whether the Primates project was there)
+            return [{"kind": "dominance", "source": key, "optional": False}]
         if "P108" in state.base_projects_unused:
             state.base_projects_unused.remove("P108")
             p.hand.append("P108")
@@ -186,6 +190,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         return [{"kind": "reveal", "source": key, "x": x, "filter": "sponsor", "optional": False}] if x else []
     elif name == "Monkey Gang":
         _monkey_gang(state, seat)
+    elif name in ("Sea Animal Magnet", "Sponsor Magnet") and state.config.confirm_turns:          # live play and the sandbox: a button of its own, the player takes the cards when they like
+        return [{"kind": "magnet", "source": key, "name": name, "optional": False}]
     elif name in ("Sea Animal Magnet", "Sponsor Magnet"):
         for i, c in enumerate(state.display):
             if c and ((name == "Sponsor Magnet" and c.startswith("S")) or (name == "Sea Animal Magnet" and _sea_animal(c, state.config.marine_worlds, any_card=True))):
@@ -300,6 +306,10 @@ def legal(state, e: dict, i: int, seat: int) -> list:
         return [Action(seat, "choose_effect", {"index": i, "worker": t.id}) for t in p.tokens if t.type == "worker" and t.location.startswith("association_")]
     if k == "assertion":
         return [Action(seat, "choose_effect", {"index": i, "card": c}) for c in state.base_projects_unused]
+    if k == "dominance":
+        return [Action(seat, "choose_effect", {"index": i, "apply": "dominance"})]
+    if k == "magnet":
+        return [Action(seat, "choose_effect", {"index": i, "apply": "magnet"})]
     if k == "pilfer":
         out = []
         if not pilfer_hits(state, e):                              # the victim is not behind (any more): nothing happens
@@ -538,4 +548,14 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
                 state.prompt.args["pending"].append({**eff, "player": p.seat})
         else:
             p.hand.append(c)
+    elif k == "dominance":
+        if "P108" in state.base_projects_unused:                  # the Primates base project, when nobody has taken it
+            state.base_projects_unused.remove("P108")
+            p.hand.append("P108")
+    elif k == "magnet":                                            # every sponsor (Sponsor Magnet) / sea animal (Sea Animal Magnet) of the display goes to the hand
+        for j, c in enumerate(state.display):
+            if c and ((e["name"] == "Sponsor Magnet" and c.startswith("S")) or (e["name"] == "Sea Animal Magnet" and _sea_animal(c, state.config.marine_worlds, any_card=True))):
+                state.display[j] = None
+                marks.taken(state, c)
+                p.hand.append(c)
     fx._done(state, i)

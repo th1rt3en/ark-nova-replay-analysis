@@ -1,5 +1,5 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
-import { $, el, seatColor, seatText } from './util.js';
+import { $, el, seatColor, seatRawColor, seatText } from './util.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { curState, hides as povHides, seatOrder, seesAll } from './pov.js';
 const hides = (seat) => povHides(seat) || (PLAY && S.play.seat !== null && seat !== S.play.seat);       // (a live game is between two real players: the dock only has the player's own hand and endgame cards, nothing of the opponent)
@@ -8,7 +8,9 @@ import { pointsBadge } from './egpoints.js';
 import { endgameDiscardAt } from './egdiscard.js';
 import { iconUrl } from './icons.js';
 import { motionOff } from './motion.js';
-import { cardPickAct, forkActs, pickCardOf } from './action-bar.js';
+import { animalsChoicePending, cardPickAct, forkActs, pickCardOf } from './action-bar.js';
+// the colour of the round buttons of the tray (and the water line of the fork's buttons): a white player is plain white there, not the grey the rest of the page uses so that the white font and the pale paper do not swallow it
+const discColor = (s) => { const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(seatRawColor(s) || ''); return m && Math.min(...[1, 2, 3].map((i) => parseInt(m[i], 16))) >= 235 ? '#ffffff' : seatColor(s); };
 import { playedChips, playedMode, withCubes } from './zoo.js';
 
 
@@ -27,6 +29,7 @@ function revealDim(seat) {
 }
 // while a sponsor is to be played, everything in the hand of that player that is not a playable sponsor is greyed out
 function handDim(seat) {
+  if (animalsChoicePending()) return () => true;                         // Ignore Animals: nothing is played until the player has said how many animals they play
   if (FORK && S.marketMode !== null) {                                    // Marketing: the sponsors that cannot be played are greyed out
     const keys = forkActs((a) => a.kind === 'choose_effect' && a.player === seat && a.args.index === S.marketMode && typeof a.args.card === 'string').map((a) => a.args.card);
     if (keys.length) return (k) => !keys.includes(k);
@@ -35,8 +38,18 @@ function handDim(seat) {
     const keys = forkActs((a) => a.player === seat && cardPickAct(a)).map(pickCardOf);
     if (keys.length) return (k) => !keys.includes(k);
   }
+  if (FORK && (S.snapMode === 'sun_money' || S.snapMode === 'sun_strength')) {                // Sponsors variant 3: the cards that can be discarded stay lit
+    const op = S.snapMode === 'sun_strength' ? 'discard_strength' : 'discard_money';
+    const keys = forkActs((a) => a.player === seat && a.kind === 'sponsor_side' && a.args.op === op).map((a) => a.args.card);
+    return (k) => !keys.includes(k);
+  }
+  if (FORK && S.snapMode) {                                             // Sponsors variant 4: first the sponsor to discard (the other cards of the hand are greyed out), then the one of the display (the whole hand is)
+    if (S.snapMode === 'snap') return () => true;
+    const keys = forkActs((a) => a.player === seat && a.kind === 'sponsor_side' && a.args.op === 'discard_snap').map((a) => a.args.card);
+    return (k) => !keys.includes(k);
+  }
   if (FORK) {                                                           // a card is to be played: the cards the engine does not let the player play (not an animal / a sponsor, a requirement, the price or an enclosure that cannot be met) are greyed out
-    const ok = forkActs((a) => a.player === seat && a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind)).map((a) => a.args.card);
+    const ok = forkActs((a) => a.player === seat && a.args && a.args.card && !a.args.from_display && ['play_animal', 'play_sponsor', 'sponsor_side'].includes(a.kind) && a.args.op !== 'discard_snap' && a.args.op !== 'discard_money' && a.args.op !== 'discard_strength').map((a) => a.args.card);
     if (ok.length) return (k) => !ok.includes(k);
   }
   const reveal = revealDim(seat);
@@ -111,6 +124,14 @@ function autoEndgame() {
     if (a.prev && here) S.dockSel = a.prev;
   }
 }
+// A fork plays both seats: when the decision passes to the other seat (a turn is confirmed), that seat's hand opens (not saved: a reload keeps the viewer's own choice; a dock that is folded stays folded).
+function autoSeat(st) {
+  if (!FORK || SANDBOX || PLAY || MINIGAME || !S.replay || !st || S.forkGate) return;                 // (while the turn waits for its Confirm the seat that played it keeps its hand open)
+  const step = S.replay.steps[S.step], first = step && (step.actions || [])[0], a = first && Number.isInteger(first.player) ? first.player : null;       // (the seat that has the moves to make: it changes when a turn is confirmed)
+  if (a === null || S.dockActive === a) return;
+  S.dockActive = a;
+  if (st.players[a]) S.dockSel = { seat: a, kind: 'hand' };
+}
 export function renderDock(st) {
   let dock = $('dock');
   if (!dock) { dock = el('div', 'dock'); dock.id = 'dock'; document.body.append(dock); }
@@ -119,6 +140,7 @@ export function renderDock(st) {
   if (SANDBOX && S.replay.setup) { dock.replaceChildren(); return; }                // (nothing to show before the game: the seat and the maps are chosen first)
   if (MINIGAME && S.pov === null) { dock.replaceChildren(); document.body.style.paddingBottom = ''; return; }      // (both hands are under the zoos, zoo.js)
   autoEndgame();
+  autoSeat(st);
   if (S.dockSel && S.dockSel.kind === 'played' && playedMode() !== 'tray') S.dockSel = { seat: S.dockSel.seat, kind: 'hand' };         // (the setting "Played cards" was changed away from the tray)
   const panel = el('div', 'dockpanel');
   const bar = el('div', 'dockbar');
@@ -285,7 +307,7 @@ function drawTray(dock, rows, shownSel, st) {
     const b = el('button', 'traydisc' + (shownSel.kind === kind ? ' on' : '')); b.type = 'button';
     const on = shownSel.seat === s && shownSel.kind === kind;
     const label = S.replay.players[s].name + ': ' + KIND_NAME[kind] + ' (' + cnt + ')';
-    b.classList.toggle('on', on); b.style.setProperty('--pc', seatColor(s)); b.dataset.seat = String(s); b.dataset.kind = kind;
+    b.classList.toggle('on', on); b.style.setProperty('--pc', discColor(s)); b.dataset.seat = String(s); b.dataset.kind = kind;
     b.title = label; b.setAttribute('aria-label', label); b.setAttribute('aria-pressed', String(on));
     const img = el('img', kind === 'played' ? 'tiles' : ''); img.src = iconUrl(KIND_ICON[kind]); img.alt = '';        // (the played-cards icon is built from the two tiles of the sheet, `scripts/build_played_icon.py`)
     b.append(img, el('span', 'traycount', cnt));

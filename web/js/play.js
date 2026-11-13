@@ -144,7 +144,13 @@ export async function playLoad() {
   setClock(setup.body.clock);
   setStudy(setup.body.study);
   P.started = P.status !== 'waiting';
-  return { ...setup.body, table_id: P.id, result: [], setup_steps: 0, steps: [playStep(state.body, 0)] };
+  let saved = [];                                                      // the log of the moves before this page was opened: the server has it, each line as this viewer reads it
+  const logRes = await playApi('/log' + (P.token ? '?s=' + encodeURIComponent(P.token) : '')).catch(() => null);
+  if (logRes && logRes.ok && Array.isArray(logRes.body.log)) saved = logRes.body.log;
+  saved = (Array.isArray(saved) ? saved : []).filter((e) => e && typeof e.label === 'string' && e.version < state.body.version);
+  const past = saved.map((e, i) => ({ ...playStep(state.body, i), label: e.label, label_pov: e.label_pov || null, log_only: true, options: null, actions: [], version: e.version }));       // (text only: they show the current board)
+  const steps = [...past, playStep(state.body, past.length)];
+  return { ...setup.body, table_id: P.id, result: [], setup_steps: 0, steps };
 }
 // Ark360 reveals the base projects and the rewards of the conservation / reputation tracks after the action card draft: the page learns them from the first view that has them
 function learnReveal(view) {

@@ -9,6 +9,7 @@ so two forks with the same seed see the same cards come up in the same order.
 """
 import copy
 import json
+import secrets
 from collections import Counter
 import re
 
@@ -25,6 +26,11 @@ from ark_nova.replay.view import state_view
 DEFAULT_SEED = 1
 MAX_SEED = (1 << 63) - 1
 _CARD = re.compile(r"^[ASPF]\d{3}$")
+
+
+def random_seed() -> int:
+    """A new seed for a fork: random, so that every fork deals the cards nobody has seen in a new order (52 bits: the largest whole number a browser reads exactly; never the replay's own seed 1)."""
+    return 2 + secrets.randbelow(1 << 52)
 
 
 def reorder_decks(state: GameState, seed: int) -> GameState:
@@ -97,6 +103,9 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
         if move:
             return f"Move the {t_} to ({x_}, {y_}) rotation {r_} (crane)"
         return f"Place {t_} at ({x_}, {y_}) rotation {r_}{extra}"
+    if k == "choose_release":
+        where = args.get("building")
+        return f"Release {_name(args.get('release', '?'))}" + (f" (empty the enclosure at {where[0]}, {where[1]})" if where else "")
     if k == "choose_slot" and isinstance(args.get("slot"), int):                           # (players count the slots from 1)
         return f"Slot {args.pop('slot') + 1}" + "".join(f", {k2} {_fmt(v)}" for k2, v in args.items())
     if k == "sponsor_side" and args.get("op") in _TRADE_TEXT:
@@ -173,7 +182,16 @@ def play(state_dict: dict, action_dict: dict, names: list[str]) -> dict:
         raise IllegalAction("that action is not legal in this position")
     who = names[action.player] if 0 <= action.player < len(names) else f"seat {action.player}"
     new = apply(state, action)
-    return step_payload(new, narrate(state, action, new, who), is_irreversible(state, action, new))
+    return step_payload(new, bga_label(state, action, new, names, who), is_irreversible(state, action, new))
+
+
+def bga_label(old: GameState, action: Action, new: GameState, names: list[str], who: str) -> str:
+    """The log of a move in BGA's words (as the replay of a logged table, a live game and the sandbox word it); the sentence of `narrate` if the wording fails."""
+    from ark_nova.live import bgalog
+    try:
+        return bgalog.texts(old, action, new, list(names) if len(names) >= 2 else [who, who])["full"]
+    except Exception:                                                        # noqa: BLE001 (a log line must never stop the fork)
+        return narrate(old, action, new, who)
 
 
 is_irreversible = turns.irreversible                                       # (the rule of what cannot be taken back lives in the engine: engine/turns.py)

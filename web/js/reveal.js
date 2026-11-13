@@ -14,8 +14,25 @@ import { pointsBadge } from './egpoints.js';
 import { draftMarks } from './action-bar.js';          // (the cards the viewer highlighted with a click, shared with the action card draft; cleared at every step)
 
 const DRAW = /^(.+?) draws .* for (perception|hunter|scuba dive|scavenging) effect$/i;
-const MAXROW = 5, ROWED = new Set(['perception', 'hunter', 'scuba dive', 'scavenging']);
-const perRow = (effect, n) => effect === 'assertion' ? Math.ceil(n / 2) : ROWED.has(effect) && n > MAXROW ? Math.ceil(n / Math.ceil(n / MAXROW)) : 0;      // (cards per row: Assertion always two rows, the others at most 5 in a row, then the cards are split evenly with the longer row first: 6 = 3 + 3, 7 = 4 + 3, 8 = 4 + 4, 9 = 5 + 4; 0 = one row as before)
+const MAXROW = 5, MAXROW_BIG = 6, BIG_FROM = 11, ROWED = new Set(['perception', 'hunter', 'scuba dive', 'scavenging']);
+// The rows of a wrapped panel, as a list of card counts (null = one row): Assertion always two rows; the others one row up to 5 cards, then as few rows as rows of at most 5 allow (from 11 cards, `BIG_FROM`,
+// at most 6), and the cards are spread EVENLY over the rows, the longer rows first (7 = 4 + 3, 10 = 5 + 5, 11 = 6 + 5, 13 = 5 + 4 + 4, 16 = 6 + 5 + 5, 17 = 6 + 6 + 5).
+function rowSizes(effect, n) {
+  const max = effect === 'assertion' ? Math.ceil(n / 2) : ROWED.has(effect) && n > MAXROW ? (n >= BIG_FROM ? MAXROW_BIG : MAXROW) : 0;
+  if (!max) return null;
+  const rows = Math.ceil(n / max), base = Math.floor(n / rows), extra = n % rows;
+  return Array.from({ length: rows }, (_, i) => base + (i < extra ? 1 : 0));
+}
+const perRow = (effect, n) => (rowSizes(effect, n) || [0])[0];                       // (cards in the longest row = the width of the panel, `--per`; 0 = one row)
+/** Sets the panel's row variables (`--per`, `--rows`) and puts a line break after each row of cards, so the rows are the even ones of `rowSizes` and not "fill a row, the rest below". Call after the cards are in `row`. */
+function layoutRows(pop, row, effect, n) {
+  const sizes = rowSizes(effect, n);
+  if (!sizes) return;
+  pop.style.setProperty('--per', String(sizes[0])); pop.style.setProperty('--rows', String(sizes.length));
+  const cards = [...row.children];
+  let at = 0;
+  for (const size of sizes.slice(0, -1)) { at += size; const br = el('i', 'rowbreak'); br.setAttribute('aria-hidden', 'true'); cards[at - 1].after(br); }
+}
 const NAME = { perception: 'Perception', hunter: 'Hunter', 'scuba dive': 'Scuba Dive', scavenging: 'Scavenging', resistance: 'Resistance', assertion: 'Assertion', horse: 'Horse Whisperer', adapt: 'Adapt' };
 const ONLY = { hunter: 'A', 'scuba dive': 'S', assertion: 'P' };                     // (the first letter of the keys the effect may take; the others take any card)
 export const takes = (effect, key) => !ONLY[effect] || String(key).startsWith(ONLY[effect]);
@@ -141,7 +158,7 @@ export function showReveal(r, nav) {
     }
     row.append(c);
   }
-  if (perRow(r.effect, r.cards.length)) pop.style.setProperty('--per', String(perRow(r.effect, r.cards.length)));          // (two rows: the first has the larger half, 8 = 4 + 4, 9 = 5 + 4, 11 = 6 + 5; the cards get narrower from 7 in a row on, css `.assertpop`)
+  layoutRows(pop, row, r.effect, r.cards.length);          // (wrapped panels: the rows are even, 8 = 4 + 4, 9 = 5 + 4, 11 = 6 + 5; the cards get narrower from 7 in a row on, css `.assertpop`)
   group.append(head(r.seat, say, r.effect));
   group.append(row);
   pop.append(group);
@@ -306,12 +323,12 @@ function horseFork(o, acts, play) {
 }
 
 // The fork and the live game: the pending reveal / scavenge effect of the player (options.effects): `cards` are the cards of the effect, `n` how many are kept
-export function forkReveal(o, acts, play) {
+export function forkReveal(o, acts, play, cancel) {
   if (horseFork(o, acts, play)) return true;
   if (adaptFork(o, acts, play)) return true;
   let e = (o.effects || []).find((x) => (x.kind === 'reveal' || x.kind === 'scavenge') && Array.isArray(x.cards) && x.cards.length);
   if (!e) {                                                       // Assertion: the pending effect holds no cards, its choices (`choose_effect` with `card`) are the unused base projects
-    const as = (o.effects || []).find((x) => x.kind === 'assertion');
+    const as = (o.effects || []).find((x) => x.kind === 'assertion' && S.assertOpen === x.index);          // (opened by the Assertion button)
     const cards = as ? [...new Set(acts.filter((a) => a.kind === 'choose_effect' && a.args.index === as.index && a.args.card).map((a) => a.args.card))] : [];
     if (cards.length) e = { ...as, cards, n: 1 };
   }
@@ -324,7 +341,7 @@ export function forkReveal(o, acts, play) {
   if (!S.revealSel || S.revealSel.index !== e.index || S.revealSel.step !== S.step) S.revealSel = { index: e.index, step: S.step, sel: [] };
   const sel = S.revealSel.sel;
   const pop = el('div', 'draftpop revealpop' + (perRow(effect, e.cards.length) ? ' assertpop' : '')), group = el('div', 'draftgroup'), row = el('div', 'draftcards');
-  if (perRow(effect, e.cards.length)) pop.style.setProperty('--per', String(perRow(effect, e.cards.length)));
+  // (the rows of the panel are laid out once the cards are in the row: `layoutRows` below)
   const none = !offered.size;
   group.append(head(seat, none ? 'reveals ' + plural(e.cards.length, 'card') + ' for ' + NAME[effect]
     : 'must choose ' + plural(n, 'card') + ' to keep (' + NAME[effect] + ')', effect), row);
@@ -334,7 +351,7 @@ export function forkReveal(o, acts, play) {
   const refresh = () => {
     confirm.textContent = none ? 'Keep nothing' : 'Confirm (' + sel.length + '/' + n + ')';
     confirm.disabled = S.forkBusy || !match();
-    for (const c of row.children) { const k = c.dataset.key; c.classList.toggle('picked', sel.includes(k)); c.classList.toggle('passed', sel.length >= n && !sel.includes(k)); const m = c.querySelector('.draftcheck'); if (sel.includes(k) && !m) c.append(el('span', 'draftcheck', '✓')); else if (!sel.includes(k) && m) m.remove(); }
+    for (const c of row.querySelectorAll('.draftcard')) { const k = c.dataset.key; c.classList.toggle('picked', sel.includes(k)); c.classList.toggle('passed', sel.length >= n && !sel.includes(k)); const m = c.querySelector('.draftcheck'); if (sel.includes(k) && !m) c.append(el('span', 'draftcheck', '✓')); else if (!sel.includes(k) && m) m.remove(); }
   };
   for (const k of e.cards) {
     const c = face(k, false), ok = offered.has(k);
@@ -345,9 +362,15 @@ export function forkReveal(o, acts, play) {
     } else c.classList.add('unavailable');
     row.append(c);
   }
+  layoutRows(pop, row, effect, e.cards.length);
   confirm.onclick = () => { const a = match(); if (a && !S.forkBusy) play(a); };
   const buttons = el('div', 'revealbtns');
   buttons.append(confirm);
+  if (effect === 'assertion' && cancel) {                                                       // (the Assertion button opened the offer: Cancel closes it again)
+    const c = el('button', 'forkmove forkskip', 'Cancel');
+    c.type = 'button'; c.onclick = () => { if (!S.forkBusy) cancel(); };
+    buttons.append(c);
+  }
   const skip = acts.find((a) => a.kind === 'skip_effect' && a.args.index === e.index);          // (an optional effect: Hunter Animals)
   if (skip) {
     const s = el('button', 'forkmove forkskip', 'Skip ' + NAME[effect]);

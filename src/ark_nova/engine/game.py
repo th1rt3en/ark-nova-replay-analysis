@@ -201,7 +201,7 @@ def harbor_ready(state: GameState, seat: int) -> bool:
     p = state.players[seat]
     own = state.active_player == seat                      # the turn is running; otherwise it has just ended and the next player has not acted yet
     turn = state.turn if own else state.turn - 1
-    return (state.phase in (Phase.TURN, Phase.FINAL_TURNS) and (own or bool(p.flags.get("turn_window"))) and p.map_id in ("4", "4a") and bool(p.hand)
+    return (state.phase in (Phase.TURN, Phase.FINAL_TURNS) and (own or (bool(p.flags.get("turn_window")) and not state.config.confirm_turns)) and p.map_id in ("4", "4a") and bool(p.hand)
             and p.flags.get("harbor_turn", -1) != turn
             and any((0, 11) in build_action.footprint(b.type, b.x, b.y, b.rotation) for b in p.buildings if build_action.knows_shape(b.type)))
 
@@ -388,7 +388,10 @@ def apply(state: GameState, action: Action) -> GameState:
         return _concede(state, action)
     scores = gamestats.scores(state)
     booked = [st["booked"] for st in state.stats] or [0] * len(state.players)
+    carried = len(getattr(state, "auto_gains", ()))
     new = _apply(state, action)
+    if hasattr(new, "auto_gains"):                       # (the gains of sponsors that pay at once, for the log of this step only: they are not part of the saved state)
+        new.auto_gains = new.auto_gains[carried:]
     gamestats.account_points(new, scores, booked, state.current_action)
     turns.track(state, action, new)
     return new
@@ -578,7 +581,10 @@ def _gain(state: GameState, seat: int, money: int = 0, appeal: int = 0, x_tokens
             if bonus.get("upgrade"):
                 bonuses.defer(state, {"kind": "upgrade", "player": seat, "source": "reputation track", "optional": False})
             if bonus.get("worker"):
-                bonuses.hire_worker(state, seat)
+                if state.config.confirm_turns:                      # live play and the sandbox: a button of its own, "Gain a worker"
+                    bonuses.defer(state, {"kind": "gain_worker", "player": seat, "source": "reputation track", "optional": False})
+                else:
+                    bonuses.hire_worker(state, seat)
             if bonus.get("take"):
                 bonuses.defer(state, {"kind": "take", "source": "reputation track", "optional": False, "player": seat})
         if old + reputation > bonuses.reputation_cap(p) == tracks.MAX_REPUTATION:      # beyond the end of the track: 1 appeal per point lost
@@ -995,7 +1001,10 @@ def _has_moves(state: GameState, action: Action) -> bool:
         p = new.players[pr.player]
         if any(x.kind == "place_building" for x in _build_actions(new, p, ("size-1", "pavilion", "kiosk"))):
             return True
-    return any(a.kind not in _FINISHING for a in legal_actions(new))
+    acts = legal_actions(new)
+    if pr.kind == "animals_play" and state.config.confirm_turns:   # live play: an animal has to be played (Ignore Animals alone is no move: nothing could be played); the logs of BGA have such turns
+        return any(a.kind == "play_animal" for a in acts)
+    return any(a.kind not in _FINISHING for a in acts)
 
 
 def _skip_action(state: GameState, action: Action) -> None:
@@ -1267,7 +1276,7 @@ def _finish_turn_now(state: GameState, seat: int) -> None:
     state.players[seat].flags.pop("t1_used", None)
     state.players[seat].flags.pop("built_now", None)
     venom.finish_turn(state, seat)
-    if bonuses.token_uses(state, state.players[seat]) and state.break_position < BREAK_AT and not endgame.last_turn_done(state, seat):
+    if not state.config.confirm_turns and bonuses.token_uses(state, state.players[seat]) and state.break_position < BREAK_AT and not endgame.last_turn_done(state, seat):
         state.players[seat].flags["refill_pending"] = 1       # a sponsor played with a notepad token after the action: BGA refills the display after it (744430246 turn 43)
     else:
         _refill_display(state)
@@ -1277,7 +1286,7 @@ def _finish_turn_now(state: GameState, seat: int) -> None:
     state.active_player = 1 - seat
     endgame.check_trigger(state, [seat, 1 - seat], True, 1 - seat)
     if endgame.last_turn_done(state, seat) and state.break_position < BREAK_AT:       # no break after the last turn, unless that turn brought it (BGA plays it: 801093493)
-        if bonuses.token_uses(state, state.players[seat]):                  # a token of the notepad may still be used before the game is scored (logs)
+        if not state.config.confirm_turns and bonuses.token_uses(state, state.players[seat]):                  # a token of the notepad may still be used before the game is scored (logs)
             state.prompt = Prompt(kind="final_window", player=seat, args={})
             return
         _end_game(state)
@@ -1332,6 +1341,7 @@ _TURN_HANDLERS = {
     ("association_tasks", "association_task"): lambda st, act: association.do_task(st, act),
     ("association_tasks", "choose_slot"): lambda st, act: association.choose_slot(st, act),
     ("association_tasks", "choose_bonus"): lambda st, act: association.choose_bonus(st, act),
+    ("association_tasks", "choose_release"): lambda st, act: association.choose_release(st, act),
     ("association_tasks", "donate"): lambda st, act: association.donate(st, act),
     ("association_tasks", "finish_association"): lambda st, act: association.finish(st, act),
     ("association_tasks", "self_clever"): lambda st, act: association.self_clever(st, act),

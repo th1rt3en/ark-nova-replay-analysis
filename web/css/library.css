@@ -1,0 +1,63 @@
+/* The Library hall (library/index.html, js/library.js): the page around the scene, the scene's motion, the cat. */
+/* The site's own cursors, as everywhere else (style.css): a black arrow and a black hand with a white outline (web/cursors/). */
+:root { --cur-arrow: url(/cursors/arrow.svg) 3 2, default; --cur-hand: url(/cursors/hand.svg) 10 1, pointer; }
+html { cursor: var(--cur-arrow); }
+a:any-link { cursor: var(--cur-hand); }
+button, summary, select { cursor: var(--cur-hand); } button:disabled { cursor: var(--cur-arrow); }
+input:not([type]), input[type="text"], input[type="search"] { cursor: text; }
+html:has(body.hallpage) { background: #1A0D10; }
+body.hallpage { margin: 0; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; background: radial-gradient(1200px 700px at 50% 0%, #812138 0%, #4D1220 45%, #1A0D10 100%) fixed #1A0D10; overflow: hidden; }
+body.hallpage .stage { position: relative; width: min(100vw, calc(100vh * 16 / 9)); width: min(100vw, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9; }
+body.hallpage #hall { display: block; width: 100%; height: 100%; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+body.hallpage .hallbar { position: absolute; z-index: 2; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1% 1.4%; pointer-events: none; }
+body.hallpage .hallbar > * { pointer-events: auto; }
+body.hallpage .hallback, body.hallpage #soundbtn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 2.5px solid #2A1210; border-radius: 19px; background: linear-gradient(#F0CE7A, #B8862E); color: #2A1210; font: 700 15px/1 'Park Label', 'Barlow', system-ui, sans-serif; text-decoration: none; cursor: var(--cur-hand); box-shadow: 0 3px 0 #2A1210; }
+body.hallpage .hallback:hover, body.hallpage #soundbtn:hover { filter: brightness(1.08); }
+body.hallpage .hallback:focus-visible, body.hallpage #soundbtn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+body.hallpage #soundbtn { width: 38px; padding: 0; justify-content: center; }
+body.hallpage #soundbtn svg { width: 20px; height: 20px; fill: none; stroke: #2A1210; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+body.hallpage #soundbtn .wave { display: none; } body.hallpage #soundbtn.on .wave { display: inline; } body.hallpage #soundbtn.on .mute { display: none; }
+/* ----- the scene's motion ----- */
+.sway { transform-box: fill-box; transform-origin: 50% 100%; animation: sway 7s ease-in-out infinite alternate; }
+.hang { transform-box: fill-box; transform-origin: 50% 0; animation: sway 9s ease-in-out infinite alternate; }
+@keyframes sway { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
+.fl { transform-box: fill-box; transform-origin: 50% 100%; animation: fl var(--d, .5s) ease-in-out infinite alternate; }
+@keyframes fl { 0% { transform: scale(1, 1) skewX(-4deg); } 50% { transform: scale(.9, 1.15) skewX(4deg); } 100% { transform: scale(1.07, .9) skewX(-1deg); } }
+.spark { mix-blend-mode: screen; animation: spark var(--d, 2s) linear var(--l, 0s) infinite; }
+@keyframes spark { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translate(var(--x, 10px), -170px); opacity: 0; } }
+#globe, .bay, #door { outline: none; -webkit-tap-highlight-color: transparent; }
+.flame { transform-box: fill-box; transform-origin: 50% 100%; animation: flick var(--fd, .9s) ease-in-out infinite alternate; }
+@keyframes flick { 0% { transform: scale(1, 1) rotate(-2deg); } 50% { transform: scale(.92, 1.1) rotate(2deg); } 100% { transform: scale(1.05, .94) rotate(-1deg); } }
+.glow { mix-blend-mode: screen; animation: gl var(--gd, 2.6s) ease-in-out infinite alternate; }
+@keyframes gl { from { opacity: .72; } to { opacity: 1; } }
+.ember { mix-blend-mode: screen; animation: em 5.5s ease-in-out infinite alternate; }
+@keyframes em { from { opacity: .5; } to { opacity: .95; } }
+.mote { animation: mote var(--md, 18s) linear var(--ml, 0s) infinite; }
+@keyframes mote { 0% { transform: translate(0, 0); opacity: 0; } 15% { opacity: var(--mo, .5); } 85% { opacity: var(--mo, .5); } 100% { transform: translate(var(--mx, 30px), -150px); opacity: 0; } }
+.rmote { mix-blend-mode: screen; animation: rmote var(--md, 9s) ease-in-out var(--ml, 0s) infinite; }
+@keyframes rmote { 0% { transform: translate(0, 0); opacity: 0; } 20% { opacity: .8; } 100% { transform: translate(var(--mx, -40px), -120px); opacity: 0; } }
+.bay .lit { opacity: 0; transition: opacity .5s; mix-blend-mode: screen; pointer-events: none; }
+.bay:hover .lit, .bay:focus-visible .lit { opacity: .55; }
+.bay { cursor: var(--cur-hand); outline: none; }
+.plq text { transition: fill .4s; }
+.bay:hover .plq text, .bay:focus-visible .plq text { fill: #FFF1C4; }
+#ladder { transition: transform 1.6s cubic-bezier(.4, 0, .2, 1); }
+#leaf { transition: transform 1.2s cubic-bezier(.4, 0, .2, 1); transform-box: fill-box; transform-origin: 100% 50%; }
+#door:hover #leaf { transform: scaleX(.72); }
+@media (prefers-reduced-motion: reduce) { .sway, .hang, .fl, .spark, .flame, .glow, .ember, .mote, .rmote { animation: none; } }
+.bay.soon { cursor: var(--cur-arrow); }
+.plq.soon { opacity: .6; }
+/* ----- the cat in its basket ----- */
+#cat { cursor: var(--cur-hand); outline: none; -webkit-tap-highlight-color: transparent; }
+#cat .mv { transform-box: fill-box; }
+#cat .eo { transform-box: fill-box; transform-origin: 50% 50%; transition: transform .07s; }
+#cat.blink .eo { transform: scaleY(.1); }
+#cat .eh { display: none; } #cat.pet .eh { display: inline; } #cat.pet .eo { display: none; }
+#cat .heart { opacity: 0; transform-box: fill-box; transform-origin: 50% 50%; }
+#cat.pet .heart { animation: heart 1.3s ease-out forwards; animation-delay: var(--hd, 0s); }
+@keyframes heart { 0% { opacity: 0; transform: translateY(6px) scale(.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-46px) scale(1.15); } }
+#cat.pet .hd { animation: lean 1.4s ease-in-out; transform-origin: 50% 100%; }
+@keyframes lean { 0%, 100% { transform: rotate(0) scale(1, 1); } 30% { transform: rotate(13deg) scale(1.04, .93); } 60% { transform: rotate(13deg) scale(1.02, .95) translateX(2px); } }
+#cat .tl { transform-origin: 0% 0%; animation: tailsway 3.6s ease-in-out infinite alternate; }
+@keyframes tailsway { from { transform: rotate(-5deg); } to { transform: rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { #cat .tl { animation: none; } }

@@ -16,6 +16,11 @@ export async function fetchReplay() {
     game.steps.forEach((st, i) => { st.index = i; });
     return game;
   }
+  if (!FORK && params.get('fork')) {                                       // an exported fork (replay.html?table=<original table>&fork=<number>): a replay made from the engine's record, with its own statistics
+    const body = await readReplay(await fetch(url.replace(/\/replay$/, '/forks/' + encodeURIComponent(params.get('fork')) + '/replay')));
+    S.postStats = body.post_stats || null;
+    return body;
+  }
   const server = params.get('source') === 'upload' ? await keptOnServer() : { kept: false, complete: false };       // (what the server keeps of this table: nothing to send when it has the log, and nothing at all when it has the data too)
   if (FORK) {
     const seed = params.get('seed');
@@ -33,8 +38,9 @@ export async function fetchReplay() {
         maps = seen ? JSON.parse(seen) : null;
       }
     }
+    S.forkSource = { kept: kept || undefined, log: kept ? undefined : log, index, base_projects, maps };          // (what the export needs to read the game up to the fork point again: nothing when the server has the log)
     const forkPost = async (withLog) => fetch(url.replace(/\/replay$/, '/fork'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                                                                                  body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, log: withLog ? log : undefined, kept: !withLog && kept, index, base_projects, maps })) });
+                                                                                  body: await packed(JSON.stringify({ step: parseInt(params.get('step'), 10), seed: seed ? parseInt(seed, 10) : undefined, fork_id: params.get('fork') ? parseInt(params.get('fork'), 10) : undefined, log: withLog ? log : undefined, kept: !withLog && kept, index, base_projects, maps })) });
     res = await forkPost(!kept);
     if (kept && res.status === 409) {                                        // (the kept copy is gone: send the log)
       log = await LogStore.get(table);
@@ -90,7 +96,7 @@ export async function fetchFullReplay() {
 }
 
 // A log is some 10 MB of text and 30 times smaller gzipped: the upload of a slow connection took longer than anything else (the server unpacks a body that starts with the gzip bytes).
-async function packed(text) {
+export async function packed(text) {
   if (typeof CompressionStream === 'undefined') return text;
   try { return await new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).blob(); } catch (e) { return text; }
 }

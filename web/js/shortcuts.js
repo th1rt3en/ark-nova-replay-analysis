@@ -1,8 +1,9 @@
 // [module] Keyboard shortcuts pop-up (the ? button in the control panel, or the ? key): a keyboard where only the keys with a function are coloured; a click on such a key, or pressing it, shows what it does (the keys do not act while the pop-up is open; light grey window with orange selected key, the text of the picked key is a typed prompt line in the title row).
 import { $, el } from './util.js';
 import { onScrollbar } from './modalscroll.js';
-import { settingsOpen } from './settings.js';
+import { settingsOpen, openSoundSettings } from './settings.js';
 import { FORK, MINIGAME, PLAY, SANDBOX, S } from './state.js';
+import { tabbedLayout } from './zoo.js';
 import { createPageView } from './rcview.js';
 
 const SHOW_KEY_DETAILS = false;                                            // the grey detail line under a key's title is switched off for now (the texts stay in D, to be overhauled)
@@ -16,6 +17,7 @@ const D = {                                                                // ke
   End: ['End', 'Jump to last step', 'The final board, also from the results.'],
   r: ['R', 'Rotate building during map preview', 'While a sponsor building is being previewed (right click on its card in a hand): Shift + R turns it the other way, the mouse wheel over the map too.'],
   Tab: ['Tab', 'Switch between tabs in hand', 'Cycles through the tabs of the shown cards: hand, endgame cards, the cards stored under the notepad (map 11) and the played cards (when the setting "Played cards" is the tray). Shift + Tab goes back.'],
+  q: ['Q', 'Switch between player boards', 'Only while the player boards are Tabbed (Settings): the other board; Shift + Q goes back. Hidden from this window in the other layouts.'],
   h: ['H', 'Show / hide hand', 'The floating tray or the fan.'],
   s: ['S', 'Open settings', ''],
   F11: ['F11', 'Full screen', 'Switches the browser to full screen and back; the full screen button next to the settings wheel does the same.'],
@@ -27,6 +29,7 @@ const C = {                                                                // th
   ArrowLeft: ['Ctrl + ←', 'Jump to start of this round', 'The start of the current round (again: the round before).'],
   ArrowRight: ['Ctrl + →', 'Jump to start of next round', 'The start of the next round.'],
 };
+C.s = ['Ctrl + S', 'Play the Shoebill sound', 'Its call, also with the setting "Animal sounds" off (Settings, Sound, More: "Ctrl + S" switches it off).'];
 for (const d of '123456789') C[d] = ['Ctrl + ' + d, 'Jump to start of round ' + d, 'The start of round ' + d + ' (Alt + ' + d + ' does the same).'];
 const GAP = [' ', .5];
 const LOCK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2.5" y="7" width="11" height="7.5" rx="1.6" fill="currentColor"/></svg>';                                                     // (a blank space in a row: [label '', width])
@@ -77,8 +80,9 @@ export function setupShortcuts() {
     kb.classList.toggle('ctrl', on);
     for (const [id, l] of Object.entries(keys)) {
       const [plain, ctrl] = lit[id];
-      const isOn = id === 'Control' ? CTRL_LAYER : on ? ctrl : plain;
-      l.forEach((k) => { k.classList.toggle('on', isOn); k.tabIndex = isOn ? 0 : -1; });
+      const isOn = id === 'Control' ? CTRL_LAYER : on ? ctrl : plain && (id !== 'q' || tabbedLayout());
+      l.forEach((k) => { k.classList.toggle('on', isOn); k.tabIndex = isOn ? 0 : -1; const off = id === 's' && on && !S.shoebillKey; k.classList.toggle('off', off); k.querySelector('.kbturn')?.remove();
+        if (off) { const t = el('span', 'kbturn'); t.onclick = (e) => { if (!k.classList.contains('sel')) return; e.stopPropagation(); close(); openSoundSettings(); }; k.append(t); } });   // (Ctrl + S switched off in Settings: the S key is dashed and faded with an OFF tag, which reads TURN ON once the key is picked and then opens the Sound settings)
     }
     if (picked === 'Control' && !locked) picked = 'ArrowRight';
     pick(on && !C[picked] && picked !== 'Control' ? (locked ? 'Control' : 'ArrowRight') : picked);
@@ -86,6 +90,7 @@ export function setupShortcuts() {
   const press = (id) => {
     if (id === 'Control') { if (!CTRL_LAYER) return; locked = !locked; picked = 'Control'; refresh(); return; }
     if (!(layer() ? C[id] : D[id])) return;
+    if (id === 'q' && !layer() && !tabbedLayout()) return;
     pick(id);
   };
   const block = (rows) => {
@@ -94,7 +99,7 @@ export function setupShortcuts() {
       const row = el('div', 'kbrow');
       for (const [label, w, id] of r) {
         if (label === ' ') { const g = el('i', 'kbgap'); g.style.setProperty('--w', String(w)); row.append(g); continue; }
-        const kid = id || (label.length === 1 && (D[label.toLowerCase()] || (CTRL_LAYER && C[label])) ? label.toLowerCase() : null);
+        const kid = id || (label.length === 1 && (D[label.toLowerCase()] || (CTRL_LAYER && C[label.toLowerCase()])) ? label.toLowerCase() : null);
         const plain = !!(kid && D[kid]), ctrl = !!(kid && CTRL_LAYER && C[kid]), isCtl = kid === 'Control';
         const has = isCtl ? CTRL_LAYER : plain || ctrl;
         const k = el(has ? 'button' : 'div', 'kbkey');

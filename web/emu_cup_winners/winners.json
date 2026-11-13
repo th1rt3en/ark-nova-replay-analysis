@@ -1,5 +1,5 @@
 {
-    "_comment": "Winners of the Emu Cup, a community tournament. `photo` is the file in data_manual/emu_cup_photos/ (<season, 2 digits>-<name>.png, ASCII; not served; may not exist yet), `focus` = [x, y] of the face in the photo (fractions) for the round thumbnail made by scripts/build_emu_cup_thumbs.py. The newest season is the incumbent champion: scripts/build_victory_column_art.py (card face + caption) and web/js/cards.js (roll of honour next to the enlarged Victory Column) read this file.",
+    "_comment": "Winners of the Emu Cup, a community tournament. `photo` is the file in data_manual/emu_cup_photos/ (<season, 2 digits>-<name>.png, ASCII; not served; may not exist yet), `focus` = [x, y] of the face in the photo (fractions) for the round thumbnail made by scripts/build_emu_cup_thumbs.py, `art` = how scripts/build_victory_column_art.py places the photo on the card (`sign_x` the middle of the face as a fraction of the scaled photo's width, `shift` px the photo starts below its top edge; negative = moves down). Every winner with a photo has a Victory Column card S274_VC_<season>; the newest season is the incumbent champion and also S274_VC (the default): scripts/build_victory_column_art.py (card face), scripts/cardgen/harness/entry.tsx (caption) and web/js/cards.js (roll of honour next to the enlarged Victory Column) read this file.",
     "event": "Emu Cup",
     "winners": [
         {
@@ -10,12 +10,25 @@
                 0.4,
                 0.3
             ],
+            "art": {
+                "sign_x": 0.405,
+                "shift": -105
+            },
             "thumb": true
         },
         {
             "season": 3,
             "name": "BDWSSBB",
-            "photo": "03-BDWSSBB.png"
+            "photo": "03-BDWSSBB.png",
+            "focus": [
+                0.45,
+                0.26
+            ],
+            "art": {
+                "sign_x": 0.5,
+                "shift": 25
+            },
+            "thumb": true
         },
         {
             "season": 2,

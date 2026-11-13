@@ -15,7 +15,7 @@ from ark_nova.engine.build_action import SIZES, knows_shape
 from ark_nova.parser.model import Event, ParsedLog
 from ark_nova.parser.setup import parse_action_type
 
-_PASSIVE = {"midmessage", "advanceBreak", "fillPool", "gameStateChangePrivateArg", "endOfGame", "timeJokerUsed", "enableMultiplier"}          # automatic consequences the engine reproduces itself
+_PASSIVE = {"midmessage", "advanceBreak", "fillPool", "gameStateChangePrivateArg", "endOfGame", "timeJokerUsed", "enableMultiplier", "gameResultNeutralized"}          # automatic consequences the engine reproduces itself (a player quit: "has quit the game and is going to lose this game whatever happens")
 _SPONSOR_SOURCES = {None, "Map 13 quarter bonus", "Animals3 ability", "increasing card strength", "triggering break", "buying sponsor card", "playing sponsor from reputation range",
                     "maxing out reputation", "reputation track bonus", "placement bonus", "building a pavilion", "filling the map", "max strength Animals", "playing animal from reputation range",
                     "last worker bonus", "Petting Zoo Animal action", "Jumping action", "Pack action", "Iconic animal", "Inventive", "Glide effect",

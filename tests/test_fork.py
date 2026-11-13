@@ -56,9 +56,30 @@ def test_a_fork_starts_from_the_step_with_its_legal_actions(client):
     assert r.status_code == 200
     body = r.json()
     first = body["steps"][0]
-    assert body["fork"]["seed"] == 1 == body["fork"]["default_seed"] and body["fork"]["step"] == step
+    assert body["fork"]["seed"] >= 2 and body["fork"]["default_seed"] == 1 and body["fork"]["step"] == step              # (a random seed each time; 1 is the order of the replay)
+    other = client.post(f"/api/tables/{client.tid}/fork", json={"step": step}).json()["fork"]["seed"]
+    assert other != body["fork"]["seed"]
+    assert client.post(f"/api/tables/{client.tid}/fork", json={"step": step, "seed": 1}).json()["fork"]["seed"] == 1
     assert first["actions"] and all({"player", "kind", "args", "text"} <= set(a) for a in first["actions"])
     assert first["engine_state"]["phase"] in ("turn", "break", "final_turns") and len(body["players"]) == 2 and body["cards"]
+
+
+def test_the_opening_can_be_forked_from_the_end_of_the_draft_to_the_first_turn(client):
+    body = client.get(f"/api/tables/{client.tid}/replay").json()
+    steps = body["steps"]
+    last_setup = max(i for i, s in enumerate(steps) if s["state"]["phase"] == "setup")
+    deal = next((i for i, s in enumerate(steps[:last_setup + 1]) if "draws" in s["label"] and "endgame card" in s["label"]), None)
+    if deal is None or not body.get("setup_steps"):
+        pytest.skip("this log has no action card draft to fork from")
+    assert all(steps[i]["fork"] for i in range(deal, last_setup + 2))                # (the deal, the discards, the first display: each is a position with a decision waiting)
+    first = client.post(f"/api/tables/{client.tid}/fork", json={"step": deal}).json()
+    cur = first["steps"][0]
+    assert cur["engine_state"]["phase"] == "setup" and all(a["kind"] == "initial_discard" for a in cur["actions"])
+    names = [p["name"] for p in first["players"]]
+    for seat in (0, 1):                                                             # both players discard (the engine deals the hands the game had)
+        act = next(a for a in cur["actions"] if a["player"] == seat)
+        cur = client.post("/api/fork/apply", json={"state": cur["engine_state"], "action": act, "names": names}).json()
+    assert cur["engine_state"]["phase"] == "turn" and any(a["kind"] == "choose_action_card" for a in cur["actions"])
 
 
 def test_both_seats_can_play_and_the_state_moves_on(client):

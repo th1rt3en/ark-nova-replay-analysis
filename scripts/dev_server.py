@@ -150,7 +150,9 @@ def build_app():
         from ark_nova.live.service import LiveService
         live = LiveService(FakeKeeper(), engine_version="dev", registry=reg.FakeRegistry(), archive=arch.FakeArchive(), ratings=accounts.store)
     local_index, local_logs = LocalIndex(index), LocalLogs(logs)
-    app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs), accounts=accounts)
+    from ark_nova.storage.forks import FileForkStore
+    forks_dir = Path(__file__).resolve().parents[1] / "build" / "forks"            # (forks exported as replays: build/forks/<table>/<n>.json.gz)
+    app = create_app(settings, local_index, local_logs, live=live, minigames=_minigames(local_index, local_logs), accounts=accounts, fork_store=FileForkStore(forks_dir))
     _planning_routes(app)
 
     @app.middleware("http")

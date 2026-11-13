@@ -1,5 +1,17 @@
 # Changes — 25 October 2026
 
+## Approved placement artwork installed — 12 November 2026
+
+Installed the final reviewed comparison-dossier artwork: Clever, Digging/rescue, Mark, Scavenging, Appeal, Kiosk, Shark Attack, Store, Wave, Search Sponsor Person, ordinary Digging, Pouch, Perception, Pavilion and Hollywood H. Also installed the approved Adapt 1 and clean yellow placement pentagon. Shared `web/icons` filenames are retained, so logs, counters, ability reveals, association/map bonuses and editor consumers use the replacements automatically. Logical sprite dimensions stay unchanged except the kiosk aspect ratio, now the approved regular hexagon (120:103.923).
+
+The final H restores the first candidate geometry exactly, removes only its yellow backing and adds two short supports. The approved rescue gap, Mark elephant contour, Clever numeral/square dots, weathered appeal ticket, tighter five-dot Store arrangement and corrected ability-icon sizing are retained. Pavilion uses the heavier approved outline. Kiosk/pavilion placement previews use the same larger 48-unit height and width, preserving their previous centres; both built-in and editor pavilion bonuses now use the approved peach pavilion. The actual pavilion building sprite is replaced with its original logical canvas/anchor intact; the distinct grey kiosk building is not replaced by the white kiosk bonus.
+
+Adapt 1 now uses `icons_hd/adapt-1.webp` through the shared `adaptIcon` function. Adapt 3 stays unchanged and other values retain their variable-number fallback. The clean pentagon replaces `r5c14.webp`; separate track-bonus vector frames remain unchanged.
+
+Assets are lossless WebP renders of the approved fitted previews (4x logical canvas), not fresh regenerations. Editable/self-contained approved SVG sources, original Adapt 1 PNG and a target manifest are retained in `web/icons_hd/placement-approved/`. Keep these replacements when running the historical BGA sprite generators. Cache versions for icon, HD, pavilion, Hollywood and building-image consumers are bumped to `art20261112`. The local development server already serves static assets with `Cache-Control: no-store`.
+
+Validation: Chrome rendered 33 actual board/editor bonus cases, decoded every image, verified restored Adapt 1/3 and the Adapt 2 fallback, and checked equal kiosk/pavilion dimensions. The running local map editor loaded without JavaScript errors and returned `Cache-Control: no-store`. The validation browser cache was cleared and disabled; image URL versions invalidate previous artwork in existing clients. No game rules, replay data, animation logic or bonus naming changed.
+
 ## Rounded X-token silhouettes — 7 November 2026
 
 Matched the supplied X-token reference with explicit curves at all eight outer corners, retaining sharp inward notches. The previous polygon rounded only its thin stroke, which became visually sharp at log sizes. All four sprite variants now share the same path: dotted/solid, bordered/plain (`r3c2`, `r5c6`, `r3c2_ns`, `r5c6_ns`). Editable SVGs live in `web/icons_hd/xtoken-{dotted,solid}[-plain].svg`; all have uniform opaque charcoal interiors. Verified identical alpha silhouettes for dotted and solid counterparts and inspected 24/32/44/100 px browser renders. Shared icon cache version bumped to art20261107c; validation browser cache cleared.

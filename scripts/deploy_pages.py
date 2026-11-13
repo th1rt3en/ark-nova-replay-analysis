@@ -45,8 +45,12 @@ COMING_SOON = {                                             # standalone page ->
     "end.html": ("Game result", "The results of live games are coming soon."),
     "map_editor.html": ("Map editor", "The map editor is coming soon."),
     "planning.html": ("Planning", "This page is coming soon."),
+    "fork.html": ("Fork", "Forking a position and playing it on is coming soon."),            # (the Fork button of the replay is paled out too: soon_fork)
+    "library/index.html": ("Library", "The card library is coming soon."),
+    "library/cards/index.html": ("Card library", "The card library is coming soon."),
+    "library/actions/index.html": ("Action card library", "The action card library is coming soon."),
 }
-START_COMING_SOON = ["custom", "sandbox", "mini", "editor"]      # the options of the start page (landing.js) that are coming soon on the production site
+START_COMING_SOON = ["custom", "sandbox", "mini", "editor", "library"]    # the options of the start page (landing.js) that are coming soon on the production site
 LANDING_SCRIPT = '<script type="module" src="/js/landing.js"></script>'
 
 

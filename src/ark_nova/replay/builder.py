@@ -36,6 +36,7 @@ class Replay:
     turn_snapshots: list[GameState] = field(default_factory=list)      # state at each turn marker (start of every player turn)
     history_frames: list = field(default_factory=list)  # (normal lifecycle transition, state immediately before it)
     notes: list[tuple[int, str]] = field(default_factory=list)         # known-imprecise oracles (strength modifiers of Venom/Constriction/hypnosis)
+    setup_engine: dict = field(default_factory=dict)        # the engine states of the opening that the log does not play move by move: "dealt" (the hands as dealt, the initial discards waiting), "after_first" (one player has discarded), "final" (the setup is over): what a fork of those steps starts from
     draft_engine: dict = field(default_factory=dict)       # setup move index -> the engine state of the action card draft after it (engine/draft.py fed with the log's offers and choices)
     draft_rounds: dict = field(default_factory=dict)       # draft stage (pick1 | pick2 | keep) -> the engine state when that round starts (nothing chosen yet)
 
@@ -57,6 +58,8 @@ class _Ctx:
         self.threshold_snaps = 0                                  # snaps that belong to a conservation bonus (extra hand size), not to the notepad
         self.support = None                                        # player id whose supported project is still waiting for its notepad bonus
         self.rep_task = False                                      # a reputation task was counted at its worker move; newer logs add a getBonuses for it
+        self.board_worker = None                                   # player id who took the 3rd partner zoo in this move (its space pays a worker, which has not come yet)
+        self.rep8 = None                                           # player id whose reputation reached 8 in this move and whose worker (the 8 reputation bonus) has not come yet
         self.timeline = None                                    # normal turn owner, separate from borrowed card owner
         self.markers: list = []                                    # (order, player id) of every turn marker
         self.mismatches: list[str] = []
@@ -223,7 +226,7 @@ def _mark_income_slot(p, kind: str, value) -> bool:
 
 def _support_bonus(ctx: _Ctx, e: Event, kind: str) -> None:
     """The notepad bonus of a supported project that BGA only logs through its consequence (a snap, a free building, a card): the slot is used up."""
-    pid = str(e.args.get("player_id"))
+    pid = str(e.args.get("player_id", e.player))
     if ctx.support == pid and _mark_income_slot(ctx.player(pid), kind, None):
         ctx.support = None                                   # (an event that is no notepad bonus, e.g. a card of the reputation track, leaves the project waiting)
 
@@ -236,10 +239,14 @@ def h_get_bonuses(ctx: _Ctx, e: Event) -> None:
         if got is not None and got < 2:
             p.reputation = min(15, ctx.__dict__.get("rep_task_old", p.reputation) + got)
         return
+    old_rep = p.reputation
     _apply_bonuses(p, e.args.get("bonuses"))
+    if old_rep < 8 <= p.reputation:
+        ctx.rep8 = str(e.args["player_id"])                  # (the 8 reputation bonus, a worker, follows: it is no project reward)
     if e.args.get("source") == "map bonus space":
         for kind, value in (e.args.get("bonuses") or {}).items():
-            if _mark_income_slot(p, kind, value) and ctx.support == str(e.args.get("player_id")):
+            pid = str(e.args.get("player_id"))
+            if (_mark_income_slot(p, kind, value) or (ctx.support == pid and _mark_income_slot(p, kind, None))) and ctx.support == pid:      # (a capped gain, e.g. 2 of the 3 X tokens at 5, is still that space)
                 ctx.support = None                           # (this bonus is the notepad bonus of the project that was just supported)
 
 
@@ -286,6 +293,18 @@ def h_meeples(ctx: _Ctx, e: Event) -> None:
         ctx.__dict__["rep_task_old"] = p.reputation
         p.reputation = min(15, p.reputation + 2)
         ctx.rep_task = True
+        if ctx.__dict__["rep_task_old"] < 8 <= p.reputation:
+            ctx.rep8 = str(a["player_id"])
+    if e.type == "slideMeeples" and any(m_.get("location") == "partner_3" and str(m_.get("type", "")).startswith("partner") for m_ in a.get("meeples") or []):
+        ctx.board_worker = str(a.get("player_id", e.player))              # the 3rd partner zoo hires a worker (its space bonus; association.space_bonuses)
+    if e.type == "slideMeeples" and e.log.endswith("gains a new Association worker"):      # the Worker bonus of a supported project (map 7) is logged only as the new worker
+        pid_w = str(a.get("player_id", e.player))
+        if ctx.rep8 is not None and ctx.rep8 == pid_w:
+            ctx.rep8 = None                                  # the player has just reached 8 reputation: this worker is that bonus, not the project's (806276023 move 113)
+        elif ctx.board_worker == pid_w:
+            ctx.board_worker = None                          # the player has just taken the 3rd partner zoo: the worker is that space's bonus, not the project's (823017370 move 134)
+        else:
+            _support_bonus(ctx, e, "Worker")
     if e.type == "discardTokens":                    # tokens leave the game (the hidden university tile that a player turns over, action card tokens)
         gone = {int(m["id"]) for m in a.get("meeples") or []}
         if a.get("continent") and a.get("player_id") is not None:        # map 9: "removes <EUROPE> marker from their map" (the markers themselves are not in the log before)
@@ -367,6 +386,8 @@ def h_discard_cards(ctx: _Ctx, e: Event) -> None:
     a = e.args
     p = s.players[ctx.seat(e.player)]
     _apply_bonuses(p, a.get("bonuses"))             # selling / pouching cards pays money
+    if a.get("pouch") == "mapPouched" or any(c.get("location") == "mapPouched" for c in a.get("cards", [])):      # map 7: the Pouch bonus of a supported project is logged only as the pouching
+        _support_bonus(ctx, e, "Pouch")
     if "Map T1 effect" in str(e.log):               # the discard for +1 strength needs the card space of the notepad (slot 0), taken before
         p.flags["bonus_used"] = p.flags.get("bonus_used", 0) | 1
     for c in a.get("cards", []):
@@ -829,8 +850,10 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
     `Replay.substates[move index]` then holds the state before each of them, i.e. the states of all sub-steps but the last."""
     state = start_game(config, seed)
     dealt = copy.deepcopy(state)                                         # the hands as dealt (8 cards, 9 with Map 14's sponsor), before the initial discard
+    after_discards = []
     for pid in setup.seats:
         state = apply(state, Action(setup.seats.index(pid), "initial_discard", {"cards": setup.discarded[pid]}))
+        after_discards.append(copy.deepcopy(state))
     ctx = _Ctx(state, setup)
     ctx.markers = parsed.turn_markers
     ctx.timeline = parsed.normal_turns
@@ -838,6 +861,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
     first_order = markers[0][0] if markers else 10 ** 12
     first_turn = next((m.index for m in parsed.moves if any(e.order > first_order for e in m.events)), len(parsed.moves))
     rep = Replay(states=[], moves=parsed.moves, setup_moves=first_turn)
+    rep.setup_engine = {"dealt": dealt, "after_first": after_discards[0] if after_discards else dealt, "final": after_discards[-1] if after_discards else dealt}
     drafts = draft_states(parsed, [str(s) for s in setup.seats], first_turn)
     if drafts:                                                           # the moves after the draft keep showing its result
         last = None
@@ -860,6 +884,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
 
     for m in parsed.moves:
         if m.index >= first_turn:
+            ctx.rep8 = ctx.board_worker = None                   # (both worker bonuses come in the move that earned them)
             for e in m.events:
                 history_before(e.order)
                 while next_marker < len(markers) and markers[next_marker][0] < e.order:
@@ -882,6 +907,7 @@ def build_replay(parsed: ParsedLog, setup: SetupInfo, config: GameConfig, seed: 
                 rep.mismatches.append((m.index, msg))
             ctx.mismatches = []
             _check_oracles(ctx, m, rep)
+            _apply_bonus_spaces(ctx, m)
         rep.states.append(_setup_state(parsed, first_turn, m.index, dealt, ctx.state, drafts) if m.index < first_turn else copy.deepcopy(ctx.state))
     _sync(ctx)
     history_before(getattr(parsed.normal_turns, "last_order", 0))
@@ -918,6 +944,18 @@ def _post_oracles(ctx: _Ctx, e: Event, m: Move, rep: Replay) -> None:
         if tracks.score(p.appeal, p.conservation) != a["score"]:
             rep.mismatches.append((m.index, f"score after {e.type}: state {tracks.score(p.appeal, p.conservation)}, log {a['score']} "
                                             f"(seat {ctx.seat(a['player_id'])}, appeal {p.appeal}, conservation {p.conservation})"))
+
+
+def _apply_bonus_spaces(ctx: _Ctx, m: Move) -> None:
+    """The association prompt of BGA lists the notepad bonus spaces whose cube is still on them: every other space has been used. Only ever adds bits (the prompt
+    can predate a support of the same move), so a bonus that the log shows only through its consequence (or not at all) is caught by the next prompt at the latest."""
+    for chk in m.checks:
+        spaces = chk.get("bonus_spaces")
+        if spaces is None or chk.get("active") not in ctx.seat_of:
+            continue
+        p = ctx.state.players[ctx.seat_of[chk["active"]]]
+        n = len(data.map_by_id(p.map_id)["geometry"]["bonus_slots"])
+        p.flags["bonus_used"] = p.flags.get("bonus_used", 0) | sum(1 << i for i in range(n) if i not in spaces)
 
 
 def _check_oracles(ctx: _Ctx, m: Move, rep: Replay) -> None:

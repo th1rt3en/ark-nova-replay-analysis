@@ -8,7 +8,7 @@ import { BONUS_HD } from './bonus_hd_data.js';
 import { FIT_DY, FIT_H, ICON_IDS, iconShadow, iconUrl } from './icons.js';
 
 const INK = '#17262B';
-const hd = (name) => '/icons_hd/' + name + '.webp?v=art20261107';
+const hd = (name) => '/icons_hd/' + name + '.webp?v=art20261112';
 let uid = 0;
 const add = (root, tag, attrs, text) => { const e = svg(tag, attrs); if (text !== undefined) e.textContent = text; root.append(e); return e; };
 const image = (root, name, [x, y, w, h]) => add(root, 'image', { href: hd(name), x, y, width: w, height: h, preserveAspectRatio: 'none', ...(iconShadow(name, h) ? { style: iconShadow(name, h) } : {}) });
@@ -33,7 +33,14 @@ export function marketingAttrs(cx, cy, h) {
 }
 // the action card upgrade is heavy on the left (the card, with the arrow only a thin line on its right), so it looked a little too far up and left and its upper left corner grazed the pentagon's
 // edge: 6% smaller and moved 1.8 right / 1 down (units of the 80 high pentagon)
-const nudged = (name, [x, y, w, h]) => name === 'upgrade-card' ? [x + w / 2 + 1.8 - w * 0.47, y + h / 2 + 1 - h * 0.47, w * 0.94, h * 0.94] : [x, y, w, h];
+// the upgrade and the shield are drawn bigger than their box so they fill the pentagon like the worker (GROW); the shield sits 0.8 unit lower (a pentagon's mass lies low, so a centred shield feels high)
+export const GROW = { 'upgrade-card': 1.2, conservation: 1.22 }, SHIELD_DY = 0.8;
+export const shieldNumberTransform = () => 'translate(0 ' + SHIELD_DY + ') translate(40 43) scale(' + GROW.conservation + ') translate(-40 -43)';          // the number on the shield follows it
+const nudged = (name, [x, y, w, h]) => {
+  if (name === 'upgrade-card') { const k = GROW[name]; return [x + w / 2 + 1.8 - w * k / 2, y + h / 2 + 1 - h * k / 2, w * k, h * k]; }
+  if (name === 'conservation') { const k = GROW[name]; return [x + w / 2 - w * k / 2, y + h / 2 + SHIELD_DY - h * k / 2, w * k, h * k]; }
+  return [x, y, w, h];
+};
 // what the pentagon of `name` needs: null when it is not one of these pictures; else { fill } (undefined = the yellow of every bonus pentagon)
 export function hdBonus(name) {
   if (name === 'Multiplier' || BONUS_HD.icons[name]) return {};
@@ -77,10 +84,15 @@ export function binderSvg(cx, cy, k = 1) {
   for (const t of [17, 31, 44.4, 58]) g.append(svg('rect', { x: x0 + 10, y: y0 + t - 3.5, width: 6.6, height: 7, fill: '#fff' }));
   return g;
 }
-// The Adapt icon (draw endgame cards, discard as many), vector: a card back with a green + (draw) next to a crossed card back, the number big on both at the bottom. Drawn in the units of the
+// The Adapt icon: approved restored artwork for 1 and 3; other values retain the variable-number vector fallback. Drawn in the units of the
 // 80 high pentagon, centred on (cx, cy), scaled by k; used by the zoo map (placement bonus Adapt 1), the bonus spaces (map 13's Adapt 3), the tracks' Adapt 3 (drawHdBonus) and the map editor.
 // (before: BGA's picture of two cards under "3x 3x", upscaled and blurry)
 export function adaptIcon(root, cx, cy, v, k = 1) {
+  if (Number(v) === 1) {
+    const g = add(root, 'g', { class: 'adapt', transform: `translate(${cx} ${cy}) scale(${k})` });
+    add(g, 'image', { href: hd('adapt-1'), x: -26.9, y: -21.2, width: 53.8, height: 46.4, preserveAspectRatio: 'xMidYMid meet' });
+    return g;
+  }
   if (Number(v) === 3) {
     const g = add(root, 'g', { transform: `translate(${cx} ${cy}) scale(${k})` });
     image(g, 'bonus-scoring-cards', [-26.9, -21.2, 53.8, 46.4]);

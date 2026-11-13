@@ -1,7 +1,8 @@
 // [module] Entry point of replay.html / fork.html / sandbox.html: `render()` draws one step, `boot()` loads and wires everything.
+import { playShoebill } from './animal-sounds.js';
 import { stageBreaks } from './break-stages.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX, params, table } from './state.js';
-import { $, el } from './util.js';
+import { $, el, seatColor } from './util.js';
 import { setupNoTips } from './notips.js';
 import { askSpectated, needsChoice, orientParam, povDialogOpen, povParam, povState, refreshLabels, seatOrder } from './pov.js';
 import { fetchFullReplay, fetchReplay } from './load.js';
@@ -11,18 +12,18 @@ import { actionBar, refreshBar } from './action-bar.js';
 import { sidePanel } from './side-panel.js';
 import { cycleDockTab, renderDock, toggleDock } from './dock.js';
 import { beforeRender, afterRender } from './card-motion.js';
-import { fitPlayed, renderCards, renderZoo } from './zoo.js';
+import { fitPlayed, renderCards, renderZoo, tabbedLayout } from './zoo.js';
 import { engineBadge, labelNode, warmLabelIcons } from './log-labels.js';
 import { startPresence } from './presence.js';
 import { setupLogSearch, refreshLogSearch } from './log-search.js';
 import { setupLogFilter, refreshLogFilter } from './log-filter.js';
 import { fitDisplay, fitScale } from './layout.js';
-import { fitSidebar, followLog, setupSidebar } from './sidebar.js';
+import { fitSidebar, followLog, logBelow, setupSidebar } from './sidebar.js';
 import { atEnd, atStart, buildMoveList, buildTimeline, go, goRound, goRoundBy, moveHash, moveNumbers, roundJumps, setPlaying, stepBy, stepOfHash, stepOfMove, updateTimeline } from './playback.js';
 import { applyTimeline, settingsOpen, setupSettings, toggleSettings } from './settings.js';
 import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
-import { forkBar, initFork, renderForkMoves } from './fork.js';
+import { forkBar, initFork, initForkReplay, renderForkMoves } from './fork.js';
 import { initPlay } from './play.js';
 import './thin-numbers.js';
 import './bpreview.js';
@@ -33,13 +34,21 @@ import { initFullscreen } from './fullscreen.js';
 
 // The players' boards by the layout setting (settings.js): side by side, one at a time with arrows (the seats go round in the order of the tracker), or one above the other
 // (also the order of the tracker: `seatOrder()`).
+function blankZoo(seat) {                                                // the zoo of a player whose map is not known to this page yet (the map choice of a live game)
+  const box = el('div', 'zoo seat' + seat + ' blankzoo'), h = el('h2', ''), name = el('span', 'zootab-name', (S.replay.players[seat] || {}).name || '');
+  h.style.setProperty('--pc', seatColor(seat));
+  h.append(name);
+  box.append(h, el('div', 'zooRow blankrow'));
+  return box;
+}
 function zooBoards(st) {
-  const zoos = $('zoos'), order = seatOrder(), layout = FORK || SANDBOX || PLAY || MINIGAME ? 'side' : S.zooLayout;
+  const zoos = $('zoos'), order = seatOrder(), layout = (FORK && !PLAY) || SANDBOX || MINIGAME ? 'side' : S.zooLayout;                // (a live game follows the setting)
   zoos.classList.toggle('zoos-tabs', layout === 'tabs');
   zoos.classList.toggle('zoos-stack', layout === 'stack');
   zoos.classList.toggle('zoos-beside', layout === 'tabs' || layout === 'stack');       // (tabbed and top / bottom: the zoo box in the display's column, the played cards in the association element's column)
-  if (layout === 'stack') return order.flatMap((seat) => [renderZoo(st, seat), renderCards(st, seat)]);       // (one row per player, no switch)
-  if (layout !== 'tabs') return order.map((seat) => renderZoo(st, seat));
+  const zoo = (seat) => (S.replay.maps[seat] ? renderZoo(st, seat) : blankZoo(seat));
+  if (layout === 'stack') return order.flatMap((seat) => [zoo(seat), renderCards(st, seat)]);       // (one row per player, no switch)
+  if (layout !== 'tabs') return order.map(zoo);
   const seat = order.includes(S.zooTab) ? S.zooTab : order[0];
   return [renderZoo(st, seat), renderCards(st, seat)];
 }
@@ -83,10 +92,29 @@ export function renderZoos() {
   window.scrollTo(scrollX, scrollY);
 }
 
+// While the maps are chosen (a live game): the game is drawn as if the players had picked, the viewer's own zoo with the map that is selected in the bar (it changes with the selection)
+// and the other zoo blank until both have confirmed; the base projects and the conservation rewards are empty. Only this page sees its own selection.
+function pickMaps() {
+  const seat = S.play && S.play.seat;
+  if (seat === null || seat === undefined) return null;
+  const mv = (S.replay.map_views || {})[S.play.mapPick];
+  const out = [null, null];
+  out[seat] = mv || null;
+  return out;
+}
 export function render() {
+  const real = S.replay.maps, tmp = PLAY && (!real || real.length < 2) ? pickMaps() : null;
+  if (!tmp) return renderBoards();
+  S.replay.maps = tmp;
+  try { return renderBoards(tmp); } finally { S.replay.maps = real; }
+}
+function renderBoards(picking) {
   if (S.preview && S.preview.step !== S.step) S.preview = null;           // (the building preview belongs to the step it was started on)
   const scrollY = window.scrollY, scrollX = window.scrollX;       // rebuilding the boards must not move the page
-  const s = S.replay.steps[S.step], st = povState(frameState());
+  const paneTop = $('paneControl')?.scrollTop;                     // (log below the info boxes: while the info boxes are drawn again the pane is shorter for a moment and the browser cuts its scroll; put back before the log follows)
+  const s = S.replay.steps[S.step];
+  let st = povState(frameState());
+  if (picking) st = { ...st, conservation_options: {}, projects_in_play: [], base_projects: [] };          // (nothing is known of the projects and the rewards of the board yet)
   const cur = $('current'), kind = frameKind();
   cur.replaceChildren();
   cur.hidden = kind !== 'text' && kind !== 'both' && (FORK || (kind !== 'draft' && kind !== 'reveal'));       // (the replay's draft frame shows the step text in the bar: the cards are in a lightbox)                 // replay: the step text and the bar are never shown together (frames.js)
@@ -119,7 +147,7 @@ export function render() {
     if (prev && S.dockHandStep !== S.step) {
       S.dockHandStep = S.step;
       const seat = st.players.findIndex((p, i) => p.hand.join() !== prev.players[i].hand.join() && p.hand.length > prev.players[i].hand.length);      // (a hand that grew)
-      if (seat >= 0 && (S.dockSel.seat !== seat || S.dockSel.kind !== 'hand' || S.dockHidden)) { S.dockSel = { seat, kind: 'hand' }; S.dockHidden = false; renderDock(st); }
+      if (seat >= 0 && (!PLAY || seat === S.play.seat) && (S.dockSel.seat !== seat || S.dockSel.kind !== 'hand' || S.dockHidden)) { S.dockSel = { seat, kind: 'hand' }; S.dockHidden = false; renderDock(st); }
     }
     forkBar(); renderForkMoves();
     if (SANDBOX) renderSandboxTools(st);
@@ -139,8 +167,11 @@ export function render() {
   for (let i = 0; i < list.children.length; i++) list.children[i].hidden = i > S.seenStep;
   refreshLogFilter();                                                     // (the Players / Actions filter hides lines, log-filter.js)
   refreshLogSearch();                                                     // (the search finds only in the lines on show)
+  if (logBelow() && $('paneControl')) $('paneControl').scrollTop = paneTop;
   followLog();
-  history.replaceState(null, '', '#' + moveHash(S.step, S.phase, S.results));       // (#641 = BGA's move 641, #641.1 = the second step of that move, #641.1.2 = its third frame)
+  if (!PLAY) history.replaceState(null, '', '#' + moveHash(S.step, S.phase, S.results));       // (a live game has no move number in the address)
+  else if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  //       // (#641 = BGA's move 641, #641.1 = the second step of that move, #641.1.2 = its third frame)
   fitSidebar();
   fitDisplay();
   fitPlayed();
@@ -169,6 +200,7 @@ function init() {
   setupShortcuts();
   $('last').onclick = () => { go(S.replay.steps.length - 1, 99); };
   $('jump').oninput = fitJump;
+  $('jump').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };                   // (Enter jumps, then leaves the box: the arrow keys and the other hotkeys work again at once; the blur sends the change)
   $('jump').onchange = (e) => {                                          // a move number past the end jumps to the end (its last frame)
     const n = parseInt(e.target.value, 10) || 0;
     const at = stepOfMove(n);                                            // (the step that holds BGA's move n, or the next one when BGA has no such move)
@@ -176,6 +208,7 @@ function init() {
   };
   document.addEventListener('keydown', (e) => {
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+    if ((e.key === 's' || e.key === 'S') && e.ctrlKey && !typing && !e.altKey && !e.metaKey && !e.shiftKey && S.shoebillKey) { e.preventDefault(); playShoebill(); return; }          // (Ctrl + S: the Shoebill's call, animal-sounds.js; the browser's "Save page" is kept off)
     if ((e.key === 's' || e.key === 'S') && !shortcutsOpen() && !typing && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); toggleSettings(); return; }
     if (!typing && roundJumps() && !settingsOpen() && !shortcutsOpen() && !povDialogOpen() && (e.ctrlKey || e.altKey) && !e.metaKey && !e.shiftKey) {          // round jumps (replay, sandbox)
       const dig = /^(?:Digit|Numpad)([1-9])$/.exec(e.code || '');
@@ -184,6 +217,7 @@ function init() {
     }
     if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === 'Tab' && !MINIGAME) { if (cycleDockTab(e.shiftKey ? -1 : 1)) e.preventDefault(); return; }       // (Tab / Shift + Tab: the tabs of the shown cards, dock.js)
+    if ((e.key === 'q' || e.key === 'Q') && tabbedLayout()) { e.preventDefault(); zooStep(e.shiftKey ? -1 : 1); return; }          // (Q / Shift + Q: the other player board, only while the boards are Tabbed; the arrows on the board's name tab do the same, `zooStep`)
     const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
     if (S.results && !FORK && !PLAY && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) keys[e.key] = () => { if (!!S.gsGraph === (e.key === 'ArrowDown')) return; S.gsGraph = e.key === 'ArrowDown'; syncResults(); };       // (on the game stats: ↑ Table, ↓ Graph; the key of the view that is already open does nothing, no redraw)
     if (FORK && e.key === ' ') return;                                  // (no autoplay in a fork / sandbox / live game: Space must keep pressing the focused button)
@@ -210,8 +244,9 @@ function init() {
   else if (PLAY) initPlay();
   else if (FORK) initFork();
   else if (!MINIGAME) {
+    initForkReplay();                                                      // (an exported fork: where it began and the way back to the table)
     const fb = $('fork');
-    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&at=' + moveHash(S.step, 0) + '&pov=' + povParam() + '&orient=' + orientParam() + (params.get('source') === 'upload' ? '&source=upload' : ''), '_blank'); };
+    if (fb) fb.onclick = () => { if (S.replay.steps[S.step].fork) window.open('/fork.html?table=' + encodeURIComponent(table) + '&step=' + S.step + '&at=' + moveHash(S.step, 0) + '&pov=' + povParam() + '&orient=' + orientParam() + (params.get('source') === 'upload' ? '&source=upload' : '') + (S.replay.fork_replay && S.step > S.replay.fork_replay.step ? '&fork=' + encodeURIComponent(S.replay.fork_replay.id) : ''), '_blank'); };       // (a step of an exported fork's own moves is forked from its record; the steps before it are the original game's)
   }
   const [h1, h2, hr] = PLAY ? [S.replay.steps.length - 1, 0] : FORK || MINIGAME ? [0, 0] : stepOfHash(location.hash);
   if (loadProgress) loadProgress.done();

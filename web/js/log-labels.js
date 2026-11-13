@@ -1,6 +1,6 @@
 // [module] Turns the <ICON> markup of move-list lines into icons and badges.
 import { el, seatText } from './util.js';
-import { ACTION_ICON, ACTION_NAMES, VARIANT_NAMES, iconUrl } from './icons.js';
+import { ACTION_ICON, ACTION_NAMES, ICON_IDS, VARIANT_NAMES, iconUrl } from './icons.js';
 import { S } from './state.js';
 
 
@@ -67,6 +67,11 @@ function strengthIcon(cls, title) {
   return s;
 }
 function labelIcon(name, amount) {
+  if (name === 'UNI') {                                                  // a university tile (`amount` is its type, e.g. fac-science-rep)
+    if (!ICON_IDS[amount]) return null;
+    const img = labelImg('icon labelicon labeluni', iconUrl(ICON_IDS[amount])); img.alt = 'university'; img.title = 'university ' + amount;
+    return img;
+  }
   if (name === 'ACARD') return actionCardIcon(amount);
   if (name === 'XTOKEN' && String(amount) === '1') amount = '';          // (a single X token: the plain icon without the 1)
   let src = null;
@@ -78,7 +83,7 @@ function labelIcon(name, amount) {
   }
   if (!src) return null;
   if (name === 'XTOKEN' && amount) src = iconUrl('r5c6_ns');       // (no white squares under a number)
-  const cls = 'icon labelicon' + (name === 'MONEY' ? ' labelmoney' : name === 'XTOKEN' && !amount ? ' labelxplain' : ''), title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
+  const cls = 'icon labelicon' + (BADGE[name] ? ' labelbadge' : '') + (name === 'MONEY' ? ' labelmoney' : name === 'XTOKEN' && !amount ? ' labelxplain' : ''), title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
   let img;
   if (src === 'inline') img = strengthIcon(cls, title);
   else { img = labelImg(cls, src); img.alt = name.toLowerCase(); img.title = title; }
@@ -163,7 +168,17 @@ export function placesText(text) {
     return pre + (names.length < 3 ? names.join(' and ') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]);
   });
 }
+// "X takes a new university" shows the tile that was taken instead: the university token that is new on the association board in this step (or in the next one, where the log moves it)
+function universityTaken(step) {
+  const steps = (S.replay && S.replay.steps) || [], i = steps.indexOf(step);
+  if (i < 0) return null;
+  const tiles = (st) => (st ? st.players.flatMap((p) => (p.tokens || []).filter((t) => /^university_/.test(t.location || '')).map((t) => t.type)) : []);
+  const fresh = (a, b) => { const left = [...tiles(a)]; for (const t of tiles(b)) { const k = left.indexOf(t); if (k < 0) return t; left.splice(k, 1); } return null; };
+  const cur = steps[i].state, prev = i > 0 ? steps[i - 1].state : null, next = steps[i + 1] ? steps[i + 1].state : null;
+  return (prev && fresh(prev, cur)) || (next && fresh(cur, next)) || null;
+}
 function amountMarkup(text, step) {
+  if (step && /takes a new university/.test(text)) { const t = universityTaken(step); if (t) text = text.replace(/takes a new university/, 'takes <UNI:' + t + '>'); }
   text = placesText(actionMarkup(text, step));
   text = text.replace(STRENGTH_RE, (all, pre, n) => `${pre}<STRENGTH:${n}>`).replace(POSITION_RE, (all, pre, n) => `${pre}<STRENGTH:${n}>`);
   if (S.iconNames.money) text = text.replace(PAYS_BUILDING_RE, (all, a, n, b) => `${a}<MONEY:${n}>${b}`);

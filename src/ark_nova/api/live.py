@@ -135,6 +135,10 @@ def add_routes(app: FastAPI, service: LiveService, ws_base: str = "") -> None:
     async def study_expire(game_id: str):
         return game_or_404(game_id) or await run(service.study_expire, game_id)
 
+    @app.get("/api/games/{game_id}/log")
+    async def game_log(game_id: str, request: Request):
+        return game_or_404(game_id) or await run(service.log, game_id, token_of(request))
+
     @app.get("/api/games/{game_id}/state")
     async def state(game_id: str, request: Request):
         return game_or_404(game_id) or await run(service.view, game_id, token_of(request))

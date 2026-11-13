@@ -46,6 +46,17 @@ PRICE_BOXES = WEB_DIR / "price_badges" / "geometry.json"      # {animal key: [x,
 TIMED_BY_LOG = ("break_position", "round", "display", "main_deck_size", "main_deck", "main_discard_size", "main_discard", "endgame_deck", "endgame_deck_size", "current_action", "active_player", "turn")      # shown as the log has them at each step (the refill comes later than the engine's); likewise the order of the action cards
 GAIN_FIELDS = ("reputation", "appeal", "conservation")
 LOG_TIMED_PLAYER_FIELDS = ("action_cards", "hand", "money", "reputation", "x_tokens", "appeal", "conservation", "score", "income", "income_total", "income_parts", "income_lines", "hand_limit")      # per player, same reason
+def log_timed_marks(engine_tokens: list, logged_tokens: list) -> list:
+    """The tokens of a player in an engine step, with the marks (cubes on animals of the display, `A###_Name`) as the log has them.
+    The viewer shows the display and the hands as the log has them at each step, but the engine marks a card and takes it out of the
+    display (a marked card goes to the owner's hand when the display is cleaned up) inside one action, so its own state has already lost the
+    cube while the log still shows the card in the display for a few steps: a cube went missing (944055156 move 250), and with two marks in one
+    action only the later cube was left (944650378 moves 207 and 211). The cubes follow the display, with the ids of the log."""
+    is_mark = lambda t: t["type"] == "token" and re.match(r"A\d{3}_", t["location"]) is not None
+    is_worker = lambda t: t["type"] == "worker"                      # (a worker the engine takes with the support of a project is gained at its own logged line: 937181556 move 254)
+    return [t for t in engine_tokens if not is_mark(t) and not is_worker(t)] + [t for t in logged_tokens if is_mark(t) or is_worker(t)]
+
+
 PICTURE_OF = {"6a": "6"}              # map 6a has the same board as map 6; its own picture has the placement bonuses baked in (bugged)
 STATE_DROP = ("endgame_discard", "seed", "config", "rng", "base_projects_unused", "version", "checkpoint")
 
@@ -64,7 +75,18 @@ def render_log(template: str, args: Any, depth: int = 0) -> str:
         return ""
 
     text = re.sub(r"\s+", " ", _PLACEHOLDER.sub(sub, template or "")).strip()
-    return _BREAK_SENTENCE.sub("", text)
+    return _break_words(_BREAK_SENTENCE.sub("", text))
+
+
+_BREAK_ADVANCE = re.compile(r"\badvances break token of (\d+) space\(s\)")
+_BREAK_REACH = re.compile(r"\band reach the last space of the Break track")
+
+
+def _break_words(text: str) -> str:
+    """BGA's two lines that move the break token, in plainer words (every replay text goes through here):
+    "X advances break token of 5 space(s), now at 7/9" -> "X advances break token by 5, now at 7/9",
+    "X advances break token of 5 space(s) and reach the last space of the Break track" -> "X advances break token by 5 and reaches the last space of the Break track"."""
+    return _BREAK_REACH.sub("and reaches the last space of the Break track", _BREAK_ADVANCE.sub(r"advances break token by \1", text))
 
 
 _BREAK_SENTENCE = re.compile(r"\.? ?At the end of the turn, all players must take a break\.?$")          # (BGA adds it to the line that moves the break token onto the last space: redundant, the break starts by itself)
@@ -410,7 +432,7 @@ def _split_keep_and_draw(mv: Move, step: dict, before: dict | None, names: dict[
     keep_text = keep_label(None)
     lp = [keep_label(pid) for pid in pids]
     first = {**step, "label": keep_text, "label_pov": [t if t != keep_text else None for t in lp] if any(t != keep_text for t in lp) else None,
-             "state": {**copy.deepcopy(before), "draft": step["state"]["draft"]}, "options": None, "actor": None, "_obj": None}
+             "state": {**copy.deepcopy(before), "draft": step["state"]["draft"]}, "options": None, "actor": None, "_obj": step.get("_obj") if not any(found_keys.values()) else None}          # (the engine state of the deal, so that a fork can start from the keep and the first draw too; not with Lagoon's person sponsors)
 
     def without(st: dict, seats: list) -> dict:                       # the final state with the hands of `seats` still as before, and the person sponsors of the others not drawn yet
         out = copy.deepcopy(st)
@@ -454,7 +476,7 @@ def _split_keep_and_draw(mv: Move, step: dict, before: dict | None, names: dict[
     final = step["state"]
     mid_state = strip(without(final, [1]), persons)                   # after the first player's deal only
     deal_state = strip(final, persons)                                 # both deals, no person sponsor yet
-    middle = {**step, "label": draw_label(pids[0]), "label_pov": None, "state": mid_state, "options": None, "actor": None, "_obj": None, "log_only": True, "merge_group": "deal"}
+    middle = {**step, "label": draw_label(pids[0]), "label_pov": None, "state": mid_state, "options": None, "actor": None, "_obj": step.get("_obj") if not persons else None, "log_only": True, "merge_group": "deal"}
     last = {**step, "label": draw_label(pids[1]), "label_pov": None, "state": deal_state if persons else final, "log_only": True, "merge_group": "deal"}
     out = [first, middle, last]
     if persons:
@@ -741,6 +763,61 @@ def _join_labels(step: dict, folded: list) -> None:
     step["move_from"] = min(x.get("move_from", x["move_id"]) for x in group)       # (BGA's first move of the group: the number the move list shows)
 
 
+_WAVE_REMOVAL = re.compile(r"^Removing (\d+) cards? of the display due to Wave icons reveal:\s*(.*)$")
+_BREAK_REMOVAL = re.compile(r"^Removing first two cards of the display:\s*(.*)$")
+_MARK_GIVEN = re.compile(r"^(.+?) is not discarded and given to .+ \(Mark effect\)$")
+
+
+def wave_removal_text(count: int, names: list) -> str:
+    return f"Removing {count} {'card' if count == 1 else 'cards'} from the display due to Wave icons reveal: {', '.join(names)}"
+
+
+def _in_display_order(names: list, display: list) -> list:
+    """The names in the order the cards lay in the display (a name that is not there keeps its place at the end)."""
+    by_name = {str(c.get("name", "")).lower(): k for k, c in data.cards_by_key().items()}          # (the data has the names in capitals)
+    place = {name: display.index(by_name[name.lower()]) if by_name.get(name.lower()) in display else len(display) for name in names}
+    return sorted(names, key=lambda n: place[n])
+
+
+def wave_labels(steps: list) -> None:
+    """The text of a Wave (or of the break's removal of the first two cards) that takes a marked card: BGA counts only the cards that are really discarded ("Removing 0 cards of the display due to
+    Wave icons reveal:", no name; the break names only the unmarked one) and words the marked card in the next step ("A is not discarded and given to X (Mark effect)"), but the card does leave the
+    display. The removal says it like any other: the marked cards are counted and named in it ("Removing 1 card from the display due to Wave icons reveal: A"; BGA's "of the display" is "from the display" and its "1 cards" is "1 card");
+    "Removing first two cards from the display: B, A"), in the order of the display. The marked cards are those of the steps of the same move that follow. It rewrites the step label and every
+    per-seat text."""
+    for i, st in enumerate(steps):
+        parts = [p.strip() for p in st["label"].split(" · ")]
+        if not any(_WAVE_REMOVAL.match(p) or _BREAK_REMOVAL.match(p) for p in parts):
+            continue
+        marked = []
+        for nxt in steps[i + 1:]:
+            if nxt["move_id"] != st["move_id"]:
+                break
+            nparts = [p.strip() for p in nxt["label"].split(" · ")]
+            if any(_WAVE_REMOVAL.match(p) or _BREAK_REMOVAL.match(p) for p in nparts):
+                break
+            marked += [m.group(1) for m in map(_MARK_GIVEN.match, nparts) if m]
+        display = (steps[i - 1]["state"].get("display") or []) if i else []
+
+        def fix(text: str) -> str:
+            out = []
+            for part in text.split(" · "):
+                w, b = _WAVE_REMOVAL.match(part.strip()), _BREAK_REMOVAL.match(part.strip())
+                if w or b:
+                    names = [n.strip() for n in (w or b).group(2 if w else 1).split(",") if n.strip()]
+                    names = _in_display_order(names + [m for m in marked if m not in names], display)
+                    if names:
+                        part = wave_removal_text(int(w.group(1)) + len(marked), names) if w else "Removing first two cards from the display: " + ", ".join(names)
+                    else:
+                        part = part.replace(" of the display", " from the display")      # (nothing removed: BGA's text, in our words)
+                out.append(part)
+            return " · ".join(out)
+
+        st["label"] = fix(st["label"])
+        if st.get("label_pov"):
+            st["label_pov"] = [fix(t) if t else t for t in st["label_pov"]]
+
+
 _BARE_XTOKEN = re.compile(r"^.+ gains \d+ xtoken$")
 _PLACES_CARD = re.compile(r"^.+ places action card \w+ at position \d+ \(finishing action\)")
 _GAIN = re.compile(r"^.+ gains \d+ (?:appeal|reputation|conservation(?: points?)?) \((.+)\)$")
@@ -786,6 +863,36 @@ def _follows(step: dict) -> bool:
     animal's appeal, a placement bonus), a building the card adds. Choices of the player ("pays 2 to gain ...") are not among them."""
     parts = _parts(step)
     return bool(parts) and all(any(f.match(p) for f in _FOLLOW) and not _NOT_FOLLOW.search(p) for p in parts)
+
+
+_TAKES_UNIVERSITY = re.compile(r"takes a new university")
+
+
+def _university_tiles(steps: list) -> None:
+    """"X takes a new university" shows the tile that was taken: the university token that is new on the board in this step (or the next, where the log moves it), as `<UNI:type>`."""
+    def tiles(st):
+        return [t["type"] for p in st["players"] for t in p.get("tokens") or [] if str(t.get("location", "")).startswith("university_")]
+
+    def fresh(a, b):
+        left = list(tiles(a))
+        for t in tiles(b):
+            if t in left:
+                left.remove(t)
+            else:
+                return t
+        return None
+    for i, step in enumerate(steps):
+        texts = [step.get("label") or ""] + [t or "" for t in step.get("label_pov") or []]
+        if not any(_TAKES_UNIVERSITY.search(t) for t in texts):
+            continue
+        cur = step["state"]
+        tile = (fresh(steps[i - 1]["state"], cur) if i else None) or (fresh(cur, steps[i + 1]["state"]) if i + 1 < len(steps) else None)
+        if not tile:
+            continue
+        sub = lambda t: _TAKES_UNIVERSITY.sub(f"takes <UNI:{tile}>", t) if t else t
+        step["label"] = sub(step.get("label"))
+        if step.get("label_pov"):
+            step["label_pov"] = [sub(t) for t in step["label_pov"]]
 
 
 def _combine_action(steps: list, keep: list) -> list:
@@ -1136,6 +1243,22 @@ def _endgame_unscored(steps: list, player_names: list, marine_worlds: bool) -> N
             p["endgame_unscored"] = 0 if over else sum(1 for k in p.get("endgame_hand") or [] if k not in scored[seat])
 
 
+def thinking_times_from_log(raw_log: dict) -> dict:
+    """Each player's thinking time in seconds, estimated from the packet times: BGA sends `updateReflexionTime` for a player when their turn ends, so the time since the
+    previous such event (the end of the other player's turn, or the start of the game) is spent by that player. {player id as text: seconds}; {} when the log has no events."""
+    try:
+        packets = raw_log["data"]["logs"]
+        events = sorted((int(p["time"]), str(e["args"]["player_id"])) for p in packets for e in p.get("data") or [] if e.get("type") == "updateReflexionTime")
+        last = int(packets[0]["time"])
+    except (KeyError, TypeError, ValueError, IndexError):
+        return {}
+    total: dict = {}
+    for t, pid in events:
+        total[pid] = total.get(pid, 0) + max(0, t - last)
+        last = t
+    return total
+
+
 def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = False, first_moves: int | None = None, quick: bool = False):
     """The replay of one table as JSON. With `with_states` it returns (view, states): the engine state of every step (None where the engine did not play it), for forking.
     With `first_moves` only that many moves are replayed and the engine does not play them (the mini games need the first steps only; the table's setup is read from the whole log).
@@ -1205,6 +1328,14 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         objs: list = [None] * len(views)                                   # the engine state of each step (forking starts from it)
         if mv.index in rep.draft_engine:                                    # the action card draft, played by the engine with the choices of the log
             objs[-1] = rep.draft_engine[mv.index]
+        elif rep.draft_engine and rep.setup_engine and mv.index < rep.setup_moves and mv.index > max(rep.draft_engine):          # after the draft: the deal and the initial discards (the engine has these states, the log builds the view)
+            dealt_, mid_, end_ = (rep.setup_engine[k] for k in ("dealt", "after_first", "final"))
+            if first_discard is None or mv.index < first_discard:
+                objs = [dealt_] * len(views)
+            elif mv.index == first_discard:
+                objs = [mid_, end_, end_][-len(views):] if len(views) <= 3 else [dealt_] * (len(views) - 2) + [mid_, end_]
+            else:
+                objs = [end_] * len(views)
         if me.end is not None:                                              # the engine played this move and agrees with the log
             logged = views[:]
             engine_vals: dict = {}
@@ -1228,6 +1359,8 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                         for f in LOG_TIMED_PLAYER_FIELDS:
                             mine[f] = theirs[f]
                         mine["flags"]["m9_removed"] = theirs["flags"].get("m9_removed", 0)           # map 9: the marker goes at the logged line
+                        mine["tokens"] = log_timed_marks(mine["tokens"], theirs["tokens"])          # the cubes of the marks go with the display (see log_timed_marks)
+                        mine["slot_numbers"] = theirs["slot_numbers"]                                # map 12: the third worker (a black square over an action strength) comes at the logged line, not when the engine takes the worker
         options = [None] * len(views)
         if me.end is not None:                                              # what the engine lets the player do next, at each engine step
             for i, src in enumerate(source):
@@ -1331,6 +1464,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     # (no step is joined to another any more: every effect / log line is a step of its own, like when the engine plays it; `_combine_runs` and `_fold_unchanged` are not called)
     setup_steps = rep.setup_moves - sum(1 for i in range(min(rep.setup_moves, len(steps))) if not keep[i])
     steps = [st for st, k in zip(steps, keep) if k]
+    wave_labels(steps)
     for st in steps:
         st["state"]["main_deck_known"] = max(0, min(len(st["state"]["main_deck"]), known_prefix - (full_deck - len(st["state"]["main_deck"]))))
     steps, extra = _draft_option_steps(steps, rep.draft_engine and rep.draft_rounds or {})
@@ -1339,11 +1473,12 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     for i, st in enumerate(steps):
         st["index"] = i
         o = objs_by_step[i]                                                  # a step can be forked where the engine played it and a decision is waiting
-        st["fork"] = o is not None and o.prompt is not None and (o.prompt.kind == "draft" or o.phase.value not in ("setup", "over", "scoring"))
+        st["fork"] = o is not None and o.prompt is not None and (o.prompt.kind in ("draft", "initial_discard") or o.phase.value not in ("setup", "over", "scoring"))
     _adapt_pools(steps)
     _horse_whisperer(steps, [names.get(pid, pid) for pid in config.player_ids])           # (the lightbox of Horse Whisperer: the whole discard pile, the Petting Zoo animals on top)
     mark_merges(steps, [names.get(pid, pid) for pid in config.player_ids])               # (runs of draws / digs / snaps of one player: one step for the viewer who follows the other one, replay/merge.py)
     _endgame_unscored(steps, [names.get(pid, pid) for pid in config.player_ids], bool(config.marine_worlds))
+    _university_tiles(steps)
     states = [st["state"] for st in steps]
     keys: set[str] = set()
     _card_keys(states, keys)
@@ -1353,11 +1488,13 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
     _card_keys([st.get("adapt") for st in steps], keys)
     _card_keys([st.get("resistance") for st in steps], keys)                     # (the card a Resistance effect discards is in no state)
     elos_after, elo_changes = dict(getattr(record, "elos_after", None) or {}), dict(getattr(record, "elo_changes", None) or {})
+    thinking_from_log = thinking_times_from_log(raw_log)                                # (used when the stats table has no row for the table)
     view = {
         "table_id": parsed.table_id,
         "marine_worlds": config.marine_worlds,
         "tracked_sponsors": sorted(_tracked_sponsors().values()),                      # (the sponsors whose gains `state.sponsor_stats` adds up)
-        "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid)), "elo_after": elos_after.get(str(pid)), "elo_change": elo_changes.get(str(pid)), "thinking_time": (getattr(record, "thinking_times", None) or {}).get(str(pid))} for i, pid in enumerate(config.player_ids)],
+        "players": [{"seat": i, "id": pid, "name": names.get(pid, pid), "color": colors.get(pid), "elo": (record.elos or {}).get(str(pid)), "elo_after": elos_after.get(str(pid)), "elo_change": elo_changes.get(str(pid)),
+                     "thinking_time": (getattr(record, "thinking_times", None) or {}).get(str(pid), thinking_from_log.get(str(pid)))} for i, pid in enumerate(config.player_ids)],
         "maps": [map_view(m) for m in config.maps],
         "base_projects": config.base_projects,
         "result": [{k: r.get(k) for k in ("id", "name", "score", "rank")} for r in parsed.result or []],

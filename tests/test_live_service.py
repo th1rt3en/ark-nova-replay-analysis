@@ -416,3 +416,16 @@ def test_a_game_with_a_clock_flags_the_player_who_runs_out_of_time():
     assert res.json()["result"]["reason"] == "overtime" and "overtime" in res.json()["end_reason"]
     assert any("ran out of time" in (m.get("label") or "") for m in [r.json().get("view", {}) or {}]) or r.json()["status"] == "conceded"
     assert client.post("/api/games", json={"time_control": {"speed": "bogus"}}).status_code == 422
+
+
+def test_a_page_opened_later_gets_the_log_so_far_as_its_viewer_reads_it():
+    client, keeper, _ = _app()
+    game_id, players = _start(client)
+    _join_both(client, game_id, players)
+    rng = random.Random(5)
+    assert _play(players, 12, rng) >= 6
+    logs = [client.get(f"/api/games/{game_id}/log", headers=p.h).json()["log"] for p in players]
+    spectator = client.get(f"/api/games/{game_id}/log").json()["log"]
+    assert logs[0] and len(logs[0]) == len(logs[1]) == len(spectator)
+    assert [e["version"] for e in logs[0]] == sorted(e["version"] for e in logs[0])
+    assert all(e["label"] for e in logs[0])
