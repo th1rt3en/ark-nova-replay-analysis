@@ -172,7 +172,7 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
             a = e.args if isinstance(e.args, dict) else {}
             if e.type == "chooseActionCard":
                 names = set()                              # (the effects of a turn are logged in several moves)
-            if e.type in ("pilfering", "pilferingMoney", "pilferingCard", "hypnosis") or (e.type == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log)):
+            if e.type in ("pilfering", "pilferingMoney", "pilferingCard", "hypnosis") or (e.type == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log))                         or (e.type == "midmessage" and "not affected by" in e.log and any(h in e.log for h in ("Constriction", "Venom", "Pilfering", "Hypnosis"))):      # (an immunity message: the hostile effect was played and the victim was protected, 657367963)
                 hostile += 1
             if e.type == "buyAnimal" and isinstance(a.get("card"), dict):
                 card = data.cards_by_key()[data.parse_bga_card_id(a["card"]["id"])[0]]

@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 
 from ark_nova import data
 from ark_nova.engine import map_rules
+from ark_nova.engine import marks as _marks
 from ark_nova.engine.actions import Action
 from ark_nova.engine.build_action import SIZES, knows_shape
 from ark_nova.engine.game import IllegalAction, apply, legal_actions
@@ -1420,6 +1421,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 if again and state.prompt is not None and state.prompt.kind == "effects" and Action(seat, "go_extra", {}) in legal_actions(state):
                     state = ap(state, Action(seat, "go_extra", {}))                    # the extra action first: the mark / Clever / Boost come after it
                 while state.prompt is not None and state.prompt.kind == "effects" and any(e["kind"] == "mark" for e in state.prompt.args["pending"]):
+                    if not _marks.markable(state):
+                        break                                                              # nothing in the display to mark: BGA logs no mark for this action (a markCard found later belongs to a later action, 664950095 turn 69)
                     _next_mark.late = False
                     nxt = _next_mark(turns, k)                                            # the mark is logged at the start of the next turn
                     if nxt is not None and _next_mark.late:

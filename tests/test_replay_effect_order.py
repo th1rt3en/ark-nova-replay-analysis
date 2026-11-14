@@ -1,5 +1,5 @@
 """The player chooses the order in which the effects of one action are resolved (the gains of a university, the bonus of a conservation threshold, the pouch of an animal ...); the engine offers every
-pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Eight turns of real games that it got wrong, found by replaying a random sample of
+pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Ten turns of real games that it got wrong, found by replaying a random sample of
 games; each is checked as a whole game with the maps of its players (the harness skips association and build turns of a player whose map it cannot infer, so the plain fixed-logs test would pass them
 without looking). The logs are the local ones (`log_examples/`, not in git)."""
 from pathlib import Path
@@ -17,6 +17,8 @@ CASES = {
     "613850149": (("8", "8"), True, 46, "a university: the 2 reputation come first, its track bonus upgrades a card, then the conservation 2 choice hires a worker"),
     "634830005": (("1a", "1a"), False, 54, "a university: the reputation gain lifts the conservation to 8 (track bonus), the player then chooses 2 reputation at 8"),
     "646886236": (("7a", "7a"), False, 58, "an animal: the conservation 8 choice, the card of the reputation track, the appeal, and only then the pouch under the animal"),
+    "657367963": (("5a", "5a"), True, 64, "Constriction was played and the victim was immune (an immunity message): not the peaceful variant, so the Puffer's Venom gives no X token"),
+    "664950095": (("3a", "3a"), True, 69, "Mark Animals with every animal of the display already marked: BGA logs no mark (a markCard some turns later belongs to another action)"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
