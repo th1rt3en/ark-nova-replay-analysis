@@ -166,12 +166,14 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
     """The peaceful variant (hostile effects replaced): an animal with a hostile ability was played and no hostile event ever shows in the log."""
     played = hostile = peaceful = 0
     names: set = set()
+    own_mark = False
     inventive_seen = False                                 # (a Reef Dweller "Inventive" animal of the zoo also pays X tokens: no proof of a peaceful Venom)
     for m in parsed.moves:
         for e in m.events:
             a = e.args if isinstance(e.args, dict) else {}
             if e.type == "chooseActionCard":
                 names = set()                              # (the effects of a turn are logged in several moves)
+                own_mark = str((a.get("actionCard") or {}).get("type", "")) == "Animals4"          # (the Mark Animals card has a mark of its own: 665079039)
             if e.type in ("pilfering", "pilferingMoney", "pilferingCard", "hypnosis") or (e.type == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log))                         or (e.type == "midmessage" and "not affected by" in e.log and any(h in e.log for h in ("Constriction", "Venom", "Pilfering", "Hypnosis"))):      # (an immunity message: the hostile effect was played and the victim was protected, 657367963)
                 hostile += 1
             if e.type == "buyAnimal" and isinstance(a.get("card"), dict):
@@ -183,7 +185,7 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
                     played += 1
             elif names:                                    # what BGA logs instead of a hostile ability
                 b = a.get("bonuses") or {}
-                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and not inventive_seen and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                         or (e.type == "actionCardCleanup" and "Constriction" in names and "Clever" not in names and "Clever effect" in e.log)                         or (e.type == "pDrawCards" and ("Pilfering 2" in names or "Pilfering 1" in names) and "Sprint" not in names and "sprint" in e.log)                         or (e.type == "markCard" and "Hypnosis" in names):
+                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and not inventive_seen and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                         or (e.type == "actionCardCleanup" and "Constriction" in names and "Clever" not in names and "Clever effect" in e.log)                         or (e.type == "pDrawCards" and ("Pilfering 2" in names or "Pilfering 1" in names) and "Sprint" not in names and "sprint" in e.log)                         or (e.type == "markCard" and "Hypnosis" in names and not own_mark):
                     peaceful += 1
     return bool(played) and not hostile and bool(peaceful)
 
