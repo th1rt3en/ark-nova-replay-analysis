@@ -556,7 +556,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             p.hand.append("P108")
     elif k == "magnet":                                            # every sponsor (Sponsor Magnet) / sea animal (Sea Animal Magnet) of the display goes to the hand
         for j, c in enumerate(state.display):
-            if c and ((e["name"] == "Sponsor Magnet" and c.startswith("S")) or (e["name"] == "Sea Animal Magnet" and _sea_animal(c, state.config.marine_worlds, any_card=True))):
+            if c and ((e["name"] == "Sponsor Magnet" and c.startswith("S")) or (e["name"] == "Animal Magnet" and c.startswith("A")) or (e["name"] == "Sea Animal Magnet" and _sea_animal(c, state.config.marine_worlds, any_card=True))):
                 state.display[j] = None
                 marks.taken(state, c)
                 p.hand.append(c)

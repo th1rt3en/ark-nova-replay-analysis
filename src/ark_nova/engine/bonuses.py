@@ -229,13 +229,7 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
                 raise NotImplementedError("Determination outside an action")
             state.current_action["extra"] = {"types": [t for t in animal_abilities.ACTION_TYPES if t != state.current_action["type"]], "optional": False}
         elif k == "animal-magnet":                       # map 12 (income-less space): every animal of the display goes to the hand, the display is refilled at the end of the turn
-            from ark_nova.engine import marks
-            p = state.players[seat]
-            for j, c in enumerate(state.display):
-                if c and c.startswith("A"):
-                    state.display[j] = None
-                    marks.taken(state, c)
-                    p.hand.append(c)
+            defer(state, {"kind": "magnet", "source": "bonus", "name": "Animal Magnet", "optional": True, "player": seat})          # (the player takes the animals when they like, or not: a log with no animal in the hand afterwards, 801879816 turn 67)
         elif k == "continent":                           # map 9 space: one of the remaining continent cubes is unlocked (with its bonus), nothing when all are
             from ark_nova.engine import map_rules
             if map_rules.continents_left(state.players[seat]):

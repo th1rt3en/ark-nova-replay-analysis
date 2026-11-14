@@ -1,5 +1,5 @@
 """The player chooses the order in which the effects of one action are resolved (the gains of a university, the bonus of a conservation threshold, the pouch of an animal ...); the engine offers every
-pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Thirty-eight turns of real games that it got wrong, found by replaying a random sample of
+pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Thirty-nine turns of real games that it got wrong, found by replaying a random sample of
 games; each is checked as a whole game with the maps of its players (the harness skips association and build turns of a player whose map it cannot infer, so the plain fixed-logs test would pass them
 without looking). The logs are the local ones (`log_examples/`, not in git)."""
 from pathlib import Path
@@ -47,6 +47,7 @@ CASES = {
     "783434284": (("5a", "5a"), True, 47, "Extra Shift: the worker that was taken back is the one whose place is empty at the end of the turn in the log"),
     "806398535": (("T1", "T1"), True, 51, "Break income: the first player's mandatory placement bonus is paid when the other player's income starts, so the display refill comes before the other player's draw"),
     "820306349": (("T1", "T1"), True, 33, "A category university: the player drew the card of the reputation track first, the search for the category came after it"),
+    "801879816": (("12", "12"), True, 67, "map 12: a project support with the Animal Magnet space that the player does not use (no animal in the hand afterwards): the magnet is optional"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),

@@ -1516,6 +1516,14 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     if nxt is None:
                         break
                     state = ap(state, Action(seat, "choose_effect", {"index": next(i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "mark"), "card": nxt}))
+                while state.prompt is not None and state.prompt.kind == "effects" and any(e_["kind"] == "magnet" and e_.get("source") == "bonus" for e_ in state.prompt.args["pending"]):
+                    mg_ = next(i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "magnet" and e_.get("source") == "bonus")
+                    animals_ = [c_ for c_ in state.display if c_ and c_.startswith("A")]
+                    me_ = state.prompt.args["pending"][mg_].get("player", seat)
+                    if animals_ and all(c_ in endsnap.players[me_].hand for c_ in animals_):          # the Animal Magnet of the notepad: used when the log's hand has the animals, else the player left it (801879816 turn 67)
+                        state = ap(state, Action(me_, "choose_effect", {"index": mg_, "apply": "magnet"}))
+                    else:
+                        state = ap(state, Action(me_, "skip_effect", {"index": mg_}))
                 while state.prompt is not None and state.prompt.kind == "effects":       # declined optional triggers at the end of the turn
                     if again and Action(seat, "go_extra", {}) in legal_actions(state):
                         state = ap(state, Action(seat, "go_extra", {}))                    # the extra action is next: the Clever / Boost of this action come after it
