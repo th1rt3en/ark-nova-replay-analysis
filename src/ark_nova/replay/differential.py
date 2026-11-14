@@ -845,6 +845,8 @@ def _engine_project_options(state: GameState, seat: int) -> dict:
     from ark_nova.engine import association
     p = state.players[seat]
     level = max((c.level for c in p.action_cards if c.type == "association"), default=1)
+    if state.prompt is not None and state.prompt.kind == "association_tasks" and state.prompt.args.get("level"):
+        level = state.prompt.args["level"]                           # (the card that is played: a hypnotised Association card of the other player is level I even when the player's own is level II, so the display's projects are out of reach: 750476271 turn 45)
     out = {}
     for act in association.conservation_actions(state, p, level):
         key = act.args["project"]
