@@ -285,7 +285,7 @@ def _prompt_actions(state: GameState) -> list[Action]:
     if pr.kind == "cards_take":
         acts = []
         a = pr.args
-        top = 0 if venom.blocked(state, p.seat) else min(a["remaining"], len(state.main_deck))
+        top = 0 if venom.blocked(state, p.seat) else min(a["remaining"], len(state.main_deck) + len(state.main_discard))      # (an empty draw pile is reshuffled from the discard pile when the cards are drawn)
         for k in ([top] if cards_action.deck_only(a["level"]) and top else range(1, top + 1)):          # (an unupgraded Cards action draws all its cards at once)
             acts.append(Action(p.seat, "take_cards", {"mode": "deck", "count": k}))
         reach = [c for c in state.display[:cards_action.reputation_range(p.reputation)] if c]
@@ -1068,7 +1068,7 @@ def _take_cards(state: GameState, action: Action) -> None:
         k = int(action.args["count"])
         if not 1 <= k <= a["remaining"]:
             raise IllegalAction("cannot draw that many cards")
-        if cards_action.deck_only(a["level"]) and k != a["remaining"] and k != len(state.main_deck):
+        if cards_action.deck_only(a["level"]) and k != a["remaining"] and k != len(state.main_deck) + len(state.main_discard):
             raise IllegalAction("an unupgraded Cards action draws all its cards from the deck at once")
         ensure_main_deck(state, k)
         if k > len(state.main_deck):
