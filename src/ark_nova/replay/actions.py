@@ -463,6 +463,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
     xdelta = 0
     spend = 0
     unpaid = t1_in = 0
+    paid_total = 0                                      # (X tokens paid for the strength of every card choice of the turn: a Multiplier repetition pays its own, 618288190 turn 48)
     built = False
     chosen = None
     variant_of_chosen = 0
@@ -637,6 +638,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             add(Action(seat, "choose_action_card", {"type": chosen, "spend": spend - unpaid - t1_in, **({"unpaid": unpaid} if unpaid else {}),
                                                     **({"t1": t1_card} if t1_card else {}),
                                                     **({"hypnosis": True} if hypnotised else {})}), e)
+            paid_total += spend - unpaid - t1_in
             t1_card = None                                 # (the discard counts for this action only: a Multiplier repetition pays its own strength)
         elif t == "getBonuses" and isinstance(a, dict):
             b = a.get("bonuses") or {}
@@ -885,6 +887,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
     kick = next((e for e in events if e.type == "skipTurnOfPlayer"), None)
     if kick is not None and not chose and cleanup_type is None:          # the player ran out of time and was kicked: the turn passes with nothing done
         return TurnPlan([Action(seat_of.get(str(kick.args.get("player_id")), seat), "skip_turn", {})], [move_of[kick.order]], False, orders=[kick.order])
+    if cleanup_type is None and not chose and actions and all(x.kind == "harbor_sell" for x in actions):
+        return TurnPlan(actions, moves, False, orders=orders)            # Commercial Harbor: a sale after the turn of the player, logged under the marker of the next one (610062035 turn 63)
     if cleanup_type is None:
         return "no cleanup"
     if chose and chosen == "association" and variant_of_chosen == 4 and not any(x.kind in ("association_task", "self_clever") for x in actions):
@@ -927,6 +931,6 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         actions.insert(i, Action(seat, "choose_effect", {"boost": t, **({"position": int(at.args["position"])} if t in boost_events and at.args.get("position") else {})}))
         moves.insert(i, move_of[at.order])
         orders.insert(i, at.order)
-    if not built and chosen not in ("sponsors", "association", "animals") and xdelta != -(spend - unpaid - t1_in):
+    if not built and chosen not in ("sponsors", "association", "animals") and xdelta != -paid_total:
         return "unexplained X token change"
     return TurnPlan(actions, moves, True, orders=orders)

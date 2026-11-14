@@ -878,6 +878,17 @@ def _is_free_part(events: list) -> bool:
     return True
 
 
+def _free_of_next(turns: list, j: int) -> bool:
+    """`_is_free_part(turns[j])`, unless it is only Harbor sales of a player other than the one who chooses the card in the next turn with events: that sale was made after the seller's own turn (610062035 turn 63)."""
+    if not _is_free_part(turns[j]):
+        return False
+    sellers = {str(e.args.get("player_id")) for e in turns[j] if e.type in ("pDiscardCards", "discardCards") and " sell" in (e.log or "")}
+    nxt = next((turns[i] for i in range(j + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[i])), [])
+    chooser = next((str(e.args.get("player_id")) for e in nxt if e.type == "chooseActionCard"), None)
+    only_sales = all(e.type.startswith("gameStateChange") or e.type in ("pDiscardCards", "discardCards") for e in turns[j])
+    return not (only_sales and sellers and chooser is not None and sellers != {chooser})
+
+
 def _is_repetition(events: list) -> bool:
     """The turn starts with a chooseActionCard that uses a Multiplier token."""
     first = next((e for e in events if e.type in ("chooseActionCard", "actionCardCleanup")), None)
@@ -997,7 +1008,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
     span: dict = {}
     for k in range(len(turns)):
         j = k
-        while k not in merged and j + 1 < len(turns) and _is_free_part(turns[j]):
+        while k not in merged and j + 1 < len(turns) and _free_of_next(turns, j):
             merged.add(j + 1)                # free actions before the card is chosen (map T1 discard, map 11 unstore, a token) are logged in a turn of their own
             j = j + 1
         while k not in merged:
@@ -1005,7 +1016,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             while nj < len(turns) and not any(not e.type.startswith("gameStateChange") for e in turns[nj]):
                 nj += 1
             fj = nj                                         # (free actions before the repetition's card: map T1 discard ...)
-            while fj + 1 < len(turns) and _is_free_part(turns[fj]):
+            while fj + 1 < len(turns) and _free_of_next(turns, fj):
                 fj += 1
             if fj < len(turns) and fj > nj and _is_repetition(turns[fj]) and not any(e.type == "actionCardCleanup" for e in turns[j]):
                 nj = fj
@@ -1036,7 +1047,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             actor = next((str(e.args["player_id"]) for e in events if e.type in ("chooseActionCard", "actionCardCleanup")), markers[k][1])
             if actor != markers[k][1] and not any(e.type == "chooseActionCard" for e in events):          # Hypnosis put back for an X token: only the cleanup of the opponent's card (`turn_actions` checks the X token)
                 actor = markers[k][1]
-            if actor != markers[k][1]:         # e.g. a turn where BGA logs the other player's card (odd skipped turns)
+            _real = [e for e in events if not e.type.startswith("gameStateChange")]
+            late_sale = False
+            if _real and all(e.type == "pDiscardCards" and e.log.startswith("You sell") and (e.args.get("bonuses") or {}).get("money") == 3 for e in _real) and len({str(e.args.get("player_id")) for e in _real}) == 1:
+                actor, late_sale = str(_real[0].args.get("player_id")), True          # (map 4: a sale after the player's own turn is logged under the marker of the next turn: 610062035 turn 63)
+            if actor != markers[k][1] and not late_sale:         # e.g. a turn where BGA logs the other player's card (odd skipped turns)
                 rep.skipped["actor differs from the turn marker"] += 1
                 continue
             seat = seat_of[actor]
