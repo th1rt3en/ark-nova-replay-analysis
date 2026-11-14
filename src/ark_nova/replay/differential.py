@@ -563,9 +563,13 @@ def _gains_open_threshold(state: GameState, act) -> list:
     while trial.prompt is not None and trial.prompt.kind == "effects":
         pend = trial.prompt.args["pending"]
         gi = next((i for i, e in enumerate(pend) if e["kind"] == "gain" and e["res"] == "reputation" and e.get("player", act.player) == act.player), None)
-        if gi is None:
-            return []
-        a = Action(pend[gi].get("player", trial.prompt.player), "choose_effect", {"index": gi, "apply": "gain", "res": "reputation"})
+        if gi is not None:
+            a = Action(pend[gi].get("player", trial.prompt.player), "choose_effect", {"index": gi, "apply": "gain", "res": "reputation"})
+        else:                                                  # (a placement bonus of reputation of the building just built: 815209400 turn 61)
+            gi = next((i for i, e in enumerate(pend) if e["kind"] == "pbonus" and e["bonus"]["type"] == "reputation" and e.get("player", act.player) == act.player), None)
+            if gi is None:
+                return []
+            a = Action(pend[gi].get("player", trial.prompt.player), "choose_effect", {"index": gi, "apply": "pbonus", "bonus": "reputation"})
         try:
             trial = apply(trial, a)
         except Exception:
@@ -779,6 +783,8 @@ def _mark_extra_building(state: GameState, seat: int, acts: list, events: list) 
     fits_strength = False          # (the buildings of the turn fit the strength: none was the additional one: 823017370 turn 40)
     out, done = [], fits_strength
     for a in acts:
+        if a.kind == "choose_action_card" and out:
+            done = fits_strength                                     # (a Multiplier repeat of the action has an additional pavilion / kiosk of its own: 824172891 turn 55)
         free = any(e.type == "buyBuilding" and isinstance(e.args, dict) and "for free" in __import__("ark_nova.replay.view", fromlist=["render_log"]).render_log(e.log, e.args) and (e.args["building"]["x"], e.args["building"]["y"], e.args["building"]["type"])
                    == (a.args.get("x"), a.args.get("y"), a.args.get("type")) for e in events) if a.kind == "place_building" else False       # ("adds a Kiosk for free": a bonus building, not the additional one of the action)
         paid = next((e.args.get("amount_money") for e in events if e.type == "buyBuilding" and isinstance(e.args, dict) and e.args.get("building")
@@ -1218,6 +1224,26 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             act = _normalise(state, act, endsnap)
                     if act.kind == "choose_effect" and act.args.get("refill") and "index" not in act.args:
                         continue                                 # (BGA refilled the display, the engine has no take effect that would: nothing to do)
+                    while state.prompt is not None and state.prompt.kind == "effects" and (state.current_action or {}).get("type") == "break":
+                        pend_ = state.prompt.args["pending"]                     # the break income goes player by player: the other player's act means that the first one is done, with the optional effects they never used (810846540 turn 55)
+                        done_ = next((e_.get("player") for e_ in pend_ if e_.get("player") not in (None, act.player) and all(
+                            o_.get("optional") or o_["kind"] in ("income_kiosk", "income_appeal") for o_ in pend_ if o_.get("player") == e_.get("player")) and not any(x_.player == e_.get("player") for x_ in acts[ai:])), None)
+                        if done_ is None:
+                            break
+                        step_ = None
+                        for i_, o_ in enumerate(pend_):
+                            if o_.get("player") != done_:
+                                continue
+                            cand_ = Action(done_, "skip_effect", {"index": i_}) if o_.get("optional") else Action(done_, "choose_effect", {"index": i_, "apply": o_["kind"]})
+                            if cand_ in legal_actions(state):
+                                step_ = cand_
+                                break
+                        if step_ is None:
+                            break
+                        state = ap(state, step_)
+                        if act.kind == "choose_effect" and "index" in act.args:
+                            act = Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "index"})          # (the pending indexes moved)
+                        act = _normalise(state, act, endsnap)
                     while state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
                         sym = _symbiosis_for(state, act)          # Symbiosis: BGA only logs the ability that was used
                         if sym is not None:
