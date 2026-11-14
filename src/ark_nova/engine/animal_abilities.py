@@ -74,7 +74,7 @@ def add_multiplier(state, p, card) -> None:
 
 def peaceful_effects(state, seat: int, key: str, name: str, value) -> list:
     """The peaceful variant replaces the hostile abilities (found in the logs: Venom X -> X X tokens, Constriction -> Clever, Pilfering 1 -> 3
-    money, Pilfering 2 -> Sprint 2, Hypnosis -> Mark; ISSUES.md)."""
+    money, Pilfering 2 -> Sprint 2, Hypnosis -> Determination; ISSUES.md)."""
     if name == "Venom":
         return [{"kind": "gain", "source": key, "res": "xtoken", "n": int(value or 1), "optional": False}]
     if name == "Constriction":
@@ -84,8 +84,8 @@ def peaceful_effects(state, seat: int, key: str, name: str, value) -> list:
                 {"kind": "ability", "name": "Sprint", "value": 1, "source": key, "optional": True, "xor": key}]
     elif name == "Pilfering 2":
         return [{"kind": "ability", "name": "Sprint", "value": 2, "source": key, "optional": True}]
-    elif name == "Hypnosis":
-        state.current_action.setdefault("after", []).append({"kind": "mark", "source": key, "optional": False})
+    elif name == "Hypnosis":                                       # (the solo game's effect: a second action, as Determination)
+        return [{"kind": "ability", "name": "Determination", "value": value, "source": key, "optional": True}]
     return []
 
 

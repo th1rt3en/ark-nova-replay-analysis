@@ -51,6 +51,8 @@ CASES = {
     "750476271": (("2a", "2a"), True, 45, "a hypnotised level I Association card of the other player: the display's projects can not be supported (that is level II), so BGA's project list does not have the Geological in the display"),
     "657367963": (("5a", "5a"), True, 45, "a sponsor played with a token before the card is chosen, followed by an empty turn marker: the free part belongs to the player's next action"),
     "665079039": (("6a", "6a"), True, 66, "the player who ends the game has two marks pending but BGA logs only one: the second would come with a next action that never happens"),
+    "665716566": (("5a", "5a"), True, 45, "a sponsor played with a token before the card is chosen, whose reputation gain reaches the track bonus that takes a card from the range: part of the free action, not a card effect outside the Cards action"),
+    "679739686:35": (("6a", "6a"), True, 35, "a sponsor played with a token after an Association action: its reputation reaches the track bonus that hires a worker (slideMeeples 'gains a new Association worker')"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),

@@ -872,8 +872,8 @@ def _is_free_part(events: list) -> bool:
             continue
         if e.type in ("pDiscardCards", "discardCards") and " sell" in (e.log or "") and ((e.args if isinstance(e.args, dict) else {}).get("bonuses") or {}).get("money") == 3:
             continue                                         # map 4, Commercial Harbor: a card sold for 3 money at any time of the turn, also before the action card is chosen (627776608 moves 107 and 483)
-        if token and (e.type in ("playSponsor", "getBonuses", "takeBonus", "buyBuilding", "pDrawCards")):
-            continue                                         # (the sponsor's gains, a conservation space reward it reaches, its free building: 901779082 turn 48)
+        if token and (e.type in ("playSponsor", "getBonuses", "takeBonus", "buyBuilding", "pDrawCards", "snapCard", "pDiscardCards") or (e.type == "slideMeeples" and (e.log or "").endswith("gains a new Association worker"))):
+            continue                                         # (the sponsor's gains, a conservation space reward it reaches, its free building: 901779082 turn 48; a card taken or a worker hired by a reputation track bonus: 665716566 turn 45)
         return False
     return True
 

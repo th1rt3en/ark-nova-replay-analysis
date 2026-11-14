@@ -62,7 +62,7 @@ All 160 animals are implemented, on the assumptions below. `scripts/engine_probl
 Implemented for all five action cards, levels I and II (texts in `data/action_cards.json`). Printed appeal / reputation / conservation of every played animal
 are pending effects of their own (any order). Open points:
 - **Peaceful mode** (`GameConfig.peaceful`, inferred from the logs): replacements Venom X -> X X tokens, Constriction -> Clever, Pilfering 1 -> 3 money,
-  Pilfering 2 -> Sprint 2, Hypnosis -> Mark. Only Venom's is confirmed by the user; the others are inferred from the logs.
+  Pilfering 2 -> Sprint 2, Hypnosis -> Determination. Only Venom's is confirmed by the user; the others are inferred from the logs.
 - **Supply (Association 1):** 4 copies of each partner zoo and of each non-category university tile (the board copy counts); category universities exist once
   each (`association.supply_left`). Association 2 level II: each extra worker lowers the needed strength by 2; the needed strength is clamped at 0 (not
   confirmed; the logs do not distinguish 0 from 1).

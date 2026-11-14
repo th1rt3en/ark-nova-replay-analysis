@@ -492,6 +492,10 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         moves.append(move_of[e.order])
         orders.append(e.order)
 
+    def free_sponsor(ev) -> bool:
+        """A sponsor played with a token before any action card is chosen: its gains (a reputation track bonus ...) are those of a Sponsors action (665716566 turn 45)."""
+        return chosen is None and any(x.type == "playSponsor" for x in events[:events.index(ev)])
+
     for e in events:
         a = e.args
         t = e.type
@@ -699,7 +703,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             pass                                                     # the card drawn for a rescued hand card: the engine draws it itself
         elif t == "pDiscardCards" and e.log.startswith("You sell") and (a.get("bonuses") or {}).get("money") == 3 and len(a.get("cards") or []) == 1:
             add(Action(seat_of[str(e.player or a.get("player_id"))], "harbor_sell", {"card": _key(a["cards"][0]["id"])}), e)      # map 4 Commercial Harbor: at any time of the turn, also before the action card is chosen
-        elif (chosen in ("sponsors", "association", "animals", "build") or (chosen == "cards" and (_special_card_event(e) or flags.get("dig")))) and t in ("pDrawCards", "snapCard", "pDiscardCards"):
+        elif (chosen in ("sponsors", "association", "animals", "build") or free_sponsor(e) or (chosen == "cards" and (_special_card_event(e) or flags.get("dig")))) and t in ("pDrawCards", "snapCard", "pDiscardCards"):
             why = _sponsor_cards(e, seat, seat_of, add, revealed, flags)
             if why:
                 return why
@@ -765,7 +769,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         elif t == "playSponsor":
             played.add(_key(a["card"]["id"]))
             add(Action(seat, "play_sponsor", {"card": _key(a["card"]["id"]), "from_display": bool(a.get("fromDisplay"))}), e)
-        elif chosen in ("sponsors", "animals", "build", "cards") and t == "slideMeeples" and e.log.endswith("gains a new Association worker"):      # (a reputation track bonus during a Build / Cards action too)
+        elif (chosen in ("sponsors", "animals", "build", "cards") or free_sponsor(e) or (chosen == "association" and cleanup_type is not None)) and t == "slideMeeples" and e.log.endswith("gains a new Association worker"):      # (a reputation track bonus during a Build / Cards action too)
             if hire_choice:                                          # the choice at conservation 2 (upgrade or hire)
                 hire_choice = False
                 add(Action(seat, "choose_effect", {"hire": True}), e)
