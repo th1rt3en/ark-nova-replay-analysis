@@ -13,7 +13,7 @@ from ark_nova import data
 from ark_nova.engine import association, animal_abilities, bonuses, marks, project_effects, sponsor_extras, venom, build_action, card_programs as prog, cards_action
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board_of
-from ark_nova.engine.cards import ensure_main_deck
+from ark_nova.engine.cards import ensure_main_deck, peek_main_deck
 from ark_nova.engine.icons import card_icons, icon_counts, requirement
 
 
@@ -271,7 +271,7 @@ def legal(state, p0) -> list:
                 out.append(Action(p.seat, "skip_effect", {"index": i}))
             continue
         elif k == "reveal":
-            top = state.main_deck[:e["x"]]
+            top = peek_main_deck(state, e["x"])                     # (the draw pile is reshuffled from the discard pile when the cards are revealed: the options are those of the cards that will be on top)
             opts = [c for c in top if _reveal_ok(e, c)]
             if e.get("n", 1) > 1:                                   # Perception 4: 4 cards are drawn, 2 are kept
                 out += [Action(p.seat, "choose_effect", {"index": i, "keep": sorted(c)}) for c in sorted(set(combinations(sorted(opts), e["n"])))]

@@ -498,8 +498,9 @@ def play(state: GameState, action: Action) -> None:
 
 
 def finish(state: GameState, action: Action) -> None:
-    if action not in legal(state, state.players[action.player]):
-        raise _fx().IllegalEffect("play an animal first")
+    acts = legal(state, state.players[action.player])
+    if action not in acts and any(a.kind == "play_animal" for a in acts):
+        raise _fx().IllegalEffect("play an animal first")                  # (with nothing that can be played the action may be ended)
     _end(state, action.player)
 
 

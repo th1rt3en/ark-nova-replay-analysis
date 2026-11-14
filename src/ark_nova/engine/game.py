@@ -240,6 +240,10 @@ def legal_actions(state: GameState) -> list[Action]:
                 acts = acts + [Action(p.seat, "unstore", {"card": c}) for c in dict.fromkeys(p.stored)]
             if harbor_ready(state, p.seat):
                 acts = acts + [Action(p.seat, "harbor_sell", {"card": c}) for c in dict.fromkeys(p.hand)]
+        pr = state.prompt
+        fin = _CARD_FINISH.get(pr.kind)
+        if fin is not None and not any(a.player == pr.player and a.kind not in _FREE_ACTIONS and a.kind not in ("undo_last", "restart_turn") for a in acts):
+            acts = acts + [Action(pr.player, fin, {})]            # nothing but free actions is left (they were used up without making a move): the action can be ended, as at the table
     return acts
 
 
@@ -310,7 +314,7 @@ def _prompt_actions(state: GameState) -> list[Action]:
     if pr.kind == "association_tasks":
         return association.legal(state, p)
     if pr.kind == "cards_discard":
-        return [Action(p.seat, "discard_cards", {"cards": list(c)}) for c in combinations(sorted(set(p.hand)), pr.args["count"])]
+        return [Action(p.seat, "discard_cards", {"cards": list(c)}) for c in combinations(sorted(set(p.hand)), min(pr.args["count"], len(p.hand)))]      # (never more cards than the hand holds: a sale or a played sponsor may have used them)
     raise NotImplementedError(f"prompt {pr.kind!r} is not implemented yet")
 
 
@@ -961,13 +965,14 @@ def _sponsor_break(state: GameState, action: Action) -> None:
 
 
 def _finish_build(state: GameState, action: Action) -> None:
-    if not state.prompt.args["placed"] and not state.prompt.args.get("extra_used"):
+    if not state.prompt.args["placed"] and not state.prompt.args.get("extra_used") and any(a.kind == "place_building" for a in _build_actions(state, state.players[action.player])):
         raise IllegalAction("build at least one building first")
     _end_turn(state)
 
 
-_FREE_ACTIONS = {"harbor_sell", "unstore"}                  # free actions of the zoo map, available beside any prompt
+_FREE_ACTIONS = {"harbor_sell", "unstore", "use_token"}      # free actions beside any prompt (the Commercial Harbor sale, a stored card back into the hand, a token of the notepad): each can lead to a move, none is a move of the card itself
 _FINISHING = {"finish_animals", "finish_build", "finish_sponsors", "finish_association", "skip_effect"}
+_CARD_FINISH = {"animals_play": "finish_animals", "build_place": "finish_build", "association_tasks": "finish_association", "sponsors_play": "finish_sponsors"}
 
 
 def _with_moves(state: GameState, chosen: list) -> list:
@@ -1006,10 +1011,30 @@ def _has_moves(state: GameState, action: Action) -> bool:
         p = new.players[pr.player]
         if any(x.kind == "place_building" for x in _build_actions(new, p, ("size-1", "pavilion", "kiosk"))):
             return True
-    acts = legal_actions(new)
+    acts = [a for a in legal_actions(new) if a.player == pr.player]
     if pr.kind == "animals_play" and state.config.confirm_turns:   # live play: an animal has to be played (Ignore Animals alone is no move: nothing could be played); the logs of BGA have such turns
         return any(a.kind == "play_animal" for a in acts)
-    return any(a.kind not in _FINISHING and a.kind not in _FREE_ACTIONS for a in acts)      # (a free action of the zoo map is no move of the card: the Commercial Harbor always offers its sale, and a card that left only that was chosen and then stuck the game)
+    if any(a.kind not in _FINISHING and a.kind not in _FREE_ACTIONS for a in acts):
+        return True
+    # only free actions are left: the card can still be played when one of them leads to a move (a sale that pays an animal, a stored animal back into the hand, a token that gives workers)
+    return any(_leads_to_move(new, a, 2) for a in [a for a in acts if a.kind in _FREE_ACTIONS][:8])
+
+
+def _leads_to_move(state: GameState, action: Action, depth: int) -> bool:
+    """Whether, after this free action (and the choices of the effect it opens, `depth` steps deep), the prompt of the card has a move that is not a free action or the end of the action."""
+    try:
+        new = apply(state, action)
+    except (IllegalAction, NotImplementedError):
+        return False
+    pr = new.prompt
+    if pr is None:
+        return False
+    acts = [a for a in legal_actions(new) if a.player == pr.player]
+    if pr.kind in _CARD_FINISH:
+        return any(a.kind not in _FINISHING and a.kind not in _FREE_ACTIONS for a in acts)
+    if depth <= 0:
+        return False
+    return any(_leads_to_move(new, a, depth - 1) for a in [a for a in acts if a.kind not in _FREE_ACTIONS][:8])
 
 
 def _skip_action(state: GameState, action: Action) -> None:
@@ -1120,7 +1145,7 @@ def _skip_snap(state: GameState, action: Action) -> None:
 def _discard_for_cards(state: GameState, action: Action) -> None:
     p = state.players[action.player]
     cards = list(action.args["cards"])
-    if len(cards) != state.prompt.args["count"]:
+    if len(cards) != min(state.prompt.args["count"], len(p.hand)):
         raise IllegalAction("discard the required number of cards")
     for c in cards:
         if c not in p.hand:
