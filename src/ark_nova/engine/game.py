@@ -765,7 +765,7 @@ def hydrologist_geologist(state: GameState, seat: int, cells) -> None:
     bd = board_of(p)
     for sponsor, terrain in (("S241", "water"), ("S242", "rock")):
         if sponsor in p.sponsors:
-            now = p.flags.get("built_now", [])
+            now = p.flags.get("built_now", [])[-1:]            # (only the building just placed: a space covered by an earlier building of the same turn is gone too, 665019532 turn 17)
             covered = {c for b in p.buildings if b.id not in now and b.type != "underwater-tunnel" for c in build_action.footprint(b.type, b.x, b.y, b.rotation)}
             _gain(state, seat, money=sum(any(bd.terrain.get(n) == terrain and n not in covered for n in neighbours(c)) for c in cells))
 

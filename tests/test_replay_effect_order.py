@@ -1,5 +1,5 @@
 """The player chooses the order in which the effects of one action are resolved (the gains of a university, the bonus of a conservation threshold, the pouch of an animal ...); the engine offers every
-pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Thirty turns of real games that it got wrong, found by replaying a random sample of
+pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Thirty-one turns of real games that it got wrong, found by replaying a random sample of
 games; each is checked as a whole game with the maps of its players (the harness skips association and build turns of a player whose map it cannot infer, so the plain fixed-logs test would pass them
 without looking). The logs are the local ones (`log_examples/`, not in git)."""
 from pathlib import Path
@@ -39,6 +39,7 @@ CASES = {
     "640381487": (("6a", "6a"), False, 44, "Animals with an extra Build action (A515) and a Hypnosis animal: the Build comes first, the hypnosis after it, in one turn"),
     "813790919": (("3a", "3a"), True, 31, "skipTurnOfPlayer: a player out of time is kicked and the turn passes"),
     "749781422": (("6a", "6a"), True, 67, "skipTurnOfPlayer: the kicked player pays no Venom"),
+    "665019532": (("8a", "8a"), True, 17, "Hydrologist: the water space that an earlier building of the same turn covered is gone, so a later building next to it pays nothing"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
