@@ -401,7 +401,8 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
         if cands and not any(c.args["worker"] == act.args["worker"] for c in cands):      # (the workers on the board are interchangeable: BGA's id of the one just used may be another one in the engine)
             return sorted(cands, key=lambda c: c.args["worker"] < 9000)[0] if len(cands) == 1 or any(c.args["worker"] >= 9000 for c in cands) else cands[0]
     if act.kind == "choose_effect" and "building_id" in act.args:                                # Cut Down: the building by its id
-        b = next((b for b in state.players[act.player].buildings if b.id == act.args["building_id"]), None)
+        pos = _BUILDING_POS.get((str(state.config.player_ids[act.player]), act.args["building_id"])) or next((p_ for (pid_, bid_), p_ in _BUILDING_POS.items() if bid_ == act.args["building_id"]), None)
+        b = next((b for b in state.players[act.player].buildings if pos is not None and (b.x, b.y) == pos), None) or next((b for b in state.players[act.player].buildings if b.id == act.args["building_id"]), None)
         if b is not None:
             act = Action(act.player, act.kind, {"building": [b.x, b.y]})
     if act.kind == "association_task" and "workers" in act.args:        # Hire Association, level II: the workers beyond what the task needs are extra
@@ -917,6 +918,7 @@ def _result(rep: DiffReport, counts: tuple, trace: list, last: int):
     return None
 
 
+_BUILDING_POS: dict = {}          # (BGA player id, BGA building id) -> (x, y), filled at the start of a run
 _RUN_LOCK = threading.RLock()     # `_ARCH_TAKEN` and `_UPCOMING` are shared by every run: two replays built at the same time (the API serves requests in threads) would corrupt each other, so runs go one at a time
 
 
@@ -949,6 +951,13 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             if "build" in c and c["player"] == c["active"]:
                 build_checks.setdefault(m.index, []).append(c)
     consumed_marks: set = set()
+    _BUILDING_POS.clear()
+    for m_ in parsed.moves:                                    # BGA's building ids (the engine numbers its own): where each building lies, for Cut Down
+        for e_ in m_.events:
+            a_ = e_.args if isinstance(e_.args, dict) else {}
+            for b_ in (a_.get("buildings") or []) + ([a_["building"]] if isinstance(a_.get("building"), dict) else []):
+                if isinstance(b_, dict) and b_.get("id") is not None and b_.get("x") is not None and b_.get("pId") is not None:
+                    _BUILDING_POS[(str(b_["pId"]), int(b_["id"]))] = (int(b_["x"]), int(b_["y"]))
     deferred_mark = [False]
     merged: set = set()                      # Multiplier: BGA logs every repetition as a turn of its own (no cleanup of the card before the last one)
     span: dict = {}
