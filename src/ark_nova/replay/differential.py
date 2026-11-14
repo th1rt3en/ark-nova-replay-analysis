@@ -1430,7 +1430,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         alt = _normalise(state, other, endsnap)
                         if _plain(alt) in legal_actions(state):
                             act = alt
-                    if _plain(act) not in legal_actions(state):
+                    if _plain(act) not in legal_actions(state) and act.kind != "skip_turn":          # (a kicked player's turn passes: the engine takes it, but it is not among the legal moves)
                         rep.illegal.append(f"turn {k}: {act.kind} {act.args} not in legal_actions")
                         raise _Stop
                     if act.kind == "association_task" and act.args.get("task") == "conservation" and state.prompt is not None                             and state.prompt.kind == "association_tasks" and order is not None and not state.prompt.args.get("hypnosis"):

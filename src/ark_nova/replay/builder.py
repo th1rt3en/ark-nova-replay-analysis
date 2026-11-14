@@ -212,6 +212,15 @@ def h_action_card_cleanup(ctx: _Ctx, e: Event) -> None:
     s.active_player = 1 - actor
 
 
+def h_skip_turn(ctx: _Ctx, e: Event) -> None:
+    """A player ran out of time: BGA kicks them, the turn passes with nothing done."""
+    s = ctx.state
+    seat = ctx.seat(str(e.args.get("player_id"))) if str(e.args.get("player_id")) in ctx.seat_of else s.active_player
+    s.current_action = None
+    s.turn += 1
+    s.active_player = 1 - seat
+
+
 def h_increase_size(ctx: _Ctx, e: Event) -> None:
     """An enclosure grows by one space: BGA replaces it by a bigger building (new id, type and rotation; the animal stays)."""
     a = e.args
@@ -799,12 +808,12 @@ HANDLERS: dict[str, Callable[[_Ctx, Event], None]] = {
     "pStoreCard": h_store_card, "pUnstoreCard": h_unstore_card,
     "buyAnimal": h_buy_animal, "playSponsor": h_play_sponsor, "buyBuilding": h_buy_building, "moveProjects": h_move_projects,
     "releaseAnimal": h_release_animal, "cutDown": h_cut_down, "increaseSize": h_increase_size, "moveAnimal": h_move_animal,
-    "reconstructionRemove": h_reconstruction_remove, "reconstructionPlaceBack": h_reconstruction_place_back,
+    "skipTurnOfPlayer": h_skip_turn, "reconstructionRemove": h_reconstruction_remove, "reconstructionPlaceBack": h_reconstruction_place_back,
 }
 # events that carry no state change the builder needs
 IGNORED = {"midmessage", "startBreak", "updateBreakDiscardSelection", "enableMultiplier",
            "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame", "gameStateChangePrivateArg", "timeJokerUsed",
-           "skipTurnOfPlayer", "gameResultNeutralized"}         # a player timed out (the turn is skipped, nothing to show) / quit (the game is lost for them)
+           "gameResultNeutralized"}         # a player quit (the game is lost for them)
 
 
 def _sync(ctx: _Ctx) -> None:

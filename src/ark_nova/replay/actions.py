@@ -15,7 +15,7 @@ from ark_nova.engine.build_action import SIZES, knows_shape
 from ark_nova.parser.model import Event, ParsedLog
 from ark_nova.parser.setup import parse_action_type
 
-_PASSIVE = {"midmessage", "advanceBreak", "fillPool", "gameStateChangePrivateArg", "endOfGame", "timeJokerUsed", "enableMultiplier", "gameResultNeutralized"}          # automatic consequences the engine reproduces itself (a player quit: "has quit the game and is going to lose this game whatever happens")
+_PASSIVE = {"skipTurnOfPlayer", "midmessage", "advanceBreak", "fillPool", "gameStateChangePrivateArg", "endOfGame", "timeJokerUsed", "enableMultiplier", "gameResultNeutralized"}          # automatic consequences the engine reproduces itself (a player quit: "has quit the game and is going to lose this game whatever happens")
 _SPONSOR_SOURCES = {None, "Map 13 quarter bonus", "Animals3 ability", "increasing card strength", "triggering break", "buying sponsor card", "playing sponsor from reputation range",
                     "maxing out reputation", "reputation track bonus", "placement bonus", "building a pavilion", "filling the map", "max strength Animals", "playing animal from reputation range",
                     "last worker bonus", "Petting Zoo Animal action", "Jumping action", "Pack action", "Iconic animal", "Inventive", "Glide effect",
@@ -878,6 +878,9 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             return f"unsupported event {t}"
     if cleanup_type is None and conceded and chose:
         return TurnPlan(actions, moves, True, orders=orders)             # the game ended in the middle of the turn (the opponent conceded): the action card stays where it is
+    kick = next((e for e in events if e.type == "skipTurnOfPlayer"), None)
+    if kick is not None and not chose and cleanup_type is None:          # the player ran out of time and was kicked: the turn passes with nothing done
+        return TurnPlan([Action(seat_of.get(str(kick.args.get("player_id")), seat), "skip_turn", {})], [move_of[kick.order]], False, orders=[kick.order])
     if cleanup_type is None:
         return "no cleanup"
     if chose and chosen == "association" and variant_of_chosen == 4 and not any(x.kind in ("association_task", "self_clever") for x in actions):

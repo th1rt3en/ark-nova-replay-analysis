@@ -394,6 +394,13 @@ def apply(state: GameState, action: Action) -> GameState:
         return turns.rewind(state, action)
     if action.kind == "concede":                           # a player gives up: the game is over at once (not among the legal actions: the live service offers it)
         return _concede(state, action)
+    if action.kind == "skip_turn":                         # BGA: a player ran out of time and is kicked, the turn passes with nothing done (replays; not among the legal actions)
+        if state.prompt is None or state.prompt.kind != "choose_action_card" or state.prompt.player != action.player or state.phase not in (Phase.TURN, Phase.FINAL_TURNS):
+            raise IllegalAction("a turn can only be skipped before an action card is chosen")
+        new = copy.deepcopy(state)
+        new.prompt = None
+        _finish_turn_now(new, action.player, kicked=True)
+        return new
     scores = gamestats.scores(state)
     booked = [st["booked"] for st in state.stats] or [0] * len(state.players)
     carried = len(getattr(state, "auto_gains", ()))
@@ -1302,10 +1309,11 @@ def _confirm_turn(state: GameState, action: Action) -> None:
     _finish_turn_now(state, action.player)
 
 
-def _finish_turn_now(state: GameState, seat: int) -> None:
+def _finish_turn_now(state: GameState, seat: int, kicked: bool = False) -> None:
     state.players[seat].flags.pop("t1_used", None)
     state.players[seat].flags.pop("built_now", None)
-    venom.finish_turn(state, seat)
+    if not kicked:                                           # (a kicked player pays no Venom: 749781422 turn 67)
+        venom.finish_turn(state, seat)
     if not state.config.confirm_turns and bonuses.token_uses(state, state.players[seat]) and state.break_position < BREAK_AT and not endgame.last_turn_done(state, seat):
         state.players[seat].flags["refill_pending"] = 1       # a sponsor played with a notepad token after the action: BGA refills the display after it (744430246 turn 43)
     else:

@@ -386,7 +386,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     if k == "hypnosis":
         other = state.players[1 - action.player]
         if other.appeal >= p.appeal and not tracks.is_protected(other.appeal) and "S225" not in other.sponsors:           # the other player is not behind (and not protected): one of their first 3 action cards
-            state.current_action["extra"] = {"types": [], "optional": True, "hypnosis": True}
+            g.add_extra(state, {"types": [], "optional": True, "hypnosis": True})          # (behind an extra action that an animal played before gave: the log shows that one first, 640381487 turn 42)
     elif k == "pay_appeal":
         if p.money < 2:
             raise fx.IllegalEffect("not enough money")
