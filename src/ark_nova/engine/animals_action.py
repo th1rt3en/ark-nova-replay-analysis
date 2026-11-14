@@ -519,6 +519,6 @@ def _end(state: GameState, seat: int) -> None:
 def after_step(state: GameState, seat: int) -> None:
     acts = [x for x in legal(state, state.players[seat]) if x.kind != "animals_single"]
     if not acts or all(x.kind == "finish_animals" for x in acts):
-        if acts and _g().harbor_ready(state, seat) and any(k.startswith("A") for k in state.players[seat].hand):
+        if acts and _g().harbor_ready(state, seat) and (any(k.startswith("A") for k in state.players[seat].hand) or (state.prompt.args.get("level", 1) >= 2 and any(k and k.startswith("A") for k in state.display))):
             return                                                    # Commercial Harbor: a sale may pay for one more animal, the player ends the action
         _end(state, seat)
