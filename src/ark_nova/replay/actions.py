@@ -479,6 +479,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
     t1_card = None                                       # map T1: the hand card discarded for +1 strength before the action card is chosen
     person_open = False                                  # map 14: the person sponsor of the income slot is played by the engine itself
     printed_seen: set = set()
+    played_in_break: set = set()                        # sponsors played after the break started (a sponsor played earlier in the turn paid its printed gain then: 776662847 turn 10)
     marketing_open = False                               # a bonus-sponsor / sponsor token announced a Marketing effect: the next sponsor played is its choice
     gained: set = set()
     assoc = _AssocMap(seat, lambda act, ev: add(act, ev))
@@ -497,6 +498,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             in_break = True
             continue
         if in_break and t == "playSponsor" and isinstance(a, dict) and a.get("player_id") is not None and str(a["player_id"]) in seat_of:
+            played_in_break.add(_key(a["card"]["id"])) if isinstance(a.get("card"), dict) and a["card"].get("id") else None
             break_player = seat_of[str(a["player_id"])]                  # a sponsor played in the break (a Sponsor token / placement bonus): its icons go into this player's zoo, not the zoo of the player whose turn it is
         if t == "getBonuses" and isinstance(a, dict) and a.get("card_id") and a.get("player_id") is not None and _key(a["card_id"]) in TRIGGER_GAINS                 and set(a.get("bonuses") or {}) <= {"appeal", "money", "xtoken", "conservation"} and str(a["player_id"]) in seat_of:
             k_ = _key(a["card_id"])
@@ -542,7 +544,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             res_ = _INCOME_RESOURCE[k_]
             if set(a["bonuses"]) != {res_}:
                 continue                                              # (a printed gain of the sponsor, not its income)
-            if k_ in played and k_ not in printed_seen and res_ in _printed_keys(k_):
+            if k_ in played and k_ in played_in_break and k_ not in printed_seen and res_ in _printed_keys(k_):
                 printed_seen.add(k_)                                  # (the printed gain of a sponsor played in the break: the engine pays it with the play)
                 continue
             add(Action(seat_of[str(a["player_id"])], "choose_effect", {"apply": "income_sponsor", "source": _key(a["card_id"])}), e)      # a sponsor's break income: an effect of its own

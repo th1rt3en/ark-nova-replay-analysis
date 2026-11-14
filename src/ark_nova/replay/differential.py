@@ -252,6 +252,7 @@ def _fit_income_slots(state: GameState, events: list, seat_of: dict) -> None:
         if e.type == "takeBonus" and a.get("source") == "map bonus space" and bd.get("bonus_type") and a.get("player_id") is not None:
             seen.setdefault(seat_of[str(a["player_id"])], []).append((str(bd["bonus_type"]).lower().replace("-", "").replace("_", ""), bd.get("bonus_n")))
     supports: dict = {}
+    covered: dict = {}
     for e in events:                                          # (a project supported in this turn covers one of the income slots itself: the break pays it, but the support has not used it yet: 877649220 turn 27)
         if e.type == "startBreak":
             break
@@ -259,8 +260,20 @@ def _fit_income_slots(state: GameState, events: list, seat_of: dict) -> None:
             supports[seat_of[str(e.args["player_id"])]] = supports.get(seat_of[str(e.args["player_id"])], 0) + 1
         if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "map bonus space" and e.args.get("player_id") is not None and str(e.args["player_id"]) in seat_of:
             sp_ = seat_of[str(e.args["player_id"])]           # (the support took an instant slot of the map, paid at once: 3 X tokens, 12 money ...; it covers no income slot: 791369985 turn 51)
+            slots_ = data.map_by_id(state.players[sp_].map_id)["geometry"]["bonus_slots"]
+            inc_ = [(r_, n_) for r_, n_ in (e.args.get("bonuses") or {}).items() if any(
+                sl_["kind"] == "instant_income" and sl_.get("bonus") and sl_["bonus"]["type"].lower().replace("-", "").replace("_", "") == r_.replace("_", "") and sl_["bonus"]["value"] == n_ for sl_ in slots_)
+                and not any(sl_["kind"] == "instant" and sl_.get("bonus") and sl_["bonus"]["type"].lower() == r_ and sl_["bonus"]["value"] == n_ for sl_ in slots_)]
+            if inc_:                                          # (an instant AND income slot: the break pays it too, but it was not used before this turn: 842806508 turn 44)
+                covered.setdefault(sp_, []).extend((r_.replace("_", ""), n_) for r_, n_ in inc_)
+                continue
             supports[sp_] = max(0, supports.get(sp_, 0) - 1)
     for seat, got in seen.items():
+        got = list(got)
+        for c_ in covered.get(seat, []):                      # (the income of the slot that this turn's support covers: it is not used yet at the start of the turn)
+            if c_ in got:
+                got.remove(c_)
+                supports[seat] = max(0, supports.get(seat, 0) - 1)
         got = got[:max(0, len(got) - supports.get(seat, 0))]
         p = state.players[seat]
         slots = data.map_by_id(p.map_id)["geometry"]["bonus_slots"]
@@ -403,6 +416,14 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
         same_ = [c for c in cands if next((t_.location for t_ in state.players[act.player].tokens if t_.id == c.args["worker"]), None) == loc_] if loc_ else []
         if len(same_) == 1 and not any(c.args["worker"] == act.args["worker"] for c in cands):
             return same_[0]                                   # (the worker that BGA's id has on the replay board, the engine's own ids differ: 739415597 turn 45)
+        if len(cands) > 1 and end is not None:
+            from collections import Counter as _C
+            mine_ = _C(t_.location for t_ in state.players[act.player].tokens if t_.type == "worker" and t_.location.startswith("association_"))
+            end_ = _C(t_.location for t_ in end.players[act.player].tokens if t_.type == "worker" and t_.location.startswith("association_"))
+            gone_ = [loc_ for loc_ in mine_ if mine_[loc_] > end_[loc_]]          # (the place that the log's board no longer has a worker on at the end of the turn: the worker that was taken back, 818398015 turn 26)
+            pick_ = [c for c in cands if next((t_.location for t_ in state.players[act.player].tokens if t_.id == c.args["worker"]), None) in gone_]
+            if len(gone_) == 1 and pick_:
+                return pick_[0]
         if cands and not any(c.args["worker"] == act.args["worker"] for c in cands):      # (the workers on the board are interchangeable: BGA's id of the one just used may be another one in the engine)
             return sorted(cands, key=lambda c: c.args["worker"] < 9000)[0] if len(cands) == 1 or any(c.args["worker"] >= 9000 for c in cands) else cands[0]
     if act.kind == "choose_effect" and "building_id" in act.args:                                # Cut Down: the building by its id
@@ -1228,7 +1249,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if rf is not None:                       # Snapping 2: the player refilled the display before the second snap
                             state = ap(state, rf)
                             act = _normalise(state, act, endsnap)
-                    while state.prompt is not None and state.prompt.kind == "effects" and not (("keep" in act.args and not any(o_ < order for o_ in search_orders)) or act.args.get("apply") == "search_category") and any(e["kind"] == "search_category" for e in state.prompt.args["pending"]):
+                    while state.prompt is not None and state.prompt.kind == "effects" and not (("keep" in act.args and not any(o_ < order for o_ in search_orders)) or act.args.get("apply") == "search_category") and not (
+                            act.kind == "take_cards" and search_orders and order is not None and all(o_ > order for o_ in search_orders)) and any(e["kind"] == "search_category" for e in state.prompt.args["pending"]):          # (a draw that the log shows before the search: the player resolved it first, 820306349 turn 33)
                         j = next(j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "search_category")          # the search of a category university comes right after its own trigger effects, before the other effects (720708815 turn 19, 796946880 turn 23)
                         state = ap(state, Action(state.prompt.args["pending"][j]["player"], "choose_effect", {"index": j, "apply": "search_category"}))
                         if act.kind == "choose_effect" and "index" in act.args:
@@ -1245,14 +1267,15 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     while state.prompt is not None and state.prompt.kind == "effects" and (state.current_action or {}).get("type") == "break":
                         pend_ = state.prompt.args["pending"]                     # the break income goes player by player: the other player's act means that the first one is done, with the optional effects they never used (810846540 turn 55)
                         done_ = next((e_.get("player") for e_ in pend_ if e_.get("player") not in (None, act.player) and all(
-                            o_.get("optional") or o_["kind"] in ("income_kiosk", "income_appeal") for o_ in pend_ if o_.get("player") == e_.get("player")) and not any(x_.player == e_.get("player") for x_ in acts[ai:])), None)
+                            o_.get("optional") or o_["kind"] in ("income_kiosk", "income_appeal", "pbonus") for o_ in pend_ if o_.get("player") == e_.get("player")) and not any(x_.player == e_.get("player") for x_ in acts[ai:])), None)
                         if done_ is None:
                             break
                         step_ = None
                         for i_, o_ in enumerate(pend_):
                             if o_.get("player") != done_:
                                 continue
-                            cand_ = Action(done_, "skip_effect", {"index": i_}) if o_.get("optional") else Action(done_, "choose_effect", {"index": i_, "apply": o_["kind"]})
+                            cand_ = (Action(done_, "skip_effect", {"index": i_}) if o_.get("optional") else
+                                     Action(done_, "choose_effect", {"index": i_, "apply": "pbonus", "bonus": o_["bonus"]["type"]}) if o_["kind"] == "pbonus" else Action(done_, "choose_effect", {"index": i_, "apply": o_["kind"]}))
                             if cand_ in legal_actions(state):
                                 step_ = cand_
                                 break
