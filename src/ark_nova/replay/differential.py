@@ -326,6 +326,12 @@ def _threshold_option_has(state, e: dict, bonus_type: str, n) -> bool:
 def _normalise(state: GameState, act: Action, end=None) -> Action:
     """The log does not say which pending effect a choice belongs to (or which notepad bonus a project took): find it among the legal
     actions."""
+    if act.kind == "choose_effect" and "upgrade" in act.args and "index" not in act.args and state.prompt is not None and state.prompt.kind == "effects" \
+            and getattr(_skip_unneeded, "order", None) in getattr(_skip_unneeded, "rep_upgrades", ()):
+        for cand in legal_actions(state):                  # the upgrade of the reputation track bonus, not the one of the conservation choice that is pending beside it
+            if cand.kind == "choose_effect" and cand.args.get("upgrade") == act.args["upgrade"] and "index" in cand.args and state.prompt.args["pending"][cand.args["index"]]["kind"] == "upgrade" \
+                    and "reputation" in str(state.prompt.args["pending"][cand.args["index"]].get("source", "")):
+                return cand
     if "psrc" in act.args:                                # a pouched card: the log names the card it goes under
         src = act.args["psrc"]
         act = Action(act.player, act.kind, {k: v for k, v in act.args.items() if k != "psrc"})
@@ -527,6 +533,42 @@ def _kiosk_income_first(state: GameState, act):
     return None
 
 
+def _rep_gain_before_track_upgrade(state: GameState, act):
+    """The log shows the upgrade of the reputation track bonus right after the reputation gain that earned it, before a conservation choice (threshold 2) that the same action opened: the player
+    resolves the gains in the order he likes. The engine offers every pending effect, so the reputation gain is resolved first and the upgrade goes to the effect that the gain opens (613850149 turn 46)."""
+    if act is None or act.kind != "choose_effect" or "upgrade" not in act.args or state.prompt is None or state.prompt.kind != "effects":
+        return None
+    if getattr(_skip_unneeded, "order", None) not in getattr(_skip_unneeded, "rep_upgrades", ()):
+        return None
+    pend = state.prompt.args["pending"]
+    if any(e["kind"] == "upgrade" and "reputation" in str(e.get("source", "")) and e.get("player", act.player) == act.player for e in pend):
+        return None
+    for i, e in enumerate(pend):
+        if e["kind"] == "gain" and e["res"] == "reputation" and e.get("player", act.player) == act.player:
+            return Action(act.player, "choose_effect", {"index": i, "apply": "gain", "res": "reputation"})
+    return None
+
+
+def _gains_open_threshold(state: GameState, act) -> list:
+    """The reputation gains after which the choice at conservation 5 / 8 that the log shows (`act`) is pending: a gain can lift the conservation (the bonus of the reputation track), and the engine opens the choice when
+    that gain is resolved, while the log shows the player's choice after it (634830005 turn 54). [] when no sequence of gains opens it."""
+    out, trial = [], state
+    while trial.prompt is not None and trial.prompt.kind == "effects":
+        pend = trial.prompt.args["pending"]
+        gi = next((i for i, e in enumerate(pend) if e["kind"] == "gain" and e["res"] == "reputation" and e.get("player", act.player) == act.player), None)
+        if gi is None:
+            return []
+        a = Action(pend[gi].get("player", trial.prompt.player), "choose_effect", {"index": gi, "apply": "gain", "res": "reputation"})
+        try:
+            trial = apply(trial, a)
+        except Exception:
+            return []
+        out.append(a)
+        if trial.prompt is not None and trial.prompt.kind == "effects" and any(e["kind"] == "threshold_bonus" and _threshold_option_has(trial, e, act.args["bonus_type"], act.args.get("n")) for e in trial.prompt.args["pending"]):
+            return out
+    return []
+
+
 def _rep_before_income(state: GameState, act):
     """The log pays the appeal of a reputation that overflows (the track's 15) before the appeal income, which counts it: resolve those effects first (806276023 turn 51)."""
     if act is None or act.kind != "choose_effect" or act.args.get("apply") != "income_appeal" or state.prompt is None or state.prompt.kind != "effects":
@@ -566,6 +608,8 @@ def _skip_unneeded(state: GameState, act):
             break
         rest.append(x)
     for i, e in enumerate(state.prompt.args["pending"]):
+        if e["kind"] == "pouch" and any(x.kind == "choose_effect" and x.args.get("psrc") == e.get("source") and x.player == e.get("player", x.player) for x in rest):
+            continue                                          # the log pouches under this card later in the turn (after other effects the player chose first: 646886236 turn 58)
         if e.get("optional") and not _fits(e, act) and not (not (act is not None and act.kind == "play_animal") and (e["kind"] in ("build", "digging", "sell", "ability", "marketing", "pay_appeal", "take", "cut_down", "donation", "expedition", "venom", "constrict") or (e["kind"] == "pouch" and (e.get("source") == "map" or (act is not None and act.kind == "take_cards" and act.args.get("mode") == "snap")))
                                                               or (e["kind"] == "slot1" and act is not None and act.kind == "use_token")
                                                               or (e["kind"] == "extra_shift" and act is not None and act.kind in ("choose_effect", "take_cards", "place_building") and "worker" not in act.args)) and any(_fits(e, x) and x.player == e.get("player", x.player) for x in (rest if e["kind"] != "marketing" else [y for y in rest if y.kind == "choose_effect" and str(y.args.get("card", "")).startswith("S")]))):      # (a later action of the turn may still use it; Marketing: only the choice of a sponsor card)
@@ -1013,6 +1057,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             _skip_unneeded.rep_first = _project_rep_before_sponsor(turns[k])
             search_orders = [e.order for e in turns[k] if e.type == "pDrawCards" and "gaining a new university" in e.log]          # (the search of a category university is logged before the effect the harness is about to resolve: 846710292 turn 55)
             _skip_unneeded.maxing = [e.order for e in turns[k] if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "maxing out reputation"]
+            _skip_unneeded.rep_upgrades = {e.order for j_, e in enumerate(turns[k]) if e.type == "upgradeCard" and any(
+                p_.type == "takeBonus" and isinstance(p_.args, dict) and p_.args.get("source") == "reputation track bonus" and ((p_.args.get("bonus_desc") or {}).get("args") or {}).get("bonus_type") == "upgrade-card"
+                for p_ in turns[k][max(0, j_ - 3):j_])}          # (the upgrade of the reputation track bonus: 613850149 turn 46)
             _skip_unneeded.order = None
             _skip_unneeded.kiosk_logged = {seat_of[str(e.args["player_id"])] for e in turns[k] if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "kiosk income"
                                            and str(e.args.get("player_id")) in seat_of}
@@ -1100,6 +1147,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         gr = next((x for x in legal_actions(state) if x.kind == "choose_effect" and x.args.get("gain") == "reputation"), None)
                         if gr is not None:                      # Glide at 15 reputation: the gain is the bonus on 16 (the log only shows the bonus)
                             state = ap(state, gr)
+                    if act.kind == "choose_effect" and "bonus_type" in act.args and "continent" not in act.args and state.prompt is not None and state.prompt.kind == "effects" \
+                            and not any(e["kind"] in ("threshold_bonus", "rep_bonus") for e in state.prompt.args["pending"]):
+                        for g_ in _gains_open_threshold(state, act):          # the choice at conservation 5 / 8 opens when the pending reputation gain is resolved (634830005 turn 54)
+                            state = ap(state, g_)
                     if act.kind == "choose_effect" and "bonus_type" in act.args and "continent" not in act.args and not (state.prompt is not None and state.prompt.kind == "effects" and any(
                             e["kind"] in ("threshold_bonus", "rep_bonus") for e in state.prompt.args["pending"])) and not (
                             state.prompt is not None and state.prompt.kind != "effects" and any(
@@ -1143,7 +1194,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if act.kind == "choose_effect" and "index" in act.args:
                             act = Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "index"})          # (the pending indexes moved)
                     act = _normalise(state, act, endsnap)
-                    for pre_fn in (_kiosk_income_first, _rep_before_income):
+                    for pre_fn in (_kiosk_income_first, _rep_before_income, _rep_gain_before_track_upgrade):
                         while (pre := pre_fn(state, act)) is not None:
                             state = ap(state, pre)
                             if act.kind == "choose_effect" and "index" in act.args:
