@@ -111,7 +111,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     elif name == "Iconic Animal":
         both = icon_counts(state, 0) + icon_counts(state, 1)
         icon = next(i for i in icons if i.lower() == str(value).lower()) if any(i.lower() == str(value).lower() for i in icons) else str(value).capitalize()
-        return [{"kind": "gain", "source": key, "res": "appeal", "n": 0, "iconic": icon, "optional": False}]          # (counted when the effect is resolved: a sponsor played before it in the same action counts, 746858756 turn 58)
+        return [{"kind": "gain", "source": key, "res": "appeal", "n": min(8, both[icon]), "iconic": icon, "optional": False}]          # (counted when the effect is resolved: a sponsor played before it in the same action counts, 746858756 turn 58)
     elif name in DEFERRED:                                        # drawing from the deck is irreversible: the player activates it when Venom is paid
         return [{"kind": "ability", "name": name, "value": value, "source": key, "optional": True}]
     elif name == "Venom":
