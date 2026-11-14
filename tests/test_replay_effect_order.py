@@ -29,7 +29,7 @@ CASES = {
     "802552873": (("6a", "6a"), True, 63, "the Boost of an animal waits for the end of the extra action; BGA leaves empty turn markers between the two actions"),
     "810846540": (("1a", "1a"), True, 55, "Break income: the first player's unused optional Marketing is over when the other player's income starts, so the display is refilled before that player's draw"),
     "815209400": (("8a", "8a"), True, 61, "A placement bonus of reputation lifts the conservation to 8, the log's 3 X tokens are the reward at 8 (not a bonus of the building)"),
-    "824172891": (("7a", "1a"), True, 55, "Build variant 1 with a Multiplier repeat: each of the two actions has its own additional pavilion"),
+    "824172891": (("1a", "7a"), True, 55, "Build variant 1 with a Multiplier repeat: each of the two actions has its own additional pavilion"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
