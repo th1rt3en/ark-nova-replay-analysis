@@ -816,8 +816,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         elif t == "markCard" and not chose:
             pass                                                     # the mark of the previous turn, logged after the turn marker (the harness takes it from here)
         elif t == "markCard":
-            add(Action(seat, "choose_effect", {"card": next(iter(a["cards"]))[:4] if isinstance(a.get("cards"), dict) else _key(a["meeples"][0]["location"]),
-                                               "mark": True}), e)
+            for card_ in (list(a["cards"]) if isinstance(a.get("cards"), dict) else [m["location"] for m in a["meeples"]]):      # (one event can mark several cards: two marks pending, 772379557 turn 6)
+                add(Action(seat, "choose_effect", {"card": card_[:4] if isinstance(a.get("cards"), dict) else _key(card_), "mark": True}), e)
         elif t in ("gainMarked", "markAssign"):
             pass                                                     # the engine pays / hands over the marked card itself
         elif t == "hypnosis":

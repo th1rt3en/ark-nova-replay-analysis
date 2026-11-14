@@ -59,6 +59,8 @@ CASES = {
     "868399197": (("2a", "2a"), True, 32, "Conference on Europe: the break's map bonus (a size-2 enclosure on the Partner Zoo hex of map 2a) puts a Europe partner zoo into the zoo, and the mark comes at once (there is no end of action in the break)"),
     "741147906": (("3a", "3a"), True, 54, "Conference on Europe: a Europe icon played in the break (a partner zoo): the mark comes at once"),
     "864896379": (("9", "9"), True, 64, "Conference on Europe: a Europe icon played in the break (a partner zoo): the mark comes at once"),
+    "783434284:22": (("5a", "5a"), True, 22, "Mark Animals II: an animal with Venom and no Constriction event in a game that is not peaceful (a Clever effect later in the log is the Clever of another animal, so it does not make the game peaceful); the mark of the card comes at the end"),
+    "772379557": (("8a", "8a"), True, 6, "Conference on Europe: an animal with two Europe icons puts two marks pending, and BGA logs both cards in one markCard event"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
