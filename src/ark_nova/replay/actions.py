@@ -651,6 +651,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             if peaceful and chosen == "animals" and not a.get("card_id") and not a.get("source") and set(b) == {"money"} \
                     and any(n == "Pilfering 1" for k in played for n in _ability_names(k)):
                 add(Action(seat, "choose_effect", {"apply": "gain", "res": "money"}), e)                   # peaceful Pilfering 1: 3 money
+            if a.get("source") == "Iconic animal" and set(b) == {"appeal"}:
+                add(Action(seat, "choose_effect", {"apply": "gain", "res": "appeal"}), e)                  # Iconic Animal: an effect of its own, counted when it is resolved
             if a.get("source") == "Inventive" and set(b) == {"xtoken"}:
                 add(Action(seat, "choose_effect", {"apply": "gain", "res": "xtoken"}), e)                  # Inventive / peaceful Venom: X tokens
             if chosen == "association" and a.get("card_id") and _key(a["card_id"])[:1] == "A" and _key(a["card_id"]) not in played:       # Activate Reef: the effects of the animals of one aquarium

@@ -111,7 +111,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     elif name == "Iconic Animal":
         both = icon_counts(state, 0) + icon_counts(state, 1)
         icon = next(i for i in icons if i.lower() == str(value).lower()) if any(i.lower() == str(value).lower() for i in icons) else str(value).capitalize()
-        g._gain(state, seat, appeal=min(8, both[icon]))
+        return [{"kind": "gain", "source": key, "res": "appeal", "n": 0, "iconic": icon, "optional": False}]          # (counted when the effect is resolved: a sponsor played before it in the same action counts, 746858756 turn 58)
     elif name in DEFERRED:                                        # drawing from the deck is irreversible: the player activates it when Venom is paid
         return [{"kind": "ability", "name": name, "value": value, "source": key, "optional": True}]
     elif name == "Venom":
@@ -417,6 +417,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     elif k == "gain":
         if e.get("per_pavilion"):                                    # Landscape Gardener: the pavilions in the zoo when the effect is resolved
             e["n"] = sum(b.type == "pavilion" for b in p.buildings)
+        if e.get("iconic"):                                           # Iconic Animal: the icons of both zoos when the effect is resolved, up to 8
+            e["n"] = min(8, (icon_counts(state, 0) + icon_counts(state, 1))[e["iconic"]])
         if e.get("per"):
             e["n"] = e["per"]["mult"] * (icon_counts(state, action.player)[e["per"]["icon"]] // e["per"]["every"])
         g._gain(state, action.player, **{{"appeal": "appeal", "money": "money", "reputation": "reputation", "conservation": "conservation", "xtoken": "x_tokens"}[e["res"]]: e["n"]})
