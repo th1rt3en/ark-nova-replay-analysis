@@ -527,7 +527,7 @@ def _choose_action_card(state: GameState, action: Action) -> None:
                             "slot": idx + 1, "strength": strength, "after": list(carry.get("after") or []), "extra": carry.get("extra"),
                             "appeal_start": [q.appeal for q in state.players]}
     if hypnosis:
-        state.current_action.update(owner=owner.seat, hypnosis=True, extra=None)
+        state.current_action.update(owner=owner.seat, hypnosis=True, extra=carry.get("extra"))          # (the next extra action of the animals that were played goes on after the hypnotised one: 627743200 turn 61)
     if card.type == "build":
         state.prompt = Prompt(kind="build_place", player=p.seat, args={
             "level": card.level, "remaining": strength + (1 if card.variant == 3 else 0), "placed": [], "variant": card.variant})

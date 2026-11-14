@@ -1,5 +1,5 @@
 """The player chooses the order in which the effects of one action are resolved (the gains of a university, the bonus of a conservation threshold, the pouch of an animal ...); the engine offers every
-pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Twenty-one turns of real games that it got wrong, found by replaying a random sample of
+pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Twenty-five turns of real games that it got wrong, found by replaying a random sample of
 games; each is checked as a whole game with the maps of its players (the harness skips association and build turns of a player whose map it cannot infer, so the plain fixed-logs test would pass them
 without looking). The logs are the local ones (`log_examples/`, not in git)."""
 from pathlib import Path
@@ -30,6 +30,10 @@ CASES = {
     "810846540": (("1a", "1a"), True, 55, "Break income: the first player's unused optional Marketing is over when the other player's income starts, so the display is refilled before that player's draw"),
     "815209400": (("8a", "8a"), True, 61, "A placement bonus of reputation lifts the conservation to 8, the log's 3 X tokens are the reward at 8 (not a bonus of the building)"),
     "824172891": (("1a", "7a"), True, 55, "Build variant 1 with a Multiplier repeat: each of the two actions has its own additional pavilion"),
+    "824618439": (("4a", "4a"), True, 61, "Waza Small Animal Program: the snap comes before the pouch of the snapped card"),
+    "610008670": (("4a", "4a"), False, 66, "an extra action after empty turn markers: the engine's state (the Boost) carries on"),
+    "614184809": (("7a", "7a"), False, 51, "Break income: the placement bonus' take in range closes the gap only; the display is refilled when the player's income is done"),
+    "627743200": (("7a", "7a"), False, 61, "Hypnosis followed by another extra action in the same turn: the turn is one turn (the turn count)"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),

@@ -1094,7 +1094,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 if "S228" in state.players[seat].sponsors:         # Waza Small Animal Program: its snap comes at the end of the action, after the Digging that BGA logs later
                     for j in range(len(items) - 1):
                         x, y = items[j][0], items[j + 1][0]
-                        if x.kind == "take_cards" and x.args.get("mode") == "snap" and y.kind == "choose_effect" and ("hand" in y.args or "display" in y.args or ("card" in y.args and "mark" not in y.args) or (
+                        if x.kind == "take_cards" and x.args.get("mode") == "snap" and y.kind == "choose_effect" and y.args.get("card") != x.args.get("card") and ("hand" in y.args or "display" in y.args or ("card" in y.args and "mark" not in y.args) or (
                                 y.args.get("apply") == "gain" and not any(z[0].kind in ("play_animal", "take_cards") for z in items[j + 2:]))):          # (the last animal's own gain is logged after the snap: 883300517 turn 40)
                             items[j], items[j + 1] = items[j + 1], items[j]
                     acts = [x[0] for x in items]
@@ -1205,8 +1205,23 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                                 state = ap(state, Action(e_.get("player", state.prompt.player), "choose_effect", {"index": j_, "apply": "gain", "res": "reputation"}))
                                 break
                     act = _normalise(state, act, endsnap)
+                    if act.kind == "take_cards" and act.args.get("mode") == "range" and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
+                        pbr_ = next((j_ for j_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "pbonus" and e_["bonus"]["type"] == "take-in-range-or-deck" and e_.get("player", state.prompt.player) == act.player), None)
+                        if pbr_ is not None:                     # the placement bonus' take effect comes first: its refill only closes the gap (614184809 turn 51)
+                            state = ap(state, Action(act.player, "choose_effect", {"index": pbr_, "apply": "pbonus", "bonus": "take-in-range-or-deck"}))
+                            act = _normalise(state, act, endsnap)
                     if act.kind == "take_cards" and act.args.get("mode") in ("snap", "range") and state.prompt is not None and state.prompt.kind == "effects"                             and _plain(act) not in legal_actions(state):
-                        rf = next((x for x in legal_actions(state) if x.kind == "choose_effect" and x.args.get("refill")), None)
+                        rfs = [x for x in legal_actions(state) if x.kind == "choose_effect" and x.args.get("refill")]
+                        rfs.sort(key=lambda x: bool(state.prompt.args["pending"][x.args["index"]].get("snap")) != (act.args.get("mode") == "snap"))          # (a range take is the one of a take effect that does not snap: it only closes the gap)
+                        rf = rfs[0] if rfs else None
+                        for x_ in rfs:                            # (several take effects may be pending: the refill of the one after which the logged take is legal; a snap effect would draw new cards, 614184809 turn 51)
+                            try:
+                                trial_ = apply(copy.deepcopy(state), x_)
+                                if trial_.prompt is not None and _plain(act) in legal_actions(trial_):
+                                    rf = x_
+                                    break
+                            except Exception:
+                                continue
                         if rf is not None:                       # Snapping 2: the player refilled the display before the second snap
                             state = ap(state, rf)
                             act = _normalise(state, act, endsnap)
