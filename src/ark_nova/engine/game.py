@@ -216,6 +216,10 @@ def _harbor_sell(state: GameState, action: Action) -> None:
     p.flags["harbor_turn"] = state.turn if state.active_player == p.seat else state.turn - 1
     _gain(state, p.seat, money=3)
     venom.pay_late(state, p.seat)                          # (a Venom that the player could not pay at the end of the turn is taken after the sale)
+    if state.prompt is not None and state.prompt.kind == "cards_discard" and state.prompt.player == p.seat and len(p.hand) < state.prompt.args["count"]:
+        state.prompt.args["count"] = len(p.hand)             # the sale was one of the cards that had to be discarded: only the cards that are left are owed
+        if not p.hand:
+            _end_turn(state)
     if state.prompt is not None and state.prompt.kind == "effects":          # a sale in the break window can satisfy the hand limit
         pend = state.prompt.args["pending"]
         for i, e in enumerate(pend):
@@ -962,6 +966,7 @@ def _finish_build(state: GameState, action: Action) -> None:
     _end_turn(state)
 
 
+_FREE_ACTIONS = {"harbor_sell", "unstore"}                  # free actions of the zoo map, available beside any prompt
 _FINISHING = {"finish_animals", "finish_build", "finish_sponsors", "finish_association", "skip_effect"}
 
 
@@ -1004,7 +1009,7 @@ def _has_moves(state: GameState, action: Action) -> bool:
     acts = legal_actions(new)
     if pr.kind == "animals_play" and state.config.confirm_turns:   # live play: an animal has to be played (Ignore Animals alone is no move: nothing could be played); the logs of BGA have such turns
         return any(a.kind == "play_animal" for a in acts)
-    return any(a.kind not in _FINISHING for a in acts)
+    return any(a.kind not in _FINISHING and a.kind not in _FREE_ACTIONS for a in acts)      # (a free action of the zoo map is no move of the card: the Commercial Harbor always offers its sale, and a card that left only that was chosen and then stuck the game)
 
 
 def _skip_action(state: GameState, action: Action) -> None:
