@@ -54,6 +54,7 @@ CASES = {
     "665716566": (("5a", "5a"), True, 45, "a sponsor played with a token before the card is chosen, whose reputation gain reaches the track bonus that takes a card from the range: part of the free action, not a card effect outside the Cards action"),
     "679739686:35": (("6a", "6a"), True, 35, "a sponsor played with a token after an Association action: its reputation reaches the track bonus that hires a worker (slideMeeples 'gains a new Association worker')"),
     "686637105": (("5a", "5a"), True, 62, "a sponsor played with a token whose reputation puts a Multiplier on a card, then an Association action, an Extra Shift of the worker and the repetition with the Multiplier: one chain"),
+    "771855619": (("1a", "1a"), True, 55, "Publications played in the break: its donation is an effect of the sponsor, not of the Cards action of the turn"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
@@ -78,7 +79,8 @@ def test_effects_are_resolved_in_the_order_of_the_log(table):
 
 # turns that only say something happened (a player quit, the display was refilled): nothing to replay, and nothing may be reported for them
 EVENT_ONLY = {"774645171": (("2a", "2a"), True, 30, "'X has quit the game and is going to lose'"),
-              "795694395": (("11", "11"), True, 74, "only the replenishment of the display")}
+              "795694395": (("11", "11"), True, 74, "only the replenishment of the display"),
+              "749781422": (("6a", "6a"), True, 69, "the end of the game: the points of the scoring cards and the final score, no action")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")

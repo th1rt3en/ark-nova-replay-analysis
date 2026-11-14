@@ -1048,6 +1048,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             endsnap = snaps[last + 1] if last + 1 < len(snaps) else replay.states[-1]
             if not events or all(e.type.startswith("gameStateChange") or e.type in ("playerConcedeGame", "gameResultNeutralized", "fillPool") for e in events):                       # a repeated state-20 marker (BGA re-enters the state without anything happening)
                 continue
+            if any(e.type == "finalScoring" for e in events) and all(e.type.startswith("gameStateChange") or e.type in ("getBonuses", "finalScoring") for e in events):
+                continue                         # the end of the game: the scoring cards' points and the final score (the engine's end-of-game scoring is checked by the golden tests: 749781422 turn 69)
             rep.turns += 1
             actor = next((str(e.args["player_id"]) for e in events if e.type in ("chooseActionCard", "actionCardCleanup")), markers[k][1])
             if actor != markers[k][1] and not any(e.type == "chooseActionCard" for e in events):          # Hypnosis put back for an X token: only the cleanup of the opponent's card (`turn_actions` checks the X token)
