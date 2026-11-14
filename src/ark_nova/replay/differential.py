@@ -1009,8 +1009,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
     for k in range(len(turns)):
         j = k
         while k not in merged and j + 1 < len(turns) and _free_of_next(turns, j):
-            merged.add(j + 1)                # free actions before the card is chosen (map T1 discard, map 11 unstore, a token) are logged in a turn of their own
-            j = j + 1
+            nj_ = j + 1                      # free actions before the card is chosen (map T1 discard, map 11 unstore, a token) are logged in a turn of their own
+            while nj_ + 1 < len(turns) and not any(not e.type.startswith("gameStateChange") for e in turns[nj_]):
+                nj_ += 1                     # (BGA leaves empty markers after them: 657367963 turn 45)
+            merged.update(range(j + 1, nj_ + 1))
+            j = nj_
         while k not in merged:
             nj = j + 1                                      # (the next turn with events: BGA leaves empty markers between the parts of a turn)
             while nj < len(turns) and not any(not e.type.startswith("gameStateChange") for e in turns[nj]):
@@ -1553,6 +1556,14 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             state = ap(state, mark_skip)
                             continue
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
+                            if not any(e_.type == "chooseActionCard" and str(e_.args.get("player_id")) == actor for t_ in turns[last + 1:] for e_ in t_):
+                                mk_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "mark"), 0)
+                                mc_ = next((x_ for x_ in legal_actions(state) if x_.kind == "choose_effect" and x_.args.get("index") == mk_ and "card" in x_.args), None)
+                                if mc_ is None:
+                                    break
+                                state = ap(state, mc_)   # (the player never acts again, so BGA never logs the mark: the game ended with this turn, 665079039 turn 66: the engine needs it resolved to go on, the cube is taken off again)
+                                _marks._remove(state, mc_.args["card"])
+                                continue
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
                         if any(e_.type == "playerConcedeGame" for e_ in events):
@@ -1588,6 +1599,14 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             state = ap(state, mark_skip)
                             continue
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
+                            if not any(e_.type == "chooseActionCard" and str(e_.args.get("player_id")) == actor for t_ in turns[last + 1:] for e_ in t_):
+                                mk_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "mark"), 0)
+                                mc_ = next((x_ for x_ in legal_actions(state) if x_.kind == "choose_effect" and x_.args.get("index") == mk_ and "card" in x_.args), None)
+                                if mc_ is None:
+                                    break
+                                state = ap(state, mc_)   # (the player never acts again, so BGA never logs the mark: the game ended with this turn, 665079039 turn 66: the engine needs it resolved to go on, the cube is taken off again)
+                                _marks._remove(state, mc_.args["card"])
+                                continue
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
                         if any(e_.type == "playerConcedeGame" for e_ in events):

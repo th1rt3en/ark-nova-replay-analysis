@@ -49,6 +49,8 @@ CASES = {
     "820306349": (("T1", "T1"), True, 33, "A category university: the player drew the card of the reputation track first, the search for the category came after it"),
     "801879816": (("12", "12"), True, 67, "map 12: a project support with the Animal Magnet space that the player does not use (no animal in the hand afterwards): the magnet is optional"),
     "750476271": (("2a", "2a"), True, 45, "a hypnotised level I Association card of the other player: the display's projects can not be supported (that is level II), so BGA's project list does not have the Geological in the display"),
+    "657367963": (("5a", "5a"), True, 45, "a sponsor played with a token before the card is chosen, followed by an empty turn marker: the free part belongs to the player's next action"),
+    "665079039": (("6a", "6a"), True, 66, "the player who ends the game has two marks pending but BGA logs only one: the second would come with a next action that never happens"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
