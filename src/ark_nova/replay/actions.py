@@ -896,8 +896,10 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             return "unexplained X token change"
         extra = {"hypnosis": True} if hypnosis else ({"repeat": again_} if again_ else {})
         sold = [i for i, x in enumerate(actions) if x.kind == "harbor_sell"]          # (map 4: a card sold before the skipped action card is still sold, 688371482 turn 51)
-        return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})], [moves[i] for i in sold] + [move_of[cleanup_order]], False,
-                        orders=[orders[i] for i in sold] + [cleanup_order])
+        later = [i for i, x in enumerate(actions) if hypnosis and x.kind == "choose_effect" and set(x.args) == {"type"} and orders[i] > cleanup_order]       # (the Clever / Boost of the first action, logged after the hypnosis that was put back: 717818868 turn 65)
+        return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})] + [actions[i] for i in later],
+                        [moves[i] for i in sold] + [move_of[cleanup_order]] + [moves[i] for i in later], False,
+                        orders=[orders[i] for i in sold] + [cleanup_order] + [orders[i] for i in later])
     for sup in assoc.all_supports:                                           # a notepad bonus that leaves no trace: the keyword space (3) of the map (Clever, Pouch, Determination, Marketing ...), which is only
         if sup.args.get("bonus") is None:                                   # visible when it is used
             sup.args["bonus"] = {"slot": 3}

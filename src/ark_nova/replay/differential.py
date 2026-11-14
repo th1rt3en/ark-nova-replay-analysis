@@ -1019,6 +1019,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             seat = seat_of[actor]
             nxt_events = next((turns[j] for j in range(last + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[j])), [])      # (the next turn with events: BGA leaves empty markers between)
             again = any(e.type == "chooseActionCard" and str(e.args["player_id"]) == actor for e in nxt_events[:6])       # the same player acts again right away
+            _nx_real = [e for e in nxt_events if not e.type.startswith("gameStateChange")]
+            if not again and _nx_real and not any(e.type == "chooseActionCard" for e in _nx_real) and _nx_real[0].type == "getBonuses" and (_nx_real[0].args.get("bonuses") or {}) == {"xtoken": 1}                     and str(_nx_real[0].args.get("player_id")) == actor and any(e.type == "actionCardCleanup" for e in _nx_real[1:3]) and any(e.type == "hypnosis" for t_ in turns[max(0, k - 1):last + 1] for e in t_):
+                again = True                                                          # the hypnosis that the player puts back for an X token is the next "turn": its Clever / Boost come after it (717818868 turn 65)
             queued = carry[0] == k and carry[1] is not None and carry[1].prompt is not None and (carry[1].prompt.args.get("carry") or {}).get("extra")      # (the next action is an extra action of another animal, not a notepad bonus)
             _normalise.cube_used = any(e_.type == "discardTokens" and any(str(m_.get("location", "")).startswith("S253") for m_ in (e_.args.get("meeples") or [])) for e_ in events)
             _normalise.maxing = any(e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "maxing out reputation" for e_ in events)          # (the notepad bonus of reputation shows only as this appeal)
