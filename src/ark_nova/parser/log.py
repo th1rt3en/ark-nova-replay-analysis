@@ -87,6 +87,8 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
                 final_scores[str(a["player_id"])] = int(a["newScore"])
             if t == "gameStateChange" and isinstance(a, dict) and a.get("id") == 20 and player is None:
                 turn_markers.append((order, str(a.get("active_player"))))
+            elif t == "gameStateChange" and isinstance(a, dict) and a.get("id") == 35 and turn_markers and turn_markers[-1][1] != str(a.get("active_player")):
+                turn_markers.append((order, str(a.get("active_player"))))          # (the turn of the other player starts without the usual state 20: 791967351, the second player's first turn)
             if t == "gameStateChange" and isinstance(a, dict) and a.get("id") == 20 and player and isinstance(a.get("args"), dict):
                 statuses = (a["args"].get("_private") or {}).get("statuses")
                 if isinstance(statuses, dict):

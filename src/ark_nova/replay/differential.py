@@ -398,6 +398,11 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
                 return free[0]
     if act.kind == "choose_effect" and "worker" in act.args and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
         cands = [c for c in legal_actions(state) if c.kind == "choose_effect" and c.player == act.player and isinstance(c.args.get("worker"), int)]
+        snap_ = getattr(_normalise, "snap", None)
+        loc_ = next((t_.location for t_ in snap_.players[act.player].tokens if t_.id == act.args["worker"]), None) if snap_ is not None else None
+        same_ = [c for c in cands if next((t_.location for t_ in state.players[act.player].tokens if t_.id == c.args["worker"]), None) == loc_] if loc_ else []
+        if len(same_) == 1 and not any(c.args["worker"] == act.args["worker"] for c in cands):
+            return same_[0]                                   # (the worker that BGA's id has on the replay board, the engine's own ids differ: 739415597 turn 45)
         if cands and not any(c.args["worker"] == act.args["worker"] for c in cands):      # (the workers on the board are interchangeable: BGA's id of the one just used may be another one in the engine)
             return sorted(cands, key=lambda c: c.args["worker"] < 9000)[0] if len(cands) == 1 or any(c.args["worker"] >= 9000 for c in cands) else cands[0]
     if act.kind == "choose_effect" and "building_id" in act.args:                                # Cut Down: the building by its id
@@ -1020,6 +1025,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 continue
             acts = plan.actions
             state = copy.deepcopy(carry[1] if carry[0] == k else snaps[k])
+            _normalise.snap = snaps[k]
             _fit_income_slots(state, events, seat_of)
             if any(a_.kind == "skip_action" and a_.args.get("hypnosis") for a_ in acts) and not (
                     state.prompt is not None and state.prompt.kind == "choose_action_card" and state.prompt.args.get("hypnosis") and state.prompt.player == seat):
@@ -1556,5 +1562,5 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             res = _result(rep, counts, trace, span.get(k, k))
             if res is not None:
                 rep.results[k] = res
-                carry = (res.last_turn + 1, trace[-1][2]) if (chain or again) and res.status == "ok" and trace else (None, None)      # (an extra action goes on from the engine's own state: a Clever of the first action waits for its end)
+                carry = (next((j_ for j_ in range(res.last_turn + 1, len(turns)) if any(not e_.type.startswith("gameStateChange") and e_.type != "playerConcedeGame" for e_ in turns[j_])), res.last_turn + 1), trace[-1][2]) if (chain or again) and res.status == "ok" and trace else (None, None)      # (BGA leaves empty markers between an action and its extra action: the engine's state goes on to the next turn with events, 802552873 turn 63)      # (an extra action goes on from the engine's own state: a Clever of the first action waits for its end)
     return rep

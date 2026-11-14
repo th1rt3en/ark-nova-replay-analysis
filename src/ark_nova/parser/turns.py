@@ -135,6 +135,13 @@ def extract_turns(packets: list[dict], break_orders: frozenset[int] | None = Non
         elif ty == "finishBreak":
             if phase == "break":
                 transition(o, move, "between_turns", "finish_break")
+        elif sid == 35 and phase == "turn" and opened is not None and player not in (None, "None") and player != opened.player:
+            counts[player] += 1                                   # (the other player's turn starts without a state 7, as the second player's first turn in 791967351)
+            display = counts[player]
+            ctx = transition(o, move, "turn", "turn")
+            opened = NormalTurn(len(out.turns) + 1, player, counts[player], o, move, o, move)
+            out.turns.append(opened)
+            ctx.update(index=opened.index, player=player, number=opened.number)
         elif sid == 7:
             # State-7 public resends may have a fresh UID/packet. A backend move
             # identifies one normal-start transition for this owner; a later
