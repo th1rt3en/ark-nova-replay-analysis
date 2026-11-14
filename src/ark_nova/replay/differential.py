@@ -860,7 +860,7 @@ def _engine_project_options(state: GameState, seat: int) -> dict:
     return out
 
 
-def _is_free_part(events: list) -> bool:
+def _is_free_part(events: list, back: bool = False) -> bool:
     """A "turn" of free actions only, before the player chooses an action card: the map T1 discard for +1 strength, a stored card taken back (map 11), a token used
     (a Sponsor token and the sponsor it plays). BGA logs them after the turn marker, as a turn of their own."""
     real = [e for e in events if not e.type.startswith("gameStateChange")]
@@ -870,17 +870,19 @@ def _is_free_part(events: list) -> bool:
     for e in real:
         if e.type == "pDiscardCards" and "Map T1 effect" in e.log or e.type == "pUnstoreCard" or e.type == "discardTokens" and e.log.startswith("${player_name} uses"):
             continue
+        if back and e.type == "slideMeeples" and "worker(s) back" in (e.log or ""):
+            continue                                         # an Extra Shift between an Association action and its Multiplier repetition (686637105 turn 65)
         if e.type in ("pDiscardCards", "discardCards") and " sell" in (e.log or "") and ((e.args if isinstance(e.args, dict) else {}).get("bonuses") or {}).get("money") == 3:
             continue                                         # map 4, Commercial Harbor: a card sold for 3 money at any time of the turn, also before the action card is chosen (627776608 moves 107 and 483)
-        if token and (e.type in ("playSponsor", "getBonuses", "takeBonus", "buyBuilding", "pDrawCards", "snapCard", "pDiscardCards") or (e.type == "slideMeeples" and (e.log or "").endswith("gains a new Association worker"))):
+        if token and (e.type in ("playSponsor", "getBonuses", "takeBonus", "buyBuilding", "pDrawCards", "snapCard", "pDiscardCards", "addMeeples") or (e.type == "slideMeeples" and (e.log or "").endswith("gains a new Association worker"))):
             continue                                         # (the sponsor's gains, a conservation space reward it reaches, its free building: 901779082 turn 48; a card taken or a worker hired by a reputation track bonus: 665716566 turn 45)
         return False
     return True
 
 
-def _free_of_next(turns: list, j: int) -> bool:
+def _free_of_next(turns: list, j: int, back: bool = False) -> bool:
     """`_is_free_part(turns[j])`, unless it is only Harbor sales of a player other than the one who chooses the card in the next turn with events: that sale was made after the seller's own turn (610062035 turn 63)."""
-    if not _is_free_part(turns[j]):
+    if not _is_free_part(turns[j], back):
         return False
     sellers = {str(e.args.get("player_id")) for e in turns[j] if e.type in ("pDiscardCards", "discardCards") and " sell" in (e.log or "")}
     nxt = next((turns[i] for i in range(j + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[i])), [])
@@ -1019,7 +1021,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             while nj < len(turns) and not any(not e.type.startswith("gameStateChange") for e in turns[nj]):
                 nj += 1
             fj = nj                                         # (free actions before the repetition's card: map T1 discard ...)
-            while fj + 1 < len(turns) and _free_of_next(turns, fj):
+            while fj + 1 < len(turns) and _free_of_next(turns, fj, True):
                 fj += 1
             if fj < len(turns) and fj > nj and _is_repetition(turns[fj]) and not any(e.type == "actionCardCleanup" for e in turns[j]):
                 nj = fj
@@ -1044,7 +1046,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 break
             last = span.get(k, k)
             endsnap = snaps[last + 1] if last + 1 < len(snaps) else replay.states[-1]
-            if not events or all(e.type.startswith("gameStateChange") or e.type == "playerConcedeGame" for e in events):                       # a repeated state-20 marker (BGA re-enters the state without anything happening)
+            if not events or all(e.type.startswith("gameStateChange") or e.type in ("playerConcedeGame", "gameResultNeutralized", "fillPool") for e in events):                       # a repeated state-20 marker (BGA re-enters the state without anything happening)
                 continue
             rep.turns += 1
             actor = next((str(e.args["player_id"]) for e in events if e.type in ("chooseActionCard", "actionCardCleanup")), markers[k][1])

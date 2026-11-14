@@ -53,6 +53,7 @@ CASES = {
     "665079039": (("6a", "6a"), True, 66, "the player who ends the game has two marks pending but BGA logs only one: the second would come with a next action that never happens"),
     "665716566": (("5a", "5a"), True, 45, "a sponsor played with a token before the card is chosen, whose reputation gain reaches the track bonus that takes a card from the range: part of the free action, not a card effect outside the Cards action"),
     "679739686:35": (("6a", "6a"), True, 35, "a sponsor played with a token after an Association action: its reputation reaches the track bonus that hires a worker (slideMeeples 'gains a new Association worker')"),
+    "686637105": (("5a", "5a"), True, 62, "a sponsor played with a token whose reputation puts a Multiplier on a card, then an Association action, an Extra Shift of the worker and the repetition with the Multiplier: one chain"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
@@ -73,3 +74,22 @@ def test_effects_are_resolved_in_the_order_of_the_log(table):
     rep = build_replay(parsed, setup, cfg, seed)
     diff = run_differential(parsed, rep, {pid: i for i, pid in enumerate(setup.seats)}, chain=True)
     assert diff.results[turn].status == "ok", (why, diff.results[turn].status, diff.results[turn].detail)
+
+
+# turns that only say something happened (a player quit, the display was refilled): nothing to replay, and nothing may be reported for them
+EVENT_ONLY = {"774645171": (("2a", "2a"), True, 30, "'X has quit the game and is going to lose'"),
+              "795694395": (("11", "11"), True, 74, "only the replenishment of the display")}
+
+
+@pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
+@pytest.mark.parametrize("table", sorted(EVENT_ONLY))
+def test_a_turn_of_notices_only_is_not_reported(table):
+    path = LOGS / f"{table}.json"
+    if not path.exists():
+        pytest.skip("log not available")
+    maps, mw, turn, why = EVENT_ONLY[table]
+    parsed = parse_log(str(path))
+    setup, cfg, seed = game_from_log(parsed, maps=list(maps), marine_worlds=mw)
+    rep = build_replay(parsed, setup, cfg, seed)
+    diff = run_differential(parsed, rep, {pid: i for i, pid in enumerate(setup.seats)}, chain=True)
+    assert turn not in diff.results, (why, diff.results.get(turn))
