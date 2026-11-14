@@ -55,6 +55,7 @@ CASES = {
     "679739686:35": (("6a", "6a"), True, 35, "a sponsor played with a token after an Association action: its reputation reaches the track bonus that hires a worker (slideMeeples 'gains a new Association worker')"),
     "686637105": (("5a", "5a"), True, 62, "a sponsor played with a token whose reputation puts a Multiplier on a card, then an Association action, an Extra Shift of the worker and the repetition with the Multiplier: one chain"),
     "771855619": (("1a", "1a"), True, 55, "Publications played in the break: its donation is an effect of the sponsor, not of the Cards action of the turn"),
+    "900757015": (("5a", "5a"), True, 51, "Animals with two animals: one gives an extra Cards action, the other a Clever effect; the player resolves the Cards action first, so the card goes to slot 1 after it (one turn)"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),

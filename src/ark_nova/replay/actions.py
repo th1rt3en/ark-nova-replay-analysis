@@ -840,8 +840,6 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 return f"unsupported building: {b['type']}"
             built = True
             add(Action(seat, "place_building", {"type": b["type"], "x": b["x"], "y": b["y"], "rotation": b.get("rotation", 0)}), e)
-        elif t == "actionCardCleanup" and cleanup_type is not None and "action card" not in e.log and chosen == "cards" and variant_of_chosen != 4 and not in_break:
-            return "a card put on slot 1 in a Cards action without Clever (map effect?)"
         elif t == "actionCardCleanup" and cleanup_type is not None and "action card" not in e.log:
             if parse_action_type(a["actionCard"]["type"])[0] not in boosts:          # (a Boost to slot 1 is decided by the boost action)
                 from ark_nova.replay.view import render_log
