@@ -330,7 +330,7 @@ def pilfer_hits(state, e: dict) -> bool:
     if tracks.is_protected(victim.appeal) or "S225" in victim.sponsors:                             # below 5 appeal a player is protected
         return False
     if e.get("by", "appeal") == "appeal":
-        return victim.appeal >= thief.appeal
+        return victim.appeal >= thief.appeal - ((state.current_action or {}).get("late_appeal", 0) if thief.seat == state.active_player else 0)
     return victim.conservation >= thief.conservation and victim.conservation > 0                    # (a tie at 0 does not count: logs)
 
 

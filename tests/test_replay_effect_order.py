@@ -1,5 +1,5 @@
 """The player chooses the order in which the effects of one action are resolved (the gains of a university, the bonus of a conservation threshold, the pouch of an animal ...); the engine offers every
-pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Twelve turns of real games that it got wrong, found by replaying a random sample of
+pending effect, and the replay harness (`replay/differential.py`) has to resolve them in the order the log shows. Fifteen turns of real games that it got wrong, found by replaying a random sample of
 games; each is checked as a whole game with the maps of its players (the harness skips association and build turns of a player whose map it cannot infer, so the plain fixed-logs test would pass them
 without looking). The logs are the local ones (`log_examples/`, not in git)."""
 from pathlib import Path
@@ -21,6 +21,9 @@ CASES = {
     "664950095": (("3a", "3a"), True, 69, "Mark Animals with every animal of the display already marked: BGA logs no mark (a markCard some turns later belongs to another action)"),
     "679739686": (("6a", "6a"), True, 19, "Cut Down: the log names BGA's building id 6, which the engine numbers differently (the empty size-2 enclosure at (7, 2))"),
     "700204563": (("1a", "1a"), True, 21, "Cut Down: the log names BGA's building id 9 (the empty size-2 enclosure at (5, 2))"),
+    "714263104": (("1a", "1a"), True, 49, "Hypnosis of a Digging Cards card on an older table: its dig comes before the cards action"),
+    "739415597": (("8a", "8a"), True, 76, "Pilfering by appeal: the Explorer's appeal of the same animal is logged after it and does not count for the comparison"),
+    "752201952:52": (("1a", "1a"), True, 52, "Hypnosis of a level II +1 Build card on an older table: the extra building (a kiosk) is allowed"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
@@ -32,7 +35,7 @@ CASES = {
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
 @pytest.mark.parametrize("table", sorted(CASES))
 def test_effects_are_resolved_in_the_order_of_the_log(table):
-    path = LOGS / f"{table}.json"
+    path = LOGS / f"{table.split(':')[0]}.json"
     if not path.exists():
         pytest.skip("log not available")
     maps, mw, turn, why = CASES[table]

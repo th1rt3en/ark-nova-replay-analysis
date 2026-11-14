@@ -194,6 +194,8 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
     if explorer:
         new = [i for i in prog.EXPLORER_ICONS if own[i] and not before[i] and i not in EXPLORER_BUG.get(card_key, ())]
         g._gain(state, seat, appeal=len(new), money=2 * len(new))
+        if new and state.current_action is not None:
+            state.current_action["late_appeal"] = state.current_action.get("late_appeal", 0) + len(new)      # (BGA logs the Explorer's gains after a Pilfering of the same animal: it does not count there, 739415597 turn 76)
     if state.players[seat].map_id == "BDW1":                  # Management Zoo: the second icon of a species pays a bonus
         from ark_nova.engine import map_rules
         pending += map_rules.species_effects(seat, before, total)
