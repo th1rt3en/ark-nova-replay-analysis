@@ -89,6 +89,20 @@ def same_map_of(info: dict) -> bool:
         return False
 
 
+def peaceful_of(info: dict) -> bool | None:
+    """BGA's "Peaceful mode" option (103) in the table info: True when it is enabled, False when disabled, None when the table info has no such option (or a value that is
+    neither: the replay then goes by the arena rating and the log)."""
+    opt = (info.get("options") or {}).get("103") if isinstance(info.get("options"), dict) else None
+    if not isinstance(opt, dict):
+        return None
+    return peaceful_from_option(opt.get("value"))
+
+
+def peaceful_from_option(value) -> bool | None:
+    """The value of option 103: "1" (enabled) / "0" (disabled), as text or number; anything else is not an answer."""
+    return {"1": True, "0": False}.get(str(value).strip())
+
+
 def record_from_tableinfo(info: dict, table_id: int) -> TableRecord:
     """The record that stands in for the index of a table that is not indexed: the Elo of the players (the maps and Marine Worlds come from the log)."""
-    return TableRecord(table_id=table_id, elos=elos_from_tableinfo(info), elos_after=elos_after_from_tableinfo(info), elo_changes=elo_changes_from_tableinfo(info), same_map=same_map_of(info), player_maps=maps_from_tableinfo(info), marine_worlds=marine_worlds_of(info))
+    return TableRecord(table_id=table_id, elos=elos_from_tableinfo(info), elos_after=elos_after_from_tableinfo(info), elo_changes=elo_changes_from_tableinfo(info), same_map=same_map_of(info), player_maps=maps_from_tableinfo(info), marine_worlds=marine_worlds_of(info), peaceful=peaceful_of(info))

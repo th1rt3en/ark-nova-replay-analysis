@@ -38,3 +38,16 @@ def test_a_game_with_an_arena_rating_is_never_peaceful(arena, peaceful):
         pytest.skip("log not available")
     _, cfg, _ = game_from_log(parse_log(str(path)), marine_worlds=True, arena=arena)
     assert cfg.peaceful is peaceful
+
+
+@pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
+@pytest.mark.parametrize("arena, option, peaceful", [(True, True, True), (None, False, False), (False, False, False), (None, None, True), (True, None, False)])
+def test_bgas_option_beats_the_arena_rating_and_the_log(arena, option, peaceful):
+    """The option (103) of the table info / index decides; without it the arena rating (never peaceful), then the log (619074436 shows the signs of a peaceful game)."""
+    from ark_nova.replay.config import game_from_log
+
+    path = LOGS / "619074436.json"
+    if not path.exists():
+        pytest.skip("log not available")
+    _, cfg, _ = game_from_log(parse_log(str(path)), marine_worlds=True, arena=arena, peaceful=option)
+    assert cfg.peaceful is peaceful

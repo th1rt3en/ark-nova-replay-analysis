@@ -286,3 +286,25 @@ def test_redirects_to_pages_when_configured(monkeypatch):
     assert r.status_code == 307 and r.headers["location"] == "https://site.example/replay.html?table=5"
     assert c.get("/healthz").json() == {"status": "ok"}
     assert c.get("/api/tables/999").status_code != 307
+
+
+def test_bigquery_index_reads_bgas_peaceful_option():
+    from ark_nova.storage.index import BigQueryIndex
+
+    def find(rows):
+        idx = BigQueryIndex("stats", "logs")
+
+        def run(sql, table_id):
+            if "pre_match_arena_rating" in sql:
+                return rows
+            if "post_match_elo" in sql:
+                return []
+            return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
+
+        idx._run = run
+        return idx.find(5)
+
+    assert find([{"pre_match_arena_rating": None, "peaceful_option": "1"}, {"pre_match_arena_rating": None, "peaceful_option": "1"}]).peaceful is True
+    assert find([{"pre_match_arena_rating": 1200, "peaceful_option": "0"}]).peaceful is False
+    assert find([{"pre_match_arena_rating": None, "peaceful_option": None}]).peaceful is None           # (the options column is filled for some tables only)
+    assert find([{"pre_match_arena_rating": None, "peaceful_option": "2"}]).peaceful is None

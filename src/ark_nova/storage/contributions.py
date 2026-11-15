@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 
 PREFIX = "all_games_logs"
 JSON_FIELDS = ("maps", "elos", "elos_after", "elo_changes")          # dict columns, stored as JSON text
-FLAG_FIELDS = ("same_map", "marine_worlds")                          # BOOL columns
+FLAG_FIELDS = ("same_map", "marine_worlds", "peaceful")             # BOOL columns (`peaceful`: BGA's option 103, NULL = not known)
 
 
 class Contributions:
@@ -69,7 +69,7 @@ class Contributions:
         return json.loads(blob.download_as_bytes())
 
     def record(self, table_id: int) -> dict | None:
-        """What the newest complete row (one with the maps) holds for the table: {base_projects, maps, elos, elos_after, elo_changes, same_map, marine_worlds}, or None.
+        """What the newest complete row (one with the maps) holds for the table: {base_projects, maps, elos, elos_after, elo_changes, same_map, marine_worlds, peaceful}, or None.
         Blocking: call it off the event loop."""
         if not (self.enabled and self.bq_table):
             return None
@@ -88,7 +88,7 @@ class Contributions:
         for field in JSON_FIELDS:
             out[field] = json.loads(row[field]) if row.get(field) else {}
         for field in FLAG_FIELDS:
-            out[field] = bool(row.get(field))
+            out[field] = bool(row.get(field)) if field != "peaceful" or row.get(field) is not None else None
         if not out["maps"]:
             return None
         self._rows[table_id] = out
@@ -107,8 +107,10 @@ class Contributions:
         if not (self.bq_table and isinstance(projects, (list, tuple)) and len(projects) == 3):
             return wrote
         extras = extras or {}
-        if not wrote and not (extras.get("maps") and self.record(table_id) is None):
-            return False
+        if not wrote:
+            kept_row = self.record(table_id) if extras.get("maps") else None
+            if not extras.get("maps") or (kept_row is not None and not (extras.get("peaceful") is not None and kept_row.get("peaceful") is None)):
+                return False                            # (a row with the maps is added when there is none, or when it lacks BGA's peaceful option that this upload knows)
         try:
             self._insert(table_id, projects, extras)
         except Exception:
@@ -125,7 +127,8 @@ class Contributions:
         for field in JSON_FIELDS:
             row[field] = json.dumps(extras[field], sort_keys=True) if extras.get(field) else None
         for field in FLAG_FIELDS:
-            row[field] = bool(extras[field]) if field in extras else None
+            row[field] = bool(extras[field]) if extras.get(field) is not None else None
         errors = self._bq.insert_rows_json(self.bq_table, [row])
         if errors:
             raise RuntimeError(f"BigQuery refused the row: {errors}")
+        self._rows.pop(int(table_id), None)             # (the newest row changed)
