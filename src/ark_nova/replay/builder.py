@@ -746,7 +746,7 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
                 elif mine.animals:
                     moved = mine.animals.pop(0)
                     holder = next((o for o in p.buildings if first and mine.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") and k in o.animals), None)
-                    if holder is not None:        # the aquariums are one pool: the animal that BGA's flipped aquarium held moves to the space that the released one frees, which is in another aquarium (672851171 turn 36, 820998468 turn 70)
+                    if holder is not None:        # an animal is not tied to an enclosure: the named aquarium is emptied, the released animal leaves the zoo and the animal listed in the named one stays (bookkeeping only; 672851171 turn 36, 820998468 turn 70)
                         holder.animals.remove(k)
                         holder.animals.append(moved)
                     emptied = True
