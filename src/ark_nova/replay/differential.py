@@ -213,6 +213,7 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
                   and (e.args["building"]["x"], e.args["building"]["y"], e.args["building"]["type"]) == (act.args["x"], act.args["y"], act.args["type"])), None)
     if start is None:
         return state
+    snaps_ = 0
     extra: Counter = Counter()                        # BGA names the chosen bonus with a takeBonus that has no source ("gets 1 x reputation")
     for e in events[start + 1:]:
         if e.type == "buyBuilding" or (e.type == "actionCardCleanup" and "Clever" not in e.log):
@@ -223,6 +224,8 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
             bt = bd_args.get("bonus_type")
             if bt:
                 extra[(bt, bd_args.get("bonus_n"))] += 1
+        elif e.type == "snapCard" and "snaps" in (e.log or "") and str(a.get("player_id")) in {str(x) for x in [state.config.player_ids[seat]]}:
+            snaps_ += 1                                      # BGA names the Snapping hex of the Archaeologist only by the snap itself (881841416 turn 58)
     bd = board(state.players[seat].map_id)
     for (typ, amount), n in extra.items():
         for _ in range(n):
@@ -238,6 +241,14 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
                 break                                      # (not a bonus of a hex: the choice at conservation 5 / 8 is logged the same way)
             state = ap(state, Action(seat, "choose_effect", {"index": i, "cell": list(cell)}))
             _ARCH_TAKEN.append((str(typ), amount))                  # (the plan still holds the log's "gets 1 x <bonus>" as an action: it is this pick)
+    for _ in range(snaps_):                                  # a Snapping hex picked by the Archaeologist: the snap that follows resolves it (nothing to drop from the plan)
+        if state.prompt is None or state.prompt.kind != "effects":
+            break
+        i = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "archaeologist"), None)
+        cell = next((c for c in bon.archaeologist_cells(state, state.players[seat]) if any(b and b["type"] == "Snapping" for b in bd.bonuses[c])), None)
+        if i is None or cell is None:
+            break
+        state = ap(state, Action(seat, "choose_effect", {"index": i, "cell": list(cell)}))
     return state
 
 
