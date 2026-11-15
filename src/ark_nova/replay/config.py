@@ -163,7 +163,12 @@ HOSTILE = {"Venom", "Constriction", "Pilfering 1", "Pilfering 2", "Hypnosis"}
 
 
 def infer_peaceful(parsed: ParsedLog) -> bool:
-    """The peaceful variant (hostile effects replaced): an animal with a hostile ability was played and no hostile event ever shows in the log."""
+    """The peaceful variant (hostile effects replaced): an animal with a hostile ability was played, no hostile event ever shows in the log, and at least one of
+    the replacements BGA logs in their place does. A fallback only: BGA's table option 103 "Peaceful mode" is the real source once the index carries it.
+
+    Only signs that `scripts/audit_peaceful.py` found never to occur in a game with a hostile event are used (a Venom animal's X token, a Pilfering 1's 3 money,
+    the Sprint draw of a Pilfering). A card put on slot 1 ("Clever effect") after a Constriction animal was tried and is NOT one: in 13 of 19 local games that show it
+    a hostile event shows too, and a Clever effect can come from any Clever animal, a sponsor, or an earlier action (900757015 turn 51, 783434284 turn 22)."""
     played = hostile = peaceful = 0
     names: set = set()
     inventive_seen = False                                 # (a Reef Dweller "Inventive" animal of the zoo also pays X tokens: no proof of a peaceful Venom)

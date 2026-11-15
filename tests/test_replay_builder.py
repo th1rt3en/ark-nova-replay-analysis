@@ -30,7 +30,8 @@ def test_replay_of_one_game_has_a_state_per_move():
 def test_setup_steps_follow_the_log_deal_then_discard_then_display():
     parsed, rep = _replay(LOGS[0])
     hands = [[len(p.hand) for p in st.players] for st in rep.states[:rep.setup_moves]]
-    assert hands[0] == [0, 0] and all(not st.display[0] for st in rep.states[:1])      # nothing is dealt at the literal start
+    starts_at_the_deal = any(e.type == "pDrawCards" for e in parsed.moves[0].events)      # (a log that begins with the deal itself: 594103300)
+    assert starts_at_the_deal or (hands[0] == [0, 0] and all(not st.display[0] for st in rep.states[:1]))      # nothing is dealt at the literal start
     assert max(h[0] for h in hands) in (8, 9)                                          # the deal (9 with Map 14's sponsor)
     last = rep.states[rep.setup_moves - 1]
     assert [len(p.hand) for p in last.players] in ([4, 4], [5, 5], [4, 5], [5, 4]) and all(last.display)   # discarded 4 each, display filled
