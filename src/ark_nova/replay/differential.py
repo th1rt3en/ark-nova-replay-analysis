@@ -649,6 +649,11 @@ def _skip_unneeded(state: GameState, act):
                                                               or (e["kind"] == "slot1" and act is not None and act.kind == "use_token")
                                                               or (e["kind"] == "extra_shift" and act is not None and act.kind in ("choose_effect", "take_cards", "place_building") and "worker" not in act.args)) and any(_fits(e, x) and x.player == e.get("player", x.player) for x in (rest if e["kind"] != "marketing" else [y for y in rest if y.kind == "choose_effect" and str(y.args.get("card", "")).startswith("S")]))):      # (a later action of the turn may still use it; Marketing: only the choice of a sponsor card)
             return Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
+    for i, e in enumerate(state.prompt.args["pending"]):
+        if e["kind"] == "mark" and not (act is not None and act.kind == "choose_effect" and "mark" in act.args):
+            sk = Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
+            if sk in legal_actions(state):                       # no animal is left in the display to mark (the engine allows the skip only then): BGA logs nothing, and the break goes on (651806280 turn 46)
+                return sk
     legal = None
     for i, e in enumerate(state.prompt.args["pending"]):
         if e["kind"] == "extra_shift":                                   # nothing left to take back (the second placement bonus of Excavation Site ...): the logs show nothing

@@ -66,6 +66,7 @@ CASES = {
     "638649830": (("4a", "4a"), False, 41, "the free size-2 enclosure of the break comes after an Animals action that ended in the break"),
     "647695434": (("2a", "2a"), False, 44, "Archaeologist: the partner zoo bonus (an upgrade of Cards) comes before the 1 reputation bonus of the same enclosure, which then passes 9 and takes the card of the 10 reputation space"),
     "647824362": (("5a", "5a"), True, 74, "Scuba Dive: a Marketing token plays one of the revealed sponsors before the card to keep is chosen"),
+    "651806280": (("4", "4"), True, 46, "Mark Animals with no unmarked animal left in the display: BGA logs no mark, and the break goes on (the mark is skipped)"),
     "659912999": (("4a", "4a"), True, 58, "Animals II with the Commercial Harbor: an animal, a sale for 3 money, and the second animal (from the display) that the sale made affordable"),
     "719833428": (("7a", "7a"), False, 37, "the choice at conservation 5 that comes after a reputation gain"),
     "752201952": (("1a", "1a"), True, 32, "the choice at conservation 2 (hire) after the reputation gain and its track bonus"),
