@@ -656,11 +656,12 @@ def _place_building(state: GameState, action: Action) -> None:
             a["terrain_used"] = True
             _gain(state, p.seat, money=2)
     elif variant == 4 and _covers_terrain(bd, t, x, y, k) and not ("S219" in p.sponsors and a["level"] == 1):  # Terrain Build: 2 more at level I (not with the Diversity Researcher, who may build over water and rock anyway: 854263310 turn 37), level II: gain 2 money
+        first_terrain = not a.get("terrain_used")
         a["terrain_used"] = True
         if a["level"] == 1:
             _pay(state, p, TERRAIN_COST)
-        else:
-            _gain(state, p.seat, money=2)
+        elif first_terrain:
+            _gain(state, p.seat, money=2)                  # (level II pays the 2 money once in the action: 801481122 turn 60)
     _put_building(state, p.seat, t, x, y, k, terrain_fee=fee)
     more = [x for x in _build_actions(state, p) if x.kind == "place_building"]
     if a["level"] < 2 and a["placed"]:                    # level I: one building, only the additional one of Pavilion / Kiosk Build may follow (the extra one may also come first)

@@ -1057,6 +1057,14 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 build_checks.setdefault(m.index, []).append(c)
     consumed_marks: set = set()
     _BUILDING_POS.clear()
+    left_at: dict = {}                                       # seat -> order of the last action card the player chose, for a player who never acts again while the other one chooses 4 times or more (BGA's player who left: no turn, no income)
+    _ch = [(e_.order, seat_of[str(e_.args.get("player_id"))]) for m_ in parsed.moves for e_ in m_.events if e_.type == "chooseActionCard" and isinstance(e_.args, dict) and str(e_.args.get("player_id")) in seat_of]
+    for seat_x_ in set(seat_of.values()):
+        mine_ = [o_ for o_, s_ in _ch if s_ == seat_x_]
+        after_ = [o_ for o_, s_ in _ch if s_ != seat_x_ and (not mine_ or o_ > mine_[-1])]
+        skipped_ = any(e_.type == "skipTurnOfPlayer" and isinstance(e_.args, dict) and seat_of.get(str(e_.args.get("player_id"))) == seat_x_ for m_ in parsed.moves for e_ in m_.events)       # (a player kicked for time has its own handling: 782921035 turn 64)
+        if mine_ and len(after_) >= 4 and not skipped_:
+            left_at[seat_x_] = mine_[-1]
     for m_ in parsed.moves:                                    # BGA's building ids (the engine numbers its own): where each building lies, for Cut Down
         for e_ in m_.events:
             a_ = e_.args if isinstance(e_.args, dict) else {}
@@ -1142,6 +1150,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 continue
             acts = plan.actions
             state = copy.deepcopy(carry[1] if carry[0] == k else snaps[k])
+            for seat_l_, order_l_ in left_at.items():
+                if events and events[0].order > order_l_ and not any(e_.type == "getBonuses" and isinstance(e_.args, dict) and seat_of.get(str(e_.args.get("player_id"))) == seat_l_
+                                                                      and e_.args.get("source") in ("appeal income", "kiosk income", "map income") for e_ in events):
+                    state.players[seat_l_].flags["left"] = 1          # (the break right after their last action still paid them: 697970922 turn 47)
             _normalise.snap = snaps[k]
             _fit_income_slots(state, events, seat_of)
             if any(a_.kind == "skip_action" and a_.args.get("hypnosis") for a_ in acts) and not (
