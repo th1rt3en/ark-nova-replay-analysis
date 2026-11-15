@@ -1184,7 +1184,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             state.phase = Phase.TURN
             state.current_action = None
             state.active_player = seat
-            state.prompt = Prompt(kind="choose_action_card", player=seat, args={**({"hypnosis": True, "optional": True} if acts[0].args.get("hypnosis") else {}), **kept})
+            state.prompt = Prompt(kind="choose_action_card", player=seat, args={**({"hypnosis": True, "optional": True} if next((x_ for x_ in acts if x_.kind in ("choose_action_card", "skip_action")), acts[0]).args.get("hypnosis") else {}), **kept})      # (a token or a sale may come before the hypnotised card: 884212153 turn 46)
             oracle_notes: list[str] = []
             _skip_unneeded.rest = []
             _skip_unneeded.rep_first = _project_rep_before_sponsor(turns[k])
@@ -1260,6 +1260,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     if act.kind == "choose_effect" and str(act.args.get("card", "")).startswith("F") and not (state.prompt is not None and state.prompt.kind == "effects" and any(
                             e["kind"] == "endgame_discard" and e["player"] == act.player for e in state.prompt.args["pending"])) and act.args["card"] not in state.players[act.player].endgame_hand:
                         continue                                 # the engine already discarded that card (the discards come early in the engine)
+                    if act.kind == "choose_effect" and act.args.get("cards") == [] and not (state.prompt is not None and state.prompt.kind == "effects" and any(
+                            e["kind"] in ("break_discard", "sell", "reveal", "marketing") for e in state.prompt.args["pending"])):
+                        continue                                 # a discard of no card (the hand is within the limit): nothing to do (856281778 turn 51)
                     if act.kind == "choose_effect" and act.args.get("apply") == "income_map" and not (state.prompt is not None and state.prompt.kind == "effects" and any(
                             e["kind"] == "income_map" for e in state.prompt.args["pending"])):
                         continue                                 # a map income that the engine pays itself (other maps)
@@ -1606,6 +1609,20 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         alt = _normalise(state, other, endsnap)
                         if _plain(alt) in legal_actions(state):
                             act = alt
+                    if act.kind == "choose_effect" and len(act.args.get("cards") or []) > 1 and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
+                        left_ = list(act.args["cards"])          # one sale of the log that two sell effects pay (two Sea Turtle Tanks: 869352683 turn 44): the cards are split between them
+                        while left_ and state.prompt is not None and state.prompt.kind == "effects":
+                            si_ = next((j_ for j_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "sell" and e_.get("player", act.player) == act.player), None)
+                            if si_ is None:
+                                break
+                            take_ = left_[:state.prompt.args["pending"][si_]["max"]]
+                            sale_ = Action(act.player, "choose_effect", {"index": si_, "cards": sorted(take_)})
+                            if sale_ not in legal_actions(state):
+                                break
+                            state = ap(state, sale_)
+                            left_ = left_[len(take_):]
+                        if not left_:
+                            continue
                     for _ in range(6):                           # the action of the player is over and its declined optional effects (Hunter Animals' reveal) still stand: the next logged move is the other player's (the break discard of the hand limit, 787630841 turn 11)
                         if _plain(act) in legal_actions(state) or state.prompt is None or state.prompt.kind != "effects" or act.player == state.prompt.player or act.kind != "choose_effect":
                             break
@@ -1707,6 +1724,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
+                        g_ = next((Action(e_.get("player", state.prompt.player), "choose_effect", {"index": i_, "apply": "gain", "res": e_["res"]}) for i_, e_ in enumerate(state.prompt.args["pending"])
+                                   if e_["kind"] == "gain" and Action(e_.get("player", state.prompt.player), "choose_effect", {"index": i_, "apply": "gain", "res": e_["res"]}) in legal_actions(state)), None)
+                        if g_ is not None:                       # a gain with no decision that the log shows no event for: BGA has paid it (865779207 turn 62), the state comparison checks the amount
+                            state = ap(state, g_)
+                            continue
                         rep.illegal.append(f"turn {k}: a mandatory effect is still pending: {state.prompt.args['pending']}")
                         raise _Stop
                     state = ap(state, skip)
@@ -1742,10 +1764,18 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
+                        g_ = next((Action(e_.get("player", state.prompt.player), "choose_effect", {"index": i_, "apply": "gain", "res": e_["res"]}) for i_, e_ in enumerate(state.prompt.args["pending"])
+                                   if e_["kind"] == "gain" and Action(e_.get("player", state.prompt.player), "choose_effect", {"index": i_, "apply": "gain", "res": e_["res"]}) in legal_actions(state)), None)
+                        if g_ is not None:                       # a gain with no decision that the log shows no event for: BGA has paid it (865779207 turn 62), the state comparison checks the amount
+                            state = ap(state, g_)
+                            continue
                         rep.illegal.append(f"turn {k}: a mandatory effect is still pending: {state.prompt.args['pending']}")
                         raise _Stop
                     state = ap(state, skip)
-                if state.prompt is not None and state.prompt.kind == "choose_action_card" and state.prompt.args.get("optional")                     and (snaps[last + 1] if last + 1 < len(snaps) else snaps[k]).active_player != seat:
+                nxt_ev_ = next((turns[j_] for j_ in range(last + 1, len(turns)) if any(not e_.type.startswith("gameStateChange") for e_ in turns[j_])), [])
+                hyp_next_ = state.prompt is not None and state.prompt.args.get("hypnosis") and any(
+                    e_.type == "chooseActionCard" and isinstance(e_.args, dict) and str(e_.args["actionCard"].get("pId")) != str(e_.args.get("player_id")) and seat_of.get(str(e_.args.get("player_id"))) == seat for e_ in nxt_ev_)      # (the hypnosis action is logged in the next marker, after a token or a sale: 884212153 turn 46)
+                if state.prompt is not None and state.prompt.kind == "choose_action_card" and state.prompt.args.get("optional") and not hyp_next_                     and (snaps[last + 1] if last + 1 < len(snaps) else snaps[k]).active_player != seat:
                     state = ap(state, Action(seat, "skip_extra", {}))           # an optional second action (Multiplier, Action: X, Hypnosis) that was not taken
                 elif (state.prompt is not None and state.prompt.kind == "choose_action_card" and state.prompt.args.get("repeat")
                       and not (last + 1 < len(turns) and _is_repetition(turns[last + 1])) and Action(seat, "skip_extra", {}) in legal_actions(state)):
