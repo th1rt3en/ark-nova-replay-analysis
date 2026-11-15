@@ -174,7 +174,7 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                         pending.append({"kind": "sell", "source": s, "max": eff[1], "optional": True, "player": owner})
                     elif eff[0] == "pouch":
                         pending.append({"kind": "pouch", "source": s, "optional": True, "player": owner})
-                    elif eff[0] == "slot1" and state.current_action.get("type") == "break":      # (a sponsor played in the break: at once, free)
+                    elif eff[0] == "slot1" and (state.current_action.get("type") == "break" or (state.current_action.get("type") == "window" and state.players[owner].flags.get("post_break"))):      # (a sponsor played in the break or in the window after it: at once, free; 643733401 turn 78)
                         pending.append({"kind": "slot1", "source": s, "optional": True, "cost": 0, "player": owner})
                     elif eff[0] == "slot1":              # the used action card only goes to slot 1 at the end of the action
                         state.current_action.setdefault("after", []).append({"kind": "slot1", "source": s, "optional": True})
