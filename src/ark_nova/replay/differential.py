@@ -196,7 +196,7 @@ def _placement_types(state: GameState, act: Action) -> Counter:
     return Counter(b["type"] for c in cells for b in bd.bonuses.get(c, []) if b)
 
 
-_BONUS_ALIAS = {"extrashift": "worker", "map10": "digging"}      # the log's names of a placement bonus -> the board's (the Extra Shift hex of map 11 is "Worker" in the logs)
+_BONUS_ALIAS = {"extrashift": "worker", "addworker": "worker", "map10": "digging"}      # the log's names of a placement bonus -> the board's (the Extra Shift hex of map 11 is "Worker" in the logs)
 _ARCH_TAKEN: list = []       # the bonuses that `_archaeologist` picked for the turn that is being replayed
 
 
@@ -459,6 +459,9 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
             for j, b in notepad_bonuses(state, p):
                 if j == want["slot"]:
                     return Action(act.player, act.kind, {**act.args, "bonus": j})
+            left = notepad_bonuses(state, p)
+            if len(left) == 1:                              # one bonus is left on the notepad and a support must take one: it is the bonus that left no trace (a Worker at the most workers, 622711105 turn 70)
+                return Action(act.player, act.kind, {**act.args, "bonus": left[0][0]})
             return act
         for j, b in notepad_bonuses(state, p):
             if b["type"] == want["type"] and ("value" not in want or b["value"] == want["value"]):
@@ -1196,6 +1199,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     if act.kind == "choose_effect" and "bonus_type" in act.args and "continent" not in act.args and (str(act.args["bonus_type"]), act.args.get("n")) in _ARCH_TAKEN:
                         _ARCH_TAKEN.remove((str(act.args["bonus_type"]), act.args.get("n")))
                         continue                                 # the Archaeologist's pick of this bonus was made by the harness already
+                    if act.kind == "choose_effect" and act.args.get("hire") and ("add-worker", 1) in _ARCH_TAKEN:
+                        _ARCH_TAKEN.remove(("add-worker", 1))
+                        continue                                 # the Archaeologist took a Worker hex: the worker was hired with that pick (594103300 turn 19)
                     if act.kind == "choose_effect" and "multiplier" in act.args and state.prompt is not None and state.prompt.kind == "effects" and not any(
                             e["kind"] == "multiplier" for e in state.prompt.args["pending"]):
                         pbm = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus" and e["bonus"]["type"] == "Multiplier"), None)
@@ -1349,6 +1355,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                                 if skip is None:
                                     break
                                 state = ap(state, skip)
+                    if (act.kind == "use_token" and act.args.get("token") == "bonus-sponsor-gray" or (act.kind == "choose_effect" and str(act.args.get("card", "")).startswith("S") and "mark" not in act.args))                             and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
+                        ri_ = next((j_ for j_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "reveal" and not e_.get("revealed")), None)
+                        if ri_ is not None and Action(seat, "choose_effect", {"index": ri_, "reveal": True}) in legal_actions(state):
+                            state = ap(state, Action(seat, "choose_effect", {"index": ri_, "reveal": True}))        # a Marketing plays one of the revealed sponsors before the card to keep is chosen (647824362 turn 74)
                     if state.prompt is not None and state.prompt.kind == "sponsors_play" and act.kind in ("place_building", "take_cards", "skip_effect")                             and _plain(act) not in legal_actions(state) and Action(seat, "finish_sponsors", {}) in legal_actions(state):
                         state = ap(state, Action(seat, "finish_sponsors", {}))           # the effects of the sponsors (a break, a reputation bonus ...) come after the action's last card
                         act = _normalise(state, act, endsnap)
@@ -1364,6 +1374,14 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         act = _normalise(state, act, endsnap)
                     if state.prompt is not None and state.prompt.kind == "choose_action_card" and state.prompt.args.get("repeat") and act.kind in ("choose_effect", "take_cards") and _plain(act) not in legal_actions(state)                             and Action(seat, "skip_extra", {}) in legal_actions(state):
                         state = ap(state, Action(seat, "skip_extra", {}))          # the Multiplier was not used: the effects that waited for the end of the action come now (826013800 turn 66)
+                        act = _normalise(state, act, endsnap)
+                    if state.prompt is not None and state.prompt.kind == "animals_play" and act.kind == "place_building" and _plain(act) not in legal_actions(state)                             and Action(seat, "finish_animals", {}) in legal_actions(state):
+                        state = ap(state, Action(seat, "finish_animals", {}))             # the free building of the break (a map bonus space) comes after the action that ended in the break (638649830 turn 41)
+                        while state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
+                            skip = _skip_unneeded(state, act)
+                            if skip is None:
+                                break
+                            state = ap(state, skip)
                         act = _normalise(state, act, endsnap)
                     if state.prompt is not None and state.prompt.kind == "animals_play" and act.kind == "take_cards"                             and _plain(act) not in legal_actions(state) and Action(seat, "finish_animals", {}) in legal_actions(state):
                         state = ap(state, Action(seat, "finish_animals", {}))             # Waza Small Animal Program: the snap comes after the action's last animal

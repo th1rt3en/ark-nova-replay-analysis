@@ -543,6 +543,8 @@ def h_discard_cards(ctx: _Ctx, e: Event) -> None:
             p.stored.append(k)
         elif loc and loc[0] in "AS" and loc[1:4].isdigit():        # pouched under a card in play
             p.under.setdefault(_key(loc), []).append(k)
+        elif k in p.sponsors or k in p.animals:                # played already: BGA's list of the discarded revealed cards still names a sponsor that a Marketing played from them (647824362 turn 74)
+            pass
         else:
             s.main_discard.append(k)
 

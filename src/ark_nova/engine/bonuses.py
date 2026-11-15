@@ -209,9 +209,8 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             defer(state, {"kind": "store", "source": "map11", "optional": True, "player": seat})
         elif k == "add-worker":
             hire_worker(state, seat)
-        elif k == "Worker":                              # a new worker; with all four hired, a worker comes back from the association board (like Extra Shift)
-            if not hire_worker(state, seat):
-                defer(state, {"kind": "extra_shift", "source": "bonus", "optional": False, "player": seat})
+        elif k == "Worker":                              # a new worker; with all four hired nothing happens (BGA logs no worker coming back, even with workers on the board: 622711105 turn 70, 610597958 turn 60)
+            hire_worker(state, seat)
         elif k == "size-2":
             defer(state, {"kind": "build", "source": "bonus", "type": "size-2", "rules": {}, "optional": True, "double": False, "player": seat})      # (optional wherever it comes from: income, a project bonus, the reward track)
         elif k == "take-in-range-or-deck":               # v cards (3 for the conservation bonus)

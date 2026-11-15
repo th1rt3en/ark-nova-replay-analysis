@@ -790,7 +790,8 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     p.flags.setdefault("built_now", []).append(p.buildings[-1].id)          # (Hydrologist / Geologist: spaces covered in this turn still count)
     if t in ("reptile-house", "large-bird-aviary") or first_aquarium:      # animals played before may move into the new enclosure
         bonuses.defer(state, {"kind": "move_in", "building": [x, y], "optional": True, "player": seat})
-    if len(gains) > 1:                                                  # several placement bonuses under one building: the player chooses the order (each is an effect of its own)
+    arch_n = sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) * (2 if double else 1) if "S221" in p.sponsors and "S280" not in p.sponsors else 0
+    if len(gains) > 1 or (gains and arch_n):                            # several placement bonuses under one building (or one and the Archeologist's extra one): the player chooses the order (each is an effect of its own: an upgrade from the Archeologist's pick may lift the cap of 9 reputation first, 647695434 turn 44)
         for b in gains:
             bonuses.defer(state, {"kind": "pbonus", "bonus": b, "optional": False, "player": seat})
     else:
@@ -799,7 +800,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     for _ in range(sum(1 for c in cells if c in map_rules.hollywood_hexes(p))):      # maps 8 / 8a: covering an H reveals cards until the first sponsor, which joins the hand (an effect of its own: the order with the other draws is the player's)
         bonuses.defer(state, {"kind": "search_sponsor", "optional": False, "player": seat})
     if "S221" in p.sponsors and "S280" not in p.sponsors:               # Archeologist: every border space with a bonus that is gained gives one more free placement bonus of the player's choice
-        for _ in range(sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) * (2 if double else 1)):
+        for _ in range(arch_n):
             bonuses.defer(state, {"kind": "archaeologist", "source": "S221", "optional": False, "player": seat})
     hydrologist_geologist(state, seat, cells)
     for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: a completely covered area pays its bonus at once

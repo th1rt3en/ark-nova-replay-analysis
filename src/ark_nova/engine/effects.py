@@ -275,6 +275,8 @@ def legal(state, p0) -> list:
                 out.append(Action(p.seat, "skip_effect", {"index": i}))
             continue
         elif k == "reveal":
+            if not e.get("revealed") and animal_abilities.reveal_helps_marketing(state, p.seat, e):
+                out.append(Action(p.seat, "choose_effect", {"index": i, "reveal": True}))       # (a Marketing may play one of the revealed sponsors first)
             top = peek_main_deck(state, e["x"])                     # (the draw pile is reshuffled from the discard pile when the cards are revealed: the options are those of the cards that will be on top)
             opts = [c for c in top if _reveal_ok(e, c)]
             if e.get("n", 1) > 1:                                   # Perception 4: 4 cards are drawn, 2 are kept
