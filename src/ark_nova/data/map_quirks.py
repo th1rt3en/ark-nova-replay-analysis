@@ -17,9 +17,9 @@ GEOLOGICAL_FIXED_FROM_TABLE_ID = int(os.environ.get("GEOLOGICAL_FIXED_FROM_TABLE
 
 # Hypnosis: the variant effect of the opponent's action card (Money Sponsors bonus, Mark, the extra kiosk ...) is part of the hypnotised action. BGA first
 # left it out; tables below this id were played with the bug. The sample logs put the change between table 732463562 (no Sponsors II bonus) and
-# 783118944 (the Mark of a hypnotised Animals 4 card happens), so the number is a guess inside that gap: set it to the first table id that has the
-# fix (or the env var HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID) when it is known.
-HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID = int(os.environ.get("HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID", "757800000"))
+# 739307302 (the Sponsors 3 effect of a hypnotised card happens; 756726232 pays the Sponsors II bonus), so the number is a guess inside that gap: set
+# it to the first table id that has the fix (or the env var HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID) when it is known.
+HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID = int(os.environ.get("HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID", "735000000"))
 
 LEGACY_SUFFIX = "-legacy"                      # '6a-legacy' = map 6a as BGA played it before the fix
 _LEGACY_MOVES = {"6a": {"take-in-range-or-deck": {(8, 5): (8, 7)}}}      # base map -> bonus type -> {printed cell: cell where it worked}

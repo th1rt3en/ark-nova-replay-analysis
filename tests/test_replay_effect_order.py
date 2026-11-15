@@ -131,7 +131,11 @@ NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the
                  "801059195": (("11", "11"), True, 41, "Hypnosis put back for an X token on a Mark Animals card: the mark is the hypnotiser's and is logged right after the cleanup"),
                  "677396972": (("6a", "6a"), True, 63, "a hypnotised Mark Animals card on an older table: its mark happens"),
                  "677682492": (("7a", "7a"), True, 37, "a hypnotised Mark Animals card on an older table: its mark happens"),
-                 "667768996": (("3a", "3a"), True, 61, "the game ends by a concession with the Mark Animals mark still pending: it is never reached")}
+                 "667768996": (("3a", "3a"), True, 61, "the game ends by a concession with the Mark Animals mark still pending: it is never reached"),
+                 "748721369": (("1a", "1a"), True, 24, "hypnosis: the variant effect of a hypnotised card already runs on tables from 735000000 (the Sponsors 3 effect of 739307302, the Money Sponsors bonus of 756726232)"),
+                 "750877829": (("4a", "4a"), True, 56, "hypnosis: the variant effect of a hypnotised card runs on this table"),
+                 "754900512": (("5a", "5a"), True, 37, "hypnosis: the variant effect of a hypnotised card runs on this table"),
+                 "756726232": (("4a", "4a"), True, 44, "hypnosis: the Money Sponsors bonus of a hypnotised Sponsors II card is paid on this table")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
