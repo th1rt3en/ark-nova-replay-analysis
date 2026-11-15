@@ -125,7 +125,7 @@ def parse_log(raw: dict | str | Path) -> ParsedLog:
                 if mv0 is None:
                     mv0 = by_move[key] = Move(index=-1, move_id=key, time=int(p["time"]))
                 mv0.checks.append({"player": player, "active": str(a["player_id"]), "order": order, "extra_action": True})
-            if t in NOISE and order not in protection_orders:
+            if t in NOISE and order not in protection_orders and not (t == "midmessage" and "cannot have more than" in str(e.get("log", "")) and "x-tokens" in str(e.get("log", ""))):          # (the X token limit is kept: a bonus of X tokens that gained none shows only this line, 805030443 turn 74)
                 continue
             mv = by_move.get(key)
             if mv is None:

@@ -209,8 +209,12 @@ def _archaeologist(state: GameState, act: Action, events: list, expected: Counte
     if state.prompt is None or state.prompt.kind != "effects" or not any(e["kind"] == "archaeologist" for e in state.prompt.args["pending"]):
         return state
     seat = act.player
-    start = next((i for i, e in enumerate(events) if e.type == "buyBuilding" and isinstance(e.args, dict) and "building" in e.args
-                  and (e.args["building"]["x"], e.args["building"]["y"], e.args["building"]["type"]) == (act.args["x"], act.args["y"], act.args["type"])), None)
+    if act.kind == "place_building":
+        start = next((i for i, e in enumerate(events) if e.type == "buyBuilding" and isinstance(e.args, dict) and "building" in e.args
+                      and (e.args["building"]["x"], e.args["building"]["y"], e.args["building"]["type"]) == (act.args["x"], act.args["y"], act.args["type"])), None)
+    else:                                              # an enlargement of an enclosure: the log's increaseSize event
+        start = next((i for i, e in enumerate(events) if e.type == "increaseSize" and isinstance(e.args, dict)
+                      and ((e.args.get("newBuilding") or {}).get("x"), (e.args.get("newBuilding") or {}).get("y")) == (act.args["x"], act.args["y"])), None)
     if start is None:
         return state
     snaps_ = 0
@@ -552,7 +556,7 @@ def _fits(effect: dict, act) -> bool:
                 or ("cards" in a and k in ("glide", "shark")) or ("trade" in a and k == "trade") or (("building" in a or "building_id" in a) and "x" not in a and k == "cut_down") or ("building" in a and "x" in a and k == "enlarge") or ("apply" in a and a["apply"] == "reef" and k == "reef") or (("send" in a or "scuba" in a or ("keep" in a and (a["keep"] is None or str(a["keep"]).startswith("S")))) and k == "expedition")
                 or ("worker" in a and k == "extra_shift") or ("discard" in a and k == "adapt") or ("animal" in a and k == "symbiosis")
                 or (("give" in a or "pay" in a) and k == "pilfer") or ("apply" in a and (k == "gain" or a["apply"] == k) and k in ("venom", "constrict", "gain"))
-                or ("activate" in a and k == "ability") or (a.get("apply") == k and k in ("hypnosis", "pay_appeal")) or ("rep_bonus" in a and k == "rep_bonus") or ("move" in a and k == "move_in") or ("store" in a and k == "store") or ("continent" in a and k == "continent") or ("multiplier" in a and k == "multiplier"))
+                or ("bonus_type" in a and k == "rep_bonus") or ("activate" in a and k == "ability") or (a.get("apply") == k and k in ("hypnosis", "pay_appeal")) or ("rep_bonus" in a and k == "rep_bonus") or ("move" in a and k == "move_in") or ("store" in a and k == "store") or ("continent" in a and k == "continent") or ("multiplier" in a and k == "multiplier"))
     return False
 
 
@@ -1250,6 +1254,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         while state.prompt is not None and state.prompt.kind == "effects" and not any(e["kind"] in ("threshold_bonus", "rep_bonus") for e in state.prompt.args["pending"]):
                             gi = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "gain" and e["res"] == "reputation"), None)
                             if gi is None:
+                                pbi = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus" and e["bonus"]["type"] == "reputation"), None)
+                                if pbi is not None:                     # the reputation comes from a placement bonus of the building (881841416 turn 58)
+                                    state = ap(state, Action(state.prompt.args["pending"][pbi].get("player", state.prompt.player), "choose_effect", {"index": pbi, "apply": "pbonus", "bonus": "reputation"}))
+                                    continue
                                 break                                   # (the point at 15 that BGA lets the player trade for the bonus on 16 is still unpaid)
                             state = ap(state, Action(state.prompt.args["pending"][gi].get("player", state.prompt.player), "choose_effect",
                                                      {"index": gi, "apply": "gain", "res": "reputation"}))
@@ -1493,6 +1501,24 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             act = plain
                     if _use_ignore_branch(state, act, parsed.animal_ignores.get(order)):
                         state = ap(state, Action(act.player, "animals_single", {}))
+                    for _ in range(12):                              # a mark of an earlier action of the chain waits for the end of this one: resolve the automatic gains that are left, then finish the action (731047318 turn 85)
+                        if not (act.args.get("mark") and state.prompt is not None and not any(e["kind"] == "mark" for e in (state.prompt.args.get("pending") or []))
+                                and not (state.prompt.kind == "effects" and _plain(act) in legal_actions(state))):
+                            break
+                        if state.prompt.kind == "effects":
+                            gi_ = next((j_ for j_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and not e_.get("optional")), None)
+                            if gi_ is None:
+                                break
+                            state = ap(state, Action(state.prompt.player, "choose_effect", {"index": gi_, "apply": "gain", "res": state.prompt.args["pending"][gi_]["res"]}))
+                        elif state.prompt.kind in ("sponsors_play", "build_place", "animals_play", "association_tasks"):
+                            fin_ = Action(seat, {"sponsors_play": "finish_sponsors", "build_place": "finish_build", "animals_play": "finish_animals", "association_tasks": "finish_association"}[state.prompt.kind], {})
+                            if fin_ not in legal_actions(state):
+                                break
+                            state = ap(state, fin_)
+                        else:
+                            break
+                    if act.args.get("mark") and state.prompt is not None and state.prompt.kind == "effects":
+                        act = _normalise(state, act, endsnap)         # (the index of the pending mark is known now)
                     if act.args.get("mark") and not any(e["kind"] == "mark" for e in (state.prompt.args.get("pending") or [] if state.prompt is not None else []))                         and not (state.prompt is not None and state.prompt.kind == "effects" and _plain(act) in legal_actions(state)):
                         rep.skipped["a Mark in the log that the engine did not expect (its source is not implemented)"] += 1
                         raise _Stop
@@ -1540,7 +1566,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             mine = _engine_project_options(state, seat)
                             if mine != theirs and not any(t_ in ("partner", "university") for t_ in state.prompt.args.get("done", [])):          # (BGA's list is made before the partner zoo / university of the same action gives its icon: 653431606 turn 73)
                                 oracle_notes.append(f"project slots before move {mv}: engine {mine} bga {theirs}")
-                    arch_before = _placement_types(state, act) if act.kind == "place_building" and "S221" in state.players[act.player].sponsors else None
+                    arch_before = _placement_types(state, act) if act.kind == "place_building" and "S221" in state.players[act.player].sponsors else (
+                        Counter() if act.kind == "choose_effect" and "building" in act.args and "x" in act.args and "S221" in state.players[act.player].sponsors else None)          # (an enlargement: Conference on Australia)
                     inserted[0] = False
                     state = ap(state, act)
                     inserted[0] = True

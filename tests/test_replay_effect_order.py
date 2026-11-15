@@ -145,7 +145,12 @@ NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the
                  "716484804": (("3a", "3a"), True, 48, "a hypnotised card of an older table runs its variant (+1 Build)"),
                  "719561092": (("8a", "8a"), True, 90, "a hypnotised card of an older table runs its variant (Sponsors 3 side action)"),
                  "729387250": (("10", "4a"), True, 76, "a hypnotised card of an older table runs its variant (Sponsors 4 side action)"),
-                 "732463562": (("2a", "2a"), True, 41, "a hypnotised Sponsors II card of an older table pays no Money Sponsors bonus")}
+                 "732463562": (("2a", "2a"), True, 41, "a hypnotised Sponsors II card of an older table pays no Money Sponsors bonus"),
+                 "659445505": (("8a", "8a"), True, 40, "Archaeologist: an enlargement (Conference on Australia) that covers a new border hex with a bonus gives one more free placement bonus (the 5 money of another hex)"),
+                 "801014048": (("13", "13"), True, 54, "the Mark of a placement bonus (map 13) is resolved at once: it is an effect of its own, not an end-of-action mark"),
+                 "731047318": (("7a", "7a"), True, 85, "a mark of the first action of a chain (a reef effect) is logged after the extra action's cleanup: the engine's pending mark is offered once the second action is finished"),
+                 "881841416": (("12", "12"), True, 58, "reputation reaches 16 through a placement bonus: the player takes the reward at 16 (a snap and a hand size token) instead of 1 appeal"),
+                 "805030443": (("4a", "4a"), True, 74, "the 3 X tokens of a notepad bonus when the player is at 5: the log only says that they cannot have more than 5")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")

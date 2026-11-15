@@ -205,6 +205,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             if c not in old and "S280" not in p.sponsors:
                 for bon in board_of(p).bonuses.get(c, []):          # (the covered hex pays its placement bonus, a Marketing one included)
                     g.apply_placement_bonus(state, action.player, bon)
+        if "S221" in p.sponsors and "S280" not in p.sponsors:               # Archaeologist: a new border hex with a bonus gives one more free placement bonus (659445505 turn 40)
+            from ark_nova.engine import bonuses
+            for _ in range(sum(1 for c in build_action.footprint(b.type, b.x, b.y, b.rotation) if c not in old and c in bd_.border for bon in bd_.bonuses.get(c, []) if bon)):
+                bonuses.defer(state, {"kind": "archaeologist", "source": "S221", "optional": False, "player": action.player})
         for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: the enlarged enclosure completes an area, which pays its bonus (941429583 turn 60)
             map_rules.quarter_bonus(state, p.seat, name)
         if b.animal:
