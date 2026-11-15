@@ -813,7 +813,8 @@ HANDLERS: dict[str, Callable[[_Ctx, Event], None]] = {
 # events that carry no state change the builder needs
 IGNORED = {"midmessage", "startBreak", "updateBreakDiscardSelection", "enableMultiplier",
            "hypnosis", "pilfering", "pilferingCard", "playerConcedeGame", "gameStateChangePrivateArg", "timeJokerUsed",
-           "gameResultNeutralized"}         # a player quit (the game is lost for them)
+           "gameResultNeutralized",         # a player quit (the game is lost for them)
+           "switchToTurnbased"}             # BGA converted a real-time table to turn-based: no effect on the game
 
 
 def _sync(ctx: _Ctx) -> None:
