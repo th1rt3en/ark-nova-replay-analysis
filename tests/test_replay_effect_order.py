@@ -155,7 +155,28 @@ NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the
                  "672851171": (("3a", "3a"), True, 79, "BGA names the other aquarium when a Release project frees one: the animal leaves the one it sits in and the Octopus stays for its reef effect"),
                  "691447217": (("4a", "7a"), True, 17, "peaceful: a Venom + Reef Dweller Inventive animal (Devil Firefish) pays the X token twice; the second one proves the peaceful variant"),
                  "711316402": (("4a", "4a"), True, 49, "the player conceded while a project was being supported: BGA still paid the slot (5 conservation) and the endgame card choice, with no notepad bonus"),
-                 "719268728": (("8a", "8a"), True, 59, "a Release project's animal is released while the aquarium bookkeeping differs: the turn is accepted until the concession")}
+                 "719268728": (("8a", "8a"), True, 59, "a Release project's animal is released while the aquarium bookkeeping differs: the turn is accepted until the concession"),
+                 "728510488": (("7a", "7a"), True, 64, "Hire Association: 4 workers on one space (a space has no limit of 3): the support with 3 extra workers is legal"),
+                 "807928704": (("6a", "6a"), True, 78, "Hire Association: more workers than 3 on one space"),
+                 "862403568": (("10", "10"), True, 82, "Hire Association: more workers than 3 on one space"),
+                 "870140048": (("10", "10"), True, 66, "Hire Association: more workers than 3 on one space"),
+                 "730117368": (("2a", "2a"), True, 23, "a sponsor's printed reputation is paid after the conservation choice that upgrades the Cards action (the cap of 9 is lifted by then)"),
+                 "731797456": (("4a", "4a"), True, 60, "a release that spans several aquariums does not remove another animal from the zoo's lists: the Clever reef animal still triggers"),
+                 "763398689": (("8a", "8a"), True, 55, "Cut Down names the enclosure by the id of its enlargement (increaseSize newBuilding)"),
+                 "804334725": (("13", "13"), True, 70, "Cut Down of a starting enclosure: BGA's id is not the engine's, the one empty enclosure of that size goes"),
+                 "740099274": (("6a", "6a"), True, 34, "a log that stops at the start of the break never shows the hand limit discard"),
+                 "838437200": (("4a", "4a"), True, 68, "a Management Plan's reputation per icon is resolved before the university that adds science icons"),
+                 "877736075": (("9", "9"), True, 65, "Map 9: the cube's conservation and the choice at 8 come before the picked bonus"),
+                 "813079399": (("13", "13"), True, 73, "a notepad Worker with no worker left to hire leaves no trace"),
+                 "751052996": (("5a", "5a"), True, 52, "the moves into a new reptile house: the pending move_in effect is kept for the later move actions"),
+                 "787630841": (("4a", "4a"), True, 11, "the other player's break discard after an Animals action whose Hunter reveal was declined"),
+                 "790873577": (("0", "0"), True, 37, "Water Playground: its appeal comes after the building and the Marketing sponsor with an appeal ceiling"),
+                 "805076451": (("12", "12"), True, 70, "a notepad Animal Magnet is the sponsorMagnet event with animals"),
+                 "821275583": (("4a", "4a"), True, 40, "a card sold at the Commercial Harbor before the Build: the additional pavilion is still found"),
+                 "832356100": (("6a", "6a"), True, 32, "a declined pouch of the first animal: the pouch of the log belongs to the second animal"),
+                 "833118571": (("5a", "5a"), True, 75, "a notepad special enclosure bonus with nothing to build is skipped"),
+                 "877253786": (("T1", "T1"), True, 53, "map T1: the discard for +1 strength on a hypnotised action card"),
+                 "890633580": (("T1", "T1"), True, 32, "map T1: the discard for +1 strength on a hypnotised action card")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")

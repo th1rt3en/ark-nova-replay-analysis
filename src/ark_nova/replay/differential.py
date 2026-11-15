@@ -674,12 +674,17 @@ def _skip_unneeded(state: GameState, act):
             break
         rest.append(x)
     for i, e in enumerate(state.prompt.args["pending"]):
-        if e["kind"] == "pouch" and any(x.kind == "choose_effect" and x.args.get("psrc") == e.get("source") and x.player == e.get("player", x.player) for x in rest):
+        if e["kind"] == "pouch" and not (act is not None and act.kind == "play_animal") and any(x.kind == "choose_effect" and x.args.get("psrc") == e.get("source") and x.player == e.get("player", x.player) for x in rest):
             continue                                          # the log pouches under this card later in the turn (after other effects the player chose first: 646886236 turn 58)
         if e.get("optional") and not _fits(e, act) and not (not (act is not None and act.kind == "play_animal") and (e["kind"] in ("build", "digging", "sell", "ability", "marketing", "pay_appeal", "take", "cut_down", "donation", "expedition", "venom", "constrict", "move_in") or (e["kind"] == "pouch" and (e.get("source") == "map" or (act is not None and act.kind == "take_cards" and act.args.get("mode") == "snap")))
                                                               or (e["kind"] == "slot1" and act is not None and act.kind == "use_token")
                                                               or (e["kind"] == "extra_shift" and act is not None and act.kind in ("choose_effect", "take_cards", "place_building") and "worker" not in act.args)) and any(_fits(e, x) and x.player == e.get("player", x.player) for x in (rest if e["kind"] != "marketing" else [y for y in rest if y.kind == "choose_effect" and str(y.args.get("card", "")).startswith("S")]))):      # (a later action of the turn may still use it; Marketing: only the choice of a sponsor card)
             return Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
+    for i, e in enumerate(state.prompt.args["pending"]):
+        if e["kind"] == "build" and e.get("source") == "bonus" and not _fits(e, act) and not any(_fits(e, x) and x.player == e.get("player", x.player) for x in rest):
+            sk = Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
+            if sk in legal_actions(state):                       # a notepad bonus for a special enclosure with nothing to build (the engine allows the skip only then): BGA logs nothing (833118571 turn 75)
+                return sk
     for i, e in enumerate(state.prompt.args["pending"]):
         if e["kind"] == "mark" and not (act is not None and act.kind == "choose_effect" and "mark" in act.args):
             sk = Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
@@ -837,7 +842,8 @@ def _mark_extra_building(state: GameState, seat: int, acts: list, events: list) 
     """Pavilion / Kiosk Build: when the buildings of the turn are more than the strength allows, the first pavilion / kiosk is the additional one."""
     from ark_nova.engine.game import EXTRA_TYPE
     ch = next((e for e in events if e.type == "chooseActionCard"), None)
-    if ch is None or not acts or acts[0].kind != "choose_action_card" or acts[0].args["type"] != "build":
+    first_ = next((x for x in acts if x.kind == "choose_action_card"), None)           # (a card sold at the Commercial Harbor may come first: 821275583 turn 40)
+    if ch is None or first_ is None or first_.args["type"] != "build":
         return acts
     variant = parse_action_type(ch.args["actionCard"]["type"])[1]
     if variant not in EXTRA_TYPE:
@@ -1240,7 +1246,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             e["kind"] == act.args["apply"] for e in state.prompt.args["pending"])):
                         continue                                 # (the search was resolved earlier with the effects around it)
                     if act.kind == "choose_effect" and "keep" in act.args and state.prompt is not None and state.prompt.kind == "effects"                             and (not any(e["kind"] == "reveal" for e in state.prompt.args["pending"]) or (act.args["keep"] is not None and not any(c.kind == "choose_effect" and c.args.get("keep") == act.args["keep"] for c in legal_actions(state)))
-                                                                                                                                              or ("shown" in act.args and not any(e["kind"] == "reveal" and e.get("x") == act.args["shown"] for e in state.prompt.args["pending"]))) and any(e["kind"] == "expedition" for e in state.prompt.args["pending"]):
+                                                                                                                                              or ("shown" in act.args and not any(e["kind"] == "reveal" and e.get("x") == act.args["shown"] for e in state.prompt.args["pending"]))) and any(e["kind"] == "expedition" for e in state.prompt.args["pending"]) and act.args.get("shown", 3) == 3:          # (the expedition's Scuba Dive shows 3 cards: a reveal of 8 is another ability, 840068875 turn 69)
                         ei = next(j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "expedition")
                         state = ap(state, Action(state.prompt.args["pending"][ei].get("player", act.player), "choose_effect", {"index": ei, "scuba": True}))      # the Scuba Dive of the expedition
                     if act.kind == "harbor_sell" and state.result is not None:

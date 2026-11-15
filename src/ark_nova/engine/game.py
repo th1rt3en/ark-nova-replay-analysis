@@ -271,6 +271,8 @@ def _prompt_actions(state: GameState) -> list[Action]:
         if pr.args.get("hypnosis"):                              # one of the first 3 cards of the other player
             return ([Action(p.seat, "choose_action_card", {"type": c.type, "spend": k, "hypnosis": True})
                      for c in state.players[1 - p.seat].action_cards[:3] for k in range(0, p.x_tokens + 1)]
+                    + ([Action(p.seat, "choose_action_card", {"type": c.type, "spend": k, "t1": h, "hypnosis": True})           # (map T1: the discard for +1 strength works on a hypnotised card too: 890633580 turn 32)
+                        for c in state.players[1 - p.seat].action_cards[:3] for k in range(0, p.x_tokens + 1) for h in sorted(set(p.hand))] if map_rules.t1_discard_possible(p) else [])
                     + [Action(p.seat, "skip_action", {"type": c.type, "hypnosis": True}) for c in state.players[1 - p.seat].action_cards[:3]]       # (put it back on slot 1 for an X token)
                     + [Action(p.seat, "skip_extra", {})])
         chosen =[Action(p.seat, "choose_action_card", {"type": c.type, "spend": k})
@@ -518,7 +520,7 @@ def _choose_action_card(state: GameState, action: Action) -> None:
         card.tokens.remove("Multiplier")
     t1 = action.args.get("t1")
     if t1 is not None:                                          # map T1: a hand card for +1 strength (once in the turn)
-        if not map_rules.t1_discard_possible(p) or t1 not in p.hand or hypnosis:
+        if not map_rules.t1_discard_possible(p) or t1 not in p.hand:
             raise IllegalAction("no Map T1 discard now")
         p.hand.remove(t1)
         state.main_discard.append(t1)
