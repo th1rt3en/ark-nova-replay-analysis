@@ -211,9 +211,12 @@ _MULTIPLIER_CARD = {"Association": "association", "Building": "build", "Card": "
 
 def activate(state, seat: int, key: str, name: str, value) -> list:
     """The deferred abilities (the same code as the direct ones)."""
-    if name not in DEFERRED:
+    if name not in DEFERRED and name != "Determination":
         return []
     g = _g()
+    if name == "Determination":                                  # (the peaceful Hypnosis: a second action of another action card of the player)
+        g.add_extra(state, {"types": [t for t in ACTION_TYPES if t != state.current_action["type"]], "optional": False})
+        return []
     if name == "Sprint":
         _draw(state, seat, int(value))
     elif name == "Monkey Gang":

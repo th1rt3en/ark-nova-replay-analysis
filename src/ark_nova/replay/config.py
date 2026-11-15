@@ -173,9 +173,23 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
     names: set = set()
     reef_inventive = 0                                     # (the Reef Dweller "Inventive" animals played so far: each pays X tokens again when a new Reef Dweller is played, no proof of a peaceful Venom)
     play: dict = {}                                        # the animal being played: {"venom": bool, "expected": X-token events its own and its reef Inventive effects explain, "seen": the ones the log shows}
+    cur_act: dict = {}                                     # the action being played: its player, its card, whether a Hypnosis animal was played in it and a hypnosis event was logged
+    prev_act: dict = {}                                    # the action that ended last
+    determination: set = set()                             # players who have played an animal with Determination (an extra action of its own)
     for m in parsed.moves:
         for e in m.events:
             a = e.args if isinstance(e.args, dict) else {}
+            if e.type == "chooseActionCard" and isinstance(a.get("actionCard"), dict):
+                ca_, pid_ = a["actionCard"], str(a.get("player_id"))
+                if (prev_act.get("ended") and prev_act.get("player") == pid_ and str(ca_.get("pId")) == pid_ and prev_act.get("hyp") and not prev_act.get("hyp_event")
+                        and ca_.get("id") != prev_act.get("card_id") and pid_ not in determination):
+                    peaceful += 1                          # the peaceful Hypnosis is Determination: a second action of the player's own card right after an action with a Hypnosis animal and no hypnosis event (849884135 turn 42)
+                cur_act = {"player": pid_, "card_id": ca_.get("id"), "hyp": False, "hyp_event": False, "ended": False}
+            if e.type == "hypnosis" and cur_act:
+                cur_act["hyp_event"] = True
+            if e.type == "actionCardCleanup" and cur_act and "finishing" in (e.log or "") + str(a.get("i18n", "")) or (e.type == "actionCardCleanup" and cur_act and not cur_act.get("ended")):
+                cur_act["ended"] = True
+                prev_act = cur_act
             if e.type == "chooseActionCard":
                 names = set()                              # (the effects of a turn are logged in several moves)
             if e.type in ("pilfering", "pilferingMoney", "pilferingCard", "hypnosis") or (e.type == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log))                         or (e.type == "midmessage" and "not affected by" in e.log and any(h in e.log for h in ("Constriction", "Venom", "Pilfering", "Hypnosis"))):      # (an immunity message: the hostile effect was played and the victim was protected, 657367963)
@@ -188,6 +202,10 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
                         "expected": ("Inventive" in own) + (reef_inventive if reef_own else 0)}
                 reef_inventive += "Inventive" in reef_own
                 names |= own
+                if "Hypnosis" in own and cur_act:
+                    cur_act["hyp"] = True
+                if "Determination" in own:
+                    determination.add(str(a.get("player_id")))
                 if own & HOSTILE:
                     played += 1
             elif names:                                    # what BGA logs instead of a hostile ability

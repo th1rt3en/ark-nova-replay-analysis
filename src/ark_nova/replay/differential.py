@@ -487,6 +487,10 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
             if len(left) == 1:                              # one bonus is left on the notepad and a support must take one: it is the bonus that left no trace (a Worker at the most workers, 622711105 turn 70)
                 return Action(act.player, act.kind, {**act.args, "bonus": left[0][0]})
             return act
+        if want.get("type") == "Worker" and any(x.kind == "choose_effect" and set(x.args) == {"type"} for x in _UPCOMING[0]):
+            for j, b in notepad_bonuses(state, p):          # a Clever of the end of the action and no other source of one: the notepad's keyword space (the worker of the log is another one's)
+                if b["type"] == "Clever":
+                    return Action(act.player, act.kind, {**act.args, "bonus": j})
         for j, b in notepad_bonuses(state, p):
             if b["type"] == want["type"] and ("value" not in want or b["value"] == want["value"]):
                 return Action(act.player, act.kind, {**act.args, "bonus": j})
@@ -958,6 +962,8 @@ def _is_tail(prev: list, events: list) -> bool:
     chose = next((e for e in prev if e.type == "chooseActionCard"), None)
     real = [e for e in events if not e.type.startswith("gameStateChange")]
     rest = real
+    if chose is not None and real and all(e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "Venom" and str(e.args.get("player_id")) == str(chose.args.get("player_id")) for e in real):
+        return True                                         # the 2 money of an unpaid Venom token, logged under a marker of its own after the cleanup (822396122 turn 80)
     if chose is None and real and real[0].type == "getBonuses" and (real[0].args.get("bonuses") or {}) == {"xtoken": 1}:
         rest = [e for e in real[1:] if not (e.type == "discardTokens" and "multiplier" in e.log)]      # a skip repeated with a Multiplier: its X token and the token, then the cleanup
         if len(rest) == len(real) - 1:
@@ -1727,6 +1733,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     if again and Action(seat, "go_extra", {}) in legal_actions(state):
                         state = ap(state, Action(seat, "go_extra", {}))                    # the extra action is next: the Clever / Boost of this action come after it
                         break
+                    det_ = next((Action(seat, "choose_effect", {"index": i_, "activate": True}) for i_, e_ in enumerate(state.prompt.args["pending"])
+                                 if again and e_["kind"] == "ability" and e_.get("name") == "Determination" and Action(seat, "choose_effect", {"index": i_, "activate": True}) in legal_actions(state)), None)
+                    if det_ is not None:                                                   # the player acts again with a card of their own: the Determination (the peaceful Hypnosis) is used (849884135 turn 42)
+                        state = ap(state, det_)
+                        break
                     skip = _skip_unneeded(state, None)
                     if skip is None:
                         mark_skip = next((Action(seat, "skip_effect", {"index": i_}) for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] in ("mark", "reef")
@@ -1766,6 +1777,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 while state.prompt is not None and state.prompt.kind == "effects":       # end-of-action triggers that were declined
                     if again and Action(seat, "go_extra", {}) in legal_actions(state):
                         state = ap(state, Action(seat, "go_extra", {}))                    # the extra action is next: the Clever / Boost of this action come after it
+                        break
+                    det_ = next((Action(seat, "choose_effect", {"index": i_, "activate": True}) for i_, e_ in enumerate(state.prompt.args["pending"])
+                                 if again and e_["kind"] == "ability" and e_.get("name") == "Determination" and Action(seat, "choose_effect", {"index": i_, "activate": True}) in legal_actions(state)), None)
+                    if det_ is not None:                                                   # the player acts again with a card of their own: the Determination (the peaceful Hypnosis) is used (849884135 turn 42)
+                        state = ap(state, det_)
                         break
                     skip = _skip_unneeded(state, None)
                     if skip is None:

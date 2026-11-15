@@ -126,6 +126,8 @@ def use_token(state, action) -> None:
         state.prompt.args["pending"].append(eff)
     elif state.current_action is not None and state.current_action.get("seat") == p.seat and state.prompt is not None and state.prompt.player == p.seat:
         _fx().open_prompt(state, p.seat, [eff], {"kind": "prompt", "prompt_kind": state.prompt.kind, "args": state.prompt.args})
+    elif state.current_action is None and state.prompt is not None and state.prompt.kind == "effects" and state.prompt.player == p.seat and state.active_player == p.seat             and (state.prompt.args.get("resume") or {}).get("kind") == "end":
+        state.prompt.args["pending"].append(eff)           # the effects after the action (Clever, Boost, marks) are still open: the token's effect joins them, in any order (840068875 turn 69)
     else:                                                  # the turn is over but the next player has not acted yet: BGA still lets the token be used
         pr = state.prompt
         state.current_action = {"seat": p.seat, "type": "window", "strength": 0, "after": [],
