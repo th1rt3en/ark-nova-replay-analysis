@@ -110,6 +110,7 @@ def _sponsor_cards(e: Event, seat: int, seat_of: dict, add, revealed: list, st: 
         return None
     if t == "pDiscardCards" and "Sponsors4 effect" in log and "snap" in log:
         st["s4snap"] = cards[0]                                   # the snapped sponsor follows
+        st["s4snap_order"] = e.order
         return None
     if t == "pDiscardCards" and "Sponsors4 effect" in log:
         st["s4"] = cards[0]                                       # the sponsor played for it follows
@@ -924,6 +925,11 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         actions.insert(i, Action(seat, "sponsor_side", {"op": "discard_play", "card": flags.pop("s4"), "play": None}))
         moves.insert(i, move_of[flags["s4_order"]])
         orders.insert(i, flags["s4_order"])
+    if flags.get("s4snap"):                                # Sponsors (4), level I: a sponsor was discarded and no sponsor was snapped (none in the display: 729229221 turn 9)
+        i = sum(1 for o in orders if o <= flags["s4snap_order"])
+        actions.insert(i, Action(seat, "sponsor_side", {"op": "discard_snap", "card": flags.pop("s4snap"), "take": None}))
+        moves.insert(i, move_of[flags["s4snap_order"]])
+        orders.insert(i, flags["s4snap_order"])
     from ark_nova.replay.view import render_log
     boost_events = {parse_action_type(e.args["actionCard"]["type"])[0]: e for e in events
                     if e.type == "actionCardCleanup" and "Boost effect" in render_log(e.log, e.args)}

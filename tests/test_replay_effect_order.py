@@ -135,7 +135,10 @@ NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the
                  "748721369": (("1a", "1a"), True, 24, "hypnosis: the variant effect of a hypnotised card already runs on tables from 735000000 (the Sponsors 3 effect of 739307302, the Money Sponsors bonus of 756726232)"),
                  "750877829": (("4a", "4a"), True, 56, "hypnosis: the variant effect of a hypnotised card runs on this table"),
                  "754900512": (("5a", "5a"), True, 37, "hypnosis: the variant effect of a hypnotised card runs on this table"),
-                 "756726232": (("4a", "4a"), True, 44, "hypnosis: the Money Sponsors bonus of a hypnotised Sponsors II card is paid on this table")}
+                 "756726232": (("4a", "4a"), True, 44, "hypnosis: the Money Sponsors bonus of a hypnotised Sponsors II card is paid on this table"),
+                 "729229221": (("2a", "2a"), True, 9, "Sponsors 4 (level I): a sponsor discarded to snap one when the display has none: BGA lets the card go"),
+                 "660113790": (("5a", "5a"), True, 61, "a Venom effect that the opponent's Quarantine Lab makes void is not used later by the break's income"),
+                 "782921035": (("1a", "1a"), True, 64, "a player kicked for time in a break does not discard: the break goes on without it")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")

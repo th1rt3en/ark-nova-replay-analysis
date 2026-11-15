@@ -197,6 +197,7 @@ def _placement_types(state: GameState, act: Action) -> Counter:
 
 
 _BONUS_ALIAS = {"extrashift": "worker", "addworker": "worker", "map10": "digging"}      # the log's names of a placement bonus -> the board's (the Extra Shift hex of map 11 is "Worker" in the logs)
+_KICKED: set = set()          # the seats of the players who ran out of time in the turn that is being replayed: BGA logs nothing of their break discard
 _ARCH_TAKEN: list = []       # the bonuses that `_archaeologist` picked for the turn that is being replayed
 
 
@@ -539,7 +540,7 @@ def _fits(effect: dict, act) -> bool:
                 or (("hand" in a or "display" in a) and k == "digging") or ("keep" in a and k == "scavenge") or ("gain" in a and k == "glide_gain")
                 or ("cards" in a and k in ("glide", "shark")) or ("trade" in a and k == "trade") or (("building" in a or "building_id" in a) and "x" not in a and k == "cut_down") or ("building" in a and "x" in a and k == "enlarge") or ("apply" in a and a["apply"] == "reef" and k == "reef") or (("send" in a or "scuba" in a or ("keep" in a and (a["keep"] is None or str(a["keep"]).startswith("S")))) and k == "expedition")
                 or ("worker" in a and k == "extra_shift") or ("discard" in a and k == "adapt") or ("animal" in a and k == "symbiosis")
-                or (("give" in a or "pay" in a) and k == "pilfer") or ("apply" in a and k in ("venom", "constrict", "gain"))
+                or (("give" in a or "pay" in a) and k == "pilfer") or ("apply" in a and (k == "gain" or a["apply"] == k) and k in ("venom", "constrict", "gain"))
                 or ("activate" in a and k == "ability") or (a.get("apply") == k and k in ("hypnosis", "pay_appeal")) or ("rep_bonus" in a and k == "rep_bonus") or ("move" in a and k == "move_in") or ("store" in a and k == "store") or ("continent" in a and k == "continent") or ("multiplier" in a and k == "multiplier"))
     return False
 
@@ -654,6 +655,11 @@ def _skip_unneeded(state: GameState, act):
             sk = Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
             if sk in legal_actions(state):                       # no animal is left in the display to mark (the engine allows the skip only then): BGA logs nothing, and the break goes on (651806280 turn 46)
                 return sk
+    for i, e in enumerate(state.prompt.args["pending"]):
+        if e["kind"] == "break_discard" and e.get("player") in _KICKED and not (act is not None and act.kind == "choose_effect" and "cards" in act.args):
+            gone = next((x for x in legal_actions(state) if x.kind == "choose_effect" and x.args.get("index") == i and "cards" in x.args), None)
+            if gone is not None:                                  # (a kicked player leaves the game: any discard will do, 782921035 turn 64)
+                return gone
     legal = None
     for i, e in enumerate(state.prompt.args["pending"]):
         if e["kind"] == "extra_shift":                                   # nothing left to take back (the second placement bonus of Excavation Site ...): the logs show nothing
@@ -1087,6 +1093,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             _normalise.cube_used = any(e_.type == "discardTokens" and any(str(m_.get("location", "")).startswith("S253") for m_ in (e_.args.get("meeples") or [])) for e_ in events)
             _normalise.maxing = any(e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "maxing out reputation" for e_ in events)          # (the notepad bonus of reputation shows only as this appeal)
             flat_ = [e for t_ in [events] + turns[last + 1:] for e in t_]
+            _KICKED.clear()
+            _KICKED.update(seat_of[str(e_.args.get("player_id"))] for e_ in events if e_.type == "skipTurnOfPlayer" and isinstance(e_.args, dict) and str(e_.args.get("player_id")) in seat_of)
             _ends = ("playerConcedeGame", "gameResultNeutralized", "skipTurnOfPlayer")          # a concession, a quit, a player kicked for running out of time: the game ends at once
             cc_ = next((i_ for i_, e in enumerate(flat_) if e.type in _ends), None)
             conceded_next = cc_ is not None and all(e.type.startswith("gameStateChange") or e.type in _ends + ("simpleNode", "updateReflexionTime", "getBonuses", "takeBonus", "pDiscardCards", "slideMeeples", "finalScoring", "endOfGame", "fillPool", "discardCardsOnDisplay") for e in flat_[cc_:])          # (a player left in or right after this turn and nothing but the end of the game follows: its scoring)
