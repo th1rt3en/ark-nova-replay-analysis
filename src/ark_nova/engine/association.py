@@ -747,6 +747,8 @@ def take_instead(state, action: Action) -> None:
 
 
 def finish(state, action: Action) -> None:
+    if state.prompt.args.get("project"):
+        raise _fx().IllegalEffect("finish the project first")             # (ending the action here would lose the project's slot, conservation and bonus)
     if not state.prompt.args["done"] and any(a.kind == "association_task" for a in task_actions(state, state.players[action.player], state.prompt.args)):
         raise _fx().IllegalEffect("perform a task first")                  # (with no task that can be done the action may be ended)
     _g()._end_turn(state)

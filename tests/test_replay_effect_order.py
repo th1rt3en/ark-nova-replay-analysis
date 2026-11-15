@@ -150,7 +150,12 @@ NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the
                  "801014048": (("13", "13"), True, 54, "the Mark of a placement bonus (map 13) is resolved at once: it is an effect of its own, not an end-of-action mark"),
                  "731047318": (("7a", "7a"), True, 85, "a mark of the first action of a chain (a reef effect) is logged after the extra action's cleanup: the engine's pending mark is offered once the second action is finished"),
                  "881841416": (("12", "12"), True, 58, "reputation reaches 16 through a placement bonus: the player takes the reward at 16 (a snap and a hand size token) instead of 1 appeal"),
-                 "805030443": (("4a", "4a"), True, 74, "the 3 X tokens of a notepad bonus when the player is at 5: the log only says that they cannot have more than 5")}
+                 "805030443": (("4a", "4a"), True, 74, "the 3 X tokens of a notepad bonus when the player is at 5: the log only says that they cannot have more than 5"),
+                 "667801017": (("3a", "3a"), True, 50, "the upgrade of the reputation track bonus comes after the university's 2 reputation, not after the tiger's 1 (identical pending gains are told apart by the amount)"),
+                 "672851171": (("3a", "3a"), True, 79, "BGA names the other aquarium when a Release project frees one: the animal leaves the one it sits in and the Octopus stays for its reef effect"),
+                 "691447217": (("4a", "7a"), True, 17, "peaceful: a Venom + Reef Dweller Inventive animal (Devil Firefish) pays the X token twice; the second one proves the peaceful variant"),
+                 "711316402": (("4a", "4a"), True, 49, "the player conceded while a project was being supported: BGA still paid the slot (5 conservation) and the endgame card choice, with no notepad bonus"),
+                 "719268728": (("8a", "8a"), True, 59, "a Release project's animal is released while the aquarium bookkeeping differs: the turn is accepted until the concession")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")

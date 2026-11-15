@@ -155,6 +155,14 @@ def release_animal(state, seat: int, key: str, building=None, totals=None) -> No
             b.animal = None
         elif key in b.animals:
             b.animals.remove(key)
+        elif b.type in ("small-aquarium", "large-aquarium", "underwater-tunnel"):
+            holder = next((o for o in p.buildings if key in getattr(o, "animals", ())), None)      # the aquariums share their spaces: BGA names the one that is emptied, the animal sits in another (672851171 turn 36); never release a neighbour
+            if holder is not None:
+                holder.animals.remove(key)
+                if b.animals:                                              # the emptied aquarium's animal moves to the space the released one frees (the aquariums are one pool; BGA flips the named one)
+                    holder.animals.append(b.animals.pop(0))
+            elif b.animals:
+                b.animals.pop(0)                                           # (the animal sits in no aquarium of the engine: the named one loses one, 820998468 turn 70)
         elif b.animals:
             b.animals.pop(0)
     p.released.append(key)

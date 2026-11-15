@@ -94,8 +94,6 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     p = state.players[seat]
     icons = icon_counts(state, seat)
     if state.config.peaceful and name in PEACEFUL:
-        if name == "Venom" and any(ab["keyword"]["name"] == "Inventive" for ab in (card(key).get("abilities") or []) + (card(key).get("reefDwellerEffect") or [])):
-            return []                                    # (the peaceful Venom is the Inventive X token: a card with both pays it once, 801244007 T24)
         return peaceful_effects(state, seat, key, name, value)
     if name == "Pack":
         if state.config.confirm_turns:                              # live: the player collects the appeal with a button of its own, in the order he likes (replays pay it at once)

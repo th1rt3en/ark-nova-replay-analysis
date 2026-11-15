@@ -530,6 +530,9 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
     if "shown" in act.args and len(found) > 1:                      # the reveal effect that shows this many cards (a Scuba Dive 3 of the sponsor and the animal's own Scuba Dive X: 842580036 turn 57)
         same_ = [cand for cand in found if state.prompt.args["pending"][cand.args["index"]].get("x") == act.args["shown"]]
         found = same_ or found
+    if len(found) > 1 and want.get("apply") == "gain" and getattr(_normalise, "amt", None) is not None:
+        same_amt = [cand for cand in found if state.prompt.args["pending"][cand.args["index"]].get("n") == _normalise.amt]
+        found = same_amt or found
     if "upgrade" in want and len(found) > 1:             # an upgrade of its own comes before the (more flexible) choice at conservation 2
         found.sort(key=lambda c: state.prompt.args["pending"][c.args["index"]]["kind"] != "upgrade")
     if str(want.get("card", "")).startswith("S") and len(found) > 1:             # a sponsor of the hand: Marketing (it can also be pouched, but the log then shows a pouch)
@@ -590,9 +593,11 @@ def _rep_gain_before_track_upgrade(state: GameState, act):
     pend = state.prompt.args["pending"]
     if any(e["kind"] == "upgrade" and "reputation" in str(e.get("source", "")) and e.get("player", act.player) == act.player for e in pend):
         return None
-    for i, e in enumerate(pend):
-        if e["kind"] == "gain" and e["res"] == "reputation" and e.get("player", act.player) == act.player:
-            return Action(act.player, "choose_effect", {"index": i, "apply": "gain", "res": "reputation"})
+    amt = getattr(_skip_unneeded, "rep_upgrades", {}).get(_skip_unneeded.order)           # the gain that the log shows right before the upgrade (a university's 2, not the tiger's 1)
+    cands = [i for i, e in enumerate(pend) if e["kind"] == "gain" and e["res"] == "reputation" and e.get("player", act.player) == act.player]
+    cands = [i for i in cands if pend[i].get("n") == amt] or cands
+    if cands:
+        return Action(act.player, "choose_effect", {"index": cands[0], "apply": "gain", "res": "reputation"})
     return None
 
 
@@ -1169,9 +1174,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             _skip_unneeded.rep_first = _project_rep_before_sponsor(turns[k])
             search_orders = [e.order for e in turns[k] if e.type == "pDrawCards" and "gaining a new university" in e.log]          # (the search of a category university is logged before the effect the harness is about to resolve: 846710292 turn 55)
             _skip_unneeded.maxing = [e.order for e in turns[k] if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "maxing out reputation"]
-            _skip_unneeded.rep_upgrades = {e.order for j_, e in enumerate(turns[k]) if e.type == "upgradeCard" and any(
+            _skip_unneeded.rep_upgrades = {e.order: next((p_.args["bonuses"]["reputation"] for p_ in reversed(turns[k][max(0, j_ - 6):j_]) if p_.type == "getBonuses" and isinstance(p_.args, dict)
+                                                          and "reputation" in (p_.args.get("bonuses") or {})), None)
+                                           for j_, e in enumerate(turns[k]) if e.type == "upgradeCard" and any(
                 p_.type == "takeBonus" and isinstance(p_.args, dict) and p_.args.get("source") == "reputation track bonus" and ((p_.args.get("bonus_desc") or {}).get("args") or {}).get("bonus_type") == "upgrade-card"
-                for p_ in turns[k][max(0, j_ - 3):j_])}          # (the upgrade of the reputation track bonus: 613850149 turn 46)
+                for p_ in turns[k][max(0, j_ - 3):j_])}          # (the upgrade of the reputation track bonus: 613850149 turn 46; the value = the reputation the log shows just before it, 667801017 turn 50)
             _skip_unneeded.order = None
             _skip_unneeded.kiosk_logged = {seat_of[str(e.args["player_id"])] for e in turns[k] if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "kiosk income"
                                            and str(e.args.get("player_id")) in seat_of}
@@ -1196,6 +1203,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if sym is not None:
                             state = ap(state, sym)
                         continue
+                    _normalise.amt = None                          # the amount of the gain that the log event shows: tells identical pending gains apart (2 reputation of a university, 1 of an animal: 667801017 turn 50)
+                    if act.kind == "choose_effect" and act.args.get("apply") == "gain":
+                        ev_amt = next((x_ for x_ in events if x_.order == order and x_.type == "getBonuses" and isinstance(x_.args, dict)), None)
+                        if ev_amt is not None:
+                            _normalise.amt = (ev_amt.args.get("bonuses") or {}).get(act.args.get("res"))
                     _skip_unneeded.rest = acts[ai + 1:]
                     _skip_unneeded.order = order
                     if act.kind == "choose_action_card" and "unpaid" in act.args:         # (the repetition of a Multiplier action: the strength bonus of the map was checked for the first one)
@@ -1585,6 +1597,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         inserted[0] = False
                         state = ap(state, f)
                         inserted[0] = True
+                    if follow and conceded_next and state.prompt is not None and state.prompt.kind == "association_tasks" and (state.prompt.args.get("project") or {}).get("step") == "bonus":
+                        from ark_nova.engine import association as assoc_
+                        state = copy.deepcopy(state)                         # the game ended before the player picked the notepad bonus: BGA still paid the project (711316402 turn 49), without one
+                        assoc_._finish_project(state, state.players[seat], None)
                     while follow and state.prompt is not None and state.prompt.kind == "effects" and _project_effect(state) is not None:
                         state = ap(state, _project_effect(state))          # BGA shows the building of a size-2 bonus right after the choice
                     if state.prompt is not None and (state.prompt.kind == "build_place" or (state.prompt.kind == "effects" and any(

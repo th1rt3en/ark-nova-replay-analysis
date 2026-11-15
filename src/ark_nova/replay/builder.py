@@ -731,9 +731,10 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
     s.main_discard.append(k)
     cubes.release(p, k, cube_totals(a.get("buildings")))
     emptied = False
-    for b in a.get("buildings") or []:                       # the enclosure that was emptied (an animal is not tied to an enclosure)
+    for bi_, b in enumerate(a.get("buildings") or []):                       # the enclosure that was emptied (an animal is not tied to an enclosure)
         if b.get("type") == "empty" or "id" not in b:        # "frees no enclosure": BGA lists a placeholder {"type": "empty"} (715758234)
             continue
+        first = bi_ == 0
         for mine in p.buildings:
             if mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"]):          # (the starting enclosure has an id of its own in the engine)
                 if mine.type.startswith("size-"):
@@ -743,7 +744,11 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
                     mine.animals.remove(k)
                     emptied = True
                 elif mine.animals:
-                    mine.animals.pop(0)
+                    moved = mine.animals.pop(0)
+                    holder = next((o for o in p.buildings if first and mine.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") and k in o.animals), None)
+                    if holder is not None:        # the aquariums are one pool: the animal that BGA's flipped aquarium held moves to the space that the released one frees, which is in another aquarium (672851171 turn 36, 820998468 turn 70)
+                        holder.animals.remove(k)
+                        holder.animals.append(moved)
                     emptied = True
     if not emptied:                                           # BGA names an empty enclosure as the one that is freed: the animal leaves the one it lived in (820534913 turn 56)
         for mine in p.buildings:

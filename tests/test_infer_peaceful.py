@@ -51,3 +51,16 @@ def test_bgas_option_beats_the_arena_rating_and_the_log(arena, option, peaceful)
         pytest.skip("log not available")
     _, cfg, _ = game_from_log(parse_log(str(path)), marine_worlds=True, arena=arena, peaceful=option)
     assert cfg.peaceful is peaceful
+
+
+@pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
+@pytest.mark.parametrize("table, peaceful", [("691447217", True), ("801244007", False)])
+def test_a_venom_reef_animal_pays_one_x_token_more_in_a_peaceful_game(table, peaceful):
+    """Devil Firefish (Venom + Reef Dweller Inventive): the Inventive X token is paid in any game, the peaceful Venom adds a second one (691447217 turn 17, peaceful);
+    a single one (801244007 turn 24) is no sign."""
+    from ark_nova.replay.config import infer_peaceful
+
+    path = LOGS / f"{table}.json"
+    if not path.exists():
+        pytest.skip("log not available")
+    assert infer_peaceful(parse_log(str(path))) is peaceful

@@ -171,7 +171,8 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
     a hostile event shows too, and a Clever effect can come from any Clever animal, a sponsor, or an earlier action (900757015 turn 51, 783434284 turn 22)."""
     played = hostile = peaceful = 0
     names: set = set()
-    inventive_seen = False                                 # (a Reef Dweller "Inventive" animal of the zoo also pays X tokens: no proof of a peaceful Venom)
+    reef_inventive = 0                                     # (the Reef Dweller "Inventive" animals played so far: each pays X tokens again when a new Reef Dweller is played, no proof of a peaceful Venom)
+    play: dict = {}                                        # the animal being played: {"venom": bool, "expected": X-token events its own and its reef Inventive effects explain, "seen": the ones the log shows}
     for m in parsed.moves:
         for e in m.events:
             a = e.args if isinstance(e.args, dict) else {}
@@ -182,13 +183,20 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
             if e.type == "buyAnimal" and isinstance(a.get("card"), dict):
                 card = data.cards_by_key()[data.parse_bga_card_id(a["card"]["id"])[0]]
                 own = {ab["keyword"]["name"] for ab in card.get("abilities") or []} | {ab["keyword"]["name"] for ab in card.get("reefDwellerEffect") or []}
-                inventive_seen = inventive_seen or "Inventive" in own
+                reef_own = {ab["keyword"]["name"] for ab in card.get("reefDwellerEffect") or []}
+                play = {"venom": "Venom" in own, "seen": 0,
+                        "expected": ("Inventive" in own) + (reef_inventive if reef_own else 0)}
+                reef_inventive += "Inventive" in reef_own
                 names |= own
                 if own & HOSTILE:
                     played += 1
             elif names:                                    # what BGA logs instead of a hostile ability
                 b = a.get("bonuses") or {}
-                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and not inventive_seen and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                                                 or (e.type == "pDrawCards" and ("Pilfering 2" in names or "Pilfering 1" in names) and "Sprint" not in names and "sprint" in e.log)                        :
+                if e.type == "getBonuses" and a.get("source") == "Inventive" and set(b) == {"xtoken"} and play.get("venom"):
+                    play["seen"] += 1                      # more X tokens "from Inventive" than the Inventive effects of the zoo explain: a Venom replaced (Devil Firefish: its own Inventive reef + the peaceful Venom, 691447217 turn 17)
+                    if play["seen"] > play["expected"]:
+                        peaceful += 1
+                if (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                                                 or (e.type == "pDrawCards" and ("Pilfering 2" in names or "Pilfering 1" in names) and "Sprint" not in names and "sprint" in e.log)                        :
                     peaceful += 1
     return bool(played) and not hostile and bool(peaceful)
 
