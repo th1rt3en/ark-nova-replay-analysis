@@ -236,6 +236,9 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
     fixes = _label_fixes().get(str(parsed.table_id))
     if fixes and maps is not None:                                        # tables where BGA's index names the wrong map (data_manual/map_label_fixes.json)
         maps = [fixes.get(pid, m) for pid, m in zip(setup.seats, maps)]
+    if maps is not None and "0" in maps:                                  # BGA's index labels the T1 layout "Map 0" in some tables: where the log's own first-building list fingerprints T1 for that player, the log wins
+        seen_ = infer_maps(parsed, setup.seats)
+        maps = ["T1" if m == "0" and s_ == "T1" else m for m, s_ in zip(maps, seen_)]
     exits = extract_exits(parsed)
     main, endgame = known_order(exits, "main", from_seq), known_order(exits, "endgame", from_seq)
     if marine_worlds is None:       # Marine Worlds cards in the log, or BGA offering aquariums (a Marine Worlds building) to build
