@@ -414,7 +414,7 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
         snap_ = getattr(_normalise, "snap", None)
         loc_ = next((t_.location for t_ in snap_.players[act.player].tokens if t_.id == act.args["worker"]), None) if snap_ is not None else None
         same_ = [c for c in cands if next((t_.location for t_ in state.players[act.player].tokens if t_.id == c.args["worker"]), None) == loc_] if loc_ else []
-        if len(same_) == 1 and not any(c.args["worker"] == act.args["worker"] for c in cands):
+        if same_ and not any(c.args["worker"] == act.args["worker"] for c in cands):          # (workers on the same space are interchangeable: the first one)
             return same_[0]                                   # (the worker that BGA's id has on the replay board, the engine's own ids differ: 739415597 turn 45)
         if len(cands) > 1 and end is not None:
             from collections import Counter as _C
@@ -882,7 +882,7 @@ def _is_free_part(events: list, back: bool = False) -> bool:
             continue                                         # an Extra Shift between an Association action and its Multiplier repetition (686637105 turn 65)
         if e.type in ("pDiscardCards", "discardCards") and " sell" in (e.log or "") and ((e.args if isinstance(e.args, dict) else {}).get("bonuses") or {}).get("money") == 3:
             continue                                         # map 4, Commercial Harbor: a card sold for 3 money at any time of the turn, also before the action card is chosen (627776608 moves 107 and 483)
-        if token and (e.type in ("playSponsor", "getBonuses", "takeBonus", "buyBuilding", "pDrawCards", "snapCard", "pDiscardCards", "addMeeples") or (e.type == "slideMeeples" and (e.log or "").endswith("gains a new Association worker"))):
+        if token and (e.type in ("playSponsor", "getBonuses", "takeBonus", "buyBuilding", "pDrawCards", "snapCard", "pDiscardCards", "addMeeples", "pStoreCard", "discardCardsOnDisplay", "fillPool", "buyAnimal", "endOfGame") or (e.type == "slideMeeples" and ((e.log or "").endswith("gains a new Association worker") or not (e.log or ""))) or e.type in ("gainMarked", "discardTokens", "midmessage", "upgradeCard")):
             continue                                         # (the sponsor's gains, a conservation space reward it reaches, its free building: 901779082 turn 48; a card taken or a worker hired by a reputation track bonus: 665716566 turn 45)
         return False
     return True
@@ -891,7 +891,13 @@ def _is_free_part(events: list, back: bool = False) -> bool:
 def _free_of_next(turns: list, j: int, back: bool = False) -> bool:
     """`_is_free_part(turns[j])`, unless it is only Harbor sales of a player other than the one who chooses the card in the next turn with events: that sale was made after the seller's own turn (610062035 turn 63)."""
     if not _is_free_part(turns[j], back):
-        return False
+        if back or not _is_free_part(turns[j], True):
+            return False
+        who = {str(e.args.get("player_id")) for e in turns[j] if e.type in ("discardTokens", "slideMeeples", "pDiscardCards") and isinstance(e.args, dict) and e.args.get("player_id") is not None}
+        nxt_ = next((turns[i] for i in range(j + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[i])), [])
+        chooser_ = next((str(e.args.get("player_id")) for e in nxt_ if e.type == "chooseActionCard"), None)
+        if not (who and chooser_ is not None and who == {chooser_} and any(e.type == "pDiscardCards" and "Map T1 effect" in (e.log or "") for t_ in turns[max(0, j - 1):j + 1] for e in t_)):
+            return False                                     # an Extra Shift joins the next turn only when that turn is the same player's (the map T1 discard and the token before the card: 827940536 turn 79)
     sellers = {str(e.args.get("player_id")) for e in turns[j] if e.type in ("pDiscardCards", "discardCards") and " sell" in (e.log or "")}
     nxt = next((turns[i] for i in range(j + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[i])), [])
     chooser = next((str(e.args.get("player_id")) for e in nxt if e.type == "chooseActionCard"), None)
@@ -914,6 +920,8 @@ def _is_tail(prev: list, events: list) -> bool:
         rest = [e for e in real[1:] if not (e.type == "discardTokens" and "multiplier" in e.log)]      # a skip repeated with a Multiplier: its X token and the token, then the cleanup
         if len(rest) == len(real) - 1:
             rest = real
+    if chose is not None and real and not any(e.type == "actionCardCleanup" for e in prev) and not any(e.type in ("chooseActionCard", "startBreak", "endOfGame") for e in real)             and all(e.type in ("pDiscardCards", "getBonuses", "takeBonus", "slideMeeples", "snapCard", "pDrawCards", "buyAnimal", "buyBuilding", "playSponsor", "discardCardsOnDisplay", "fillPool", "pStoreCard", "markCard") for e in real)             and all(str(e.args.get("player_id")) == str(chose.args.get("player_id")) for e in real if isinstance(e.args, dict) and e.args.get("player_id") is not None):
+        return True                                         # the rest of the action under a marker of its own (a discard, then the cleanup under the next one: 854333361 turn 63)
     if not real or any(e.type == "chooseActionCard" for e in real) or not rest or rest[0].type != "actionCardCleanup":
         return False
     if chose is None:                                   # a skipped action: the X token comes in a "turn" of its own
@@ -1033,7 +1041,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 fj += 1
             if fj < len(turns) and fj > nj and _is_repetition(turns[fj]) and not any(e.type == "actionCardCleanup" for e in turns[j]):
                 nj = fj
-            elif nj >= len(turns) or not ((_is_repetition(turns[nj]) and not any(e.type == "actionCardCleanup" for e in turns[j])) or _is_tail(turns[j], turns[nj])):
+            elif nj >= len(turns) or not ((_is_repetition(turns[nj]) and not any(e.type == "actionCardCleanup" for e in turns[j])) or _is_tail([e_ for t_ in turns[k:j + 1] for e_ in t_] if j > k else turns[j], turns[nj])):
                 break
             merged.update(range(j + 1, nj + 1))
             j = nj
@@ -1054,9 +1062,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 break
             last = span.get(k, k)
             endsnap = snaps[last + 1] if last + 1 < len(snaps) else replay.states[-1]
-            if not events or all(e.type.startswith("gameStateChange") or e.type in ("playerConcedeGame", "gameResultNeutralized", "fillPool", "switchToTurnbased") for e in events):                       # a repeated state-20 marker (BGA re-enters the state without anything happening)
+            if not events or all(e.type.startswith("gameStateChange") or e.type in ("playerConcedeGame", "gameResultNeutralized", "fillPool", "switchToTurnbased", "timeJokerUsed", "discardCardsOnDisplay") for e in events):                       # a repeated state-20 marker (BGA re-enters the state without anything happening)
                 continue
-            if any(e.type == "finalScoring" for e in events) and all(e.type.startswith("gameStateChange") or e.type in ("getBonuses", "finalScoring") for e in events):
+            if any(e.type == "finalScoring" for e in events) and all(e.type.startswith("gameStateChange") or e.type in ("getBonuses", "finalScoring", "fillPool") for e in events):
                 continue                         # the end of the game: the scoring cards' points and the final score (the engine's end-of-game scoring is checked by the golden tests: 749781422 turn 69)
             rep.turns += 1
             actor = next((str(e.args["player_id"]) for e in events if e.type in ("chooseActionCard", "actionCardCleanup")), markers[k][1])
@@ -1079,8 +1087,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             _normalise.cube_used = any(e_.type == "discardTokens" and any(str(m_.get("location", "")).startswith("S253") for m_ in (e_.args.get("meeples") or [])) for e_ in events)
             _normalise.maxing = any(e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "maxing out reputation" for e_ in events)          # (the notepad bonus of reputation shows only as this appeal)
             flat_ = [e for t_ in [events] + turns[last + 1:] for e in t_]
-            cc_ = next((i_ for i_, e in enumerate(flat_) if e.type == "playerConcedeGame"), None)
-            conceded_next = cc_ is not None and all(e.type.startswith("gameStateChange") or e.type in ("playerConcedeGame", "simpleNode", "updateReflexionTime") for e in flat_[cc_:])          # (the opponent conceded in or right after this turn and nothing but the end of the game follows)
+            _ends = ("playerConcedeGame", "gameResultNeutralized", "skipTurnOfPlayer")          # a concession, a quit, a player kicked for running out of time: the game ends at once
+            cc_ = next((i_ for i_, e in enumerate(flat_) if e.type in _ends), None)
+            conceded_next = cc_ is not None and all(e.type.startswith("gameStateChange") or e.type in _ends + ("simpleNode", "updateReflexionTime", "getBonuses", "takeBonus", "pDiscardCards", "slideMeeples", "finalScoring", "endOfGame", "fillPool", "discardCardsOnDisplay") for e in flat_[cc_:])          # (a player left in or right after this turn and nothing but the end of the game follows: its scoring)
+            if not conceded_next and any(e.type == "chooseActionCard" for e in events) and not any(e.type == "actionCardCleanup" for e in events)                     and not any(any(not e_.type.startswith("gameStateChange") for e_ in t_) for t_ in turns[last + 1:]):
+                conceded_next = True                        # the log ends in the middle of the turn (the table was left or abandoned): no cleanup follows
             plan = turn_actions(events, seat, seat_of, move_of, snaps[k].config.peaceful, again and not queued, extra_follows=again, conceded=conceded_next)
             if isinstance(plan, str):
                 rep.skipped[plan] += 1
@@ -1585,7 +1596,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
-                        if any(e_.type == "playerConcedeGame" for e_ in events):
+                        if conceded_next or any(e_.type in _ends for e_ in events):
                             raise _Stop
                         rep.illegal.append(f"turn {k}: a mandatory effect is still pending: {state.prompt.args['pending']}")
                         raise _Stop
@@ -1619,7 +1630,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
                             raise _Stop
-                        if any(e_.type == "playerConcedeGame" for e_ in events):
+                        if conceded_next or any(e_.type in _ends for e_ in events):
                             raise _Stop
                         rep.illegal.append(f"turn {k}: a mandatory effect is still pending: {state.prompt.args['pending']}")
                         raise _Stop

@@ -828,7 +828,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             add(Action(seat, "choose_effect", {"apply": "venom" if "Venom" in e.log else "constrict"}), e)
         elif t == "sponsorMagnet":                                   # Sponsor Magnet / Sea Animal Magnet: the engine takes the cards itself (a Symbiosis that copies it is chosen from this note)
             add(Action(seat, "magnet_note", {"ability": "Sea Animal Magnet" if "ea animal" in str(e.log) else "Sponsor Magnet"}), e)
-        elif (chosen == "sponsors" or in_break) and t == "donation":          # (a sponsor played in the break: Publications, 771855619 turn 55)
+        elif (chosen == "sponsors" or in_break or any(x.type == "playSponsor" for x in events[:events.index(e)])) and t == "donation":          # (Publications played with a Marketing in any action)          # (a sponsor played in the break: Publications, 771855619 turn 55)
             add(Action(seat, "choose_effect", {"donate": True}), e)
         elif t == "advanceBreak" and chosen == "sponsors":
             add(Action(seat, "sponsor_break", {}), e)

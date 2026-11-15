@@ -112,7 +112,17 @@ def test_a_turn_of_notices_only_is_not_reported(table):
 NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the middle of an action: the game ends at once, no cleanup is expected and every logged action was accepted"),
                  "667852938": (("8a", "8a"), True, 61, "a player conceded in the middle of an action: the game ends at once, no cleanup is expected and every logged action was accepted"),
                  "649469558": (("5a", "5a"), False, 14, "switchToTurnbased: BGA converted a real-time table to turn-based, no effect on the game"),
-                 "654208935": (("6a", "6a"), True, 69, "switchToTurnbased: BGA converted a real-time table to turn-based, no effect on the game")}
+                 "654208935": (("6a", "6a"), True, 69, "switchToTurnbased: BGA converted a real-time table to turn-based, no effect on the game"),
+                 "618160389": (("5a", "5a"), False, 23, "a player ran out of time right after choosing the card: the game ends at once, no cleanup"),
+                 "627757905": (("5a", "5a"), True, 23, "a player quit in the middle of an action: the game ends at once, no cleanup"),
+                 "643539930": (("3a", "3a"), False, 66, "the last turn holds only the display refill, the scoring bonuses and the final score"),
+                 "662607546": (("3a", "3a"), True, 41, "a turn that only says that a time joker was used"),
+                 "854333361": (("4a", "4a"), True, 63, "an action whose Harbor sale and cleanup are logged under later markers"),
+                 "796946880": (("11", "11"), True, 47, "a sponsor played with the Marketing token before the player's action, with a card stored by map 11"),
+                 "827940536": (("T1", "T1"), True, 79, "map T1: a discard for +1 strength and an Extra Shift of the same player, logged before the card is chosen"),
+                 "669605987": (("7a", "7a"), True, 59, "Publications played through a Marketing in a Build action: its donation"),
+                 "859308287": (("7a", "7a"), True, 45, "a sponsor played with a token whose effects include an upgrade and the other player's mark gain"),
+                 "840558355": (("5a", "5a"), True, 74, "the log ends in the middle of the last turn: no cleanup follows")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
