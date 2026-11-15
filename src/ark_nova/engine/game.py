@@ -523,7 +523,14 @@ def _choose_action_card(state: GameState, action: Action) -> None:
         p.hand.remove(t1)
         state.main_discard.append(t1)
         p.flags["t1_used"] = 1
-    strength = max(1, idx + 1 + map_rules.strength_bonus(p, idx + 1) + spend + (1 if t1 is not None else 0) - venom.strength_penalty(card))              # Constriction: -2 strength (on a hypnotised card too)
+    penalty = venom.strength_penalty(card)
+    if args.get("repeat"):                                      # a Multiplier repetition: the Constriction token stays on the card until the last one (the logs discard it after the chain, 656418283 turn 57)
+        penalty = p.flags.get("repeat_penalty", 0)
+    if "Multiplier" in card.tokens:
+        p.flags["repeat_penalty"] = penalty
+    else:
+        p.flags.pop("repeat_penalty", None)
+    strength = max(1, idx + 1 + map_rules.strength_bonus(p, idx + 1) + spend + (1 if t1 is not None else 0) - penalty)              # Constriction: -2 strength (on a hypnotised card too)
     if not hypnosis:
         venom.remove_tokens(p, card, state=state)
     p.x_tokens -= spend
