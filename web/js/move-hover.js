@@ -38,7 +38,8 @@ export function collect(turnNumber) {
     }
     const ca = st.current_action || null;
     if (ca && !prevCa && ca.seat != null && st.players && st.players[ca.seat]) {          // a new action starts: the card is still in its slot, so its type can be read
-      const card = (st.players[ca.seat].action_cards || [])[ca.slot - 1] || {}, type = ca.type || card.type;
+      const holder = ca.owner != null ? ca.owner : ca.seat;                                  // (Hypnosis: the card of the other player's row)
+      const card = ((st.players[holder] || {}).action_cards || [])[ca.slot - 1] || {}, type = ca.type || card.type;
       const row = t ? byKey.get(t.seat + ':' + t.number) : null;
       if (type) { acts[ca.seat].push({ t: type, turn: row ? row.number : null, extra: !!row && row.n > 0, up: type !== 'x' && (card.level || 1) >= 2, key: row }); if (row) row.n += 1; }
     }

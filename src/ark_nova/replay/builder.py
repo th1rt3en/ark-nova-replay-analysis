@@ -181,6 +181,8 @@ def h_choose_action_card(ctx: _Ctx, e: Event) -> None:
     ac = a["actionCard"]
     ctx.state.current_action = {"seat": ctx.seat(a["player_id"]), "id": int(ac["id"]), "slot": int(ac["strength"]),
                                 "strength": int(a["strength"])}
+    if str(ac.get("pId")) in ctx.seat_of:                          # the owner of the card: Hypnosis plays a card of the other player's row (the viewer highlights it there)
+        ctx.state.current_action["owner"] = ctx.seat(str(ac["pId"]))
 
 
 def h_action_card_cleanup(ctx: _Ctx, e: Event) -> None:

@@ -273,7 +273,7 @@ export function sidePanel(st) {
     slots.forEach((a, i) => {
       if (!a) { const g = el('span', 'ac ghost'); g.append(el('b', '', i + 1)); acts.append(g); return; }
       // the card chosen for the running action (set by "chooses action card", cleared when it is placed back on slot 1 at the end of the action)
-      const chosen = st.current_action && st.current_action.seat === seat && st.current_action.slot === i + 1;
+      const chosen = st.current_action && (st.current_action.owner != null ? st.current_action.owner : st.current_action.seat) === seat && st.current_action.slot === i + 1;          // (Hypnosis: the card of the other player's row)
       const c = el('span', 'ac' + (a.level === 2 ? ' lvl2' : '') + (chosen ? ' chosen' : ''));
       c.dataset.actionSeat = seat; c.dataset.actionType = a.type; c.dataset.actionView = 'sidebar';
       c.title = 'Slot ' + (i + 1) + ': ' + ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + (a.variant ? ' (variant ' + a.variant + ')' : '');

@@ -237,7 +237,7 @@ function actionStrip(st, seat) {
   const slots = st.actions_hidden ? [{ type: 'animals', level: 1, variant: 0, tokens: [] }, null, null, null, null] : st.players[seat].action_cards;
   slots.forEach((a, i) => {
     const slot = el('div', 'asl'), cur = st.current_action;
-    const chosen = !!a && cur && cur.seat === seat && cur.slot === i + 1;
+    const chosen = !!a && cur && (cur.owner != null ? cur.owner : cur.seat) === seat && cur.slot === i + 1;          // (Hypnosis: the card is in the other player's row, `owner`)
     if (chosen) slot.classList.add('chosen');
     if (!a) { slot.classList.add('empty'); slot.append(el('div', 'acard'), el('div', 'aclip')); slot.lastChild.innerHTML = CLIP((st.players[seat].slot_numbers || [])[i] || i + 1, false); strip.append(slot); return; }
     const card = el('div', 'acard');
