@@ -56,3 +56,12 @@ def test_all_events_handled_and_all_oracles_agree():
     from ark_nova.replay.batch import parallel_map
     problems = [p for found in parallel_map(_oracle_problems, LOGS) for p in found]
     assert not problems, problems[:3]
+
+
+def test_the_status_list_of_the_player_who_discarded_first_may_lag_one_move():
+    """At 10 conservation both players discard an endgame card at once: BGA's list of the player who discarded first still shows the card one move later (784671762 move 201)."""
+    path = Path(__file__).resolve().parents[1] / "log_examples" / "784671762.json"
+    if not path.exists():
+        pytest.skip("log not available")
+    _, rep = _replay(str(path))
+    assert not rep.mismatches and not rep.unhandled

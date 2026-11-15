@@ -530,6 +530,7 @@ def h_discard_cards(ctx: _Ctx, e: Event) -> None:
             if k in p.endgame_hand:
                 p.endgame_hand.remove(k)
             s.endgame_discard.append(k)
+            ctx.__dict__.setdefault("recent_scoring", {}).setdefault(ctx.seat(e.player), []).append((ctx.cur_move, k))      # (see _check_oracles)
             if "(scoring card)" in e.log:                  # the one-time discard at 10 conservation has happened (the Adapt discards are worded differently)
                 s.endgame_discard_done = True
             continue
@@ -1126,6 +1127,8 @@ def _check_oracles(ctx: _Ctx, m: Move, rep: Replay) -> None:
             if int(chk["xtokens"]) != act.x_tokens:
                 rep.mismatches.append((m.index, f"x tokens of seat {ctx.seat_of[chk['active']]}: log {chk['xtokens']}, state {act.x_tokens}"))
         theirs = [k for k in chk["hand_and_display"] if k[0] in "AF"]
+        just_discarded = {k for mv, k in ctx.__dict__.get("recent_scoring", {}).get(seat, []) if 0 <= m.index - mv <= 2}
+        theirs = [k for k in theirs if k not in just_discarded]        # (the simultaneous discard of an endgame card at 10 conservation: BGA's list for the player who discarded first still shows the card one move later, 784671762 move 201)
         if mine != theirs:
             rep.mismatches.append((m.index, f"hand+display+endgame of seat {seat}: log has {sorted(set(theirs) - set(mine))} more, "
                                             f"state has {sorted(set(mine) - set(theirs))} more"))
