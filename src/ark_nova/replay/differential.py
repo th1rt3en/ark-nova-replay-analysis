@@ -1250,6 +1250,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         ev_amt = next((x_ for x_ in events if x_.order == order and x_.type == "getBonuses" and isinstance(x_.args, dict)), None)
                         if ev_amt is not None:
                             _normalise.amt = (ev_amt.args.get("bonuses") or {}).get(act.args.get("res"))
+                    if act.kind == "place_building" and state.prompt is not None and state.prompt.kind == "effects" and any(
+                            e_["kind"] == "gain" and e_.get("source") == "S276" for e_ in state.prompt.args["pending"]) and any(e_["kind"] == "build" and e_.get("source") == "S276" for e_ in state.prompt.args["pending"])                             and not any(e_.type == "getBonuses" and isinstance(e_.args, dict) and str(e_.args.get("card_id", "")).startswith("S276") and "appeal" in (e_.args.get("bonuses") or {}) for e_ in events):
+                        gi_ = next(i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and e_.get("source") == "S276")
+                        state = ap(state, Action(act.player, "choose_effect", {"index": gi_, "apply": "gain", "res": "appeal"}))          # Landscape Gardener: the player resolved the appeal first, with no pavilion in the zoo: 0 appeal and no log line (683029660 turn 18)
                     _skip_unneeded.rest = acts[ai + 1:]
                     _skip_unneeded.order = order
                     if act.kind == "choose_action_card" and "unpaid" in act.args:         # (the repetition of a Multiplier action: the strength bonus of the map was checked for the first one)
