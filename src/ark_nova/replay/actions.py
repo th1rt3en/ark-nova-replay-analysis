@@ -662,6 +662,9 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 add(Action(seat, "choose_effect", {"apply": "gain", "res": "money"}), e)                   # peaceful Pilfering 1: 3 money
             if a.get("source") == "Iconic animal" and set(b) == {"appeal"}:
                 add(Action(seat, "choose_effect", {"apply": "gain", "res": "appeal"}), e)                  # Iconic Animal: an effect of its own, counted when it is resolved
+            if chosen == "association" and not a.get("card_id") and set(b) == {"reputation"} and str(a.get("source", "")).endswith("Management Plan"):
+                pk_ = next((k_ for k_, c_ in data.cards_by_key().items() if c_.get("card_type") == "project" and str(c_.get("name", "")).upper() == str(a.get("source")).upper()), None)
+                add(Action(seat, "choose_effect", {"apply": "gain", "res": "reputation", **({"trigger": pk_} if pk_ else {})}), e)              # a Management Plan's reputation per icon: counted when it is resolved, in the order the log shows (838437200 turn 68)
             if a.get("source") == "Inventive" and set(b) == {"xtoken"}:
                 add(Action(seat, "choose_effect", {"apply": "gain", "res": "xtoken"}), e)                  # Inventive / peaceful Venom: X tokens
             if chosen == "association" and a.get("card_id") and _key(a["card_id"])[:1] == "A" and _key(a["card_id"]) not in played:       # Activate Reef: the effects of the animals of one aquarium
@@ -673,8 +676,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 for res in b:                                      # printed gains and Reef Dweller gains: effects of their own
                     add(Action(seat, "choose_effect", {"apply": "gain", "res": res}), e)
             if chosen in ("sponsors", "association", "animals") or (chosen is None and any(x.type == "playSponsor" for x in events[:events.index(e)])):          # (also a sponsor played with a token before the card is chosen)
-                if a.get("card_id") and _key(a["card_id"]) == "S276" and "appeal" in b:
-                    add(Action(seat, "choose_effect", {"apply": "gain", "res": "appeal"}), e)       # Landscape Gardener: the appeal for the pavilions is an effect of its own, in the order the log shows
+                if a.get("card_id") and _key(a["card_id"]) in ("S276", "S256") and "appeal" in b:
+                    add(Action(seat, "choose_effect", {"apply": "gain", "res": "appeal", **({"trigger": "S256"} if _key(a["card_id"]) == "S256" else {})}), e)       # Landscape Gardener: the appeal for the pavilions is an effect of its own, in the order the log shows (Water Playground: its appeal comes after the building)
                 elif a.get("card_id"):
                     pass                                         # a gain of another card of the zoo (Geologist, Hydrologist, Science Lab ...): the engine computes it, the state comparison checks it
                 else:
@@ -807,7 +810,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             old, new = a["building"], a["newBuilding"]
             add(Action(seat_of[str(a["player_id"])], "choose_effect", {"building": [old["x"], old["y"]], "x": new["x"], "y": new["y"], "rotation": new.get("rotation", 0)}), e)
         elif t == "cutDown":
-            add(Action(seat_of.get(str(a.get("player_id")), seat), "choose_effect", {"building_id": int(a["buildingId"])}), e)
+            add(Action(seat_of.get(str(a.get("player_id")), seat), "choose_effect", {"building_id": int(a["buildingId"]), **({"size": int(a["size"])} if a.get("size") else {})}), e)
         elif chosen == "animals" and t == "pilferingMoney":
             add(Action(seat_of[str(a["player_id"])], "choose_effect", {"pay": True}), e)
         elif chosen == "animals" and t in ("pilfering", "pilferingCard"):
@@ -828,7 +831,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         elif chosen == "animals" and t == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log):
             add(Action(seat, "choose_effect", {"apply": "venom" if "Venom" in e.log else "constrict"}), e)
         elif t == "sponsorMagnet":                                   # Sponsor Magnet / Sea Animal Magnet: the engine takes the cards itself (a Symbiosis that copies it is chosen from this note)
-            add(Action(seat, "magnet_note", {"ability": "Sea Animal Magnet" if "ea animal" in str(e.log) else "Sponsor Magnet"}), e)
+            add(Action(seat, "magnet_note", {"ability": "Sea Animal Magnet" if "ea animal" in str(e.log) else "Animal Magnet" if any(str(c.get("id", ""))[:1] == "A" for c in a.get("cards") or []) and not any(str(c.get("id", ""))[:1] == "S" for c in a.get("cards") or []) else "Sponsor Magnet"}), e)
         elif (chosen == "sponsors" or in_break or any(x.type == "playSponsor" and isinstance(x.args, dict) and _key(x.args["card"]["id"]) == "S273" for x in events[:events.index(e)])) and t == "donation":          # (only Publications (S273) gives a donation: played with a Marketing in any action)          # (a sponsor played in the break: Publications, 771855619 turn 55)
             add(Action(seat, "choose_effect", {"donate": True}), e)
         elif t == "advanceBreak" and chosen == "sponsors":

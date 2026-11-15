@@ -859,10 +859,19 @@ def _play_sponsor(state: GameState, action: Action) -> None:
     own = sponsors_action.own_gain(k)
     printed = card_programs.PRINTED_OVERRIDE[k] if k in card_programs.PRINTED_OVERRIDE else {"appeal": card.get("appeal") or 0, "reputation": card.get("reputation") or 0,
                                                       "conservation": card.get("conservationPoint") or 0}
+    rep_ = printed.get("reputation", 0) + own.get("reputation", 0)
+    deferred = []
+    if rep_ and printed.get("conservation", 0) + own.get("conservation", 0) and p.reputation + rep_ > bonuses.reputation_cap(p):
+        deferred = [{"kind": "gain", "source": k, "res": "reputation", "n": rep_, "optional": False}]          # BGA pays the conservation first and the reputation after its choices: the upgrade of Cards at 2 lifts the cap of 9 (730117368 turn 23)
+        rep_ = 0
+    appeal_ = printed.get("appeal", 0) + own.get("appeal", 0)
+    if k == "S256" and appeal_:                                              # Water Playground: BGA pays its appeal after the building and what the building opens (a Marketing sponsor with an appeal ceiling: 790873577 turn 37)
+        deferred.append({"kind": "gain", "source": k, "res": "appeal", "n": appeal_, "optional": False})
+        appeal_ = 0
     _gain(state, p.seat, money=own.get("money", 0), x_tokens=own.get("xtoken", 0),
-          appeal=printed.get("appeal", 0) + own.get("appeal", 0), reputation=printed.get("reputation", 0) + own.get("reputation", 0),
+          appeal=appeal_, reputation=rep_,
           conservation=printed.get("conservation", 0) + own.get("conservation", 0))
-    pending = effects.on_play(state, p.seat, k)
+    pending = effects.on_play(state, p.seat, k) + deferred
     if not _open_effects(state, p.seat, pending, {"kind": "sponsors_play", "args": a}):
         _after_sponsor(state, p.seat)
 

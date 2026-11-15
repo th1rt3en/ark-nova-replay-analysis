@@ -320,7 +320,7 @@ def _extra_options(p, a, task: str) -> list:
     if need is None:
         return [0]
     on = len(bonuses.worker_tokens(p, f"association_{TASK_VALUE[task]}"))
-    return [n for n in range(0, 4) if on + need + n <= 3 and len(bonuses.worker_tokens(p, "reserve")) >= need + n]
+    return [n for n in range(0, 4) if len(bonuses.worker_tokens(p, "reserve")) >= need + n]          # (no limit per space: 728510488 turn 64 put 3 workers on a space that had one)
 
 
 def task_actions(state, p, a) -> list:

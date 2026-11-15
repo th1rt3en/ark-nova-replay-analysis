@@ -172,6 +172,8 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
     played = hostile = peaceful = 0
     names: set = set()
     reef_inventive = 0                                     # (the Reef Dweller "Inventive" animals played so far: each pays X tokens again when a new Reef Dweller is played, no proof of a peaceful Venom)
+    owned: dict = {}                                       # player -> abilities of the animals he played (a Clever effect has other sources than a peaceful Constriction)
+    constrictor = None
     play: dict = {}                                        # the animal being played: {"venom": bool, "expected": X-token events its own and its reef Inventive effects explain, "seen": the ones the log shows}
     for m in parsed.moves:
         for e in m.events:
@@ -183,6 +185,9 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
             if e.type == "buyAnimal" and isinstance(a.get("card"), dict):
                 card = data.cards_by_key()[data.parse_bga_card_id(a["card"]["id"])[0]]
                 own = {ab["keyword"]["name"] for ab in card.get("abilities") or []} | {ab["keyword"]["name"] for ab in card.get("reefDwellerEffect") or []}
+                owned.setdefault(str(a.get("player_id")), set()).update(own)
+                if "Constriction" in own:
+                    constrictor = str(a.get("player_id"))
                 reef_own = {ab["keyword"]["name"] for ab in card.get("reefDwellerEffect") or []}
                 play = {"venom": "Venom" in own, "seen": 0,
                         "expected": ("Inventive" in own) + (reef_inventive if reef_own else 0)}
@@ -192,6 +197,8 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
                     played += 1
             elif names:                                    # what BGA logs instead of a hostile ability
                 b = a.get("bonuses") or {}
+                if e.type == "actionCardCleanup" and "Clever effect" in e.log and "Constriction" in names and str(a.get("player_id")) == constrictor and "Clever" not in owned.get(constrictor, ()):
+                    peaceful += 1                          # the peaceful Constriction is a Clever effect: an action card placed on slot 1 after the animal, with no Clever animal in the zoo (768475372 turn 61)
                 if e.type == "getBonuses" and a.get("source") == "Inventive" and set(b) == {"xtoken"} and play.get("venom"):
                     play["seen"] += 1                      # more X tokens "from Inventive" than the Inventive effects of the zoo explain: a Venom replaced (Devil Firefish: its own Inventive reef + the peaceful Venom, 691447217 turn 17)
                     if play["seen"] > play["expected"]:

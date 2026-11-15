@@ -743,7 +743,7 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
                 elif k in mine.animals:
                     mine.animals.remove(k)
                     emptied = True
-                elif mine.animals:
+                elif mine.animals and (first or mine.type not in ("small-aquarium", "large-aquarium", "underwater-tunnel")):
                     moved = mine.animals.pop(0)
                     holder = next((o for o in p.buildings if first and mine.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") and k in o.animals), None)
                     if holder is not None:        # an animal is not tied to an enclosure: the named aquarium is emptied, the released animal leaves the zoo and the animal listed in the named one stays (bookkeeping only; 672851171 turn 36, 820998468 turn 70)
@@ -762,6 +762,10 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
 def h_cut_down(ctx: _Ctx, e: Event) -> None:
     a = e.args
     p = ctx.player(a["player_id"])
+    if not any(b.id == int(a["buildingId"]) for b in p.buildings) and a.get("size"):          # a starting enclosure: BGA's id is not the engine's, the one empty enclosure of that size goes (804334725 turn 70)
+        same = [b for b in p.buildings if b.type == f"size-{int(a['size'])}" and b.animal is None]
+        if len(same) == 1:
+            p.buildings = [b for b in p.buildings if b is not same[0]]
     p.buildings = [b for b in p.buildings if b.id != int(a["buildingId"])]
     _apply_bonuses(p, a.get("bonuses"))
     _support_bonus(ctx, e, "cut-down")                           # the cut-down space of the notepad (map 13)

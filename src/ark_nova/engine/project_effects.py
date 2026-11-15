@@ -185,8 +185,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         release_animal(state, p.seat, a["release"], a.get("building"), a.get("cubes"))
         for other in a.get("also") or []:                       # BGA may name more enclosures as emptied (an animal is not tied to an enclosure): each one loses an animal
             ob = next((b for b in p.buildings if [b.x, b.y] == list(other)), None)
-            if ob is not None and not ob.type.startswith("size-") and ob.animals:
-                ob.animals.pop(0)
+            if ob is not None and not ob.type.startswith("size-") and ob.animals and ob.type not in ("small-aquarium", "large-aquarium", "underwater-tunnel"):
+                ob.animals.pop(0)                                  # (an aquarium animal can span several aquariums: they are emptied of its spaces, no other animal leaves: 731797456 turn 60)
     elif k == "reef":
         from ark_nova.engine import animals_action
         extra = []
