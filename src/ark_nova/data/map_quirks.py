@@ -37,11 +37,14 @@ def played_map_id(map_id: str, table_id: int) -> str:
 
 
 def hypnosis_runs_variant(table_id: int, card_type: str = "", variant: int = 0) -> bool:
-    """Whether a hypnotised card of the opponent runs its variant effect in table `table_id`. Older tables left it out (Money Sponsors bonus, Mark, the
-    extra kiosk ...), but the Mark of a hypnotised Animals 4 card (the logs of 677396972, 677682492, 783118944 and 805393631 show it), the Discount Animals (3) payment, the Association variants and the Digging Cards (2) dig already ran in the oldest sample tables (665718619, 668553028; 714263104 turn 49) and the +1 Build of Build variant 3 (752201952 turn 52: a level II card, strength 3, built a size-2, a pavilion and a kiosk)."""
+    """Whether a hypnotised card of the opponent runs its variant effect (the extra of the card's face: the Money Sponsors bonus, the Mark, the extra kiosk ...) in table `table_id`.
+    Tested on all 83 sample tables below 735000000 that have a hypnosis (variants always run vs the old rule): only the Money Sponsors (variant 2) bonus of a hypnotised
+    Sponsors card was left out on the older tables (661243248 turn 30, 677651655 turn 40, 732463562 turn 41: engine 5 money above the log); every other variant ran (the
+    Mark of 677396972 and 677682492, the +1 Build kiosk / pavilion of 668290113 and 716484804, the Cards variant of 669771146 and 715786486, the Sponsors side actions of
+    719561092 and 729387250)."""
     if table_id <= 0 or table_id >= HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID:
         return True
-    return (card_type == "animals" and variant in (3, 4)) or (card_type == "cards" and variant == 2) or (card_type == "build" and variant == 3) or card_type == "association"
+    return not (card_type == "sponsors" and variant == 2)
 
 
 def project_for_table(card: dict, table_id: int) -> dict:

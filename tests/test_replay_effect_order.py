@@ -138,7 +138,14 @@ NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the
                  "756726232": (("4a", "4a"), True, 44, "hypnosis: the Money Sponsors bonus of a hypnotised Sponsors II card is paid on this table"),
                  "729229221": (("2a", "2a"), True, 9, "Sponsors 4 (level I): a sponsor discarded to snap one when the display has none: BGA lets the card go"),
                  "660113790": (("5a", "5a"), True, 61, "a Venom effect that the opponent's Quarantine Lab makes void is not used later by the break's income"),
-                 "782921035": (("1a", "1a"), True, 64, "a player kicked for time in a break does not discard: the break goes on without it")}
+                 "782921035": (("1a", "1a"), True, 64, "a player kicked for time in a break does not discard: the break goes on without it"),
+                 "668290113": (("8a", "8a"), True, 49, "a hypnotised card of an older table runs its variant (+1 Build); only the Money Sponsors bonus was left out"),
+                 "669771146": (("7a", "7a"), True, 36, "a hypnotised card of an older table runs its variant (Cards)"),
+                 "715786486": (("4a", "4a"), True, 40, "a hypnotised card of an older table runs its variant (Cards)"),
+                 "716484804": (("3a", "3a"), True, 48, "a hypnotised card of an older table runs its variant (+1 Build)"),
+                 "719561092": (("8a", "8a"), True, 90, "a hypnotised card of an older table runs its variant (Sponsors 3 side action)"),
+                 "729387250": (("10", "4a"), True, 76, "a hypnotised card of an older table runs its variant (Sponsors 4 side action)"),
+                 "732463562": (("2a", "2a"), True, 41, "a hypnotised Sponsors II card of an older table pays no Money Sponsors bonus")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
