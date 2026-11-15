@@ -21,6 +21,7 @@ class TableRecord:
     thinking_times: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's thinking time in seconds (column `thinking_time`)
     elos_after: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's Elo after the game (column `post_match_elo`, same scale as `elos`)
     elo_changes: dict[str, int] = field(default_factory=dict)  # BGA player id -> the change of the game (`post_match_elo` - `pre_match_elo`, rounded)
+    arena: bool | None = None  # the game has an arena rating (`pre_match_arena_rating` is filled): an arena game is never peaceful; None = not known
     base_projects: list[str] = field(default_factory=list)  # the 3 base projects in play, positions base_0..2 (['P103', 'P106', 'P111']), read off BGA's replay by the extension; empty = infer from the log
 
     @property
@@ -85,7 +86,16 @@ class BigQueryIndex:
                            marine_worlds=any(bool(r["is_mw"]) for r in stats),
                            elos={str(r["player_id"]): round(r["elo"]) for r in stats if r.get("elo") is not None},
                            thinking_times={str(r["player_id"]): round(r["thinking_time"]) for r in stats if r.get("thinking_time") is not None},
-                           elos_after=after, elo_changes=change)
+                           elos_after=after, elo_changes=change, arena=self._arena(table_id))
+
+    def _arena(self, table_id: int) -> bool | None:
+        """Whether the game has an arena rating (the column `pre_match_arena_rating` is filled): then it cannot be a peaceful game. A query of its own, so a table without
+        the column (or an error) only leaves the answer open (None: the replay then infers it from the log)."""
+        try:
+            rows = self._query(f"SELECT pre_match_arena_rating FROM `{self._stats_table}` WHERE table_id = @table_id", table_id)
+        except Exception:                                                         # noqa: BLE001
+            return None
+        return True if any(r.get("pre_match_arena_rating") is not None for r in rows) else (False if rows else None)
 
     def _elo_after(self, table_id: int) -> tuple[dict[str, int], dict[str, int]]:
         """({player id: Elo after the game}, {player id: change of the game}) from `post_match_elo` / `pre_match_elo`. A query of its own, so a table without

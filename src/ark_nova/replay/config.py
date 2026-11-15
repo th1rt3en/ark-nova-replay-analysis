@@ -217,8 +217,9 @@ def _known_map(map_label) -> bool:
 
 
 def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_projects: Optional[list[str]] = None,
-                  marine_worlds: Optional[bool] = None, from_seq: int = 0) -> tuple[SetupInfo, GameConfig, SeedSpec]:
-    """`maps`, `base_projects` and `marine_worlds` come from the BigQuery index / the user in production. When they are not
+                  marine_worlds: Optional[bool] = None, from_seq: int = 0, arena: Optional[bool] = None) -> tuple[SetupInfo, GameConfig, SeedSpec]:
+    """`maps`, `base_projects`, `marine_worlds` and `arena` come from the BigQuery index / the user in production. A game with an arena rating (`arena`) is never peaceful;
+    otherwise (False or unknown) the peaceful variant is inferred from the log (`infer_peaceful`) until the index carries BGA's own option. When they are not
     given (tests) they are inferred: Marine Worlds if any known card is a Marine Worlds card, Map 14 if the log shows its
     start-of-game sponsor search, map 1 otherwise, and the first 3 base projects."""
     setup = extract_setup(parsed)
@@ -260,7 +261,7 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
         options["99"] = cb.random["99"][:1]                  # the bonus on 16 reputation (Marine Worlds)
     cfg = GameConfig(marine_worlds=marine_worlds, player_ids=setup.seats, maps=maps, base_projects=base_projects,
                      action_cards=[[ActionCardChoice(t, v) for t, v in setup.action_cards[p]] for p in setup.seats],
-                     conservation_bonuses=options, map_known=known, peaceful=infer_peaceful(parsed), table_id=int(parsed.table_id or 0))
+                     conservation_bonuses=options, map_known=known, peaceful=False if arena else infer_peaceful(parsed), table_id=int(parsed.table_id or 0))
     seed = SeedSpec(tail_seed=1, main_order=main, endgame_order=endgame)
     if infer_bp and cfg.marine_worlds is not None:
         cfg.base_projects = refine_base_projects(parsed, setup, cfg, seed)

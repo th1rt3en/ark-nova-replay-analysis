@@ -25,3 +25,16 @@ def test_peaceful_is_inferred_only_from_signs_that_never_show_in_a_normal_game(t
         pytest.skip("log not available")
     expected, why = CASES[table]
     assert infer_peaceful(parse_log(str(path))) is expected, why
+
+
+@pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
+@pytest.mark.parametrize("arena, peaceful", [(True, False), (False, True), (None, True)])
+def test_a_game_with_an_arena_rating_is_never_peaceful(arena, peaceful):
+    """The index's arena rating decides first (619074436 shows the signs of a peaceful game); without it the log is inferred."""
+    from ark_nova.replay.config import game_from_log
+
+    path = LOGS / "619074436.json"
+    if not path.exists():
+        pytest.skip("log not available")
+    _, cfg, _ = game_from_log(parse_log(str(path)), marine_worlds=True, arena=arena)
+    assert cfg.peaceful is peaceful
