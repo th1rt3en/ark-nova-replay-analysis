@@ -214,7 +214,7 @@ def _harbor_sell(state: GameState, action: Action) -> None:
     p.hand.remove(card)
     state.main_discard.append(card)
     p.flags["harbor_turn"] = state.turn if state.active_player == p.seat else state.turn - 1
-    _gain(state, p.seat, money=3)
+    _gain(state, p.seat, money=3, s2_bonus=False)          # (the sale is no money of the Sponsors action: 765101523 turn 42)
     venom.pay_late(state, p.seat)                          # (a Venom that the player could not pay at the end of the turn is taken after the sale)
     if state.prompt is not None and state.prompt.kind == "cards_discard" and state.prompt.player == p.seat and len(p.hand) < state.prompt.args["count"]:
         state.prompt.args["count"] = len(p.hand)             # the sale was one of the cards that had to be discarded: only the cards that are left are owed
@@ -576,12 +576,12 @@ def _pay(state: GameState, p, n: int) -> None:
 
 
 def _gain(state: GameState, seat: int, money: int = 0, appeal: int = 0, x_tokens: int = 0, reputation: int = 0,
-          conservation: int = 0) -> None:
+          conservation: int = 0, s2_bonus: bool = True) -> None:
     """Resource gains with the track rules: appeal 113 and X tokens 5 (gains above a limit are lost), reputation up to 15 with the
     track bonuses on the way (excess reputation becomes appeal), conservation up to 41 (the 2/5/8/10 choices are not implemented)."""
     p = state.players[seat]
     ca = state.current_action
-    if money > 0 and ca and ca.get("seat") == seat and ca.get("type") == "sponsors" and ca.get("variant") == 2 and not ca.get("s2_done"):
+    if s2_bonus and money > 0 and ca and ca.get("seat") == seat and ca.get("type") == "sponsors" and ca.get("variant") == 2 and not ca.get("s2_done"):
         ca["s2_done"] = True                                # Money Sponsors (2): the first money of the action comes with extra money
         money += sponsor_variants.S2_BONUS[ca["level"]]
     p.money += money

@@ -205,7 +205,9 @@ def h_action_card_cleanup(ctx: _Ctx, e: Event) -> None:
     if "action card" not in e.log and s.current_action is None:      # a card placed on slot 1 by an effect (Expert on Africa), not a turn end
         return
     owner = ctx.timeline.context(e.order).get("player") if ctx.timeline else None
-    actor = ctx.seat(owner) if owner in ctx.seat_of else (s.current_action or {}).get("seat", seat)           # (Hypnosis: the card that is placed belongs to the other player)
+    actor = (s.current_action or {}).get("seat")                                  # the player who chose the card (Hypnosis: the card that is placed belongs to the other player); the timeline's player can still be the one of the earlier marker (620178151 turn 2)
+    if actor is None:
+        actor = ctx.seat(owner) if owner in ctx.seat_of else seat
     s.current_action = None
     nxt = next((pid for order, pid in ctx.markers if order > e.order), None)
     if nxt is not None and ctx.seat(nxt) == actor:               # a second action of the same player (Determination, Action: X)
