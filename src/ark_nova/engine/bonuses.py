@@ -546,7 +546,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if cell not in archaeologist_cells(state, p):
             raise fx.IllegalEffect("choose a placement bonus that is not covered")
         for b in _board(p).bonuses[cell]:
-            _g().apply_placement_bonus(state, p.seat, b)
+            _g().apply_placement_bonus(state, p.seat, b, at_once=True)
     elif k == "take_tile":
         from ark_nova.engine import association
         opt = {x: v for x, v in a.items() if x in ("partner", "university", "category")}

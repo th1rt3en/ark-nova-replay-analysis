@@ -693,7 +693,7 @@ def _player_rules(p) -> dict:
 PLACEMENT_VIA_BONUSES = ("bonus-sponsor", "Worker", "upgrade-card", "Partner-Zoo", "appeal", "Fac")
 
 
-def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
+def apply_placement_bonus(state: GameState, seat: int, b: dict, at_once: bool = False) -> None:
     """The effect of one placement bonus that is gained (covered by a building, or chosen with the Archeologist)."""
     _gain(state, seat, money=b["value"] if b["type"] == "money" else 0, x_tokens=b["value"] if b["type"] == "xtoken" else 0,
           reputation=b["value"] if b["type"] == "reputation" else 0)
@@ -703,8 +703,10 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
         bonuses.apply_bonus(state, seat, {"Worker": 1})
     elif b["type"] in PLACEMENT_VIA_BONUSES:                        # the same effects as the conservation / notepad bonuses
         bonuses.apply_bonus(state, seat, {b["type"]: b["value"]})
-    if b["type"] == "Mark" and state.current_action is not None:  # map 13 / T1: the Mark of a placement bonus is an effect of its own, resolved when the player likes (the one log with this bonus, 801014048 turn 54, marks at once: the end of the action was only assumed from the animal ability)
+    if b["type"] == "Mark" and state.current_action is not None and (at_once or state.current_action.get("type") == "break"):      # (a Mark that the Archaeologist picked is marked at once: 801014048 turn 54; in the break there is no end of the action)
         bonuses.defer(state, {"kind": "mark", "source": "map", "optional": False, "player": seat})
+    elif b["type"] == "Mark" and state.current_action is not None:  # map 13 / T1: a Mark (the animal ability), resolved at the end of the action (the logs: dozens of Build turns on maps 13 / T1 / 12)
+        state.current_action.setdefault("after", []).append({"kind": "mark", "source": "map13", "optional": False})
     if b["type"] == "Scavenging":                                   # map T1: Scavenging 3 (the animal ability)
         from ark_nova.engine import animal_abilities
         for eff in animal_abilities.effects_for(state, seat, "map", "Scavenging", b["value"]):

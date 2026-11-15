@@ -556,7 +556,7 @@ def _fits(effect: dict, act) -> bool:
                 or ("cards" in a and k in ("glide", "shark")) or ("trade" in a and k == "trade") or (("building" in a or "building_id" in a) and "x" not in a and k == "cut_down") or ("building" in a and "x" in a and k == "enlarge") or ("apply" in a and a["apply"] == "reef" and k == "reef") or (("send" in a or "scuba" in a or ("keep" in a and (a["keep"] is None or str(a["keep"]).startswith("S")))) and k == "expedition")
                 or ("worker" in a and k == "extra_shift") or ("discard" in a and k == "adapt") or ("animal" in a and k == "symbiosis")
                 or (("give" in a or "pay" in a) and k == "pilfer") or ("apply" in a and (k == "gain" or a["apply"] == k) and k in ("venom", "constrict", "gain"))
-                or ("bonus_type" in a and k == "rep_bonus") or ("activate" in a and k == "ability") or (a.get("apply") == k and k in ("hypnosis", "pay_appeal")) or ("rep_bonus" in a and k == "rep_bonus") or ("move" in a and k == "move_in") or ("store" in a and k == "store") or ("continent" in a and k == "continent") or ("multiplier" in a and k == "multiplier"))
+                or ("activate" in a and k == "ability") or (a.get("apply") == k and k in ("hypnosis", "pay_appeal")) or ("rep_bonus" in a and k == "rep_bonus") or ("move" in a and k == "move_in") or ("store" in a and k == "store") or ("continent" in a and k == "continent") or ("multiplier" in a and k == "multiplier"))
     return False
 
 
@@ -1255,7 +1255,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             gi = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "gain" and e["res"] == "reputation"), None)
                             if gi is None:
                                 pbi = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus" and e["bonus"]["type"] == "reputation"), None)
-                                if pbi is not None:                     # the reputation comes from a placement bonus of the building (881841416 turn 58)
+                                if pbi is not None and any(act.args["bonus_type"] in o_ and (o_[act.args["bonus_type"]] or 0) == (act.args.get("n") or 0) for o_ in state.conservation_options["99"]):          # the reputation comes from a placement bonus of the building and the action is the reward at 16 (881841416 turn 58)
                                     state = ap(state, Action(state.prompt.args["pending"][pbi].get("player", state.prompt.player), "choose_effect", {"index": pbi, "apply": "pbonus", "bonus": "reputation"}))
                                     continue
                                 break                                   # (the point at 15 that BGA lets the player trade for the bonus on 16 is still unpaid)

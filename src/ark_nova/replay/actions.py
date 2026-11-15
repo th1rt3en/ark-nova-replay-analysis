@@ -916,7 +916,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})] + [actions[i] for i in later] + mark_acts,
                         [moves[i] for i in sold] + [move_of[cleanup_order]] + [moves[i] for i in later] + [move_of[e.order] for e in marks], False,
                         orders=[orders[i] for i in sold] + [cleanup_order] + [orders[i] for i in later] + [e.order for e in marks])
-    xlimit = any(e.type == "midmessage" and "cannot have more than" in (e.log or "") and "x-tokens" in (e.log or "") for e in events)      # the X tokens of a notepad bonus that the player could not gain (already at 5)
+    xlimit = any(events[i].type == "slideMeeples" and not events[i].log and events[i + 1].type == "midmessage" and "cannot have more than" in (events[i + 1].log or "") and "x-tokens" in (events[i + 1].log or "")
+                 for i in range(len(events) - 1))      # the X tokens of the notepad bonus that the player could not gain (already at 5): the message comes right after the cube of the support moves
     for sup in assoc.all_supports:                                           # a notepad bonus that leaves no trace: the keyword space (3) of the map (Clever, Pouch, Determination, Marketing ...), which is only
         if sup.args.get("bonus") is None:                                   # visible when it is used
             sup.args["bonus"] = {"type": "xtoken"} if xlimit else {"slot": 3}
