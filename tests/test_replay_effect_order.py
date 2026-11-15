@@ -101,3 +101,23 @@ def test_a_turn_of_notices_only_is_not_reported(table):
     rep = build_replay(parsed, setup, cfg, seed)
     diff = run_differential(parsed, rep, {pid: i for i, pid in enumerate(setup.seats)}, chain=True)
     assert turn not in diff.results, (why, diff.results.get(turn))
+
+# turns the log cuts short or fills with a notice: no problem may be reported for them
+NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the middle of an action: the game ends at once, no cleanup is expected and every logged action was accepted"),
+                 "667852938": (("8a", "8a"), True, 61, "a player conceded in the middle of an action: the game ends at once, no cleanup is expected and every logged action was accepted"),
+                 "649469558": (("5a", "5a"), False, 14, "switchToTurnbased: BGA converted a real-time table to turn-based, no effect on the game"),
+                 "654208935": (("6a", "6a"), True, 69, "switchToTurnbased: BGA converted a real-time table to turn-based, no effect on the game")}
+
+
+@pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")
+@pytest.mark.parametrize("table", sorted(NOT_A_PROBLEM))
+def test_a_turn_that_ends_with_the_game_or_a_notice_is_not_a_problem(table):
+    path = LOGS / f"{table}.json"
+    if not path.exists():
+        pytest.skip("log not available")
+    maps, mw, turn, why = NOT_A_PROBLEM[table]
+    parsed = parse_log(str(path))
+    setup, cfg, seed = game_from_log(parsed, maps=list(maps), marine_worlds=mw)
+    rep = build_replay(parsed, setup, cfg, seed)
+    diff = run_differential(parsed, rep, {pid: i for i, pid in enumerate(setup.seats)}, chain=True)
+    assert turn not in diff.results or diff.results[turn].status == "ok", (why, diff.results[turn].status, diff.results[turn].detail)

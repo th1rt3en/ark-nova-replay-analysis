@@ -1046,7 +1046,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 break
             last = span.get(k, k)
             endsnap = snaps[last + 1] if last + 1 < len(snaps) else replay.states[-1]
-            if not events or all(e.type.startswith("gameStateChange") or e.type in ("playerConcedeGame", "gameResultNeutralized", "fillPool") for e in events):                       # a repeated state-20 marker (BGA re-enters the state without anything happening)
+            if not events or all(e.type.startswith("gameStateChange") or e.type in ("playerConcedeGame", "gameResultNeutralized", "fillPool", "switchToTurnbased") for e in events):                       # a repeated state-20 marker (BGA re-enters the state without anything happening)
                 continue
             if any(e.type == "finalScoring" for e in events) and all(e.type.startswith("gameStateChange") or e.type in ("getBonuses", "finalScoring") for e in events):
                 continue                         # the end of the game: the scoring cards' points and the final score (the engine's end-of-game scoring is checked by the golden tests: 749781422 turn 69)
@@ -1577,8 +1577,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                                         "association_tasks": "finish_association"}[state.prompt.kind], {})
                     if fin not in legal_actions(state):
                         if conceded_next and plan.actions and plan.actions[-1].kind != "skip_action":
-                            rep.skipped["conceded in the middle of the turn"] += 1          # (the action was left unfinished: nothing to compare)
-                            raise _Stop
+                            raise _Stop                          # (a player conceded / quit / was kicked in the middle of the action: the game ends at once, no cleanup follows; every logged action was accepted and nothing is left to compare)
                         rep.illegal.append(f"turn {k}: {fin.kind} not legal")
                         raise _Stop
                     state = ap(state, fin)
