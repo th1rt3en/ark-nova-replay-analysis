@@ -38,10 +38,10 @@ def played_map_id(map_id: str, table_id: int) -> str:
 
 def hypnosis_runs_variant(table_id: int, card_type: str = "", variant: int = 0) -> bool:
     """Whether a hypnotised card of the opponent runs its variant effect in table `table_id`. Older tables left it out (Money Sponsors bonus, Mark, the
-    extra kiosk ...), but the Discount Animals (3) payment, the Association variants and the Digging Cards (2) dig already ran in the oldest sample tables (665718619, 668553028; 714263104 turn 49) and the +1 Build of Build variant 3 (752201952 turn 52: a level II card, strength 3, built a size-2, a pavilion and a kiosk)."""
+    extra kiosk ...), but the Mark of a hypnotised Animals 4 card (the logs of 677396972, 677682492, 783118944 and 805393631 show it), the Discount Animals (3) payment, the Association variants and the Digging Cards (2) dig already ran in the oldest sample tables (665718619, 668553028; 714263104 turn 49) and the +1 Build of Build variant 3 (752201952 turn 52: a level II card, strength 3, built a size-2, a pavilion and a kiosk)."""
     if table_id <= 0 or table_id >= HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID:
         return True
-    return (card_type == "animals" and variant == 3) or (card_type == "cards" and variant == 2) or (card_type == "build" and variant == 3) or card_type == "association"
+    return (card_type == "animals" and variant in (3, 4)) or (card_type == "cards" and variant == 2) or (card_type == "build" and variant == 3) or card_type == "association"
 
 
 def project_for_table(card: dict, table_id: int) -> dict:

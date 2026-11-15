@@ -122,7 +122,16 @@ NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the
                  "827940536": (("T1", "T1"), True, 79, "map T1: a discard for +1 strength and an Extra Shift of the same player, logged before the card is chosen"),
                  "669605987": (("7a", "7a"), True, 59, "Publications played through a Marketing in a Build action: its donation"),
                  "859308287": (("7a", "7a"), True, 45, "a sponsor played with a token whose effects include an upgrade and the other player's mark gain"),
-                 "840558355": (("5a", "5a"), True, 74, "the log ends in the middle of the last turn: no cleanup follows")}
+                 "840558355": (("5a", "5a"), True, 74, "the log ends in the middle of the last turn: no cleanup follows"),
+                 "642463938": (("10", "10"), True, 44, "Waza Small Animal Program: 2 money per small animal, the small animals of the Rescue Station included"),
+                 "837448258": (("10", "10"), True, 49, "Waza Small Animal Program: a small animal in the Rescue Station counts"),
+                 "845259923": (("10", "10"), True, 73, "Waza Small Animal Program: a small animal in the Rescue Station counts"),
+                 "862761275": (("10", "10"), True, 75, "Waza Small Animal Program: a small animal in the Rescue Station counts"),
+                 "673161628": (("5a", "5a"), True, 60, "Hypnosis put back for an X token on a Mark Animals card: the mark is the hypnotiser's and is logged right after the cleanup"),
+                 "801059195": (("11", "11"), True, 41, "Hypnosis put back for an X token on a Mark Animals card: the mark is the hypnotiser's and is logged right after the cleanup"),
+                 "677396972": (("6a", "6a"), True, 63, "a hypnotised Mark Animals card on an older table: its mark happens"),
+                 "677682492": (("7a", "7a"), True, 37, "a hypnotised Mark Animals card on an older table: its mark happens"),
+                 "667768996": (("3a", "3a"), True, 61, "the game ends by a concession with the Mark Animals mark still pending: it is never reached")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")

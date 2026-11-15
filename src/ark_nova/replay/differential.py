@@ -1593,10 +1593,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if mark_skip is not None:            # a Mark with no animal left in the display to mark, an Activate Reef without a reef dweller: nothing to do, BGA logs nothing
                             state = ap(state, mark_skip)
                             continue
+                        if conceded_next or any(e_.type in _ends for e_ in events):
+                            raise _Stop                           # (the game ended: the pending mark is never reached)
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
-                            raise _Stop
-                        if conceded_next or any(e_.type in _ends for e_ in events):
                             raise _Stop
                         rep.illegal.append(f"turn {k}: a mandatory effect is still pending: {state.prompt.args['pending']}")
                         raise _Stop
@@ -1627,10 +1627,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if mark_skip is not None:            # a Mark with no animal left in the display to mark, an Activate Reef without a reef dweller: nothing to do, BGA logs nothing
                             state = ap(state, mark_skip)
                             continue
+                        if conceded_next or any(e_.type in _ends for e_ in events):
+                            raise _Stop                           # (the game ended: the pending mark is never reached)
                         if all(e["kind"] == "mark" for e in state.prompt.args["pending"]):
                             rep.skipped["mark logged in a later turn (Animals4)"] += 1      # BGA logs it after the next action of the player
-                            raise _Stop
-                        if conceded_next or any(e_.type in _ends for e_ in events):
                             raise _Stop
                         rep.illegal.append(f"turn {k}: a mandatory effect is still pending: {state.prompt.args['pending']}")
                         raise _Stop

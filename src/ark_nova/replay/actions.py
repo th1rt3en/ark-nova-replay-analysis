@@ -910,9 +910,11 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         extra = {"hypnosis": True} if hypnosis else ({"repeat": again_} if again_ else {})
         sold = [i for i, x in enumerate(actions) if x.kind == "harbor_sell"]          # (map 4: a card sold before the skipped action card is still sold, 688371482 turn 51)
         later = [i for i, x in enumerate(actions) if hypnosis and x.kind == "choose_effect" and set(x.args) == {"type"} and orders[i] > cleanup_order]       # (the Clever / Boost of the first action, logged after the hypnosis that was put back: 717818868 turn 65)
-        return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})] + [actions[i] for i in later],
-                        [moves[i] for i in sold] + [move_of[cleanup_order]] + [moves[i] for i in later], False,
-                        orders=[orders[i] for i in sold] + [cleanup_order] + [orders[i] for i in later])
+        marks = [e for e in events if hypnosis and e.type == "markCard" and e.order > cleanup_order and e.order not in CONSUMED_MARKS and isinstance(e.args.get("cards"), dict) and str(e.args.get("player_id")) in seat_of]
+        mark_acts = [Action(seat_of[str(e.args["player_id"])], "choose_effect", {"card": next(iter(e.args["cards"]))[:4], "mark": True}) for e in marks]      # (the hypnotised Mark Animals card that was put back: its mark is the hypnotiser's, logged right after, 673161628 turn 60)
+        return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})] + [actions[i] for i in later] + mark_acts,
+                        [moves[i] for i in sold] + [move_of[cleanup_order]] + [moves[i] for i in later] + [move_of[e.order] for e in marks], False,
+                        orders=[orders[i] for i in sold] + [cleanup_order] + [orders[i] for i in later] + [e.order for e in marks])
     for sup in assoc.all_supports:                                           # a notepad bonus that leaves no trace: the keyword space (3) of the map (Clever, Pouch, Determination, Marketing ...), which is only
         if sup.args.get("bonus") is None:                                   # visible when it is used
             sup.args["bonus"] = {"slot": 3}

@@ -100,8 +100,8 @@ def special_on_play(state, seat: int, key: str, total: Counter) -> list:
     elif key == "S268":                          # Conference on Europe: 2 / 5 / 10 money for 1 / 3 / 5 Europe icons
         n = total["Europe"]
         g._gain(state, seat, money=10 if n >= 5 else 5 if n >= 3 else 2 if n >= 1 else 0)
-    elif key == "S228":                          # Waza Small Animal Program: 2 money per small animal in the zoo (checked on the 7 plays in the logs)
-        g._gain(state, seat, money=2 * sum(size_class(data.cards_by_key()[a]) == "small" for a in state.players[seat].animals))
+    elif key == "S228":                          # Waza Small Animal Program: 2 money per small animal in the zoo, the small animals of the Rescue Station (map 10) included (the 129 plays in the logs, 4 of them with a small rescued animal)
+        g._gain(state, seat, money=2 * sum(size_class(data.cards_by_key()[a]) == "small" for a in list(state.players[seat].animals) + list(state.players[seat].rescued)))
     elif key == "S227":
         pending.append({"kind": "waza", "source": key, "optional": False})
     elif key == "S280":
