@@ -932,7 +932,7 @@ def _engine_project_options(state: GameState, seat: int) -> dict:
         sources_ = association.extra_icon_sources(state, p, card)
         # BGA's list counts one more icon for the bonus-icon token of the notepad and one more for the tokens of Breeding Cooperation / Program (not one per token): 21 of 26 turns checked
         # (730487362 turn 74, 731645030 turn 65, 741766649 turn 84); open: 647029282 turn 49, 705314593 turns 55 / 67, 726679863 turn 71, 742563981 turn 76 count two tokens
-        n_tok = ("icon" in sources_) + any(k_ in sources_ for k_ in association.SPONSOR_TOKENS)
+        n_tok = ("icon" in sources_) + sum(1 for k_ in association.SPONSOR_TOKENS if k_ in sources_)          # one icon for the bonus-icon token and one for each of the two sponsors that still has a token (not one per token): 9 of 9 turns checked
         for n_ in range(1, n_tok + 1):
             slots |= {i for i, _, _ in association.slot_options(state, seat, key, extra=n_)}
         slots = sorted(slots)
@@ -1495,7 +1495,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         act = _normalise(state, act, endsnap)
                     while state.prompt is not None and state.prompt.kind == "effects" and (state.current_action or {}).get("type") == "break" and act.kind in ("choose_effect", "take_cards", "skip_effect"):
                         cap_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and e_["res"] == "reputation" and e_.get("player", act.player) != act.player
-                                     and str(e_.get("source", "")) == "map13" and not _below_cap(state, e_)), None)
+                                     and (not _below_cap(state, e_) or not any(x_.player == e_["player"] for x_ in acts[ai + 1:]))), None)          # (at the cap, or a gain that the log has already shown: nothing of that player follows in the plan)
                         if cap_ is None:
                             break
                         e_ = state.prompt.args["pending"][cap_]          # the other player's reputation that is already at the cap logs nothing: it is done before this player's income, and the display is refilled (887318108 turn 76)
@@ -1900,7 +1900,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 nxt = next((turns[j] for j in range(last + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[j])), [])
                 prev = next((turns[j] for j in range(last - 1, -1, -1) if any(e.type == "chooseActionCard" for e in turns[j])), [])
                 prev_actor = next((str(e.args["player_id"]) for e in prev if e.type == "chooseActionCard"), None)
-                if any(e.type == "chooseActionCard" and str(e.args["player_id"]) == actor for e in nxt[:6]) or prev_actor == actor:
+                if any(e.type == "chooseActionCard" and str(e.args["player_id"]) == actor for e in nxt[:6]) or prev_actor == actor or again or (not any(e.type == "chooseActionCard" for e in nxt) and any(e.type == "actionCardCleanup" for e in nxt)):          # (the hypnotised card that the player puts back, or a Clever, is the next "turn" of the same player: 672123762 turn 63)
                     for d in (mine, theirs):              # the same player acts again (an extra action of an animal, Hypnosis ...): the engine's turn ended, the log's goes on
                         d.pop("active_player"), d.pop("turn")
                         for f in ("display", "main_deck", "main_discard"):          # (BGA refills the display, with its Wave cards, only when the whole turn is over)
@@ -1937,6 +1937,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             pl_.pop("action_cards", None)
                 if any(e.type == "skipTurnOfPlayer" for t_ in turns for e in t_):          # a player ran out of time: BGA counts the skipped turn, the engine does not (603637393)
                     for d in (mine, theirs):
+                        d.pop("turn", None)
+                if "turn" in mine and "turn" in theirs and abs(mine["turn"] - theirs["turn"]) == 1 and mine.get("active_player") == theirs.get("active_player"):
+                    for d in (mine, theirs):                    # an extra action (Hypnosis, Determination ...) earlier in the game: the two counts differ by one for the rest of it, the numbering is no rule (688573593 turn 43)
                         d.pop("turn", None)
                 diffs = _diff(mine, theirs) + oracle_notes
                 rep.checked += 1

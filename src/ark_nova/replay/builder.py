@@ -349,6 +349,9 @@ def h_get_bonuses(ctx: _Ctx, e: Event) -> None:
         return
     old_rep = p.reputation
     _apply_bonuses(p, e.args.get("bonuses"))
+    if "Trade effect" in (e.log or "") and (e.args.get("bonuses") or {}).get("reputation"):
+        from ark_nova.engine import bonuses as _bon
+        p.reputation = min(p.reputation, _bon.reputation_cap(p))          # BGA logs the Trade for reputation at 9 with the Cards action not upgraded, but the marker stays (666650119 turn 63)
     if old_rep < 8 <= p.reputation:
         ctx.rep8 = str(e.args["player_id"])                  # (the 8 reputation bonus, a worker, follows: it is no project reward)
     if e.args.get("source") == "map bonus space":
