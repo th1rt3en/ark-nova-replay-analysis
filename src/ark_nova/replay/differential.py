@@ -560,6 +560,8 @@ def _fits(effect: dict, act) -> bool:
     k = effect["kind"]
     if act.kind == "magnet_note":
         return k == "magnet" and effect.get("name") == act.args.get("ability")
+    if act.kind == "play_sponsor":
+        return k == "marketing"                                  # (a sponsor played with a Marketing effect is logged like a played sponsor: 666779558 turn 22)
     if act.kind == "place_building":
         return k == "build" and act.args["type"] in effect.get("types", [effect["type"]])
     if act.kind == "take_cards":
@@ -682,7 +684,7 @@ def _skip_unneeded(state: GameState, act):
             continue                                          # the log pouches under this card later in the turn (after other effects the player chose first: 646886236 turn 58)
         if e.get("optional") and not _fits(e, act) and not (not (act is not None and act.kind == "play_animal") and (e["kind"] in ("build", "digging", "sell", "ability", "marketing", "pay_appeal", "take", "cut_down", "donation", "expedition", "venom", "constrict", "move_in") or (e["kind"] == "pouch" and (e.get("source") == "map" or (act is not None and act.kind == "take_cards" and act.args.get("mode") == "snap")))
                                                               or (e["kind"] == "slot1" and act is not None and act.kind == "use_token")
-                                                              or (e["kind"] == "extra_shift" and act is not None and act.kind in ("choose_effect", "take_cards", "place_building") and "worker" not in act.args)) and any(_fits(e, x) and x.player == e.get("player", x.player) for x in (rest if e["kind"] != "marketing" else [y for y in rest if y.kind == "choose_effect" and str(y.args.get("card", "")).startswith("S")]))):      # (a later action of the turn may still use it; Marketing: only the choice of a sponsor card)
+                                                              or (e["kind"] == "extra_shift" and act is not None and act.kind in ("choose_effect", "take_cards", "place_building") and "worker" not in act.args)) and any(_fits(e, x) and x.player == e.get("player", x.player) for x in (rest if e["kind"] != "marketing" else [y for y in rest if (y.kind == "choose_effect" and str(y.args.get("card", "")).startswith("S")) or y.kind == "play_sponsor"]))):      # (a later action of the turn may still use it; Marketing: only the choice of a sponsor card)
             return Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
     for i, e in enumerate(state.prompt.args["pending"]):
         if e["kind"] == "build" and e.get("source") == "bonus" and not _fits(e, act) and not any(_fits(e, x) and x.player == e.get("player", x.player) for x in rest):

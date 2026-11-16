@@ -185,7 +185,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         return [{"kind": "adapt", "source": key, "player": seat, "optional": False, "draw": int(value), "n": int(value)}]
     elif name == "Scuba Dive X":
         x = icons["SeaAnimal"] + icons["Reptile"]
-        return [{"kind": "reveal", "source": key, "x": x, "filter": "sponsor", "optional": False}] if x else []
+        return [{"kind": "reveal", "source": key, "x": x, "filter": "sponsor", "optional": False, "icons": ["SeaAnimal", "Reptile"]}] if x else []          # (counted when the cards are revealed: a sponsor played with Marketing first adds its icons, 661026172 turn 45)
     elif name == "Monkey Gang":
         _monkey_gang(state, seat)
     elif name in ("Sea Animal Magnet", "Sponsor Magnet") and state.config.confirm_turns:          # live play and the sandbox: a button of its own, the player takes the cards when they like

@@ -275,6 +275,7 @@ def legal(state, p0) -> list:
                 out.append(Action(p.seat, "skip_effect", {"index": i}))
             continue
         elif k == "reveal":
+            _refresh_reveal(state, p.seat, e)
             if not e.get("revealed") and animal_abilities.reveal_helps_marketing(state, p.seat, e):
                 out.append(Action(p.seat, "choose_effect", {"index": i, "reveal": True}))       # (a Marketing may play one of the revealed sponsors first)
             top = peek_main_deck(state, e["x"])                     # (the draw pile is reshuffled from the discard pile when the cards are revealed: the options are those of the cards that will be on top)
@@ -313,6 +314,14 @@ def legal(state, p0) -> list:
 
 def _small_animal(key: str) -> bool:
     return key.startswith("A") and sponsor_extras.size_class(data.cards_by_key()[key]) == "small"
+
+
+def _refresh_reveal(state, seat: int, e: dict) -> None:
+    """A reveal whose number counts icons (Scuba Dive X) is counted when its cards are revealed, not when the animal is played."""
+    if e.get("icons") and not e.get("revealed"):
+        from ark_nova.engine.icons import icon_counts
+        counts = icon_counts(state, e.get("player", seat))
+        e["x"] = sum(counts[n] for n in e["icons"])
 
 
 def _reveal_ok(e, card: str) -> bool:
@@ -446,6 +455,7 @@ def resolve_choice(state, action: Action) -> None:
         animal_abilities.resolve(state, action, e, i)
         return
     if k == "reveal":
+        _refresh_reveal(state, action.player, e)
         ensure_main_deck(state, e["x"])
         if action.args.get("reveal"):
             e["revealed"] = True
