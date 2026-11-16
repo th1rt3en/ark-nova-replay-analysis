@@ -120,7 +120,7 @@ REPLAYED = {
     "688573593": [43],                      # the turn numbers differ by one after an extra action: not a rule
     "856281778": [51],                      # a Shark Attack that hits a marked card in the break: the card goes to the player who marked it
     "869352683": [69],                      # map 10: the draw before a rescue from the display is the placement bonus's, not the rescue's
-    "847820417": [68],                      # the other player's declined optional effect: their income is done, the display is refilled
+    "847820417": [64, 68],                  # turn 64: the last kiosk used the last strength (BGA lists nothing afterwards); turn 68: the other player's declined optional effect, their income is done, the display is refilled
     "795707447": [32],                      # (same as 869352683)
     "789679971": [26],                      # the Sea Turtle Tank pays the Explorer for one new icon
     "656606572": [27],                      # (same)

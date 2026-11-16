@@ -471,7 +471,7 @@ def do_task(state, action: Action) -> None:
         gamestats.count(state, p.seat, "assoc", sub=task)
     kind = "conservation" if task == "hire" else task
     extra = int(args.get("extra", 0))
-    need = workers_needed(p, kind)
+    need = 1 if task == "hire" else workers_needed(p, kind)           # (the Hire ability puts the worker that uses it and the new one on the space: 708541127 turn 50)
     for w in bonuses.worker_tokens(p, "reserve")[:need + extra]:
         w.location = f"association_{TASK_VALUE[kind]}"
     paid = max(0, strength_needed(p, kind) - EXTRA_WORKER_STRENGTH * extra)

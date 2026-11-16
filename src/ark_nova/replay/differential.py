@@ -487,7 +487,8 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
             if len(left) == 1:                              # one bonus is left on the notepad and a support must take one: it is the bonus that left no trace (a Worker at the most workers, 622711105 turn 70)
                 return Action(act.player, act.kind, {**act.args, "bonus": left[0][0]})
             return act
-        if want.get("type") == "Worker" and any(x.kind == "choose_effect" and set(x.args) == {"type"} for x in _UPCOMING[0]):
+        other_worker = 6 <= p.reputation < 8 or (state.prompt is not None and state.prompt.kind == "effects" and any(e_["kind"] == "gain_worker" for e_ in state.prompt.args["pending"]))          # (the project's reputation may take the marker to 8: a worker)
+        if want.get("type") == "Worker" and other_worker and any(x.kind == "choose_effect" and set(x.args) == {"type"} for x in _UPCOMING[0]):          # (the worker may come from the reputation track: with no other source the notepad's Worker is the worker of the log, 763555835 turn 40)
             for j, b in notepad_bonuses(state, p):          # a Clever of the end of the action and no other source of one: the notepad's keyword space (the worker of the log is another one's)
                 if b["type"] == "Clever":
                     return Action(act.player, act.kind, {**act.args, "bonus": j})
@@ -670,6 +671,11 @@ def _search_found_nothing(state: GameState, category: str) -> None:
 
 def _skip_unneeded(state: GameState, act):
     """`skip_effect` for the first optional pending effect that the next logged action does not use."""
+    if (act is not None and act.kind == "choose_effect" and "bonus_type" in act.args and state.conservation_options.get("99") and not any(e["kind"] in ("rep_bonus", "threshold_bonus") for e in state.prompt.args["pending"])
+            and any(act.args["bonus_type"] in o for o in state.conservation_options["99"])):
+        for i, e in enumerate(state.prompt.args["pending"]):          # the bonus of the 16 reputation space comes from the reputation that overflows: that reputation is gained first (805041041 turn 52: the project's reputation before its Worker)
+            if e["kind"] == "gain" and e["res"] == "reputation" and e.get("player", act.player) == act.player and state.players[e.get("player", act.player)].reputation >= 15:
+                return Action(e.get("player", act.player), "choose_effect", {"index": i, "apply": "gain", "res": "reputation"})
     pb = [i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus"]
     if pb:                                                    # several placement bonuses of one building: the log shows them in the order the player chose (the one after which the logged action is legal)
         def resolve(i_):
@@ -814,19 +820,29 @@ def _adds_icons(act) -> bool:
     if getattr(_skip_unneeded, "rep_first", False):
         return False
     def one(a) -> bool:
-        return a.kind in ("use_token", "play_sponsor") or (a.kind == "choose_effect" and "card" in a.args and not str(a.args["card"]).startswith("F"))      # (an endgame card discarded at 10 conservation adds no icons)
+        return a.kind in ("use_token", "play_sponsor") or (a.kind == "choose_effect" and "card" in a.args and "mark" not in a.args and not str(a.args["card"]).startswith("F"))    # (an endgame card discarded at 10 conservation adds no icons)
     if act is None:                                  # (the effects right after the choice of a project: look at what the turn still does)
         return any(one(x) for x in getattr(_skip_unneeded, "rest", []))
     return one(act)
 
 
+def _tile_bonus_ahead(state: GameState, act=None) -> bool:
+    """The log's next actions take the bonus of the 16 reputation space (a "gets <bonus>" of "maxing out reputation"): the player resolved the reputation that overflows first."""
+    if not state.conservation_options.get("99"):
+        return False
+    return any(x.kind == "choose_effect" and "bonus_type" in x.args and "continent" not in x.args and any(x.args["bonus_type"] in o for o in state.conservation_options["99"])
+               for x in ([act] if act is not None else []) + list(getattr(_skip_unneeded, "rest", [])))
+
+
 def _project_effect(state: GameState, act=None):
     """The next effect of a supported project that the log only shows through its results (gains, the notepad bonus, a tutor search)."""
     for i, e in enumerate(state.prompt.args["pending"]):
-        if e["kind"] == "gain" and e["res"] == "reputation" and not (e.get("per") and _adds_icons(act)) and any(o["kind"] in ("project_bonus", "upgrade", "take_tile", "threshold2", "threshold_bonus") for o in state.prompt.args["pending"])                 and not (act is not None and act.kind == "take_cards"):
+        if e["kind"] == "gain" and e["res"] == "reputation" and not (e.get("per") and _adds_icons(act)) and any(o["kind"] in ("project_bonus", "upgrade", "take_tile", "threshold2", "threshold_bonus") for o in state.prompt.args["pending"])                 and not (act is not None and act.kind == "take_cards") \
+                and not (state.players[e.get("player", state.prompt.player)].reputation >= 15 and _tile_bonus_ahead(state, act)):          # (the player chose to take the reputation first: the log then shows the bonus of the 16 space, which only that reputation's overflow can bring, before anything else of the project, 805041041 turn 52)
             continue                                       # (BGA pays the reputation of a new project last, after the upgrades the project's bonus brings)
-        if e["kind"] == "gain" and e.get("per") and _adds_icons(act):
-            continue                                       # (counted when resolved: a sponsor that the log plays first counts)
+        if e["kind"] == "gain" and e.get("per") and _adds_icons(act) and not (act is not None and act.kind == "choose_effect" and "bonus_type" in act.args and state.conservation_options.get("99")
+                                                                               and state.players[e.get("player", state.prompt.player)].reputation >= 15):
+            continue                                       # (counted when resolved: a sponsor that the log plays first counts; not the university of the 16 reputation space, which this reputation itself brings: 805041041 turn 52)
         if e["kind"] == "gain" and (e["source"][:1] == "P" or e["source"] == "S224"):
             return Action(state.prompt.player, "choose_effect", {"index": i, "apply": "gain", "res": e["res"]})
         if e["kind"] == "jumping":                                          # the log shows its results (the break token, the money) as lines of their own
@@ -1624,7 +1640,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
 
                         def after_full(a_):
                             s2 = apply(state, a_)
-                            return engine_placements(s2) if s2.prompt is not None and s2.prompt.kind == "build_place" else None
+                            return engine_placements(s2) if s2.prompt is not None and s2.prompt.kind == "build_place" else {}          # (the action is over: BGA lists nothing, 847820417 turn 64)
                         full_extra, full_plain = after_full(act), after_full(plain)
                         if full_plain == theirs_full and full_extra != theirs_full:          # the positions BGA lists afterwards say which one it was: an ordinary kiosk / pavilion uses strength, the additional one does not (823017370 turn 40)
                             got_plain, got_extra = want, None
@@ -1737,6 +1753,14 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         act = _normalise(state, act, endsnap)
                     if act.kind == "pay_venom" and act not in legal_actions(state):
                         state.players[act.player].flags.pop("venom_early", None)          # (paid by the engine while the effects before it were settled)
+                        continue
+                    if act.kind == "choose_effect" and set(act.args) == {"type"} and _plain(act) not in legal_actions(state) and state.prompt is not None and state.prompt.kind in ("effects", "choose_action_card"):
+                        state = copy.deepcopy(state)                       # a Clever whose source the engine does not know (the log gives the effect, not the space): the card goes to slot 1 (763555835 turn 40)
+                        pl_ = state.players[act.player]
+                        idx_ = next((i_ for i_, c_ in enumerate(pl_.action_cards) if c_.type == act.args["type"]), None)
+                        if idx_ is not None:
+                            pl_.action_cards.insert(0, pl_.action_cards.pop(idx_))
+                        rep.notes.append(f"turn {k}: a Clever with no known source ({act.args['type']})") if hasattr(rep, "notes") else None
                         continue
                     if _plain(act) not in legal_actions(state) and act.kind != "skip_turn":          # (a kicked player's turn passes: the engine takes it, but it is not among the legal moves)
                         rep.illegal.append(f"turn {k}: {act.kind} {act.args} not in legal_actions")
