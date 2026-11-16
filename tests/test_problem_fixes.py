@@ -108,7 +108,6 @@ REPLAYED = {
     "855359344": [55],                      # the Adapt comes before the discard at 10 conservation
     "862612675": [40],                      # Waza: the snap of a card that the Digging then digs from the hand stays in front of it
     "887318108": [76],                      # map 13: the capped reputation of the other player is done before this player's income (the display is refilled)
-    "726679863": [71],                      # (same)
     "889879141": [58],                      # the Side Entrance played in the break pays its income before the entrance is built
     "771466733": [56],                      # a second Venom of a turn goes on the next card, not on the same one
     "772160454": [21],                      # a player who quits in the middle of a turn

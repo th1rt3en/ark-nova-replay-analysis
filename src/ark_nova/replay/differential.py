@@ -921,8 +921,9 @@ def _engine_project_options(state: GameState, seat: int) -> dict:
         card = association.project(key, state.config.marine_worlds)
         slots = {i for i, _, _ in association.slot_options(state, seat, key)}
         sources_ = association.extra_icon_sources(state, p, card)
-        n_tok = ("icon" in sources_) + sum(1 for k_ in association.SPONSOR_TOKENS if k_ in sources_ for t_ in p.tokens if t_.location == association.token_location(k_))
-        n_tok = min(2, n_tok)                                        # BGA's list counts every extra icon token (the bonus-icon token of the notepad, each token of Breeding Cooperation / Program), at most two (730487362 turn 74, 731645030 turn 65, 741766649 turn 84; open: 705314593 turn 32, 736722003 turn 49, where BGA counts fewer Europe / Americas icons than the engine)
+        # BGA's list counts one more icon for the bonus-icon token of the notepad and one more for the tokens of Breeding Cooperation / Program (not one per token): 21 of 26 turns checked
+        # (730487362 turn 74, 731645030 turn 65, 741766649 turn 84); open: 647029282 turn 49, 705314593 turns 55 / 67, 726679863 turn 71, 742563981 turn 76 count two tokens
+        n_tok = ("icon" in sources_) + any(k_ in sources_ for k_ in association.SPONSOR_TOKENS)
         for n_ in range(1, n_tok + 1):
             slots |= {i for i, _, _ in association.slot_options(state, seat, key, extra=n_)}
         slots = sorted(slots)
