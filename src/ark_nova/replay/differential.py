@@ -1147,7 +1147,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 continue
             seat = seat_of[actor]
             nxt_events = next((turns[j] for j in range(last + 1, len(turns)) if any(not e.type.startswith("gameStateChange") for e in turns[j])), [])      # (the next turn with events: BGA leaves empty markers between)
-            again = any(e.type == "chooseActionCard" and str(e.args["player_id"]) == actor for e in nxt_events[:6])       # the same player acts again right away
+            first_choice_ = next((e for e in nxt_events if e.type == "chooseActionCard"), None)
+            again = any(e.type == "chooseActionCard" and str(e.args["player_id"]) == actor for e in nxt_events[:6]) or (
+                first_choice_ is not None and str(first_choice_.args["player_id"]) == actor and all(str(e.args.get("player_id")) in ("None", actor) for e in nxt_events[:nxt_events.index(first_choice_)] if isinstance(e.args, dict)))       # the same player acts again right away (a token or a sale may come first: 816239058 turn 75)
             _nx_real = [e for e in nxt_events if not e.type.startswith("gameStateChange")]
             if not again and _nx_real and not any(e.type == "chooseActionCard" for e in _nx_real) and _nx_real[0].type == "getBonuses" and (_nx_real[0].args.get("bonuses") or {}) == {"xtoken": 1}                     and str(_nx_real[0].args.get("player_id")) == actor and any(e.type == "actionCardCleanup" for e in _nx_real[1:3]) and any(e.type == "hypnosis" for t_ in turns[max(0, k - 1):last + 1] for e in t_):
                 again = True                                                          # the hypnosis that the player puts back for an X token is the next "turn": its Clever / Boost come after it (717818868 turn 65)
@@ -1311,6 +1313,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             e["kind"] == "digging" and e.get("rescue") for e in state.prompt.args["pending"])                             and 1 + sum(1 for x in acts[ai + 1:] if x.kind == "take_cards" and x.args.get("mode") == "deck") > sum(
                                 1 for e in state.prompt.args["pending"] if e["kind"] == "take" and not e.get("snap")):
                         continue                                 # map 10: the draw of the Digging is logged before the discard, the engine draws when the card is discarded
+                    if act.kind == "take_cards" and act.args.get("mode") == "deck" and act.args.get("count") == 1 and getattr(_normalise, "hand_rescue", False) and not (state.prompt is not None and state.prompt.kind == "cards_take") and not (
+                            state.prompt is not None and state.prompt.kind == "effects" and any(e["kind"] == "take" and not e.get("snap") for e in state.prompt.args["pending"])):
+                        _normalise.hand_rescue = False
+                        continue                                 # the card drawn for an animal rescued from the hand was drawn by the engine with the rescue (840980354 turn 53)
                     if (act.kind == "play_sponsor" or (act.kind == "choose_effect" and str(act.args.get("card", "")).startswith("S") and "mark" not in act.args)) and state.prompt is not None and state.prompt.kind == "effects"                             and not any(e["kind"] == "marketing" and not e.get("cube") for e in state.prompt.args["pending"]):
                         pbs = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus" and e["bonus"]["type"] == "bonus-sponsor"), None)
                         if pbs is not None:                              # the Marketing of one of several placement bonuses of a building (not the Okapi Stable's cube): resolve that bonus first
@@ -1687,6 +1693,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     inserted[0] = False
                     state = ap(state, act)
                     inserted[0] = True
+                    _normalise.hand_rescue = act.kind == "choose_effect" and "hand" in act.args and "index" in act.args and not act.args.get("mark")
                     if act.kind == "choose_effect" and "option" in act.args and state.prompt is not None and state.prompt.kind == "effects" and (state.current_action or {}).get("type") == "break":
                         # the bonus of a conservation space (e.g. 2 reputation) is paid when it is chosen, before the effects around it (906045803 turn 57: the display is refilled when the player's effects are done)
                         gi = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "gain" and e.get("source") == "bonus" and e.get("player", act.player) == act.player), None)

@@ -584,6 +584,9 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             if t == "discardCardsOnDisplay" and "Wave bonus placement" in e.log:
                 add(Action(seat_of[str(a.get("player_id") or e.player)], "choose_effect", {"apply": "wave"}), e)
                 continue
+            if t == "discardCardsOnDisplay" and " digs " in e.log and a.get("cards"):          # a Digging in the break (the Rescue Station's special digging, a placement bonus of the free enclosure): a card of the display
+                add(Action(seat_of[str(a.get("player_id") or e.player)], "choose_effect", {"display": _key(a["cards"][0]["id"])}), e)
+                continue
             if t == "addMeeples" and any(m.get("type") == "Multiplier" for m in a.get("meeples") or []) and a.get("actionCard"):
                 add(Action(seat_of[str(a.get("player_id"))], "choose_effect", {"multiplier": parse_action_type(a["actionCard"]["type"])[0]}), e)      # map 4: the Multiplier of the free enclosure's hex
                 continue
@@ -921,11 +924,15 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})] + [actions[i] for i in later] + mark_acts,
                         [moves[i] for i in sold] + [move_of[cleanup_order]] + [moves[i] for i in later] + [move_of[e.order] for e in marks], False,
                         orders=[orders[i] for i in sold] + [cleanup_order] + [orders[i] for i in later] + [e.order for e in marks])
-    xlimit = any(events[i].type == "slideMeeples" and not events[i].log and events[i + 1].type == "midmessage" and "cannot have more than" in (events[i + 1].log or "") and "x-tokens" in (events[i + 1].log or "")
-                 for i in range(len(events) - 1))      # the X tokens of the notepad bonus that the player could not gain (already at 5): the message comes right after the cube of the support moves
+    xlimits = sum(1 for i in range(len(events) - 1) if events[i].type == "slideMeeples" and not events[i].log and events[i + 1].type == "midmessage" and "cannot have more than" in (events[i + 1].log or "") and "x-tokens" in (events[i + 1].log or ""))      # the X tokens of the notepad bonus that the player could not gain (already at 5): the message comes right after the cube of the support moves
+    xlimits -= sum(1 for sup in assoc.all_supports if isinstance(sup.args.get("bonus"), dict) and sup.args["bonus"].get("type") == "xtoken")          # (a support that shows its X tokens, capped, explains its message: 853928382 turn 81)
     for sup in assoc.all_supports:                                           # a notepad bonus that leaves no trace: the keyword space (3) of the map (Clever, Pouch, Determination, Marketing ...), which is only
         if sup.args.get("bonus") is None:                                   # visible when it is used
-            sup.args["bonus"] = {"type": "xtoken"} if xlimit else {"slot": 3}
+            if xlimits > 0:
+                sup.args["bonus"] = {"type": "xtoken"}
+                xlimits -= 1
+            else:
+                sup.args["bonus"] = {"slot": 3}
     cleanup_event = next(e for e in events if e.type == "actionCardCleanup")
     if flags.get("s4"):                                    # Snap Sponsors (4), level II: the card was discarded but no sponsor was played for it
         i = sum(1 for o in orders if o <= flags["s4_order"])
