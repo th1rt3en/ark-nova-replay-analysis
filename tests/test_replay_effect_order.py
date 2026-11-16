@@ -176,7 +176,12 @@ NOT_A_PROBLEM = {"665785121": (("10", "10"), True, 65, "a player conceded in the
                  "832356100": (("6a", "6a"), True, 32, "a declined pouch of the first animal: the pouch of the log belongs to the second animal"),
                  "833118571": (("5a", "5a"), True, 75, "a notepad special enclosure bonus with nothing to build is skipped"),
                  "877253786": (("T1", "T1"), True, 53, "map T1: the discard for +1 strength on a hypnotised action card"),
-                 "890633580": (("T1", "T1"), True, 32, "map T1: the discard for +1 strength on a hypnotised action card")}
+                 "890633580": (("T1", "T1"), True, 32, "map T1: the discard for +1 strength on a hypnotised action card"),
+                 "768475372": (("3a", "3a"), True, 61, "peaceful game: the Indian Rock Python gives a Clever effect instead of the Constriction (a Constriction animal followed by a Clever effect with no Clever animal in the zoo; confirmed by the user)"),
+                 "808330821": (("2a", "2a"), True, 59, "paying for Venom is a free action of the player's own turn: a payment the log shows is final, a token removed later by the second action takes nothing back"),
+                 "837366183": (("A", "A"), True, 47, "peaceful game: a Constriction animal followed by a Clever effect"),
+                 "840068875": (("T1", "T1"), True, 69, "a Marketing token used while the Boost and the Clever of the action are open joins them: they resolve in any order"),
+                 "849884135": (("4a", "7a"), True, 45, "peaceful Hypnosis is Determination: the second action of the player's own card right after a Hypnosis animal")}
 
 
 @pytest.mark.skipif(not LOGS.exists(), reason="log_examples not available")

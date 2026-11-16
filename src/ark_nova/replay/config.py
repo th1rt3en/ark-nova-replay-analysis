@@ -171,6 +171,10 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
     a hostile event shows too, and a Clever effect can come from any Clever animal, a sponsor, or an earlier action (900757015 turn 51, 783434284 turn 22)."""
     played = hostile = peaceful = 0
     names: set = set()
+    owned: dict = {}                                       # player -> abilities of the animals he played (a Clever effect has other sources than a peaceful Constriction)
+    constrictor = None
+    venom_open: dict = {}                                  # the Venom animal being played: whether its X token (the peaceful Venom) was logged
+    venom_plain = 0                                        # Venom animals after which no X token was logged: the peaceful Venom always pays it, so the game is not peaceful (783434284 turn 22)
     reef_inventive = 0                                     # (the Reef Dweller "Inventive" animals played so far: each pays X tokens again when a new Reef Dweller is played, no proof of a peaceful Venom)
     play: dict = {}                                        # the animal being played: {"venom": bool, "expected": X-token events its own and its reef Inventive effects explain, "seen": the ones the log shows}
     cur_act: dict = {}                                     # the action being played: its player, its card, whether a Hypnosis animal was played in it and a hypnosis event was logged
@@ -179,6 +183,9 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
     for m in parsed.moves:
         for e in m.events:
             a = e.args if isinstance(e.args, dict) else {}
+            if venom_open and e.type in ("chooseActionCard", "actionCardCleanup", "buyAnimal"):
+                venom_plain += 0 if venom_open.get("seen", 0) > venom_open.get("expected", 0) else 1          # (a peaceful Venom pays one X token more than the Inventive effects of the zoo explain)
+                venom_open = {}
             if e.type == "chooseActionCard" and isinstance(a.get("actionCard"), dict):
                 ca_, pid_ = a["actionCard"], str(a.get("player_id"))
                 if (prev_act.get("ended") and prev_act.get("player") == pid_ and str(ca_.get("pId")) == pid_ and prev_act.get("hyp") and not prev_act.get("hyp_event")
@@ -202,6 +209,11 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
                         "expected": ("Inventive" in own) + (reef_inventive if reef_own else 0)}
                 reef_inventive += "Inventive" in reef_own
                 names |= own
+                owned.setdefault(str(a.get("player_id")), set()).update(own)
+                if "Constriction" in own:
+                    constrictor = str(a.get("player_id"))
+                if "Venom" in {ab["keyword"]["name"] for ab in card.get("abilities") or []}:
+                    venom_open = play
                 if "Hypnosis" in own and cur_act:
                     cur_act["hyp"] = True
                 if "Determination" in own:
@@ -210,13 +222,17 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
                     played += 1
             elif names:                                    # what BGA logs instead of a hostile ability
                 b = a.get("bonuses") or {}
+                if e.type == "actionCardCleanup" and "Clever effect" in (e.log or "") and "Constriction" in names and str(a.get("player_id")) == constrictor and "Clever" not in owned.get(constrictor, ()):
+                    peaceful += 1                          # the peaceful Constriction is a Clever effect: an action card placed on slot 1 after the animal, with no Clever animal in the zoo (768475372 turn 61, confirmed peaceful)
                 if e.type == "getBonuses" and a.get("source") == "Inventive" and set(b) == {"xtoken"} and play.get("venom"):
                     play["seen"] += 1                      # more X tokens "from Inventive" than the Inventive effects of the zoo explain: a Venom replaced (Devil Firefish: its own Inventive reef + the peaceful Venom, 691447217 turn 17)
                     if play["seen"] > play["expected"]:
                         peaceful += 1
                 if (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                                                 or (e.type == "pDrawCards" and ("Pilfering 2" in names or "Pilfering 1" in names) and "Sprint" not in names and "sprint" in e.log)                        :
                     peaceful += 1
-    return bool(played) and not hostile and bool(peaceful)
+    if venom_open and venom_open.get("seen", 0) <= venom_open.get("expected", 0):
+        venom_plain += 1
+    return bool(played) and not hostile and bool(peaceful) and not venom_plain
 
 
 @lru_cache(maxsize=None)

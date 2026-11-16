@@ -531,6 +531,10 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
         return act
     if act.kind != "choose_effect" or "index" in act.args or state.prompt is None or state.prompt.kind != "effects":
         return act
+    if act.args.get("pay") and not any(c.kind == "choose_effect" and c.args.get("pay") for c in legal_actions(state)):
+        nothing_ = next((c for c in legal_actions(state) if c.kind == "choose_effect" and c.args.get("nothing")), None)
+        if nothing_ is not None:                                  # Pilfering 2 hits a victim who has given their only card and has no money left: they pay what they have, 0 (773745155 turn 59)
+            return nothing_
     want = _plain(act).args
     found = [cand for cand in legal_actions(state) if cand.kind == "choose_effect" and {k: v for k, v in cand.args.items() if k != "index"} == want]
     if "type" in want:                                              # a Clever (slot 1): the effect of the player the log names (both players have one in the break: 814075010 turn 58)
@@ -674,6 +678,12 @@ def _skip_unneeded(state: GameState, act):
                 if ok:
                     return resolve(i)
         return resolve(pb[0])
+    cl_ = getattr(_skip_unneeded, "cleanup", None)
+    if cl_ is not None and getattr(_skip_unneeded, "order", None) is not None and _skip_unneeded.order > cl_:
+        for i, e in enumerate(state.prompt.args["pending"]):          # an effect of the end of the action (the snap of Waza Small Animal Program) that the log never used before the cleanup of the card: the break that follows is no part of it (688187663 turn 70)
+            sk = Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
+            if e["kind"] == "take" and e.get("source") == "S228" and sk in legal_actions(state):
+                return sk
     rest = []
     for x in ([] if act is not None and act.kind == "choose_action_card" else getattr(_skip_unneeded, "rest", [])):                     # (what follows in the same action: a Multiplier repetition starts another one)
         if x.kind == "choose_action_card":
@@ -1216,6 +1226,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 p_.type == "takeBonus" and isinstance(p_.args, dict) and p_.args.get("source") == "reputation track bonus" and ((p_.args.get("bonus_desc") or {}).get("args") or {}).get("bonus_type") == "upgrade-card"
                 for p_ in turns[k][max(0, j_ - 3):j_])}          # (the upgrade of the reputation track bonus: 613850149 turn 46; the value = the reputation the log shows just before it, 667801017 turn 50)
             _skip_unneeded.order = None
+            _skip_unneeded.cleanup = next((e_.order for e_ in events if e_.type == "actionCardCleanup"), None)
             _skip_unneeded.kiosk_logged = {seat_of[str(e.args["player_id"])] for e in turns[k] if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "kiosk income"
                                            and str(e.args.get("player_id")) in seat_of}
             if _dominance_without_project(turns[k]):                  # BGA gave no project: it was in play or somebody else had it (the log only lists what a player could support)
