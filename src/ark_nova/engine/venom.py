@@ -30,6 +30,23 @@ def due(p) -> bool:
     return not p.flags.get("venom_removed") and not p.flags.get("venom_paid") and count(p, "Venom") > 0
 
 
+def can_pay(state, p) -> bool:
+    """The "pay Venom" button: at any time of the player's own turn, like a sale at the Commercial Harbor; payment is only required before the turn ends,
+    unless a Venom token is removed during it (808330821 turn 58: paid in the first action of two, kept when the second removed the token)."""
+    return (state.active_player == p.seat and count(p, "Venom") > 0 and not p.flags.get("venom_paid") and not p.flags.get("venom_removed")
+            and p.money >= VENOM_COST)
+
+
+def pay_now(state, seat: int) -> None:
+    p = state.players[seat]
+    if not can_pay(state, p):
+        raise _g().IllegalAction("there is no Venom to pay now")
+    p.flags.pop("venom_owed", None)
+    _g()._gain(state, seat, money=-VENOM_COST)
+    p.flags["venom_paid"] = 1                                  # (a chosen payment is final: the token removed later takes nothing back)
+    p.flags.pop("venom_early", None)
+
+
 def blocked(state, seat: int) -> bool:
     """Drawing cards from the deck is never blocked by an unpaid Venom: BGA let a player with 1 money draw (839471673 turn 57, 820888770 turn 35) and took the
     2 money only at the end of the turn, after the card was sold for money."""

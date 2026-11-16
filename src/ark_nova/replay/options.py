@@ -7,7 +7,7 @@ from ark_nova import data
 from ark_nova.engine.game import apply, legal_actions
 from ark_nova.engine.state import GameState, Phase
 
-FREE = {"use_token", "harbor_sell"}            # free actions of the notepad / zoo map: possible at any time, not the decision of the prompt
+FREE = {"use_token", "harbor_sell", "pay_venom"}            # free actions of the notepad / zoo map: possible at any time, not the decision of the prompt
 
 
 # the keyword of the card ability that each kind of pending effect comes from (the button is named like the ability: "Perception 2", "Digging 3", ...)

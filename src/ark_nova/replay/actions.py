@@ -689,6 +689,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                         return f"unsupported sponsors source {a.get('source')}"
             if a.get("source") == "Venom":                       # the 2 money of a Venom token that was not removed this turn
                 xdelta += 0
+                if (b.get("money") or 0) < 0 and str(a.get("player_id")) in seat_of:
+                    add(Action(seat_of[str(a["player_id"])], "pay_venom", {}), e)          # the player pressed "pay Venom" (when it happens, 808330821 turn 58)
             elif not set(b) <= _RESOURCE_BONUSES or (set(b) != {"xtoken"} and not built and chosen not in ("sponsors", "association", "animals")
                                                      and not (a.get("source") in _SPONSOR_SOURCES | {"Cards4 effect"} and a.get("source") is not None) and not a.get("card_id")
                                                      and not _is_space_reward_gain(events, e)):

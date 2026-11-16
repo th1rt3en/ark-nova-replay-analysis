@@ -240,6 +240,8 @@ def legal_actions(state: GameState) -> list[Action]:
                 acts = acts + [Action(p.seat, "unstore", {"card": c}) for c in dict.fromkeys(p.stored)]
             if harbor_ready(state, p.seat):
                 acts = acts + [Action(p.seat, "harbor_sell", {"card": c}) for c in dict.fromkeys(p.hand)]
+            if state.phase in (Phase.TURN, Phase.FINAL_TURNS) and not state.config.confirm_turns and venom.can_pay(state, p) and state.prompt.player == p.seat:
+                acts = acts + [Action(p.seat, "pay_venom", {})]          # the "pay Venom" button: at any time of the own turn
         pr = state.prompt
         fin = _CARD_FINISH.get(pr.kind)
         if fin is not None and not any(a.player == pr.player and a.kind not in _FREE_ACTIONS and a.kind not in ("undo_last", "restart_turn") for a in acts):
@@ -457,6 +459,9 @@ def _apply(state: GameState, action: Action) -> GameState:
         return new
     if action.kind == "harbor_sell":                     # a free action of the zoo map, possible at any time of the player's own turn
         _harbor_sell(new, action)
+        return new
+    if action.kind == "pay_venom":                       # the player pays for Venom when they like during their turn
+        venom.pay_now(new, action.player)
         return new
     if action.kind == "unstore":                         # map 11 (Caves): a stored card goes back into the hand, a free action during the player's own turn
         p = new.players[action.player]
@@ -997,7 +1002,7 @@ def _finish_build(state: GameState, action: Action) -> None:
     _end_turn(state)
 
 
-_FREE_ACTIONS = {"harbor_sell", "unstore", "use_token"}      # free actions beside any prompt (the Commercial Harbor sale, a stored card back into the hand, a token of the notepad): each can lead to a move, none is a move of the card itself
+_FREE_ACTIONS = {"harbor_sell", "unstore", "use_token", "pay_venom"}      # free actions beside any prompt (the Commercial Harbor sale, a stored card back into the hand, a token of the notepad): each can lead to a move, none is a move of the card itself
 _FINISHING = {"finish_animals", "finish_build", "finish_sponsors", "finish_association", "skip_effect"}
 _CARD_FINISH = {"animals_play": "finish_animals", "build_place": "finish_build", "association_tasks": "finish_association", "sponsors_play": "finish_sponsors"}
 

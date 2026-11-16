@@ -1234,6 +1234,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     if ai in pre_done:
                         continue
                     cur_move[:] = [mv, order]
+                    if act.kind == "pay_venom" and act not in legal_actions(state):
+                        state.players[act.player].flags.pop("venom_early", None)          # the engine paid at the end of the action: the log shows the payment, so it is final (no refund when a later action removes the token)
+                        continue                                 # (the engine has paid it at the end of the action / turn, or the money is short: nothing to do)
                     if act.kind == "magnet_note":                 # the log shows a magnet ability being used: when it is a Symbiosis copy, choose it
                         sym = next((x for x in legal_actions(state) if state.prompt is not None and state.prompt.kind == "effects" and x.kind == "choose_effect" and x.args.get("ability") == act.args["ability"]
                                     and state.prompt.args["pending"][x.args["index"]]["kind"] == "symbiosis"), None)
@@ -1653,6 +1656,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             break
                         state = ap(state, skip)
                         act = _normalise(state, act, endsnap)
+                    if act.kind == "pay_venom" and act not in legal_actions(state):
+                        state.players[act.player].flags.pop("venom_early", None)          # (paid by the engine while the effects before it were settled)
+                        continue
                     if _plain(act) not in legal_actions(state) and act.kind != "skip_turn":          # (a kicked player's turn passes: the engine takes it, but it is not among the legal moves)
                         rep.illegal.append(f"turn {k}: {act.kind} {act.args} not in legal_actions")
                         raise _Stop
