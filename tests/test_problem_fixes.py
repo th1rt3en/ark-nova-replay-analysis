@@ -112,6 +112,9 @@ REPLAYED = {
     "771466733": [56],                      # a second Venom of a turn goes on the next card, not on the same one
     "772160454": [21],                      # a player who quits in the middle of a turn
     "840929840": [59],                      # (same)
+    "795715523": [58],                      # map 12: a hypnotised card gets the concealed numbers of the player who owns it
+    "864552379": [49, 51],                  # a project's Hunter counts its icons when the cards are revealed (a university of the same project adds one)
+    "664979088": [36],                      # the Explorer's gains come after the Constriction of the same animal
 }
 
 

@@ -15,7 +15,7 @@ from ark_nova.engine.build_action import SIZES, knows_shape
 from ark_nova.parser.model import Event, ParsedLog
 from ark_nova.parser.setup import parse_action_type
 
-_PASSIVE = {"skipTurnOfPlayer", "midmessage", "advanceBreak", "fillPool", "gameStateChangePrivateArg", "endOfGame", "timeJokerUsed", "enableMultiplier", "gameResultNeutralized", "switchToTurnbased"}          # automatic consequences the engine reproduces itself (a player quit: "has quit the game and is going to lose this game whatever happens")
+_PASSIVE = {"skipTurnOfPlayer", "midmessage", "advanceBreak", "fillPool", "gameStateChangePrivateArg", "endOfGame", "timeJokerUsed", "enableMultiplier", "gameResultNeutralized", "switchToTurnbased", "zombieModeFail"}        # automatic consequences the engine reproduces itself (a player quit: "has quit the game and is going to lose this game whatever happens")
 _SPONSOR_SOURCES = {None, "Map 13 quarter bonus", "Animals3 ability", "increasing card strength", "triggering break", "buying sponsor card", "playing sponsor from reputation range",
                     "maxing out reputation", "reputation track bonus", "placement bonus", "building a pavilion", "filling the map", "max strength Animals", "playing animal from reputation range",
                     "last worker bonus", "Petting Zoo Animal action", "Jumping action", "Pack action", "Iconic animal", "Inventive", "Glide effect",
@@ -317,6 +317,8 @@ class _AssocMap:
                 self.add(_bonus_tile(seat, m), e)
             elif log == "":
                 return "unexplained token move"
+            elif log.endswith("donates to an association") and not a.get("meeples"):
+                pass                                                   # the announcement of a donation: the `donation` event that follows is the action (594103300 turn 79)
             else:
                 return f"unsupported association event: {log[:40]}"
             return None
@@ -440,7 +442,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
     moves: list[int] = []
     orders: list[int] = []
     if any(e.type == "finalScoring" for e in events):         # the end of the game: the sponsors' end-of-game effects and the final scoring are the engine's own
-        last = max((i for i, e in enumerate(events) if e.type in ("actionCardCleanup", "finishBreak")), default=-1)          # (the last break of the game is played in full)
+        last = max((i for i, e in enumerate(events) if e.type in ("actionCardCleanup", "finishBreak", "skipTurnOfPlayer", "gameResultNeutralized", "playerConcedeGame")), default=-1)          # (the last break of the game is played in full; a player kicked or gone in the middle of a turn: what the turn did is before that line, what follows is the scoring: 669214062 turn 77)
         played = {str(e.args["card"]["id"]) for e in events[last + 1:] if e.type == "playSponsor" and isinstance(e.args, dict) and e.args.get("card")}      # (a sponsor played with a token after the last action: its gains still belong to the game)
         cut = next((i for i, e in enumerate(events) if i > last and (e.type == "finalScoring" or (e.type == "getBonuses" and isinstance(e.args, dict)
                     and str(e.args.get("card_id")) not in played and e.args.get("source") not in ("buying sponsor card", "playing sponsor from reputation range")))), None)

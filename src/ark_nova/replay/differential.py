@@ -1220,10 +1220,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     continue
                 unpaid = ca_act.args.pop("unpaid", 0)
                 tokens_ = owner.action_cards[slot - 1].tokens.count("Constriction")
-                logged_ = slot + map_rules.strength_bonus(state.players[seat], slot) + ca_act.args.get("spend", 0) + (1 if ca_act.args.get("t1") else 0) - 2 * tokens_
+                logged_ = slot + map_rules.strength_bonus(owner, slot) + ca_act.args.get("spend", 0) + (1 if ca_act.args.get("t1") else 0) - 2 * tokens_
                 if tokens_ and int(ch.args["strength"]) == logged_:
                     pass                                     # map 12 with a Constriction token: concealed numbers + X tokens - 2 per token give the logged strength (937181556 turn 54)
-                elif unpaid != map_rules.strength_bonus(state.players[seat], slot):         # map 12: the concealed strength numbers
+                elif unpaid != map_rules.strength_bonus(owner, slot):         # map 12: the concealed strength numbers (a hypnotised card: the numbers of the player who owns the card, 795715523 turn 58)
                     rep.skipped["strength above the slot that the engine does not explain"] += 1
                     continue
             acts = _mark_extra_building(state, seat, acts, turns[k])

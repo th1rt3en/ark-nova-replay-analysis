@@ -537,7 +537,7 @@ def _choose_action_card(state: GameState, action: Action) -> None:
         p.flags["repeat_penalty"] = penalty
     else:
         p.flags.pop("repeat_penalty", None)
-    strength = max(1, idx + 1 + map_rules.strength_bonus(p, idx + 1) + spend + (1 if t1 is not None else 0) - penalty)              # Constriction: -2 strength (on a hypnotised card too)
+    strength = max(1, idx + 1 + map_rules.strength_bonus(owner, idx + 1) + spend + (1 if t1 is not None else 0) - penalty)              # Constriction: -2 strength (on a hypnotised card too)
     if not hypnosis:
         venom.remove_tokens(p, card, state=state)
     p.x_tokens -= spend
