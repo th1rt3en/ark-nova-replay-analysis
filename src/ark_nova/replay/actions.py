@@ -767,7 +767,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             add(Action(seat, "choose_effect", {"remove": sorted([b["x"], b["y"]] for b in a["buildings"])}), e)
         elif t == "reconstructionPlaceBack":
             b = a["building"]
-            add(Action(seat, "place_building", {"type": b["type"], "x": b["x"], "y": b["y"], "rotation": b.get("rotation", 0)}), e)
+            origin = next(([m["x"], m["y"]] for e_ in events if e_.type == "reconstructionRemove" for m in (e_.args.get("buildings") or []) if m.get("id") == b.get("id")), None)
+            add(Action(seat, "place_building", {"type": b["type"], "x": b["x"], "y": b["y"], "rotation": b.get("rotation", 0), **({"placeback": origin} if origin else {})}), e)
         elif t == "playSponsor" and (chosen != "sponsors" or marketing_open or in_break):       # Marketing (animal ability, bonus-sponsor token, a placement bonus in the break): a sponsor of the hand for money
             played.add(_key(a["card"]["id"]))
             if _key(a["card"]["id"]) in prog.HIRE_WORKER:
@@ -923,9 +924,12 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
         later = [i for i, x in enumerate(actions) if hypnosis and x.kind == "choose_effect" and set(x.args) == {"type"} and orders[i] > cleanup_order]       # (the Clever / Boost of the first action, logged after the hypnosis that was put back: 717818868 turn 65)
         marks = [e for e in events if hypnosis and e.type == "markCard" and e.order > cleanup_order and e.order not in CONSUMED_MARKS and isinstance(e.args.get("cards"), dict) and str(e.args.get("player_id")) in seat_of]
         mark_acts = [Action(seat_of[str(e.args["player_id"])], "choose_effect", {"card": next(iter(e.args["cards"]))[:4], "mark": True}) for e in marks]      # (the hypnotised Mark Animals card that was put back: its mark is the hypnotiser's, logged right after, 673161628 turn 60)
-        return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})] + [actions[i] for i in later] + mark_acts,
-                        [moves[i] for i in sold] + [move_of[cleanup_order]] + [moves[i] for i in later] + [move_of[e.order] for e in marks], False,
-                        orders=[orders[i] for i in sold] + [cleanup_order] + [orders[i] for i in later] + [e.order for e in marks])
+        from ark_nova.replay.view import render_log as _render
+        boost_ev = [e for e in events if hypnosis and e.type == "actionCardCleanup" and e.order > cleanup_order and "Boost effect" in _render(e.log, e.args) and str(e.args.get("player_id")) == mine]
+        boost_acts = [Action(seat, "choose_effect", {"boost": parse_action_type(e.args["actionCard"]["type"])[0], **({"position": int(e.args["position"])} if e.args.get("position") else {})}) for e in boost_ev]      # (the Boost of an animal played in the turn before, decided here: 736722003 turn 62)
+        return TurnPlan([actions[i] for i in sold] + [Action(seat, "skip_action", {"type": cleanup_type, **extra})] + [actions[i] for i in later] + boost_acts + mark_acts,
+                        [moves[i] for i in sold] + [move_of[cleanup_order]] + [moves[i] for i in later] + [move_of[e.order] for e in boost_ev] + [move_of[e.order] for e in marks], False,
+                        orders=[orders[i] for i in sold] + [cleanup_order] + [orders[i] for i in later] + [e.order for e in boost_ev] + [e.order for e in marks])
     xlimits = sum(1 for i in range(len(events) - 1) if events[i].type == "slideMeeples" and not events[i].log and events[i + 1].type == "midmessage" and "cannot have more than" in (events[i + 1].log or "") and "x-tokens" in (events[i + 1].log or ""))      # the X tokens of the notepad bonus that the player could not gain (already at 5): the message comes right after the cube of the support moves
     xlimits -= sum(1 for sup in assoc.all_supports if isinstance(sup.args.get("bonus"), dict) and sup.args["bonus"].get("type") == "xtoken")          # (a support that shows its X tokens, capped, explains its message: 853928382 turn 81)
     for sup in assoc.all_supports:                                           # a notepad bonus that leaves no trace: the keyword space (3) of the map (Clever, Pouch, Determination, Marketing ...), which is only

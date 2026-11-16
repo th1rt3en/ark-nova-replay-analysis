@@ -115,6 +115,9 @@ REPLAYED = {
     "795715523": [58],                      # map 12: a hypnotised card gets the concealed numbers of the player who owns it
     "864552379": [49, 51],                  # a project's Hunter counts its icons when the cards are revealed (a university of the same project adds one)
     "664979088": [36],                      # the Explorer's gains come after the Constriction of the same animal
+    "666650119": [63],                      # a Trade for reputation at 9 with the Cards action not upgraded leaves the marker at 9
+    "672123762": [63],                      # the hypnotised card that is put back is the next turn of the same player
+    "688573593": [43],                      # the turn numbers differ by one after an extra action: not a rule
 }
 
 

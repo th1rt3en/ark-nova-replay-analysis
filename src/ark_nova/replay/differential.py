@@ -332,8 +332,8 @@ def _use_ignore_branch(state: GameState, act: Action, evidence=None) -> bool:
 
 def _plain(act: Action) -> Action:
     """The action as `legal_actions` lists it: the category of a category university is a chance outcome, not a choice."""
-    if act.args.get("mark") or "also" in act.args or "shown" in act.args or "trigger" in act.args or "cubes" in act.args:
-        return Action(act.player, act.kind, {k: v for k, v in act.args.items() if k not in ("mark", "also", "shown", "trigger", "cubes")})      # (`cubes`: the log's cube counts, engine/cubes.py)
+    if act.args.get("mark") or "also" in act.args or "shown" in act.args or "trigger" in act.args or "cubes" in act.args or "placeback" in act.args:
+        return Action(act.player, act.kind, {k: v for k, v in act.args.items() if k not in ("mark", "also", "shown", "trigger", "cubes", "placeback")})      # (`cubes`: the log's cube counts, engine/cubes.py)
     return act
 
 

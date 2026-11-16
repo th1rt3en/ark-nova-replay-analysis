@@ -367,7 +367,11 @@ def resolve_build(state, action: Action) -> None:
                 and (x, y, k) in build_options(state, p.seat, t, e["rules"]))
 
     try:                                            # a building that was picked up (Reconstruction) goes back before a new one is built
-        i = _find(state, "build", lambda e: bool(e.get("placeback")) and fits(e))
+        want = action.args.get("placeback")               # (the replay names the building that goes back: its place before it was picked up, 835139386 turn 53)
+        try:
+            i = _find(state, "build", lambda e: bool(e.get("placeback")) and fits(e) and (want is None or list(e["placeback"].get("from") or want) == list(want)))
+        except IllegalEffect:
+            i = _find(state, "build", lambda e: bool(e.get("placeback")) and fits(e))
     except IllegalEffect:                           # the most specific effect first (a kiosk-only trigger before Posturing's kiosk or pavilion)
         i = min((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "build" and fits(e)),
                 key=lambda j: len(state.prompt.args["pending"][j].get("types", [1])), default=None)
