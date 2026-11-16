@@ -91,7 +91,10 @@ SMOKE_CHECKED = 6300
 def _differential_of_log(path):
     """One log through parser + replay + engine (a worker of the parallel test): (name, checked turns, problems)."""
     parsed = parse_log(path)
-    setup, cfg, seed = game_from_log(parsed)
+    try:
+        setup, cfg, seed = game_from_log(parsed)
+    except KeyError:                                       # a game that ended in the setup (a player never chose their cards, e.g. 652669119): nothing to replay
+        return Path(path).name, 0, []
     replay = build_replay(parsed, setup, cfg, seed)
     rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
     return Path(path).name, rep.checked, rep.illegal + rep.mismatches
