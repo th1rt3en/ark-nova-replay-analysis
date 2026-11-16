@@ -767,6 +767,8 @@ def _skip_unneeded(state: GameState, act):
     for i, e in enumerate(state.prompt.args["pending"]):
         if e["kind"] == "search_sponsor" and not (act is not None and act.args.get("apply") == "search_sponsor") and not any(
                 x.kind == "choose_effect" and x.args.get("apply") == "search_sponsor" for x in getattr(_skip_unneeded, "rest", [])):
+            if not getattr(_skip_unneeded, "sponsor_draws", False):
+                e["nothing"] = True                                                # (781552400 turn 68: BGA's search took a sponsor that no line of the log shows, the engine's first sponsor is another card)
             return Action(e["player"], "choose_effect", {"index": i, "apply": "search_sponsor"})          # (no draw is logged: nothing found)
         if e["kind"] == "search_category":
             if not getattr(_skip_unneeded, "search_orders", None):
@@ -1236,7 +1238,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             _skip_unneeded.rest = []
             _skip_unneeded.rep_first = _project_rep_before_sponsor(turns[k])
             search_orders = [e.order for e in turns[k] if e.type == "pDrawCards" and "gaining a new university" in e.log]
-            _skip_unneeded.search_orders = [e.order for e in events if e.type == "pDrawCards" and "gaining a new university" in e.log]        # (the search of a category university is logged before the effect the harness is about to resolve: 846710292 turn 55)
+            _skip_unneeded.search_orders = [e.order for e in events if e.type == "pDrawCards" and "gaining a new university" in e.log]
+            _skip_unneeded.sponsor_draws = any(e.type == "pDrawCards" and isinstance(e.args, dict) and e.args.get("cards") and all(str(c["id"]).startswith("S") for c in e.args["cards"]) for e in events)          # (a search for a sponsor whose card the log shows: 874269610 turn 8)        # (the search of a category university is logged before the effect the harness is about to resolve: 846710292 turn 55)
             _skip_unneeded.maxing = [e.order for e in turns[k] if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "maxing out reputation"]
             _skip_unneeded.rep_upgrades = {e.order: next((p_.args["bonuses"]["reputation"] for p_ in reversed(turns[k][max(0, j_ - 6):j_]) if p_.type == "getBonuses" and isinstance(p_.args, dict)
                                                           and "reputation" in (p_.args.get("bonuses") or {})), None)
@@ -1496,8 +1499,17 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     while state.prompt is not None and state.prompt.kind == "effects" and (state.current_action or {}).get("type") == "break" and act.kind in ("choose_effect", "take_cards", "skip_effect"):
                         cap_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and e_["res"] == "reputation" and e_.get("player", act.player) != act.player
                                      and (not _below_cap(state, e_) or not any(x_.player == e_["player"] for x_ in acts[ai + 1:]))), None)          # (at the cap, or a gain that the log has already shown: nothing of that player follows in the plan)
-                        if cap_ is None:
-                            break
+                        skip_ = None
+                        if cap_ is None:                                 # an optional effect of the other player that the log never uses and that nothing of theirs follows: declined, so their income is done and the display is refilled (847820417 turn 68)
+                            skip_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_.get("optional") and e_.get("player", act.player) != act.player and e_["kind"] in ("cut_down", "build", "marketing", "mark", "slot1", "sell", "pouch")
+                                          and not any(x_.player == e_["player"] for x_ in acts[ai:]) and Action(e_["player"], "skip_effect", {"index": i_}) in legal_actions(state)), None)
+                            if skip_ is None:
+                                break
+                            state = ap(state, Action(state.prompt.args["pending"][skip_]["player"], "skip_effect", {"index": skip_}))
+                            if act.kind == "choose_effect" and "index" in act.args:
+                                act = Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "index"})
+                            act = _normalise(state, act, endsnap)
+                            continue
                         e_ = state.prompt.args["pending"][cap_]          # the other player's reputation that is already at the cap logs nothing: it is done before this player's income, and the display is refilled (887318108 turn 76)
                         state = ap(state, Action(e_["player"], "choose_effect", {"index": cap_, "apply": "gain", "res": "reputation"}))
                         if act.kind == "choose_effect" and "index" in act.args:
@@ -1884,7 +1896,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 if state.prompt is not None and state.prompt.kind == "choose_action_card" and state.prompt.args.get("optional") and not hyp_next_                     and (snaps[last + 1] if last + 1 < len(snaps) else snaps[k]).active_player != seat:
                     state = ap(state, Action(seat, "skip_extra", {}))           # an optional second action (Multiplier, Action: X, Hypnosis) that was not taken
                 elif (state.prompt is not None and state.prompt.kind == "choose_action_card" and state.prompt.args.get("repeat")
-                      and not (last + 1 < len(turns) and _is_repetition(turns[last + 1])) and Action(seat, "skip_extra", {}) in legal_actions(state)):
+                      and not (last + 1 < len(turns) and _is_repetition(turns[last + 1]) and next((parse_action_type(e_.args["actionCard"]["type"])[0] for e_ in turns[last + 1] if e_.type == "chooseActionCard"), None) == state.prompt.args.get("type"))          # (a later turn that starts with another card and merged its own repetition is no repetition of this card: 862028007 turn 79)
+                      and Action(seat, "skip_extra", {}) in legal_actions(state)):
                     state = ap(state, Action(seat, "skip_extra", {}))           # the Multiplier was not used: the card goes to slot 1 with its token, then the extra action (if any) follows
                 end = endsnap
                 from ark_nova.engine import game as _game

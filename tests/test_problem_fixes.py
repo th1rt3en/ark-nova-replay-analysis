@@ -118,6 +118,13 @@ REPLAYED = {
     "666650119": [63],                      # a Trade for reputation at 9 with the Cards action not upgraded leaves the marker at 9
     "672123762": [63],                      # the hypnotised card that is put back is the next turn of the same player
     "688573593": [43],                      # the turn numbers differ by one after an extra action: not a rule
+    "856281778": [51],                      # a Shark Attack that hits a marked card in the break: the card goes to the player who marked it
+    "869352683": [69],                      # map 10: the draw before a rescue from the display is the placement bonus's, not the rescue's
+    "847820417": [68],                      # the other player's declined optional effect: their income is done, the display is refilled
+    "795707447": [32],                      # (same as 869352683)
+    "789679971": [26],                      # the Sea Turtle Tank pays the Explorer for one new icon
+    "656606572": [27],                      # (same)
+    "862028007": [79],                      # an animals action that does not use its Multiplier: the cleanup is the next marker
 }
 
 

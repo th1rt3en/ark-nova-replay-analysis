@@ -945,8 +945,12 @@ def _resume_after_effects(state: GameState) -> None:
             state.current_action["after"] = []
             effects.open_prompt(state, seat, later, resume)
             return
+        pre_card = bool((state.current_action or {}).get("pre_card"))
         state.current_action = None
-        _refill_display(state)
+        if pre_card and not state.config.confirm_turns and any(c is None for c in state.display):          # the token was used before the card is chosen: the gaps stay where they are (the folder numbers of the cards that follow count them) and the new cards come at the end of the turn (885456549 turn 71, 765376473 turn 61)
+            pass
+        else:
+            _refill_display(state)
         state.prompt = Prompt(kind=resume["prompt_kind"], player=resume["player"], args=resume["args"])
     elif kind == "prompt":                                         # an effects step before a prompt that was waiting (Digging cards)
         state.prompt = Prompt(kind=resume["prompt_kind"], player=seat, args=resume["args"])

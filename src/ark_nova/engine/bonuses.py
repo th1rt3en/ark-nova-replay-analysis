@@ -521,7 +521,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         apply_bonus(state, p.seat, bonus)
     elif k == "search_sponsor":
         from ark_nova.engine.cards import search_deck
-        found = search_deck(state.main_deck, ("sponsor", None))
+        found = None if e.get("nothing") else search_deck(state.main_deck, ("sponsor", None))          # (the replay harness: the log shows no draw, the card taken is one that no line shows)
         if found:
             p.hand.append(found)
     elif k == "pbonus":

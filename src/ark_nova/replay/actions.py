@@ -578,7 +578,8 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                            {"cards": sorted(_key(c["id"]) for c in a["cards"])}), e)
                 continue
             if t == "discardCardsOnDisplay" and "Shark Attack" in e.log:                  # map 14: the free enclosure of the income covers a Shark Attack hex
-                add(Action(seat_of[str(a.get("player_id") or e.player)], "choose_effect", {"cards": sorted(_key(c["id"]) for c in a["cards"])}), e)
+                hit_ = [_key(c["id"]) for c in a["cards"]] + [_key(c["id"]) for x in events[events.index(e) + 1:events.index(e) + 3] if x.type == "markAssign" for c in x.args["cards"]]      # (a marked card of the attack goes to the mark's owner: 856281778 turn 51)
+                add(Action(seat_of[str(a.get("player_id") or e.player)], "choose_effect", {"cards": sorted(hit_)}), e)
                 continue
             if t == "discardCardsOnDisplay" and "expedition" in e.log:                       # Marine Research Expedition played in the break: a person sponsor sent away
                 add(Action(seat_of[str(a.get("player_id") or e.player)], "choose_effect", {"send": _key(a["cards"][0]["id"])}), e)
@@ -609,7 +610,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             if t == "snapCard" or (t == "pDrawCards" and e.log == "You draw ${card_names} from the deck"):         # a card taken as income (map bonus space, Science Lab): either player
                 who = seat_of[str(a.get("player_id") or e.player)]
                 if t == "pDrawCards" and (_draw_after_rescue(events, e) or (nxt_event(events, e) is not None and nxt_event(events, e).type == "buyAnimal"
-                                                                           and (nxt_event(events, e).args["card"] or {}).get("location") == "rescueStation")):
+                                                                           and (nxt_event(events, e).args["card"] or {}).get("location") == "rescueStation" and not nxt_event(events, e).args.get("fromDisplay"))):          # (a rescue from the display draws nothing: the draw before it is a placement bonus, 869352683 turn 69)
                     continue                                         # the card drawn for a rescued hand card (map 10): the engine draws it itself (855033887 turn 57)
                 if t == "pDrawCards":
                     add(Action(who, "take_cards", {"mode": "deck", "count": 1}), e)
@@ -710,7 +711,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
             pass                                                     # the person sponsor of the Lagoon: the engine finds it itself
         elif t == "pDrawCards" and e.log == "You draw ${card_names} from the deck" and _draw_after_rescue(events, e):
             pass                                                     # the card drawn for a rescued hand card, logged after the animal's own gains (a Meerkat Den: 837771519 turn 60)
-        elif t == "pDrawCards" and e.log == "You draw ${card_names} from the deck" and (nxt_event(events, e) is not None and nxt_event(events, e).type == "buyAnimal" and nxt_event(events, e).args["card"].get("location") == "rescueStation"):
+        elif t == "pDrawCards" and e.log == "You draw ${card_names} from the deck" and (nxt_event(events, e) is not None and nxt_event(events, e).type == "buyAnimal" and nxt_event(events, e).args["card"].get("location") == "rescueStation" and not nxt_event(events, e).args.get("fromDisplay")):
             pass                                                     # the card drawn for a rescued hand card: the engine draws it itself
         elif t == "pDiscardCards" and e.log.startswith("You sell") and (a.get("bonuses") or {}).get("money") == 3 and len(a.get("cards") or []) == 1:
             add(Action(seat_of[str(e.player or a.get("player_id"))], "harbor_sell", {"card": _key(a["cards"][0]["id"])}), e)      # map 4 Commercial Harbor: at any time of the turn, also before the action card is chosen

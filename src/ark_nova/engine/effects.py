@@ -194,7 +194,9 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                     elif eff[0] == "unsupported":
                         raise NotImplementedError(eff[1])
     if explorer:
-        new = [i for i in prog.EXPLORER_ICONS if own[i] and not before[i] and i not in EXPLORER_BUG.get(card_key, ())]
+        new = [i for i in prog.EXPLORER_ICONS if own[i] and not before[i]]
+        if card_key in EXPLORER_BUG:                       # the Sea Turtle Tank pays for one new icon only (656606572 turn 27: Reptile and Sea Animal both new, one payment; 789679971 turn 26: Sea Animal alone, one payment)
+            new = new[:1]
         g._gain(state, seat, appeal=len(new), money=2 * len(new))
         if new and state.current_action is not None:
             state.current_action["late_appeal"] = state.current_action.get("late_appeal", 0) + len(new)      # (BGA logs the Explorer's gains after a Pilfering of the same animal: it does not count there, 739415597 turn 76)
