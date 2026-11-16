@@ -1,4 +1,4 @@
-"""The problems of docs/problem_report.md that were fixed stay fixed: each log below was a mismatch or an illegal move of the differential test (the engine against BGA's log)."""
+﻿"""The problems of docs/problem_report.md that were fixed stay fixed: each log below was a mismatch or an illegal move of the differential test (the engine against BGA's log)."""
 from pathlib import Path
 
 import pytest
@@ -99,8 +99,20 @@ REPLAYED = {
     "927683584": [64, 70],                  # a Mark with no animal in the display (C); the other player's Clever in the break (D)
     "920319154": [23],                      # Activate Reef without a reef dweller (C)
     "795215166": [78],                      # an endgame card discard is no sponsor play (E)
-    "843469060": [46],                      # map T1: the snaps of a conservation-5 reward are no notepad bonus, so the card bonus (slot 0) is still free
+    "843469060": [46, 66],                  # map T1: the snaps of a conservation-5 reward are no notepad bonus, so the card bonus (slot 0) is still free; turn 66: the log ends before BGA refills the display
     "901779082": [48],                      # a Marketing token plays the Amazon House before the card is chosen: its building covers a Clever hex, the Clever comes after the Association II (turns 48 + 49)
+    # 2026-11-16: the differential list of the 86 tables
+    "816239058": [50, 74, 75],              # an extra action after a token or a sale; the draw of a hand rescue is no second draw
+    "840980354": [53],                      # map 10: an animal rescued from the hand draws its card with the rescue
+    "820998468": [70, 83],                  # a released aquarium animal empties as many spaces as it takes; the Hawkfish still triggers as a reef dweller
+    "855359344": [55],                      # the Adapt comes before the discard at 10 conservation
+    "862612675": [40],                      # Waza: the snap of a card that the Digging then digs from the hand stays in front of it
+    "887318108": [76],                      # map 13: the capped reputation of the other player is done before this player's income (the display is refilled)
+    "726679863": [71],                      # (same)
+    "889879141": [58],                      # the Side Entrance played in the break pays its income before the entrance is built
+    "771466733": [56],                      # a second Venom of a turn goes on the next card, not on the same one
+    "772160454": [21],                      # a player who quits in the middle of a turn
+    "840929840": [59],                      # (same)
 }
 
 

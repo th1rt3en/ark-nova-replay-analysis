@@ -162,7 +162,11 @@ def release_animal(state, seat: int, key: str, building=None, totals=None) -> No
                 if b.animals:                                              # (bookkeeping only: the named aquarium is emptied, the animal the engine listed there stays in the zoo)
                     holder.animals.append(b.animals.pop(0))
             elif b.animals:
-                b.animals.pop(0)                                           # (the engine lists the animal in no aquarium: the named one is emptied of one entry, 820998468 turn 70)
+                from ark_nova.engine import animals_action
+                freed = 0
+                need = animals_action._special_size(key)                    # (the engine lists the animal in no aquarium: the named one is emptied of as many spaces as the released animal takes, 820998468 turns 70 and 83)
+                while b.animals and freed < need:
+                    freed += animals_action._special_size(b.animals.pop(0))
         elif b.animals:
             b.animals.pop(0)
     p.released.append(key)
@@ -190,8 +194,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     elif k == "reef":
         from ark_nova.engine import animals_action
         extra = []
-        for b in _reef_aquariums(state, p.seat):                    # the aquariums of a zoo share their spaces: the effects of all of their animals (logs)
-            for other in b.animals:
+        if _reef_aquariums(state, p.seat):                          # the aquariums of a zoo share their spaces: the effects of all of their animals (logs)
+            for other in animals_action.aquarium_animals(state, p.seat):
                 pairs = animals_action.reef_abilities(other)
                 if pairs:
                     extra += [{**x, "reef": True} for x in animals_action.ability_effects(state, other, pairs)]

@@ -107,6 +107,17 @@ def own_abilities(key: str, b) -> list:
     return pairs
 
 
+def aquarium_animals(state, seat: int) -> list:
+    """The animals that live in the aquariums of the zoo: the ones listed there, and the aquarium-only animals that a release took off the lists (the lists are bookkeeping: an
+    animal is not tied to an aquarium, a release empties as many spaces as the released animal takes; 820998468 turn 83: the Blackside Hawkfish still triggers)."""
+    p = state.players[seat]
+    listed = [o for bb in p.buildings if bb.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") for o in bb.animals]
+    placed = {o for bb in p.buildings for o in getattr(bb, "animals", ())} | {bb.animal for bb in p.buildings if getattr(bb, "animal", None)}
+    spare = [k for k in p.animals if k not in placed and card(k).get("canBeInStandardEnclosure") is False
+             and any(s["type"] == "Aquarium" for s in card(k).get("specialEnclosures") or [])]
+    return listed + spare
+
+
 def reef_effects(state, key: str, b) -> list:
     """A Reef Dweller (a sea animal with a Reef Dweller effect) placed in an aquarium makes every other sea animal in the aquariums of the zoo trigger its Reef Dweller
     effect (confirmed by the user: 724827313 T68, a Cowfish in the small aquarium, the new animal in the large one). Sea animals without one (their effect is only an ability) neither trigger nor are triggered (checked on the logs)."""
@@ -114,7 +125,7 @@ def reef_effects(state, key: str, b) -> list:
         return []
     out = []
     seat = next(i for i, pl in enumerate(state.players) if b in pl.buildings)
-    zoo = [o for bb in state.players[seat].buildings if bb.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") for o in bb.animals]      # (any aquarium of the zoo)
+    zoo = aquarium_animals(state, seat)
     for other in zoo:
         if other != key:
             pairs = reef_abilities(other)

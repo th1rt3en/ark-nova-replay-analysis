@@ -731,6 +731,8 @@ def _skip_unneeded(state: GameState, act):
         if e["kind"] == "endgame_discard" and state.players[e["player"]].endgame_hand:      # the logs show the discards later, if at all
             hand = state.players[e["player"]].endgame_hand
             logged = [x.args["card"] for x in getattr(_skip_unneeded, "future", []) if x.player == e["player"] and x.args.get("card") in hand]      # (the card that the log discards later)
+            if not logged and any(x.player == e["player"] for x in getattr(_skip_unneeded, "adapts", [])):
+                continue                                         # an Adapt comes first in the log: its draw and discard change the hand (855359344 turn 55)
             return Action(e["player"], "choose_effect", {"index": i, "card": logged[0] if logged else hand[0]})
     for i, e in enumerate(state.prompt.args["pending"]):
         if (e["kind"] == "gain" and e["res"] == "reputation" and not (e.get("per") and _adds_icons(act)) and not (act is not None and act.args.get("res") == "reputation")
@@ -918,8 +920,11 @@ def _engine_project_options(state: GameState, seat: int) -> dict:
         key = act.args["project"]
         card = association.project(key, state.config.marine_worlds)
         slots = {i for i, _, _ in association.slot_options(state, seat, key)}
-        if association.extra_icon_sources(state, p, card):           # BGA's list counts a token of Breeding Cooperation / Program as an icon,
-            slots |= {i for i, _, _ in association.slot_options(state, seat, key, extra=1)}       # not the bonus-icon token of the notepad
+        sources_ = association.extra_icon_sources(state, p, card)
+        n_tok = ("icon" in sources_) + sum(1 for k_ in association.SPONSOR_TOKENS if k_ in sources_ for t_ in p.tokens if t_.location == association.token_location(k_))
+        n_tok = min(2, n_tok)                                        # BGA's list counts every extra icon token (the bonus-icon token of the notepad, each token of Breeding Cooperation / Program), at most two (730487362 turn 74, 731645030 turn 65, 741766649 turn 84; open: 705314593 turn 32, 736722003 turn 49, where BGA counts fewer Europe / Americas icons than the engine)
+        for n_ in range(1, n_tok + 1):
+            slots |= {i for i, _, _ in association.slot_options(state, seat, key, extra=n_)}
         slots = sorted(slots)
         if slots:
             out[key] = slots
@@ -1235,15 +1240,25 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 state.base_projects_unused = [x for x in state.base_projects_unused if x != "P108"]
             _ARCH_TAKEN.clear()
             _skip_unneeded.future = [x for x in acts if x.kind == "choose_effect" and str(x.args.get("card", "")).startswith("F")]
+            _skip_unneeded.adapts = [x for x in acts if x.kind == "choose_effect" and (x.args.get("bonus_type") == "bonus-scoring-cards" or (isinstance(x.args.get("discard"), list) and x.args["discard"] and all(str(c).startswith("F") for c in x.args["discard"])))]
             try:
                 items = list(zip(acts, plan.moves, plan.orders))
                 if "S228" in state.players[seat].sponsors:         # Waza Small Animal Program: its snap comes at the end of the action, after the Digging that BGA logs later
                     for j in range(len(items) - 1):
                         x, y = items[j][0], items[j + 1][0]
-                        if x.kind == "take_cards" and x.args.get("mode") == "snap" and y.kind == "choose_effect" and y.args.get("card") != x.args.get("card") and ("hand" in y.args or "display" in y.args or ("card" in y.args and "mark" not in y.args) or (
+                        if x.kind == "take_cards" and x.args.get("mode") == "snap" and y.kind == "choose_effect" and y.args.get("card") != x.args.get("card") and y.args.get("hand") != x.args.get("card") and ("hand" in y.args or "display" in y.args or ("card" in y.args and "mark" not in y.args) or (
                                 y.args.get("apply") == "gain" and not any(z[0].kind in ("play_animal", "take_cards") for z in items[j + 2:]))):          # (the last animal's own gain is logged after the snap: 883300517 turn 40)
                             items[j], items[j + 1] = items[j + 1], items[j]
                     acts = [x[0] for x in items]
+                for j in range(len(items)):                      # a Trade (5 money) that the log shows after a sale: the sale comes as soon as the card is in hand, or the engine ends the action before the Trade (897330959 turn 44)
+                    if items[j][0].kind == "sponsor_side" and items[j][0].args.get("op") in ("trade_x", "rep_money"):
+                        s_ = next((i_ for i_ in range(j - 1, -1, -1) if items[i_][0].kind == "harbor_sell"), None)
+                        if s_ is None:
+                            continue
+                        k_ = next((i_ for i_ in range(s_ - 1, -1, -1) if items[i_][0].kind == "choose_effect" and items[i_][0].args.get("keep") == items[s_][0].args.get("card")), None)
+                        if k_ is not None and k_ + 1 < s_:
+                            items.insert(k_ + 1, items.pop(s_))
+                            acts = [x[0] for x in items]
                 pre_done: set = set()                           # indexes of plan actions that were played ahead of their place
                 for ai, (act, mv, order) in enumerate(items):
                     if ai in pre_done:
@@ -1301,7 +1316,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             e["kind"] == "endgame_discard" and e["player"] == act.player for e in state.prompt.args["pending"])) and act.args["card"] not in state.players[act.player].endgame_hand:
                         continue                                 # the engine already discarded that card (the discards come early in the engine)
                     if act.kind == "choose_effect" and act.args.get("cards") == [] and not (state.prompt is not None and state.prompt.kind == "effects" and any(
-                            e["kind"] in ("break_discard", "sell", "reveal", "marketing") for e in state.prompt.args["pending"])):
+                            e["kind"] in ("break_discard", "sell", "reveal") for e in state.prompt.args["pending"])):
                         continue                                 # a discard of no card (the hand is within the limit): nothing to do (856281778 turn 51)
                     if act.kind == "choose_effect" and act.args.get("apply") == "income_map" and not (state.prompt is not None and state.prompt.kind == "effects" and any(
                             e["kind"] == "income_map" for e in state.prompt.args["pending"])):
@@ -1330,6 +1345,16 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     if act.kind == "choose_effect" and act.args.get("hire") and ("add-worker", 1) in _ARCH_TAKEN:
                         _ARCH_TAKEN.remove(("add-worker", 1))
                         continue                                 # the Archaeologist took a Worker hex: the worker was hired with that pick (594103300 turn 19)
+                    if act.kind == "place_building" and act.args.get("type") == "entrance" and state.prompt is not None and state.prompt.kind == "effects" and (state.current_action or {}).get("type") == "break":
+                        inc_ = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "income_sponsor" and e.get("source") == "S257" and e.get("player", act.player) == act.player), None)
+                        if inc_ is not None and not any(b_.type == "entrance" for b_ in state.players[act.player].buildings):
+                            state = ap(state, Action(act.player, "choose_effect", {"index": inc_, "apply": "income_sponsor", "source": "S257"}))      # the Side Entrance played in the break pays its income when it is played, before the entrance is built (889879141 turn 58)
+                    if act.kind == "place_building" and act.args.get("type") == "kiosk" and state.prompt is not None and state.prompt.kind == "effects" and any(
+                            x_.kind == "place_building" and x_.args.get("type") == "pavilion" for x_ in acts[ai + 1:]):
+                        pbk = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus" and e["bonus"]["type"] == "kiosk" and e.get("player", act.player) == act.player), None)
+                        if pbk is not None and any(e["kind"] == "build" and "pavilion" in e.get("types", []) for e in state.prompt.args["pending"]):
+                            e_ = state.prompt.args["pending"][pbk]       # the kiosk is the placement bonus of the building before, the pavilion comes from Posturing's later pick (859064022 turn 44)
+                            state = ap(state, Action(e_["player"], "choose_effect", {"index": pbk, "apply": "pbonus", "bonus": "kiosk"}))
                     if act.kind == "choose_effect" and "multiplier" in act.args and state.prompt is not None and state.prompt.kind == "effects" and not any(
                             e["kind"] == "multiplier" for e in state.prompt.args["pending"]):
                         pbm = next((i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus" and e["bonus"]["type"] == "Multiplier"), None)
@@ -1452,6 +1477,16 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         if step_ is None:
                             break
                         state = ap(state, step_)
+                        if act.kind == "choose_effect" and "index" in act.args:
+                            act = Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "index"})          # (the pending indexes moved)
+                        act = _normalise(state, act, endsnap)
+                    while state.prompt is not None and state.prompt.kind == "effects" and (state.current_action or {}).get("type") == "break" and act.kind in ("choose_effect", "take_cards", "skip_effect"):
+                        cap_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and e_["res"] == "reputation" and e_.get("player", act.player) != act.player
+                                     and str(e_.get("source", "")) == "map13" and not _below_cap(state, e_)), None)
+                        if cap_ is None:
+                            break
+                        e_ = state.prompt.args["pending"][cap_]          # the other player's reputation that is already at the cap logs nothing: it is done before this player's income, and the display is refilled (887318108 turn 76)
+                        state = ap(state, Action(e_["player"], "choose_effect", {"index": cap_, "apply": "gain", "res": "reputation"}))
                         if act.kind == "choose_effect" and "index" in act.args:
                             act = Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "index"})          # (the pending indexes moved)
                         act = _normalise(state, act, endsnap)
@@ -1859,6 +1894,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             d.pop(f, None)
                     if state.players[seat].flags.get("venom_paid"):       # BGA logs the Venom payment at the end of the whole turn, the engine pays before the first draw
                         mine["players"][seat]["money"] += 2 if mine["players"][seat]["money"] + 2 == theirs["players"][seat]["money"] else 0
+                if not nxt and not any(e.type == "fillPool" for e in events):          # the log ends with this turn before BGA refilled the display: the engine's refill is not in the log (843469060 turn 66)
+                    for d in (mine, theirs):
+                        for f in ("display", "main_deck", "main_discard"):
+                            d.pop(f, None)
                 if state.result is not None:                   # the final scoring is added to the tracks by the engine; the log-built state keeps the tracks as played
                     for d in (mine, theirs):
                         for pl in d["players"]:
@@ -1874,6 +1913,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                                     pl_.pop(f, None)
                 if conceded_next and not plan.actions[-1].kind == "skip_action":      # the game ended in the middle of the turn: the log never moved the action card, the engine did
                     for d in (mine, theirs):
+                        d.pop("active_player", None)              # (the turn is cut short: the log's turn goes on, the engine's has ended)
+                        d.pop("turn", None)
                         for pl_ in d["players"]:
                             pl_.pop("action_cards", None)
                 diffs = _diff(mine, theirs) + oracle_notes

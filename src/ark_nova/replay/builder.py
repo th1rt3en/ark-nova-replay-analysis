@@ -748,6 +748,11 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
                 elif mine.animals and (first or mine.type not in ("small-aquarium", "large-aquarium", "underwater-tunnel")):
                     moved = mine.animals.pop(0)
                     holder = next((o for o in p.buildings if first and mine.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") and k in o.animals), None)
+                    if holder is None and mine.type in ("small-aquarium", "large-aquarium", "underwater-tunnel"):
+                        from ark_nova.engine.animals_action import _special_size      # the aquarium is emptied of as many spaces as the released animal takes (820998468 turns 70, 83)
+                        freed = _special_size(moved)
+                        while mine.animals and freed < _special_size(k):
+                            freed += _special_size(mine.animals.pop(0))
                     if holder is not None:        # an animal is not tied to an enclosure: the named aquarium is emptied, the released animal leaves the zoo and the animal listed in the named one stays (bookkeeping only; 672851171 turn 36, 820998468 turn 70)
                         holder.animals.remove(k)
                         holder.animals.append(moved)

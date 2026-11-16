@@ -113,7 +113,7 @@ def give_venom(state, seat: int, n: int) -> None:
     start = (state.current_action or {}).get("appeal_start")            # the appeal when the action began: what the animal gains itself does not count (105 logged Venoms)
     mine, theirs = (start[seat], start[1 - seat]) if start else (me.appeal, other.appeal)
     if theirs > mine and not _tracks().is_protected(other.appeal) and "S225" not in other.sponsors:
-        for card in other.action_cards[:n]:
+        for card in [c for c in other.action_cards[:2] if "Venom" not in c.tokens][:n]:          # (only the two cards at strength 1 and 2 can carry one, a card one token: a second Venom of the same turn goes on the next card, 671283576 turn 55, 771466733 turn 56)
             card.tokens.append("Venom")
 
 
@@ -121,7 +121,7 @@ def give_constriction(state, seat: int) -> None:
     me, other = state.players[seat], state.players[1 - seat]
     if _tracks().is_protected(other.appeal) or "S225" in other.sponsors:                            # below 5 appeal a player is protected
         return
-    ahead = (other.appeal > me.appeal) + (other.conservation > me.conservation)          # (the appeal now: the animal's own appeal and the sponsors' triggers are effects of their own that the player may resolve first)
+    ahead = (other.appeal > me.appeal) + (other.conservation > me.conservation)      # (the appeal now: the animal's own appeal and the sponsors' triggers are effects of their own that the player may resolve first)
     for card in other.action_cards[::-1][:ahead]:                       # the cards at strength 5, then 4
         card.tokens.append("Constriction")
 
