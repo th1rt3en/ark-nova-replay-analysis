@@ -30,6 +30,8 @@ def test_live_count_equals_final_scoring_and_changes_nothing(path):
         rep, pre = _pre_final(path)
     except ValueError:
         pytest.skip("log without a replay")
+    except StopIteration:
+        pytest.skip("game ended without a final scoring (a quit or a time-out)")
     before = copy.deepcopy(pre)
     live = endgame.live_scoring(pre)
     assert pre.players[0].appeal == before.players[0].appeal and pre.players[0].conservation == before.players[0].conservation

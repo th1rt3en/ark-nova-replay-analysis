@@ -80,7 +80,12 @@ def test_illegal_and_unimplemented():
         apply(s, Action(0, "choose_action_card", {"type": "cards", "spend": 0}))
 
 
-LOGS = [p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p]   # (573904205 is an old log format the parser does not read)
+from tests._logsel import FULL, sweep  # noqa: E402
+LOGS = sweep([p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p])   # (573904205 is an old log format the parser does not read)
+
+
+SMOKE_LIMIT = 0                                            # (measured on the fixed subset of tests/_logsel.py: 100 games, 6378 turns, no problem: any new one fails)
+SMOKE_CHECKED = 6300
 
 
 def _differential_of_log(path):
@@ -109,8 +114,12 @@ def test_engine_agrees_with_the_log_turn_by_turn():
     # differences) are listed by scripts/engine_summary.py
     # (the harness also checks the turns with takeBonus / break income cards / placement bonus cards / the Commercial Harbor: 6.5k turns
     # checked, ~340 known problems, see scripts/engine_coverage.py; this is a ratchet, lower it when the problems are fixed)
-    assert len(problems) <= 30, problems[:3]               # (the 500 tables added in October: their problems are the to-do list, docs/problem_report.md)
-    assert checked >= 55000
+    if FULL:                                               # every log: the limit of known problems and the number of turns that have to be compared
+        assert len(problems) <= 30, problems[:3]               # (the 500 tables added in October: their problems are the to-do list, docs/problem_report.md)
+        assert checked >= 55000
+    else:                                                  # the fixed subset of tests/_logsel.py: the same ratchet on fewer games (exact numbers: any new problem fails)
+        assert len(problems) <= SMOKE_LIMIT, problems[:3]
+        assert checked >= SMOKE_CHECKED
 
 
 def _build_state(marine_worlds=True, map_id="1"):

@@ -8,7 +8,8 @@ from ark_nova.engine import tracks
 from ark_nova.parser import parse_log
 from ark_nova.parser.conservation import extract_conservation_bonuses
 
-LOGS = [p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p]   # (573904205 is an old log format the parser does not read)
+from tests._logsel import FULL, sweep  # noqa: E402
+LOGS = sweep([p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p])   # (573904205 is an old log format the parser does not read)
 needs_logs = pytest.mark.skipif(not LOGS, reason="log_examples not available")
 
 
@@ -79,4 +80,4 @@ def test_conservation_bonuses_recoverable_from_logs():
             incomplete += 1
         else:
             complete += 1
-    assert complete >= 110 and incomplete <= 4         # 4 games need user input for a 5-conservation option
+    assert complete >= (110 if FULL else int(0.95 * len(LOGS))) and incomplete <= 4         # 4 games need user input for a 5-conservation option (the fixed subset of tests/_logsel.py: the same ratio on fewer games)
