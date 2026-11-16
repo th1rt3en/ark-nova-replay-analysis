@@ -59,6 +59,8 @@ def legal(state, p) -> list:
             for c in hand:
                 if c.startswith("S"):
                     out += [Action(p.seat, "sponsor_side", {"op": "discard_snap", "card": c, "take": t}) for t in shown]
+                    if not shown:                                    # (no sponsor in the display: BGA still lets the card go, 729229221 turn 9)
+                        out.append(Action(p.seat, "sponsor_side", {"op": "discard_snap", "card": c, "take": None}))
         elif a.get("broke"):
             out += [Action(p.seat, "sponsor_side", {"op": "discard_play", "card": c, "play": None}) for c in dict.fromkeys(hand)]       # (BGA lets the card go without a sponsor played)
             for c in hand:
@@ -99,9 +101,10 @@ def apply(state, action: Action) -> None:
         elif op == "discard_strength":
             a["left"] += STRENGTH_BONUS
         elif op == "discard_snap":
-            i = state.display.index(args["take"])
-            state.display[i] = None
-            p.hand.append(args["take"])
+            if args["take"] is not None:
+                i = state.display.index(args["take"])
+                state.display[i] = None
+                p.hand.append(args["take"])
         elif args["play"] is None:
             pass
         else:

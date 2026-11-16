@@ -30,7 +30,7 @@ from ark_nova.replay import preview as building_preview
 from ark_nova.replay import sandbox
 from ark_nova.replay.view import build_replay_view
 from ark_nova.storage.index import NotConfiguredIndex, TableIndex, TableRecord
-from ark_nova.storage.tableinfo import elo_changes_from_tableinfo, elos_after_from_tableinfo, elos_from_tableinfo, is_known_map, maps_from_tableinfo, marine_worlds_of, record_from_tableinfo, same_map_of
+from ark_nova.storage.tableinfo import elo_changes_from_tableinfo, elos_after_from_tableinfo, elos_from_tableinfo, is_known_map, maps_from_tableinfo, marine_worlds_of, peaceful_of, record_from_tableinfo, same_map_of
 from ark_nova.storage.logs import ByteLru, CachedLogStore, LogNotFound, LogStore, NotConfiguredLogStore, default_cache_dir
 from ark_nova.storage.contributions import Contributions
 from ark_nova.storage.requests import request_log
@@ -330,7 +330,8 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         base = app.state.index.find(table_id) or TableRecord(table_id)
         return dataclasses.replace(base, gcs_path=f"{KEPT}{table_id}", player_maps=base.player_maps or row["maps"], marine_worlds=row["marine_worlds"] if not base.player_maps else base.marine_worlds,
                                    same_map=base.same_map or row["same_map"], elos=base.elos or row["elos"], elos_after=base.elos_after or row["elos_after"],
-                                   elo_changes=base.elo_changes or row["elo_changes"], base_projects=base.base_projects or [k for k in row["base_projects"] if k])
+                                   elo_changes=base.elo_changes or row["elo_changes"], base_projects=base.base_projects or [k for k in row["base_projects"] if k],
+                                   peaceful=base.peaceful if base.peaceful is not None else row["peaceful"])
 
     def _raw_of(rec: TableRecord, table_id: int) -> dict:
         """The log of a logged record, or of a kept one (LogNotFound when it is gone)."""
@@ -351,7 +352,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             if rec is None:
                 return _error(404, "not_logged", "No log has been collected for this table.", table_id=table_id)
         kept = rec.gcs_path.startswith(KEPT)
-        digest = hashlib.sha1(json.dumps([rec.player_maps, rec.marine_worlds, rec.same_map, rec.elos, rec.elos_after, rec.elo_changes, rec.base_projects], sort_keys=True).encode()).hexdigest()[:10]
+        digest = hashlib.sha1(json.dumps([rec.player_maps, rec.marine_worlds, rec.same_map, rec.elos, rec.elos_after, rec.elo_changes, rec.base_projects, rec.peaceful], sort_keys=True).encode()).hexdigest()[:10]
         tag = _etag("replay", f"{table_id}-{digest}" if kept else table_id)       # (a kept table gets a new row when more is known about it: a new tag)
         if (cached := _not_modified(request, tag)) is not None:                     # the browser has it: nothing is read or built
             return cached
@@ -685,7 +686,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
         if not isinstance(index_info, dict) or str(index_info.get("id")) != str(table_id):
             return None
         base = app.state.index.find(table_id) or TableRecord(table_id)
-        changes = {"elos": elos_from_tableinfo(index_info), "elos_after": elos_after_from_tableinfo(index_info), "elo_changes": elo_changes_from_tableinfo(index_info), "same_map": same_map_of(index_info), "base_projects": projects}
+        changes = {"elos": elos_from_tableinfo(index_info), "elos_after": elos_after_from_tableinfo(index_info), "elo_changes": elo_changes_from_tableinfo(index_info), "same_map": same_map_of(index_info), "base_projects": projects, **({"peaceful": peaceful_of(index_info)} if peaceful_of(index_info) is not None else {})}
         if not base.player_maps:                              # the table is not indexed: its table info tells the maps and the Marine Worlds flag
             changes.update(player_maps={**maps_from_tableinfo(index_info), **seen_maps}, marine_worlds=marine_worlds_of(index_info))
         return dataclasses.replace(base, **changes)
@@ -742,7 +743,7 @@ def create_app(settings: Settings | None = None, index: TableIndex | None = None
             def keep_data():
                 view = build_replay_view(raw, rec, quick=True)
                 return view["base_projects"], {"maps": rec.player_maps, "elos": rec.elos, "elos_after": rec.elos_after, "elo_changes": rec.elo_changes,
-                                               "same_map": rec.same_map, "marine_worlds": bool(view["marine_worlds"])}
+                                               "same_map": rec.same_map, "marine_worlds": bool(view["marine_worlds"]), "peaceful": rec.peaceful}
             app.state.contributions.submit(table_id, None if kept else raw, keep_data)       # (a log that is kept already: only a row with the maps is added, when there is none)
         return await run_in_threadpool(_replay, table_id, rec, raw, quick)
 

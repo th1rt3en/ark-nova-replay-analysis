@@ -163,29 +163,76 @@ HOSTILE = {"Venom", "Constriction", "Pilfering 1", "Pilfering 2", "Hypnosis"}
 
 
 def infer_peaceful(parsed: ParsedLog) -> bool:
-    """The peaceful variant (hostile effects replaced): an animal with a hostile ability was played and no hostile event ever shows in the log."""
+    """The peaceful variant (hostile effects replaced): an animal with a hostile ability was played, no hostile event ever shows in the log, and at least one of
+    the replacements BGA logs in their place does. A fallback only: BGA's table option 103 "Peaceful mode" is the real source once the index carries it.
+
+    Only signs that `scripts/audit_peaceful.py` found never to occur in a game with a hostile event are used (a Venom animal's X token, a Pilfering 1's 3 money,
+    the Sprint draw of a Pilfering). A card put on slot 1 ("Clever effect") after a Constriction animal was tried and is NOT one: in 13 of 19 local games that show it
+    a hostile event shows too, and a Clever effect can come from any Clever animal, a sponsor, or an earlier action (900757015 turn 51, 783434284 turn 22)."""
     played = hostile = peaceful = 0
     names: set = set()
-    inventive_seen = False                                 # (a Reef Dweller "Inventive" animal of the zoo also pays X tokens: no proof of a peaceful Venom)
+    owned: dict = {}                                       # player -> abilities of the animals he played (a Clever effect has other sources than a peaceful Constriction)
+    constrictor = None
+    venom_open: dict = {}                                  # the Venom animal being played: whether its X token (the peaceful Venom) was logged
+    venom_plain = 0                                        # Venom animals after which no X token was logged: the peaceful Venom always pays it, so the game is not peaceful (783434284 turn 22)
+    reef_inventive = 0                                     # (the Reef Dweller "Inventive" animals played so far: each pays X tokens again when a new Reef Dweller is played, no proof of a peaceful Venom)
+    play: dict = {}                                        # the animal being played: {"venom": bool, "expected": X-token events its own and its reef Inventive effects explain, "seen": the ones the log shows}
+    cur_act: dict = {}                                     # the action being played: its player, its card, whether a Hypnosis animal was played in it and a hypnosis event was logged
+    prev_act: dict = {}                                    # the action that ended last
+    determination: set = set()                             # players who have played an animal with Determination (an extra action of its own)
     for m in parsed.moves:
         for e in m.events:
             a = e.args if isinstance(e.args, dict) else {}
+            if venom_open and e.type in ("chooseActionCard", "actionCardCleanup", "buyAnimal"):
+                venom_plain += 0 if venom_open.get("seen", 0) > venom_open.get("expected", 0) else 1          # (a peaceful Venom pays one X token more than the Inventive effects of the zoo explain)
+                venom_open = {}
+            if e.type == "chooseActionCard" and isinstance(a.get("actionCard"), dict):
+                ca_, pid_ = a["actionCard"], str(a.get("player_id"))
+                if (prev_act.get("ended") and prev_act.get("player") == pid_ and str(ca_.get("pId")) == pid_ and prev_act.get("hyp") and not prev_act.get("hyp_event")
+                        and ca_.get("id") != prev_act.get("card_id") and pid_ not in determination):
+                    peaceful += 1                          # the peaceful Hypnosis is Determination: a second action of the player's own card right after an action with a Hypnosis animal and no hypnosis event (849884135 turn 42)
+                cur_act = {"player": pid_, "card_id": ca_.get("id"), "hyp": False, "hyp_event": False, "ended": False}
+            if e.type == "hypnosis" and cur_act:
+                cur_act["hyp_event"] = True
+            if e.type == "actionCardCleanup" and cur_act and "finishing" in (e.log or "") + str(a.get("i18n", "")) or (e.type == "actionCardCleanup" and cur_act and not cur_act.get("ended")):
+                cur_act["ended"] = True
+                prev_act = cur_act
             if e.type == "chooseActionCard":
                 names = set()                              # (the effects of a turn are logged in several moves)
-            if e.type in ("pilfering", "pilferingMoney", "pilferingCard", "hypnosis") or (e.type == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log)):
+            if e.type in ("pilfering", "pilferingMoney", "pilferingCard", "hypnosis") or (e.type == "addMeeples" and ("Venom effect" in e.log or "Constriction effect" in e.log))                         or (e.type == "midmessage" and "not affected by" in e.log and any(h in e.log for h in ("Constriction", "Venom", "Pilfering", "Hypnosis"))):      # (an immunity message: the hostile effect was played and the victim was protected, 657367963)
                 hostile += 1
             if e.type == "buyAnimal" and isinstance(a.get("card"), dict):
                 card = data.cards_by_key()[data.parse_bga_card_id(a["card"]["id"])[0]]
                 own = {ab["keyword"]["name"] for ab in card.get("abilities") or []} | {ab["keyword"]["name"] for ab in card.get("reefDwellerEffect") or []}
-                inventive_seen = inventive_seen or "Inventive" in own
+                reef_own = {ab["keyword"]["name"] for ab in card.get("reefDwellerEffect") or []}
+                play = {"venom": "Venom" in own, "seen": 0,
+                        "expected": ("Inventive" in own) + (reef_inventive if reef_own else 0)}
+                reef_inventive += "Inventive" in reef_own
                 names |= own
+                owned.setdefault(str(a.get("player_id")), set()).update(own)
+                if "Constriction" in own:
+                    constrictor = str(a.get("player_id"))
+                if "Venom" in {ab["keyword"]["name"] for ab in card.get("abilities") or []}:
+                    venom_open = play
+                if "Hypnosis" in own and cur_act:
+                    cur_act["hyp"] = True
+                if "Determination" in own:
+                    determination.add(str(a.get("player_id")))
                 if own & HOSTILE:
                     played += 1
             elif names:                                    # what BGA logs instead of a hostile ability
                 b = a.get("bonuses") or {}
-                if (e.type == "getBonuses" and "Venom" in names and "Inventive" not in names and not inventive_seen and a.get("source") == "Inventive" and set(b) == {"xtoken"})                         or (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                         or (e.type == "actionCardCleanup" and "Constriction" in names and "Clever" not in names and "Clever effect" in e.log)                         or (e.type == "pDrawCards" and ("Pilfering 2" in names or "Pilfering 1" in names) and "Sprint" not in names and "sprint" in e.log)                         or (e.type == "markCard" and "Hypnosis" in names):
+                if e.type == "actionCardCleanup" and "Clever effect" in (e.log or "") and "Constriction" in names and str(a.get("player_id")) == constrictor and "Clever" not in owned.get(constrictor, ()):
+                    peaceful += 1                          # the peaceful Constriction is a Clever effect: an action card placed on slot 1 after the animal, with no Clever animal in the zoo (768475372 turn 61, confirmed peaceful)
+                if e.type == "getBonuses" and a.get("source") == "Inventive" and set(b) == {"xtoken"} and play.get("venom"):
+                    play["seen"] += 1                      # more X tokens "from Inventive" than the Inventive effects of the zoo explain: a Venom replaced (Devil Firefish: its own Inventive reef + the peaceful Venom, 691447217 turn 17)
+                    if play["seen"] > play["expected"]:
+                        peaceful += 1
+                if (e.type == "getBonuses" and "Pilfering 1" in names and set(b) == {"money"} and b["money"] == 3 and not a.get("card_id") and not a.get("source"))                                                 or (e.type == "pDrawCards" and ("Pilfering 2" in names or "Pilfering 1" in names) and "Sprint" not in names and "sprint" in e.log)                        :
                     peaceful += 1
-    return bool(played) and not hostile and bool(peaceful)
+    if venom_open and venom_open.get("seen", 0) <= venom_open.get("expected", 0):
+        venom_plain += 1
+    return bool(played) and not hostile and bool(peaceful) and not venom_plain
 
 
 @lru_cache(maxsize=None)
@@ -212,8 +259,10 @@ def _known_map(map_label) -> bool:
 
 
 def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_projects: Optional[list[str]] = None,
-                  marine_worlds: Optional[bool] = None, from_seq: int = 0) -> tuple[SetupInfo, GameConfig, SeedSpec]:
-    """`maps`, `base_projects` and `marine_worlds` come from the BigQuery index / the user in production. When they are not
+                  marine_worlds: Optional[bool] = None, from_seq: int = 0, arena: Optional[bool] = None, peaceful: Optional[bool] = None) -> tuple[SetupInfo, GameConfig, SeedSpec]:
+    """`maps`, `base_projects`, `marine_worlds` and `arena` come from the BigQuery index / the user in production. `peaceful` is BGA's
+    own "Peaceful mode" option (103) when known (the table info of the extension, the index); else a game with an arena rating (`arena`) is never peaceful; else the
+    peaceful variant is inferred from the log (`infer_peaceful`). When they are not
     given (tests) they are inferred: Marine Worlds if any known card is a Marine Worlds card, Map 14 if the log shows its
     start-of-game sponsor search, map 1 otherwise, and the first 3 base projects."""
     setup = extract_setup(parsed)
@@ -229,6 +278,9 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
     fixes = _label_fixes().get(str(parsed.table_id))
     if fixes and maps is not None:                                        # tables where BGA's index names the wrong map (data_manual/map_label_fixes.json)
         maps = [fixes.get(pid, m) for pid, m in zip(setup.seats, maps)]
+    if maps is not None and "0" in maps:                                  # BGA's index labels the T1 layout "Map 0" in some tables: where the log's own first-building list fingerprints T1 for that player, the log wins
+        seen_ = infer_maps(parsed, setup.seats)
+        maps = ["T1" if m == "0" and s_ == "T1" else m for m, s_ in zip(maps, seen_)]
     exits = extract_exits(parsed)
     main, endgame = known_order(exits, "main", from_seq), known_order(exits, "endgame", from_seq)
     if marine_worlds is None:       # Marine Worlds cards in the log, or BGA offering aquariums (a Marine Worlds building) to build
@@ -255,7 +307,7 @@ def game_from_log(parsed: ParsedLog, maps: Optional[list[str]] = None, base_proj
         options["99"] = cb.random["99"][:1]                  # the bonus on 16 reputation (Marine Worlds)
     cfg = GameConfig(marine_worlds=marine_worlds, player_ids=setup.seats, maps=maps, base_projects=base_projects,
                      action_cards=[[ActionCardChoice(t, v) for t, v in setup.action_cards[p]] for p in setup.seats],
-                     conservation_bonuses=options, map_known=known, peaceful=infer_peaceful(parsed), table_id=int(parsed.table_id or 0))
+                     conservation_bonuses=options, map_known=known, peaceful=peaceful if peaceful is not None else (False if arena else infer_peaceful(parsed)), table_id=int(parsed.table_id or 0))
     seed = SeedSpec(tail_seed=1, main_order=main, endgame_order=endgame)
     if infer_bp and cfg.marine_worlds is not None:
         cfg.base_projects = refine_base_projects(parsed, setup, cfg, seed)

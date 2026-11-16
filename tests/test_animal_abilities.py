@@ -502,6 +502,8 @@ def test_peaceful_mode_replaces_hostile_effects():
     s = _start(_zoo("A414"))
     eff = ab.peaceful_effects(s, 0, "A414", "Venom", 2)
     assert eff == [{"kind": "gain", "source": "A414", "res": "xtoken", "n": 2, "optional": False}]
+    eff = ab.peaceful_effects(s, 0, "A475", "Hypnosis", 3)                                # Hypnosis becomes Determination, not a Mark
+    assert eff == [{"kind": "ability", "name": "Determination", "value": 3, "source": "A475", "optional": True}]
 
 
 def test_hypnosis_applies_constriction_and_clears_tokens_at_the_end():

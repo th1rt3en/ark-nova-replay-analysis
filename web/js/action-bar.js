@@ -390,7 +390,8 @@ const SOURCE_TEXT = { bonus: 'placement bonus', 'reputation track': 'reputation 
 // the action card of the running action with its strength, as in front of BGA's prompt
 function actionBadge(st) {
   const ca = st.current_action || {};
-  const card = (st.players[ca.seat] && st.players[ca.seat].action_cards[ca.slot - 1]) || {};      // (the log-built state only knows the slot of the card)
+  const holder = ca.owner != null ? ca.owner : ca.seat;                                          // (Hypnosis: the card is in the other player's row)
+  const card = (st.players[holder] && st.players[holder].action_cards[ca.slot - 1]) || {};      // (the log-built state only knows the slot of the card)
   const type = ca.type || card.type, level = ca.level || card.level;
   const b = el('span', 'abtn acbtn' + (level === 2 ? ' lvl2' : ''));
   const o = (FORK && S.replay.steps[S.step].options) || {};          // (live / fork: what is left to spend in a Sponsors or Build action, in place of the card's strength)

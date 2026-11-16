@@ -234,6 +234,8 @@ def map_ability_income(state, p) -> int:
 def _income(state, seat: int) -> None:
     g = _g()
     p = state.players[seat]
+    if p.flags.get("left"):                                  # a player who left the game (BGA plays no turn of theirs and pays no income: 697970922)
+        return
     bonuses.defer(state, {"kind": "income_appeal", "optional": False, "player": seat})      # the money of the appeal track is counted when the player resolves it: appeal gained first counts
     bonuses.defer(state, {"kind": "income_kiosk", "optional": False, "player": seat})
     if p.map_id in ("11", "5", "5a", "7", "7a"):           # the income of the map is an effect of its own: the player may resolve it before or after the free enclosure / store of the income

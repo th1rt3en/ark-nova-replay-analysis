@@ -1,4 +1,4 @@
-"""The problems of docs/problem_report.md that were fixed stay fixed: each log below was a mismatch or an illegal move of the differential test (the engine against BGA's log)."""
+﻿"""The problems of docs/problem_report.md that were fixed stay fixed: each log below was a mismatch or an illegal move of the differential test (the engine against BGA's log)."""
 from pathlib import Path
 
 import pytest
@@ -99,8 +99,32 @@ REPLAYED = {
     "927683584": [64, 70],                  # a Mark with no animal in the display (C); the other player's Clever in the break (D)
     "920319154": [23],                      # Activate Reef without a reef dweller (C)
     "795215166": [78],                      # an endgame card discard is no sponsor play (E)
-    "843469060": [46],                      # map T1: the snaps of a conservation-5 reward are no notepad bonus, so the card bonus (slot 0) is still free
+    "843469060": [46, 66],                  # map T1: the snaps of a conservation-5 reward are no notepad bonus, so the card bonus (slot 0) is still free; turn 66: the log ends before BGA refills the display
     "901779082": [48],                      # a Marketing token plays the Amazon House before the card is chosen: its building covers a Clever hex, the Clever comes after the Association II (turns 48 + 49)
+    # 2026-11-16: the differential list of the 86 tables
+    "816239058": [50, 74, 75],              # an extra action after a token or a sale; the draw of a hand rescue is no second draw
+    "840980354": [53],                      # map 10: an animal rescued from the hand draws its card with the rescue
+    "820998468": [70, 83],                  # a released aquarium animal empties as many spaces as it takes; the Hawkfish still triggers as a reef dweller
+    "855359344": [55],                      # the Adapt comes before the discard at 10 conservation
+    "862612675": [40],                      # Waza: the snap of a card that the Digging then digs from the hand stays in front of it
+    "887318108": [76],                      # map 13: the capped reputation of the other player is done before this player's income (the display is refilled)
+    "889879141": [58],                      # the Side Entrance played in the break pays its income before the entrance is built
+    "771466733": [56],                      # a second Venom of a turn goes on the next card, not on the same one
+    "772160454": [21],                      # a player who quits in the middle of a turn
+    "840929840": [59],                      # (same)
+    "795715523": [58],                      # map 12: a hypnotised card gets the concealed numbers of the player who owns it
+    "864552379": [49, 51],                  # a project's Hunter counts its icons when the cards are revealed (a university of the same project adds one)
+    "664979088": [36],                      # the Explorer's gains come after the Constriction of the same animal
+    "666650119": [63],                      # a Trade for reputation at 9 with the Cards action not upgraded leaves the marker at 9
+    "672123762": [63],                      # the hypnotised card that is put back is the next turn of the same player
+    "688573593": [43],                      # the turn numbers differ by one after an extra action: not a rule
+    "856281778": [51],                      # a Shark Attack that hits a marked card in the break: the card goes to the player who marked it
+    "869352683": [69],                      # map 10: the draw before a rescue from the display is the placement bonus's, not the rescue's
+    "847820417": [64, 68],                  # turn 64: the last kiosk used the last strength (BGA lists nothing afterwards); turn 68: the other player's declined optional effect, their income is done, the display is refilled
+    "795707447": [32],                      # (same as 869352683)
+    "789679971": [26],                      # the Sea Turtle Tank pays the Explorer for one new icon
+    "656606572": [27],                      # (same)
+    "862028007": [79],                      # an animals action that does not use its Multiplier: the cleanup is the next marker
 }
 
 
@@ -116,3 +140,14 @@ def test_a_turn_that_used_to_be_skipped_is_replayed(table):
     rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)}, chain=True)
     bad = {k: (rep.results[k].status, rep.results[k].detail[:120]) for k in REPLAYED[table] if k in rep.results and rep.results[k].status != "ok"}
     assert not bad, bad
+
+@pytest.mark.skipif(not (LOGS / "715758234.json").exists(), reason="log not available")
+def test_a_release_that_frees_no_enclosure_is_replayed():
+    # 715758234 (map 5a, Marine Worlds): BGA lists {"type": "empty"} as the building of the 4th release ("frees no enclosure")
+    parsed = parse_log(str(LOGS / "715758234.json"))
+    seats = [str(p.id) for p in parsed.players]
+    setup, cfg, seed = game_from_log(parsed, maps=["5a", "5a"], marine_worlds=True)
+    replay = build_replay(parsed, setup, cfg, seed)
+    rep = run_differential(parsed, replay, {pid: i for i, pid in enumerate(setup.seats)})
+    assert not rep.illegal and not rep.mismatches, rep.illegal + rep.mismatches
+    assert all(r.status == "ok" for r in rep.results.values()), {k: r.detail for k, r in rep.results.items() if r.status != "ok"}

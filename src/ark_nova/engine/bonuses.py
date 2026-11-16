@@ -126,6 +126,8 @@ def use_token(state, action) -> None:
         state.prompt.args["pending"].append(eff)
     elif state.current_action is not None and state.current_action.get("seat") == p.seat and state.prompt is not None and state.prompt.player == p.seat:
         _fx().open_prompt(state, p.seat, [eff], {"kind": "prompt", "prompt_kind": state.prompt.kind, "args": state.prompt.args})
+    elif state.current_action is None and state.prompt is not None and state.prompt.kind == "effects" and state.prompt.player == p.seat and state.active_player == p.seat             and (state.prompt.args.get("resume") or {}).get("kind") == "end":
+        state.prompt.args["pending"].append(eff)           # the effects after the action (Clever, Boost, marks) are still open: the token's effect joins them, in any order (840068875 turn 69)
     else:                                                  # the turn is over but the next player has not acted yet: BGA still lets the token be used
         pr = state.prompt
         state.current_action = {"seat": p.seat, "type": "window", "strength": 0, "after": [],
@@ -209,9 +211,8 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             defer(state, {"kind": "store", "source": "map11", "optional": True, "player": seat})
         elif k == "add-worker":
             hire_worker(state, seat)
-        elif k == "Worker":                              # a new worker; with all four hired, a worker comes back from the association board (like Extra Shift)
-            if not hire_worker(state, seat):
-                defer(state, {"kind": "extra_shift", "source": "bonus", "optional": False, "player": seat})
+        elif k == "Worker":                              # a new worker; with all four hired nothing happens (BGA logs no worker coming back, even with workers on the board: 622711105 turn 70, 610597958 turn 60)
+            hire_worker(state, seat)
         elif k == "size-2":
             defer(state, {"kind": "build", "source": "bonus", "type": "size-2", "rules": {}, "optional": True, "double": False, "player": seat})      # (optional wherever it comes from: income, a project bonus, the reward track)
         elif k == "take-in-range-or-deck":               # v cards (3 for the conservation bonus)
@@ -229,13 +230,7 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
                 raise NotImplementedError("Determination outside an action")
             state.current_action["extra"] = {"types": [t for t in animal_abilities.ACTION_TYPES if t != state.current_action["type"]], "optional": False}
         elif k == "animal-magnet":                       # map 12 (income-less space): every animal of the display goes to the hand, the display is refilled at the end of the turn
-            from ark_nova.engine import marks
-            p = state.players[seat]
-            for j, c in enumerate(state.display):
-                if c and c.startswith("A"):
-                    state.display[j] = None
-                    marks.taken(state, c)
-                    p.hand.append(c)
+            defer(state, {"kind": "magnet", "source": "bonus", "name": "Animal Magnet", "optional": True, "player": seat})          # (the player takes the animals when they like, or not: a log with no animal in the hand afterwards, 801879816 turn 67)
         elif k == "continent":                           # map 9 space: one of the remaining continent cubes is unlocked (with its bonus), nothing when all are
             from ark_nova.engine import map_rules
             if map_rules.continents_left(state.players[seat]):
@@ -526,7 +521,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         apply_bonus(state, p.seat, bonus)
     elif k == "search_sponsor":
         from ark_nova.engine.cards import search_deck
-        found = search_deck(state.main_deck, ("sponsor", None))
+        found = None if e.get("nothing") else search_deck(state.main_deck, ("sponsor", None))          # (the replay harness: the log shows no draw, the card taken is one that no line shows)
         if found:
             p.hand.append(found)
     elif k == "pbonus":
@@ -535,7 +530,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         else:
             _g().apply_placement_bonus(state, p.seat, e["bonus"])
     elif k == "search_category":
-        fx.search_for_category(state, p.seat, e["category"])
+        if not e.get("nothing"):                          # (the replay harness: BGA found nothing, the cards of the category are not in the deck)
+            fx.search_for_category(state, p.seat, e["category"])
     elif k == "income_map":
         from ark_nova.engine import breaks
         _g()._gain(state, p.seat, money=breaks.map_ability_income(state, p))
@@ -553,7 +549,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if cell not in archaeologist_cells(state, p):
             raise fx.IllegalEffect("choose a placement bonus that is not covered")
         for b in _board(p).bonuses[cell]:
-            _g().apply_placement_bonus(state, p.seat, b)
+            _g().apply_placement_bonus(state, p.seat, b, at_once=True)
     elif k == "take_tile":
         from ark_nova.engine import association
         opt = {x: v for x, v in a.items() if x in ("partner", "university", "category")}

@@ -58,7 +58,8 @@ def keyword_effects(state, seat: int, source: str, b: dict) -> list:
     value = b.get("bonusValue", 1)
     if name == "hunter":
         n = icons[tag_icon(per["tag"])] // per["every"] if per else value
-        return [{"kind": "reveal", "source": source, "x": n, "filter": "animal", "optional": False}] if n else []
+        extra = {"per_icon": tag_icon(per["tag"]), "every": per["every"]} if per else {}          # (counted again when the cards are revealed: a university of the same project adds its icon first, 864552379 turn 49)
+        return [{"kind": "reveal", "source": source, "x": n, "filter": "animal", "optional": False, **extra}] if n else []
     if name == "posturing":
         return animal_abilities._build(source, ("kiosk", "pavilion"), value)
     if name == "sunbathing":
@@ -155,6 +156,18 @@ def release_animal(state, seat: int, key: str, building=None, totals=None) -> No
             b.animal = None
         elif key in b.animals:
             b.animals.remove(key)
+        elif b.type in ("small-aquarium", "large-aquarium", "underwater-tunnel"):
+            holder = next((o for o in p.buildings if key in getattr(o, "animals", ())), None)      # an animal is not tied to an enclosure: BGA names the enclosure that is emptied (it fits the released animal), the engine's list of animals per aquarium is only bookkeeping, so the released animal leaves the zoo and no other animal does (672851171 turn 36)
+            if holder is not None:
+                holder.animals.remove(key)
+                if b.animals:                                              # (bookkeeping only: the named aquarium is emptied, the animal the engine listed there stays in the zoo)
+                    holder.animals.append(b.animals.pop(0))
+            elif b.animals:
+                from ark_nova.engine import animals_action
+                freed = 0
+                need = animals_action._special_size(key)                    # (the engine lists the animal in no aquarium: the named one is emptied of as many spaces as the released animal takes, 820998468 turns 70 and 83)
+                while b.animals and freed < need:
+                    freed += animals_action._special_size(b.animals.pop(0))
         elif b.animals:
             b.animals.pop(0)
     p.released.append(key)
@@ -177,13 +190,13 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         release_animal(state, p.seat, a["release"], a.get("building"), a.get("cubes"))
         for other in a.get("also") or []:                       # BGA may name more enclosures as emptied (an animal is not tied to an enclosure): each one loses an animal
             ob = next((b for b in p.buildings if [b.x, b.y] == list(other)), None)
-            if ob is not None and not ob.type.startswith("size-") and ob.animals:
-                ob.animals.pop(0)
+            if ob is not None and not ob.type.startswith("size-") and ob.animals and ob.type not in ("small-aquarium", "large-aquarium", "underwater-tunnel"):
+                ob.animals.pop(0)                                  # (an aquarium animal can span several aquariums: they are emptied of its spaces, no other animal leaves: 731797456 turn 60)
     elif k == "reef":
         from ark_nova.engine import animals_action
         extra = []
-        for b in _reef_aquariums(state, p.seat):                    # the aquariums of a zoo share their spaces: the effects of all of their animals (logs)
-            for other in b.animals:
+        if _reef_aquariums(state, p.seat):                          # the aquariums of a zoo share their spaces: the effects of all of their animals (logs)
+            for other in animals_action.aquarium_animals(state, p.seat):
                 pairs = animals_action.reef_abilities(other)
                 if pairs:
                     extra += [{**x, "reef": True} for x in animals_action.ability_effects(state, other, pairs)]

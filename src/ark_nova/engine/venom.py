@@ -30,6 +30,23 @@ def due(p) -> bool:
     return not p.flags.get("venom_removed") and not p.flags.get("venom_paid") and count(p, "Venom") > 0
 
 
+def can_pay(state, p) -> bool:
+    """The "pay Venom" button: at any time of the player's own turn, like a sale at the Commercial Harbor; payment is only required before the turn ends,
+    unless a Venom token is removed during it (808330821 turn 58: paid in the first action of two, kept when the second removed the token)."""
+    return (state.active_player == p.seat and count(p, "Venom") > 0 and not p.flags.get("venom_paid") and not p.flags.get("venom_removed")
+            and p.money >= VENOM_COST)
+
+
+def pay_now(state, seat: int) -> None:
+    p = state.players[seat]
+    if not can_pay(state, p):
+        raise _g().IllegalAction("there is no Venom to pay now")
+    p.flags.pop("venom_owed", None)
+    _g()._gain(state, seat, money=-VENOM_COST)
+    p.flags["venom_paid"] = 1                                  # (a chosen payment is final: the token removed later takes nothing back)
+    p.flags.pop("venom_early", None)
+
+
 def blocked(state, seat: int) -> bool:
     """Drawing cards from the deck is never blocked by an unpaid Venom: BGA let a player with 1 money draw (839471673 turn 57, 820888770 turn 35) and took the
     2 money only at the end of the turn, after the card was sold for money."""
@@ -96,7 +113,7 @@ def give_venom(state, seat: int, n: int) -> None:
     start = (state.current_action or {}).get("appeal_start")            # the appeal when the action began: what the animal gains itself does not count (105 logged Venoms)
     mine, theirs = (start[seat], start[1 - seat]) if start else (me.appeal, other.appeal)
     if theirs > mine and not _tracks().is_protected(other.appeal) and "S225" not in other.sponsors:
-        for card in other.action_cards[:n]:
+        for card in [c for c in other.action_cards[:2] if "Venom" not in c.tokens][:n]:          # (only the two cards at strength 1 and 2 can carry one, a card one token: a second Venom of the same turn goes on the next card, 671283576 turn 55, 771466733 turn 56)
             card.tokens.append("Venom")
 
 
@@ -104,7 +121,8 @@ def give_constriction(state, seat: int) -> None:
     me, other = state.players[seat], state.players[1 - seat]
     if _tracks().is_protected(other.appeal) or "S225" in other.sponsors:                            # below 5 appeal a player is protected
         return
-    ahead = (other.appeal > me.appeal) + (other.conservation > me.conservation)          # (the appeal now: the animal's own appeal and the sponsors' triggers are effects of their own that the player may resolve first)
+    late = (state.current_action or {}).get("late_appeal", 0) if seat == state.active_player else 0          # (BGA logs the Explorer's gains after the Constriction of the same animal: 664979088 turn 36)
+    ahead = (other.appeal > me.appeal - late) + (other.conservation > me.conservation)    # (the appeal now: the animal's own appeal and the sponsors' triggers are effects of their own that the player may resolve first)
     for card in other.action_cards[::-1][:ahead]:                       # the cards at strength 5, then 4
         card.tokens.append("Constriction")
 

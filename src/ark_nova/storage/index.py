@@ -21,6 +21,8 @@ class TableRecord:
     thinking_times: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's thinking time in seconds (column `thinking_time`)
     elos_after: dict[str, int] = field(default_factory=dict)  # BGA player id -> the player's Elo after the game (column `post_match_elo`, same scale as `elos`)
     elo_changes: dict[str, int] = field(default_factory=dict)  # BGA player id -> the change of the game (`post_match_elo` - `pre_match_elo`, rounded)
+    peaceful: bool | None = None  # BGA's "Peaceful mode" option (103): True / False when known (the table info of the extension, the index's `options`), None = not known: the replay then goes by `arena` and the log
+    arena: bool | None = None  # the game has an arena rating (`pre_match_arena_rating` is filled): an arena game is never peaceful; None = not known
     base_projects: list[str] = field(default_factory=list)  # the 3 base projects in play, positions base_0..2 (['P103', 'P106', 'P111']), read off BGA's replay by the extension; empty = infer from the log
 
     @property
@@ -80,12 +82,27 @@ class BigQueryIndex:
             return None
         logs = self._query(f"SELECT table_id, file_name FROM `{self._logs_table}` WHERE table_id = @table_id LIMIT 1", str(table_id))
         after, change = self._elo_after(table_id)
+        arena, peaceful = self._flags(table_id)
         return TableRecord(table_id=table_id, gcs_path=logs[0]["file_name"] if logs else None,
                            player_maps={str(r["player_id"]): map_id(str(r["map"])) for r in stats},
                            marine_worlds=any(bool(r["is_mw"]) for r in stats),
                            elos={str(r["player_id"]): round(r["elo"]) for r in stats if r.get("elo") is not None},
                            thinking_times={str(r["player_id"]): round(r["thinking_time"]) for r in stats if r.get("thinking_time") is not None},
-                           elos_after=after, elo_changes=change)
+                           elos_after=after, elo_changes=change, arena=arena, peaceful=peaceful)
+
+    def _flags(self, table_id: int) -> tuple[bool | None, bool | None]:
+        """(arena, peaceful): whether the game has an arena rating (`pre_match_arena_rating` is filled: then it cannot be a peaceful game) and BGA's "Peaceful mode" option (103,
+        in the JSON column `options`, filled for some tables only). A query of its own, so a table without those columns (or an error) only leaves the answers open (None:
+        the replay then infers the peaceful variant from the log)."""
+        from ark_nova.storage.tableinfo import peaceful_from_option
+
+        try:
+            rows = self._query(f"SELECT pre_match_arena_rating, JSON_VALUE(options, '$.\"103\".value') AS peaceful_option FROM `{self._stats_table}` WHERE table_id = @table_id", table_id)
+        except Exception:                                                         # noqa: BLE001
+            return None, None
+        arena = True if any(r.get("pre_match_arena_rating") is not None for r in rows) else (False if rows else None)
+        answers = {peaceful_from_option(r.get("peaceful_option")) for r in rows} - {None}
+        return arena, (answers.pop() if len(answers) == 1 else None)
 
     def _elo_after(self, table_id: int) -> tuple[dict[str, int], dict[str, int]]:
         """({player id: Elo after the game}, {player id: change of the game}) from `post_match_elo` / `pre_match_elo`. A query of its own, so a table without

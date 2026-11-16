@@ -37,6 +37,18 @@ def ensure_main_deck(state, need: int) -> None:
     state.main_deck = state.main_deck + pile
 
 
+def peek_main_deck(state, n: int) -> list:
+    """The top `n` cards of the draw pile as they will be when they are drawn: `ensure_main_deck` shuffles the discard pile under what is left with the same random state,
+    so the preview is the same (and the state is not changed). The legal moves of an effect that looks at the top cards have to be listed from this."""
+    if len(state.main_deck) >= n or not state.main_discard:
+        return state.main_deck[:n]
+    from ark_nova.engine.rng import Rng
+    rng = Rng(state.rng)
+    pile = list(state.main_discard)
+    rng.shuffle(pile)
+    return (state.main_deck + pile)[:n]
+
+
 def search_deck(deck: list[str], cond: Condition) -> Optional[str]:
     """Remove and return the first card of `deck` (top first) that satisfies `cond`; everything else keeps its order."""
     for i, key in enumerate(deck):

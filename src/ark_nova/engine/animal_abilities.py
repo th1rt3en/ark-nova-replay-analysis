@@ -74,7 +74,7 @@ def add_multiplier(state, p, card) -> None:
 
 def peaceful_effects(state, seat: int, key: str, name: str, value) -> list:
     """The peaceful variant replaces the hostile abilities (found in the logs: Venom X -> X X tokens, Constriction -> Clever, Pilfering 1 -> 3
-    money, Pilfering 2 -> Sprint 2, Hypnosis -> Mark; ISSUES.md)."""
+    money, Pilfering 2 -> Sprint 2, Hypnosis -> Determination; ISSUES.md)."""
     if name == "Venom":
         return [{"kind": "gain", "source": key, "res": "xtoken", "n": int(value or 1), "optional": False}]
     if name == "Constriction":
@@ -84,8 +84,8 @@ def peaceful_effects(state, seat: int, key: str, name: str, value) -> list:
                 {"kind": "ability", "name": "Sprint", "value": 1, "source": key, "optional": True, "xor": key}]
     elif name == "Pilfering 2":
         return [{"kind": "ability", "name": "Sprint", "value": 2, "source": key, "optional": True}]
-    elif name == "Hypnosis":
-        state.current_action.setdefault("after", []).append({"kind": "mark", "source": key, "optional": False})
+    elif name == "Hypnosis":                                       # (the solo game's effect: a second action, as Determination)
+        return [{"kind": "ability", "name": "Determination", "value": value, "source": key, "optional": True}]
     return []
 
 
@@ -94,8 +94,6 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     p = state.players[seat]
     icons = icon_counts(state, seat)
     if state.config.peaceful and name in PEACEFUL:
-        if name == "Venom" and any(ab["keyword"]["name"] == "Inventive" for ab in (card(key).get("abilities") or []) + (card(key).get("reefDwellerEffect") or [])):
-            return []                                    # (the peaceful Venom is the Inventive X token: a card with both pays it once, 801244007 T24)
         return peaceful_effects(state, seat, key, name, value)
     if name == "Pack":
         if state.config.confirm_turns:                              # live: the player collects the appeal with a button of its own, in the order he likes (replays pay it at once)
@@ -111,7 +109,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
     elif name == "Iconic Animal":
         both = icon_counts(state, 0) + icon_counts(state, 1)
         icon = next(i for i in icons if i.lower() == str(value).lower()) if any(i.lower() == str(value).lower() for i in icons) else str(value).capitalize()
-        g._gain(state, seat, appeal=min(8, both[icon]))
+        return [{"kind": "gain", "source": key, "res": "appeal", "n": min(8, both[icon]), "iconic": icon, "optional": False}]          # (counted when the effect is resolved: a sponsor played before it in the same action counts, 746858756 turn 58)
     elif name in DEFERRED:                                        # drawing from the deck is irreversible: the player activates it when Venom is paid
         return [{"kind": "ability", "name": name, "value": value, "source": key, "optional": True}]
     elif name == "Venom":
@@ -187,7 +185,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         return [{"kind": "adapt", "source": key, "player": seat, "optional": False, "draw": int(value), "n": int(value)}]
     elif name == "Scuba Dive X":
         x = icons["SeaAnimal"] + icons["Reptile"]
-        return [{"kind": "reveal", "source": key, "x": x, "filter": "sponsor", "optional": False}] if x else []
+        return [{"kind": "reveal", "source": key, "x": x, "filter": "sponsor", "optional": False, "icons": ["SeaAnimal", "Reptile"]}] if x else []          # (counted when the cards are revealed: a sponsor played with Marketing first adds its icons, 661026172 turn 45)
     elif name == "Monkey Gang":
         _monkey_gang(state, seat)
     elif name in ("Sea Animal Magnet", "Sponsor Magnet") and state.config.confirm_turns:          # live play and the sandbox: a button of its own, the player takes the cards when they like
@@ -213,9 +211,12 @@ _MULTIPLIER_CARD = {"Association": "association", "Building": "build", "Card": "
 
 def activate(state, seat: int, key: str, name: str, value) -> list:
     """The deferred abilities (the same code as the direct ones)."""
-    if name not in DEFERRED:
+    if name not in DEFERRED and name != "Determination":
         return []
     g = _g()
+    if name == "Determination":                                  # (the peaceful Hypnosis: a second action of another action card of the player)
+        g.add_extra(state, {"types": [t for t in ACTION_TYPES if t != state.current_action["type"]], "optional": False})
+        return []
     if name == "Sprint":
         _draw(state, seat, int(value))
     elif name == "Monkey Gang":
@@ -330,7 +331,7 @@ def pilfer_hits(state, e: dict) -> bool:
     if tracks.is_protected(victim.appeal) or "S225" in victim.sponsors:                             # below 5 appeal a player is protected
         return False
     if e.get("by", "appeal") == "appeal":
-        return victim.appeal >= thief.appeal
+        return victim.appeal >= thief.appeal - ((state.current_action or {}).get("late_appeal", 0) if thief.seat == state.active_player else 0)
     return victim.conservation >= thief.conservation and victim.conservation > 0                    # (a tie at 0 does not count: logs)
 
 
@@ -343,16 +344,42 @@ def rescuable(key) -> bool:
     return bool(c) and key.startswith("A") and not any(s["type"] == "Petting Zoo" for s in c.get("specialEnclosures") or [])
 
 
-def _marketing_options(state, seat: int, e=None) -> list:
-    """Marketing: a sponsor of the hand that can be played (all requirements) for money equal to its strength."""
+def revealed_cards(state, seat: int) -> list:
+    """The cards that a reveal effect of the player (Scuba Dive, Hunter ...) has revealed and not settled yet: the player may play a sponsor among them with Marketing
+    before choosing the card to keep (the log of 647824362 turn 74)."""
+    from ark_nova.engine.cards import peek_main_deck
+    pr = state.prompt
+    if pr is None or pr.kind != "effects":
+        return []
+    out: list = []
+    for e in pr.args.get("pending", []):
+        if e["kind"] == "reveal" and e.get("revealed") and e.get("player", pr.player) == seat:
+            out += peek_main_deck(state, e["x"])
+    return out
+
+
+def _marketing_options(state, seat: int, e=None, extra=()) -> list:
+    """Marketing: a sponsor of the hand (or of the revealed cards, or `extra`) that can be played (all requirements) for money equal to its strength."""
     from ark_nova.engine import effects, sponsors_action
     p = state.players[seat]
     level = max((c.level for c in p.action_cards if c.type == "sponsors"), default=1)
     free, person = bool(e and e.get("free")), bool(e and e.get("person"))                # map 14: a person sponsor of the hand for nothing
-    return [k for k in sorted(set(p.hand)) if k.startswith("S") and (free or sponsors_action.level_for(state, seat, k) <= p.money)
+    return [k for k in sorted(set(p.hand) | set(revealed_cards(state, seat)) | set(extra)) if k.startswith("S") and (free or sponsors_action.level_for(state, seat, k) <= p.money)
             and (not person or data.cards_by_key()[k].get("type") == "HUMAN")
             and sponsors_action.requirements_met(state, seat, k, level) and effects.can_play(state, seat, k)
             and not sponsors_action.has_unimplemented_effect(k)]
+
+
+def reveal_helps_marketing(state, seat: int, e) -> bool:
+    """A reveal that is not opened yet may be opened first when the player has a Marketing to use (a token or a pending effect) and a sponsor among the cards it would reveal can be played."""
+    from ark_nova.engine.cards import peek_main_deck
+    p = state.players[seat]
+    pr = state.prompt
+    has_marketing = any(t.type == "bonus-sponsor-gray" for t in p.tokens) or any(x["kind"] == "marketing" and x.get("player", pr.player) == seat for x in pr.args.get("pending", []))
+    if not has_marketing:
+        return False
+    top = [c for c in peek_main_deck(state, e["x"]) if c.startswith("S")]
+    return bool(top) and bool(_marketing_options(state, seat, None, extra=top))
 
 
 def _empty_standard(b) -> bool:
@@ -386,7 +413,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     if k == "hypnosis":
         other = state.players[1 - action.player]
         if other.appeal >= p.appeal and not tracks.is_protected(other.appeal) and "S225" not in other.sponsors:           # the other player is not behind (and not protected): one of their first 3 action cards
-            state.current_action["extra"] = {"types": [], "optional": True, "hypnosis": True}
+            g.add_extra(state, {"types": [], "optional": True, "hypnosis": True})          # (behind an extra action that an animal played before gave: the log shows that one first, 640381487 turn 42)
     elif k == "pay_appeal":
         if p.money < 2:
             raise fx.IllegalEffect("not enough money")
@@ -399,6 +426,11 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         card = a["card"]
         if card not in _marketing_options(state, action.player, e):
             raise fx.IllegalEffect("that sponsor cannot be played with Marketing")
+        if card not in p.hand:                                      # a sponsor among the revealed cards: it leaves the reveal (one card fewer to choose from)
+            rev = next(x for x in state.prompt.args["pending"] if x["kind"] == "reveal" and x.get("revealed") and card in fx.peek_main_deck(state, x["x"]))
+            state.main_deck.remove(card)
+            rev["x"] -= 1
+            p.hand.append(card)
         from ark_nova.engine import sponsors_action
         if not e.get("free"):
             g._gain(state, action.player, money=-sponsors_action.level_for(state, action.player, card))
@@ -417,6 +449,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     elif k == "gain":
         if e.get("per_pavilion"):                                    # Landscape Gardener: the pavilions in the zoo when the effect is resolved
             e["n"] = sum(b.type == "pavilion" for b in p.buildings)
+        if e.get("iconic"):                                           # Iconic Animal: the icons of both zoos when the effect is resolved, up to 8
+            e["n"] = min(8, (icon_counts(state, 0) + icon_counts(state, 1))[e["iconic"]])
         if e.get("per"):
             e["n"] = e["per"]["mult"] * (icon_counts(state, action.player)[e["per"]["icon"]] // e["per"]["every"])
         g._gain(state, action.player, **{{"appeal": "appeal", "money": "money", "reputation": "reputation", "conservation": "conservation", "xtoken": "x_tokens"}[e["res"]]: e["n"]})
@@ -554,7 +588,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             p.hand.append("P108")
     elif k == "magnet":                                            # every sponsor (Sponsor Magnet) / sea animal (Sea Animal Magnet) of the display goes to the hand
         for j, c in enumerate(state.display):
-            if c and ((e["name"] == "Sponsor Magnet" and c.startswith("S")) or (e["name"] == "Sea Animal Magnet" and _sea_animal(c, state.config.marine_worlds, any_card=True))):
+            if c and ((e["name"] == "Sponsor Magnet" and c.startswith("S")) or (e["name"] == "Animal Magnet" and c.startswith("A")) or (e["name"] == "Sea Animal Magnet" and _sea_animal(c, state.config.marine_worlds, any_card=True))):
                 state.display[j] = None
                 marks.taken(state, c)
                 p.hand.append(c)

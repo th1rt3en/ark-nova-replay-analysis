@@ -13,7 +13,7 @@ from ark_nova import data
 from ark_nova.engine import association, animal_abilities, bonuses, marks, project_effects, sponsor_extras, venom, build_action, card_programs as prog, cards_action
 from ark_nova.engine.actions import Action
 from ark_nova.engine.board import board_of
-from ark_nova.engine.cards import ensure_main_deck
+from ark_nova.engine.cards import ensure_main_deck, peek_main_deck
 from ark_nova.engine.icons import card_icons, icon_counts, requirement
 
 
@@ -174,10 +174,12 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                         pending.append({"kind": "sell", "source": s, "max": eff[1], "optional": True, "player": owner})
                     elif eff[0] == "pouch":
                         pending.append({"kind": "pouch", "source": s, "optional": True, "player": owner})
-                    elif eff[0] == "slot1" and state.current_action.get("type") == "break":      # (a sponsor played in the break: at once, free)
+                    elif eff[0] == "slot1" and (state.current_action is None or state.current_action.get("type") == "break" or (state.current_action.get("type") == "window" and state.players[owner].flags.get("post_break"))):      # (a sponsor played in the break or in the window after it: at once, free; 643733401 turn 78)
                         pending.append({"kind": "slot1", "source": s, "optional": True, "cost": 0, "player": owner})
                     elif eff[0] == "slot1":              # the used action card only goes to slot 1 at the end of the action
                         state.current_action.setdefault("after", []).append({"kind": "slot1", "source": s, "optional": True})
+                    elif eff[0] == "mark" and (state.current_action is None or state.current_action.get("type") == "break"):      # (a Europe icon played in the break, e.g. by a map bonus hex: at once, 868399197 turn 32)
+                        pending.append({"kind": "mark", "source": s, "optional": False, "player": owner})
                     elif eff[0] == "mark":                # Conference on Europe: one mark per Europe icon, at the end of the action
                         state.current_action.setdefault("after", []).append({"kind": "mark", "source": s, "optional": False})
                     elif eff[0] == "expedition":
@@ -192,8 +194,12 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                     elif eff[0] == "unsupported":
                         raise NotImplementedError(eff[1])
     if explorer:
-        new = [i for i in prog.EXPLORER_ICONS if own[i] and not before[i] and i not in EXPLORER_BUG.get(card_key, ())]
+        new = [i for i in prog.EXPLORER_ICONS if own[i] and not before[i]]
+        if card_key in EXPLORER_BUG:                       # the Sea Turtle Tank pays for one new icon only (656606572 turn 27: Reptile and Sea Animal both new, one payment; 789679971 turn 26: Sea Animal alone, one payment)
+            new = new[:1]
         g._gain(state, seat, appeal=len(new), money=2 * len(new))
+        if new and state.current_action is not None:
+            state.current_action["late_appeal"] = state.current_action.get("late_appeal", 0) + len(new)      # (BGA logs the Explorer's gains after a Pilfering of the same animal: it does not count there, 739415597 turn 76)
     if state.players[seat].map_id == "BDW1":                  # Management Zoo: the second icon of a species pays a bonus
         from ark_nova.engine import map_rules
         pending += map_rules.species_effects(seat, before, total)
@@ -271,7 +277,10 @@ def legal(state, p0) -> list:
                 out.append(Action(p.seat, "skip_effect", {"index": i}))
             continue
         elif k == "reveal":
-            top = state.main_deck[:e["x"]]
+            _refresh_reveal(state, p.seat, e)
+            if not e.get("revealed") and animal_abilities.reveal_helps_marketing(state, p.seat, e):
+                out.append(Action(p.seat, "choose_effect", {"index": i, "reveal": True}))       # (a Marketing may play one of the revealed sponsors first)
+            top = peek_main_deck(state, e["x"])                     # (the draw pile is reshuffled from the discard pile when the cards are revealed: the options are those of the cards that will be on top)
             opts = [c for c in top if _reveal_ok(e, c)]
             if e.get("n", 1) > 1:                                   # Perception 4: 4 cards are drawn, 2 are kept
                 out += [Action(p.seat, "choose_effect", {"index": i, "keep": sorted(c)}) for c in sorted(set(combinations(sorted(opts), e["n"])))]
@@ -307,6 +316,17 @@ def legal(state, p0) -> list:
 
 def _small_animal(key: str) -> bool:
     return key.startswith("A") and sponsor_extras.size_class(data.cards_by_key()[key]) == "small"
+
+
+def _refresh_reveal(state, seat: int, e: dict) -> None:
+    """A reveal whose number counts icons (Scuba Dive X) is counted when its cards are revealed, not when the animal is played."""
+    if e.get("icons") and not e.get("revealed"):
+        from ark_nova.engine.icons import icon_counts
+        counts = icon_counts(state, e.get("player", seat))
+        e["x"] = sum(counts[n] for n in e["icons"])
+    elif e.get("per_icon") and not e.get("revealed"):
+        from ark_nova.engine.icons import icon_counts
+        e["x"] = max(e["x"], icon_counts(state, e.get("player", seat))[e["per_icon"]] // e["every"])
 
 
 def _reveal_ok(e, card: str) -> bool:
@@ -349,7 +369,11 @@ def resolve_build(state, action: Action) -> None:
                 and (x, y, k) in build_options(state, p.seat, t, e["rules"]))
 
     try:                                            # a building that was picked up (Reconstruction) goes back before a new one is built
-        i = _find(state, "build", lambda e: bool(e.get("placeback")) and fits(e))
+        want = action.args.get("placeback")               # (the replay names the building that goes back: its place before it was picked up, 835139386 turn 53)
+        try:
+            i = _find(state, "build", lambda e: bool(e.get("placeback")) and fits(e) and (want is None or list(e["placeback"].get("from") or want) == list(want)))
+        except IllegalEffect:
+            i = _find(state, "build", lambda e: bool(e.get("placeback")) and fits(e))
     except IllegalEffect:                           # the most specific effect first (a kiosk-only trigger before Posturing's kiosk or pavilion)
         i = min((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "build" and fits(e)),
                 key=lambda j: len(state.prompt.args["pending"][j].get("types", [1])), default=None)
@@ -440,6 +464,7 @@ def resolve_choice(state, action: Action) -> None:
         animal_abilities.resolve(state, action, e, i)
         return
     if k == "reveal":
+        _refresh_reveal(state, action.player, e)
         ensure_main_deck(state, e["x"])
         if action.args.get("reveal"):
             e["revealed"] = True

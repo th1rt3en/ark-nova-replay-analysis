@@ -205,3 +205,55 @@ def test_a_kept_table_opens_like_a_logged_one_and_is_cached():
     assert [p["elo"] for p in view["players"]] == [_extras()["elos"][p["id"]] for p in view["players"]]
     assert [p["elo_change"] for p in view["players"]] == [5, 5] and [p["elo_after"] for p in view["players"]] == [p["elo"] + 5 for p in view["players"]]
     assert client.get("/api/tables/607674960/replay", headers={"If-None-Match": r.headers["etag"]}).status_code == 304
+
+def _info_with_peaceful(value):
+    info = json.loads(INFO.read_text(encoding="utf-8"))["data"]
+    info["options"] = {**info.get("options", {}), **({"103": {"name": "Peaceful mode", "type": "enum", "value": value, "values": [{"name": "Disabled"}, {"name": "Enabled"}]}} if value is not None else {})}
+    if value is None:
+        info["options"].pop("103", None)
+    return info
+
+
+@pytest.mark.parametrize("value, expected", [("1", True), ("0", False), (None, None)])
+def test_the_upload_keeps_bgas_peaceful_option_of_the_table_info(value, expected):
+    """BGA's "Peaceful mode" option (103) of the table info goes to the appendix row: the replay then knows for sure."""
+    if not LOG.exists():
+        pytest.skip("log not available")
+    seen = {}
+
+    class Spy(Contributions):
+        def keep(self, table_id, raw, projects, extras=None):
+            seen.update(extras)
+            return True
+
+    client = _client(Spy("b"))
+    body = json.dumps({"log": json.loads(LOG.read_text(encoding="utf-8")), "index": _info_with_peaceful(value)})
+    assert client.post("/api/tables/607674960/upload", content=body.encode()).status_code == 200
+    for _ in range(100):
+        if seen:
+            break
+        time.sleep(0.1)
+    assert seen["peaceful"] is expected
+
+
+def test_the_row_carries_the_peaceful_option_and_an_old_row_has_none():
+    c = _kept()
+    extras = {**_extras(), "peaceful": True}
+    c.keep(7, {"data": {"logs": []}}, ["P101", "P102", "P103"], extras)
+    (_, row), = c._bq.rows
+    assert row["peaceful"] is True and c.record(7)["peaceful"] is True
+    c2 = _kept()
+    c2.keep(8, {"data": {"logs": []}}, ["P101", "P102", "P103"], _extras())                   # (an upload that does not know it: NULL, not False)
+    (_, row2), = c2._bq.rows
+    assert row2["peaceful"] is None and c2.record(8)["peaceful"] is None
+
+
+def test_a_kept_row_without_the_peaceful_option_gets_a_newer_row_once():
+    c = _kept()
+    c.keep(7, {"data": {"logs": []}}, ["P101", "P102", "P103"], _extras())                    # (an older row: the extension did not know the option)
+    assert len(c._bq.rows) == 1 and c.record(7)["peaceful"] is None
+    known = {**_extras(), "peaceful": False}
+    assert c.keep(7, None, ["P101", "P102", "P103"], known) is True                           # (a later open of a table whose info has it)
+    assert len(c._bq.rows) == 2 and c.record(7)["peaceful"] is False
+    assert c.keep(7, None, ["P101", "P102", "P103"], known) is False                          # (and not again)
+    assert len(c._bq.rows) == 2

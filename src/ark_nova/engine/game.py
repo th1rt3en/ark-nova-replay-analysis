@@ -214,8 +214,12 @@ def _harbor_sell(state: GameState, action: Action) -> None:
     p.hand.remove(card)
     state.main_discard.append(card)
     p.flags["harbor_turn"] = state.turn if state.active_player == p.seat else state.turn - 1
-    _gain(state, p.seat, money=3)
+    _gain(state, p.seat, money=3, s2_bonus=False)          # (the sale is no money of the Sponsors action: 765101523 turn 42)
     venom.pay_late(state, p.seat)                          # (a Venom that the player could not pay at the end of the turn is taken after the sale)
+    if state.prompt is not None and state.prompt.kind == "cards_discard" and state.prompt.player == p.seat and len(p.hand) < state.prompt.args["count"]:
+        state.prompt.args["count"] = len(p.hand)             # the sale was one of the cards that had to be discarded: only the cards that are left are owed
+        if not p.hand:
+            _end_turn(state)
     if state.prompt is not None and state.prompt.kind == "effects":          # a sale in the break window can satisfy the hand limit
         pend = state.prompt.args["pending"]
         for i, e in enumerate(pend):
@@ -236,6 +240,12 @@ def legal_actions(state: GameState) -> list[Action]:
                 acts = acts + [Action(p.seat, "unstore", {"card": c}) for c in dict.fromkeys(p.stored)]
             if harbor_ready(state, p.seat):
                 acts = acts + [Action(p.seat, "harbor_sell", {"card": c}) for c in dict.fromkeys(p.hand)]
+            if state.phase in (Phase.TURN, Phase.FINAL_TURNS) and not state.config.confirm_turns and venom.can_pay(state, p) and state.prompt.player == p.seat:
+                acts = acts + [Action(p.seat, "pay_venom", {})]          # the "pay Venom" button: at any time of the own turn
+        pr = state.prompt
+        fin = _CARD_FINISH.get(pr.kind)
+        if fin is not None and not any(a.player == pr.player and a.kind not in _FREE_ACTIONS and a.kind not in ("undo_last", "restart_turn") for a in acts):
+            acts = acts + [Action(pr.player, fin, {})]            # nothing but free actions is left (they were used up without making a move): the action can be ended, as at the table
     return acts
 
 
@@ -263,6 +273,8 @@ def _prompt_actions(state: GameState) -> list[Action]:
         if pr.args.get("hypnosis"):                              # one of the first 3 cards of the other player
             return ([Action(p.seat, "choose_action_card", {"type": c.type, "spend": k, "hypnosis": True})
                      for c in state.players[1 - p.seat].action_cards[:3] for k in range(0, p.x_tokens + 1)]
+                    + ([Action(p.seat, "choose_action_card", {"type": c.type, "spend": k, "t1": h, "hypnosis": True})           # (map T1: the discard for +1 strength works on a hypnotised card too: 890633580 turn 32)
+                        for c in state.players[1 - p.seat].action_cards[:3] for k in range(0, p.x_tokens + 1) for h in sorted(set(p.hand))] if map_rules.t1_discard_possible(p) else [])
                     + [Action(p.seat, "skip_action", {"type": c.type, "hypnosis": True}) for c in state.players[1 - p.seat].action_cards[:3]]       # (put it back on slot 1 for an X token)
                     + [Action(p.seat, "skip_extra", {})])
         chosen =[Action(p.seat, "choose_action_card", {"type": c.type, "spend": k})
@@ -281,7 +293,7 @@ def _prompt_actions(state: GameState) -> list[Action]:
     if pr.kind == "cards_take":
         acts = []
         a = pr.args
-        top = 0 if venom.blocked(state, p.seat) else min(a["remaining"], len(state.main_deck))
+        top = 0 if venom.blocked(state, p.seat) else min(a["remaining"], len(state.main_deck) + len(state.main_discard))      # (an empty draw pile is reshuffled from the discard pile when the cards are drawn)
         for k in ([top] if cards_action.deck_only(a["level"]) and top else range(1, top + 1)):          # (an unupgraded Cards action draws all its cards at once)
             acts.append(Action(p.seat, "take_cards", {"mode": "deck", "count": k}))
         reach = [c for c in state.display[:cards_action.reputation_range(p.reputation)] if c]
@@ -306,7 +318,7 @@ def _prompt_actions(state: GameState) -> list[Action]:
     if pr.kind == "association_tasks":
         return association.legal(state, p)
     if pr.kind == "cards_discard":
-        return [Action(p.seat, "discard_cards", {"cards": list(c)}) for c in combinations(sorted(set(p.hand)), pr.args["count"])]
+        return [Action(p.seat, "discard_cards", {"cards": list(c)}) for c in combinations(sorted(set(p.hand)), min(pr.args["count"], len(p.hand)))]      # (never more cards than the hand holds: a sale or a played sponsor may have used them)
     raise NotImplementedError(f"prompt {pr.kind!r} is not implemented yet")
 
 
@@ -386,6 +398,13 @@ def apply(state: GameState, action: Action) -> GameState:
         return turns.rewind(state, action)
     if action.kind == "concede":                           # a player gives up: the game is over at once (not among the legal actions: the live service offers it)
         return _concede(state, action)
+    if action.kind == "skip_turn":                         # BGA: a player ran out of time and is kicked, the turn passes with nothing done (replays; not among the legal actions)
+        if state.prompt is None or state.prompt.kind != "choose_action_card" or state.prompt.player != action.player or state.phase not in (Phase.TURN, Phase.FINAL_TURNS):
+            raise IllegalAction("a turn can only be skipped before an action card is chosen")
+        new = copy.deepcopy(state)
+        new.prompt = None
+        _finish_turn_now(new, action.player, kicked=True)
+        return new
     scores = gamestats.scores(state)
     booked = [st["booked"] for st in state.stats] or [0] * len(state.players)
     carried = len(getattr(state, "auto_gains", ()))
@@ -440,6 +459,9 @@ def _apply(state: GameState, action: Action) -> GameState:
         return new
     if action.kind == "harbor_sell":                     # a free action of the zoo map, possible at any time of the player's own turn
         _harbor_sell(new, action)
+        return new
+    if action.kind == "pay_venom":                       # the player pays for Venom when they like during their turn
+        venom.pay_now(new, action.player)
         return new
     if action.kind == "unstore":                         # map 11 (Caves): a stored card goes back into the hand, a free action during the player's own turn
         p = new.players[action.player]
@@ -503,12 +525,19 @@ def _choose_action_card(state: GameState, action: Action) -> None:
         card.tokens.remove("Multiplier")
     t1 = action.args.get("t1")
     if t1 is not None:                                          # map T1: a hand card for +1 strength (once in the turn)
-        if not map_rules.t1_discard_possible(p) or t1 not in p.hand or hypnosis:
+        if not map_rules.t1_discard_possible(p) or t1 not in p.hand:
             raise IllegalAction("no Map T1 discard now")
         p.hand.remove(t1)
         state.main_discard.append(t1)
         p.flags["t1_used"] = 1
-    strength = max(1, idx + 1 + map_rules.strength_bonus(p, idx + 1) + spend + (1 if t1 is not None else 0) - venom.strength_penalty(card))              # Constriction: -2 strength (on a hypnotised card too)
+    penalty = venom.strength_penalty(card)
+    if args.get("repeat"):                                      # a Multiplier repetition: the Constriction token stays on the card until the last one (the logs discard it after the chain, 656418283 turn 57)
+        penalty = p.flags.get("repeat_penalty", 0)
+    if "Multiplier" in card.tokens:
+        p.flags["repeat_penalty"] = penalty
+    else:
+        p.flags.pop("repeat_penalty", None)
+    strength = max(1, idx + 1 + map_rules.strength_bonus(owner, idx + 1) + spend + (1 if t1 is not None else 0) - penalty)              # Constriction: -2 strength (on a hypnotised card too)
     if not hypnosis:
         venom.remove_tokens(p, card, state=state)
     p.x_tokens -= spend
@@ -519,7 +548,7 @@ def _choose_action_card(state: GameState, action: Action) -> None:
                             "slot": idx + 1, "strength": strength, "after": list(carry.get("after") or []), "extra": carry.get("extra"),
                             "appeal_start": [q.appeal for q in state.players]}
     if hypnosis:
-        state.current_action.update(owner=owner.seat, hypnosis=True, extra=None)
+        state.current_action.update(owner=owner.seat, hypnosis=True, extra=carry.get("extra"))          # (the next extra action of the animals that were played goes on after the hypnotised one: 627743200 turn 61)
     if card.type == "build":
         state.prompt = Prompt(kind="build_place", player=p.seat, args={
             "level": card.level, "remaining": strength + (1 if card.variant == 3 else 0), "placed": [], "variant": card.variant})
@@ -552,12 +581,12 @@ def _pay(state: GameState, p, n: int) -> None:
 
 
 def _gain(state: GameState, seat: int, money: int = 0, appeal: int = 0, x_tokens: int = 0, reputation: int = 0,
-          conservation: int = 0) -> None:
+          conservation: int = 0, s2_bonus: bool = True) -> None:
     """Resource gains with the track rules: appeal 113 and X tokens 5 (gains above a limit are lost), reputation up to 15 with the
     track bonuses on the way (excess reputation becomes appeal), conservation up to 41 (the 2/5/8/10 choices are not implemented)."""
     p = state.players[seat]
     ca = state.current_action
-    if money > 0 and ca and ca.get("seat") == seat and ca.get("type") == "sponsors" and ca.get("variant") == 2 and not ca.get("s2_done"):
+    if s2_bonus and money > 0 and ca and ca.get("seat") == seat and ca.get("type") == "sponsors" and ca.get("variant") == 2 and not ca.get("s2_done"):
         ca["s2_done"] = True                                # Money Sponsors (2): the first money of the action comes with extra money
         money += sponsor_variants.S2_BONUS[ca["level"]]
     p.money += money
@@ -632,11 +661,12 @@ def _place_building(state: GameState, action: Action) -> None:
             a["terrain_used"] = True
             _gain(state, p.seat, money=2)
     elif variant == 4 and _covers_terrain(bd, t, x, y, k) and not ("S219" in p.sponsors and a["level"] == 1):  # Terrain Build: 2 more at level I (not with the Diversity Researcher, who may build over water and rock anyway: 854263310 turn 37), level II: gain 2 money
+        first_terrain = not a.get("terrain_used")
         a["terrain_used"] = True
         if a["level"] == 1:
             _pay(state, p, TERRAIN_COST)
-        else:
-            _gain(state, p.seat, money=2)
+        elif first_terrain:
+            _gain(state, p.seat, money=2)                  # (level II pays the 2 money once in the action: 801481122 turn 60)
     _put_building(state, p.seat, t, x, y, k, terrain_fee=fee)
     more = [x for x in _build_actions(state, p) if x.kind == "place_building"]
     if a["level"] < 2 and a["placed"]:                    # level I: one building, only the additional one of Pavilion / Kiosk Build may follow (the extra one may also come first)
@@ -671,7 +701,7 @@ def _player_rules(p) -> dict:
 PLACEMENT_VIA_BONUSES = ("bonus-sponsor", "Worker", "upgrade-card", "Partner-Zoo", "appeal", "Fac")
 
 
-def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
+def apply_placement_bonus(state: GameState, seat: int, b: dict, at_once: bool = False) -> None:
     """The effect of one placement bonus that is gained (covered by a building, or chosen with the Archeologist)."""
     _gain(state, seat, money=b["value"] if b["type"] == "money" else 0, x_tokens=b["value"] if b["type"] == "xtoken" else 0,
           reputation=b["value"] if b["type"] == "reputation" else 0)
@@ -681,9 +711,9 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict) -> None:
         bonuses.apply_bonus(state, seat, {"Worker": 1})
     elif b["type"] in PLACEMENT_VIA_BONUSES:                        # the same effects as the conservation / notepad bonuses
         bonuses.apply_bonus(state, seat, {b["type"]: b["value"]})
-    if b["type"] == "Mark" and state.current_action is not None and state.current_action.get("type") == "break":
+    if b["type"] == "Mark" and state.current_action is not None and (at_once or state.current_action.get("type") == "break"):      # (a Mark that the Archaeologist picked is marked at once: 801014048 turn 54; in the break there is no end of the action)
         bonuses.defer(state, {"kind": "mark", "source": "map", "optional": False, "player": seat})
-    elif b["type"] == "Mark" and state.current_action is not None:  # map 13 / T1: a Mark (the animal ability), resolved at the end of the action
+    elif b["type"] == "Mark" and state.current_action is not None:  # map 13 / T1: a Mark (the animal ability), resolved at the end of the action (the logs: dozens of Build turns on maps 13 / T1 / 12)
         state.current_action.setdefault("after", []).append({"kind": "mark", "source": "map13", "optional": False})
     if b["type"] == "Scavenging":                                   # map T1: Scavenging 3 (the animal ability)
         from ark_nova.engine import animal_abilities
@@ -750,7 +780,7 @@ def hydrologist_geologist(state: GameState, seat: int, cells) -> None:
     bd = board_of(p)
     for sponsor, terrain in (("S241", "water"), ("S242", "rock")):
         if sponsor in p.sponsors:
-            now = p.flags.get("built_now", [])
+            now = p.flags.get("built_now", [])[-1:]            # (only the building just placed: a space covered by an earlier building of the same turn is gone too, 665019532 turn 17)
             covered = {c for b in p.buildings if b.id not in now and b.type != "underwater-tunnel" for c in build_action.footprint(b.type, b.x, b.y, b.rotation)}
             _gain(state, seat, money=sum(any(bd.terrain.get(n) == terrain and n not in covered for n in neighbours(c)) for c in cells))
 
@@ -775,7 +805,8 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     p.flags.setdefault("built_now", []).append(p.buildings[-1].id)          # (Hydrologist / Geologist: spaces covered in this turn still count)
     if t in ("reptile-house", "large-bird-aviary") or first_aquarium:      # animals played before may move into the new enclosure
         bonuses.defer(state, {"kind": "move_in", "building": [x, y], "optional": True, "player": seat})
-    if len(gains) > 1:                                                  # several placement bonuses under one building: the player chooses the order (each is an effect of its own)
+    arch_n = sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) * (2 if double else 1) if "S221" in p.sponsors and "S280" not in p.sponsors else 0
+    if len(gains) > 1 or (gains and arch_n):                            # several placement bonuses under one building (or one and the Archeologist's extra one): the player chooses the order (each is an effect of its own: an upgrade from the Archeologist's pick may lift the cap of 9 reputation first, 647695434 turn 44)
         for b in gains:
             bonuses.defer(state, {"kind": "pbonus", "bonus": b, "optional": False, "player": seat})
     else:
@@ -784,7 +815,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     for _ in range(sum(1 for c in cells if c in map_rules.hollywood_hexes(p))):      # maps 8 / 8a: covering an H reveals cards until the first sponsor, which joins the hand (an effect of its own: the order with the other draws is the player's)
         bonuses.defer(state, {"kind": "search_sponsor", "optional": False, "player": seat})
     if "S221" in p.sponsors and "S280" not in p.sponsors:               # Archeologist: every border space with a bonus that is gained gives one more free placement bonus of the player's choice
-        for _ in range(sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) * (2 if double else 1)):
+        for _ in range(arch_n):
             bonuses.defer(state, {"kind": "archaeologist", "source": "S221", "optional": False, "player": seat})
     hydrologist_geologist(state, seat, cells)
     for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: a completely covered area pays its bonus at once
@@ -836,10 +867,19 @@ def _play_sponsor(state: GameState, action: Action) -> None:
     own = sponsors_action.own_gain(k)
     printed = card_programs.PRINTED_OVERRIDE[k] if k in card_programs.PRINTED_OVERRIDE else {"appeal": card.get("appeal") or 0, "reputation": card.get("reputation") or 0,
                                                       "conservation": card.get("conservationPoint") or 0}
+    rep_ = printed.get("reputation", 0) + own.get("reputation", 0)
+    deferred = []
+    if rep_ and printed.get("conservation", 0) + own.get("conservation", 0) and p.reputation + rep_ > bonuses.reputation_cap(p):
+        deferred = [{"kind": "gain", "source": k, "res": "reputation", "n": rep_, "optional": False}]          # BGA pays the conservation first and the reputation after its choices: the upgrade of Cards at 2 lifts the cap of 9 (730117368 turn 23)
+        rep_ = 0
+    appeal_ = printed.get("appeal", 0) + own.get("appeal", 0)
+    if k == "S256" and appeal_:                                              # Water Playground: BGA pays its appeal after the building and what the building opens (a Marketing sponsor with an appeal ceiling: 790873577 turn 37)
+        deferred.append({"kind": "gain", "source": k, "res": "appeal", "n": appeal_, "optional": False})
+        appeal_ = 0
     _gain(state, p.seat, money=own.get("money", 0), x_tokens=own.get("xtoken", 0),
-          appeal=printed.get("appeal", 0) + own.get("appeal", 0), reputation=printed.get("reputation", 0) + own.get("reputation", 0),
+          appeal=appeal_, reputation=rep_,
           conservation=printed.get("conservation", 0) + own.get("conservation", 0))
-    pending = effects.on_play(state, p.seat, k)
+    pending = effects.on_play(state, p.seat, k) + deferred
     if not _open_effects(state, p.seat, pending, {"kind": "sponsors_play", "args": a}):
         _after_sponsor(state, p.seat)
 
@@ -905,8 +945,12 @@ def _resume_after_effects(state: GameState) -> None:
             state.current_action["after"] = []
             effects.open_prompt(state, seat, later, resume)
             return
+        pre_card = bool((state.current_action or {}).get("pre_card"))
         state.current_action = None
-        _refill_display(state)
+        if pre_card and not state.config.confirm_turns and any(c is None for c in state.display):          # the token was used before the card is chosen: the gaps stay where they are (the folder numbers of the cards that follow count them) and the new cards come at the end of the turn (885456549 turn 71, 765376473 turn 61)
+            pass
+        else:
+            _refill_display(state)
         state.prompt = Prompt(kind=resume["prompt_kind"], player=resume["player"], args=resume["args"])
     elif kind == "prompt":                                         # an effects step before a prompt that was waiting (Digging cards)
         state.prompt = Prompt(kind=resume["prompt_kind"], player=seat, args=resume["args"])
@@ -957,12 +1001,14 @@ def _sponsor_break(state: GameState, action: Action) -> None:
 
 
 def _finish_build(state: GameState, action: Action) -> None:
-    if not state.prompt.args["placed"] and not state.prompt.args.get("extra_used"):
+    if not state.prompt.args["placed"] and not state.prompt.args.get("extra_used") and any(a.kind == "place_building" for a in _build_actions(state, state.players[action.player])):
         raise IllegalAction("build at least one building first")
     _end_turn(state)
 
 
+_FREE_ACTIONS = {"harbor_sell", "unstore", "use_token", "pay_venom"}      # free actions beside any prompt (the Commercial Harbor sale, a stored card back into the hand, a token of the notepad): each can lead to a move, none is a move of the card itself
 _FINISHING = {"finish_animals", "finish_build", "finish_sponsors", "finish_association", "skip_effect"}
+_CARD_FINISH = {"animals_play": "finish_animals", "build_place": "finish_build", "association_tasks": "finish_association", "sponsors_play": "finish_sponsors"}
 
 
 def _with_moves(state: GameState, chosen: list) -> list:
@@ -1001,10 +1047,30 @@ def _has_moves(state: GameState, action: Action) -> bool:
         p = new.players[pr.player]
         if any(x.kind == "place_building" for x in _build_actions(new, p, ("size-1", "pavilion", "kiosk"))):
             return True
-    acts = legal_actions(new)
+    acts = [a for a in legal_actions(new) if a.player == pr.player]
     if pr.kind == "animals_play" and state.config.confirm_turns:   # live play: an animal has to be played (Ignore Animals alone is no move: nothing could be played); the logs of BGA have such turns
         return any(a.kind == "play_animal" for a in acts)
-    return any(a.kind not in _FINISHING for a in acts)
+    if any(a.kind not in _FINISHING and a.kind not in _FREE_ACTIONS for a in acts):
+        return True
+    # only free actions are left: the card can still be played when one of them leads to a move (a sale that pays an animal, a stored animal back into the hand, a token that gives workers)
+    return any(_leads_to_move(new, a, 2) for a in [a for a in acts if a.kind in _FREE_ACTIONS][:8])
+
+
+def _leads_to_move(state: GameState, action: Action, depth: int) -> bool:
+    """Whether, after this free action (and the choices of the effect it opens, `depth` steps deep), the prompt of the card has a move that is not a free action or the end of the action."""
+    try:
+        new = apply(state, action)
+    except (IllegalAction, NotImplementedError):
+        return False
+    pr = new.prompt
+    if pr is None:
+        return False
+    acts = [a for a in legal_actions(new) if a.player == pr.player]
+    if pr.kind in _CARD_FINISH:
+        return any(a.kind not in _FINISHING and a.kind not in _FREE_ACTIONS for a in acts)
+    if depth <= 0:
+        return False
+    return any(_leads_to_move(new, a, depth - 1) for a in [a for a in acts if a.kind not in _FREE_ACTIONS][:8])
 
 
 def _skip_action(state: GameState, action: Action) -> None:
@@ -1063,7 +1129,7 @@ def _take_cards(state: GameState, action: Action) -> None:
         k = int(action.args["count"])
         if not 1 <= k <= a["remaining"]:
             raise IllegalAction("cannot draw that many cards")
-        if cards_action.deck_only(a["level"]) and k != a["remaining"] and k != len(state.main_deck):
+        if cards_action.deck_only(a["level"]) and k != a["remaining"] and k != len(state.main_deck) + len(state.main_discard):
             raise IllegalAction("an unupgraded Cards action draws all its cards from the deck at once")
         ensure_main_deck(state, k)
         if k > len(state.main_deck):
@@ -1115,7 +1181,7 @@ def _skip_snap(state: GameState, action: Action) -> None:
 def _discard_for_cards(state: GameState, action: Action) -> None:
     p = state.players[action.player]
     cards = list(action.args["cards"])
-    if len(cards) != state.prompt.args["count"]:
+    if len(cards) != min(state.prompt.args["count"], len(p.hand)):
         raise IllegalAction("discard the required number of cards")
     for c in cards:
         if c not in p.hand:
@@ -1272,10 +1338,11 @@ def _confirm_turn(state: GameState, action: Action) -> None:
     _finish_turn_now(state, action.player)
 
 
-def _finish_turn_now(state: GameState, seat: int) -> None:
+def _finish_turn_now(state: GameState, seat: int, kicked: bool = False) -> None:
     state.players[seat].flags.pop("t1_used", None)
     state.players[seat].flags.pop("built_now", None)
-    venom.finish_turn(state, seat)
+    if not kicked:                                           # (a kicked player pays no Venom: 749781422 turn 67)
+        venom.finish_turn(state, seat)
     if not state.config.confirm_turns and bonuses.token_uses(state, state.players[seat]) and state.break_position < BREAK_AT and not endgame.last_turn_done(state, seat):
         state.players[seat].flags["refill_pending"] = 1       # a sponsor played with a notepad token after the action: BGA refills the display after it (744430246 turn 43)
     else:

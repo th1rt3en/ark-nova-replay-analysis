@@ -100,8 +100,8 @@ def special_on_play(state, seat: int, key: str, total: Counter) -> list:
     elif key == "S268":                          # Conference on Europe: 2 / 5 / 10 money for 1 / 3 / 5 Europe icons
         n = total["Europe"]
         g._gain(state, seat, money=10 if n >= 5 else 5 if n >= 3 else 2 if n >= 1 else 0)
-    elif key == "S228":                          # Waza Small Animal Program: 2 money per small animal in the zoo (checked on the 7 plays in the logs)
-        g._gain(state, seat, money=2 * sum(size_class(data.cards_by_key()[a]) == "small" for a in state.players[seat].animals))
+    elif key == "S228":                          # Waza Small Animal Program: 2 money per small animal in the zoo, the small animals of the Rescue Station (map 10) included (the 129 plays in the logs, 4 of them with a small rescued animal)
+        g._gain(state, seat, money=2 * sum(size_class(data.cards_by_key()[a]) == "small" for a in list(state.players[seat].animals) + list(state.players[seat].rescued)))
     elif key == "S227":
         pending.append({"kind": "waza", "source": key, "optional": False})
     elif key == "S280":
@@ -134,7 +134,7 @@ def enlarge_options(state, seat: int, b) -> list:
     for x, y in sorted(bd.cells):
         for r in range(6):
             cells = build_action.footprint(new, x, y, r)
-            if old <= set(cells) and all(c in bd.cells and c not in others and c not in bd.blocked and (c in old or over or bd.terrain[c] == "plain")   # (a rock / water space the old enclosure already covers stays covered; new spaces need Diversity Researcher)
+            if old <= set(cells) and all(c in bd.cells and c not in others and (c in old or c not in bd.blocked) and (c in old or over or bd.terrain[c] == "plain")   # (a rock / water space the old enclosure already covers stays covered; new spaces need Diversity Researcher)
                                          and (level >= 2 or c in old or c not in bd.flags) for c in cells):
                 out.append((x, y, r))
     return out
@@ -205,6 +205,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             if c not in old and "S280" not in p.sponsors:
                 for bon in board_of(p).bonuses.get(c, []):          # (the covered hex pays its placement bonus, a Marketing one included)
                     g.apply_placement_bonus(state, action.player, bon)
+        if "S221" in p.sponsors and "S280" not in p.sponsors:               # Archaeologist: a new border hex with a bonus gives one more free placement bonus (659445505 turn 40)
+            from ark_nova.engine import bonuses
+            for _ in range(sum(1 for c in build_action.footprint(b.type, b.x, b.y, b.rotation) if c not in old and c in bd_.border for bon in bd_.bonuses.get(c, []) if bon)):
+                bonuses.defer(state, {"kind": "archaeologist", "source": "S221", "optional": False, "player": action.player})
         for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: the enlarged enclosure completes an area, which pays its bonus (941429583 turn 60)
             map_rules.quarter_bonus(state, p.seat, name)
         if b.animal:
@@ -218,5 +222,5 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         for b in held:
             state.prompt.args["pending"].append({
                 "kind": "build", "source": e["source"], "type": b.type, "rules": _unique_rules(b.type, state.config.marine_worlds), "optional": False, "double": False, "player": action.player,
-                "placeback": {"id": b.id, "animal": b.animal, "animals": list(b.animals), "cubes": dict(b.cubes)}})
+                "placeback": {"id": b.id, "animal": b.animal, "animals": list(b.animals), "cubes": dict(b.cubes), "from": [b.x, b.y]}})
     fx._done(state, i)

@@ -37,3 +37,16 @@ def test_a_friendly_game_has_no_rating_and_is_not_an_error():
     assert elo_changes_from_tableinfo(info) == {rated: 20}
     for broken in ({}, {"result": None}, {"result": {"player": None}}, {"result": {"player": [{"player_id": 5}]}}):
         assert elos_from_tableinfo(broken) == elos_after_from_tableinfo(broken) == elo_changes_from_tableinfo(broken) == {}
+
+
+def test_bgas_peaceful_option_is_read_from_the_table_info():
+    from ark_nova.storage.tableinfo import peaceful_of, record_from_tableinfo
+
+    def info(value):
+        return {"options": {"103": {"name": "Peaceful mode", "value": value, "values": [{"name": "Disabled"}, {"name": "Enabled"}]}}}
+
+    assert peaceful_of(info("1")) is True and peaceful_of(info(1)) is True
+    assert peaceful_of(info("0")) is False and peaceful_of(info(0)) is False
+    assert peaceful_of(info("2")) is None and peaceful_of(info(None)) is None         # (BigQuery has one table with 2: not an answer)
+    assert peaceful_of({}) is None and peaceful_of({"options": {"102": {"value": "5"}}}) is None
+    assert record_from_tableinfo(info("1"), 5).peaceful is True and record_from_tableinfo({}, 5).peaceful is None

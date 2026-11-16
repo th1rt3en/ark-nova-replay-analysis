@@ -142,7 +142,7 @@ def test_verify_rejects_other_games_and_unfinished():
 
 def test_pages_served():
     c = client()
-    assert "Ark Nova Park" in c.get("/").text
+    assert "Park Nova" in c.get("/").text
     for page in ("submit.html", "guide.html", "replay.html", "style.css", "js/logstore.js"):
         assert c.get("/" + page).status_code == 200
 
@@ -194,6 +194,8 @@ def test_bigquery_index_caches_each_query():
 
     def run(sql, table_id):
         calls.append((sql.split("FROM")[1].split()[0], table_id))
+        if "pre_match_arena_rating" in sql:
+            return [{"pre_match_arena_rating": None}]
         if "post_match_elo" in sql:
             return [{"player_id": 1, "pre_match_elo": 100.4, "post_match_elo": 112.6}, {"player_id": 2, "pre_match_elo": 50.0, "post_match_elo": None}]
         return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
@@ -201,8 +203,38 @@ def test_bigquery_index_caches_each_query():
     idx._run = run
     for _ in range(3):
         rec = idx.find(5)
-    assert rec == TableRecord(5, None, {"1": "3a"}, True, elos_after={"1": 113}, elo_changes={"1": 12})          # (the Elo after the game and its change; a player without post_match_elo has neither)
-    assert calls == [("`stats`", 5), ("`logs`", "5"), ("`stats`", 5)]
+    assert rec == TableRecord(5, None, {"1": "3a"}, True, elos_after={"1": 113}, elo_changes={"1": 12}, arena=False)          # (the Elo after the game and its change; a player without post_match_elo has neither; no arena rating)
+    assert calls == [("`stats`", 5), ("`logs`", "5"), ("`stats`", 5), ("`stats`", 5)]
+
+
+def test_bigquery_index_knows_a_game_with_an_arena_rating():
+    from ark_nova.storage.index import BigQueryIndex
+
+    idx = BigQueryIndex("stats", "logs")
+
+    def run(sql, table_id):
+        if "pre_match_arena_rating" in sql:
+            return [{"pre_match_arena_rating": None}, {"pre_match_arena_rating": 1234.5}]
+        if "post_match_elo" in sql:
+            return []
+        return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
+
+    idx._run = run
+    assert idx.find(5).arena is True
+
+
+def test_bigquery_index_survives_a_missing_arena_column():
+    from ark_nova.storage.index import BigQueryIndex
+
+    idx = BigQueryIndex("stats", "logs")
+
+    def run(sql, table_id):
+        if "arena" in sql:
+            raise RuntimeError("Unrecognized name: pre_match_arena_rating")
+        return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql and "post_match_elo" not in sql else []
+
+    idx._run = run
+    assert idx.find(5).arena is None
 
 
 def test_bigquery_index_survives_a_missing_elo_column():
@@ -240,7 +272,9 @@ def test_setup_steps_show_the_deal_before_the_initial_discard():
     path, raw = sample_log()
     body = client(TableRecord(int(path.stem), "x.json"), files={"x.json": path.read_bytes()}).get(f"/api/tables/{path.stem}/replay").json()
     hands = [[len(p["hand"]) for p in s["state"]["players"]] for s in body["steps"][:body["setup_steps"] + 1]]
-    assert hands[0] == [0, 0]                                   # nothing has been dealt at the literal start
+    from ark_nova.parser import parse_log
+    starts_at_the_deal = any(e.type == "pDrawCards" for e in parse_log(str(path)).moves[0].events)      # (a log that begins with the deal itself: 594103300)
+    assert starts_at_the_deal or hands[0] == [0, 0]            # nothing has been dealt at the literal start
     assert max(h[0] for h in hands) >= 8                        # the 8 dealt cards (9 with Map 14's sponsor) are visible
     assert hands[-1][0] <= 5                                    # after the initial discard of 4
 
@@ -252,3 +286,25 @@ def test_redirects_to_pages_when_configured(monkeypatch):
     assert r.status_code == 307 and r.headers["location"] == "https://site.example/replay.html?table=5"
     assert c.get("/healthz").json() == {"status": "ok"}
     assert c.get("/api/tables/999").status_code != 307
+
+
+def test_bigquery_index_reads_bgas_peaceful_option():
+    from ark_nova.storage.index import BigQueryIndex
+
+    def find(rows):
+        idx = BigQueryIndex("stats", "logs")
+
+        def run(sql, table_id):
+            if "pre_match_arena_rating" in sql:
+                return rows
+            if "post_match_elo" in sql:
+                return []
+            return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
+
+        idx._run = run
+        return idx.find(5)
+
+    assert find([{"pre_match_arena_rating": None, "peaceful_option": "1"}, {"pre_match_arena_rating": None, "peaceful_option": "1"}]).peaceful is True
+    assert find([{"pre_match_arena_rating": 1200, "peaceful_option": "0"}]).peaceful is False
+    assert find([{"pre_match_arena_rating": None, "peaceful_option": None}]).peaceful is None           # (the options column is filled for some tables only)
+    assert find([{"pre_match_arena_rating": None, "peaceful_option": "2"}]).peaceful is None

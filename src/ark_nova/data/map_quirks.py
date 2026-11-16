@@ -17,9 +17,9 @@ GEOLOGICAL_FIXED_FROM_TABLE_ID = int(os.environ.get("GEOLOGICAL_FIXED_FROM_TABLE
 
 # Hypnosis: the variant effect of the opponent's action card (Money Sponsors bonus, Mark, the extra kiosk ...) is part of the hypnotised action. BGA first
 # left it out; tables below this id were played with the bug. The sample logs put the change between table 732463562 (no Sponsors II bonus) and
-# 783118944 (the Mark of a hypnotised Animals 4 card happens), so the number is a guess inside that gap: set it to the first table id that has the
-# fix (or the env var HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID) when it is known.
-HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID = int(os.environ.get("HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID", "757800000"))
+# 739307302 (the Sponsors 3 effect of a hypnotised card happens; 756726232 pays the Sponsors II bonus), so the number is a guess inside that gap: set
+# it to the first table id that has the fix (or the env var HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID) when it is known.
+HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID = int(os.environ.get("HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID", "735000000"))
 
 LEGACY_SUFFIX = "-legacy"                      # '6a-legacy' = map 6a as BGA played it before the fix
 _LEGACY_MOVES = {"6a": {"take-in-range-or-deck": {(8, 5): (8, 7)}}}      # base map -> bonus type -> {printed cell: cell where it worked}
@@ -37,11 +37,14 @@ def played_map_id(map_id: str, table_id: int) -> str:
 
 
 def hypnosis_runs_variant(table_id: int, card_type: str = "", variant: int = 0) -> bool:
-    """Whether a hypnotised card of the opponent runs its variant effect in table `table_id`. Older tables left it out (Money Sponsors bonus, Mark, the
-    extra kiosk ...), but the Discount Animals (3) payment and the Association variants already ran in the oldest sample tables (665718619, 668553028)."""
+    """Whether a hypnotised card of the opponent runs its variant effect (the extra of the card's face: the Money Sponsors bonus, the Mark, the extra kiosk ...) in table `table_id`.
+    Tested on all 83 sample tables below 735000000 that have a hypnosis (variants always run vs the old rule): only the Money Sponsors (variant 2) bonus of a hypnotised
+    Sponsors card was left out on the older tables (661243248 turn 30, 677651655 turn 40, 732463562 turn 41: engine 5 money above the log); every other variant ran (the
+    Mark of 677396972 and 677682492, the +1 Build kiosk / pavilion of 668290113 and 716484804, the Cards variant of 669771146 and 715786486, the Sponsors side actions of
+    719561092 and 729387250)."""
     if table_id <= 0 or table_id >= HYPNOSIS_VARIANT_FIXED_FROM_TABLE_ID:
         return True
-    return (card_type == "animals" and variant == 3) or card_type == "association"
+    return not (card_type == "sponsors" and variant == 2)
 
 
 def project_for_table(card: dict, table_id: int) -> dict:

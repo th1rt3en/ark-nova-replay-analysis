@@ -320,7 +320,7 @@ def _extra_options(p, a, task: str) -> list:
     if need is None:
         return [0]
     on = len(bonuses.worker_tokens(p, f"association_{TASK_VALUE[task]}"))
-    return [n for n in range(0, 4) if on + need + n <= 3 and len(bonuses.worker_tokens(p, "reserve")) >= need + n]
+    return [n for n in range(0, 4) if len(bonuses.worker_tokens(p, "reserve")) >= need + n]          # (no limit per space: 728510488 turn 64 put 3 workers on a space that had one)
 
 
 def task_actions(state, p, a) -> list:
@@ -471,7 +471,7 @@ def do_task(state, action: Action) -> None:
         gamestats.count(state, p.seat, "assoc", sub=task)
     kind = "conservation" if task == "hire" else task
     extra = int(args.get("extra", 0))
-    need = workers_needed(p, kind)
+    need = 1 if task == "hire" else workers_needed(p, kind)           # (the Hire ability puts the worker that uses it and the new one on the space: 708541127 turn 50)
     for w in bonuses.worker_tokens(p, "reserve")[:need + extra]:
         w.location = f"association_{TASK_VALUE[kind]}"
     paid = max(0, strength_needed(p, kind) - EXTRA_WORKER_STRENGTH * extra)
@@ -747,8 +747,10 @@ def take_instead(state, action: Action) -> None:
 
 
 def finish(state, action: Action) -> None:
-    if not state.prompt.args["done"]:
-        raise _fx().IllegalEffect("perform a task first")
+    if state.prompt.args.get("project"):
+        raise _fx().IllegalEffect("finish the project first")             # (ending the action here would lose the project's slot, conservation and bonus)
+    if not state.prompt.args["done"] and any(a.kind == "association_task" for a in task_actions(state, state.players[action.player], state.prompt.args)):
+        raise _fx().IllegalEffect("perform a task first")                  # (with no task that can be done the action may be ended)
     _g()._end_turn(state)
 
 
