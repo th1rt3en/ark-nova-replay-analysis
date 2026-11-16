@@ -118,7 +118,9 @@ def test_engine_agrees_with_the_log_turn_by_turn():
     # (the harness also checks the turns with takeBonus / break income cards / placement bonus cards / the Commercial Harbor: 6.5k turns
     # checked, ~340 known problems, see scripts/engine_coverage.py; this is a ratchet, lower it when the problems are fixed)
     if FULL:                                               # every log: the limit of known problems and the number of turns that have to be compared
-        assert len(problems) <= 30, problems[:3]               # (the 500 tables added in October: their problems are the to-do list, docs/problem_report.md)
+        # NEVER RAISE THIS LIMIT. It is 0 on purpose (decided with the owner, 2026-11-17): a new problem is an engine or harness bug to fix,
+        # not a number to make room for. A log the engine cannot replay is excluded by name above, with the reason, never allowed by the limit.
+        assert len(problems) == 0, problems[:3]
         assert checked >= 55000
     else:                                                  # the fixed subset of tests/_logsel.py: the same ratchet on fewer games (exact numbers: any new problem fails)
         assert len(problems) <= SMOKE_LIMIT, problems[:3]

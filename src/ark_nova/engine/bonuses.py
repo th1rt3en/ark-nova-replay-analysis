@@ -253,7 +253,7 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             ids = [t.id for q in state.players for t in q.tokens]
             state.players[seat].tokens.append(Token(max(ids, default=0) + 1, k, "notepad"))
         elif k in ("Fac", "Partner-Zoo"):                 # conservation bonus: take a university / partner zoo tile from the association board
-            defer(state, {"kind": "take_tile", "tile": "university" if k == "Fac" else "partner", "player": seat, "optional": False})
+            defer(state, {"kind": "take_tile", "tile": "university" if k == "Fac" else "partner", "player": seat, "optional": True})      # (BGA lets the player pass: a placement bonus of the map that leaves no tile in the log, 645563433 turn 37)
         elif k == "bonus-increased-hand":                # hand size +1 (counted by breaks.hand_limit)
             ids = [t.id for q in state.players for t in q.tokens]
             state.players[seat].tokens.append(Token(max(ids, default=0) + 1, "bonus-increased-hand", "notepad"))

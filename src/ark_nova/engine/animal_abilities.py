@@ -544,8 +544,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         b = next((b for b in p.buildings if [b.x, b.y] == list(a["building"]) and _empty_standard(b)), None)
         if b is None:
             raise fx.IllegalEffect("no empty standard enclosure there")
+        from ark_nova.engine import animals_action, board
+        size =animals_action.effective_size(p, b, board.board_of(p))                  # (the enclosure counts as the size it holds: Expansion Area's size-3 on the border is a 5, 851299230 turn 43)
         p.buildings.remove(b)
-        g._gain(state, p.seat, money=build_action.cost(b.type))
+        g._gain(state, p.seat, money=build_action.COST_PER_SPACE * size)
     elif k == "trade":
         if a["trade"] == "money" and p.x_tokens >= 1:
             g._gain(state, p.seat, x_tokens=-1, money=5)

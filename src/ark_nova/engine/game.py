@@ -215,6 +215,10 @@ def _harbor_sell(state: GameState, action: Action) -> None:
     state.main_discard.append(card)
     p.flags["harbor_turn"] = state.turn if state.active_player == p.seat else state.turn - 1
     _gain(state, p.seat, money=3, s2_bonus=False)          # (the sale is no money of the Sponsors action: 765101523 turn 42)
+    ca = state.current_action
+    if (ca and ca.get("seat") == p.seat and ca.get("type") == "sponsors" and ca.get("variant") == 2 and state.prompt is not None
+            and state.prompt.kind == "sponsors_play" and not state.prompt.args.get("played") and not state.prompt.args.get("broke")):
+        ca["s2_done"] = True                                # a sale before the action's first step uses up the Sponsors (2) bonus: no bonus follows (605229700 turns 49 and 73)
     venom.pay_late(state, p.seat)                          # (a Venom that the player could not pay at the end of the turn is taken after the sale)
     if state.prompt is not None and state.prompt.kind == "cards_discard" and state.prompt.player == p.seat and len(p.hand) < state.prompt.args["count"]:
         state.prompt.args["count"] = len(p.hand)             # the sale was one of the cards that had to be discarded: only the cards that are left are owed
@@ -740,7 +744,7 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict, at_once: bool = 
     if b["type"] == "take-in-range-or-deck":                        # a card from the deck or the reputation range (BGA lets the player pass: some logs show no card)
         for _ in range(b["value"]):
             bonuses.defer(state, {"kind": "take", "source": "bonus", "optional": True, "player": seat})
-    elif b["type"] == "Clever" and state.current_action is not None and state.current_action.get("type") == "break":     # a free enclosure of the income covers it: at once
+    elif b["type"] == "Clever" and (state.current_action is None or state.current_action.get("type") == "break"):     # a free enclosure of the income covers it: at once (also a building placed by an effect after the action: 755745398 turn 21)
         bonuses.defer(state, {"kind": "slot1", "source": "bonus", "optional": True, "cost": 0, "player": seat})
     elif b["type"] == "Clever" and state.current_action is not None:   # any action card may go to slot 1 at the end of the action
         state.current_action.setdefault("after", []).append({"kind": "slot1", "source": "bonus", "optional": True})
@@ -805,7 +809,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     p.flags.setdefault("built_now", []).append(p.buildings[-1].id)          # (Hydrologist / Geologist: spaces covered in this turn still count)
     if t in ("reptile-house", "large-bird-aviary") or first_aquarium:      # animals played before may move into the new enclosure
         bonuses.defer(state, {"kind": "move_in", "building": [x, y], "optional": True, "player": seat})
-    arch_n = sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) * (2 if double else 1) if "S221" in p.sponsors and "S280" not in p.sponsors else 0
+    arch_n = sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) if "S221" in p.sponsors and "S280" not in p.sponsors else 0          # (the Excavation Site's doubling is for the building's own bonuses: the Archeologist's one is not doubled, 650000006 turn 19)
     if len(gains) > 1 or (gains and arch_n):                            # several placement bonuses under one building (or one and the Archeologist's extra one): the player chooses the order (each is an effect of its own: an upgrade from the Archeologist's pick may lift the cap of 9 reputation first, 647695434 turn 44)
         for b in gains:
             bonuses.defer(state, {"kind": "pbonus", "bonus": b, "optional": False, "player": seat})

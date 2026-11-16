@@ -7,6 +7,7 @@ with BGA's own list of legal placements (state 30) after every step. Unsupported
 the coverage grows with the engine.
 """
 import copy
+import json
 import re
 import threading
 from collections import Counter
@@ -362,6 +363,14 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
             if cand.kind == "choose_effect" and cand.args.get("upgrade") == act.args["upgrade"] and "index" in cand.args and state.prompt.args["pending"][cand.args["index"]]["kind"] == "upgrade" \
                     and "reputation" in str(state.prompt.args["pending"][cand.args["index"]].get("source", "")):
                 return cand
+    if act.kind == "choose_effect" and "type" in act.args and "index" not in act.args and state.prompt is not None and state.prompt.kind == "effects":
+        pend_ = state.prompt.args["pending"]
+        cs_ = [c for c in legal_actions(state) if c.kind == "choose_effect" and c.args.get("type") == act.args["type"] and "index" in c.args and pend_[c.args["index"]]["kind"] == "slot1"]
+        if len(cs_) > 1:                                  # a Clever of the Cards action (pays 2 at level I) and a free one of a placement bonus: the log shows the payment only for the first (755745398 turn 21)
+            paid_ = getattr(_normalise, "clever_paid", True)
+            pick_ = [c for c in cs_ if (pend_[c.args["index"]].get("cost", 0) > 0) == paid_ and (pend_[c.args["index"]].get("source") == "cards4") == paid_]
+            if pick_:
+                return pick_[0]
     if "psrc" in act.args:                                # a pouched card: the log names the card it goes under
         src = act.args["psrc"]
         act = Action(act.player, act.kind, {k: v for k, v in act.args.items() if k != "psrc"})
@@ -487,7 +496,7 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
             if len(left) == 1:                              # one bonus is left on the notepad and a support must take one: it is the bonus that left no trace (a Worker at the most workers, 622711105 turn 70)
                 return Action(act.player, act.kind, {**act.args, "bonus": left[0][0]})
             return act
-        other_worker = 6 <= p.reputation < 8 or (state.prompt is not None and state.prompt.kind == "effects" and any(e_["kind"] == "gain_worker" for e_ in state.prompt.args["pending"]))          # (the project's reputation may take the marker to 8: a worker)
+        other_worker = (6 <= p.reputation < 8 and getattr(_normalise, "rep_logged", True)) or (state.prompt is not None and state.prompt.kind == "effects" and any(e_["kind"] == "gain_worker" for e_ in state.prompt.args["pending"]))          # (the project's reputation may take the marker to 8: a worker)
         if want.get("type") == "Worker" and other_worker and any(x.kind == "choose_effect" and set(x.args) == {"type"} for x in _UPCOMING[0]):          # (the worker may come from the reputation track: with no other source the notepad's Worker is the worker of the log, 763555835 turn 40)
             for j, b in notepad_bonuses(state, p):          # a Clever of the end of the action and no other source of one: the notepad's keyword space (the worker of the log is another one's)
                 if b["type"] == "Clever":
@@ -582,6 +591,11 @@ def _fits(effect: dict, act) -> bool:
                 or (("give" in a or "pay" in a) and k == "pilfer") or ("apply" in a and (k == "gain" or a["apply"] == k) and k in ("venom", "constrict", "gain"))
                 or ("activate" in a and k == "ability") or (a.get("apply") == k and k in ("hypnosis", "pay_appeal")) or ("rep_bonus" in a and k == "rep_bonus") or ("move" in a and k == "move_in") or ("store" in a and k == "store") or ("continent" in a and k == "continent") or ("multiplier" in a and k == "multiplier"))
     return False
+
+
+def _rep_cap(p) -> int:
+    from ark_nova.engine import bonuses as _b
+    return _b.reputation_cap(p)
 
 
 def _below_cap(state: GameState, e: dict) -> bool:
@@ -705,7 +719,7 @@ def _skip_unneeded(state: GameState, act):
     for i, e in enumerate(state.prompt.args["pending"]):
         if e["kind"] == "pouch" and not (act is not None and act.kind == "play_animal") and any(x.kind == "choose_effect" and x.args.get("psrc") == e.get("source") and x.player == e.get("player", x.player) for x in rest):
             continue                                          # the log pouches under this card later in the turn (after other effects the player chose first: 646886236 turn 58)
-        if e.get("optional") and not _fits(e, act) and not (not (act is not None and act.kind == "play_animal") and (e["kind"] in ("build", "digging", "sell", "ability", "marketing", "pay_appeal", "take", "cut_down", "donation", "expedition", "venom", "constrict", "move_in") or (e["kind"] == "pouch" and (e.get("source") == "map" or (act is not None and act.kind == "take_cards" and act.args.get("mode") == "snap")))
+        if e.get("optional") and not _fits(e, act) and not (not (act is not None and act.kind == "play_animal") and (e["kind"] in ("build", "digging", "sell", "ability", "marketing", "pay_appeal", "take", "cut_down", "donation", "expedition", "venom", "constrict", "move_in", "trade") or (e["kind"] == "pouch" and (e.get("source") == "map" or (act is not None and act.kind == "take_cards" and act.args.get("mode") == "snap")))
                                                               or (e["kind"] == "slot1" and act is not None and act.kind == "use_token")
                                                               or (e["kind"] == "extra_shift" and act is not None and act.kind in ("choose_effect", "take_cards", "place_building") and "worker" not in act.args)) and any(_fits(e, x) and x.player == e.get("player", x.player) for x in (rest if e["kind"] != "marketing" else [y for y in rest if (y.kind == "choose_effect" and str(y.args.get("card", "")).startswith("S")) or y.kind == "play_sponsor"]))):      # (a later action of the turn may still use it; Marketing: only the choice of a sponsor card)
             return Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
@@ -1116,6 +1130,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
         skipped_ = any(e_.type == "skipTurnOfPlayer" and isinstance(e_.args, dict) and seat_of.get(str(e_.args.get("player_id"))) == seat_x_ for m_ in parsed.moves for e_ in m_.events)       # (a player kicked for time has its own handling: 782921035 turn 64)
         if mine_ and len(after_) >= 4 and not skipped_:
             left_at[seat_x_] = mine_[-1]
+    for m_ in parsed.moves:                                    # a player kicked for time who became a zombie takes no further turn and gets no income at the breaks that follow (662940791 turn 54)
+        for e_ in m_.events:
+            if e_.type in ("skipTurnOfPlayer", "gameResultNeutralized") and isinstance(e_.args, dict) and (e_.args.get("zombie") or e_.type == "gameResultNeutralized") and seat_of.get(str(e_.args.get("player_id"))) is not None:
+                left_at.setdefault(seat_of[str(e_.args["player_id"])], e_.order)
     for m_ in parsed.moves:                                    # BGA's building ids (the engine numbers its own): where each building lies, for Cut Down
         for e_ in m_.events:
             a_ = e_.args if isinstance(e_.args, dict) else {}
@@ -1188,10 +1206,13 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 again = True                                                          # the hypnosis that the player puts back for an X token is the next "turn": its Clever / Boost come after it (717818868 turn 65)
             queued = carry[0] == k and carry[1] is not None and carry[1].prompt is not None and (carry[1].prompt.args.get("carry") or {}).get("extra")      # (the next action is an extra action of another animal, not a notepad bonus)
             _normalise.cube_used = any(e_.type == "discardTokens" and any(str(m_.get("location", "")).startswith("S253") for m_ in (e_.args.get("meeples") or [])) for e_ in events)
+            _normalise.rep_skipped = 0
+            _normalise.rep_logged = any(e_.type == "getBonuses" and isinstance(e_.args, dict) and "reputation" in (e_.args.get("bonuses") or {}) for e_ in events)          # (a reputation gain in the log: only then the project's reputation may take the marker to the worker space, 669671094 turn 34)
+            _normalise.clever_paid = any(e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "Cards4 effect" and (e_.args.get("bonuses") or {}).get("money", 0) < 0 for e_ in events)
             _normalise.maxing = any(e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "maxing out reputation" for e_ in events)          # (the notepad bonus of reputation shows only as this appeal)
             flat_ = [e for t_ in [events] + turns[last + 1:] for e in t_]
             _KICKED.clear()
-            _KICKED.update(seat_of[str(e_.args.get("player_id"))] for e_ in events if e_.type == "skipTurnOfPlayer" and isinstance(e_.args, dict) and str(e_.args.get("player_id")) in seat_of)
+            _KICKED.update(seat_of[str(e_.args.get("player_id"))] for e_ in events if e_.type in ("skipTurnOfPlayer", "gameResultNeutralized") and isinstance(e_.args, dict) and str(e_.args.get("player_id")) in seat_of)
             _ends = ("playerConcedeGame", "gameResultNeutralized", "skipTurnOfPlayer")          # a concession, a quit, a player kicked for running out of time: the game ends at once
             cc_ = next((i_ for i_, e in enumerate(flat_) if e.type in _ends), None)
             conceded_next = cc_ is not None and all(e.type.startswith("gameStateChange") or e.type in _ends + ("simpleNode", "updateReflexionTime", "getBonuses", "takeBonus", "pDiscardCards", "slideMeeples", "finalScoring", "endOfGame", "fillPool", "discardCardsOnDisplay") for e in flat_[cc_:])          # (a player left in or right after this turn and nothing but the end of the game follows: its scoring)
@@ -1204,6 +1225,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             acts = plan.actions
             state = copy.deepcopy(carry[1] if carry[0] == k else snaps[k])
             for seat_l_, order_l_ in left_at.items():
+                if seat_l_ != seat and events and events[0].order < order_l_ <= events[-1].order and any(e_.order == order_l_ and e_.type == "gameResultNeutralized" for e_ in events):
+                    state.players[seat_l_].flags["left"] = 1          # a player who quit in the break of this turn takes no discard and no income (666265711 turn 32)
                 if events and events[0].order > order_l_ and not any(e_.type == "getBonuses" and isinstance(e_.args, dict) and seat_of.get(str(e_.args.get("player_id"))) == seat_l_
                                                                       and e_.args.get("source") in ("appeal income", "kiosk income", "map income") for e_ in events):
                     state.players[seat_l_].flags["left"] = 1          # (the break right after their last action still paid them: 697970922 turn 47)
@@ -1325,7 +1348,34 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         state = ap(state, Action(act.player, "choose_effect", {"index": gi_, "apply": "gain", "res": "appeal"}))          # Landscape Gardener: the player resolved the appeal first, with no pavilion in the zoo: 0 appeal and no log line (683029660 turn 18)
                     _skip_unneeded.rest = acts[ai + 1:]
                     _skip_unneeded.order = order
-                    if act.kind == "choose_action_card" and "unpaid" in act.args:         # (the repetition of a Multiplier action: the strength bonus of the map was checked for the first one)
+                    while act.kind == "choose_effect" and str(act.args.get("apply", "")).startswith("income_") and state.prompt is not None and state.prompt.kind == "effects" and any(
+                            e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "maxing out reputation" and e_.order < order and seat_of.get(str(e_.args.get("player_id"))) == act.player for e_ in events):
+                        gi_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and e_.get("res") == "reputation" and e_.get("player", state.prompt.player) == act.player
+                                    and not e_.get("optional") and Action(act.player, "choose_effect", {"index": i_, "apply": "gain", "res": e_["res"]}) in legal_actions(state)), None)
+                        if gi_ is None:
+                            ri_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "rep_bonus" and e_.get("player", state.prompt.player) == act.player
+                                        and Action(act.player, "skip_effect", {"index": i_}) in legal_actions(state)), None)
+                            if ri_ is None or sum(1 for e_ in events if e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "maxing out reputation" and e_.order < order and seat_of.get(str(e_.args.get("player_id"))) == act.player) <= getattr(_normalise, "rep_skipped", 0):
+                                break
+                            _normalise.rep_skipped = getattr(_normalise, "rep_skipped", 0) + 1
+                            state = ap(state, Action(act.player, "skip_effect", {"index": ri_}))          # the point beyond the top of the track that the log shows as appeal before the income (877326818 turn 60)
+                            continue
+                        state = ap(state, Action(act.player, "choose_effect", {"index": gi_, "apply": "gain", "res": state.prompt.args["pending"][gi_]["res"]}))          # the university's reputation that the log shows before the income is paid first, the player's order (667652408 turn 65)
+                    while act.kind == "choose_effect" and "trade" in act.args and state.prompt is not None and state.prompt.kind == "effects" and any(
+                            e_.type == "midmessage" and e_.order < order and "x-tokens" in json.dumps(e_.args, default=str) + (e_.log or "") for e_ in events):
+                        gi_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and e_.get("res") == "xtoken" and not e_.get("optional") and e_.get("player", state.prompt.player) == act.player
+                                    and Action(act.player, "choose_effect", {"index": i_, "apply": "gain", "res": "xtoken"}) in legal_actions(state)), None)
+                        if gi_ is None:
+                            break
+                        state = ap(state, Action(act.player, "choose_effect", {"index": gi_, "apply": "gain", "res": "xtoken"}))          # the log's "cannot have more than 5 x-tokens" comes before the trade: the gain was tried first, at the cap (673816442 turn 61)
+                    while act.kind == "choose_effect" and "upgrade" in act.args and "index" not in act.args and state.prompt is not None and state.prompt.kind == "effects" \
+                            and _rep_cap(state.players[act.player]) < 15 and act.args.get("upgrade") == "cards" and not any(e_.type == "getBonuses" and isinstance(e_.args, dict) and "reputation" in (e_.args.get("bonuses") or {}) and e_.order > order and seat_of.get(str(e_.args.get("player_id"))) == act.player for e_ in events):          # (the log shows a reputation gain after the upgrade: the point came after it, 669671094 turn 58, 865841436 turn 36)
+                        gi_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and e_.get("res") == "reputation" and e_.get("player", state.prompt.player) == act.player
+                                    and not e_.get("optional") and Action(act.player, "choose_effect", {"index": i_, "apply": "gain", "res": e_["res"]}) in legal_actions(state)), None)
+                        if gi_ is None:
+                            break
+                        state = ap(state, Action(act.player, "choose_effect", {"index": gi_, "apply": "gain", "res": "reputation"}))          # the log shows no reputation: the university's point was paid (and lost at the cap) before the upgrade raised it (661299021 turn 55)
+                    if act.kind == "choose_action_card" and "unpaid" in act.args:        # (the repetition of a Multiplier action: the strength bonus of the map was checked for the first one)
                         act = Action(act.player, act.kind, {x: y for x, y in act.args.items() if x != "unpaid"})
                     if act.kind == "choose_effect" and act.args.get("apply") in ("tutor", "reef") and not (state.prompt is not None and state.prompt.kind == "effects" and any(
                             e["kind"] == act.args["apply"] for e in state.prompt.args["pending"])):
@@ -1944,6 +1994,13 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             d.pop(f, None)
                     if state.players[seat].flags.get("venom_paid"):       # BGA logs the Venom payment at the end of the whole turn, the engine pays before the first draw
                         mine["players"][seat]["money"] += 2 if mine["players"][seat]["money"] + 2 == theirs["players"][seat]["money"] else 0
+                for ks_ in _KICKED - {seat}:
+                    if any(e_.type == "gameResultNeutralized" for e_ in events):
+                        for d in (mine, theirs):
+                            d["players"][ks_].pop("hand", None)          # a player who quit in the break: BGA shows no discard of theirs, the engine takes one card (666265711 turn 32)
+                            d.pop("main_discard", None)
+                if state.players[seat].flags.get("venom_paid") and any(e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "Venom" and str(e.args.get("player_id")) == actor for e in nxt[:3]):
+                    mine["players"][seat]["money"] += 2 if mine["players"][seat]["money"] + 2 == theirs["players"][seat]["money"] else 0          # the payment is logged after the cleanup, in the next marker (837813119 turn 58)
                 if not nxt and not any(e.type == "fillPool" for e in events):          # the log ends with this turn before BGA refilled the display: the engine's refill is not in the log (843469060 turn 66)
                     for d in (mine, theirs):
                         for f in ("display", "main_deck", "main_discard"):
