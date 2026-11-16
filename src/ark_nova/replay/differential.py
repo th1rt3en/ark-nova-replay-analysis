@@ -366,7 +366,7 @@ def _normalise(state: GameState, act: Action, end=None) -> Action:
     if act.kind == "choose_effect" and "type" in act.args and "index" not in act.args and state.prompt is not None and state.prompt.kind == "effects":
         pend_ = state.prompt.args["pending"]
         cs_ = [c for c in legal_actions(state) if c.kind == "choose_effect" and c.args.get("type") == act.args["type"] and "index" in c.args and pend_[c.args["index"]]["kind"] == "slot1"]
-        if len(cs_) > 1:                                  # a Clever of the Cards action (pays 2 at level I) and a free one of a placement bonus: the log shows the payment only for the first (755745398 turn 21)
+        if len(cs_) > 1 and any(pend_[c.args["index"]].get("source") == "cards4" for c in cs_) and any(pend_[c.args["index"]].get("source") != "cards4" for c in cs_):                                  # a Clever of the Cards action (pays 2 at level I) and a free one of a placement bonus: the log shows the payment only for the first (755745398 turn 21)
             paid_ = getattr(_normalise, "clever_paid", True)
             pick_ = [c for c in cs_ if (pend_[c.args["index"]].get("cost", 0) > 0) == paid_ and (pend_[c.args["index"]].get("source") == "cards4") == paid_]
             if pick_:
@@ -583,7 +583,7 @@ def _fits(effect: dict, act) -> bool:
     if act.kind == "choose_effect":
         a = act.args
         return (("waza" in a and k == "waza") or ("remove" in a and k == "reposition") or ("boost" in a and k == "boost")
-                or ("keep" in a and k == "reveal") or ("cards" in a and k == "sell") or ("type" in a and k == "slot1")
+                or ("keep" in a and k == "reveal") or ("cards" in a and k == "sell") or ("type" in a and k == "slot1") or (("partner" in a or "university" in a) and k == "take_tile")
                 or ("card" in a and k in ("pouch", "search_discard", "assertion", "mark", "marketing") and (k == "mark" or not a.get("mark"))) or ("donate" in a and k == "donation")
                 or (("hand" in a or "display" in a) and k == "digging") or ("keep" in a and k == "scavenge") or ("gain" in a and k == "glide_gain")
                 or ("cards" in a and k in ("glide", "shark")) or ("trade" in a and k == "trade") or (("building" in a or "building_id" in a) and "x" not in a and k == "cut_down") or ("building" in a and "x" in a and k == "enlarge") or ("apply" in a and a["apply"] == "reef" and k == "reef") or (("send" in a or "scuba" in a or ("keep" in a and (a["keep"] is None or str(a["keep"]).startswith("S")))) and k == "expedition")
@@ -719,7 +719,7 @@ def _skip_unneeded(state: GameState, act):
     for i, e in enumerate(state.prompt.args["pending"]):
         if e["kind"] == "pouch" and not (act is not None and act.kind == "play_animal") and any(x.kind == "choose_effect" and x.args.get("psrc") == e.get("source") and x.player == e.get("player", x.player) for x in rest):
             continue                                          # the log pouches under this card later in the turn (after other effects the player chose first: 646886236 turn 58)
-        if e.get("optional") and not _fits(e, act) and not (not (act is not None and act.kind == "play_animal") and (e["kind"] in ("build", "digging", "sell", "ability", "marketing", "pay_appeal", "take", "cut_down", "donation", "expedition", "venom", "constrict", "move_in", "trade") or (e["kind"] == "pouch" and (e.get("source") == "map" or (act is not None and act.kind == "take_cards" and act.args.get("mode") == "snap")))
+        if e.get("optional") and not _fits(e, act) and not (not (act is not None and act.kind == "play_animal") and (e["kind"] in ("build", "digging", "sell", "ability", "marketing", "pay_appeal", "take", "cut_down", "donation", "expedition", "venom", "constrict", "move_in", "trade", "take_tile") or (e["kind"] == "pouch" and (e.get("source") == "map" or (act is not None and act.kind == "take_cards" and act.args.get("mode") == "snap")))
                                                               or (e["kind"] == "slot1" and act is not None and act.kind == "use_token")
                                                               or (e["kind"] == "extra_shift" and act is not None and act.kind in ("choose_effect", "take_cards", "place_building") and "worker" not in act.args)) and any(_fits(e, x) and x.player == e.get("player", x.player) for x in (rest if e["kind"] != "marketing" else [y for y in rest if (y.kind == "choose_effect" and str(y.args.get("card", "")).startswith("S")) or y.kind == "play_sponsor"]))):      # (a later action of the turn may still use it; Marketing: only the choice of a sponsor card)
             return Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})
