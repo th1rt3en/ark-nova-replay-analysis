@@ -121,7 +121,8 @@ def give_constriction(state, seat: int) -> None:
     me, other = state.players[seat], state.players[1 - seat]
     if _tracks().is_protected(other.appeal) or "S225" in other.sponsors:                            # below 5 appeal a player is protected
         return
-    ahead = (other.appeal > me.appeal) + (other.conservation > me.conservation)      # (the appeal now: the animal's own appeal and the sponsors' triggers are effects of their own that the player may resolve first)
+    late = (state.current_action or {}).get("late_appeal", 0) if seat == state.active_player else 0          # (BGA logs the Explorer's gains after the Constriction of the same animal: 664979088 turn 36)
+    ahead = (other.appeal > me.appeal - late) + (other.conservation > me.conservation)    # (the appeal now: the animal's own appeal and the sponsors' triggers are effects of their own that the player may resolve first)
     for card in other.action_cards[::-1][:ahead]:                       # the cards at strength 5, then 4
         card.tokens.append("Constriction")
 

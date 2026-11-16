@@ -661,6 +661,13 @@ def _rep_before_income(state: GameState, act):
     return None
 
 
+def _search_found_nothing(state: GameState, category: str) -> None:
+    """The log shows no draw for a category university: BGA found nothing, so the cards of the category that no log line shows are not in the deck (616882960 turn 67): the search takes nothing."""
+    for e in state.prompt.args["pending"]:
+        if e["kind"] == "search_category" and e["category"] == category:
+            e["nothing"] = True
+
+
 def _skip_unneeded(state: GameState, act):
     """`skip_effect` for the first optional pending effect that the next logged action does not use."""
     pb = [i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pbonus"]
@@ -762,6 +769,8 @@ def _skip_unneeded(state: GameState, act):
                 x.kind == "choose_effect" and x.args.get("apply") == "search_sponsor" for x in getattr(_skip_unneeded, "rest", [])):
             return Action(e["player"], "choose_effect", {"index": i, "apply": "search_sponsor"})          # (no draw is logged: nothing found)
         if e["kind"] == "search_category":
+            if not getattr(_skip_unneeded, "search_orders", None):
+                _search_found_nothing(state, e["category"])
             return Action(e["player"], "choose_effect", {"index": i, "apply": "search_category"})          # (the log shows only the card that was found)
         if e["kind"] == "income_map" and not (act is not None and act.args.get("apply") == "income_map") and not any(x.kind == "choose_effect" and x.args.get("apply") == "income_map" and x.player == e.get("player", x.player) for x in getattr(_skip_unneeded, "rest", [])):
             return Action(e["player"], "choose_effect", {"index": i, "apply": "income_map"})        # (nothing is logged for an income of 0)
@@ -1226,7 +1235,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             oracle_notes: list[str] = []
             _skip_unneeded.rest = []
             _skip_unneeded.rep_first = _project_rep_before_sponsor(turns[k])
-            search_orders = [e.order for e in turns[k] if e.type == "pDrawCards" and "gaining a new university" in e.log]          # (the search of a category university is logged before the effect the harness is about to resolve: 846710292 turn 55)
+            search_orders = [e.order for e in turns[k] if e.type == "pDrawCards" and "gaining a new university" in e.log]
+            _skip_unneeded.search_orders = [e.order for e in events if e.type == "pDrawCards" and "gaining a new university" in e.log]        # (the search of a category university is logged before the effect the harness is about to resolve: 846710292 turn 55)
             _skip_unneeded.maxing = [e.order for e in turns[k] if e.type == "getBonuses" and isinstance(e.args, dict) and e.args.get("source") == "maxing out reputation"]
             _skip_unneeded.rep_upgrades = {e.order: next((p_.args["bonuses"]["reputation"] for p_ in reversed(turns[k][max(0, j_ - 6):j_]) if p_.type == "getBonuses" and isinstance(p_.args, dict)
                                                           and "reputation" in (p_.args.get("bonuses") or {})), None)
@@ -1329,7 +1339,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             e["kind"] == "digging" and e.get("rescue") for e in state.prompt.args["pending"])                             and 1 + sum(1 for x in acts[ai + 1:] if x.kind == "take_cards" and x.args.get("mode") == "deck") > sum(
                                 1 for e in state.prompt.args["pending"] if e["kind"] == "take" and not e.get("snap")):
                         continue                                 # map 10: the draw of the Digging is logged before the discard, the engine draws when the card is discarded
-                    if act.kind == "take_cards" and act.args.get("mode") == "deck" and act.args.get("count") == 1 and getattr(_normalise, "hand_rescue", False) and not (state.prompt is not None and state.prompt.kind == "cards_take") and not (
+                    if act.kind == "take_cards" and act.args.get("mode") == "deck" and act.args.get("count") == 1 and getattr(_normalise, "hand_rescue", False) and (state.current_action or {}).get("type") != "cards" and not (state.prompt is not None and state.prompt.kind == "cards_take") and not (
                             state.prompt is not None and state.prompt.kind == "effects" and any(e["kind"] == "take" and not e.get("snap") for e in state.prompt.args["pending"])):
                         _normalise.hand_rescue = False
                         continue                                 # the card drawn for an animal rescued from the hand was drawn by the engine with the rescue (840980354 turn 53)
@@ -1448,6 +1458,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     while state.prompt is not None and state.prompt.kind == "effects" and not (("keep" in act.args and not any(o_ < order for o_ in search_orders)) or act.args.get("apply") == "search_category") and not (
                             act.kind == "take_cards" and search_orders and order is not None and all(o_ > order for o_ in search_orders)) and any(e["kind"] == "search_category" for e in state.prompt.args["pending"]):          # (a draw that the log shows before the search: the player resolved it first, 820306349 turn 33)
                         j = next(j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "search_category")          # the search of a category university comes right after its own trigger effects, before the other effects (720708815 turn 19, 796946880 turn 23)
+                        if not search_orders:
+                            _search_found_nothing(state, state.prompt.args["pending"][j]["category"])
                         state = ap(state, Action(state.prompt.args["pending"][j]["player"], "choose_effect", {"index": j, "apply": "search_category"}))
                         if act.kind == "choose_effect" and "index" in act.args:
                             act = Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "index"})          # (the pending indexes moved)
@@ -1899,6 +1911,11 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     for d in (mine, theirs):
                         for f in ("display", "main_deck", "main_discard"):
                             d.pop(f, None)
+                if state.result is None and any(e.type == "finalScoring" for t_ in turns for e in t_) and not any(e.type == "chooseActionCard" for t_ in turns[last + 1:] for e in t_):
+                    for d in (mine, theirs):                    # the game ends with this turn and the log-built state already has the points of the sponsors and of the endgame cards (662607546 turn 85)
+                        for pl in d["players"]:
+                            for f in ("appeal", "conservation"):
+                                pl.pop(f, None)
                 if state.result is not None:                   # the final scoring is added to the tracks by the engine; the log-built state keeps the tracks as played
                     for d in (mine, theirs):
                         for pl in d["players"]:
@@ -1918,6 +1935,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         d.pop("turn", None)
                         for pl_ in d["players"]:
                             pl_.pop("action_cards", None)
+                if any(e.type == "skipTurnOfPlayer" for t_ in turns for e in t_):          # a player ran out of time: BGA counts the skipped turn, the engine does not (603637393)
+                    for d in (mine, theirs):
+                        d.pop("turn", None)
                 diffs = _diff(mine, theirs) + oracle_notes
                 rep.checked += 1
                 for act in acts:

@@ -58,7 +58,8 @@ def keyword_effects(state, seat: int, source: str, b: dict) -> list:
     value = b.get("bonusValue", 1)
     if name == "hunter":
         n = icons[tag_icon(per["tag"])] // per["every"] if per else value
-        return [{"kind": "reveal", "source": source, "x": n, "filter": "animal", "optional": False}] if n else []
+        extra = {"per_icon": tag_icon(per["tag"]), "every": per["every"]} if per else {}          # (counted again when the cards are revealed: a university of the same project adds its icon first, 864552379 turn 49)
+        return [{"kind": "reveal", "source": source, "x": n, "filter": "animal", "optional": False, **extra}] if n else []
     if name == "posturing":
         return animal_abilities._build(source, ("kiosk", "pavilion"), value)
     if name == "sunbathing":

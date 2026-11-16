@@ -322,6 +322,9 @@ def _refresh_reveal(state, seat: int, e: dict) -> None:
         from ark_nova.engine.icons import icon_counts
         counts = icon_counts(state, e.get("player", seat))
         e["x"] = sum(counts[n] for n in e["icons"])
+    elif e.get("per_icon") and not e.get("revealed"):
+        from ark_nova.engine.icons import icon_counts
+        e["x"] = max(e["x"], icon_counts(state, e.get("player", seat))[e["per_icon"]] // e["every"])
 
 
 def _reveal_ok(e, card: str) -> bool:

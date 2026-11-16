@@ -530,7 +530,8 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         else:
             _g().apply_placement_bonus(state, p.seat, e["bonus"])
     elif k == "search_category":
-        fx.search_for_category(state, p.seat, e["category"])
+        if not e.get("nothing"):                          # (the replay harness: BGA found nothing, the cards of the category are not in the deck)
+            fx.search_for_category(state, p.seat, e["category"])
     elif k == "income_map":
         from ark_nova.engine import breaks
         _g()._gain(state, p.seat, money=breaks.map_ability_income(state, p))
