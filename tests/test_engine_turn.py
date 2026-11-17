@@ -203,7 +203,7 @@ def test_flags_need_level_two_and_map_13_builds_around_the_centre():
     assert lvl1 <= lvl2 and not (lvl1 & bd.flags)
     b13 = board("13")
     first = {(x, y) for x, y, _ in valid_placements(b13, [], "size-1", 1)}
-    assert first == {(3, 6), (4, 3), (4, 9), (5, 6)}                                   # the cells next to the centre marker
+    assert first == {(3, 6), (4, 3), (4, 9), (5, 6), (4, 5), (4, 7)}                   # the centre cells and the cells next to them (BGA built a kiosk on (4,7))
 
 
 def test_full_map_bonus_is_seven_appeal_except_on_map_13():
