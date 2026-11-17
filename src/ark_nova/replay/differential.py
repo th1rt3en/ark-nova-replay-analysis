@@ -607,7 +607,7 @@ def _explorer_quirk(state, events, seat: int, seat_of: dict, turn0: int, rep, k:
                 if e.type == "getBonuses" and isinstance(e.args, dict) and str(e.args.get("card_id", "")).startswith("S262") and seat_of.get(str(e.args.get("player_id"))) == seat)
     gained_again = [i for x in paid for i in x["icons"] if state.players[seat].icons[i] >= 2]
     d = n_eng - n_log
-    if d <= 0 or d > len(gained_again):
+    if n_log <= 0 or d <= 0 or d > len(gained_again):          # (no Explorer line in this part of the log: it comes later, nothing was taken off)
         return state
     state = copy.deepcopy(state)
     state.players[seat].money -= 2 * d
