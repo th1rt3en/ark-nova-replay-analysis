@@ -1297,7 +1297,7 @@ def _go_extra(state: GameState, action: Action) -> None:
     """The extra action (Determination / Action: X) comes before the Clever / Boost that is still pending (BGA lets the player order them): those wait
     for the end of the extra action."""
     resume = state.prompt.args["resume"]
-    if resume.get("kind") != "end" or not resume.get("extra") or any(e["kind"] not in ("slot1", "boost", "mark") and e.get("cond") != "no_animals" for e in state.prompt.args["pending"]):
+    if resume.get("kind") != "end" or not resume.get("extra") or (state.prompt.args["pending"] and not effects.extra_can_go_first(state.prompt.args["pending"])):
         raise IllegalAction("no extra action to go to")
     carried = list(state.prompt.args["pending"])
     state.prompt = None

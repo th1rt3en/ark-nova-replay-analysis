@@ -217,11 +217,18 @@ def open_prompt(state, seat: int, pending: list, resume) -> None:
     state.prompt = Prompt(kind="effects", player=seat, args={"pending": pending, "resume": resume})
 
 
+def extra_can_go_first(pending: list) -> bool:
+    """The extra action may come before the pending effects when they are all end-of-action triggers (Clever, Boost, Mark, the Snap Sponsor's
+    optional take) that wait for the end of the extra action (824357500 turn 80: Boosts and a Clever after an Association)."""
+    return bool(pending) and all(e["kind"] in ("slot1", "boost", "mark") or (e["kind"] == "take" and e.get("source") == "S228") or e.get("cond") == "no_animals"
+                                 for e in pending)
+
+
 def legal(state, p0) -> list:
     a = state.prompt.args
     out = []
     resume = a.get("resume") or {}
-    if resume.get("kind") == "end" and resume.get("extra") and a["pending"]             and all(e["kind"] in ("slot1", "boost", "mark") or e.get("cond") == "no_animals" for e in a["pending"]):
+    if resume.get("kind") == "end" and resume.get("extra") and a["pending"]             and extra_can_go_first(a["pending"]):
         out.append(Action(state.prompt.player, "go_extra", {}))        # the extra action first, the Clever / Boost after it
     for i, e in enumerate(a["pending"]):
         k = e["kind"]

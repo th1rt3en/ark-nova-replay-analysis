@@ -43,6 +43,8 @@ FIXED = {
     "941429583": "an enlarged enclosure (Conference on Australia) that completes an area of map 13 pays the area's bonus (turn 60)",
     "937181556": "the Polar Bear Exhibit played in the break by the player whose turn it is not: its own bear is an effect of the owner (turn 46)",
     "823017370": "Kiosk Build: the first kiosk was taken for the additional one though it used strength (BGA's list after the next building shows it, turn 40)",
+    "646866721": "a Green Sea Turtle that moves into a new Reptile House left its small aquarium, though the log names the large one (turns 49, 71)",
+    "824357500": "an Association extra action goes before the Boosts, the Clever and the Snap Sponsor's optional take of the animals action (turn 82)",
 }
 
 
