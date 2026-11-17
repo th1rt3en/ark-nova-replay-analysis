@@ -897,7 +897,7 @@ def _project_effect(state: GameState, act=None):
             return Action(state.prompt.player, "choose_effect", {"index": i, "apply": "jumping"})
         if e["kind"] == "tutor" and any(x.kind == "choose_effect" and x.args.get("apply") == "tutor" for x in ([act] if act is not None else []) + list(getattr(_skip_unneeded, "rest", []))):
             continue                                       # (the log names it later: the display refills of the digging before it come first)
-        if e["kind"] == "project_bonus" and state.players[e.get("player", state.prompt.player)].map_id == "14" and any(o["kind"] == "tutor" for o in state.prompt.args["pending"]) \
+        if e["kind"] == "project_bonus" and "Worker" in (e.get("bonus") or {}) and state.players[e.get("player", state.prompt.player)].map_id == "14" and any(o["kind"] == "tutor" for o in state.prompt.args["pending"]) \
                 and any(x.kind == "choose_effect" and x.args.get("apply") == "tutor" for x in ([act] if act is not None else []) + list(getattr(_skip_unneeded, "rest", []))):
             continue                                       # (map 14: the notepad's Worker brings the first person of the deck, a search that comes after the project's own tutor in the log: 793335029 turn 23)
         if e["kind"] in ("project_bonus", "tutor"):
@@ -1020,6 +1020,8 @@ def _is_free_part(events: list, back: bool = False) -> bool:
     for e in real:
         if e.type == "pDiscardCards" and "Map T1 effect" in e.log or e.type == "pUnstoreCard" or e.type == "discardTokens" and e.log.startswith("${player_name} uses"):
             continue
+        if len(real) == 1 and e.type == "getBonuses" and isinstance(e.args, dict) and (e.args.get("bonuses") or {}) == {"xtoken": 1} and not e.args.get("source") and not e.args.get("card_id"):
+            continue                                         # the X token of a pass, logged in a part of its own before the part with the Multiplier token and the cleanup (809978456 turn 45)
         if back and e.type == "slideMeeples" and "worker(s) back" in (e.log or ""):
             continue                                         # an Extra Shift between an Association action and its Multiplier repetition (686637105 turn 65)
         if e.type in ("pDiscardCards", "discardCards") and " sell" in (e.log or "") and ((e.args if isinstance(e.args, dict) else {}).get("bonuses") or {}).get("money") == 3:
@@ -2173,6 +2175,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 if state.prompt is not None and state.prompt.kind == "break_window":
                     state = ap(state, Action(state.prompt.player, "start_break", {}))
                 _game.flush_refill(state)
+                if any(q_.flags.get("post_break") for q_ in state.players) and any(c_ is None for c_ in state.display) and state.prompt is not None and state.prompt.kind == "choose_action_card":
+                    _game._refill_display(state)          # a card taken in the window after a break leaves a gap that BGA closes when the window ends (784519699 turn 60)
                 state = _explorer_quirk(state, events, seat, seat_of, turn0_, rep, k, trace, tr0_)
                 mine, theirs = project(state), project(end)
                 nm_ = _next_mark(turns, last)
