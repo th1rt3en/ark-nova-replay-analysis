@@ -683,7 +683,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                     add(Action(seat, "choose_effect", {"apply": "gain", "res": res}), e)
             if chosen in ("sponsors", "association", "animals") or (chosen is None and any(x.type == "playSponsor" for x in events[:events.index(e)])):          # (also a sponsor played with a token before the card is chosen)
                 if a.get("card_id") and _key(a["card_id"]) in ("S276", "S256") and "appeal" in b:
-                    add(Action(seat, "choose_effect", {"apply": "gain", "res": "appeal", **({"trigger": "S256"} if _key(a["card_id"]) == "S256" else {})}), e)       # Landscape Gardener: the appeal for the pavilions is an effect of its own, in the order the log shows (Water Playground: its appeal comes after the building)
+                    add(Action(seat, "choose_effect", {"apply": "gain", "res": "appeal", "trigger": _key(a["card_id"])}), e)       # Landscape Gardener (the pending gain that belongs to this sponsor: another animal's appeal may be pending too, 664374722 turn 48): the appeal for the pavilions is an effect of its own, in the order the log shows (Water Playground: its appeal comes after the building)
                 elif a.get("card_id"):
                     pass                                         # a gain of another card of the zoo (Geologist, Hydrologist, Science Lab ...): the engine computes it, the state comparison checks it
                 else:

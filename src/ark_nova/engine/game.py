@@ -240,7 +240,7 @@ def legal_actions(state: GameState) -> list[Action]:
     if state.prompt is not None and state.phase in (Phase.TURN, Phase.FINAL_TURNS):
         for p in state.players:
             acts = acts + bonuses.token_actions(state, p)
-            if p.stored and bonuses._token_window(state, p):
+            if p.stored and bonuses.unstore_window(state, p):
                 acts = acts + [Action(p.seat, "unstore", {"card": c}) for c in dict.fromkeys(p.stored)]
             if harbor_ready(state, p.seat):
                 acts = acts + [Action(p.seat, "harbor_sell", {"card": c}) for c in dict.fromkeys(p.hand)]
@@ -469,7 +469,7 @@ def _apply(state: GameState, action: Action) -> GameState:
         return new
     if action.kind == "unstore":                         # map 11 (Caves): a stored card goes back into the hand, a free action during the player's own turn
         p = new.players[action.player]
-        if action.args.get("card") not in p.stored or not bonuses._token_window(new, p):
+        if action.args.get("card") not in p.stored or not bonuses.unstore_window(new, p):
             raise IllegalAction("that card cannot be taken out of the storage now")
         p.stored.remove(action.args["card"])
         p.hand.append(action.args["card"])
@@ -1268,7 +1268,8 @@ def _complete(state: GameState, seat: int, owner, card_type: str, after: list, e
     i = next(i for i, c in enumerate(owner.action_cards) if c.type == card_type)
     _to_slot_1(owner, i, bool(state.current_action is not None and state.current_action.get("hypnosis")))
     state.current_action = None
-    venom.end_of_action(state, seat)
+    if not extra:                                    # (an extra action follows: BGA takes the Venom money at the end of the turn, or when the player presses "pay": 848774791 turn 74 builds with the money it still has)
+        venom.end_of_action(state, seat)
     if after:                                        # effects that wait for the end of the action (Expert on Africa, marks)
         effects.open_prompt(state, seat, after, {"kind": "end", "seat": seat, "extra": extra})
         return

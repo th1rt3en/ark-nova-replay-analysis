@@ -135,6 +135,15 @@ def use_token(state, action) -> None:
         _fx().open_prompt(state, p.seat, [eff], {"kind": "restore", "player": pr.player, "prompt_kind": pr.kind, "args": pr.args})
 
 
+def unstore_window(state, p) -> bool:
+    """A stored card (map 11) may come back into the hand while the player's tokens can be used, or while a Pilfering of the other player asks this one for a card
+    (835478006 turn 56: the victim takes cards out of the storage to give one)."""
+    if _token_window(state, p):
+        return True
+    pr = state.prompt
+    return pr is not None and pr.kind == "effects" and any(e["kind"] == "pilfer" and e.get("player") == p.seat for e in pr.args["pending"])
+
+
 def _token_window(state, p) -> bool:
     """Tokens are used during the player's own action, or in the moment after their turn."""
     if state.prompt is None:

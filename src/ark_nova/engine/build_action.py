@@ -124,8 +124,8 @@ def valid_placements(bd: Board, buildings: list, t: str, level: int, rules: dict
             if rules.get("free_position"):
                 out.append((x, y, k))
                 continue
-            if bd.start_cells:           # map 13: the centre marker always counts as a neighbour to build next to
-                if not touches_building and not any(n in bd.start_cells for c in cells for n in neighbours(c)):
+            if bd.start_cells and not occupied:           # map 13: the first building touches the centre marker instead of the border; the later ones touch a building (BGA lists no space that only touches the centre: 850455378 turn 23)
+                if not any(n in bd.start_cells for c in cells for n in neighbours(c)):
                     continue
             elif occupied:
                 if not touches_building and not touches_crane:

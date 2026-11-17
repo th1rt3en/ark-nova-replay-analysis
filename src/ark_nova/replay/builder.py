@@ -636,8 +636,8 @@ def h_mark_assign(ctx: _Ctx, e: Event) -> None:
 
 
 def h_store_card(ctx: _Ctx, e: Event) -> None:
-    p = ctx.state.players[ctx.seat(e.player)]
     for c in e.args["cards"]:
+        p = ctx.state.players[ctx.seat(str(c["pId"]) if c.get("pId") is not None and str(c["pId"]) in ctx.seat_of else e.player)]          # (the card names its owner: the player of the event can be the other one, 835478006 turn 56)
         k = _key(c["id"])
         if k in p.hand:
             p.hand.remove(k)
@@ -645,8 +645,8 @@ def h_store_card(ctx: _Ctx, e: Event) -> None:
 
 
 def h_unstore_card(ctx: _Ctx, e: Event) -> None:
-    p = ctx.state.players[ctx.seat(e.player)]
     for c in e.args["cards"]:
+        p = ctx.state.players[ctx.seat(str(c["pId"]) if c.get("pId") is not None and str(c["pId"]) in ctx.seat_of else e.player)]
         k = _key(c["id"])
         if k in p.stored:
             p.stored.remove(k)
