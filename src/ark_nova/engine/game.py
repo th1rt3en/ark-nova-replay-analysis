@@ -1270,8 +1270,7 @@ def _complete(state: GameState, seat: int, owner, card_type: str, after: list, e
     i = next(i for i, c in enumerate(owner.action_cards) if c.type == card_type)
     _to_slot_1(owner, i, bool(state.current_action is not None and state.current_action.get("hypnosis")))
     state.current_action = None
-    if not extra:                                    # (an extra action follows: BGA takes the Venom money at the end of the turn, or when the player presses "pay": 848774791 turn 74 builds with the money it still has)
-        venom.end_of_action(state, seat)
+    venom.end_of_action(state, seat)                 # (BGA takes the Venom money at the end of an action that an extra action of another card follows: 51 of 69 logs; a Multiplier repetition is the same action and pays at its end)
     if after:                                        # effects that wait for the end of the action (Expert on Africa, marks)
         effects.open_prompt(state, seat, after, {"kind": "end", "seat": seat, "extra": extra})
         return
