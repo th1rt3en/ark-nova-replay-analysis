@@ -717,7 +717,10 @@ def _skip_unneeded(state: GameState, act):
         if x.kind == "choose_action_card":
             break
         rest.append(x)
+    rest_action = [x for x in rest if x in getattr(_skip_unneeded, "rest_action", rest)]
     for i, e in enumerate(state.prompt.args["pending"]):
+        if e["kind"] == "sell" and e.get("optional") and not _fits(e, act) and act is not None and act.kind != "play_animal" and not any(_fits(e, x) and x.player == e.get("player", x.player) for x in rest_action):
+            return Action(e.get("player", state.prompt.player), "skip_effect", {"index": i})          # a sale of the action that no act of the action uses: declined (the sale of the break's discard comes later, 838153372 turn 23)
         if e["kind"] == "pouch" and not (act is not None and act.kind == "play_animal") and any(x.kind == "choose_effect" and x.args.get("psrc") == e.get("source") and x.player == e.get("player", x.player) for x in rest):
             continue                                          # the log pouches under this card later in the turn (after other effects the player chose first: 646886236 turn 58)
         if e.get("optional") and not _fits(e, act) and not (not (act is not None and act.kind == "play_animal") and (e["kind"] in ("build", "digging", "sell", "ability", "marketing", "pay_appeal", "take", "cut_down", "donation", "expedition", "venom", "constrict", "move_in", "trade", "take_tile", "shark") or (e["kind"] == "pouch" and (e.get("source") == "map" or (act is not None and act.kind == "take_cards" and act.args.get("mode") == "snap")))
@@ -1349,6 +1352,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         gi_ = next(i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "gain" and e_.get("source") == "S276")
                         state = ap(state, Action(act.player, "choose_effect", {"index": gi_, "apply": "gain", "res": "appeal"}))          # Landscape Gardener: the player resolved the appeal first, with no pavilion in the zoo: 0 appeal and no log line (683029660 turn 18)
                     _skip_unneeded.rest = acts[ai + 1:]
+                    _skip_unneeded.rest_action = [x_ for x_, _m, o_ in items[ai + 1:] if _skip_unneeded.cleanup is None or o_ < _skip_unneeded.cleanup or x_.kind in ("choose_action_card", "skip_action")] if len(items) == len(acts) else acts[ai + 1:]          # (the acts of the action itself: what follows the cleanup of the card belongs to the break or the next action, so a sale the log does not show is declined first, 838153372 turn 23)
                     _skip_unneeded.order = order
                     while act.kind == "choose_effect" and str(act.args.get("apply", "")).startswith("income_") and state.prompt is not None and state.prompt.kind == "effects":
                         logged_ = [next(iter(e_.args["bonuses"])) for e_ in events if e_.type == "getBonuses" and isinstance(e_.args, dict) and e_.args.get("source") == "placement bonus" and e_.order < order
@@ -1412,6 +1416,16 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             state = ap(state, Action(act.player, "skip_effect", {"index": ri_}))          # the point beyond the top of the track that the log shows as appeal before the income (877326818 turn 60)
                             continue
                         state = ap(state, Action(act.player, "choose_effect", {"index": gi_, "apply": "gain", "res": state.prompt.args["pending"][gi_]["res"]}))          # the university's reputation that the log shows before the income is paid first, the player's order (667652408 turn 65)
+                    if state.prompt is not None and state.prompt.kind == "break_window" and _plain(act) not in legal_actions(state) and act.kind != "use_token":
+                        state = ap(state, Action(state.prompt.player, "start_break", {}))          # the log goes on with the break: the notepad tokens are done with
+                    if act.kind == "choose_effect" and "move" in act.args and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
+                        alts_ = [c_ for c_ in legal_actions(state) if c_.kind == "choose_effect" and c_.args.get("move") == act.args["move"] and "from" in c_.args]
+                        if len(alts_) == 1 and any(b_.type.endswith("aquarium") and [b_.x, b_.y] == alts_[0].args["from"] for b_ in state.players[act.player].buildings) \
+                                and any(b_.type.endswith("aquarium") and [b_.x, b_.y] == list(act.args["from"]) for b_ in state.players[act.player].buildings):
+                            act = Action(act.player, act.kind, {**act.args, "from": alts_[0].args["from"]})          # the aquariums of a zoo share their spaces: BGA names the aquarium the animal sits in, the engine keeps it in another (646866721 turn 49)
+                    if act.kind == "choose_effect" and act.args.get("hire") and "index" not in act.args and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state) \
+                            and not any(e_["kind"] in ("threshold2", "upgrade", "gain_worker") for e_ in state.prompt.args["pending"]):
+                        continue                                  # the worker of the log came with a placement bonus of the engine's own (a "Worker" hex under the building): nothing is left to hire (821824119 turn 38)
                     if act.kind == "choose_effect" and "cards" in act.args and "index" not in act.args and any(e_.type == "startBreak" and e_.order < order for e_ in events):
                         while state.prompt is not None and state.prompt.kind == "effects" and (state.current_action or {}).get("type") != "break" and _plain(act) not in legal_actions(state):
                             sk_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "sell" and e_.get("optional") and Action(e_.get("player", act.player), "skip_effect", {"index": i_}) in legal_actions(state)), None)
@@ -1906,6 +1920,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             break
                         state = ap(state, skip)
                         act = _normalise(state, act, endsnap)
+                    if state.prompt is not None and state.prompt.kind == "break_window" and _plain(act) not in legal_actions(state) and act.kind not in ("use_token", "pay_venom", "harbor_sell"):
+                        state = ap(state, Action(state.prompt.player, "start_break", {}))          # (the action was finished just now: the break starts before the log's next move)
+                        act = _normalise(state, act, endsnap)
                     if act.kind == "pay_venom" and act not in legal_actions(state):
                         state.players[act.player].flags.pop("venom_early", None)          # (paid by the engine while the effects before it were settled)
                         continue
@@ -1996,6 +2013,9 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     if nxt is None:
                         break
                     state = ap(state, Action(seat, "choose_effect", {"index": next(i for i, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "mark"), "card": nxt}))
+                while state.prompt is not None and state.prompt.kind == "effects" and any(e_["kind"] == "magnet" and e_.get("source") != "bonus" for e_ in state.prompt.args["pending"]):
+                    mg_ = next(i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "magnet" and e_.get("source") != "bonus")
+                    state = ap(state, Action(state.prompt.args["pending"][mg_].get("player", seat), "choose_effect", {"index": mg_, "apply": "magnet"}))          # an animal's Magnet that the log shows no note for: nothing in the display was left for it
                 while state.prompt is not None and state.prompt.kind == "effects" and any(e_["kind"] == "magnet" and e_.get("source") == "bonus" for e_ in state.prompt.args["pending"]):
                     mg_ = next(i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "magnet" and e_.get("source") == "bonus")
                     animals_ = [c_ for c_ in state.display if c_ and c_.startswith("A")]
@@ -2036,6 +2056,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                     state = ap(state, skip)
                 if state.prompt is not None and state.prompt.kind == "final_window":
                     state = ap(state, Action(state.prompt.player, "finish_game", {}))
+                if state.prompt is not None and state.prompt.kind == "break_window":
+                    state = ap(state, Action(state.prompt.player, "start_break", {}))          # no token was used: the break starts
                 if plan.chose and state.prompt is not None and state.prompt.kind == "cards_take" and Action(seat, "skip_snap", {}) in legal_actions(state):
                     state = ap(state, Action(seat, "skip_snap", {}))
                 if plan.chose and state.prompt is not None and state.prompt.kind in ("build_place", "sponsors_play", "animals_play",
@@ -2093,6 +2115,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 state = copy.deepcopy(state)
                 if state.prompt is not None and state.prompt.kind == "final_window":          # (the last turn was finished by the harness: nothing is left to do with a token)
                     state = ap(state, Action(state.prompt.player, "finish_game", {}))
+                if state.prompt is not None and state.prompt.kind == "break_window":
+                    state = ap(state, Action(state.prompt.player, "start_break", {}))
                 _game.flush_refill(state)
                 mine, theirs = project(state), project(end)
                 if deferred_mark[0]:                             # (the mark was placed from a later markCard of the log: the replay state has it later)

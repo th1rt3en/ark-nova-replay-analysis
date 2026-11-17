@@ -571,7 +571,7 @@ def turn_actions(events: list[Event], seat: int, seat_of: dict[str, int], move_o
                 continue
             if t == "pDiscardCards" and "You pouch" in e.log:                                   # the Pouch space of the income (maps 7 / 7a): a card under the map
                 for c in a["cards"]:
-                    add(Action(seat_of[str(e.player or a.get("player_id"))], "choose_effect", {"card": _key(c["id"])}), e)
+                    add(Action(seat_of[str(e.player or a.get("player_id"))], "choose_effect", {"card": _key(c["id"]), **({"psrc": _key(a["pouch"])} if isinstance(a.get("pouch"), str) and a["pouch"][:1] in "AS" else {})}), e)          # (a card of the zoo that the log names: the Pouch of a sponsor, not the map's, 762482235 turn 63)
                 continue
             if t == "pDiscardCards" and "You discard" in e.log and "scoring" not in e.log and "(" not in e.log.split("${card_names}")[-1]:
                 add(Action(seat_of[str(e.player or a.get("player_id"))], "choose_effect",

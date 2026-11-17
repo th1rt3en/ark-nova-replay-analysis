@@ -148,7 +148,7 @@ def _token_window(state, p) -> bool:
     """Tokens are used during the player's own action, or in the moment after their turn."""
     if state.prompt is None:
         return False
-    if state.prompt.kind == "final_window":
+    if state.prompt.kind in ("final_window", "break_window"):
         return state.prompt.player == p.seat                  # (the last turn is over, the game is not scored yet)
     if state.current_action is not None:
         if state.current_action.get("type") == "break":

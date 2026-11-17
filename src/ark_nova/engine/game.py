@@ -269,6 +269,8 @@ def _prompt_actions(state: GameState) -> list[Action]:
         return []
     if pr.kind == "final_window":
         return [Action(pr.player, "finish_game", {})]
+    if pr.kind == "break_window":
+        return [Action(pr.player, "start_break", {})]
     if pr.kind == "confirm_turn":
         return [Action(pr.player, "confirm_turn", {})]
     p = state.players[pr.player]
@@ -1364,6 +1366,9 @@ def _finish_turn_now(state: GameState, seat: int, kicked: bool = False) -> None:
         _end_game(state)
         return
     if state.break_position >= BREAK_AT:
+        if not state.config.confirm_turns and bonuses.token_uses(state, state.players[seat]):          # a token of the notepad is used before the break starts: BGA's log shows the sponsor and its draws first (667652408 turn 36)
+            state.prompt = Prompt(kind="break_window", player=seat, args={})
+            return
         breaks.start(state, seat)
         return
     state.prompt = Prompt(kind="choose_action_card", player=state.active_player)
@@ -1397,6 +1402,7 @@ _TURN_HANDLERS = {
     ("choose_action_card", "skip_action"): _skip_action,
     ("choose_action_card", "skip_extra"): _skip_extra,
     ("final_window", "finish_game"): _finish_game,
+    ("break_window", "start_break"): lambda st, act: breaks.start(st, act.player),
     ("confirm_turn", "confirm_turn"): _confirm_turn,
     ("cards_take", "take_cards"): _take_cards,
     ("cards_take", "skip_snap"): lambda st, act: _skip_snap(st, act),

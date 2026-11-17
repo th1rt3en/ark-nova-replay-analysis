@@ -224,7 +224,7 @@ def infer_peaceful(parsed: ParsedLog) -> bool:
                 b = a.get("bonuses") or {}
                 if e.type == "actionCardCleanup" and "Clever effect" in (e.log or "") and "Constriction" in names and str(a.get("player_id")) == constrictor and "Clever" not in owned.get(constrictor, ()):
                     peaceful += 1                          # the peaceful Constriction is a Clever effect: an action card placed on slot 1 after the animal, with no Clever animal in the zoo (768475372 turn 61, confirmed peaceful)
-                if e.type == "getBonuses" and a.get("source") == "Inventive" and set(b) == {"xtoken"} and play.get("venom"):
+                if (e.type == "getBonuses" and a.get("source") == "Inventive" and set(b) == {"xtoken"} and play.get("venom")) or (e.type == "midmessage" and "x-tokens" in (e.log or "") and play.get("venom")):          # (at 5 X tokens the peaceful Venom's token is refused with "cannot have more than 5 x-tokens": 806367947 turn 47)
                     play["seen"] += 1                      # more X tokens "from Inventive" than the Inventive effects of the zoo explain: a Venom replaced (Devil Firefish: its own Inventive reef + the peaceful Venom, 691447217 turn 17)
                     if play["seen"] > play["expected"]:
                         peaceful += 1
