@@ -1450,7 +1450,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                             import os as _os3
                             if _os3.environ.get("DBG_FIN"):
                                 print("DBG_FIN", ex_)
-                    while act.kind not in ("magnet_note", "skip_effect") and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state):
+                    while act.kind not in ("magnet_note", "skip_effect") and state.prompt is not None and state.prompt.kind == "effects" and _plain(act) not in legal_actions(state) \
+                            and not any(x_.kind == "magnet_note" and x_.player == act.player for x_ in acts[ai + 1:]):
                         mg_ = next((i_ for i_, e_ in enumerate(state.prompt.args["pending"]) if e_["kind"] == "magnet" and e_.get("source") != "bonus" and e_.get("player", state.prompt.player) == act.player), None)
                         if mg_ is None:
                             break
@@ -1800,10 +1801,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                                     return s2.prompt.args["remaining"]
                                 r_ = (s2.prompt.args.get("resume") or {}) if s2.prompt is not None and s2.prompt.kind == "effects" else {}
                                 return r_["args"]["remaining"] if r_.get("kind") == "prompt" and r_.get("prompt_kind") == "build_place" else None
-                            types_ = build_checks[later_][0]["build"].get("types") or []
-                            extra_name_ = {"kiosk": "kiosk2", "pavilion": "pavilion1"}.get(act.args["type"])
-                            if extra_name_ is not None and extra_name_ in types_:
-                                act = plain_          # BGA still offers the additional kiosk / pavilion afterwards: this one was the ordinary one (787760450 turn 66)
+                            bl_ = build_checks[later_][0]["build"]
+                            rp_, re_ = rem_(plain_), rem_(act)
+                            if not any(bl_["options"].values()) and bl_.get("max_size") == 0 and rp_ == 0 and re_ is not None and re_ > 0:
+                                act = plain_          # BGA lists nothing more to build and no strength is left: the ordinary kiosk / pavilion (787760450 turn 66)
                     if act.kind == "place_building" and act.args.get("extra") and build_checks.get(mv) and Action(act.player, act.kind, {k_: v_ for k_, v_ in act.args.items() if k_ != "extra"}) in legal_actions(state):
                         # the additional (free) kiosk / pavilion or the ordinary one? Both cost the same at level II and the log does not say: BGA's list of what can still be
                         # built afterwards shows how much strength is left
@@ -1852,10 +1853,10 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                                 return s2.prompt.args["remaining"]
                             res_ = (s2.prompt.args.get("resume") or {}) if s2.prompt is not None and s2.prompt.kind == "effects" else {}
                             return res_["args"]["remaining"] if res_.get("kind") == "prompt" and res_.get("prompt_kind") == "build_place" else None
-                        types_ = build_checks[mv][0]["build"].get("types") or []
-                        extra_name_ = {"kiosk": "kiosk2", "pavilion": "pavilion1"}.get(act.args["type"])
-                        if extra_name_ is not None and any(extra_name_ in (c_["build"].get("types") or []) for c_ in build_checks[mv]) and not (got_plain is not None and got_plain != want and got_extra == want):
-                            act = plain          # BGA still offers the additional kiosk / pavilion afterwards: this one was the ordinary one (787760450 turn 66)
+                        bchk_ = build_checks[mv][0]["build"]
+                        lp_, le_ = left_(plain), left_(act)
+                        if not any(bchk_["options"].values()) and bchk_.get("max_size") == 0 and lp_ == 0 and le_ is not None and le_ > 0:
+                            act = plain          # BGA lists nothing more to build and no strength is left: the ordinary kiosk / pavilion (787760450 turn 66)
                         elif got_plain is not None and got_plain == want and (got_extra is None or got_extra != want):
                             act = plain
                         elif got_plain is not None and got_extra is not None and top_(got_plain) == top_(want) != top_(got_extra):
