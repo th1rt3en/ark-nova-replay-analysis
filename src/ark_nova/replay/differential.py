@@ -867,6 +867,9 @@ def _project_effect(state: GameState, act=None):
             return Action(state.prompt.player, "choose_effect", {"index": i, "apply": "jumping"})
         if e["kind"] == "tutor" and any(x.kind == "choose_effect" and x.args.get("apply") == "tutor" for x in ([act] if act is not None else []) + list(getattr(_skip_unneeded, "rest", []))):
             continue                                       # (the log names it later: the display refills of the digging before it come first)
+        if e["kind"] == "project_bonus" and state.players[e.get("player", state.prompt.player)].map_id == "14" and any(o["kind"] == "tutor" for o in state.prompt.args["pending"]) \
+                and any(x.kind == "choose_effect" and x.args.get("apply") == "tutor" for x in ([act] if act is not None else []) + list(getattr(_skip_unneeded, "rest", []))):
+            continue                                       # (map 14: the notepad's Worker brings the first person of the deck, a search that comes after the project's own tutor in the log: 793335029 turn 23)
         if e["kind"] in ("project_bonus", "tutor"):
             return Action(state.prompt.player, "choose_effect", {"index": i, "apply": e["kind"]})
         if e["kind"] == "reef":
@@ -1516,7 +1519,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                                 1 for e in state.prompt.args["pending"] if e["kind"] == "take" and not e.get("snap")):
                         continue                                 # map 10: the draw of the Digging is logged before the discard, the engine draws when the card is discarded
                     if act.kind == "take_cards" and act.args.get("mode") == "deck" and act.args.get("count") == 1 and getattr(_normalise, "hand_rescue", False) and (state.current_action or {}).get("type") != "cards" and not (state.prompt is not None and state.prompt.kind == "cards_take") and not (
-                            state.prompt is not None and state.prompt.kind == "effects" and any(e["kind"] == "take" and not e.get("snap") for e in state.prompt.args["pending"])):
+                            state.prompt is not None and state.prompt.kind == "effects" and any((e["kind"] == "take" and not e.get("snap")) or (e["kind"] == "pbonus" and e["bonus"]["type"] == "take-in-range-or-deck") for e in state.prompt.args["pending"])):
                         _normalise.hand_rescue = False
                         continue                                 # the card drawn for an animal rescued from the hand was drawn by the engine with the rescue (840980354 turn 53)
                     if (act.kind == "play_sponsor" or (act.kind == "choose_effect" and str(act.args.get("card", "")).startswith("S") and "mark" not in act.args)) and state.prompt is not None and state.prompt.kind == "effects"                             and not any(e["kind"] == "marketing" and not e.get("cube") for e in state.prompt.args["pending"]):

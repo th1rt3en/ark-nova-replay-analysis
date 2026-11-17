@@ -169,7 +169,7 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                     elif eff[0] == "reveal":
                         pending.append({"kind": "reveal", "source": s, "x": eff[1], "filter": eff[2] if len(eff) > 2 and isinstance(eff[2], str) else "any", "optional": False, "player": owner})
                     elif eff[0] == "hunter":
-                        pending.append({"kind": "reveal", "source": s, "x": total["Predator"], "filter": "animal", "optional": False, "player": owner})
+                        pending.append({"kind": "reveal", "source": s, "x": total["Predator"], "filter": "animal", "optional": False, "player": owner, "icons": ["Predator"]})          # (X counts the predator icons when the cards are revealed: both Hunters of 870114927 turn 3 / 888478305 turn 9 show 3 cards)
                     elif eff[0] == "sell":
                         pending.append({"kind": "sell", "source": s, "max": eff[1], "optional": True, "player": owner})
                     elif eff[0] == "pouch":
