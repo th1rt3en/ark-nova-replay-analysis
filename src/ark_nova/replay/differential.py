@@ -96,6 +96,7 @@ class DiffReport:
     placement_lists: int = 0                               # BGA legal-placement lists compared with the engine's
     project_lists: int = 0                                 # BGA lists of supportable projects compared with the engine's
     results: dict = field(default_factory=dict)            # turn index -> TurnResult
+    quirks: list[str] = field(default_factory=list)        # turns where BGA's own behaviour is replayed instead of the rule (docs/bga_quirks.md)
 
 
 def marks_of(state: GameState) -> list:
@@ -592,6 +593,35 @@ def _fits(effect: dict, act) -> bool:
                 or (("give" in a or "pay" in a) and k == "pilfer") or ("apply" in a and (k == "gain" or a["apply"] == k) and k in ("venom", "constrict", "gain"))
                 or ("activate" in a and k == "ability") or (a.get("apply") == k and k in ("hypnosis", "pay_appeal")) or ("rep_bonus" in a and k == "rep_bonus") or ("move" in a and k == "move_in") or ("store" in a and k == "store") or ("continent" in a and k == "continent") or ("multiplier" in a and k == "multiplier"))
     return False
+
+
+def _explorer_quirk(state, events, seat: int, seat_of: dict, turn0: int, rep, k: int, trace=None, tr0: int = 0):
+    """BGA quirk (docs/bga_quirks.md): an Explorer (S262) payment for several new icons is a pending effect, and BGA takes off the icons that the player gains again
+    meanwhile (here a Sea Animal university from the reef effect -> 5 conservation reward, 859034675 turn 23): it thinks they were already in the zoo.
+    The engine keeps the rule right (it pays every new icon); the replay shows what BGA paid: the difference is taken off the state."""
+    paid = [x for x in getattr(state, "explorer_paid", []) if x["seat"] == seat and x["turn"] == turn0]
+    if not paid:
+        return state
+    n_eng = sum(len(x["icons"]) for x in paid)
+    n_log = sum((e.args.get("bonuses") or {}).get("appeal", 0) for e in events
+                if e.type == "getBonuses" and isinstance(e.args, dict) and str(e.args.get("card_id", "")).startswith("S262") and seat_of.get(str(e.args.get("player_id"))) == seat)
+    gained_again = [i for x in paid for i in x["icons"] if state.players[seat].icons[i] >= 2]
+    d = n_eng - n_log
+    if d <= 0 or d > len(gained_again):
+        return state
+    state = copy.deepcopy(state)
+    state.players[seat].money -= 2 * d
+    state.players[seat].appeal -= d
+    again = set(gained_again)
+    started = False
+    for entry in (trace or [])[tr0:]:          # the steps of the replay show what BGA paid from the moment the icon is gained again
+        st = entry[2]
+        started = started or any(st.players[seat].icons[i] >= 2 for i in again)
+        if started and entry[2].turn == turn0:
+            st.players[seat].money -= 2 * d
+            st.players[seat].appeal -= d
+    rep.quirks.append(f"turn {k}: Explorer paid {n_log} of {n_eng} new icons (an icon gained again before it was resolved: {sorted(set(gained_again))})")
+    return state
 
 
 def _rep_cap(p) -> int:
@@ -1232,6 +1262,8 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 continue
             acts = plan.actions
             state = copy.deepcopy(carry[1] if carry[0] == k else snaps[k])
+            turn0_ = state.turn
+            tr0_ = len(trace)
             for seat_l_, order_l_ in left_at.items():
                 if seat_l_ != seat and events and events[0].order < order_l_ <= events[-1].order and any(e_.order == order_l_ and e_.type == "gameResultNeutralized" for e_ in events):
                     state.players[seat_l_].flags["left"] = 1          # a player who quit in the break of this turn takes no discard and no income (666265711 turn 32)
@@ -2141,6 +2173,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 if state.prompt is not None and state.prompt.kind == "break_window":
                     state = ap(state, Action(state.prompt.player, "start_break", {}))
                 _game.flush_refill(state)
+                state = _explorer_quirk(state, events, seat, seat_of, turn0_, rep, k, trace, tr0_)
                 mine, theirs = project(state), project(end)
                 nm_ = _next_mark(turns, last)
                 if nm_ is not None and any(m_[1] == nm_ and m_ not in [tuple(x_) for pl_x in theirs["players"] for x_ in (pl_x.get("marks") or [])] for pl_ in mine["players"] for m_ in [tuple(x_) for x_ in (pl_.get("marks") or [])]) and not deferred_mark[0]:
