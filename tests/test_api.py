@@ -186,72 +186,6 @@ def test_ttl_cache_expiry_and_eviction():
     assert calls == [[1], [], [3], [5], [6]]
 
 
-def test_bigquery_index_caches_each_query():
-    from ark_nova.storage.index import BigQueryIndex
-
-    idx = BigQueryIndex("stats", "logs")
-    calls = []
-
-    def run(sql, table_id):
-        calls.append((sql.split("FROM")[1].split()[0], table_id))
-        if "pre_match_arena_rating" in sql:
-            return [{"pre_match_arena_rating": None}]
-        if "post_match_elo" in sql:
-            return [{"player_id": 1, "pre_match_elo": 100.4, "post_match_elo": 112.6}, {"player_id": 2, "pre_match_elo": 50.0, "post_match_elo": None}]
-        return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
-
-    idx._run = run
-    for _ in range(3):
-        rec = idx.find(5)
-    assert rec == TableRecord(5, None, {"1": "3a"}, True, elos_after={"1": 113}, elo_changes={"1": 12}, arena=False)          # (the Elo after the game and its change; a player without post_match_elo has neither; no arena rating)
-    assert calls == [("`stats`", 5), ("`logs`", "5"), ("`stats`", 5), ("`stats`", 5)]
-
-
-def test_bigquery_index_knows_a_game_with_an_arena_rating():
-    from ark_nova.storage.index import BigQueryIndex
-
-    idx = BigQueryIndex("stats", "logs")
-
-    def run(sql, table_id):
-        if "pre_match_arena_rating" in sql:
-            return [{"pre_match_arena_rating": None}, {"pre_match_arena_rating": 1234.5}]
-        if "post_match_elo" in sql:
-            return []
-        return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
-
-    idx._run = run
-    assert idx.find(5).arena is True
-
-
-def test_bigquery_index_survives_a_missing_arena_column():
-    from ark_nova.storage.index import BigQueryIndex
-
-    idx = BigQueryIndex("stats", "logs")
-
-    def run(sql, table_id):
-        if "arena" in sql:
-            raise RuntimeError("Unrecognized name: pre_match_arena_rating")
-        return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql and "post_match_elo" not in sql else []
-
-    idx._run = run
-    assert idx.find(5).arena is None
-
-
-def test_bigquery_index_survives_a_missing_elo_column():
-    from ark_nova.storage.index import BigQueryIndex
-
-    idx = BigQueryIndex("stats", "logs")
-
-    def run(sql, table_id):
-        if "post_match_elo" in sql:
-            raise RuntimeError("Unrecognized name: post_match_elo")
-        return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
-
-    idx._run = run
-    rec = idx.find(5)
-    assert rec.player_maps == {"1": "3a"} and rec.elos_after == {} and rec.elo_changes == {}
-
-
 def test_replay_endpoints_build_steps_from_a_log():
     path, raw = sample_log()
     table_id = int(path.stem)
@@ -288,23 +222,117 @@ def test_redirects_to_pages_when_configured(monkeypatch):
     assert c.get("/api/tables/999").status_code != 307
 
 
-def test_bigquery_index_reads_bgas_peaceful_option():
+STATS_ROW = {"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}
+
+
+def stats_index(rows, index_table=""):
+    """A BigQueryIndex whose BigQuery calls are answered by `rows(sql, table_id)`; returns it with the list of the queries made."""
     from ark_nova.storage.index import BigQueryIndex
 
-    def find(rows):
+    idx = BigQueryIndex("stats", "logs", index_table)
+    calls = []
+
+    def run(sql, table_id=None):
+        calls.append((sql.split("FROM")[1].split()[0], table_id))
+        return rows(sql, table_id)
+
+    idx._run = run
+    return idx, calls
+
+
+def test_bigquery_index_asks_the_stats_once_and_caches_it():
+    rows = [dict(STATS_ROW, pre_match_elo=100.4, post_match_elo=112.6, pre_match_arena_rating=None),
+            dict(STATS_ROW, player_id=2, pre_match_elo=50.0, post_match_elo=None, pre_match_arena_rating=None)]
+    idx, calls = stats_index(lambda sql, t: rows if "`stats`" in sql else [])
+    for _ in range(3):
+        rec = idx.find(5)
+    assert rec == TableRecord(5, None, {"1": "3a", "2": "3a"}, True, elos_after={"1": 113}, elo_changes={"1": 12}, arena=False)          # (a player without post_match_elo has neither Elo after nor a change; no arena rating)
+    assert idx.elos_before(5) == {"1": 100, "2": 50}                                         # (the Elo chips of the mini games read the same rows: no query of their own)
+    assert calls == [("`stats`", 5), ("`logs`", "5")]                                         # (one query on the stats, one on the logs: it was three on the view before)
+
+
+def test_bigquery_index_keeps_the_rows_of_a_finished_game_for_a_day():
+    from ark_nova.storage.index import BigQueryIndex
+
+    done = [dict(STATS_ROW, pre_match_elo=1.0, post_match_elo=2.0)]
+    running = [dict(STATS_ROW, pre_match_elo=1.0, post_match_elo=None)]
+    seen = []
+    for rows in (done, running, []):
         idx = BigQueryIndex("stats", "logs")
+        idx._cache.get_or_load = lambda key, load, ttl, rows=rows: seen.append(ttl(rows)) or rows
+        idx.stats_rows(5)
+    assert seen == [BigQueryIndex.FINAL_TTL, BigQueryIndex.HIT_TTL, BigQueryIndex.MISS_TTL]
 
-        def run(sql, table_id):
-            if "pre_match_arena_rating" in sql:
-                return rows
-            if "post_match_elo" in sql:
-                return []
-            return [{"table_id": 5, "player_id": 1, "map": "Map 3a: Silver Lake", "is_mw": 1}] if "stats" in sql else []
 
-        idx._run = run
+def test_bigquery_index_knows_a_game_with_an_arena_rating():
+    rows = [dict(STATS_ROW, pre_match_arena_rating=None), dict(STATS_ROW, player_id=2, pre_match_arena_rating=1234.5)]
+    idx, _ = stats_index(lambda sql, t: rows if "`stats`" in sql else [])
+    assert idx.find(5).arena is True
+
+
+def test_bigquery_index_survives_a_stats_table_without_the_elo_and_arena_columns():
+    def rows(sql, table_id):
+        if "`stats`" not in sql:
+            return []
+        if "post_match_elo" in sql:
+            raise RuntimeError("Unrecognized name: post_match_elo")
+        return [STATS_ROW]
+
+    idx, calls = stats_index(rows)
+    rec = idx.find(5)
+    assert rec.player_maps == {"1": "3a"} and rec.elos_after == {} and rec.elo_changes == {} and rec.arena is None
+    assert idx.elos_before(5) == {}
+    assert [c[0] for c in calls].count("`stats`") == 2                                       # (the full query failed, the core columns were asked once)
+
+
+def test_bigquery_index_reads_bgas_peaceful_option_from_the_table_index():
+    def find(rows):
+        idx, _ = stats_index(lambda sql, t: rows if "`stats_ix`" in sql else [], "stats_ix")
         return idx.find(5)
 
-    assert find([{"pre_match_arena_rating": None, "peaceful_option": "1"}, {"pre_match_arena_rating": None, "peaceful_option": "1"}]).peaceful is True
-    assert find([{"pre_match_arena_rating": 1200, "peaceful_option": "0"}]).peaceful is False
-    assert find([{"pre_match_arena_rating": None, "peaceful_option": None}]).peaceful is None           # (the options column is filled for some tables only)
-    assert find([{"pre_match_arena_rating": None, "peaceful_option": "2"}]).peaceful is None
+    base = dict(STATS_ROW, pre_match_arena_rating=None)
+    assert find([dict(base, peaceful_option="1"), dict(base, player_id=2, peaceful_option="1")]).peaceful is True
+    assert find([dict(base, pre_match_arena_rating=1200, peaceful_option="0")]).peaceful is False
+    assert find([dict(base, peaceful_option=None)]).peaceful is None            # (the options column is filled for some tables only)
+    assert find([dict(base, peaceful_option="2")]).peaceful is None
+
+
+def test_the_table_index_answers_without_touching_the_view():
+    idx, calls = stats_index(lambda sql, t: [dict(STATS_ROW, peaceful_option=None)] if "`stats_ix`" in sql else [], "stats_ix")
+    assert idx.find(5).player_maps == {"1": "3a"}
+    assert [c[0] for c in calls] == ["`stats_ix`", "`logs`"]
+
+
+def test_a_table_missing_from_the_index_is_looked_up_in_the_view_only_while_it_is_recent():
+    newest = 949_000_000
+
+    def rows(sql, table_id):
+        if "MAX(table_id)" in sql:
+            return [{"newest": newest}]
+        return [dict(STATS_ROW, table_id=table_id)] if "`stats`" in sql else []
+
+    idx, calls = stats_index(rows, "stats_ix")
+    assert idx.find(948_900_000) is not None                                                  # (recent: games are processed days after their id was made)
+    assert ("`stats`", 948_900_000) in calls
+    assert idx.find(newest - 30_000_000) is None                                              # (old and not in the index: not indexed, the view stays untouched)
+    assert ("`stats`", newest - 30_000_000) not in calls
+    assert [c for c in calls if "MAX" in c[0] or c[0] == "`stats_ix`" and c[1] is None] == [("`stats_ix`", None)]      # (the newest id is asked once and kept)
+
+
+def test_an_unreadable_table_index_falls_back_to_the_view():
+    def rows(sql, table_id):
+        if "`stats_ix`" in sql:
+            raise RuntimeError("Not found: Table stats_ix")
+        return [STATS_ROW] if "`stats`" in sql else []
+
+    idx, _ = stats_index(rows, "stats_ix")
+    assert idx.find(5).player_maps == {"1": "3a"}
+
+
+def test_the_elo_source_of_the_mini_games_reads_the_index_rows():
+    from ark_nova.storage.elos import BigQueryElos
+
+    idx, calls = stats_index(lambda sql, t: [dict(STATS_ROW, pre_match_elo=1500.4)] if "`stats`" in sql else [])
+    elos = BigQueryElos("stats", idx)
+    assert elos.get(5) == {"1": 1500} and elos.get(5) == {"1": 1500}
+    assert calls == [("`stats`", 5)]

@@ -46,7 +46,7 @@ def _default_index(settings: Settings) -> TableIndex:
     if not (settings.bq_table and settings.bq_logs_table):
         return NotConfiguredIndex()
     from ark_nova.storage.index import BigQueryIndex
-    return BigQueryIndex(settings.bq_table, settings.bq_logs_table)
+    return BigQueryIndex(settings.bq_table, settings.bq_logs_table, settings.bq_index_table)
 
 
 def _code_version() -> str:
@@ -134,7 +134,7 @@ def _default_minigames(app: FastAPI):
     from ark_nova.minigames.platform.store import MemoryStore, SqliteStore
     from ark_nova.storage.elos import BigQueryElos, NoElos
     st = app.state.settings
-    elos = BigQueryElos(st.bq_table) if st.bq_table else NoElos()
+    elos = BigQueryElos(st.bq_table, app.state.index) if st.bq_table else NoElos()
     entries = load_manifest()
     games = load_games(entries)
 
