@@ -135,11 +135,20 @@ def use_token(state, action) -> None:
         _fx().open_prompt(state, p.seat, [eff], {"kind": "restore", "player": pr.player, "prompt_kind": pr.kind, "args": pr.args})
 
 
+def unstore_window(state, p) -> bool:
+    """A stored card (map 11) may come back into the hand while the player's tokens can be used, or while a Pilfering of the other player asks this one for a card
+    (835478006 turn 56: the victim takes cards out of the storage to give one)."""
+    if _token_window(state, p):
+        return True
+    pr = state.prompt
+    return pr is not None and pr.kind == "effects" and any(e["kind"] == "pilfer" and e.get("player") == p.seat for e in pr.args["pending"])
+
+
 def _token_window(state, p) -> bool:
     """Tokens are used during the player's own action, or in the moment after their turn."""
     if state.prompt is None:
         return False
-    if state.prompt.kind == "final_window":
+    if state.prompt.kind in ("final_window", "break_window"):
         return state.prompt.player == p.seat                  # (the last turn is over, the game is not scored yet)
     if state.current_action is not None:
         if state.current_action.get("type") == "break":
@@ -253,7 +262,7 @@ def apply_bonus(state, seat: int, bonus: dict, income: bool = False) -> None:
             ids = [t.id for q in state.players for t in q.tokens]
             state.players[seat].tokens.append(Token(max(ids, default=0) + 1, k, "notepad"))
         elif k in ("Fac", "Partner-Zoo"):                 # conservation bonus: take a university / partner zoo tile from the association board
-            defer(state, {"kind": "take_tile", "tile": "university" if k == "Fac" else "partner", "player": seat, "optional": False})
+            defer(state, {"kind": "take_tile", "tile": "university" if k == "Fac" else "partner", "player": seat, "optional": True})      # (BGA lets the player pass: a placement bonus of the map that leaves no tile in the log, 645563433 turn 37)
         elif k == "bonus-increased-hand":                # hand size +1 (counted by breaks.hand_limit)
             ids = [t.id for q in state.players for t in q.tokens]
             state.players[seat].tokens.append(Token(max(ids, default=0) + 1, "bonus-increased-hand", "notepad"))

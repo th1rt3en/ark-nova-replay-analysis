@@ -24,7 +24,7 @@ def _remote_index(settings: Settings):
     try:
         from ark_nova.storage.index import BigQueryIndex
         from ark_nova.storage.logs import GcsLogStore
-        return BigQueryIndex(settings.bq_table, settings.bq_logs_table), GcsLogStore(settings.gcs_bucket)
+        return BigQueryIndex(settings.bq_table, settings.bq_logs_table, settings.bq_index_table), GcsLogStore(settings.gcs_bucket)
     except Exception as ex:                                  # noqa: BLE001
         print(f"BigQuery / GCS not available ({ex}): only the tables in log_examples work")
         return None, None

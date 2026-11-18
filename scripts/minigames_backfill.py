@@ -48,7 +48,8 @@ def main() -> None:
     from ark_nova.storeclient import StoreClient
 
     st = Settings()
-    index, logs, elos = BigQueryIndex(st.bq_table, st.bq_logs_table), GcsLogStore(st.gcs_bucket), BigQueryElos(st.bq_table)
+    index = BigQueryIndex(st.bq_table, st.bq_logs_table, st.bq_index_table)
+    logs, elos = GcsLogStore(st.gcs_bucket), BigQueryElos(st.bq_table, index)
 
     def read_log(table_id: int) -> GameLog:
         rec = index.find(table_id)

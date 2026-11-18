@@ -16,13 +16,17 @@ class NoElos:
 class BigQueryElos:
     TTL = 6 * 3600.0
 
-    def __init__(self, stats_table: str):
+    def __init__(self, stats_table: str, index=None):
+        """`index`: the app's `BigQueryIndex`; the Elo then comes from the stats rows it already holds (no query of its own)."""
         self._table = stats_table
+        self._index = index
         self._client = None
         self._cache = TTLCache()
 
     def get(self, table_id: int) -> dict:
         """{BGA player id: Elo rounded to a whole number}; {} when BigQuery cannot be reached (a puzzle then shows no Elo rather than failing)."""
+        if self._index is not None and hasattr(self._index, "elos_before"):
+            return self._index.elos_before(table_id)
         return self._cache.get_or_load(table_id, lambda: self._load(table_id), lambda rows: self.TTL if rows else 60.0)
 
     def _load(self, table_id: int) -> dict:

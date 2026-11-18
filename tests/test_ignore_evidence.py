@@ -213,6 +213,8 @@ def test_camouflage_is_consumed_when_other_credits_cover_the_play_and_a_new_acti
     ('930781276', '86346298', 75, 'A504', 1),
 ])
 def test_real_private_status_and_postplay_confirmation_produce_one_counter(gid, pid, move, card, requirements):
+    if not (LOGS / (gid + '.json')).exists():
+        pytest.skip('log not available')
     parsed = parse_log(LOGS / (gid + '.json'))
     matches = [(m, e) for m in parsed.moves for e in m.events if m.move_id == move and e.type == 'buyAnimal']
     m, e = matches[0];r = parsed.animal_ignores[e.order]

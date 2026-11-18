@@ -71,7 +71,7 @@ def board(map_id: str) -> Board:
     bonuses: dict = {}
     for b in geo["placement_bonuses"]:
         bonuses.setdefault((b["x"], b["y"]), []).append(b["bonus"])
-    return Board(map_id, cells, terrain, flags, border, centre, centre, bonuses)
+    return Board(map_id, cells, terrain, flags, border, frozenset(), centre, bonuses)          # (the centre cells are ordinary spaces: a kiosk of 850455378 turn 23 and the first building of 13 lie on them; only the first building has to touch them)
 
 
 def placement_entries(p) -> list:

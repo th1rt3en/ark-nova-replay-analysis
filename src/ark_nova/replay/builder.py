@@ -636,8 +636,8 @@ def h_mark_assign(ctx: _Ctx, e: Event) -> None:
 
 
 def h_store_card(ctx: _Ctx, e: Event) -> None:
-    p = ctx.state.players[ctx.seat(e.player)]
     for c in e.args["cards"]:
+        p = ctx.state.players[ctx.seat(str(c["pId"]) if c.get("pId") is not None and str(c["pId"]) in ctx.seat_of else e.player)]          # (the card names its owner: the player of the event can be the other one, 835478006 turn 56)
         k = _key(c["id"])
         if k in p.hand:
             p.hand.remove(k)
@@ -645,8 +645,8 @@ def h_store_card(ctx: _Ctx, e: Event) -> None:
 
 
 def h_unstore_card(ctx: _Ctx, e: Event) -> None:
-    p = ctx.state.players[ctx.seat(e.player)]
     for c in e.args["cards"]:
+        p = ctx.state.players[ctx.seat(str(c["pId"]) if c.get("pId") is not None and str(c["pId"]) in ctx.seat_of else e.player)]
         k = _key(c["id"])
         if k in p.stored:
             p.stored.remove(k)
@@ -799,6 +799,9 @@ def h_move_animal(ctx: _Ctx, e: Event) -> None:
                 b.animal = k
             else:                                       # moved into a new special enclosure (reptile house / aviary)
                 b.animals.append(k)
+    for b in p.buildings:                               # the animal lives in one enclosure: BGA names the one whose cubes changed, not always the one it lived in (646866721 turn 49: the Green Sea Turtle lived in the small aquarium, the log names the large one)
+        if b is not dest and k in b.animals:            # (a standard enclosure that BGA names is the one that is freed, whichever the animal lived in: only the special enclosures are the animal's own)
+            b.animals.remove(k)
     cubes.move(p, k, dest, moved_cubes)
 
 

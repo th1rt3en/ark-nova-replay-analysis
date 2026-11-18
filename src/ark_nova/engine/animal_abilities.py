@@ -188,14 +188,8 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
         return [{"kind": "reveal", "source": key, "x": x, "filter": "sponsor", "optional": False, "icons": ["SeaAnimal", "Reptile"]}] if x else []          # (counted when the cards are revealed: a sponsor played with Marketing first adds its icons, 661026172 turn 45)
     elif name == "Monkey Gang":
         _monkey_gang(state, seat)
-    elif name in ("Sea Animal Magnet", "Sponsor Magnet") and state.config.confirm_turns:          # live play and the sandbox: a button of its own, the player takes the cards when they like
+    elif name in ("Sea Animal Magnet", "Sponsor Magnet"):          # an effect of its own (a button in live play): the player takes the cards when they like, the display may change before (806066122 turn 22)
         return [{"kind": "magnet", "source": key, "name": name, "optional": False}]
-    elif name in ("Sea Animal Magnet", "Sponsor Magnet"):
-        for i, c in enumerate(state.display):
-            if c and ((name == "Sponsor Magnet" and c.startswith("S")) or (name == "Sea Animal Magnet" and _sea_animal(c, state.config.marine_worlds, any_card=True))):
-                state.display[i] = None
-                marks.taken(state, c)
-                p.hand.append(c)
     elif name == "Determination":
         g.add_extra(state, {"types": [t for t in ACTION_TYPES if t != state.current_action["type"]], "optional": False})
     elif name.startswith("Action: "):
@@ -544,8 +538,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         b = next((b for b in p.buildings if [b.x, b.y] == list(a["building"]) and _empty_standard(b)), None)
         if b is None:
             raise fx.IllegalEffect("no empty standard enclosure there")
+        from ark_nova.engine import animals_action, board
+        size =animals_action.effective_size(p, b, board.board_of(p))                  # (the enclosure counts as the size it holds: Expansion Area's size-3 on the border is a 5, 851299230 turn 43)
         p.buildings.remove(b)
-        g._gain(state, p.seat, money=build_action.cost(b.type))
+        g._gain(state, p.seat, money=build_action.COST_PER_SPACE * size)
     elif k == "trade":
         if a["trade"] == "money" and p.x_tokens >= 1:
             g._gain(state, p.seat, x_tokens=-1, money=5)

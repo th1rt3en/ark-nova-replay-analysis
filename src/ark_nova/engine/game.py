@@ -215,6 +215,10 @@ def _harbor_sell(state: GameState, action: Action) -> None:
     state.main_discard.append(card)
     p.flags["harbor_turn"] = state.turn if state.active_player == p.seat else state.turn - 1
     _gain(state, p.seat, money=3, s2_bonus=False)          # (the sale is no money of the Sponsors action: 765101523 turn 42)
+    ca = state.current_action
+    if (ca and ca.get("seat") == p.seat and ca.get("type") == "sponsors" and ca.get("variant") == 2 and state.prompt is not None
+            and state.prompt.kind == "sponsors_play" and not state.prompt.args.get("played") and not state.prompt.args.get("broke")):
+        ca["s2_done"] = True                                # a sale before the action's first step uses up the Sponsors (2) bonus: no bonus follows (605229700 turns 49 and 73)
     venom.pay_late(state, p.seat)                          # (a Venom that the player could not pay at the end of the turn is taken after the sale)
     if state.prompt is not None and state.prompt.kind == "cards_discard" and state.prompt.player == p.seat and len(p.hand) < state.prompt.args["count"]:
         state.prompt.args["count"] = len(p.hand)             # the sale was one of the cards that had to be discarded: only the cards that are left are owed
@@ -236,7 +240,7 @@ def legal_actions(state: GameState) -> list[Action]:
     if state.prompt is not None and state.phase in (Phase.TURN, Phase.FINAL_TURNS):
         for p in state.players:
             acts = acts + bonuses.token_actions(state, p)
-            if p.stored and bonuses._token_window(state, p):
+            if p.stored and bonuses.unstore_window(state, p):
                 acts = acts + [Action(p.seat, "unstore", {"card": c}) for c in dict.fromkeys(p.stored)]
             if harbor_ready(state, p.seat):
                 acts = acts + [Action(p.seat, "harbor_sell", {"card": c}) for c in dict.fromkeys(p.hand)]
@@ -265,6 +269,8 @@ def _prompt_actions(state: GameState) -> list[Action]:
         return []
     if pr.kind == "final_window":
         return [Action(pr.player, "finish_game", {})]
+    if pr.kind == "break_window":
+        return [Action(pr.player, "start_break", {})]
     if pr.kind == "confirm_turn":
         return [Action(pr.player, "confirm_turn", {})]
     p = state.players[pr.player]
@@ -465,7 +471,7 @@ def _apply(state: GameState, action: Action) -> GameState:
         return new
     if action.kind == "unstore":                         # map 11 (Caves): a stored card goes back into the hand, a free action during the player's own turn
         p = new.players[action.player]
-        if action.args.get("card") not in p.stored or not bonuses._token_window(new, p):
+        if action.args.get("card") not in p.stored or not bonuses.unstore_window(new, p):
             raise IllegalAction("that card cannot be taken out of the storage now")
         p.stored.remove(action.args["card"])
         p.hand.append(action.args["card"])
@@ -740,7 +746,7 @@ def apply_placement_bonus(state: GameState, seat: int, b: dict, at_once: bool = 
     if b["type"] == "take-in-range-or-deck":                        # a card from the deck or the reputation range (BGA lets the player pass: some logs show no card)
         for _ in range(b["value"]):
             bonuses.defer(state, {"kind": "take", "source": "bonus", "optional": True, "player": seat})
-    elif b["type"] == "Clever" and state.current_action is not None and state.current_action.get("type") == "break":     # a free enclosure of the income covers it: at once
+    elif b["type"] == "Clever" and (state.current_action is None or state.current_action.get("type") == "break"):     # a free enclosure of the income covers it: at once (also a building placed by an effect after the action: 755745398 turn 21)
         bonuses.defer(state, {"kind": "slot1", "source": "bonus", "optional": True, "cost": 0, "player": seat})
     elif b["type"] == "Clever" and state.current_action is not None:   # any action card may go to slot 1 at the end of the action
         state.current_action.setdefault("after", []).append({"kind": "slot1", "source": "bonus", "optional": True})
@@ -805,7 +811,7 @@ def _put_building(state: GameState, seat: int, t: str, x: int, y: int, k: int, d
     p.flags.setdefault("built_now", []).append(p.buildings[-1].id)          # (Hydrologist / Geologist: spaces covered in this turn still count)
     if t in ("reptile-house", "large-bird-aviary") or first_aquarium:      # animals played before may move into the new enclosure
         bonuses.defer(state, {"kind": "move_in", "building": [x, y], "optional": True, "player": seat})
-    arch_n = sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) * (2 if double else 1) if "S221" in p.sponsors and "S280" not in p.sponsors else 0
+    arch_n = sum(1 for c in cells if c in bd.border for b in bd.bonuses.get(c, []) if b) if "S221" in p.sponsors and "S280" not in p.sponsors else 0          # (the Excavation Site's doubling is for the building's own bonuses: the Archeologist's one is not doubled, 650000006 turn 19)
     if len(gains) > 1 or (gains and arch_n):                            # several placement bonuses under one building (or one and the Archeologist's extra one): the player chooses the order (each is an effect of its own: an upgrade from the Archeologist's pick may lift the cap of 9 reputation first, 647695434 turn 44)
         for b in gains:
             bonuses.defer(state, {"kind": "pbonus", "bonus": b, "optional": False, "player": seat})
@@ -1264,7 +1270,7 @@ def _complete(state: GameState, seat: int, owner, card_type: str, after: list, e
     i = next(i for i, c in enumerate(owner.action_cards) if c.type == card_type)
     _to_slot_1(owner, i, bool(state.current_action is not None and state.current_action.get("hypnosis")))
     state.current_action = None
-    venom.end_of_action(state, seat)
+    venom.end_of_action(state, seat)                 # (BGA takes the Venom money at the end of an action that an extra action of another card follows: 51 of 69 logs; a Multiplier repetition is the same action and pays at its end)
     if after:                                        # effects that wait for the end of the action (Expert on Africa, marks)
         effects.open_prompt(state, seat, after, {"kind": "end", "seat": seat, "extra": extra})
         return
@@ -1291,7 +1297,7 @@ def _go_extra(state: GameState, action: Action) -> None:
     """The extra action (Determination / Action: X) comes before the Clever / Boost that is still pending (BGA lets the player order them): those wait
     for the end of the extra action."""
     resume = state.prompt.args["resume"]
-    if resume.get("kind") != "end" or not resume.get("extra") or any(e["kind"] not in ("slot1", "boost", "mark") and e.get("cond") != "no_animals" for e in state.prompt.args["pending"]):
+    if resume.get("kind") != "end" or not resume.get("extra") or (state.prompt.args["pending"] and not effects.extra_can_go_first(state.prompt.args["pending"])):
         raise IllegalAction("no extra action to go to")
     carried = list(state.prompt.args["pending"])
     state.prompt = None
@@ -1359,6 +1365,9 @@ def _finish_turn_now(state: GameState, seat: int, kicked: bool = False) -> None:
         _end_game(state)
         return
     if state.break_position >= BREAK_AT:
+        if not state.config.confirm_turns and bonuses.token_uses(state, state.players[seat]):          # a token of the notepad is used before the break starts: BGA's log shows the sponsor and its draws first (667652408 turn 36)
+            state.prompt = Prompt(kind="break_window", player=seat, args={})
+            return
         breaks.start(state, seat)
         return
     state.prompt = Prompt(kind="choose_action_card", player=state.active_player)
@@ -1392,6 +1401,7 @@ _TURN_HANDLERS = {
     ("choose_action_card", "skip_action"): _skip_action,
     ("choose_action_card", "skip_extra"): _skip_extra,
     ("final_window", "finish_game"): _finish_game,
+    ("break_window", "start_break"): lambda st, act: breaks.start(st, act.player),
     ("confirm_turn", "confirm_turn"): _confirm_turn,
     ("cards_take", "take_cards"): _take_cards,
     ("cards_take", "skip_snap"): lambda st, act: _skip_snap(st, act),

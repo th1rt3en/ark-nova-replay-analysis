@@ -2764,6 +2764,7 @@
         "latinName": "Eunectes murinus",
         "size": 2,
         "price": 13,
+        "water": 1,
         "requirements": [
             "Partner Zoo"
         ],

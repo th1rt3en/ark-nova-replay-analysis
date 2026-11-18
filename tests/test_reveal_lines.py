@@ -16,18 +16,19 @@ LOGS = Path(__file__).resolve().parents[1] / "log_examples"
 @pytest.mark.skipif(not (LOGS / "607674960.json").exists(), reason="log not available")
 def test_the_other_player_does_not_read_the_hunter_cards():
     v = build_replay_view(json.loads((LOGS / "607674960.json").read_text(encoding="utf-8")), TableRecord(607674960))
-    s = v["steps"][335]                                      # tonyfire02 draws 2 cards for the hunter effect (seat 1)
+    i = next(i for i, s in enumerate(v["steps"]) if s["label"].startswith("tonyfire02 draws ") and "hunter effect" in s["label"])
+    s = v["steps"][i]                                        # tonyfire02 draws 2 cards for the hunter effect (seat 1)
     assert s["label_pov"][0] == "tonyfire02 draws 2 cards for the hunter effect"
     assert "Yosemite" not in s["label_pov"][0]
-    s = v["steps"][336]                                      # ... keeps one of them
+    s = v["steps"][i + 1]                                    # ... keeps one of them
     assert s["label_pov"][0] == "tonyfire02 keeps Guinea Pig for the hunter effect"
 
 
 @pytest.mark.skipif(not (LOGS / "613566554.json").exists(), reason="log not available")
 def test_scavenging_keeps_a_count_for_the_other_player():
     v = build_replay_view(json.loads((LOGS / "613566554.json").read_text(encoding="utf-8")), TableRecord(613566554))
-    draw = next(s for s in v["steps"] if s["label"].startswith("Duci9 draw ") and "for scavenging effect" in s["label"])
-    keep = next(s for s in v["steps"] if s["label"].startswith("Duci9 keep ") and "for scavenging effect" in s["label"])
+    draw = next(s for s in v["steps"] if s["label"].startswith("Duci9 draws ") and "for scavenging effect" in s["label"])
+    keep = next(s for s in v["steps"] if s["label"].startswith("Duci9 keeps ") and "for scavenging effect" in s["label"])
     assert draw["label_pov"][1] == "Duci9 draws 3 cards for the scavenging effect"
     assert keep["label_pov"][1] == "Duci9 keeps 1 card for the scavenging effect"
 

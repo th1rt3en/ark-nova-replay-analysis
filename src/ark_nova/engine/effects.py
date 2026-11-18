@@ -169,7 +169,7 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
                     elif eff[0] == "reveal":
                         pending.append({"kind": "reveal", "source": s, "x": eff[1], "filter": eff[2] if len(eff) > 2 and isinstance(eff[2], str) else "any", "optional": False, "player": owner})
                     elif eff[0] == "hunter":
-                        pending.append({"kind": "reveal", "source": s, "x": total["Predator"], "filter": "animal", "optional": False, "player": owner})
+                        pending.append({"kind": "reveal", "source": s, "x": total["Predator"], "filter": "animal", "optional": False, "player": owner, "icons": ["Predator"]})          # (X counts the predator icons when the cards are revealed: both Hunters of 870114927 turn 3 / 888478305 turn 9 show 3 cards)
                     elif eff[0] == "sell":
                         pending.append({"kind": "sell", "source": s, "max": eff[1], "optional": True, "player": owner})
                     elif eff[0] == "pouch":
@@ -198,6 +198,10 @@ def fire_icon_counter(state, seat: int, own: Counter, card_key: str = None) -> l
         if card_key in EXPLORER_BUG:                       # the Sea Turtle Tank pays for one new icon only (656606572 turn 27: Reptile and Sea Animal both new, one payment; 789679971 turn 26: Sea Animal alone, one payment)
             new = new[:1]
         g._gain(state, seat, appeal=len(new), money=2 * len(new))
+        if new:                                            # (kept for the replay harness: BGA quirk, see docs/bga_quirks.md)
+            if not hasattr(state, "explorer_paid"):
+                state.explorer_paid = []
+            state.explorer_paid.append({"seat": seat, "turn": state.turn, "icons": list(new)})
         if new and state.current_action is not None:
             state.current_action["late_appeal"] = state.current_action.get("late_appeal", 0) + len(new)      # (BGA logs the Explorer's gains after a Pilfering of the same animal: it does not count there, 739415597 turn 76)
     if state.players[seat].map_id == "BDW1":                  # Management Zoo: the second icon of a species pays a bonus
@@ -213,11 +217,18 @@ def open_prompt(state, seat: int, pending: list, resume) -> None:
     state.prompt = Prompt(kind="effects", player=seat, args={"pending": pending, "resume": resume})
 
 
+def extra_can_go_first(pending: list) -> bool:
+    """The extra action may come before the pending effects when they are all end-of-action triggers (Clever, Boost, Mark, the Snap Sponsor's
+    optional take) that wait for the end of the extra action (824357500 turn 80: Boosts and a Clever after an Association)."""
+    return bool(pending) and all(e["kind"] in ("slot1", "boost", "mark") or (e["kind"] == "take" and e.get("source") == "S228") or e.get("cond") == "no_animals"
+                                 for e in pending)
+
+
 def legal(state, p0) -> list:
     a = state.prompt.args
     out = []
     resume = a.get("resume") or {}
-    if resume.get("kind") == "end" and resume.get("extra") and a["pending"]             and all(e["kind"] in ("slot1", "boost", "mark") or e.get("cond") == "no_animals" for e in a["pending"]):
+    if resume.get("kind") == "end" and resume.get("extra") and a["pending"]             and extra_can_go_first(a["pending"]):
         out.append(Action(state.prompt.player, "go_extra", {}))        # the extra action first, the Clever / Boost after it
     for i, e in enumerate(a["pending"]):
         k = e["kind"]

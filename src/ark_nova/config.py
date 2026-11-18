@@ -16,6 +16,7 @@ def _flag(name: str, default: bool) -> bool:
 @dataclass(frozen=True)
 class Settings:
     bq_table: str = DEFAULT_BQ_TABLE  # indexed games, e.g. freestyle-190711.ark_nova.all_games_stat (table_id, player_id, map)
+    bq_index_table: str = ""  # optional clustered copy of the stats columns the app reads (scripts/setup_table_index.py), e.g. freestyle-190711.ark_nova.table_index; empty = read the view
     bq_logs_table: str = DEFAULT_BQ_LOGS_TABLE  # e.g. freestyle-190711.ark_nova_processing.logs_archive_mapping (table_id, file_name)
     gcs_bucket: str = DEFAULT_GCS_BUCKET  # raw BGA logs, e.g. temp-common-storage
     rate_limit_enabled: bool = False  # hook exists but nothing is limited yet
@@ -44,6 +45,7 @@ class Settings:
     def from_env(cls) -> "Settings":
         return cls(
             bq_table=os.environ.get("BQ_TABLE", DEFAULT_BQ_TABLE),
+            bq_index_table=os.environ.get("BQ_INDEX_TABLE", ""),
             bq_logs_table=os.environ.get("BQ_LOGS_TABLE", DEFAULT_BQ_LOGS_TABLE),
             gcs_bucket=os.environ.get("GCS_BUCKET", DEFAULT_GCS_BUCKET),
             rate_limit_enabled=_flag("RATE_LIMIT_ENABLED", False),
