@@ -14,6 +14,7 @@ from typing import Any
 
 from ark_nova import data
 from ark_nova.data import map_quirks
+from ark_nova.replay import map_texts
 from ark_nova.replay.merge import mark_merges
 from ark_nova.engine import association, endgame, tracks
 from ark_nova.engine.breaks import hand_limit, kiosk_income, map_ability_income, map_income, sponsor_income
@@ -726,7 +727,7 @@ def map_view(map_id: str, layout: list | None = None) -> dict:
                                                                          for e in layout if e["bonus"]["type"] == "hollywood_h"]
         layout = [e for e in layout if e["bonus"]["type"] != "hollywood_h"]
     out = {"id": base, "name": m["name"], "image": f"/maps/map-{PICTURE_OF.get(base, base)}.jpg",
-           "description": [t.strip() for t in (m.get("description") or []) if t and t.strip()],
+           "description": map_texts.description(map_id, m.get("description")),
            "hexes": geo.get("hexes", []), "placement_bonuses": layout or geo.get("placement_bonuses", []),
            "special_hexes": special, "bonus_slots": geo.get("bonus_slots", []),
            "association_bonuses": association.map_bonuses(base)}
@@ -1324,6 +1325,12 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         if len(labels) != len(views):                                       # setup moves, or a move without effects: one step
             views, labels = views[-1:], [step_label(mv, names, None, hide_discard)]
             labels_pov = [[step_label(mv, names, pid, hide_discard)] for pid in config.player_ids]
+            picks = [e for e in mv.events if e.type == "setupPlayer" and "will play Map" in str(e.log)]
+            if len(picks) > 1:                                              # the maps chosen at the start of the game: one step per player, in the log's order (the state is the same for all)
+                texts = [_event_text_pov(e, names, None) for e in picks]
+                views, labels = [views[-1]] * len(texts), texts
+                labels_pov = [list(texts) for _ in config.player_ids]
+                split_extra += len(texts) - 1
         source = ["log"] * len(views)
         objs: list = [None] * len(views)                                   # the engine state of each step (forking starts from it)
         if mv.index in rep.draft_engine:                                    # the action card draft, played by the engine with the choices of the log
@@ -1454,8 +1461,10 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                 split_extra += len(halves) - 1
         steps.extend(move_steps)
     normal_history = _normal_history(parsed, rep, steps, seat_of_pid, names)
-    # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step. The first step stays.
-    keep = [i == 0 or bool(st["label"].strip()) for i, st in enumerate(steps)]
+    # a step without any text (a state update the log does not word) is not shown: its changes are in the state of the next step.
+    keep = [bool(st["label"].strip()) for st in steps]
+    if steps and not any(keep):                                               # (a first step without text goes; only a log that has no text at all keeps its first step)
+        keep[0] = True
     keep = [k and not (i > 0 and _ANNOUNCES_TAKE.search(st["label"] or "")) for i, (st, k) in enumerate(zip(steps, keep))]       # ("X gets 1 x take-in-range-or-deck": the announcement of the card the next step takes)
     # (what a play / purchase / building brings is NOT joined to it any more: the cost, every gain and every placement bonus is its own step, as when the engine plays it; `_combine_action`)
     keep = _merge_pairs(steps, keep)
