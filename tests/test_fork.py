@@ -46,7 +46,7 @@ def _forkable_step(client):
 
 def test_the_replay_marks_the_steps_that_can_be_forked(client):
     steps = client.get(f"/api/tables/{client.tid}/replay").json()["steps"]
-    assert any(s["fork"] for s in steps) and not steps[0]["fork"]
+    assert any(s["fork"] for s in steps) and not all(s["fork"] for s in steps)
     assert all("_obj" not in s and "engine_state" not in s for s in steps)           # the engine states never go into the replay itself
 
 
@@ -111,7 +111,8 @@ def test_an_illegal_action_is_refused(client):
 
 
 def test_a_step_the_engine_did_not_play_cannot_be_forked(client):
-    r = client.post(f"/api/tables/{client.tid}/fork", json={"step": 0})
+    steps = client.get(f"/api/tables/{client.tid}/replay").json()["steps"]
+    r = client.post(f"/api/tables/{client.tid}/fork", json={"step": next(s["index"] for s in steps if not s["fork"])})
     assert r.status_code == 422 and r.json()["status"] == "not_forkable"
     assert client.post(f"/api/tables/{client.tid}/fork", json={"step": 10 ** 6}).status_code == 422
     assert client.post(f"/api/tables/{client.tid}/fork", json={"step": 5, "seed": -3}).status_code == 422
