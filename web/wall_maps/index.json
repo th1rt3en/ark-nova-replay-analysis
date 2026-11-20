@@ -1,0 +1,568 @@
+{
+    "maps": [
+        {
+            "id": "0",
+            "name": "Map 0",
+            "group": "Beginner",
+            "ability": [
+                "No special ability."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "A",
+            "name": "Map A",
+            "group": "Beginner",
+            "ability": [
+                "You start with a free size-3 enclosure and a kiosk in the bottom left corner."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1394
+                ]
+            }
+        },
+        {
+            "id": "1",
+            "name": "Observation Tower",
+            "group": "Base game",
+            "ability": [
+                "Gain <APPEAL:2> every time you flip a standard enclosure next to <OBSERVATION-TOWER> to its occupied side."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1395
+                ]
+            }
+        },
+        {
+            "id": "2",
+            "name": "Outdoor Areas",
+            "group": "Base game",
+            "ability": [
+                "Each standard enclosure next to <GATE> has +2 capacity."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "3",
+            "name": "Silver Lake",
+            "group": "Base game",
+            "ability": [
+                "Profitable area around the Lake."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "4",
+            "name": "Commercial Harbor",
+            "group": "Base game",
+            "ability": [
+                "Active if <HARBOR> is connected: Once during your turn, you may discard up to 1 card from hand for <MONEY-SMALL:3> at any time."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "5",
+            "name": "Park Restaurant",
+            "group": "Base game",
+            "ability": [
+                "Gain 1 extra income for each covered space next to <RESTAURANT>."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "6",
+            "name": "Research Institute",
+            "group": "Base game",
+            "ability": [
+                "Active if <INSTITUTE> is connected: Each time you play an animal card, you may ignore 1 condition of your choice."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "7",
+            "name": "Ice Cream Parlors",
+            "group": "Base game",
+            "ability": [
+                "Once all kiosk placement bonuses are covered: Gain 1 extra income for each kiosk."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "8",
+            "name": "Hollywood Hills",
+            "group": "Base game",
+            "ability": [
+                "Each time you cover an <HOLLYWOOD>, add a random sponsor card from the deck to your hand.",
+                "Once all <HOLLYWOOD> are covered, each sponsor card requires <NEG-STRENGTH:1> to play or market."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "9",
+            "name": "Geographical Zoo",
+            "group": "Base game",
+            "ability": [
+                "Once per continent: When you play an animal into an enclosure that lies in its continent’s area, remove its marker and take 1 bonus: <APPEAL:2> <REPUTATION:1> <MONEY:4> <CLEVER> <KIOSK-PAVILION>",
+                "Gain <CONSERVATION:1> upon removing all 5 continent markers."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1642,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1394
+                ]
+            },
+            "board_box": [
+                21,
+                0,
+                1603,
+                1394
+            ]
+        },
+        {
+            "id": "10",
+            "name": "Rescue Station",
+            "group": "Marine Worlds",
+            "ability": [
+                "When covering <RESCUE>: Dig 1 card from the display or from your hand.",
+                "If the dug card is an animal (except <PETTING>), you may tuck it under your map (max. 3).",
+                "It then counts as in your zoo with its icons and enclosure size, also triggering ongoing effects."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1394
+                ]
+            }
+        },
+        {
+            "id": "11",
+            "name": "Caves",
+            "group": "Marine Worlds",
+            "ability": [
+                "When covering <STORE>, place 1 card from your hand under your notepad (max. 3). During each break, gain 2 extra income per stored card.",
+                "Stored cards can be taken back into your hand at any time."
+            ],
+            "sizes": {
+                "proj": [
+                    354,
+                    1323
+                ],
+                "board": [
+                    1524,
+                    1326
+                ],
+                "strip": [
+                    378,
+                    1323
+                ]
+            }
+        },
+        {
+            "id": "12",
+            "name": "Artificial Intelligence",
+            "group": "Marine Worlds",
+            "ability": [
+                "For each <BINDER>, conceal the leftmost open action strength (but skip <STRENGTH:3>).",
+                "Action strength is increased to the next highest visible number."
+            ],
+            "sizes": {
+                "proj": [
+                    354,
+                    1323
+                ],
+                "board": [
+                    1524,
+                    1326
+                ],
+                "strip": [
+                    378,
+                    1323
+                ]
+            }
+        },
+        {
+            "id": "13",
+            "name": "Drawing Board",
+            "group": "Marine Worlds",
+            "ability": [
+                "If you completely cover a quadrant on your map, gain the depicted bonus immediately and as break income."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1394
+                ]
+            }
+        },
+        {
+            "id": "14",
+            "name": "Lagoon",
+            "group": "Marine Worlds",
+            "ability": [
+                "Draw a random person sponsor from the deck for each worker you unlock, including your first worker at the start of the game.",
+                "Keep 5 instead of 4 cards from your starting hand."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1394
+                ]
+            }
+        },
+        {
+            "id": "1a",
+            "name": "Observation Tower",
+            "group": "Alternate side",
+            "ability": [
+                "Gain <APPEAL:2> every time you flip a standard enclosure next to <OBSERVATION-TOWER> to its occupied side."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1395
+                ]
+            }
+        },
+        {
+            "id": "2a",
+            "name": "Outdoor Areas",
+            "group": "Alternate side",
+            "ability": [
+                "Each standard enclosure next to <GATE> has +2 capacity."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "3a",
+            "name": "Silver Lake",
+            "group": "Alternate side",
+            "ability": [
+                "Profitable area around the Lake."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1395
+                ]
+            }
+        },
+        {
+            "id": "4a",
+            "name": "Commercial Harbor",
+            "group": "Alternate side",
+            "ability": [
+                "Active if <HARBOR> is connected: Once during your turn, you may discard up to 1 card from hand for <MONEY-SMALL:3> at any time."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "5a",
+            "name": "Park Restaurant",
+            "group": "Alternate side",
+            "ability": [
+                "Gain 1 extra income for each covered space next to <RESTAURANT>."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1395
+                ]
+            }
+        },
+        {
+            "id": "6a",
+            "name": "Research Institute",
+            "group": "Alternate side",
+            "ability": [
+                "Active if <INSTITUTE> is connected: Each time you play an animal card, you may ignore 1 condition of your choice."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1394
+                ]
+            }
+        },
+        {
+            "id": "7a",
+            "name": "Ice Cream Parlors",
+            "group": "Alternate side",
+            "ability": [
+                "Once all kiosk placement bonuses are covered: Gain 1 extra income for each kiosk."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1395
+                ],
+                "strip": [
+                    276,
+                    1398
+                ]
+            }
+        },
+        {
+            "id": "8a",
+            "name": "Hollywood Hills",
+            "group": "Alternate side",
+            "ability": [
+                "Each time you cover an <HOLLYWOOD>, add a random sponsor card from the deck to your hand.",
+                "Once all <HOLLYWOOD> are covered, each sponsor card requires <NEG-STRENGTH:1> to play or market."
+            ],
+            "sizes": {
+                "proj": [
+                    372,
+                    1395
+                ],
+                "board": [
+                    1608,
+                    1398
+                ],
+                "strip": [
+                    276,
+                    1394
+                ]
+            }
+        },
+        {
+            "id": "T1",
+            "name": "Tournament 1",
+            "group": "Tournament",
+            "ability": [
+                "Active if the <T1-BONUS> bonus is unlocked: Once during your turn, you may discard a card from your hand to increase the strength of an action by <STRENGTH:1>."
+            ],
+            "sizes": {
+                "proj": [
+                    354,
+                    1323
+                ],
+                "board": [
+                    1524,
+                    1326
+                ],
+                "strip": [
+                    378,
+                    1323
+                ]
+            }
+        }
+    ]
+}

@@ -80,9 +80,8 @@ export function clearReveal() { const b = $('draftbox'); if (b && b.classList.co
 function face(key, hidden, points) {
   const c = el('div', 'draftcard' + (hidden ? ' faceless' : ''));
   c.dataset.key = key;
-  if (hidden) { c.append(el('span', 'backmark', '?')); c.title = 'Hidden card'; return c; }
+  if (hidden) { c.append(el('span', 'backmark', '?')); return c; }
   const img = el('img'); img.src = largeOf(info(key)); img.alt = key; img.loading = 'lazy';
-  c.title = cardName(key) + ' (' + key + ')';
   c.append(img);
   const pb = pointsBadge(points);
   if (pb) c.append(pb);
@@ -94,7 +93,7 @@ function head(seat, text, effect) {
   who.style.color = seatText(seat);
   h.append(who, el('b', '', ' ' + text));
   const row = el('div', 'headrow'), ic = el(effect === 'horse' ? 'div' : 'img', 'fxicon');                              // the ribbon with the effect's icon pinned to its left tip (css: .headrow / .fxicon)
-  if (effect === 'horse') ic.classList.add('pet'); else ic.src = effect === 'resistance' || effect === 'adapt' ? '/icons/hourglass.svg' : iconUrl(FX_ICON[effect]); if (effect === 'resistance' || effect === 'assertion' || effect === 'adapt') ic.classList.add('tall');       // (the icon keeps its proportions: the hourglass and the base project badge are taller than wide) ic.alt = NAME[effect]; ic.title = NAME[effect]; ic.draggable = false;
+  if (effect === 'horse') ic.classList.add('pet'); else ic.src = effect === 'resistance' || effect === 'adapt' ? '/icons/hourglass.svg' : iconUrl(FX_ICON[effect]); if (effect === 'resistance' || effect === 'assertion' || effect === 'adapt') ic.classList.add('tall');       // (the icon keeps its proportions: the hourglass and the base project badge are taller than wide) ic.alt = NAME[effect]; ic.draggable = false;
   row.append(ic, h);
   return row;
 }

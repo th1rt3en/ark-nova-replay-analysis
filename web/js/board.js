@@ -5,7 +5,7 @@ import { cardName, zoneNew } from './cards.js';
 import { adaptIcon, binderSvg, fitImageAttrs, marketingAttrs } from './bonusart.js';
 import { hdPentagonSvg } from './ctrack.js';
 import { pentagon } from './handshake.js';
-import { FIT_DY, FIT_H, ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, moneyTwo, pieceUrl } from './icons.js';
+import { FIT_DY, FIT_H, HD_VERSION, ICON_IDS, SHOW_VALUE, iconUrl, moneyTile, moneyTwo, pieceUrl } from './icons.js';
 import { seatRawColor, svg } from './util.js';
 import { render, renderZoos } from './main.js';
 import { playFork } from './fork.js';
@@ -94,17 +94,13 @@ export function zooBoard(map, player, seat) {
     into = s;
     const [cx, cy] = cellCentre(pb.x, pb.y);
     const bn = pb.bonus || {};
-    const tip = svg('title');
-    tip.textContent = bn.type ? bn.type + (bn.value ? ' ' + bn.value : '') : 'bonus';
     const icon = ICON_IDS['bonus:' + bn.type];
-    if (bn.type === 'Digging') { iconBox(icon, cx, cy, 80); s.lastChild.append(tip); continue; }       // r9c13 already has its own background
+    if (bn.type === 'Digging') { iconBox(icon, cx, cy, 80); continue; }       // r9c13 already has its own background
     if (bn.type === 'extra-shift' || (bn.type === 'Worker' && map.id === '11')) {                       // Extra Shift (map 11's hex, custom maps; "Worker" on map 11 is the old name of it): a worker comes back (13 of 13 in the logs), the whole tile of the icon sheet
-      tip.textContent = 'Extra Shift: take a worker back from the association board';
-      s.append(hdPentagonSvg('bonus-extra-shift', 80, cx, cy)); s.lastChild.append(tip); continue;          // (the pentagon of the track's Extra Shift bonus, HD, ctrack.js)
+      s.append(hdPentagonSvg('bonus-extra-shift', 80, cx, cy)); continue;          // (the pentagon of the track's Extra Shift bonus, HD, ctrack.js)
     }
     if (bn.type === 'conceal') {                                                                          // BGA draws the binder (conceal) without the pentagon: a black rounded square, a gold ring, four white tabs on the left
-      tip.textContent = 'Conceal: hide a card from the display';
-      s.append(binderSvg(cx, cy)); s.lastChild.append(tip); continue;
+      s.append(binderSvg(cx, cy)); continue;
     }
     iconBox(ICON_IDS.pentagon, cx, cy, 80);
     if (bn.type === 'adapt') adaptIcon(s, cx, cy + 1, bn.value || 1);                    // (vector, bonusart.js)
@@ -113,24 +109,20 @@ export function zooBoard(map, player, seat) {
       iconBox(icon, cx + 9, cy + 3, 44);
       put('text', { x: cx - 15, y: cy + 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
     }
-    else if (bn.type === 'pavilion') put('image', { href: '/bonus/pavilion.webp?v=art20261112', x: cx - 24 * 120 / 103.923, y: cy - 22, width: 48 * 120 / 103.923, height: 48 });          // Approved pavilion artwork; same regular-hexagon size as the kiosk bonus.
+    else if (bn.type === 'pavilion') put('image', { href: '/bonus/pavilion.webp?v=' + HD_VERSION, x: cx - 24 * 120 / 103.923, y: cy - 22, width: 48 * 120 / 103.923, height: 48 });          // Approved pavilion artwork; same regular-hexagon size as the kiosk bonus.
     else if (bn.type === 'bonus-sponsor') put('image', marketingAttrs(cx, cy + 5, 56));          // (Marketing: the HD picture on its optical centre, see marketingAttrs)
     else if (icon && FIT_H[bn.type]) put('image', fitImageAttrs(bn.type, cx, cy + 80 * FIT_DY, 80 * FIT_H[bn.type]));          // (university, partner zoo: the same share of the pentagon as in the association panel)
     else if (icon) iconBox(icon, cx, cy + 3, bn.type === 'wave' ? 21 : 48);       // (the wave is a wide banner)
     if (bn.type === 'appeal' && !icon) put('text', { x: cx, y: cy + 6, class: 'bonus-label' }, '★');      // a bonus nobody has identified yet is just the empty pentagon
     if (bn.type === 'money' && String(bn.value).length > 1) put('text', { ...moneyTwo(bn.value, cx, cy + 3, 36, 7), class: 'bonus-number two' }, bn.value);       // (two digits: smaller, tighter and centred on the tile, `moneyTwo`)
     else if (SHOW_VALUE.has(bn.type)) put('text', { x: cx, y: cy + (bn.type === 'money' ? 14 : 16), class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : ''), ...(bn.type === 'money' ? { style: 'font-size:36px;stroke-width:7px' } : {}) }, bn.value);       // (the money number is a little smaller on the map)       // the number sits over the middle of the icon
-    s.lastChild.append(tip);
   }
   into = board;
   for (const sh of map.special_hexes) {            // maps 8 / 8a: the H hexes (a special placement bonus without the pentagon; the picture has empty hexes there, Ark360 moves them)
     if (sh.kind !== 'hollywood_h') continue;
     into = homeOf(sh.x, sh.y);
     const [cx, cy] = cellCentre(sh.x, sh.y);
-    put('image', { href: '/bonus/hollywood_h.webp?v=art20261112', x: cx - 34, y: cy - 46, width: 69, height: 82, class: 'hollywood-h' });
-    const tip = svg('title');
-    tip.textContent = 'H: covering it reveals cards from the deck and adds the first sponsor to your hand';
-    into.lastChild.append(tip);
+    put('image', { href: '/bonus/hollywood_h.webp?v=' + HD_VERSION, x: cx - 34, y: cy - 46, width: 69, height: 82, class: 'hollywood-h' });
   }
   into = board;
   for (const sh of flags) {            // the Build II badges, over the bonuses
@@ -141,30 +133,33 @@ export function zooBoard(map, player, seat) {
   }
   into = board;
 
-  // map 9: a slot with the continent icon on the edge of the map holds the player's cube until the marker is removed (the log line "removes <ASIA> marker")
+  // map 9: a slot with the continent icon on the edge of the map holds the player's cube until the marker is removed (the log line "removes <ASIA> marker");
+  // a removed marker keeps its square and hexagon, only the cube goes (as on BGA). Americas and Asia sit where BGA has them: Americas up in the gap between the
+  // two left hexes of the orange area, Asia a bit further out; both stick out over the board edge a little (the svg then draws outside its box: overflow visible,
+  // above the panels next to it)
   if (map.id === '9') {
+    s.style.overflow = 'visible'; s.style.position = 'relative';                // (positioned: painted above the strip next to it, which is not)
+    const MOVED = { Americas: [24, 372], Asia: [1096, 632] };                  // centre of the whole marker (square + hexagon), board units
     const CONT = { Europe: ['#92dafd', [214, 151]], Americas: ['#fba155', [169, 231]], Africa: ['#fcf401', [193, 201]], Australia: ['#ee3a62', [176, 163]], Asia: ['#b1e2b2', [256, 235]] };      // colour, size of web/continents/<name>.png (black silhouettes cut from web/badges)
     const ORDER = ['Europe', 'Americas', 'Africa', 'Australia', 'Asia'], gone = (player.flags && player.flags.m9_removed) || 0;
     const at = Object.fromEntries((map.special_hexes || []).filter((h) => h.kind === 'continent_marker').map((h) => [h.note.split(' ')[0], cellCentre(h.x, h.y)]));
     ORDER.forEach((c, i) => {
-      if (gone >> i & 1 || !at[c]) return;
+      if (!at[c]) return;
+      const removed = !!(gone >> i & 1);
       // BGA's marker: a rounded square in the colour of the continent (the player's cube sits on it) and a flat-sided hexagon with the black continent, overlapping it; side by side on the
       // top / bottom edge, one above the other on the left / right edge. BGA's proportions (measured on its board, pitch 115: square 46, hexagon 57 x 50, outline 4.5 dark grey) at 1.35 times the size (K).
       const [rx, ry] = at[c], vertical = rx < 52 || rx > 1070, [fill, sil] = CONT[c], INK = '#4b4647', SW = 4.5, K = 1.35, PW = 46 * K, HW = 57 * K, HH = 50 * K, OV = 6 * K;
       const tw = vertical ? HW : PW + HW - OV, th = vertical ? PW + HH - OV : HH;
-      const cx = Math.max(tw / 2 + 2, Math.min(1122 - tw / 2 - 2, rx)), cy = Math.max(th / 2 + 2, Math.min(976 - th / 2 - 2, ry));
+      const [cx, cy] = MOVED[c] || [Math.max(tw / 2 + 2, Math.min(1122 - tw / 2 - 2, rx)), Math.max(th / 2 + 2, Math.min(976 - th / 2 - 2, ry))];
       const px = vertical ? cx - PW / 2 : cx - tw / 2, py = vertical ? cy - th / 2 : cy - PW / 2;                   // the square
       const hx = vertical ? cx - HW / 2 : cx + tw / 2 - HW, hy = vertical ? cy + th / 2 - HH : cy - HH / 2;        // the hexagon
-      const g = svg('g', {});
-      g.append(svg('rect', { x: px + SW / 2, y: py + SW / 2, width: PW - SW, height: PW - SW, rx: 12 * K, fill, stroke: INK, 'stroke-width': SW }));
+      const g = svg('g', { 'data-m9seat': seat, 'data-m9cont': c, 'data-m9cube': pieceUrl('cubes', seatRawColor(seat)) });          // (card-motion.js `runMarkers`: the cube of a marker that is removed glides from here to the invisible deck)
+      g.append(svg('rect', { class: 'm9slot', x: px + SW / 2, y: py + SW / 2, width: PW - SW, height: PW - SW, rx: 12 * K, fill, stroke: INK, 'stroke-width': SW }));
       const hp = [[0, .5], [.245, 0], [.755, 0], [1, .5], [.755, 1], [.245, 1]].map(([u, v]) => [hx + SW / 2 + u * (HW - SW), hy + SW / 2 + v * (HH - SW)]);
       g.append(svg('polygon', { points: hp.map((q) => q.join(',')).join(' '), fill, stroke: INK, 'stroke-width': SW, 'stroke-linejoin': 'round' }));
-      const bw = 38 * K, bh = 38 * K, k = Math.min(bw / sil[0], bh / sil[1]), w = sil[0] * k, h = sil[1] * k;                  // the continent, centred in the hexagon
+      const ICON = { Africa: .9, Australia: .9 }, bw = 38 * K * (ICON[c] || 1), bh = 38 * K * (ICON[c] || 1), k = Math.min(bw / sil[0], bh / sil[1]), w = sil[0] * k, h = sil[1] * k;                  // the continent, centred in the hexagon
       g.append(svg('image', { href: '/continents/' + c + '.png', x: hx + HW / 2 - w / 2, y: hy + HH / 2 - h / 2, width: w, height: h }));
-      g.append(svg('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: px + PW / 2 - 17 * K, y: py + PW / 2 - 17 * K, width: 34 * K, height: 34 * K }));
-      const tip = svg('title');
-      tip.textContent = c + ' marker (' + S.replay.players[seat].name + '): removed when an animal of this continent is played next to its area';
-      g.append(tip);
+      if (!removed) g.append(svg('image', { class: 'm9cube', href: pieceUrl('cubes', seatRawColor(seat)), x: px + PW / 2 - 17 * K, y: py + PW / 2 - 17 * K, width: 34 * K, height: 34 * K }));       // (class: the library's wall maps draw it black, scripts/build_library_maps.py)
       s.append(g);
     });
   }
@@ -191,20 +186,18 @@ export function zooBoard(map, player, seat) {
       if (icon) iconBox(icon, cx, cy + 3, 48);
       put('text', { x: cx, y: cy + 16, class: 'bonus-number' + (bn.type === 'appeal' ? ' dk appeal' : '') }, bn.value);          // (appeal: the usual black number)
     }
-    const tip = svg('title');
-    tip.textContent = 'Area bonus: ' + bn.type + ' ' + bn.value + ' (when the area is completely covered, and at every break)';
-    s.lastChild.append(tip);
   }
 
   // the bonus for covering the whole map, in the lower right corner as on BGA: a light grey plate with a black outline (both left corners rounded, its right end under the strip) that holds the appeal
   // pentagon: the yellow bonus pentagon with the appeal ticket and 7 on every map; map 13 (no appeal for it there) a red pentagon with 0
   const FM = { x: 1032, y: FULLMAP_Y, w: 90, h: 84 }, fmx = FM.x + 47, fmy = FM.y + FM.h / 2, none = map.id === '13';
-  put('rect', { x: FM.x, y: FM.y, width: FM.w + 30, height: FM.h, rx: 20, fill: '#d0d2cd', stroke: '#000', 'stroke-width': 3.5, class: 'fullmap-plate' });
+  // (map 9's svg is `overflow: visible` for the continent markers: the part of the plate that lies under the strip has to be cut off at the edge of the map, or it shows over the strip)
+  const fmClip = 'fm' + (++maskCount), cp = svg('clipPath', { id: fmClip }); cp.append(svg('rect', { x: 0, y: 0, width: 1122, height: 976 })); s.append(cp);
+  put('rect', { x: FM.x, y: FM.y, width: FM.w + 30, height: FM.h, rx: 20, fill: '#d0d2cd', stroke: '#000', 'stroke-width': 3.5, class: 'fullmap-plate', 'clip-path': 'url(#' + fmClip + ')' });
   if (none) put('path', { d: pentagon(fmx, fmy, 64, 6), fill: '#c9323a', stroke: '#58545a', 'stroke-width': 4, 'stroke-linejoin': 'round', class: 'fullmap-pentagon' });
   else iconBox(ICON_IDS.pentagon, fmx, fmy, 74);                       // (the sprite has a transparent edge: 74 high draws a 64 high pentagon, like the red one)
   if (ICON_IDS['bonus:appeal']) iconBox(ICON_IDS['bonus:appeal'], fmx, fmy + 1, FULLMAP_TICKET);
   put('text', { x: fmx, y: fmy + 12, class: 'bonus-number dk appeal', style: 'font-size:' + FULLMAP_FONT + 'px' }, none ? 0 : (map.full_map_appeal || 7));
-  s.lastChild.append(Object.assign(svg('title'), { textContent: none ? 'No appeal for covering the whole map on this map' : 'Covering the whole map: ' + (map.full_map_appeal || 7) + ' appeal' }));
 
   // the buildings; one that arrived (or changed: another rotation, turned over when an animal is placed / turned back when it is released) gets a green frame round its hexes, one that left (cut down, replaced) stays
   // as a ghost with a red frame; both fade like the cards
@@ -234,10 +227,7 @@ export function zooBoard(map, player, seat) {
     g.setAttribute('data-bseat', seat); g.setAttribute('data-bid', b.type + '|' + b.x + '|' + b.y); g.setAttribute('data-cells', b.cells.map((c) => c[0] + ',' + c[1]).join(';'));          // (card-motion.js flies the building to / from the invisible deck)
     const sp = spriteOf(b);
     const animals = b.animal ? [b.animal] : b.animals;
-    const title = svg('title');
-    title.textContent = b.type + (animals && animals.length ? ': ' + animals.map(cardName).join(', ') : ' (empty)');
     if (!sp) {                                  // a building whose sprite is missing: outline its hexes
-      g.append(title);
       for (const [x, y] of b.cells) g.append(svg('polygon', { points: hexPoints(x, y), class: 'nosprite' }));
     } else {
       const [cx, cy] = cellCentre(b.x, b.y);
@@ -246,7 +236,6 @@ export function zooBoard(map, player, seat) {
         width: sp.size[0] * SPRITE_SCALE, height: sp.size[1] * SPRITE_SCALE,
         transform: 'rotate(' + (b.rotation * 60) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')',
       });
-      img.append(title);
       const gap = ENC_GAP, bw = S.encBorders ? ENC_BORDER : 0;
       if (gap > 0 || bw > 0) {                  // a thin gap between neighbouring buildings (the outer band of the building's outline is cut off) and / or a border inside it
         const id = 'bm' + (++maskCount), od = outlinePath(b.cells);
@@ -277,7 +266,7 @@ export function zooBoard(map, player, seat) {
         for (let c = 0; c < n; c++, at++) {
           const [hx, hy] = cellCentre(...cells[at % cells.length]), lap = Math.floor(at / cells.length) * 14;
           const cube = svg('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: hx - size / 2 + lap, y: hy - size / 2 - lap, width: size, height: size });
-          const t = svg('title'); t.textContent = cardName(k); cube.append(t);
+         
           g.append(cube);
         }
       });
@@ -395,11 +384,9 @@ export function zooBoard(map, player, seat) {
       const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
       const button = (cx, cy, glyph, title, onclick, cls) => {
         const g = svg('g', { class: 'placebtn ' + (cls || ''), transform: 'translate(' + clamp(cx, 40, 1082).toFixed(0) + ' ' + clamp(cy, 40, 936).toFixed(0) + ')' });
-        const tip = svg('title');
-        tip.textContent = title;
         const gl = svg('text', { y: 12, 'text-anchor': 'middle' });
         gl.textContent = glyph;
-        g.append(svg('circle', { r: 34 }), gl, tip);
+        g.append(svg('circle', { r: 34 }), gl);
         g.addEventListener('click', (e) => { e.stopPropagation(); onclick(); });
         s.append(g);
       };

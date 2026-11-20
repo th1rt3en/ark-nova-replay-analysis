@@ -33,7 +33,20 @@ export function applyIconNames(names) {
   ICON_IDS['bonus:xtoken_num'] = 'r3c2_ns';   // the bordered one (placement / track bonus) without them
 }
 export const SHOW_VALUE = new Set(['money', 'reputation', 'appeal']);     // BGA prints the number on these three only (appeal: 2 on the drawing board); the icon of every other bonus already says what it is
-export const iconUrl = (id) => '/icons/' + id + '.webp?v=art20261112';
+// The bonus pictures exist only in HD (web/icons_hd, the approved restorations at their full resolution, also the placement bonuses and the pentagon; the X tokens are vector drawings): the ids of BGA's sheet that
+// showed them point there, and their old sprites are gone from web/icons (icons.json keeps their size, which only gives the aspect). The `tile-` pictures are the
+// whole tiles (the HD picture on our vector pentagon, drawn by bonusTile and saved by scripts/build_hd_tiles.py) for the places that show a tile as one icon (the log, the map editor).
+export const HD_ICON = {
+  r6c8: 'multiplier.webp', r6c13: 'take-in-range-or-deck.webp', r11c8: 'money.webp', r4c9: 'reputation.webp', r10c5: 'upgrade-card.webp', r10c14: 'Partner-Zoo.webp', r10c2: 'Fac.webp',
+  r8c10: 'size-3.webp', r5c13: 'Worker.webp', r3c15: 'conservation.webp', r7c1: 'bonus-sponsor.webp',
+  r3c2: 'xtoken-dotted.svg', r5c6: 'xtoken-dotted-plain.svg', r3c2_ns: 'xtoken-solid.svg', r5c6_ns: 'xtoken-solid-plain.svg',
+  r6c6: 'clever.webp', r9c13: 'rescue.webp', r3c3: 'mark.webp', r4c10: 'scavenging.webp', r3c13: 'appeal.webp', r7c3: 'kiosk.webp', r5c1: 'shark-attack.webp', r5c2: 'store.webp',
+  r11c14: 'wave.webp', r4c13: 'search-sponsor.webp', r4c2: 'digging.webp', r7c11: 'pouch.webp', r7c10: 'perception.webp', r5c14: 'pentagon.webp',
+  r6c1: 'tile-bonus-ignore-conditions.webp', r6c2: 'tile-bonus-increased-hand.webp', r6c5: 'tile-bonus-sponsor-gray.webp', r5c15: 'tile-bonus-extra-shift.webp',
+  r5c16: 'tile-bonus-icon.webp', r6c3: 'tile-bonus-kiosk-pavilion.webp', r6c4: 'tile-bonus-scoring-cards.webp',
+};
+export const HD_VERSION = 'hd20261114d';
+export const iconUrl = (id) => HD_ICON[id] ? '/icons_hd/' + HD_ICON[id] + '?v=' + HD_VERSION : '/icons/' + id + '.webp?v=art20261112';
 export function moneyTile(root, cx, cy, size) {
   const id = 'mt' + (S.clipCount += 1), r = size * 0.24;
   const clip = svg('clipPath', { id });
@@ -85,7 +98,7 @@ export function pic(name, h) {
   const id = S.iconNames[name];
   if (!id) return document.createTextNode('');
   const img = el('img', 'icon');
-  img.decoding = 'sync'; img.src = iconUrl(id); img.alt = name; img.title = name; img.height = h;
+  img.decoding = 'sync'; img.src = iconUrl(id); img.alt = name; img.height = h;
   return img;
 }
 

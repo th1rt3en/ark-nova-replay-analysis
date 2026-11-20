@@ -102,7 +102,8 @@ export const S = {
   music: 'off',                                          // the setting "Ambience" (Sound tab): 'off' or a soundscape of ambience.js AMBIENCE
   musicVolume: 0.5,                                      // the setting "Ambience volume" (on top of Volume): 0-1, default 0.5
   soundVolume: 0.5,                                      // the volume of all sounds (setting "Volume", Sound tab): 0-1, default 0.5
-  stepSound: false,                                      // the setting "Animation sounds" (step-sound.js), off by default                                   // the setting "Animal sounds" (animal-sounds.js), off by default
+  volBack: 0.5,                                         // the volume the M key brings back after muting (settings.js `toggleMute`, saved with the settings)
+  stepSound: true,                                       // the setting "Animation sounds" (step-sound.js), on by default (animal sounds, "animalSounds" above, are off by default)
   noSnake: 'show',                                       // 'show' | 'hide' | 'worm': the cards with a snake photo, see nosnake.js / settings.js
   handMode: 'tray',                                      // how the hand is shown: 'fan' (at the screen edge) or 'tray' (floating container), see settings.js
   zooLayout: 'side',                                     // the zoo boards: 'side' (side by side), 'tabs' (one, with arrows) or 'stack' (one above the other); settings.js, replay only

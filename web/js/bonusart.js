@@ -5,10 +5,10 @@
 import { el, svg } from './util.js';
 import { pentagon } from './handshake.js';
 import { BONUS_HD } from './bonus_hd_data.js';
-import { FIT_DY, FIT_H, ICON_IDS, iconShadow, iconUrl } from './icons.js';
+import { FIT_DY, FIT_H, HD_VERSION, ICON_IDS, iconShadow, iconUrl } from './icons.js';
 
 const INK = '#17262B';
-const hd = (name) => '/icons_hd/' + name + '.webp?v=art20261112';
+const hd = (name) => '/icons_hd/' + name + '.webp?v=' + HD_VERSION;
 let uid = 0;
 const add = (root, tag, attrs, text) => { const e = svg(tag, attrs); if (text !== undefined) e.textContent = text; root.append(e); return e; };
 const image = (root, name, [x, y, w, h]) => add(root, 'image', { href: hd(name), x, y, width: w, height: h, preserveAspectRatio: 'none', ...(iconShadow(name, h) ? { style: iconShadow(name, h) } : {}) });

@@ -1,5 +1,5 @@
 // [module] Floating dock at the bottom left with the hands / endgame cards of both players.
-import { $, el, seatColor, seatRawColor, seatText } from './util.js';
+import { $, el, onColour, seatColor, seatRawColor, seatText } from './util.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { curState, hides as povHides, seatOrder, seesAll } from './pov.js';
 const hides = (seat) => povHides(seat) || (PLAY && S.play.seat !== null && seat !== S.play.seat);       // (a live game is between two real players: the dock only has the player's own hand and endgame cards, nothing of the opponent)
@@ -327,11 +327,6 @@ function drawTray(dock, rows, shownSel, st) {
 // The played cards in the tray (setting "Played cards" = Tray): one row, animals then sponsors, each card showing as much as the width allows; a hovered card rises. Each group starts with a slim vertical rail (icon, name, count: the
 // width of a rail is paid, never height, so the tray is as tall as the hand tray); the switch that picks the player sits on the top edge next to the fold button.
 const RAIL_W = 32, RAIL_GAP = 22;
-const onColour = (c) => {                                         // ink or white text, whichever reads better on the colour `c` (#rrggbb)
-  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c || ''); if (!m) return '#fff';
-  const l = [1, 2, 3].map((i) => { const v = parseInt(m[i], 16) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
-  return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2] > 0.4 ? '#17262B' : '#fff';
-};
 function playedTrayBody(st, seat, width) {
   const p = st.players[seat], box = el('div', 'pt'), deck = el('div', 'ptdeck');
   const cw = 170 * S.handScale, inner = Math.max(300, width - 16);

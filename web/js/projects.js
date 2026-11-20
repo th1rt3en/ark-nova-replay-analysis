@@ -27,15 +27,11 @@ export function blockedCube(i, colour, title, spot, kind = 'cubes') {           
   g.style.left = ((spot ? spot[0] : SLOT_X[i]) * 100) + '%';
   if (spot) { g.style.top = (spot[1] * 100) + '%'; g.style.width = (spot[2] * 100) + '%'; }
   g.append(pieceImage(kind, c, 48));
-  const tip = svg('title');
-  tip.textContent = title || 'Blocked in a 2 player game';
-  g.append(tip);
   return g;
 }
 
 export function projectPanel(st, keys, count, iconName, title, blocked) {
   const panel = el('div', 'projpanel' + (count < 3 ? ' pair' : ''));
-  panel.title = title;
   const icon = el('img', 'icon projicon');
   icon.src = iconUrl(S.iconNames[iconName] || ''); icon.alt = title; icon.height = 44;
   panel.append(icon);
@@ -74,8 +70,5 @@ export function markOwner(st, key) {
 export function markCube(seat) {
   const g = svg('svg', { class: 'markcube', viewBox: '-24 -24 48 48' });
   g.append(pieceImage('cubes', seatRawColor(seat), 48));
-  const tip = svg('title');
-  tip.textContent = 'Marked by ' + S.replay.players[seat].name;
-  g.append(tip);
   return g;
 }

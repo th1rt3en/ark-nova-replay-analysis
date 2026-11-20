@@ -1,13 +1,14 @@
 // [module] The results of a finished replay (BGA's "Game results" tab): at the last step the move bar becomes the switch Final board | Game stats, › on the last step opens
 // the results and ‹ closes them. The statistics are counted in the browser from the raw log (`countStats`, fetched once when the end is reached), the score race (the graph
 // view for now) from the replay's steps. Replays only (not forks, the sandbox, live games or the mini games).
-import { $, el, seatColor, seatRawColor, seatText } from './util.js';
+import { $, el, title, seatColor, seatRawColor, seatText } from './util.js';
 import { FORK, MINIGAME, PLAY, S, params, table } from './state.js';
 import { framesOf } from './frames.js';
 import { seatOrder } from './pov.js';
 import { render } from './main.js';
-import { ICON_IDS, SHOW_VALUE, iconUrl, moneyTile } from './icons.js';
+import { HD_VERSION, ICON_IDS, SHOW_VALUE, iconUrl, moneyTile } from './icons.js';
 import { adaptIcon, binderSvg } from './bonusart.js';
+import { placementBonusName } from './bonus-names.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
@@ -42,9 +43,23 @@ function countStats(raw) {
   const data = raw.data || raw, ids = (data.players || []).map((p) => String(p.id));
   const seatOf = (pid) => { const i = ids.indexOf(String(pid)); return i < 0 ? null : i; };
   const blank = () => ({ turns: 0, act: { build: 0, animals: 0, cards: 0, association: 0, sponsors: 0 }, xPass: 0, xGained: 0, xUsed: 0, money: 0, income: 0, kioskIncome: 0, spentOther: 0, onAnimals: 0, onBuildings: 0,
-    onDonations: 0, onRange: 0, drawn: 0, fromRange: 0, snapped: 0, discarded: 0, animals: 0, sponsors: 0, released: 0, workers: 1, projects: 0, partners: 0, universities: 0, donations: 0,
+    onDonations: 0, onRange: 0, drawn: 0, fromRange: 0, bonusDraws: 0, snapped: 0, discarded: 0, animals: 0, sponsors: 0, released: 0, workers: 1, projects: 0, partners: 0, universities: 0, donations: 0,
     reputation: 0, breaks: 0, advances: 0, manualSnaps: 0, projectSnaps: 0, freeTwos: 0, clever: 0, enclosures: 0, kiosks: 0, pavilions: 0, unique: 0 });
   const P = [blank(), blank()], chose = [false, false];
+  // the cards a reveal-and-keep or fetch effect puts into a hand count as drawn from the deck, only the kept ones (the revealed ones that go back are neither drawn nor discarded):
+  // Hunter / Scuba Dive / Scavenging keep one, Perception keeps `m`, Sprint keeps all it draws, Assertion / Dominance / Horse Whisperer fetch one card (a project, or the discard pile), the targeted draws take one
+  const keptDraw = (ty, log, a) => {
+    if (ty === 'discardCards') {
+      if (/for (hunter|scuba dive|scavenging) effect$/.test(log) && log.includes(' keeps ')) return 1;
+      if (log.endsWith('for perception effect') && log.includes(' keeps ')) return Number(a.m) || 0;
+    } else if (ty === 'drawCards') {
+      if (log.endsWith('for sprint effect')) return Number(a.n) || 0;
+      if (log.endsWith('with Assertion') || log.endsWith('with Dominance') || log.endsWith('for Horse Whisperer effect')) return Number(a.n) || 1;
+      // the targeted draws: "draws 1 <type> card ..." (a new university, Monkey Gang, a Management Plan, a worker bonus, Map 14), Waza Special Assignment, Map 8's sponsor card
+      if (/^\$\{player_name\} draws 1 <.+> card/.test(log) || log.includes('animal card from the deck (Waza') || log.includes('sponsor card(s) from the deck (Map 8 effect)')) return Number(a.n) || 1;
+    }
+    return 0;
+  };
   const seenBreaks = new Set(), seenBreakEffects = new Set();
   const normal = S.replay.normal_turns;
   if (normal) normal.forEach((t) => { P[t.seat].turns = Math.max(P[t.seat].turns, t.number); });
@@ -52,7 +67,8 @@ function countStats(raw) {
   // where a snap comes from (only two kinds are told apart): `sel` = the snap selector of a seat (gameStateChange id 59: its `source`, 'map bonus space' = a project snap, an animal's name = something else),
   // `proj` = snaps a break-income takeBonus "Snapping" (map bonus space) has granted and not used yet, `cards` = the snap state of the Cards action (id 34, descSuffix 'snap'), open until that action ends
   const sel = [null, null], proj = [0, 0], cards = [0, 0];
-  const build = [null, null];                                                                           // the `source` of the seat's build selector (gameStateChange id 30): 'map bonus space' = a free enclosure from the conservation bonus slot
+  const projDraw = [0, 0];                                                                              // T1's map bonus space: a card from the deck or the range, granted by takeBonus 'take-in-range-or-deck' and taken in the next draw / range take of that seat
+  const build = [null, null], projBuild = [false, false], grantThree = [false, false], grantKP = [0, 0], buildSrc = [null, null], stNow = [null, null], stPrev = [null, null], bmpSlots = [0, 0], newProj = [null, null], map9 = [0, 0];          // (map9: the free kiosks / pavilions Map 9's reward (takeBonus 'kiosk-pavilion', source 'Map 9 effect') has granted and not used yet; bmpSlots: the most Bird Management Plan free kiosk / pavilion slots an effect choice of the seat's current action offered; newProj: the project the seat has played in its current action)          // (stNow / stPrev: the seat's last state and the one of an earlier move id, { move, bmp }: a packet's state change is the state after its events, so a build is governed by the state of an earlier move id)                     // (buildSrc: the sourceId of the seat's last build selector, e.g. S211_ExpertOnEurope)                                               // (projBuild: the seat was offered "Build for free" by a conservation project and has not built yet)                                                                           // the `source` of the seat's build selector (gameStateChange id 30): 'map bonus space' = a free enclosure from the conservation bonus slot
   // the display before a move: the last step of an earlier move id (a card played from the display costs its folder number)
   const steps = S.replay.steps;
   const displayBefore = (moveId) => { let st = null; for (const s of steps) { if (Number(s.move_id) < moveId) st = s.state; else break; } return st ? st.display || [] : []; };
@@ -73,9 +89,17 @@ function countStats(raw) {
         }
       }
       if (ty === 'gameStateChange' && a.id === 59 && a.args && typeof a.args === 'object') { const q = seatOf(a.active_player); if (q !== null) sel[q] = { src: a.args.source || null, suffix: a.args.descSuffix || '' }; }
+      if (ty === 'takeBonus' && a.source !== 'map bonus space' && a.bonus_desc && a.bonus_desc.args && a.bonus_desc.args.bonus_type === 'size-3') { const q = seatOf(a.player_id); if (q !== null) grantThree[q] = true; }          // the 5 / 8 conservation point bonus or a maxed reputation track grants a free size-3
+      if (ty === 'takeBonus' && a.bonus_desc && a.bonus_desc.args && a.bonus_desc.args.bonus_type === 'bonus-kiosk-pavilion') { const q = seatOf(a.player_id); if (q !== null) grantKP[q] += Number(a.bonus_desc.args.bonus_n) || 3; }          // the 5 / 8 CP bonus or a maxed reputation track: up to 3 free kiosks / pavilions
+      if (ty === 'gameStateChange') { const q = seatOf(a.active_player); if (q !== null) { const g = a.args && typeof a.args === 'object' && !Array.isArray(a.args) ? a.args : {}, all = Array.isArray(g.allBuildings) ? g.allBuildings : []; if (a.id === 91) { const cs = g.allChoices || g.choices, list = Array.isArray(cs) ? cs : cs && typeof cs === 'object' ? Object.values(cs) : []; bmpSlots[q] = Math.max(bmpSlots[q], list.filter((c) => c && c.description === 'Build for free' && KE_BMP_SOURCES.has(c.source) && c.args && Array.isArray(c.args.freeBuilding) && c.args.freeBuilding.length > 0 && c.args.freeBuilding.every((b) => b === 'kiosk' || b === 'pavilion')).length); }          // the most slots offered in this action: a re-sent choice is not a new trigger, and a nested choice (e.g. a reputation bonus) that hides the slot does not close it
+        const bmp = a.id === 30 && bmpSlots[q] > 0 && (g.source === 'Bird Management Plan' || (g.source === 'adding a new conservation project' && /^P135_/.test(String(newProj[q] || '')))) && all.length > 0 && all.every((b) => /^(kiosk|pavilion)/.test(String(b)));          // the placeholder source counts only when the project played in this action is Bird Management Plan
+        if (stNow[q] && stNow[q].move !== moveId) stPrev[q] = stNow[q]; stNow[q] = { move: moveId, bmp, src: g.sourceId || null, ani: a.id === 62 && !!g.sourceId && Array.isArray(g.allBuildings) && g.allBuildings.length > 0 && g.allBuildings.every((b) => /^(kiosk|pavilion)/.test(String(b))), map9: a.id === 30 && g.source === 'Map 9 effect' && all.length > 0 && all.every((b) => /^(kiosk|pavilion)/.test(String(b))) }; } }          // Bird Management Plan: a build selector of kiosks / pavilions only, from the project (source 'adding a new conservation project' when it is played, else 'Bird Management Plan')
+      if (ty === 'gameStateChange' && a.id === 30 && a.args && typeof a.args === 'object') { const q = seatOf(a.active_player); if (q !== null) buildSrc[q] = a.args.sourceId || null; }
+      if (ty === 'gameStateChange' && a.id === 91 && a.args && Array.isArray(a.args.choices)) { const q = seatOf(a.active_player); if (q !== null && a.args.choices.some((c) => c && c.description === 'Build for free')) projBuild[q] = true; }
       if (ty === 'gameStateChange' && a.id === 30 && a.args && typeof a.args === 'object') { const q = seatOf(a.active_player); if (q !== null) build[q] = a.args.source || null; }
       if (ty === 'gameStateChange' && a.id === 34 && a.args && typeof a.args === 'object' && a.args.descSuffix === 'snap' && a.args.nSnap > 0) { const q = seatOf(a.active_player); if (q !== null) cards[q] = a.args.nSnap; }
       if (ty === 'takeBonus' && a.source === 'map bonus space' && a.bonus_desc && a.bonus_desc.args && a.bonus_desc.args.bonus_type === 'Snapping') { const q = seatOf(a.player_id); if (q !== null) proj[q] += Number(a.bonus_desc.args.bonus_n) || 1; }
+      if (ty === 'takeBonus' && a.source === 'map bonus space' && a.bonus_desc && a.bonus_desc.args && a.bonus_desc.args.bonus_type === 'take-in-range-or-deck') { const q = seatOf(a.player_id); if (q !== null) projDraw[q] += Number(a.bonus_desc.args.bonus_n) || 1; }
       if (ty === 'startBreak' || ty === 'finishBreak') {
         const boundary = ty + ':' + (moveId ?? ('event:' + (e.uid || pk.packet_id)));
         if (seenBreaks.has(boundary)) continue;
@@ -87,33 +111,59 @@ function countStats(raw) {
       if (ty === 'playerConcedeGame' && s !== null) conceded = s;
       if (s === null) continue;
       const p = P[s];
-      if (ty === 'chooseActionCard') { sel[s] = null; if (first === null) first = s; const k = String(a.action_card_type || '').toLowerCase(); if (k in p.act) p.act[k] += 1; chose[s] = true; }
+      const kept = keptDraw(ty, log, a); p.drawn += kept;                     // (a draw counted here is not counted again by the plain deck draw below, whatever its wording)
+      if (ty === 'moveProjects' && log.includes('plays a new conservation project')) { const q = seatOf(a.player_id), cs = Array.isArray(a.cards) ? a.cards : a.cards && typeof a.cards === 'object' ? Object.values(a.cards) : []; if (q !== null && cs.length) newProj[q] = String(cs[0].id || cs[0].card_id || ''); }
+      if (ty === 'takeBonus' && a.source === 'Map 9 effect' && a.bonus_desc && a.bonus_desc.args && a.bonus_desc.args.bonus_type === 'kiosk-pavilion') { const q = seatOf(a.player_id); if (q !== null) map9[q] += Number(a.bonus_desc.args.bonus_n) || 1; }          // Map 9 (Geographical Zoo): the free kiosk / pavilion reward
+      if (ty === 'chooseActionCard') { sel[s] = null; newProj[s] = null; bmpSlots[s] = 0; map9[s] = 0; if (first === null) first = s; const k = String(a.action_card_type || '').toLowerCase(); if (k in p.act) p.act[k] += 1; chose[s] = true; }
       else if (ty === 'actionCardCleanup' && log.includes('(Clever effect)')) p.clever += 1;                  // one resolved Clever = one action card moved by it, whatever its source (sponsor, bonus, animal, project ...)
       else if (ty === 'actionCardCleanup' && log.includes('finishing action')) { cards[s] = 0; sel[s] = null; if (!normal) p.turns += 1; if (!chose[s]) p.xPass += 1; chose[s] = false; }
       else if (ty === 'getBonuses') {
         const b = a.bonuses && typeof a.bonuses === 'object' ? a.bonuses : {}, x = b.xtoken || 0, m = b.money || 0;
         if (x > 0) p.xGained += x; else if (x < 0) p.xUsed -= x;
         if (m > 0) { p.money += m; if (inBreak) p.income += m; if (a.source === 'kiosk income') p.kioskIncome += m; }
-        else if (m < 0) p.spentOther -= m;      // (every other payment: sponsor cards and their range cost, Venom, ...; an animal's price already includes its range cost)
+        else if (m < 0) { if (a.source === 'playing sponsor from reputation range') p.onRange -= m; else p.spentOther -= m; }      // (a sponsor taken from the display pays its range cost in a payment of its own: display cost; every other payment: the sponsor card itself, Venom, ...)
         if (a.source === 'triggering break') p.breaks += 1;
       } else if (ty === 'buyAnimal' || ty === 'playSponsor') {
-        if (ty === 'buyAnimal') { p.animals += 1; p.onAnimals += Number(a.amount) || 0; } else p.sponsors += 1;
-        if (a.fromDisplay) { const key = String(a.card_id || '').split('_')[0], at = displayBefore(Number(pk.move_id)).indexOf(key); if (at >= 0) p.onRange += at + 1; }
+        let range = 0;      // the animal's price in the log includes the cost of its place in the range (1-5): it is display cost, not spent on animals (a sponsor's range cost is its own payment, above)
+        if (ty === 'buyAnimal' && a.fromDisplay) { const key = String(a.card_id || '').split('_')[0], at = displayBefore(Number(pk.move_id)).indexOf(key); if (at >= 0) range = at + 1; }
+        if (ty === 'buyAnimal') { p.animals += 1; p.onAnimals += (Number(a.amount) || 0) - range; p.onRange += range; } else p.sponsors += 1;
       } else if (ty === 'releaseAnimal') p.released += 1;
       else if (ty === 'buyBuilding') {
         p.onBuildings += Number(a.amount_money) || 0;
         const t = a.building && typeof a.building === 'object' ? String(a.building.type || '') : String(a.building || '');
-        if (t === 'size-2' && log.includes('for free') && build[s] === 'map bonus space') { p.freeTwos += 1; build[s] = null; }       // a free 2-hex enclosure from the map's bonus space (counted as an enclosure as well)
+        const spon = KE_SPONSOR_BUILD[String(buildSrc[s] || '').replace(/_MW$/, '')];
+        if (spon && spon === t && log.includes('for free')) { (p.freeSponsorMoves || (p.freeSponsorMoves = [])).push(Number(pk.move_id)); (p.srcOf || (p.srcOf = {}))[Number(pk.move_id)] = String(buildSrc[s] || '').replace(/_MW$/, '').split('_')[0]; }          // a free building of a sponsor (Expert On Europe / Asia / The Americas, Expansion Area, WAZA Large Animal Program, Franchise Business, Landscape Gardener)
+        buildSrc[s] = null;
+        const bsel = stNow[s] && stNow[s].move !== moveId ? stNow[s] : stPrev[s];
+        const bmp = !spon && !!(bsel && bsel.bmp) && (t === 'kiosk' || t === 'pavilion') && log.includes('for free');
+        const ap = !spon && !!(bsel && bsel.ani) && (t === 'kiosk' || t === 'pavilion') && Number(a.amount_money) === 0;          // an animal's Posturing (state 62 with the animal's sourceId, kiosks / pavilions only): its build line names the animal, not 'for free'
+        if (ap) { (p.freeAnimalMoves || (p.freeAnimalMoves = [])).push(Number(pk.move_id)); if (bsel.src) (p.srcOf || (p.srcOf = {}))[Number(pk.move_id)] = String(bsel.src).split('_')[0]; }
+        const emu = !spon && t === 'large-bird-aviary' && Number(a.amount_money) === 0 && ((bsel && bsel.src === 'A514_Emu') || a.card_id === 'A514_Emu' || (a.card && a.card.id === 'A514_Emu'));          // the Emu's Peacocking (the only card with it): a free Large Bird Aviary, bound by the Emu's card id on the selector in force or on the build (state / log wording not yet seen in a sample log)
+        if (emu) { (p.freeAnimalMoves || (p.freeAnimalMoves = [])).push(Number(pk.move_id)); (p.srcOf || (p.srcOf = {}))[Number(pk.move_id)] = 'A514'; }
+        const mp = !spon && !bmp && !ap && !!(bsel && bsel.map9) && map9[s] > 0 && (t === 'kiosk' || t === 'pavilion') && log.includes('for free');
+        if (mp) { (p.freeMapMoves || (p.freeMapMoves = [])).push(Number(pk.move_id)); map9[s] -= 1; }          // a free kiosk / pavilion from Map 9's reward: the selector in force has the source 'Map 9 effect' and the reward was taken in this action
+        if (bmp) { (p.freeBmpMoves || (p.freeBmpMoves = [])).push(Number(pk.move_id)); (p.srcOf || (p.srcOf = {}))[Number(pk.move_id)] = 'P135'; }          // a free kiosk / pavilion from Bird Management Plan (the selector in force when it was built)
+        if (!spon && !bmp && !mp && !ap && (t === 'kiosk' || t === 'pavilion') && log.includes('for free') && grantKP[s] > 0) { (p.freeThreeMoves || (p.freeThreeMoves = [])).push(Number(pk.move_id)); grantKP[s] -= 1; }
+        if (t === 'size-3' && log.includes('for free') && grantThree[s]) { (p.freeThreeMoves || (p.freeThreeMoves = [])).push(Number(pk.move_id)); grantThree[s] = false; }
+        if (!emu && KE_SPECIAL.includes(t) && log.includes('for free') && projBuild[s]) { (p.freeSpecMoves || (p.freeSpecMoves = [])).push(Number(pk.move_id)); projBuild[s] = false; }       // a free aviary / reptile house / large aquarium from a conservation project (map 5 / 5a)
+        if (t === 'size-2' && log.includes('for free') && build[s] === 'map bonus space') { p.freeTwos += 1; (p.freeTwoMoves || (p.freeTwoMoves = [])).push(Number(pk.move_id)); build[s] = null; }       // a free 2-hex enclosure from the map's bonus space (counted as an enclosure as well)
         if (t === 'kiosk') p.kiosks += 1; else if (t === 'pavilion') p.pavilions += 1; else if (UNIQUE.has(t)) p.unique += 1; else p.enclosures += 1;
       } else if (ty === 'gainMarked' || (ty === 'discardCards' && log.includes(' sells '))) {      // money for a mark on a card / money from selling cards: gained, but no getBonuses event
         const m = Number(a.bonuses && a.bonuses.money) || 0; if (m > 0) p.money += m;
       } else if (ty === 'pilferingMoney') {      // player_id gives the money, player_id2 receives it: spent by one, gained by the other
         const m = Number(a.bonuses && a.bonuses.money) || 0, r = seatOf(a.player_id2); if (m > 0) { p.spentOther += m; if (r !== null) P[r].money += m; }
       } else if (ty === 'donation') { const m = (a.bonuses && a.bonuses.money) || 0; p.donations += 1; p.onDonations += Math.abs(m); }
-      else if (ty === 'drawCards' && log.startsWith('${player_name} draws ${n} card(s) from the deck')) p.drawn += Number(a.n) || 0;
+      else if (ty === 'drawCards' && !kept && log.startsWith('${player_name} draws ${n} card(s) from the deck')) {
+        const n = Number(a.n) || 0; p.drawn += n;
+        if (projDraw[s] > 0) { p.bonusDraws += Math.min(n, projDraw[s]); projDraw[s] = Math.max(0, projDraw[s] - n); }
+      }
+      else if (ty === 'sponsorMagnet') p.fromRange += (a.cards || []).length || 1;      // Sponsor / Sea animal magnet: a card taken from the display counts as drawn from range
       else if (ty === 'snapCard') {
         const n = (a.cards || []).length || 1;
-        if (log.includes('reputation range')) p.fromRange += n;
+        if (log.includes('reputation range')) {
+          p.fromRange += n;
+          if (projDraw[s] > 0) { p.bonusDraws += Math.min(n, projDraw[s]); projDraw[s] = Math.max(0, projDraw[s] - n); }
+        }
         else {
           p.snapped += n;
           // the source, strongest first: the selector's own source, a break-income grant not used yet, the open Cards action
@@ -299,16 +349,33 @@ const KE_OUTLINE = 1.5;                                                         
 const KE_OLD_ICON = 44;                                                                            // the size (px) of every upgrade, worker and Association event, the same in every window size
 const KE_ICON = 36;                                                                                // the size (px) of every event of the new lane types, the same in every window size
 const KE_ENCL = /^(size-[1-5]|petting-zoo|reptile-house|large-bird-aviary|small-aquarium|large-aquarium|kiosk|pavilion)$/;       // standard and special enclosures, kiosks and pavilions (no sponsor buildings)
+const KE_SPONSOR_BUILD = { S211_ExpertOnEurope: 'size-1', S213_ExpertOnAsia: 'pavilion', S210_ExpertOnTheAmericas: 'kiosk', S272_ExpansionArea: 'size-3', S263_WazaLargeAnimalProgram: 'size-5', S265_FranchiseBusiness: 'kiosk', S276_LandscapeGardener: 'pavilion' };          // the sponsors whose free building gets the cobalt ring (sourceId of the build selector -> the building)
+const KE_BMP_SOURCES = new Set(['adding a new conservation project', 'Bird Management Plan']);          // the sources of Bird Management Plan's free kiosk / pavilion selector
+const KE_SPONSOR_TYPES = new Set(Object.values(KE_SPONSOR_BUILD));
+const KE_SPECIAL = ['large-bird-aviary', 'reptile-house', 'large-aquarium'];
+const KE_GATE_FILL = '#ffdf78';          // the capacity number of a standard enclosure with a capacity bonus (+2 next to the gate on maps 2 / 2a, +2 for a 3-size on the border with Expansion Area): a pale sunny yellow
+const keGateNext = (cells, gates) => gates.length > 0 && cells.some(([x, y]) => [[0, 2], [0, -2], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => gates.some((g) => g.x === x + dx && g.y === y + dy)));          // (hex neighbours in the (x, y) grid of the maps: (x, y +- 2) and (x +- 1, y +- 1))
+const KE_CORAL_GLOW = 'filter: drop-shadow(0 0 3px #ee7a58) drop-shadow(0 0 3px #ee7a58) drop-shadow(0 0 1px #ee7a58)';          // the Emu's free Large Bird Aviary: the same glow in the animal ring's coral
+const KE_GOLD_GLOW = 'filter: drop-shadow(0 0 3px #e8c04a) drop-shadow(0 0 3px #e8c04a) drop-shadow(0 0 1px #d8b03a)';
 const KE_ENCL_NAME = { 'petting-zoo': 'Petting Zoo', 'reptile-house': 'Reptile House', 'large-bird-aviary': 'Large Bird Aviary', 'small-aquarium': 'Small Aquarium', 'large-aquarium': 'Large Aquarium', kiosk: 'Kiosk', pavilion: 'Pavilion' };
 const KE_LOGGED = new Set(['money', 'xtoken', 'reputation', 'appeal']);                          // placement bonuses the log names ("gains 5 money (placement bonus)"); the others are read off the covered hexes
-const KE_BONUS_NAME = { money: 'money', xtoken: 'X-token', reputation: 'reputation', appeal: 'appeal', 'take-in-range-or-deck': 'a card', Clever: 'Clever', 'bonus-sponsor': 'a sponsor', kiosk: 'a free kiosk', wave: 'Wave',
-  store: 'Store', conceal: 'Conceal', 'shark-attack': 'Shark Attack', Mark: 'Mark', adapt: 'Adapt', Fac: 'a university', 'extra-shift': 'Extra Shift', Multiplier: 'Multiplier', Scavenging: 'Scavenging', 'Partner-Zoo': 'a partner zoo' };
+const KE_BONUS_NAME = { money: 'money', xtoken: 'X-token', reputation: 'reputation', appeal: 'appeal', 'take-in-range-or-deck': 'Card', Clever: 'Clever', 'bonus-sponsor': 'Marketing', kiosk: 'Free kiosk', wave: 'Wave',
+  store: 'Store', conceal: 'Conceal', 'shark-attack': 'Shark Attack', Mark: 'Mark', adapt: 'Adapt', Fac: 'University', 'extra-shift': 'Extra Shift', Multiplier: 'Multiplier', Scavenging: 'Scavenging', 'Partner-Zoo': 'Partner zoo', Digging: 'Digging or rescue', Worker: 'Worker' };
+// When a key event happened, for its tooltip: "Turn 15", or for an event during a break (round x.5) "Break 3", the break's number counted in the order of `break_markers`
+// (the backend lists every break once, `turn` = the round it follows + .5); without the list (an old cached replay) just "Break".
+const keWhen = (round) => {
+  if (Number.isInteger(round)) return 'Turn ' + round;
+  const n = (S.replay.break_markers || []).findIndex((b) => b.turn === round);
+  return n >= 0 ? 'Break ' + (n + 1) : 'Break';
+};
 const keRound = (st) => { const ctx = st.turn_context; return ctx ? (ctx.phase === 'turn' ? ctx.number : ctx.phase === 'break' ? ctx.display + .5 : null) : Math.ceil(st.turn / 2); };       // (the rule of keyEvents)
 // The three new types, from the steps: placement bonuses (lane 3), new enclosures (lane 4), icons gained (lane 5). The setup (the first state) gives none.
 function keMoreEvents() {
   const names = S.replay.players.map((p) => p.name), seatOf = (n) => names.indexOf(n), ev = [];
   const maps = S.replay.maps || [];
-  let prev = null; const ever = [new Set(), new Set()], built = [new Set(), new Set()];
+  const confOcc = new Set();                                                                                 // Conference On Australia (S269): "X increases the size of a size-N enclosure" = the new size-N+1 building; the moves of an OCCUPIED one are the ones with "X gains 2 appeal (Conference On Australia)" (their enlargements are not key events)
+  S.replay.steps.forEach((q) => { const m = /(?:^|· )([^·\n]+?) gains 2 appeal \(Conference On Australia\)/m.exec(q.label || ''); if (m) confOcc.add(q.move_id + ':' + seatOf(m[1])); });
+  let prev = null; const ever = [new Set(), new Set()], built = [new Set(), new Set()], kioskBonus = [0, 0];                 // (kioskBonus: free kiosks a covered placement bonus hex has granted and the next kiosk build of that seat takes)
   S.replay.steps.forEach((s) => {
     const st = s.state, label = s.label || '';
     if (!st || !Number.isFinite(st.turn) || !st.players) return;
@@ -317,6 +384,15 @@ function keMoreEvents() {
       const seat = seatOf(m[1]);
       if (seat >= 0 && round !== null) ev.push({ seat, round, lane: 3, kind: 'bonus', type: m[3], value: +m[2] });
     }
+    const freeAt = (seat) => { const m = S.postStats && S.postStats.players && S.postStats.players[seat] && S.postStats.players[seat].freeTwoMoves; return m ? m.includes(Number(s.move_id)) : false; };       // (a free size-2 from a conservation project bonus: its move id was stored by countStats, known once the log has been read)
+    const sponAt = (seat) => { const m = S.postStats && S.postStats.players && S.postStats.players[seat] && S.postStats.players[seat].freeSponsorMoves; return m ? m.includes(Number(s.move_id)) : false; };
+    const bmpAt = (seat) => { const m = S.postStats && S.postStats.players && S.postStats.players[seat] && S.postStats.players[seat].freeBmpMoves; return m ? m.includes(Number(s.move_id)) : false; };
+    const mapAt = (seat) => { const m = S.postStats && S.postStats.players && S.postStats.players[seat] && S.postStats.players[seat].freeMapMoves; return m ? m.includes(Number(s.move_id)) : false; };
+    const srcAt = (seat) => { const m = S.postStats && S.postStats.players && S.postStats.players[seat] && S.postStats.players[seat].srcOf; return m ? m[Number(s.move_id)] || null : null; };
+    const aniAt = (seat) => { const m = S.postStats && S.postStats.players && S.postStats.players[seat] && S.postStats.players[seat].freeAnimalMoves; return m ? m.includes(Number(s.move_id)) : false; };
+    const threeAt = (seat) => { const m = S.postStats && S.postStats.players && S.postStats.players[seat] && S.postStats.players[seat].freeThreeMoves; return m ? m.includes(Number(s.move_id)) : false; };
+    const specAt = (seat) => { const m = S.postStats && S.postStats.players && S.postStats.players[seat] && S.postStats.players[seat].freeSpecMoves; return m ? m.includes(Number(s.move_id)) : false; };
+    const confM = /(?:^|· )([^·\n]+?) increases the size of a size-(\d) enclosure/m.exec(label), confSeat = confM ? seatOf(confM[1]) : -1;
     const rebuilt = /\((?:Reconstruction|Cut Down|Conference)\)/i.test(label), cutDown = /\(Cut Down effect\)/i.test(label);
     st.players.forEach((p, seat) => {
       const lay = p.bonus_layout || (maps[seat] && maps[seat].placement_bonuses) || [], bon = new Map(lay.map((b) => [b.x + ',' + b.y, b.bonus || {}]));
@@ -335,12 +411,17 @@ function keMoreEvents() {
           if (ever[seat].has(k)) continue;
           ever[seat].add(k);
           const bn = bon.get(k);
-          if (!first && !noBonus && round !== null && bn && bn.type && !KE_LOGGED.has(bn.type)) ev.push({ seat, round, lane: 3, kind: 'bonus', type: bn.type, value: bn.value || 1 });
+          if (!first && !noBonus && round !== null && bn && bn.type && !KE_LOGGED.has(bn.type)) { ev.push({ seat, round, lane: 3, kind: 'bonus', type: bn.type, value: bn.value || 1 }); if (bn.type === 'kiosk') kioskBonus[seat] += 1; }
         }
         const key = b.type + ':' + b.x + ':' + b.y;
         if (built[seat].has(key)) continue;
+        const gateNear = /^size-[1-5]$/.test(b.type) && keGateNext(b.cells || [], ((maps[seat] && maps[seat].special_hexes) || []).filter((h) => h.kind === 'gate'));          // maps 2 / 2a: a standard enclosure next to the gate has +2 capacity
+        const hexSet = maps[seat] && maps[seat].hexes ? new Set(maps[seat].hexes.map((h) => h.x + ',' + h.y)) : null;
+        const expNear = b.type === 'size-3' && (p.sponsors || []).some((k) => String(k).startsWith('S272')) && !!hexSet && (b.cells || []).some(([x, y]) => [[0, 2], [0, -2], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => !hexSet.has((x + dx) + ',' + (y + dy))));          // Expansion Area (S272), played before: a 3-size touching the border (a neighbour off the map) counts as a 5-size
+        const plus = (gateNear ? 2 : 0) + (expNear ? 2 : 0);
         built[seat].add(key);
-        if (!first && !rebuilt && round !== null && KE_ENCL.test(b.type)) ev.push({ seat, round, lane: 4, kind: 'building', type: b.type });
+        const confHit = confSeat === seat && b.type === 'size-' + (+confM[2] + 1);          // the enclosure that Conference On Australia just enlarged (the new size-N+1 building); only an EMPTY one is a key event, an occupied one (it gave 2 appeal) is left out
+        if (!first && !rebuilt && round !== null && KE_ENCL.test(b.type) && !(confHit && confOcc.has(s.move_id + ':' + seat))) ev.push({ seat, round, lane: 4, kind: 'building', type: b.type, ...(plus ? { plus } : {}), ...(b.type === 'size-2' && freeAt(seat) ? { project: true } : {}), ...(KE_SPECIAL.includes(b.type) && specAt(seat) ? { special: true } : {}), ...((b.type === 'size-3' || b.type === 'kiosk' || b.type === 'pavilion') && threeAt(seat) ? { three: true } : {}), ...(KE_SPONSOR_TYPES.has(b.type) && sponAt(seat) ? { sponsor: true } : {}), ...((b.type === 'kiosk' || b.type === 'pavilion') && bmpAt(seat) ? { bmp: true } : {}), ...((b.type === 'kiosk' || b.type === 'pavilion') && mapAt(seat) ? { mapb: true } : {}), ...((b.type === 'kiosk' || b.type === 'pavilion' || b.type === 'large-bird-aviary') && aniAt(seat) ? { animal: true } : {}), ...(b.type === 'kiosk' && kioskBonus[seat] > 0 && (kioskBonus[seat]--, true) ? { placement: true } : {}), ...(srcAt(seat) ? { src: srcAt(seat) } : {}), ...(confHit ? { conf: true } : {}) });
       }
       if (!first && round !== null && prev.players[seat]) {
         const a = prev.players[seat].icons || {}, b = p.icons || {};
@@ -383,13 +464,26 @@ function keDrawNew(g, e, x, cy, sz) {
   else if (e.kind === 'building') {                                                       // drawn as the building's own icon (as on the cards), not the board piece
     const T = e.type, ic = (href, w, h, st) => g.append(sv('image', { href, x: x - w / 2, y: cy - h / 2, width: w, height: h, preserveAspectRatio: 'xMidYMid meet', ...(st ? { style: st } : {}) }));
     const num = (v, dx, st) => { const t = sv('text', { x: x + dx, y: cy + sz * .2, 'text-anchor': 'middle', style: `font-family:'Park Num',system-ui,sans-serif;font-size:${sz * .58}px;fill:#fff;pointer-events:none;${st}` }); t.textContent = String(v); g.append(t); };
-    if (/^size-/.test(T)) { ic(iconUrl('r9c3'), sz * 1.05, sz * .91); num(T.slice(5), 0, 'stroke:none'); }          // brown hexagon with its size
-    else if (T === 'large-bird-aviary') ic(iconUrl('r9c9'), sz * 1.3, sz * 1.3);
+    if (e.project && T === 'size-2') g.append(sv('polygon', { class: 'keprojring', points: [0, 1, 2, 3, 4, 5].map((i) => (x + sz * .6 * Math.cos(Math.PI / 3 * i)).toFixed(1) + ',' + (cy + sz * .6 * Math.sin(Math.PI / 3 * i)).toFixed(1)).join(' ') }));          // a free 2 from a project bonus: a purple ring round the brown hexagon
+    const SPEC = e.special ? KE_GOLD_GLOW : e.animal && T === 'large-bird-aviary' ? KE_CORAL_GLOW : undefined;          // a free special enclosure from a project: a soft gold glow round the picture
+    if (e.sponsor) g.append(sv('polygon', { class: 'kesponsorring', points: [0, 1, 2, 3, 4, 5].map((i) => (x + sz * .6 * Math.cos(Math.PI / 3 * i)).toFixed(1) + ',' + (cy + sz * .6 * Math.sin(Math.PI / 3 * i)).toFixed(1)).join(' ') }));          // a free building of a sponsor: a cobalt ring
+    else if (e.mapb && (T === 'kiosk' || T === 'pavilion')) g.append(sv('polygon', { class: 'kemapring', points: [0, 1, 2, 3, 4, 5].map((i) => (x + sz * .6 * Math.cos(Math.PI / 3 * i)).toFixed(1) + ',' + (cy + sz * .6 * Math.sin(Math.PI / 3 * i)).toFixed(1)).join(' ') }));          // a free kiosk / pavilion from Map 9's reward: an amethyst ring
+    else if (e.animal && (T === 'kiosk' || T === 'pavilion')) g.append(sv('polygon', { class: 'keanimalring', points: [0, 1, 2, 3, 4, 5].map((i) => (x + sz * .6 * Math.cos(Math.PI / 3 * i)).toFixed(1) + ',' + (cy + sz * .6 * Math.sin(Math.PI / 3 * i)).toFixed(1)).join(' ') }));          // a free kiosk / pavilion from an animal's Posturing: a coral orange ring
+    else if (e.bmp && (T === 'kiosk' || T === 'pavilion')) g.append(sv('polygon', { class: 'kebmpring', points: [0, 1, 2, 3, 4, 5].map((i) => (x + sz * .6 * Math.cos(Math.PI / 3 * i)).toFixed(1) + ',' + (cy + sz * .6 * Math.sin(Math.PI / 3 * i)).toFixed(1)).join(' ') }));          // a free kiosk / pavilion from Bird Management Plan: a sea green ring
+    else if (e.three && (T === 'size-3' || T === 'kiosk' || T === 'pavilion')) g.append(sv('polygon', { class: 'kethreering', points: [0, 1, 2, 3, 4, 5].map((i) => (x + sz * .6 * Math.cos(Math.PI / 3 * i)).toFixed(1) + ',' + (cy + sz * .6 * Math.sin(Math.PI / 3 * i)).toFixed(1)).join(' ') }));          // a free 3 from the 5 / 8 CP bonus or the end of the reputation track: a green ring
+    if (e.placement && !e.three && !e.sponsor && !e.bmp && !e.mapb && !e.animal && T === 'kiosk') g.append(sv('polygon', { class: 'keplacering', points: [0, 1, 2, 3, 4, 5].map((i) => (x + sz * .6 * Math.cos(Math.PI / 3 * i)).toFixed(1) + ',' + (cy + sz * .6 * Math.sin(Math.PI / 3 * i)).toFixed(1)).join(' ') }));          // a free kiosk from a placement bonus: a yellow ring (the pentagon's yellow)
+    if (e.conf && /^size-/.test(T)) {                                                      // Conference On Australia enlarged this EMPTY enclosure: not a build, so no brown hexagon but a blush hexagon with a red border and the new size in deep red
+      const r = sz * .52;
+      g.append(sv('polygon', { class: 'keconf', points: [0, 1, 2, 3, 4, 5].map((i) => (x + r * Math.cos(Math.PI / 3 * i)).toFixed(1) + ',' + (cy + r * Math.sin(Math.PI / 3 * i)).toFixed(1)).join(' ') }));
+      num(T.slice(5), 0, 'stroke:none;fill:' + KE_CONF_NUM);
+    }
+    else if (/^size-/.test(T)) { ic(iconUrl('r9c3'), sz * 1.05, sz * .91); num(e.plus ? Number(T.slice(5)) + e.plus : T.slice(5), 0, 'stroke:none' + (e.plus ? ';fill:' + KE_GATE_FILL : '')); }          // brown hexagon with its size
+    else if (T === 'large-bird-aviary') ic(iconUrl('r9c9'), sz * 1.3, sz * 1.3, SPEC);
     else if (T === 'petting-zoo') ic(iconUrl('r9c10'), sz * 1.3, sz * 1.3);
-    else if (T === 'reptile-house') ic(iconUrl('r9c11'), sz * 1.3, sz * 1.3);
-    else if (T === 'small-aquarium' || T === 'large-aquarium') { ic(iconUrl('r8c14'), sz * 1.1, sz * 1.25); num(T === 'small-aquarium' ? 2 : 5, -sz * .112, `stroke:#0a3a58;stroke-width:${sz * .075}px;paint-order:stroke;stroke-linejoin:round`); }   // 2 / 5 in the water, dark-blue outline
-    else if (T === 'kiosk') ic('/icons_hd/placement-approved/kiosk.svg', sz * 1.05, sz * .91, 'filter:brightness(.655)');   // the sharp approved hexagon, white turned grey
-    else if (T === 'pavilion') ic('/icons_hd/placement-approved/pavilion.svg', sz * 1.05, sz * .91);
+    else if (T === 'reptile-house') ic(iconUrl('r9c11'), sz * 1.3, sz * 1.3, SPEC);
+    else if (T === 'small-aquarium' || T === 'large-aquarium') { ic(iconUrl('r8c14'), sz * 1.1, sz * 1.25, SPEC); num(T === 'small-aquarium' ? 2 : 5, -sz * .112, `stroke:#0a3a58;stroke-width:${sz * .075}px;paint-order:stroke;stroke-linejoin:round`); }   // 2 / 5 in the water, dark-blue outline
+    else if (T === 'kiosk') ic(iconUrl('r7c3'), sz * 1.05, sz * .91, 'filter:brightness(.655)');   // the sharp approved hexagon, white turned grey
+    else if (T === 'pavilion') ic('/bonus/pavilion.webp?v=' + HD_VERSION, sz * 1.05, sz * .91);
   }
   else if (e.type === 'money') { moneyTile(g, x, cy, sz * .9); g.lastChild.style.strokeWidth = sz * .9 / 48 * 3.5; num(e.value, cy + sz * .26, sz * .66); }
   else if (e.type === 'conceal') g.append(binderSvg(x, cy, sz / 82));
@@ -397,12 +491,21 @@ function keDrawNew(g, e, x, cy, sz) {
   else {
     const id = e.type === 'xtoken' && e.value > 1 ? ICON_IDS['bonus:xtoken_num'] || ICON_IDS['bonus:xtoken'] : ICON_IDS['bonus:' + e.type];
     if (id) g.append(sv('image', { href: iconUrl(id), x: x - sz / 2, y: cy - sz / 2, width: sz, height: sz, preserveAspectRatio: 'xMidYMid meet', class: e.type === 'reputation' ? 'kerep' : '' }));
-    if (SHOW_VALUE.has(e.type) || (e.type === 'xtoken' && e.value > 1) || (e.type === 'Scavenging' && e.value > 1)) num(e.value, cy + sz * .3, sz * .6);
+    if (SHOW_VALUE.has(e.type) || (e.type === 'xtoken' && e.value > 1) || (e.type === 'Scavenging' && e.value > 1)) num(e.value, cy + sz * (e.type === 'reputation' ? .227 : .3), sz * .6);          // (the cap's number sat 2 px low: its middle is lifted to the middle of the cap)
   }
 }
+const KE_CONF_NUM = '#8a1b34';          // the number of a Conference enlargement of an empty enclosure: deep red on the blush hexagon
+const KE_HEAD_COLOR = { sponsor: '#7fa2ff', animal: '#ee7a58', bmp: '#2fb58f', map: '#b994e6', conf: '#ff8a9b' };            // (the card name of a hover takes the colour of the ring: sponsor cobalt, animal coral, Bird Management Plan sea green; lightened for the dark box)
+const keTipHead = (e) => {                                                                   // 'WAZA Large Animal Program: ' for a building that a card gave (the raw log names the card; forks and live play have no name and keep Sponsor: / Animal: / Project:)
+  if (e.kind === 'building' && !e.lost && e.conf) { const c = S.replay && S.replay.cards && S.replay.cards.S269; return { text: title(c && c.name ? c.name : 'Conference On Australia') + ': ', color: KE_HEAD_COLOR.conf }; }
+  if (e.kind === 'building' && !e.lost && e.mapb) { const m = S.replay && S.replay.maps && S.replay.maps[e.seat]; return m && m.name ? { text: m.name + ': ', color: KE_HEAD_COLOR.map } : null; }          // Map 9's reward: the map's own name (without its number)
+  if (e.kind !== 'building' || e.lost || !e.src || !(e.sponsor || e.animal || e.bmp)) return null;
+  const c = S.replay && S.replay.cards && S.replay.cards[e.src];
+  return c && c.name ? { text: title(c.name) + ': ', color: KE_HEAD_COLOR[e.sponsor ? 'sponsor' : e.animal ? 'animal' : 'bmp'] } : null;
+};
 const keTip = (e) => {
-  if (e.kind === 'bonus') return 'Placement bonus: ' + (e.value > 1 || KE_LOGGED.has(e.type) ? e.value + ' ' : '') + (KE_BONUS_NAME[e.type] || e.type);
-  if (e.kind === 'building') return (e.lost ? 'Cut down: ' : 'Built: ') + (/^size-/.test(e.type) ? 'size-' + e.type.slice(5) + ' enclosure' : KE_ENCL_NAME[e.type] || e.type);
+  if (e.kind === 'bonus') return 'Placement bonus: ' + (KE_LOGGED.has(e.type) ? e.value + ' ' : '') + (KE_BONUS_NAME[e.type] || placementBonusName({ type: e.type, value: e.value })) + (e.type === 'Scavenging' ? ' ' + e.value : '');       // (money / X-token / reputation / appeal: "5 money"; Scavenging: "Scavenging 3"; a type without a name here gets the one of the fork buttons)
+  if (e.kind === 'building') return ((keTipHead(e) || {}).text || (e.lost ? 'Cut down: ' : e.sponsor ? 'Sponsor: ' : e.bmp ? 'Project: ' : e.mapb ? 'Map: ' : e.animal ? 'Animal: ' : e.project || e.special || e.three ? 'Bonus: ' : e.placement ? 'Placement bonus: ' : 'Built: ')) + (/^size-/.test(e.type) ? (e.conf ? 'size-' + (Number(e.type.slice(5)) - 1) + ' \u2192 size-' + e.type.slice(5) + ' enclosure (' + 'empty' + ')' : 'size-' + e.type.slice(5) + '+2'.repeat((e.plus || 0) / 2) + ' enclosure') : KE_ENCL_NAME[e.type] || e.type);
   if (e.kind === 'icon') return (e.lost ? 'Icon lost: ' : 'Icon: ') + (e.type === 'SeaAnimal' ? 'Sea Animal' : e.type);
   let what = e.kind === 'upgrade' ? KE_TYPE[e.type] + ' upgraded to II' : e.kind === 'worker' ? (e.cp ? 'Gained a worker (2 CP bonus)' : 'Gained a worker') : e.kind === 'project' ? 'Supported a project: ' + e.name
     : e.kind === 'hire' ? 'Hired a worker instead of a project' : e.kind === 'reputation' ? (e.cp ? 'Took reputation (' + e.cp + ' CP bonus)' : 'Took reputation') : e.kind === 'partner' ? 'Partner zoo: ' + e.type.replace('partner-', '') : 'University' + (KE_UNI[e.type] ? ': ' + KE_UNI[e.type] : '');
@@ -424,6 +527,13 @@ function keView(w, h) {
   const inPlot = (e) => e.round >= R.turns[0] && e.round <= R.turns[R.turns.length - 1];
   const ev = keyEvents().filter(inPlot).concat(keMoreEvents().filter(inPlot));
   const X = (t) => pad.l + (w - pad.l - pad.r) * (t - t0) / Math.max(1, t1 - t0), yb = h - pad.b;
+  // The turns in the order they were played: the second player's turn n half a column after the first player's (little_hook 6, Tsong Chen 6, little_hook 7 ...), so a break
+  // always lies between the turns it came between: one the first player triggered (in the middle of turn n, before the second player's turn n) a quarter column after the
+  // first player's turn n, one the second player triggered (after both turns n) three quarters. A break's own events (round n.5) stand on its line. Only here: the line graphs keep their columns.
+  const nt = S.replay.normal_turns, st0 = S.replay.steps[0] && S.replay.steps[0].state;
+  const first = nt && nt.length ? nt[0].seat : st0 && Number.isInteger(st0.active_player) ? st0.active_player : 0;
+  const kb = (b) => (b.seat === first ? b.turn - .25 : b.seat === 1 - first ? b.turn + .25 : b.turn);
+  const keX = (seat, r) => { if (Number.isInteger(r)) return r + (seat === 1 - first && r > 0 ? .5 : 0); const b = R.breaks.find((x) => x.turn === r); return b ? kb(b) : r; };
   const GS = [graphStyle(0), graphStyle(1)], uid = 'ke' + (++raceSeq);
   const wrap = el('div', 'kewrap'); wrap.style.width = w + 'px'; wrap.style.height = h + 'px';
   // the back: break lines and mugs as on the other graphs, the hover band, the base line, the chip
@@ -434,7 +544,7 @@ function keView(w, h) {
   const hover = sv('rect', { class: 'kehov', visibility: 'hidden' }); back.append(hover);
   back.append(sv('line', { x1: KE_LL, x2: w - 4, y1: yb, y2: yb, class: 'kebase' }));
   R.breaks.forEach((b) => {
-    const known = b.seat !== null && b.seat >= 0, x = X(b.turn), cy = pad.t - 22;
+    const known = b.seat !== null && b.seat >= 0, x = X(kb(b)), cy = pad.t - 22;
     back.append(sv('line', { x1: x, x2: x, y1: pad.t - 2, y2: h - pad.b, class: 'rsbreak', stroke: `url(#${uid}f)` }));
     back.append(sv('circle', { cx: x, cy, r: 16.8, fill: known ? GS[b.seat].df : '#f8edcb' }));
     back.append(mugIcon(known ? GS[b.seat].mf : '#2a2a2a', x, cy, 21.8));
@@ -454,9 +564,11 @@ function keView(w, h) {
   const scaleOf = () => { const r = wrap.getBoundingClientRect(); return { r, k: r.width / w || 1 }; };
   const showTip = (g, e) => {
     const { r, k } = scaleOf(), b = g.getBoundingClientRect(), x0 = (b.left - r.left) / k, x1 = (b.right - r.left) / k, cy = ((b.top + b.bottom) / 2 - r.top) / k;
-    t1el.textContent = keTip(e); t2el.textContent = 'Turn ' + e.round + ' · ' + S.replay.players[e.seat].name;
+    const head = keTipHead(e), full = keTip(e);
+    if (head) { t1el.textContent = ''; const a = sv('tspan', { fill: head.color }), b2 = sv('tspan', {}); a.textContent = head.text; b2.textContent = full.slice(head.text.length); t1el.append(a, b2); } else t1el.textContent = full;
+    t2el.textContent = keWhen(e.round) + ' · ' + S.replay.players[e.seat].name;
     const wd = Math.max(t1el.getComputedTextLength(), t2el.getComputedTextLength()) + 28, th = 54;
-    let tx = x1 + 10, ty = cy - th / 2; if (tx + wd > w - 4) tx = x0 - 10 - wd; ty = Math.max(4, Math.min(h - th - 4, ty));
+    let tx = x1 + 10, ty = cy - th / 2; if (tx + wd > w - 4) tx = x0 - 10 - wd; tx = Math.max(4, Math.min(w - wd - 4, tx)); ty = Math.max(4, Math.min(h - th - 4, ty));
     tb.setAttribute('x', tx); tb.setAttribute('y', ty); tb.setAttribute('width', wd); tb.setAttribute('height', th);
     [t1el, t2el].forEach((t, i) => { t.setAttribute('x', tx + 14); t.setAttribute('y', ty + 24 + i * 20); });
     tip.setAttribute('visibility', 'visible'); g.classList.add('on');
@@ -474,7 +586,7 @@ function keView(w, h) {
     if (!lane) {
       mine.forEach((e) => {
         const k = Math.max(0, seatOrder().indexOf(e.seat)), c = GS[e.seat].black ? GS[e.seat].core : keMix(GS[e.seat].c, .28);
-        g.append(sv('circle', e.lost ? { cx: X(e.round), cy: k ? 27 : 13, r: 2.75, fill: 'none', stroke: c, 'stroke-width': 1.5, class: 'kedot' } : { cx: X(e.round), cy: k ? 27 : 13, r: 3.5, fill: c, class: 'kedot' }));          // (a lost icon: a ring)
+        g.append(sv('circle', e.lost ? { cx: X(keX(e.seat, e.round)), cy: k ? 27 : 13, r: 2.75, fill: 'none', stroke: c, 'stroke-width': 1.5, class: 'kedot' } : { cx: X(keX(e.seat, e.round)), cy: k ? 27 : 13, r: 3.5, fill: c, class: 'kedot' }));          // (a lost icon: a ring)
       });
     } else {
       rowsOf(H).forEach((row) => g.append(sv('rect', { x: KE_LL + KE_TABW + 6, y: row.y0, width: iw - KE_TABW - 12, height: row.rh, rx: 8, fill: GS[row.seat].c, class: 'kerow' })));
@@ -485,11 +597,11 @@ function keView(w, h) {
         let place;
         if (t <= 2) {                                                                                     // the old types: their sizes and stacking unchanged
           const sz = KE_OLD_ICON, step = t === 2 ? Math.max(sz * .3, Math.min(sz * 1.15, (rh - 8 - sz) / Math.max(1, n - 1))) : sz * .62;          // (one size, whatever the window; an Association stack that does not fit overlaps more)
-          place = (i) => ({ x: X(e0.round), cy: row.cy + (i - (n - 1) / 2) * (n > 1 ? step : 0), sz });
+          place = (i) => ({ x: X(keX(e0.seat, e0.round)), cy: row.cy + (i - (n - 1) / 2) * (n > 1 ? step : 0), sz });
         } else {                                                                                          // the new ones: 36 px; more than three in two columns; overlapping when the stack does not fit
           const cols = n > 3 ? 2 : 1, per = Math.ceil(n / cols), sz = KE_ICON;                                // (one size for every icon, whatever the window and the number in the turn: a stack that does not fit overlaps more)
           const step = per > 1 ? Math.max(sz * .3, Math.min(sz * .95, (rh - 6 - sz) / (per - 1))) : 0;
-          place = (i) => { const c = Math.floor(i / per), k = i % per, m = Math.min(per, n - c * per); return { x: X(e0.round) + (cols > 1 ? (c - .5) * sz * .85 : 0), cy: row.cy + (k - (m - 1) / 2) * step, sz }; };
+          place = (i) => { const c = Math.floor(i / per), k = i % per, m = Math.min(per, n - c * per); return { x: X(keX(e0.seat, e0.round)) + (cols > 1 ? (c - .5) * sz * .85 : 0), cy: row.cy + (k - (m - 1) / 2) * step, sz }; };
         }
         cl.forEach((e, i) => {
           const p = place(i), eg = sv('g', { class: 'keev' }); eg.dataset.r = e.round;
@@ -569,8 +681,9 @@ function keView(w, h) {
     if (keDragging) return;
     const { r, k } = scaleOf(), px = (pm.clientX - r.left) / k, py = (pm.clientY - r.top) / k;
     if (px < pad.l - 12 || px > w - pad.r + 12 || py < pad.t - 4 || py > yb + 40) return hideHover();
-    let i = 0, best = Infinity; R.turns.forEach((tt, j) => { const d = Math.abs(X(tt) - px); if (d < best) { best = d; i = j; } });
-    const x = X(R.turns[i]);
+    const hx = (j) => X(R.turns[j] + (j > 0 && !(R.end && j === R.turns.length - 1) ? .25 : 0));          // (a turn's band covers both players' turn n: n and n + .5)
+    let i = 0, best = Infinity; R.turns.forEach((tt, j) => { const d = Math.abs(hx(j) - px); if (d < best) { best = d; i = j; } });
+    const x = hx(i);
     hover.setAttribute('x', x - cw / 2); hover.setAttribute('y', pad.t); hover.setAttribute('width', cw); hover.setAttribute('height', yb - pad.t); hover.setAttribute('visibility', 'visible');
     wrap.querySelectorAll('.keev').forEach((g) => g.classList.toggle('now', +g.dataset.r === R.turns[i]));
     ct.textContent = R.end && i === R.turns.length - 1 ? 'End' : i === 0 ? 'Start' : 'Turn ' + R.turns[i];
@@ -589,7 +702,7 @@ const graphFor = (key, w, h) => {
 
 // How a seat is drawn on the dark graph (the colour the rest of the page uses is made for paper and info boxes). Every seat has the same parts: the line, a pill behind the numbers
 // and a disc behind the break mug (pf/ps/pt = pill fill / edge / text, df/mf = disc / mug). A seat colour fills pill and disc, with dark (or white) content. A white seat is an ice
-// white with a dark casing under the line (the page's mid grey looks like the cream break lines); a black seat is a black line with a thin grey core, a black pill, a slate disc.
+// white with a dark casing under the line (the page's mid grey looks like the cream break lines); a black seat is a plain black line (a little heavier than the others), a black pill, a slate disc.
 function inkOn(hex) { const n = parseInt(String(hex).replace('#', ''), 16), l = ((n >> 16) * .299 + ((n >> 8) & 255) * .587 + (n & 255) * .114); return l > 150 ? '#10222a' : '#ffffff'; }
 function graphStyle(seat) {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(seatRawColor(seat) || ''), ch = m ? [1, 2, 3].map((i) => parseInt(m[i], 16)) : null;
@@ -617,7 +730,18 @@ function pillEl(p, GS) {                                                        
 function raceSvg(R, w, h, big) {
   const pad = big ? { l: 60, r: 78, t: 50, b: 46 } : { l: 40, r: 52, t: 36, b: 24 };
   const { lo, hi } = R, tickList = R.ticks;
-  const t0 = R.axis ? R.axis[0] : R.turns[0] || 0, t1 = R.axis ? R.axis[1] : R.turns[R.turns.length - 1] || 1;          // (Points per turn keeps the x axis of the Points graph, so the break lines stay where they are there)
+  // The turns in the order they were played (as on Key events, keView): the second player's turn n half a column after the first player's, so a break always lies between the turns it
+  // came between: one the first player triggered (in the middle of turn n) a quarter column after the first player's turn n, one the second player triggered three quarters. The Start and
+  // End columns stay where they are; a turn a player never took (the first player's extra last turn) has no point for the other.
+  const last = R.turns.length - 1, nt = S.replay.normal_turns, st0 = S.replay.steps[0] && S.replay.steps[0].state;
+  const first = nt && nt.length ? nt[0].seat : st0 && Number.isInteger(st0.active_player) ? st0.active_player : 0, second = 1 - first;
+  const has = (p, n) => !Array.isArray(nt) || nt.some((x) => x.seat === p && x.number === n);
+  const isTurn = (k) => R.turns[k] > 0 && !(R.end && k === last);
+  const seen = (p, k) => !isTurn(k) || has(p, R.turns[k]);
+  const xt = (p, k) => R.turns[k] + (p === second && isTurn(k) ? .5 : 0);
+  const kb = (b) => (b.seat === first ? b.turn - .25 : b.seat === second ? b.turn + .25 : b.turn);
+  const maxX = Math.max(...[0, 1].flatMap((p) => R.turns.map((_, k) => (seen(p, k) && R.scores[k][p] !== null ? xt(p, k) : -Infinity))));
+  const t0 = R.axis ? R.axis[0] : R.turns[0] || 0, t1 = Math.max(R.axis ? R.axis[1] : R.turns[R.turns.length - 1] || 1, maxX);          // (Points per turn keeps the x axis of the Points graph, so the break lines stay where they are there)
   const X = (t) => pad.l + (w - pad.l - pad.r) * (t - t0) / Math.max(1, t1 - t0), Y = (v) => pad.t + (h - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
   const s = sv('svg', { viewBox: `0 0 ${w} ${h}`, class: 'rsrace-svg' + (big ? ' big' : '') });
   const uid = 'rs' + (++raceSeq), GS = [graphStyle(0), graphStyle(1)];
@@ -640,7 +764,7 @@ function raceSvg(R, w, h, big) {
   s.append(sv('line', { x1: pad.l, x2: pad.l, y1: pad.t - 4, y2: yb, class: 'rsaxis' }), sv('line', { x1: pad.l, x2: w - pad.r, y1: yb, y2: yb, class: 'rsaxis' }));
   for (const g of tickList) s.append(sv('line', { x1: pad.l - 5, x2: pad.l, y1: Y(g), y2: Y(g), class: 'rsaxis' }));
   R.breaks.forEach((b) => {                                                                            // the breaks: one solid cream line (fading towards the axis), a coffee mug on top in the colour of the player who triggered it
-    const known = b.seat !== null && b.seat >= 0, x = X(b.turn), sz = big ? 28 : 20, cy = pad.t - (big ? 22 : 15);
+    const known = b.seat !== null && b.seat >= 0, x = X(kb(b)), sz = big ? 28 : 20, cy = pad.t - (big ? 22 : 15);
     s.append(sv('line', { x1: x, x2: x, y1: pad.t - 2, y2: h - pad.b, class: 'rsbreak', stroke: `url(#${uid}f)` }));
     s.append(sv('circle', { cx: x, cy, r: sz * .6, fill: known ? GS[b.seat].df : '#f8edcb' }));
     s.append(mugIcon(known ? GS[b.seat].mf : '#2a2a2a', x, cy, sz * .78));
@@ -649,10 +773,9 @@ function raceSvg(R, w, h, big) {
   const minGap = big ? 34 : 22;
   if (!R.noPill && Math.abs(ends[0] - ends[1]) < minGap) { const top = ends[0] <= ends[1] ? 0 : 1, gap = (minGap - Math.abs(ends[0] - ends[1])) / 2; ends[top] -= gap; ends[1 - top] += gap; }
   [0, 1].forEach((p) => {
-    const d = R.turns.map((t, i) => [t, R.scores[i][p]]).filter((q) => q[1] !== null).map((q, i) => (i ? 'L' : 'M') + X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' ');          // (a player without a turn there: the line stops)
+    const d = R.turns.map((t, k) => [xt(p, k), R.scores[k][p], k]).filter((q) => q[1] !== null && seen(p, q[2])).map((q, i) => (i ? 'L' : 'M') + X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' ');          // (a player without a turn there: the line stops)
     if (GS[p].cas) s.append(sv('path', { d, class: 'rsline rscase', stroke: GS[p].cas }));
     s.append(sv('path', { d, class: 'rsline' + (GS[p].black ? ' rsblk' : ''), stroke: GS[p].c }));
-    if (GS[p].black) s.append(sv('path', { d, class: 'rsline rscore', stroke: GS[p].core }));
     if (!R.noPill) { const pl = pillEl(p, GS); pl.set(w - pad.r + 8, ends[p] - 5, String(R.scores[R.scores.length - 1][p]), 'start', big ? 20 : 13); s.append(pl.g); }          // (the number at the line end; not in Points per turn)
   });
   const ax = sv('text', { x: (w + pad.l - pad.r) / 2, y: h - (big ? 6 : 3), class: 'rsax', 'text-anchor': 'middle' }); ax.textContent = '';                                                                                    // (no axis title: the hover chip names the round)
@@ -665,23 +788,24 @@ function raceSvg(R, w, h, big) {
   const chip = sv('g', { class: 'rschip' }), cr = sv('rect', { class: 'rschipbg' }), ct = sv('text', { class: 'rschipt', 'text-anchor': 'middle' });
   chip.append(cr, ct); hv.append(gl, ...dots, ...nums.map((n) => n.g), chip);
   const hit = sv('rect', { x: pad.l, y: pad.t - 4, width: w - pad.l - pad.r, height: h - pad.t - pad.b + 4, fill: 'transparent', class: 'rshit' });
-  const fs = big ? 22 : 14, cf = big ? 15 : 10, last = R.turns.length - 1;
+  const fs = big ? 22 : 14, cf = big ? 15 : 10;
+  const hx = (k) => (!isTurn(k) ? X(R.turns[k]) : seen(0, k) && seen(1, k) ? X(R.turns[k] + .25) : X(xt(seen(first, k) ? first : second, k)));          // (the middle of both players' turn n: the tick and the chip)
   const leader = (k) => { for (let i = k; i >= 0; i--) if (R.scores[i][0] !== R.scores[i][1] && R.scores[i][0] !== null && R.scores[i][1] !== null) return R.scores[i][0] > R.scores[i][1] ? 0 : 1; return 0; };
   const show = (ev) => {
     const r = s.getBoundingClientRect(), px = (ev.clientX - r.left) * w / r.width;
     let k = 0, best = Infinity;
-    R.turns.forEach((t, i) => { const d = Math.abs(X(t) - px); if (d < best) { best = d; k = i; } });
-    const x = X(R.turns[k]), v = R.scores[k], top = v[0] === null ? 1 : v[1] === null ? 0 : leader(k), atEnd = R.end && k === last;
+    R.turns.forEach((t, i) => { const d = Math.abs(hx(i) - px); if (d < best) { best = d; k = i; } });
+    const x = hx(k), v = R.scores[k].map((val, p) => (seen(p, k) ? val : null)), top = v[0] === null ? 1 : v[1] === null ? 0 : leader(k), atEnd = R.end && k === last, xs = [0, 1].map((p) => X(xt(p, k)));
     gl.setAttribute('x1', x); gl.setAttribute('x2', x);
-    dots.forEach((d, p) => { d.setAttribute('cx', x); d.setAttribute('cy', v[p] === null ? 0 : Y(v[p])); d.style.display = v[p] === null ? 'none' : ''; });
-    const left = x > w - pad.r - fs * 3.2;
+    dots.forEach((d, p) => { d.setAttribute('cx', xs[p]); d.setAttribute('cy', v[p] === null ? 0 : Y(v[p])); d.style.display = v[p] === null ? 'none' : ''; });
     const ph = fs * .9 * 1.5, low = h - pad.b - ph / 2 - 3;                                           // (a pill never reaches the x-axis and its round chip: low scores near the axis push the trailer up, and the leader above it)
     const pcy = [0, 1].map((p) => (v[p] === null ? 0 : p === top ? Y(v[p]) - fs * 1.2 : Math.min(Y(v[p]) + fs * 1.2, low)));
     if (v[0] !== null && v[1] !== null) pcy[top] = Math.min(pcy[top], pcy[1 - top] - ph - 3);
     nums.forEach((n, p) => {
       n.g.style.display = atEnd || v[p] === null ? 'none' : '';
       if (v[p] === null) return;
-      n.set(left ? x - fs * .45 : x + fs * .45, pcy[p], v[p] < 0 ? '\u2212' + Math.abs(v[p]) : String(v[p]), left ? 'end' : 'start', fs * .9);
+      const left = xs[p] > w - pad.r - fs * 3.2;
+      n.set(left ? xs[p] - fs * .45 : xs[p] + fs * .45, pcy[p], v[p] < 0 ? '\u2212' + Math.abs(v[p]) : String(v[p]), left ? 'end' : 'start', fs * .9);
     });
     ct.textContent = atEnd ? 'End' : k === 0 && R.turns[0] === 0 ? 'Start' : 'Turn ' + R.turns[k];
     const cw = ct.textContent.length * cf * .62 + cf * 1.6, ch = cf * 1.8, cy = h - pad.b + cf * (big ? .8 : .5);
@@ -723,8 +847,8 @@ function outcome() {
 }
 // ---- the map-specific rows (counted by `replay/mapstats.py`, `S.replay.map_stats`: one dict per seat with the keys of that seat's map) ------------------------------------------------
 // A row shows up when either player's map has the key; the other player gets a dash. [label, key, factor]: map 13's quadrant keys are trigger counts (Appeal pays 2 each, Money 3 each).
-const MAP_OVERVIEW = [['Tower appeal', 'tower_appeal'], ['Sponsors marketed\nwith map ability', 'tower_marketed'], ['Overall points of\nmarketed sponsors', 'tower_marketed_points'],
-  ['Animals played\nwith map ability', 'ignore_animals'], ['Cards pouched\nwith map ability', 'pouched'], ['Continent markers removed', 'cubes'],
+const MAP_OVERVIEW = [['Tower appeal', 'tower_appeal'], ['Bonus marketing', 'tower_marketed'], ['Points gained by\nbonus marketing', 'tower_marketed_points'],
+  ['Animals played\nwith map ability', 'ignore_animals'], ['Map pouches', 'pouched'], ['Markers removed', 'cubes'],
   ['Quadrant reputation', 'quad_reputation'], ['Quadrant appeal', 'quad_appeal', 2], ['Quadrant hunter', 'quad_hunters'],
   ['Shark Attack points', 'shark_points'], ['Person sponsors played\nwith map ability', 'person_free'], ['Cards discarded\nfor action strength', 't1_discards']];
 const mapValue = (seat, key, factor = 1) => { const m = S.replay.map_stats && S.replay.map_stats[seat]; return m && m[key] !== undefined ? m[key] * factor : undefined; };
@@ -748,11 +872,19 @@ function groups(D) {
   const [a, b] = D.players, hx = [hexes(0), hexes(1)];
   const has = (k) => !D.available || D.available.includes(k);                                                  // (an exported fork has the numbers of the engine only: no row for what it does not count)
   const r = (label, f, key) => (key && !has(key) ? null : [label, f(a), f(b)]);
+  // T1 is the one map whose bonus space gives a card from the deck or the range (Bonus draws) and no snap (no Bonus snaps): the row of the other kind shows a dash for a T1 seat, and is dropped when both seats play T1
+  const t1 = [0, 1].map((i) => !!(S.replay.maps && S.replay.maps[i] && S.replay.maps[i].id === 'T1'));
+  const t1Rows = (pa, pb, label, key, onT1) => {
+    if (!has(key)) return [];
+    const show = t1.map((x) => x === onT1);
+    if (!show[0] && !show[1]) return [];
+    return [[label, show[0] ? (pa[key] ?? 0) : '\u2013', show[1] ? (pb[key] ?? 0) : '\u2013', ...(show[0] && show[1] ? [] : [-1])]];
+  };
   const out = [
     ['Actions', [r('Animals', (p) => p.act.animals, 'act'), r('Association', (p) => p.act.association, 'act'), r('Build', (p) => p.act.build, 'act'), r('Cards', (p) => p.act.cards, 'act'), r('Sponsors', (p) => p.act.sponsors, 'act'), r('X-back', (p) => p.xPass, 'xPass'), r('Clever', (p) => p.clever, 'clever'), ...mapRows([['Clever from map ability', 'clever_map']])]],
     ['Association', [r('Projects', (p) => p.projects, 'projects'), r('Releases', (p) => p.released, 'released'), r('Donations', (p) => p.donations, 'donations'), r('Universities', (p) => p.universities, 'universities'), r('Partner zoos', (p) => p.partners, 'partners'), r('Reputation', (p) => p.reputation, 'reputation'), r('Workers', (p) => p.workers, 'workers')]],
-    ['Cards', [r('Drawn from deck', (p) => p.drawn, 'drawn'), r('Drawn from range', (p) => p.fromRange, 'fromRange'), r('Snapped', (p) => p.snapped, 'snapped'), r('Manual snaps', (p) => p.manualSnaps, 'manualSnaps'), r('Bonus snaps', (p) => p.projectSnaps, 'projectSnaps'), r('Discarded', (p) => p.discarded, 'discarded'), r('Animals played', (p) => p.animals, 'animals'), r('Sponsors played', (p) => p.sponsors, 'sponsors')]],
-    ['Money', [r('Gained overall', (p) => p.money, 'money'), r('Gained from income', (p) => p.income, 'income'), r('Gained from kiosk income', (p) => p.kioskIncome, 'kioskIncome'), ...mapRows([['Gained from map ability', 'harbor_money']]), ...incomeRow(), r('Spent overall', (p) => p.onAnimals + p.onBuildings + p.onDonations + p.spentOther, 'spentOther'), r('Spent on animals', (p) => p.onAnimals, 'onAnimals'), r('Spent on buildings', (p) => p.onBuildings, 'onBuildings'), r('Spent on donations', (p) => p.onDonations, 'onDonations'), r('Spent on display cost', (p) => p.onRange, 'onRange')]],
+    ['Cards', [r('Drawn from deck', (p) => p.drawn, 'drawn'), r('Drawn from range', (p) => p.fromRange, 'fromRange'), ...t1Rows(a, b, 'Bonus draws', 'bonusDraws', true), r('Snapped', (p) => p.snapped, 'snapped'), r('Manual snaps', (p) => p.manualSnaps, 'manualSnaps'), ...t1Rows(a, b, 'Bonus snaps', 'projectSnaps', false), r('Discarded', (p) => p.discarded, 'discarded'), r('Animals played', (p) => p.animals, 'animals'), r('Sponsors played', (p) => p.sponsors, 'sponsors')]],
+    ['Money', [r('Gained overall', (p) => p.money, 'money'), r('Gained from income', (p) => p.income, 'income'), r('Gained from kiosk income', (p) => p.kioskIncome, 'kioskIncome'), ...mapRows([['Gained from map ability', 'harbor_money']]), ...incomeRow(), r('Spent overall', (p) => p.onAnimals + p.onBuildings + p.onDonations + p.onRange + p.spentOther, 'spentOther'), r('Spent on animals', (p) => p.onAnimals, 'onAnimals'), r('Spent on buildings', (p) => p.onBuildings, 'onBuildings'), r('Spent on donations', (p) => p.onDonations, 'onDonations'), r('Spent on display cost', (p) => p.onRange, 'onRange')]],
     ['X-tokens', [r('Gained', (p) => p.xGained, 'xGained'), r('Used', (p) => p.xUsed, 'xUsed')]],
     ['Zoo', [r('Enclosures', (p) => p.enclosures, 'enclosures'), r('Free 2-sizes', (p) => p.freeTwos, 'freeTwos'), r('Pavilions', (p) => p.pavilions, 'pavilions'), r('Kiosks', (p) => p.kiosks, 'kiosks'), r('Unique buildings', (p) => p.unique, 'unique'), ['Covered hexes', hx[0].covered, hx[1].covered], ['Empty hexes', hx[0].empty, hx[1].empty]]],
   ];
@@ -801,7 +933,7 @@ function panel() {
   box.style.setProperty('--c0', seatColor(L)); box.style.setProperty('--c1', seatColor(R));
   const tg = el('div', 'gstg' + (S.gsGraph ? ' g' : '')); tg.setAttribute('role', 'group'); tg.setAttribute('aria-label', 'Comparison or graph');
   for (const [k, label] of [['table', 'Comparison'], ['graph', 'Graph']]) {
-    const b = el('button'); b.type = 'button'; b.innerHTML = GS_ICON[k] + '<span>' + (k === 'table' ? 'Table' : 'Graph') + '</span><i class="chk"></i>'; b.title = label; b.setAttribute('aria-label', label);
+    const b = el('button'); b.type = 'button'; b.innerHTML = GS_ICON[k] + '<span>' + (k === 'table' ? 'Table' : 'Graph') + '</span><i class="chk"></i>'; b.setAttribute('aria-label', label);
     b.setAttribute('aria-pressed', String((k === 'graph') === !!S.gsGraph));
     b.onclick = () => { if ((k === 'graph') !== !!S.gsGraph) { S.gsGraph = k === 'graph'; syncResults(); } };
     tg.append(b);
@@ -826,7 +958,7 @@ function panel() {
     if (!e) { who.append(nm); h.append(who); return h; }
     const rgb = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(seatColor(i) || ''); if (rgb && Math.max(...[1, 2, 3].map((k) => parseInt(rgb[k], 16))) < 80) chip.classList.add('dk');   // a (nearly) black seat gets the solid grey chip
     chip.append(el('b', '', String(e.elo)), el('span', 'gsd ' + (e.d > 0 ? 'up' : e.d < 0 ? 'down' : ''), (e.d > 0 ? '+' : e.d < 0 ? '\u2212' : '\u00b1') + Math.abs(e.d)));
-    chip.title = 'New Elo rating and its change';
+    chip.title = 'Elo: New';
     who.append(nm, chip); h.append(who);                                                                  // (the chip hangs below the name, so the name itself is centred like the score)
     return h;
   };
@@ -836,7 +968,7 @@ function panel() {
   const swrap = (k) => {                                                                                    // a score with its endgame points (hourglass + value between two thin lines) hanging under it
     const w = el('span', 'gsw'), n = el('span', 'n' + hi(k), String(O.scores[k])); w.append(n);
     if (eg) { const g = el('span', 'gseg'); g.style.setProperty('--hg', hourglassColor(k));
-      g.title = 'Points from the final scoring (sponsors and endgame cards)'; g.innerHTML = HOURGLASS + '<b>+' + eg[k] + '</b>'; w.append(g); }
+      g.title = 'Endgame points'; g.innerHTML = HOURGLASS + '<b>+' + eg[k] + '</b>'; w.append(g); }
     return w;
   };
   sc.append(swrap(L), el('span', 'dash', '-'), swrap(R));
@@ -879,8 +1011,8 @@ function resultsSwitch() {
   const ICB = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7z" class="o"/><path d="M12 7l4.5 2.5v5L12 17l-4.5-2.5v-5z" class="f"/></svg>', ICS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18" class="o"/><rect x="4.5" y="11" width="4" height="8" rx="1" class="f"/><rect x="10" y="6" width="4" height="13" rx="1" class="f"/><rect x="15.5" y="13" width="4" height="6" rx="1" class="f"/></svg>';
   const AL = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 4l-6 6 6 6"/></svg>', AR = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 4l6 6-6 6"/></svg>';
   const b = el('button', 'rsflap rsgo'); b.type = 'button';                                      // one button, only the view that can be switched to: Game stats on the final board, Final board on the results
-  if (S.results) { b.classList.add('rsback'); b.innerHTML = AL + ICB + '<span>Final board</span>'; b.title = 'Final board (←)'; b.onclick = closeResults; }
-  else { b.innerHTML = ICS + '<span>Game stats</span>' + AR; b.title = 'Game stats (→)'; b.onclick = openResults; }
+  if (S.results) { b.classList.add('rsback'); b.innerHTML = AL + ICB + '<span>Final board</span>'; b.onclick = closeResults; }
+  else { b.innerHTML = ICS + '<span>Game stats</span>' + AR; b.onclick = openResults; }
   const O = outcome(), text = el('span', 'rsswitchtext');
   const hi = O.winner === null ? O.scores[0] : O.scores[O.winner], lo = O.winner === null ? O.scores[1] : O.scores[1 - O.winner];          // (the winner's score first: "Xiao Tsong wins 109-104")
   const stopped = !!(S.postStats && S.postStats.synthetic);                                      // (a fork that was stopped before the end: the score where it stands)

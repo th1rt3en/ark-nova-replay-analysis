@@ -21,7 +21,7 @@ export function renderPile() {
   const head = el('div', 'pilehead');
   head.append(el('h2', '', (S.openedPile === 'discard' ? 'Discard pile' : S.openedPile === 'deck' ? 'Draw pile, top first' : 'Endgame cards left (unordered)') + ' - ' + (secret ? (S.openedPile === 'deck' ? st.main_deck_size : st.endgame_deck_size) : keys.length) + ' card' + ((secret ? 1 : keys.length) === 1 ? '' : 's')));
   const x = el('button', 'pileclose', '✕');
-  x.type = 'button'; x.title = 'Close (Escape)'; x.setAttribute('aria-label', 'Close');
+  x.type = 'button'; x.setAttribute('aria-label', 'Close');
   x.onclick = closePile;
   head.append(x);
   const grid = el('div', 'cards pilegrid');

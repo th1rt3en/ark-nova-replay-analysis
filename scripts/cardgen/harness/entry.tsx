@@ -19,7 +19,7 @@ const cardOf=(kind:string,idRaw:string)=>{const id=baseId(idRaw);return kind==='
 const named=(kind:string,id:string,c:any)=>{const f=(nameFixes as any)[kind+id];return c&&f?{...c,...f}:c;};   // (BGA's names for the cards where the fan site's data differs: data_manual/card_names.json, the same file scripts/import_data.py applies to our data)
 const renderCard0=(kind:string,idRaw:string)=>{
   const mw=idRaw.endsWith('_MW'),vcm=/_VC(_\d\d)?$/.exec(idRaw),vc=!!vcm,season=vcm&&vcm[1]?+vcm[1].slice(1):0;const id=baseId(idRaw);
-  if(kind==='A'){const c=named('A',id,AnimalsData.find(x=>x.id===id));return c?renderToStaticMarkup(<BaseAnimalCard animal={c as any}/>):null;}
+  if(kind==='A'){const c0=named('A',id,AnimalsData.find(x=>x.id===id));const c=c0&&id==='482'?{...c0,water:1}:c0;return c?renderToStaticMarkup(<BaseAnimalCard animal={c as any}/>):null;}   // (A482 Anaconda: the fan site's data lacks its 1 water requirement; the engine has it in engine/icons.py REQUIREMENT_FIX, the only animal missing one, checked against ssimeonoff's card list)
   if(kind==='S'){const c:any=named('S',id,SponsorsData.find(x=>x.id===id));if(!c)return null;
     const d=mw&&id==='250'?{...c,water:2,tags:[AnimalTag.Reptile,AnimalTag.SeaAnimal]}:c;
     const d2=vc&&id==='274'?{...d,name:'VICTORY COLUMN'}:d;                                   // (S274_VC: the BGA name Victory Column, with the picture of the incumbent Emu Cup winner: scripts/build_victory_column_art.py)

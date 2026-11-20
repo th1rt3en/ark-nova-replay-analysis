@@ -67,7 +67,7 @@ function setAccount(a) {
 }
 
 async function boot() {
-  options = await fetch('/api/live/options').then((r) => r.json()).catch(() => ({ game_modes: [] }));
+  options = await fetch('/api/live/options').then((r) => (r.ok ? r.json() : Promise.reject(r))).catch(() => ({ game_modes: [] }));          // (live games off: 404, read as no options)
   const ark = [...options.game_modes.filter((m) => ['original', 'random-mirrored', 'free-select', 'ark360'].includes(m.id)),             // (the modes that can be played from a lobby: Normal first; the options leave custom-map out: it is not for a table made by link)
     { id: 'custom-map', label: 'Custom map', description: 'Both players play one of your own maps, made in the map editor. Everything else is as in a normal game.' }];
   const mode = $('mode');

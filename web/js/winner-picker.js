@@ -21,7 +21,7 @@ const SIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" 
 function portrait(btn) {                                            // the portrait of the chosen winner on the button (an initial / silhouette until the list has loaded)
   const w = current();
   btn.querySelector('.vcface').replaceChildren(...(w && w.thumb ? [Object.assign(el('img'), { src: '/emu_cup_winners/thumbs/' + pad(w.season) + '.webp', alt: '' })] : []));
-  btn.title = w ? 'Victory Column: ' + w.name + ' (Emu Cup season ' + w.season + ')' : 'Choose the Emu Cup winner';
+  btn.removeAttribute('title');          // (no tooltip)
 }
 
 export function closeWinners() {
@@ -43,7 +43,7 @@ function buildWindow() {
 function fillWindow() {
   const box = el('div', 'winbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Emu Cup champions');
   const head = el('div', 'winhead'); head.append(el('span', '', 'Emu Cup champions'));
-  const x = el('button', 'winx'); x.type = 'button'; x.title = 'Close (Esc)'; x.setAttribute('aria-label', 'Close');
+  const x = el('button', 'winx'); x.type = 'button'; x.setAttribute('aria-label', 'Close');
   x.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>';
   x.onclick = closeWinners; head.append(x);
   const grid = el('div', 'wingrid'), cur = currentSeason();

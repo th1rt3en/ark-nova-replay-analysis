@@ -2,7 +2,7 @@
 // Every mode: it is read off the steps up to the one shown (`S.replay.steps`, `current_action`, `turn_context`, `round`), so a replay, a fork, the sandbox and a live game give the same picture.
 // Opened by a click on a half of the chip (again: closed; another step: closed). Turn half: the two keys switch between the actions in play order (`order`: each action as a chip with its icon, pale = level I, full colour = upgraded: `actionTile`) and as a scoreboard by type (`type`: a count per player and action type, upgraded uses in the full colour, the others paler); the choice is kept until the page is reloaded.
 import { S } from './state.js';
-import { el, seatColor, seatRawColor } from './util.js';
+import { el, seatColor, seatRawColor, seatText } from './util.js';
 import { seatOrder } from './pov.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, pieceUrl } from './icons.js';
 
@@ -26,7 +26,7 @@ function turnOf(st, turnNumber) {
 // everything the two panels need, from the first step to the one shown
 export function collect(turnNumber) {
   const steps = (S.replay && S.replay.steps) || [], end = Math.min(S.step, steps.length - 1);
-  const keys = [], byKey = new Map(), acts = [[], []], breaks = [];
+  const keys = [], byKey = new Map(), acts = [[], []], breaks = [], splits = [], lastNum = [0, 0];          // splits: for each break, the last turn number of each seat before it (the Order view's stepped line)
   let prevCa = null, prevRound = null, prevSeat = null;
   for (let i = 0; i <= end; i++) {
     const st = steps[i] && steps[i].state;
@@ -44,8 +44,9 @@ export function collect(turnNumber) {
       if (type) { acts[ca.seat].push({ t: type, turn: row ? row.number : null, extra: !!row && row.n > 0, up: type !== 'x' && (card.level || 1) >= 2, key: row }); if (row) row.n += 1; }
     }
     prevCa = ca;
-    if (prevRound !== null && st.round > prevRound) breaks.push({ seat: prevSeat, turn: (t ? t.number : 0) });
+    if (prevRound !== null && st.round > prevRound) { breaks.push({ seat: prevSeat, turn: (t ? t.number : 0) }); splits.push(lastNum.slice()); }
     prevRound = st.round; prevSeat = st.active_player;
+    if (t && (t.seat === 0 || t.seat === 1)) lastNum[t.seat] = Math.max(lastNum[t.seat], t.number);
   }
   // a finished turn without an action is an X-back (the next turn of the game has started)
   const cur = steps[end] && turnOf(steps[end].state, turnNumber), curKey = cur ? cur.seat + ':' + cur.number : null;
@@ -54,7 +55,7 @@ export function collect(turnNumber) {
   for (const s of [0, 1]) acts[s].sort((a, b) => (a.key ? keys.indexOf(a.key) : 0) - (b.key ? keys.indexOf(b.key) : 0));
   const markers = Array.isArray(S.replay.break_markers) ? S.replay.break_markers.map((b) => ({ seat: b.seat, turn: b.turn })) : breaks;
   const round = steps[end] ? steps[end].state.round : 1;
-  return { acts, breaks: markers.slice(0, Math.max(0, round - 1)), turn: cur ? cur.number : (keys.length ? keys[keys.length - 1].number : 1), round };
+  return { acts, splits, breaks: markers.slice(0, Math.max(0, round - 1)), turn: cur ? cur.number : (keys.length ? keys[keys.length - 1].number : 1), round };
 }
 
 const sv = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.append(n); return n; };
@@ -79,7 +80,6 @@ function actionTile(a, size) {
   d.style.width = d.style.height = size + 'px';
   d.style.setProperty('--c', ACTION_COLOR[a.t] || '#999');
   if (a.t !== 'x') { const im = el('img'); im.src = iconUrl(S.iconNames[ACTION_ICON[a.t]]); im.alt = ''; im.draggable = false; d.append(im); }          // (the sheet's own tile, the same picture as the player info box and the Type view; the border around it is css)
-  d.title = (a.t === 'x' ? 'X: the action card was put back for an X token' : (ACTION_NAMES[a.t] || a.t) + (a.up ? ' (upgraded)' : '')) + (a.extra ? ' (extra action)' : '') + (a.turn ? ', turn ' + a.turn : '');
   return d;
 }
 const seatTag = (seat) => { const t = el('img', 'mh-seat'); t.src = pieceUrl('cubes', seatRawColor(seat)); t.alt = ''; t.draggable = false; return t; };          // (the player's own cube)
@@ -104,23 +104,25 @@ function roundPanel(D) {                                                       /
   for (const b of D.breaks) {
     const at = Math.min(100, (b.turn / span) * 100), m = el('span', 'mh-bk');
     m.style.left = 'calc((100% - ' + NOW_ROOM + 'px) * ' + (at / 100) + ')'; m.append(mug(seatColor(b.seat), 30));
-    m.title = (S.replay.players[b.seat] ? S.replay.players[b.seat].name : 'Player') + ' caused the break at the end of round ' + (D.breaks.indexOf(b) + 1);
     box.append(m);
   }
-  const now = el('i', 'mh-now'); now.style.background = nowColor(); now.title = 'Now: round ' + D.round + ', turn ' + D.turn;
+  const now = el('i', 'mh-now'); now.style.background = nowColor();
   box.append(now);
   return box;
 }
 // play order: one column per turn (the same column for both players, so the n-th turn of one player lies exactly above the other's); an extra action of a turn (a chain) is joined to its action by a thin line and makes the column as wide as the longer chain of the two
-// the round breaks of the Order view: the index of each column (turn) a break comes after, a 1 px line like the Type view's, faded at both ends, is drawn there (css .mh-brk). A break's turn is x.5 = between turn x and x + 1; there is no line after the last column.
-function breakColumns(D, keys) {
-  const out = new Set();
-  for (const b of D.breaks) {
-    let i = -1;
-    keys.forEach((k, n) => { if (k <= Math.floor(b.turn)) i = n; });
-    if (i >= 0 && i < keys.length - 1) out.add(i);
+// the round breaks of the Order view, a 2 px line, faded at both ends (css .mh-brk). Each row gets its line after its own last turn before the break (`D.splits`):
+// a break after both players' turn n is one straight line after column n; a break the first player triggered in the middle of turn n (before the second player's turn n) steps:
+// after column n in the first player's row, after column n - 1 in the second player's, joined by a short line between the rows (`.mh-jog`). There is no line after the last column.
+// Returns `slots` (column index -> the row indexes 0 / 1 that draw their line after it; every slot takes a spacer in both rows) and `jogs` ([index in row 0, index in row 1]).
+function breakColumns(D, keys, seats) {
+  const slots = new Map(), jogs = [];
+  for (const after of D.splits || []) {
+    const at = seats.map((seat) => { let i = -1; keys.forEach((k, n) => { if (k <= after[seat]) i = n; }); return i >= 0 && i < keys.length - 1 ? i : null; });
+    at.forEach((i, k) => { if (i === null) return; if (!slots.has(i)) slots.set(i, new Set()); slots.get(i).add(k); });
+    if (at[0] !== null && at[1] !== null && at[0] !== at[1]) jogs.push(at);
   }
-  return out;
+  return { slots, jogs };
 }
 const CHAIN = 6;                                                                  // (how far the line of a chain runs under each of its two tiles; the tiles are the normal `gap` apart, css .mh-chain)
 const CHEV = '<svg viewBox="0 0 12 14" aria-hidden="true"><path d="M8.5 1.5 3 7l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -130,7 +132,7 @@ function orderPanel(D, size) {
   const per = seats.map((seat) => { const m = new Map(); for (const a of D.acts[seat]) { const k = a.turn == null ? 0 : a.turn; if (!m.has(k)) m.set(k, []); m.get(k).push(a); } return m; });
   const keys = [...new Set(per.flatMap((m) => [...m.keys()]))].sort((x, y) => x - y);
   const slots = keys.map((k) => Math.max(1, ...per.map((m) => (m.get(k) || []).length)));
-  const brkAfter = breakColumns(D, keys);                                          // (the columns a round ends after: a line follows them)
+  const { slots: brkAfter, jogs } = breakColumns(D, keys, seats), spacer = new Map();          // (the columns a round ends after: a line follows them; spacer: 'row:index' -> its element, for the jogs)
   wrap.style.setProperty('--rh', size + 'px');
   const cubes = el('div', 'mh-cubes2'); seats.forEach((seat) => cubes.append(seatTag(seat)));
   const strip = el('div', 'mh-strip');
@@ -142,7 +144,11 @@ function orderPanel(D, size) {
       cell.style.width = (slots[i] * size + (slots[i] - 1) * gap) + 'px';
       list.forEach((a, j) => { if (j) { const ln = el('i', 'mh-chain'); ln.style.width = (gap + 2 * CHAIN) + 'px'; cell.append(ln); } cell.append(actionTile(a, size)); });
       row.append(cell);
-      if (brkAfter.has(i)) { const b = el('i', 'mh-brk'); if (!k) b.classList.add('mh-brk1'); row.append(b); }          // (the first row holds the line, the second an empty spacer of the same width)
+      if (brkAfter.has(i)) {                                                       // (a straight line: the first row holds it, the second an empty spacer of the same width; a stepped one: each row its half)
+        const on = brkAfter.get(i), b = el('i', 'mh-brk');
+        if (on.has(0) && on.has(1)) { if (!k) b.classList.add('mh-brk1'); } else if (on.has(k)) b.classList.add(k ? 'mh-brkB' : 'mh-brkT');
+        row.append(b); spacer.set(k + ':' + i, b);
+      }
     });
     strip.append(row);
   });
@@ -166,7 +172,14 @@ function orderPanel(D, size) {
   const end = () => { sx = null; view.classList.remove('drag'); };
   view.addEventListener('pointerup', end); view.addEventListener('pointercancel', end);
   // called when the panel is in the page: the tabs only exist when the turns do not fit without them; it opens at the newest turn
+  const jogEls = jogs.map(() => { const j = el('i', 'mh-jog'); strip.append(j); return j; });
+  const placeJogs = () => jogs.forEach(([i0, i1], n) => {                          // (between the two halves of a stepped line, in the middle of the gap between the rows)
+    const a = spacer.get('0:' + i0), b = spacer.get('1:' + i1), s0 = strip.getBoundingClientRect(); if (!a || !b) return;
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), k = strip.offsetWidth ? s0.width / strip.offsetWidth : 1;
+    Object.assign(jogEls[n].style, { left: (Math.min(ra.left, rb.left) - s0.left) / k + 'px', width: (Math.abs(rb.left - ra.left) / k + 2) + 'px', top: ((ra.bottom + rb.top) / 2 - s0.top) / k + 'px' });
+  });
   wrap.fit = () => {
+    placeJogs();
     wrap.classList.remove('over');
     wrap.classList.toggle('over', strip.scrollWidth > view.clientWidth + 1);
     view.scrollLeft = view.scrollWidth; upd();
@@ -184,16 +197,16 @@ function scorePanel(D, room) {
   box.append(cubes);
   TYPES.forEach((t, i) => {
     const col = el('div', 'mh-sc');
-    if (t === 'x') { const w = el('span', 'mh-xt'), im = el('img', ''); im.src = iconUrl(S.iconNames.xtoken); im.alt = 'X token'; im.height = 17; w.append(im); w.title = 'X: the action card was put back for an X token'; col.append(w); }
-    else { const im = el('img', 'mh-tile'); im.src = iconUrl(S.iconNames[ACTION_ICON[t]]); im.alt = ACTION_NAMES[t] || t; im.title = ACTION_NAMES[t] || t; im.draggable = false; col.append(im); }
+    if (t === 'x') { const w = el('span', 'mh-xt'), im = el('img', ''); im.src = iconUrl(S.iconNames.xtoken); im.alt = 'X token'; im.height = 17; w.append(im); col.append(w); }
+    else { const im = el('img', 'mh-tile'); im.src = iconUrl(S.iconNames[ACTION_ICON[t]]); im.alt = ACTION_NAMES[t] || t; im.draggable = false; col.append(im); }
     const nums = el('div', 'mh-nums');
     seats.forEach((seat, k) => {
       const [u, v] = cnt[i][k], n = u + v, row = el('div', 'mh-nr'), num = el('b', 'mh-n' + (n ? '' : ' zero'), String(n));
-      num.style.color = seatColor(seat);
+      num.style.color = seatText(seat, 3);                  // (the seat colour darkened to 3 : 1 on the paper: BGA's yellow was 1.5 : 1)
       const trk = el('span', 'mh-trk');
       if (t === 'x') { if (n) { const g = el('i', 'mh-seg only x'); g.style.cssText = '--c:' + ACTION_COLOR.x + ';width:' + (n * unit) + 'px'; trk.append(g); } }
       else [[u, 'l1'], [v, 'l2']].forEach(([m, c]) => { if (!m) return; const g = el('i', 'mh-seg ' + c + (u && v ? '' : ' only')); g.style.cssText = '--c:' + ACTION_COLOR[t] + ';width:' + (m * unit) + 'px'; trk.append(g); });
-      row.append(num, trk); row.title = (ACTION_NAMES[t] || t) + ': ' + n + (v ? ' (' + u + ' not upgraded, ' + v + ' upgraded)' : '');
+      row.append(num, trk);
       nums.append(row);
     });
     col.append(nums); box.append(col);

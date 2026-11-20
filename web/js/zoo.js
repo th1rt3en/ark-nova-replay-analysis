@@ -1,5 +1,6 @@
 // [module] Renders one player's zoo: board, cards row, association strip, bonus panel.
-import { el, seatColor, seatRawColor, section } from './util.js';
+import { mapTextHtml } from './map_text.js';
+import { el, onColour, seatColor, seatRawColor, section } from './util.js';
 import { ACTION_ICON, ACTION_NAMES, iconUrl, pic, pieceUrl } from './icons.js';
 import { FORK, MINIGAME, PLAY, S, SANDBOX } from './state.js';
 import { eyeButton } from './pov.js';
@@ -25,7 +26,6 @@ export function withCubes(row, p, seat) {
       for (let i = 0; i < CUBE_SLOTS[key]; i++) {
         if (i < left) { const c = el('img', 'cube'); c.src = pieceUrl('cubes', colour); c.alt = ''; chip.append(c); } else chip.append(el('i', 'cube used'));
       }
-      chip.title = left + ' of ' + CUBE_SLOTS[key] + ' cubes left on this card';
     } else if (key === 'S227' && p.flags.waza) {                      // Waza: a red X over the bonus of the kind that was not chosen (left: 2 appeal per small animal, right: 4 per large one)
       const small = p.flags.waza === 1, ns = 'http://www.w3.org/2000/svg', x = document.createElementNS(ns, 'svg');
       x.setAttribute('viewBox', '0 0 100 70'); x.setAttribute('class', 'wazax ' + (small ? 'right' : 'left'));
@@ -34,7 +34,6 @@ export function withCubes(row, p, seat) {
         path.setAttribute('d', 'M14 10L86 60M86 10L14 60'); path.setAttribute('stroke', col); path.setAttribute('stroke-width', String(w)); path.setAttribute('stroke-linecap', 'round'); path.setAttribute('fill', 'none');
         x.append(path);
       }
-      const t = document.createElementNS(ns, 'title'); t.textContent = 'Chosen: ' + (small ? 'small' : 'large') + ' animals (' + (small ? '2' : '4') + ' appeal for each)'; x.append(t);
       node.classList.add('hascubes'); node.append(x);
       continue;
     } else continue;
@@ -113,7 +112,7 @@ function playedDrawer(box, p, seat, narrow) {                                  /
   const resize = open && !!an && an.kind === 'resize' && an.seat === seat;      // (the size of THIS board was switched: its drawer wipes to the new size instead of sliding out again; the other board's drawer is left alone)
   const fresh = open && !!an && an.kind !== 'resize' && an.seat === seat;      // (just opened: it slides in; a redraw of an open drawer does not replay it)
   const go = el('button', 'drtab' + (open ? ' open' : '')); go.type = 'button';
-  go.title = open ? 'Hide the cards (Esc)' : 'Show the played cards';
+  go.title = open ? 'Hide the cards (Esc)' : 'Show played cards';
   go.append(el('span', '', 'Cards'), el('b', '', String(kindCount(p))), el('i', fresh ? 'enter' : '', '▼'));
   const bar = el('div', 'drbar');
   if (open) {                                                              // the size button: expand over the whole map / shrink back beside it
@@ -199,24 +198,19 @@ document.addEventListener('keydown', (e) => {                              // Es
 });
 
 
-// The tooltip of the map badge: the first sentence of the map's rules is the main line. The longer notes that follow it in the data are switched off for now (SHOW_MAP_NOTES, to be overhauled);
-// MAP_TIP words the main line of a map ourselves (the card data's text is longer or has typos): 4 / 4a Commercial Harbor, 13 Drawing Board.
-const SHOW_MAP_NOTES = false;
-const MAP_TIP = {
-  '4': 'If Harbor is connected: Once during your turn, you may discard up to 1 hand card for 3 Money (at any time).',
-  '4a': 'If Harbor is connected: Once during your turn, you may discard up to 1 hand card for 3 Money (at any time).',
-  '13': 'If you completely cover a quadrant on your map, gain the depicted bonus immediately and as break income.',
-};
+// The tooltip of the map badge, a small poster: a title band in the player's colour (`--pc`, its text `--pt`) with the map's name and its code, then the
+// ability text (src/ark_nova/replay/map_texts.py, drawn by map_text.js, the same text as the map library), one paragraph per line (map 9 has two).
 function mapBadge(map) {
   const custom = !!map.custom_association;                                         // a map made in the map editor: its name is the badge (its id is a hash)
-  const code = custom ? map.name : 'Map ' + map.id, title = !custom && map.name && !/^(map|tournament)\b/i.test(map.name) ? code + ': ' + map.name : (map.name || code);
+  const code = custom ? map.name : 'Map ' + map.id, named = !custom && map.name && !/^(map|tournament)\b/i.test(map.name);
   const b = el('span', 'mapbadge'); b.tabIndex = 0; b.textContent = code;
   const tip = el('div', 'maptip'); tip.setAttribute('role', 'tooltip');
-  tip.append(el('div', 'mt-title', title));
-  const rules = MAP_TIP[map.id] ? [MAP_TIP[map.id]] : map.description || [];
-  if (rules.length) { tip.append(el('p', 'mt-main', rules[0])); if (SHOW_MAP_NOTES) for (const t of rules.slice(1)) tip.append(el('p', 'mt-note', t)); }
-  else tip.append(el('p', 'mt-main', 'No special ability.'));
-  b.append(tip);
+  const head = el('div', 'mt-title'); head.append(el('span', 'mt-name', named ? map.name : (map.name || code)));
+  if (named) head.append(el('small', 'mt-code', code));
+  const body = el('div', 'mt-body');
+  const lines = (map.description || []).filter(Boolean);
+  (lines.length ? lines : ['No special ability.']).forEach((t) => { const main = el('p', 'mt-main'); main.innerHTML = mapTextHtml(t); body.append(main); });
+  tip.append(head, body); b.append(tip);
   b.onclick = e => { e.stopPropagation(); b.classList.toggle('on'); };
   return b;
 }
@@ -247,7 +241,7 @@ function actionStrip(st, seat) {
     img.src = art; card.append(img);
     (a.tokens || []).forEach((t, k) => {                                   // the tokens that lie on the card (Venom, Constriction, Multiplier), as in the player box
       const id = CARD_TOKEN_ICON[t]; if (!id) return;
-      const b = el('img', 'actoken'); b.src = iconUrl(id); b.alt = t; b.title = CARD_TOKEN_TEXT[t] || t; b.style.setProperty('--k', String(k));
+      const b = el('img', 'actoken'); b.src = iconUrl(id); b.alt = t; b.style.setProperty('--k', String(k));
       b.dataset.actionToken = t; b.dataset.tokenIndex = k;
       card.append(b);
     });
@@ -283,12 +277,12 @@ export function renderZoo(st, seat) {
   box.dataset.zooSeat = seat;
   const tabbed = tabbedLayout();
   const h = el('h2', '');                        // the tab above the zoo: a dot in the player's colour, the name, the map
-  h.style.setProperty('--pc', seatColor(seat));
-  const nameTag = () => { const n = el('span', 'zootab-name', who.name); if (who.elo) { const e = el('span', 'zootab-elo', ' (' + who.elo + ')'); e.title = 'Elo at this table (before the game)'; n.append(e); } return n; };   // (the name, with the Elo in brackets after it in the same font)
+  h.style.setProperty('--pc', seatColor(seat)); h.style.setProperty('--pt', onColour(seatColor(seat)));     // (--pt: ink or white text on the colour: the title band of the map tooltip)
+  const nameTag = () => { const n = el('span', 'zootab-name', who.name); if (who.elo) { const e = el('span', 'zootab-elo', ' (' + who.elo + ')'); e.title = 'Elo'; n.append(e); } return n; };   // (the name, with the Elo in brackets after it in the same font)
   if (!tabbed) h.append(nameTag());                 // (the name in a span, so the thinning of the letters can be set for it alone)
   let sw = null;
   if (tabbed) {                                                          // tabbed: the two arrows of the switch go to the other board (main.js `zooStep`)
-    const arrow = (d, label, path) => { const b = el('button', 'zootab-arrow'); b.type = 'button'; b.title = label; b.setAttribute('aria-label', label); b.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + path + '"/></svg>'; b.onclick = () => zooStep(d); return b; };
+    const arrow = (d, label, path) => { const b = el('button', 'zootab-arrow'); b.type = 'button'; b.setAttribute('aria-label', label); b.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + path + '"/></svg>'; b.onclick = () => zooStep(d); return b; };
     h.append(nameTag());
     sw = el('div', 'zootab-switch'); sw.append(arrow(-1, 'Previous board', 'M13 3L5 10l8 7z'), arrow(1, 'Next board', 'M7 3l8 7-8 7z'));      // (a small tab of its own at the right edge of the box: it stays put whatever the length of the name)
   }

@@ -9,7 +9,7 @@ below that leaves no rock / water coloured pixel behind (the hexes of special_he
 upgrade flags, the placement bonuses and the special spots are drawn by the viewer from the geometry, exactly as on the normal pictures.
 
 Output: `web/maps_blank/map-<id>.jpg` for every map with a picture (map 6a uses the picture of map 6, like `PICTURE_OF` in `replay/view.py`), and `web/maps_blank/index.json` (the grow that was
-used and the number of hexes replaced; grow 0 = the whole board of lank_map.png, see WHOLE_BOARD). `--check` only reports. The sprites to put a random rock / water hex back are `web/map_editor/hex_rock.png` and `hex_water.png`.
+used and the number of hexes replaced; grow 0 = the whole board of blank_map.png, see WHOLE_BOARD). `--check` only reports. The sprites to put a random rock / water hex back are `web/map_editor/hex_rock.png` and `hex_water.png`.
 """
 import argparse
 import json
@@ -25,7 +25,7 @@ HH = 133.0
 GROWS = (14, 22, 30, 40, 52)
 PICTURE_OF = {"6a": "6"}
 WHOLE_BOARD = ("13",)        # map 13 paints a dark rim along the edges of the hexes next to its rock and water: patching the hexes would leave rims round nothing, so its blank is the plain board
-                            # of lank_map.png as a whole (the margin is the cleanest map's, which looks like the map's own)
+                            # of blank_map.png as a whole (the margin is the cleanest map's, which looks like the map's own)
 
 
 def centre(x, y):

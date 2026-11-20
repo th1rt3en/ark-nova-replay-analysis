@@ -1,0 +1,61 @@
+/* The final scoring show of replays, forks and live games (js/endshow.js): a 1920 x 1080 stage over the dimmed, blurred board, scaled to the window. Colours of the post-game screen (teal panels, cream
+   text, gold accents); the players' colours come from the script. */
+.egshow { position: fixed; inset: 0; z-index: 9000; overflow: hidden; }
+.egdim { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 62% at 50% 50%, rgba(4, 22, 28, .6), rgba(3, 14, 18, .93)); backdrop-filter: blur(4px); }
+.egstage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; color: #f8edcb; font-family: 'Park Head', system-ui, sans-serif; user-select: none; }
+.egstage > div { position: absolute; box-sizing: border-box; }
+.egpanel { top: 150px; width: 360px; height: 780px; border-radius: 22px; border: 4px solid #17262b; box-shadow: 0 0 0 2px rgba(244, 182, 63, .55), 0 30px 80px rgba(0, 0, 0, .6); }          /* (no ledge under the panel: the gold outline runs all the way round it) */
+.egname { top: 180px; width: 360px; height: 78px; padding: 0 18px; display: grid; place-items: center; text-align: center; font: 400 36px/1.06 'Park Head', system-ui, sans-serif; }          /* room for two lines: endshow.js fitName() sizes and wraps a long name */
+.egname span { display: inline-block; max-width: 324px; text-wrap: balance; overflow: hidden; }
+.egscore { top: 281px; width: 360px; text-align: center; font: 400 130px/1 'Park Num', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff; transition: opacity .4s; }
+.egbump { animation: egbump .35s; }
+@keyframes egbump { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.egnudge { animation: egnudge .45s; }                     /* a card worth nothing: the score shakes sideways instead of counting */
+@keyframes egnudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
+/* the cards still to score, under each score: a recessed tray with two face-down stacks (sponsors with an endgame ability, endgame cards) and the number left on a badge */
+.egtray { width: 260px; height: 148px; border-radius: 18px; background: rgba(4, 18, 23, .42); box-shadow: inset 0 3px 8px rgba(0, 0, 0, .55), 0 1px 0 rgba(255, 255, 255, .08); }
+.egstack { z-index: 2; }
+.egstack img { position: absolute; width: 100%; height: 100%; border-radius: 6% / 4.3%; box-shadow: 0 0 0 2px #17262b, 0 3px 6px rgba(0, 0, 0, .45); transition: opacity .25s; }
+.egslot { position: absolute; inset: 0; border-radius: 6% / 4.3%; border: 3px dashed rgba(248, 237, 203, .22); }
+.egcount { position: absolute; right: -16px; top: -16px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 3px solid #17262b; box-shadow: 0 3px 0 #17262b;
+  font: 400 30px/1 'Park Num', system-ui, sans-serif; font-variant-numeric: tabular-nums; color: #fff; z-index: 2; transition: opacity .3s; }
+.egstack.empty .egcount { opacity: .45; }
+/* the rope: twisted hemp with a dark outline; the tie mark; the knot and the lead above it */
+.egrope { height: 18px; border-radius: 9px; border: 3px solid #17262b; box-shadow: 0 5px 0 rgba(0, 0, 0, .35);
+  background: repeating-linear-gradient(118deg, #e2c48f 0 7px, #b48a52 7px 11px, #cfae76 11px 14px); }
+.egtie { width: 4px; height: 60px; border-radius: 2px; background: rgba(248, 237, 203, .8); }
+.egknot { width: 52px; height: 52px; border-radius: 50%; border: 3px solid #17262b; box-shadow: 0 5px 0 #17262b; z-index: 2;
+  background: radial-gradient(circle at 36% 32%, #f1d9a8, #c39a5e 55%, #8a6634); }
+.egknot::before, .egknot::after { content: ''; position: absolute; inset: 9px; border-radius: 50%; border: 3px solid rgba(80, 52, 20, .55); clip-path: polygon(0 0, 100% 0, 100% 45%, 0 70%); }
+.egknot::after { transform: rotate(180deg); }
+.eglead { width: 140px; height: 46px; border-radius: 23px; border: 3px solid #17262b; box-shadow: 0 4px 0 #17262b; display: grid; place-items: center;
+  font: 400 30px/1 'Park Num', system-ui, sans-serif; font-variant-numeric: tabular-nums; z-index: 2; }
+/* the card on the stage, its banner, the chip */
+.egstage .egcard { border-radius: 5.2% / 3.7%; box-shadow: 0 0 0 2px #17262b, 0 14px 30px rgba(0, 0, 0, .6); perspective: 1000px; z-index: 3; }
+.egfl { position: absolute; inset: 0; border-radius: inherit; transform-style: preserve-3d; }
+.egfl img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; backface-visibility: hidden; display: block; }
+.egfl img.bk { transform: rotateY(180deg); }
+.egplain { position: absolute; inset: 0; border-radius: inherit; background: #f8edcb; color: #17262b; display: grid; place-items: center; padding: 10%; text-align: center; font: 400 30px/1.15 'Park Head', system-ui, sans-serif; }
+.egshake { animation: egshake .5s; }
+@keyframes egshake { 0%, 100% { rotate: 0deg; } 20% { rotate: -3deg; } 40% { rotate: 3deg; } 60% { rotate: -2deg; } 80% { rotate: 2deg; } }
+.egbanner { left: 560px; top: 900px; width: 800px; padding: 12px 20px; text-align: center; font: 400 40px/1.15 'Park Head', system-ui, sans-serif; background: #17262b;
+  border-top: 5px solid #f4b63f; border-bottom: 5px solid #f4b63f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 4; }
+.egbanner.egblack { box-shadow: 0 -1.5px 0 rgba(255, 255, 255, .6), 0 1.5px 0 rgba(255, 255, 255, .6), inset 0 1.5px 0 rgba(255, 255, 255, .6), inset 0 -1.5px 0 rgba(255, 255, 255, .6); }          /* black lines: thin white edges on both sides of each */
+.egchip { display: flex; align-items: center; gap: 8px; padding: 10px 26px 10px 14px; border-radius: 999px; background: #f8edcb; color: #17262b; border: 3px solid #17262b;
+  box-shadow: 0 4px 0 #17262b; font: 400 54px/1 'Park Num', system-ui, sans-serif; transform: translate(-50%, -50%); white-space: nowrap; z-index: 5; }
+.egchip img { width: 70px; height: 70px; object-fit: contain; }
+.egchip.zero { background: #17262b; color: #b9cbc7; border-color: #5b7b80; box-shadow: 0 4px 0 #0b1518; }          /* a card worth nothing: a dark +0 chip */
+.egchip.zero img { filter: grayscale(1) brightness(.85); opacity: .75; }
+.egwin { left: 960px; top: 520px; transform: translate(-50%, -50%); padding: 18px 40px; border-radius: 16px; background: #f4b63f; color: #17262b; border: 4px solid #17262b;
+  box-shadow: 0 6px 0 #17262b; font: 400 52px/1 'Park Head', system-ui, sans-serif; white-space: nowrap; z-index: 6; }
+/* Skip, at the top centre (or → twice within a second; the first → shows the hint under it) */
+.egstage .egskip { position: absolute; left: 960px; top: 28px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 14px 22px 14px 22px; margin: 0; border-radius: 14px;
+  background: #17262b; border: 3px solid #f4b63f; box-shadow: 0 6px 0 #0b1518, 0 10px 30px rgba(0, 0, 0, .5); color: #fff; font: 400 34px/1 'Park Head', system-ui, sans-serif; cursor: var(--cur-hand, pointer);
+  transition: background .15s, transform .15s; z-index: 8; }
+.egstage .egskip:hover { background: #21414a; transform: translateX(-50%) translateY(-2px); }
+.egstage .egskip:focus-visible { outline: 3px solid #f4b63f; outline-offset: 4px; }
+.egskip svg { width: 36px; height: 36px; fill: #f4b63f; }
+.egkey { display: inline-grid; place-items: center; min-width: 32px; height: 27.5px; border-radius: 7px; border: 2px solid currentColor; font: 600 21px/1 'Park Label', system-ui, sans-serif; opacity: .85; margin-left: -6px; padding-bottom: 4.5px; }          /* (the arrow sits low in the font's line box: 4.5 px of padding below, taken off the height, lifts it ~2.3 px into the middle of the key; the key stays 32 px high) */
+.egkey:first-of-type { margin-left: 0; }
+.egagain { left: 760px; top: 112px; width: 400px; text-align: center; font: 600 20px/1 'Park Label', system-ui, sans-serif; color: #f8edcb; letter-spacing: .03em; opacity: 0; transition: opacity .2s; z-index: 8; }
+.egagain.on { opacity: 1; }

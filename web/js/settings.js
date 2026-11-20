@@ -13,15 +13,26 @@ import { AMBIENCE, setAmbience } from './ambience.js';                         /
 let animalMore = false;                                                    // the Animal sounds window (More) is open (not stored)
 let settingsTab = 0;                                                       // the tab of the pop-up that is open: 0 Control, 1 Board, 2 Cards, 3 Sound (not stored)
 const KEY = 'settings';                                                    // localStorage: { speed: 0.5 | 1 | 2 | 3 | 4, timeline: boolean, hand: 0.5 ... 2, handMode: 'fan' | 'tray', noSnake: 'show' | 'hide' | 'worm', s274: 'victory' | 'mascot', vcSeason: season number | null, zoos: 'side' | 'tabs' | 'stack', boardSwitch: boolean, played: 'below' | 'tray' | 'drawer', drawerFull: { 0: boolean, 1: boolean }, logPos: 'tab' | 'below', logOrder: { tab, below: 'oldest' | 'newest' } }
+const SOUNDS_V = 1;                                                           // one-time migration: a browser that has not seen version 1 gets "Animation sounds" switched on once on its next visit (it was off by default at first and few knew the setting); after that its own choice counts. For another one-time reset of a setting add a new number here and a check like the one in setupSettings.
 const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { return {}; } };
 export const PLAYED_MODES = [['drawer', 'Slide-out drawer'], ['below', 'Below the map'], ['tray', 'Tray in the hand dock'], ['beside', 'Cards next to the map']];       // where the played cards are shown (zoo.js `playedMode`)
 export const MUSIC = AMBIENCE;                                             // the soundscapes of the setting "Ambience": [value, name] (ambience.js)
 const syncAmbience = () => setAmbience(S.music, Math.min(1, S.soundVolume * S.musicVolume * 2));          // (Volume x Ambience volume; both at 50 %, the defaults, play the file at 0.5: about 10 LU under the card and step sounds)
 export const SPEEDS = [0.5, 1, 1.5, 2, 3, 4];                                  // the autoplay speeds, the steps of the slider (1 = the default)
 export const HAND_SCALES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];            // the sizes of the cards in the hand (1 = the default size)
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, animationSpeed: S.animationSpeed, animations: S.animations, timeline: S.showTimeline, egLive: S.endgameLive, discounts: S.applyDiscounts, hand: S.handScale, bpreview: S.previewBuilding, encBorders: S.encBorders, actionStrip: S.actionStrip, handMode: S.handMode, noSnake: S.noSnake, animalSounds: S.animalSounds, stepSound: S.stepSound, volume: Math.round(S.soundVolume * 100), snakeSounds: S.snakeSounds, animalFor: S.animalFor, shoebillKey: S.shoebillKey, animalVolume: Math.round(S.animalVolume * 100), music: S.music, musicVolume: Math.round(S.musicVolume * 100), s274: S.s274, vcSeason: S.vcSeason, zoos: S.zooLayout, boardSwitch: S.boardSwitch, played: S.playedMode, drawerFull: S.drawerFull, logPos: S.logPos, logOrder: S.logOrder })); } catch (e) { /* no storage */ } };
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify({ speed: S.speed, animationSpeed: S.animationSpeed, animations: S.animations, timeline: S.showTimeline, egLive: S.endgameLive, discounts: S.applyDiscounts, hand: S.handScale, bpreview: S.previewBuilding, encBorders: S.encBorders, actionStrip: S.actionStrip, handMode: S.handMode, noSnake: S.noSnake, animalSounds: S.animalSounds, stepSound: S.stepSound, soundsV: SOUNDS_V, volume: Math.round(S.soundVolume * 100), volBack: Math.round(S.volBack * 100), snakeSounds: S.snakeSounds, animalFor: S.animalFor, shoebillKey: S.shoebillKey, animalVolume: Math.round(S.animalVolume * 100), music: S.music, musicVolume: Math.round(S.musicVolume * 100), s274: S.s274, vcSeason: S.vcSeason, zoos: S.zooLayout, boardSwitch: S.boardSwitch, played: S.playedMode, drawerFull: S.drawerFull, logPos: S.logPos, logOrder: S.logOrder })); } catch (e) { /* no storage */ } };
 document.addEventListener('drawerfull', () => save());
 /* (no 'kelayout' save: see above) */                    // (the Key events graph of the results: order and open types, results.js `keSave`)                  // (the size button of the drawer, zoo.js: narrow beside the map / expanded over it)
+let volSlider = null;                                                      // the Volume slider of the settings (kept in step when the M key mutes / unmutes)
+// The M key (main.js): mute = Volume to 0 (the level it had is kept in S.volBack, saved), again = back to that level. Returns true when the sound is now off. The page shows what happened (`mutetoggle` event).
+export function toggleMute() {
+  if (S.soundVolume > 0) { S.volBack = S.soundVolume; S.soundVolume = 0; } else S.soundVolume = S.volBack > 0 ? S.volBack : 0.5;
+  if (volSlider) { volSlider.value = String(Math.round(S.soundVolume * 20)); volSlider.dispatchEvent(new Event('input')); }          // (the slider's own handler saves and sets the ambience)
+  save(); syncAmbience();
+  const muted = S.soundVolume === 0;
+  document.dispatchEvent(new CustomEvent('mutetoggle', { detail: { muted, volume: Math.round((muted ? S.volBack : S.soundVolume) * 100) } }));
+  return muted;
+}
 export const settingsOpen = () => { const m = $('settingsModal'); return !!m && !m.hidden; };
 let soundJump = null;                                                      // set by setupSettings: switches the open pop-up to the Sound tab with the extra Animal sounds settings unfolded
 export function openSoundSettings() {                                     // the TURN ON tag of the Ctrl + S key in the keyboard pop-up (shortcuts.js) sends the user here
@@ -88,13 +99,14 @@ export function setupSettings() {
   S.noSnake = NO_SNAKE_MODES.some(([v]) => v === st.noSnake) ? st.noSnake : 'show';        // default: show
   S.animalSounds = st.animalSounds === true;
   S.soundVolume = typeof st.volume === 'number' && st.volume >= 0 && st.volume <= 100 ? Math.round(st.volume / 5) * 0.05 : 0.5;       // default 50 %
+  S.volBack = typeof st.volBack === 'number' && st.volBack > 0 && st.volBack <= 100 ? Math.round(st.volBack / 5) * 0.05 : (S.soundVolume > 0 ? S.soundVolume : 0.5);       // the volume the M key (`toggleMute`) brings back after muting
   S.animalFor = st.animalFor === 'me' ? 'me' : 'all';                       // default: every player
   S.animalVolume = typeof st.animalVolume === 'number' && st.animalVolume >= 0 && st.animalVolume <= 100 ? Math.round(st.animalVolume / 5) / 20 : 0.5;       // default 50 %
   S.music = MUSIC.some(([v]) => v === st.music) ? st.music : 'off';          // default: off
   S.musicVolume = typeof st.musicVolume === 'number' && st.musicVolume >= 0 && st.musicVolume <= 100 ? Math.round(st.musicVolume / 5) / 20 : 0.5;       // default 50 %
   S.shoebillKey = st.shoebillKey !== false;                                // default: on
   S.snakeSounds = st.snakeSounds !== false;                                // default: on
-  S.stepSound = st.stepSound === true;                                     // default: off (step-sound.js)                               // default: off (animal-sounds.js)
+  S.stepSound = st.stepSound !== false;                                    // default: on (step-sound.js; a saved choice, on or off, stays)
   if (S.stepSound) preloadSounds();                                       // (decoded before the first step, so the first hits are on time)
   S.zooLayout = ['side', 'tabs', 'stack'].includes(st.zoos) && (!FORK || PLAY) && !SANDBOX && !MINIGAME ? st.zoos : 'side';       // default: side by side (only the replay: a fork needs both boards)
   // (the Key events graph of the results is not restored: every new session starts with the default order and everything folded to a strip; changes only last while the page lives)
@@ -104,6 +116,7 @@ export function setupSettings() {
   if (S.playedMode === 'tray' && S.handMode !== 'tray') S.playedMode = 'drawer';           // the tray needs the floating hand (default of the setting: the drawer)
   applyHandScale();
   placeLog();                                                              // (the log's place and order, sidebar.js)
+  if (st.soundsV !== SOUNDS_V) { S.stepSound = true; preloadSounds(); save(); }             // (the migration, see SOUNDS_V; save() writes the version, so it happens once per browser)
   const modal = el('div', 'modal'); modal.id = 'settingsModal'; modal.hidden = true;
   let openMenu = null;                                                     // the open dropdown list (only one at a time)
   const closeMenu = () => { if (openMenu) { openMenu.menu.remove(); openMenu.btn.setAttribute('aria-expanded', 'false'); openMenu = null; } };
@@ -138,7 +151,7 @@ export function setupSettings() {
   }, true);
   const box = el('div', 'modalbox'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Settings');
   const head = el('div', 'modalhead');
-  const x = el('button', 'modalx'); x.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>'; x.type = 'button'; x.title = 'Close (Esc)'; x.setAttribute('aria-label', 'Close'); x.onclick = close;
+  const x = el('button', 'modalx'); x.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>'; x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.onclick = close;
   head.append(el('b', '', 'Settings'), x);
   // Animations: a three-part switch (green all, yellow only standard, red none), css `.setthree`; the words are the tooltips
   const THREE = [['all', 'All', 'All\n(full animation pack)', '<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/>'],
@@ -146,7 +159,7 @@ export function setupSettings() {
     ['none', 'None', 'None\n(all actions happen instantly)', '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>']];
   const animRow = el('div', 'setrow'), three = el('div', 'setthree'); three.setAttribute('role', 'radiogroup'); three.setAttribute('aria-label', 'Animations');
   let speedRange = null;
-  const syncSpeed = () => { const off = S.animations === 'none', r = speedRange; box.classList.toggle('noanim', off); if (r) { r.disabled = off; r.title = off ? 'Off while Animations is None' : ''; } };      // (Animations = None: the speed slider is greyed and cannot be moved)
+  const syncSpeed = () => { const off = S.animations === 'none', r = speedRange; box.classList.toggle('noanim', off); if (r) { r.disabled = off; } };      // (Animations = None: the speed slider is greyed and cannot be moved)
   const syncThree = () => { [...three.children].forEach((b, i) => { const on = ANIMATION_MODES[i] === S.animations; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; }); syncSpeed(); };
   THREE.forEach(([v, name, tip, svg], i) => {
     const b = el('button', 'setthree-opt'); b.type = 'button'; b.dataset.v = v; b.dataset.tip = tip; b.setAttribute('role', 'radio'); b.setAttribute('aria-label', name);
@@ -162,6 +175,7 @@ export function setupSettings() {
   speedRange = animationRow.querySelector('.setrange'); syncSpeed();
   const volRow = el('div', 'setrow setslide');                             // the volume of every sound (step sounds, animal calls): 0-100 % in steps of 5, default 50 %
   volRow.append(el('span', 'setlabel', 'Volume'), knobSlider(Array.from({ length: 21 }, (_, i) => i * 5), Math.round(S.soundVolume * 100), 'Sound volume', (v) => { S.soundVolume = v / 100; save(); syncAmbience(); }, (v) => v + '%'));
+  volSlider = volRow.querySelector('input');
   volRow.querySelector('input').addEventListener('change', () => playStep());          // (let go of the slider: the swoosh at the new level)
   const stepRow = el('label', 'setrow');                                  // a short swoosh on each step forward (step-sound.js), every mode
   const stepsw = el('input'); stepsw.type = 'checkbox'; stepsw.className = 'setswitch'; stepsw.checked = S.stepSound;
@@ -177,7 +191,6 @@ export function setupSettings() {
   const egsw = el('input'); egsw.type = 'checkbox'; egsw.className = 'setswitch'; egsw.checked = S.endgameLive;
   egsw.onchange = () => { S.endgameLive = egsw.checked; save(); document.dispatchEvent(new Event('eglive')); };
   egRow.append(el('span', 'setlabel', 'Endgame live count'), egsw);
-  egRow.title = 'Shows the points that the sponsors (and your endgame cards) would give at the end of the game right now, as a violet +X under the appeal and conservation points';
   const pvRow = el('label', 'setrow');                                    // the placement preview: a right click on a sponsor building card of a hand, or on a zoo map (an enclosure of the picker), shows where it would fit (bpreview.js)
   const pvsw = el('input'); pvsw.type = 'checkbox'; pvsw.className = 'setswitch'; pvsw.checked = S.previewBuilding;
   pvsw.onchange = () => { S.previewBuilding = pvsw.checked; save(); document.dispatchEvent(new Event('bpreview')); };
@@ -270,7 +283,7 @@ export function setupSettings() {
   const syncSub = () => { closeMenu(); subRows.forEach((r) => { r.classList.toggle('off', !sndsw.checked); r.inert = !sndsw.checked; if (sndsw.checked) r.removeAttribute('aria-disabled'); else r.setAttribute('aria-disabled', 'true'); }); };          // (Animal sounds off: the rows of its window are greyed out and cannot be changed, `inert` also keeps the keyboard out)
   const sub = el('div', 'modalbox subwin'); sub.setAttribute('role', 'dialog'); sub.setAttribute('aria-label', 'Animal sounds');   // the window of the extra Animal sounds settings: opened by More, over the dimmed Settings (smaller than it); X, Esc or a click on the dim close it
   const subDim = el('div', 'subdim');
-  const back = el('button', 'modalx'); back.type = 'button'; back.title = 'Close (Esc)'; back.setAttribute('aria-label', 'Close'); back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>';
+  const back = el('button', 'modalx'); back.type = 'button'; back.setAttribute('aria-label', 'Close'); back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4L20 20M20 4L4 20" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" fill="none"/></svg>';
   const shead = el('div', 'modalhead'); shead.append(el('b', '', 'Animal sounds'), back);
   const spanel = el('div', 'setpanel');
   for (const [r, k] of [[forRow, 'people'], [avolRow, 'sound'], [snakeSndRow, 'snake'], [keyRow, 'keys']]) { r.prepend(chip(k)); spanel.append(r); }

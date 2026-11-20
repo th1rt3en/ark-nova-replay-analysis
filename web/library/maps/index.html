@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maps - Park Nova</title>
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/park-fonts.css">
+<link rel="stylesheet" href="/css/library_room.css?v=20261119g">
+<link rel="stylesheet" href="/css/library_volume.css?v=20261115t">
+</head>
+<body class="roompage mappage m-lib">
+<main class="stage">
+  <div class="roombar"><a class="roombtn" href="/library">&larr; Library</a>
+    <div class="right"><span class="libvol"><button class="roombtn icon" id="roomsound" type="button" aria-pressed="false" aria-label="Sound off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path class="wave" d="M15.5 9.5a3.6 3.6 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/><path class="mute" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button><span class="libvol-panel"><input class="libvol-range" type="range" min="0" max="100" step="1" value="100" orient="vertical" aria-label="Volume"></span></span></div></div>
+  <div id="room">
+    <div id="mstage">
+      <canvas id="wall" width="1920" height="1080"></canvas>
+      <div id="rig" aria-live="polite"></div>
+      <canvas id="warm" width="960" height="540" style="width:1920px;height:1080px"></canvas>
+      <div id="mshade"></div>
+      <div id="mapdrawer">
+        <nav id="rack" aria-label="Maps" inert></nav>
+        <button id="dfront" type="button" aria-expanded="false" aria-controls="rack" aria-label="Maps: open or close the map drawer (M)"><span class="pull"></span><span class="hint">Maps</span></button>
+      </div>
+    </div>
+  </div>
+</main>
+<script type="module" src="/js/library_maps.js?v=20261120a"></script>
+<script type="module" src="/js/library_sound.js?v=20261120a"></script>
+<script type="module" src="/js/tooltip.js"></script>
+</body>
+</html>

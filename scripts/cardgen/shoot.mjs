@@ -27,6 +27,12 @@ const geom = (tag) => pg.evaluate(([tag, PH, ST, STS, CD]) => { const bad = []; 
   const W = w.getBoundingClientRect(), M = m.getBoundingClientRect(), top = (M.top - W.top) / W.height, hh = M.height / W.height * 520;
   if (Math.abs(top - PH / CD) > 0.002 || Math.abs(hh - (document.body.classList.contains('compact') ? STS : ST)) > 0.6) bad.push([c.id.slice(1), +top.toFixed(4), +hh.toFixed(1)]); }); return { checked: n, bad }; }, [tag, LAYOUT_PHOTO, STRIPE, STRIPE_SMALL, CARD]);
 // animals with 3 requirements: the left column (cost, strength and the three requirement badges, .ark-card-top-left) is scaled down from its top left corner until the last badge ends above the stripe (0.86 at a 260 px photo); cards with fewer requirements are left alone
+// names: every name keeps the one size of its kind (a long one is NOT shrunk by its length: the fan site's scale-75 / scale-90 rule is switched off in uniform.css); only a name that needs three lines, so does not fit its bar, is scaled down from its centre until it does
+const fitTitle = () => pg.evaluate(() => { const out = []; document.querySelectorAll('.c').forEach(c => {
+  const t = c.querySelector('.ark-card-title'), w = t && t.closest('.ark-card-title-wrapper'); if (!w) return;
+  t.style.removeProperty('transform'); const cs = getComputedStyle(w), W = w.getBoundingClientRect(), room = W.height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const r = document.createRange(); r.selectNodeContents(t); const h = r.getBoundingClientRect().height; if (h <= room - 1) return;
+  const k = (room - 1) / h; t.style.transformOrigin = 'center'; t.style.setProperty('transform', `scale(${k.toFixed(3)})`, 'important'); out.push([c.id.slice(1), +k.toFixed(2)]); }); return out; });
 const fitReq = (photo) => pg.evaluate((photo) => { const out = []; document.querySelectorAll('.c').forEach(c => {
   if (c.id[1] !== 'A') return; const w = c.querySelector('.ark-card-wrapper'), el = c.querySelector('.ark-card-top-left'); if (!el) return;
   el.style.transform = '';
@@ -66,6 +72,7 @@ const fitNames = (on) => pg.evaluate((on) => { const out = []; const AV = 305, B
 console.log('animal names (large):', JSON.stringify(await fitNames(true)));
 console.log('layout check (large):', JSON.stringify(await geom('L')));
 console.log('requirements scaled (large):', JSON.stringify(await fitReq(LAYOUT_PHOTO)));
+console.log('names scaled (large):', JSON.stringify(await fitTitle()));
 const body = await fitBody();
 console.log('body zoomed (projects, endgame):', JSON.stringify(body));
 console.log('text shrunk:', JSON.stringify(fit), 'project texts:', JSON.stringify(fitP));
@@ -82,6 +89,7 @@ await fitNames(false);
 await pg.evaluate(() => { document.querySelectorAll('.animal-ability,.dijitTooltipContainer').forEach(e => e.style.zoom = ''); document.body.classList.add('compact'); document.body.setAttribute('data-card-desc', '0'); });
 console.log('layout check (small):', JSON.stringify(await geom('S')));
 console.log('requirements scaled (small):', JSON.stringify(await fitReq(LAYOUT_PHOTO)));
+console.log('names scaled (small):', JSON.stringify(await fitTitle()));
 console.log('body zoomed (small):', JSON.stringify(await fitBody()));
 priceGeo.small = await priceBox();
 for (const k of ok) await pg.locator('#c' + k).screenshot({ path: `out/compact/${k}.png`, omitBackground: true });
