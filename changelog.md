@@ -1,3 +1,7 @@
+## Final scoring show: it no longer plays twice in a replay — 20 November 2026
+
+In some replays the step just before the final scoring (the last turn's last draw) already carries the state of a finished game. `engineBlock`, the end of a fork or live game, took that step for an end: one step forward played a show built from the zoo, landed back on that step, and the next steps played the real show. `engineBlock` now only takes the very last step, which is where the end of a fork or live game always is. Every mode with the show. File: `web/js/endshow.js`.
+
 ## Final scoring show: long player names are no longer cut — 20 November 2026
 
 A player name that is too wide for its panel (324 px) first shrinks to fit, down to 32 px. If it would need to go smaller, it goes on two balanced lines at the normal 36 px instead, broken at a space, an underscore or hyphen, a lower→Upper change or before digits (mid-word only for a name with none of those). If even two lines at 36 px are not enough, the two lines shrink as far as needed. The panel now keeps room for two name lines: the name sits a bit lower, the gap between name and score is larger, and the score, the tray of cards still to score and the pile of scored cards move down to keep the spacing even (the +N chip flies to the score's new position). Every mode with the show. Files: `web/js/endshow.js` (`fitName`), `web/css/endshow.css`.
