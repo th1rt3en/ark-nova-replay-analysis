@@ -17,6 +17,7 @@ import { amountIcon, labelNode } from './log-labels.js';
 import { sbMeta, sbReady, sbSetupBar } from './sandbox.js';
 import { buildMoveList, go } from './playback.js';
 import { expandLagoonDeal } from './lagoon-deal.js';
+import { showEngineEnd } from './endshow.js';
 import { packed } from './load.js';
 
 
@@ -37,7 +38,7 @@ function collapsible(box, head, body) {
 }
 
 export function initFork() {
-  document.title = 'Fork - Ark Nova Park';
+  document.title = 'Fork - Park Nova';
   const box = $('forkinfo');
   box.hidden = false;
   const back = el('a', '', 'replay of table #' + S.replay.table_id);
@@ -130,7 +131,7 @@ export function initForkReplay() {
   back.href = '/replay.html?table=' + encodeURIComponent(S.replay.table_id) + (fr.parent_fork ? '&fork=' + encodeURIComponent(fr.parent_fork) : '') + '#' + (fr.step ?? 0);
   collapsible(box, [el('b', '', 'Fork #' + fr.id + ' of '), back, document.createTextNode(' after step ' + fr.step)],
               [el('div', 'forknote', 'The game up to step ' + fr.step + (fr.parent_fork ? ' is the game of fork #' + fr.parent_fork : ' is the original game') + '; the moves after it are this fork' + (fr.stopped ? ', which stops before the end of the game' : '') + '. Fork it again from any step where the Fork button is lit.')]);
-  document.title = 'Fork #' + fr.id + ' of table #' + S.replay.table_id + ' - Ark Nova Park';
+  document.title = 'Fork #' + fr.id + ' of table #' + S.replay.table_id + ' - Park Nova';
 }
 
 // the buildings that can be placed: a button per piece; once one is chosen the zoo map takes the clicks (see zooBoard)
@@ -258,6 +259,7 @@ export function commitSteps(steps) {
   stageBreaks(S.replay);
   buildMoveList();
   S.forkBusy = false;
+  if (!SANDBOX && all.length === steps.length && showEngineEnd(S.replay.steps.length - 1, (i) => go(i, 99))) return;          // (a move that ends the game: the final scoring show, endshow.js)
   go(all.length > steps.length ? first : S.replay.steps.length - 1, 0, true);          // (a split deal is entered at its first step: playback.js `personChain` plays the sponsors on)
 }
 
@@ -980,8 +982,9 @@ function bpickBar(bar, bp, cur, acts) {
       }
     } else {
       prompt = ' must choose a bonus for the ' + c + ' marker';
-      const bonuses = [() => amountIcon('reputation', 1), () => amountIcon('appeal', 2), () => amountIcon('money', 4), () => ico('bonus:Clever', 'Clever'), () => ico('r1c9', 'Kiosk / pavilion')]          // (r1c9: the kiosk and the pavilion with a slash between them);
-      bonuses.forEach((mk, j) => {
+      const kp = () => { const i = el('img', 'icon'); i.src = '/icons_hd/kiosk-pavilion-pair.webp'; i.alt = 'Kiosk / pavilion'; i.title = 'Free kiosk or pavilion'; i.height = 32; return i; };          // (the pair of hexes with the slash, as in the map text)
+      const bonuses = [[1, () => amountIcon('appeal', 2)], [0, () => amountIcon('reputation', 1)], [2, () => amountIcon('money', 4)], [3, () => ico('bonus:Clever', 'Clever')], [4, kp]];          // (shown in the order of the map text: appeal, reputation, money, Clever, kiosk / pavilion; `pick` is the engine's number: map_rules.CONTINENT_BONUSES)
+      bonuses.forEach(([j, mk]) => {
         const act = bp.acts.find((a) => a.args.continent === c && a.args.pick === j);
         const b = choice('', () => act && playFork(act));
         b.append(mk() || String(j));

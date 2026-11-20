@@ -34,7 +34,7 @@ const Plan=({p}:{p:any})=>{
     <div className='ark-card-bottom'>
       <div className='project-card-description sf-hidden'>Requires {p.requirement.count} <b>{TAG[p.requirement.tag].toLowerCase()}</b> icons.</div>
       <div className='project-card-slots-container mw'>{p.slots.map((s:any,i:number)=><div key={i} className={'project-card-slot mwp-slot'+(i!==1?' mwp-panel':'')}><div className='project-card-slot-cube-holder mwp-cube'/>{s.bonuses.filter((b:any)=>b.bonusType==='Conservation Point').map((b:any,j:number)=><div key={j} className='mwp-shield'><Bonus b={b}/></div>)}<div className='mwp-rest'>{s.bonuses.filter((b:any)=>b.bonusType!=='Conservation Point').map((b:any,j:number)=><Bonus key={j} b={b}/>)}</div></div>)}</div>
-      <div className='zoo-card-bonuses mw-place' data-size='1'><div className='mw-place-in'>{p.placeBonuses.map((b:any,j:number)=><Bonus key={j} b={b}/>)}</div></div>
+      {p.placeBonuses.some((b:any)=>b.bonusType==='Reputation')?<div className='zoo-card-bonuses mw-place-rep' data-size='1'>{p.placeBonuses.map((b:any,j:number)=><div key={j} className='zoo-card-bonus reputation'>{b.bonusValue}</div>)}</div>:<div className='zoo-card-bonuses mw-place' data-size='1'><div className='mw-place-in'>{p.placeBonuses.map((b:any,j:number)=><Bonus key={j} b={b}/>)}</div></div>}
     </div></div></div>;
 };
 (globalThis as any).renderMW=(id:string)=>{

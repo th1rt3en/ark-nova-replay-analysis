@@ -9,14 +9,54 @@ html:has(body.hallpage) { background: #1A0D10; }
 body.hallpage { margin: 0; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; background: radial-gradient(1200px 700px at 50% 0%, #812138 0%, #4D1220 45%, #1A0D10 100%) fixed #1A0D10; overflow: hidden; }
 body.hallpage .stage { position: relative; width: min(100vw, calc(100vh * 16 / 9)); width: min(100vw, calc(100dvh * 16 / 9)); aspect-ratio: 16 / 9; }
 body.hallpage #hall { display: block; width: 100%; height: 100%; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
-body.hallpage .hallbar { position: absolute; z-index: 2; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1% 1.4%; pointer-events: none; }
-body.hallpage .hallbar > * { pointer-events: auto; }
-body.hallpage .hallback, body.hallpage #soundbtn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 2.5px solid #2A1210; border-radius: 19px; background: linear-gradient(#F0CE7A, #B8862E); color: #2A1210; font: 700 15px/1 'Park Label', 'Barlow', system-ui, sans-serif; text-decoration: none; cursor: var(--cur-hand); box-shadow: 0 3px 0 #2A1210; }
-body.hallpage .hallback:hover, body.hallpage #soundbtn:hover { filter: brightness(1.08); }
-body.hallpage .hallback:focus-visible, body.hallpage #soundbtn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
-body.hallpage #soundbtn { width: 38px; padding: 0; justify-content: center; }
-body.hallpage #soundbtn svg { width: 20px; height: 20px; fill: none; stroke: #2A1210; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-body.hallpage #soundbtn .wave { display: none; } body.hallpage #soundbtn.on .wave { display: inline; } body.hallpage #soundbtn.on .mute { display: none; }
+/* The radio's native controls share the scene coordinates through this overlay SVG. */
+body.hallpage #hall-controls { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+body.hallpage #hall-controls foreignObject { pointer-events:auto; overflow:visible; }
+/* The gramophone's controls (js/library.js draws the gramophone, js/library_sound.js plays the loop): at the scene's scale, so they are small; the lever opens #volpop. */
+.hall-radio-ui { position:relative; width:96px; height:60px; }
+#gram-armhit { position:absolute; left:46px; top:6px; width:48px; height:22px; padding:0; margin:0; border:0; border-radius:4px; background:none; cursor:var(--cur-hand); }
+#gram-armhit:focus-visible { outline:1.5px solid #efd38d; outline-offset:0; }
+.hall-radio-ui #soundbtn { position:absolute; left:76px; top:39px; width:16px; height:16px; padding:0; margin:0; border:0; border-radius:50%; background:none; box-shadow:none; cursor:var(--cur-hand); }
+.hall-radio-ui #soundbtn svg { display:block; width:16px; height:16px; }
+.hall-radio-ui #soundbtn .hi { opacity:0; transition:opacity .15s; }
+.hall-radio-ui #soundbtn:hover .hi, .hall-radio-ui #soundbtn:focus-visible .hi { opacity:.22; }
+.hall-radio-ui #soundbtn .wave, .hall-radio-ui #soundbtn .mute { fill:none; stroke:#2A1210; stroke-width:.9; stroke-linecap:round; }
+.hall-radio-ui #soundbtn .wave { display:none; }
+.hall-radio-ui #soundbtn.on .wave { display:inline; }
+.hall-radio-ui #soundbtn.on .mute { display:none; }
+.hall-radio-ui #soundbtn:focus-visible, .hall-radio-volume:focus-visible { outline:1.5px solid #efd38d; outline-offset:1px; }
+.hall-radio-volume { position:absolute; left:8px; top:39px; width:58px; height:16px; padding:0; margin:0; background:transparent; appearance:none; -webkit-appearance:none; cursor:url(/cursors/ew.svg) 16 16, ew-resize; touch-action:none; }
+.hall-radio-volume::-webkit-slider-runnable-track { height:4px; box-sizing:border-box; background:#24190f; border:.6px solid #a97f48; border-radius:2px; }
+.hall-radio-volume::-moz-range-track { height:4px; box-sizing:border-box; background:#24190f; border:.6px solid #a97f48; border-radius:2px; }
+.hall-radio-volume::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:5px; height:12px; margin-top:-4.6px; box-sizing:border-box; border:.8px solid #29170e; border-radius:1px; background:#e2bd6e; }
+.hall-radio-volume::-moz-range-thumb { width:5px; height:12px; box-sizing:border-box; border:.8px solid #29170e; border-radius:1px; background:#e2bd6e; }
+/* the bigger volume slider below the lever (js/library.js) */
+#volpop { position:fixed; z-index:30; left:0; top:0; width:230px; box-sizing:border-box; padding:8px 14px; background:#1d0f0b; border:2px solid #b8893f; border-radius:10px; box-shadow:0 14px 30px rgba(0,0,0,.55); display:flex; flex-direction:column; gap:4px; opacity:0; transform:translateY(5px); pointer-events:none; transition:opacity .14s, transform .14s; }
+#volpop.on { opacity:1; transform:none; pointer-events:auto; }
+#volpop::after { content:""; position:absolute; left:var(--ax, 50%); top:-9px; margin-left:-8px; border:8px solid transparent; border-top:0; border-bottom-color:#b8893f; }
+#volpop::before { content:""; position:absolute; inset:-12px 0 auto 0; height:12px; }
+#volpop input { -webkit-appearance:none; appearance:none; width:100%; height:26px; margin:0; background:transparent; cursor:var(--cur-hand); --p:50%; }
+#volpop input::-webkit-slider-runnable-track { height:8px; border-radius:4px; background:linear-gradient(90deg, #d9ab52 0 var(--p), #3a2416 var(--p) 100%); box-shadow:inset 0 0 0 1px #5d4222; }
+#volpop input::-moz-range-track { height:8px; border-radius:4px; background:#3a2416; box-shadow:inset 0 0 0 1px #5d4222; }
+#volpop input::-moz-range-progress { height:8px; border-radius:4px; background:#d9ab52; }
+#volpop input::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:24px; margin-top:-8px; border-radius:3px; border:2px solid #1d0f0b; background:linear-gradient(90deg, #9a7339, #f0c96a, #b78b43); }
+#volpop input::-moz-range-thumb { width:12px; height:22px; border-radius:3px; border:2px solid #1d0f0b; background:linear-gradient(90deg, #9a7339, #f0c96a, #b78b43); }
+#volpop input:focus-visible { outline:2px solid #f0c96a; outline-offset:3px; border-radius:4px; }
+#volpop .ticks { display:flex; justify-content:space-between; font:600 11px Barlow, system-ui, sans-serif; color:#9c7a45; }
+#volpop .ticks button { all:unset; cursor:var(--cur-hand); padding:0 2px; }
+#volpop .ticks button:hover, #volpop .ticks button:focus-visible { color:#f0c96a; }
+#hall-return { cursor:var(--cur-hand); outline:none; }
+/* the paw tracks back to Park Nova (js/library.js parkReturn): they walk slowly on their own, right to left; on hover they turn lighter and glow and the
+   gilt label appears. The hover must not change the walk itself (no animation property here), or it restarts. */
+#hall-return .exit-paw { fill:#bea375; transition:fill .3s; opacity:.2; animation:pawwalk 6s ease-in-out infinite; animation-delay:calc((7 - var(--k)) * .4s); }
+@keyframes pawwalk { 0% { opacity:.2; } 7% { opacity:.9; } 50% { opacity:.8; } 70%, 100% { opacity:.2; } }
+#hall-return:hover .exit-paw, #hall-return:focus-visible .exit-paw { fill:#f3dba6; }
+#hall-return:focus-visible .exit-paw { stroke:#efd38d; stroke-width:.8; }
+#hall-return .exit-paws { transition:filter .35s; }
+#hall-return:hover .exit-paws, #hall-return:focus-visible .exit-paws { filter:drop-shadow(0 0 2px rgba(255, 214, 130, 1)) drop-shadow(0 0 5px rgba(255, 190, 90, .8)); }
+#hall-return .exit-label { opacity:0; transform:translateY(4px); transition:opacity .25s, transform .25s; pointer-events:none; }
+#hall-return:hover .exit-label, #hall-return:focus-visible .exit-label { opacity:1; transform:none; }
+@media (prefers-reduced-motion: reduce) { #hall-return .exit-paw { animation:none; opacity:.85; } }
 /* ----- the scene's motion ----- */
 .sway { transform-box: fill-box; transform-origin: 50% 100%; animation: sway 7s ease-in-out infinite alternate; }
 .hang { transform-box: fill-box; transform-origin: 50% 0; animation: sway 9s ease-in-out infinite alternate; }
@@ -39,9 +79,11 @@ body.hallpage #soundbtn .wave { display: none; } body.hallpage #soundbtn.on .wav
 .bay .lit { opacity: 0; transition: opacity .5s; mix-blend-mode: screen; pointer-events: none; }
 .bay:hover .lit, .bay:focus-visible .lit { opacity: .55; }
 .bay { cursor: var(--cur-hand); outline: none; }
-.plq text { transition: fill .4s; }
-.bay:hover .plq text, .bay:focus-visible .plq text { fill: #FFF1C4; }
-#ladder { transition: transform 1.6s cubic-bezier(.4, 0, .2, 1); }
+.plq { transition: filter .35s; }
+.plq.hot { filter: brightness(1.13) drop-shadow(0 0 5px rgba(255, 214, 140, .65)); }
+#ladder { transition: transform 1.3s cubic-bezier(.4, 0, .2, 1); }
+body.hallpage #hall-controls { visibility: hidden; }          /* (shown at once, not faded: a fade of this overlay, which covers the whole stage, made the browser composite the hall differently for its 0.7 s and the whole hall moved 2-4 px sideways and back) */
+body.hallpage.ready #hall-controls { visibility: visible; }
 #leaf { transition: transform 1.2s cubic-bezier(.4, 0, .2, 1); transform-box: fill-box; transform-origin: 100% 50%; }
 #door:hover #leaf { transform: scaleX(.72); }
 @media (prefers-reduced-motion: reduce) { .sway, .hang, .fl, .spark, .flame, .glow, .ember, .mote, .rmote { animation: none; } }

@@ -1,0 +1,20 @@
+/* The volume slider of the library pages (hall, cards, action cards, maps), beside the sound button; the bonus tiles have their own carved one (library_room.css).
+   A small brass panel hangs below the button and opens on hover (a mouse only) or keyboard focus; the volume is one setting for the whole library (js/library_sound.js).
+   On a touch screen there is no panel: the button stays a plain tap-to-mute (there is no hover, and the device has its own volume). */
+.libvol { --w: 38px; --r: 19px; position: relative; display: inline-flex; }
+.libvol-fixed { --w: 30px; --r: 15px; position: fixed; z-index: 30; right: 12px; top: 10px; }
+.libvol-fixed .soundplate { position: static; }
+.libvol-panel { position: absolute; z-index: 8; top: calc(100% + 8px); left: 50%; width: var(--w); margin-left: calc(var(--w) / -2); height: 132px; box-sizing: border-box; border: 2.5px solid #2A1210; border-radius: var(--r); background: linear-gradient(#F0CE7A, #B8862E); box-shadow: 0 3px 0 #2A1210;
+  opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-6px); transition: opacity .16s, transform .2s, visibility .16s; }
+.libvol-panel::before { content: ''; position: absolute; left: -6px; right: -6px; top: -12px; height: 12px; }
+.libvol-range { position: absolute; left: 50%; top: 12px; bottom: 12px; width: 20px; margin: 0 0 0 -10px; padding: 0; appearance: none; -webkit-appearance: none; writing-mode: vertical-lr; direction: rtl; background: transparent; cursor: var(--cur-hand, pointer); touch-action: none; --volume: 100%; }
+.libvol-range::-webkit-slider-runnable-track { width: 5px; height: 100%; border-radius: 3px; background: linear-gradient(to top, #2A1210 var(--volume), #7A5416 var(--volume)); box-shadow: inset 0 1px 2px #0006, 0 1px 0 #FFE9B0aa; }
+.libvol-range::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 20px; height: 11px; margin-left: -7.5px; border: 2px solid #F0CE7A; border-radius: 3px; background: #2A1210; box-shadow: 0 1px 2px #0008; }
+.libvol-range::-moz-range-track { width: 5px; height: 100%; border-radius: 3px; background: #7A5416; box-shadow: inset 0 1px 2px #0006; }
+.libvol-range::-moz-range-progress { width: 5px; border-radius: 3px; background: #2A1210; }
+.libvol-range::-moz-range-thumb { width: 16px; height: 7px; border: 2px solid #F0CE7A; border-radius: 3px; background: #2A1210; }
+.libvol-range:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.libvol:has(input:active) .libvol-panel, .libvol:has(:focus-visible) .libvol-panel { opacity: 1; visibility: visible; pointer-events: auto; transform: none; }
+@media (hover: hover) and (pointer: fine) { .libvol:hover .libvol-panel { opacity: 1; visibility: visible; pointer-events: auto; transform: none; } }
+@media (hover: none), (pointer: coarse) { .libvol-panel { display: none; } }
+@media (prefers-reduced-motion: reduce) { .libvol-panel { transition: none; } }

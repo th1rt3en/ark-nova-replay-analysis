@@ -22,6 +22,13 @@ OTHERS = {"science": "Science", "rock": "Rock", "water": "Water"}
 ICONS = {**SPECIES, **CONTINENTS, **OTHERS}               # tag -> the badge file name (web/badges/<name>.webp)
 
 
+def nice_name(name: str) -> str:
+    """The card name as the frontend writes it (web/js/util.js `title` + `niceNames`): every word capitalised, also after "(" ("(Domestic) Goat"), but not after an
+    apostrophe ("Horsfield's", where str.title() gives "Horsfield'S"); WAZA in capitals."""
+    out = re.sub(r"(^|[\s(-])(\w)", lambda m: m.group(1) + m.group(2).upper(), name.lower())
+    return re.sub(r"\bWaza\b", "WAZA", out)
+
+
 def plain(text: str) -> str:
     """The printed text without its markup: **bold**, {Appeal-2} icons become words."""
     text = re.sub(r"\*\*", "", text or "")
@@ -49,7 +56,7 @@ def main() -> None:
             icons.append("rock")
         if (c.get("water") or 0) > 0 and "water" not in icons:
             icons.append("water")
-        entry = {"key": key, "name": str(c.get("name", key)).title(), "type": kind, "source": c.get("source", "base"), "icons": icons}
+        entry = {"key": key, "name": nice_name(str(c.get("name", key))), "type": kind, "source": c.get("source", "base"), "icons": icons}
         words = [entry["name"], key, c.get("latinName", ""), c.get("endangeredCategory", ""), c.get("description") if isinstance(c.get("description"), str) else ""]
         if kind == "animal":
             ab = c.get("abilities") or []

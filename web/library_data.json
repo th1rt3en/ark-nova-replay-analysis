@@ -688,7 +688,7 @@
         },
         {
             "key": "A429",
-            "name": "Grevy'S Zebra",
+            "name": "Grevy's Zebra",
             "type": "animal",
             "source": "base",
             "icons": [
@@ -1470,7 +1470,7 @@
         },
         {
             "key": "A461",
-            "name": "Horsfield'S Tarsier",
+            "name": "Horsfield's Tarsier",
             "type": "animal",
             "source": "base",
             "icons": [
@@ -2169,7 +2169,7 @@
         },
         {
             "key": "A490",
-            "name": "Gould'S Monitor",
+            "name": "Gould's Monitor",
             "type": "animal",
             "source": "base",
             "icons": [
@@ -2845,7 +2845,7 @@
         },
         {
             "key": "A518",
-            "name": "Lesser Bird-Of-Paradise",
+            "name": "Lesser Bird-of-paradise",
             "type": "animal",
             "source": "base",
             "icons": [
@@ -3078,7 +3078,7 @@
         },
         {
             "key": "A528",
-            "name": "Bennett'S Wallaby",
+            "name": "Bennett's Wallaby",
             "type": "animal",
             "source": "base",
             "icons": [
@@ -4709,7 +4709,7 @@
         },
         {
             "key": "S227",
-            "name": "Waza Special Assignment",
+            "name": "WAZA Special Assignment",
             "type": "sponsor",
             "source": "base",
             "icons": [],
@@ -4718,7 +4718,7 @@
         },
         {
             "key": "S228",
-            "name": "Waza Small Animal Program",
+            "name": "WAZA Small Animal Program",
             "type": "sponsor",
             "source": "base",
             "icons": [],
@@ -5093,7 +5093,7 @@
         },
         {
             "key": "S263",
-            "name": "Waza Large Animal Program",
+            "name": "WAZA Large Animal Program",
             "type": "sponsor",
             "source": "base",
             "icons": [],

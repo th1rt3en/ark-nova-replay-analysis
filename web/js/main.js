@@ -20,7 +20,8 @@ import { setupLogFilter, refreshLogFilter } from './log-filter.js';
 import { fitDisplay, fitScale } from './layout.js';
 import { fitSidebar, followLog, logBelow, setupSidebar } from './sidebar.js';
 import { atEnd, atStart, buildMoveList, buildTimeline, go, goRound, goRoundBy, moveHash, moveNumbers, roundJumps, setPlaying, stepBy, stepOfHash, stepOfMove, updateTimeline } from './playback.js';
-import { applyTimeline, settingsOpen, setupSettings, toggleSettings } from './settings.js';
+import { applyTimeline, settingsOpen, setupSettings, toggleMute, toggleSettings } from './settings.js';
+import './mutepop.js';                                                       // (the panel that shows what the M key did)
 import { setupShortcuts, shortcutsOpen } from './shortcuts.js';
 import { initSandbox, renderSandboxTools } from './sandbox.js';
 import { forkBar, initFork, initForkReplay, renderForkMoves } from './fork.js';
@@ -63,7 +64,7 @@ document.addEventListener('playedmode', () => { S.lastBoard = null; render(); })
 // Redrawing keeps what did not change: the parts of a freshly drawn zone whose markup equals the one on show are put back as they were (the old elements, their pictures already
 // loaded), so only the changed zones are replaced (and flash). Used in the replay; a fork / sandbox / live game still replaces everything, because the handlers of its elements
 // close over the legal actions of the moment.
-const markup = (n) => (n.nodeType === 1 ? n.outerHTML.replace(/mt\d+/g, 'mt') : n.textContent);          // (the ids of the clip paths count up with every drawing)
+const markup = (n) => (n.nodeType === 1 ? n.outerHTML.replace(/\bmt\d+\b/g, 'mt') : n.textContent);          // (the ids of the clip paths count up with every drawing)
 function reconcile(old, fresh) {
   if (old.nodeType !== fresh.nodeType) return fresh;
   if (markup(old) === markup(fresh)) return old;
@@ -217,6 +218,7 @@ function init() {
     }
     if (settingsOpen() || shortcutsOpen() || povDialogOpen() || typing || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === 'Tab' && !MINIGAME) { if (cycleDockTab(e.shiftKey ? -1 : 1)) e.preventDefault(); return; }       // (Tab / Shift + Tab: the tabs of the shown cards, dock.js)
+    if (e.key === 'm' || e.key === 'M') { e.preventDefault(); toggleMute(); return; }          // (M: sound off / back to the volume it had, settings.js `toggleMute`)
     if ((e.key === 'q' || e.key === 'Q') && tabbedLayout()) { e.preventDefault(); zooStep(e.shiftKey ? -1 : 1); return; }          // (Q / Shift + Q: the other player board, only while the boards are Tabbed; the arrows on the board's name tab do the same, `zooStep`)
     const keys = { ArrowLeft: () => stepBy(-1), ArrowRight: () => stepBy(1), ' ': () => { document.activeElement?.blur?.(); setPlaying(!S.timer); }, Home: () => go(0), h: () => toggleDock(), H: () => toggleDock(), End: () => go(S.replay.steps.length - 1, 99) };
     if (S.results && !FORK && !PLAY && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) keys[e.key] = () => { if (!!S.gsGraph === (e.key === 'ArrowDown')) return; S.gsGraph = e.key === 'ArrowDown'; syncResults(); };       // (on the game stats: ↑ Table, ↓ Graph; the key of the view that is already open does nothing, no redraw)

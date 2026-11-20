@@ -12,7 +12,7 @@
 import { S } from './state.js';
 import { motionOff } from './motion.js';
 
-const FILE = { step: 'step', draw: 'draw-card', play: 'play-card', shuffle: 'shuffle', discard: 'discard-card', chomp: 'chomp', drip: 'water-drip' };
+const FILE = { step: 'step', draw: 'draw-card', play: 'play-card', shuffle: 'shuffle', discard: 'discard-card', chomp: 'chomp', drip: 'water-drip', ding: 'score-ding', wood: 'score-wood' };
 export const SHUFFLE_MS = 650;                                           // the length of shuffle.mp3 (0.648 s)
 const SHUFFLE_GAP_MS = 250;                                              // between the two shuffles (two separate shuffles, not one long one)
 export const PRE_SHUFFLE_MS = 500;                                       // the pause between the new screen (the draft's lightbox closed) and the first shuffle
@@ -125,6 +125,12 @@ function playShuffle() {
   sound('shuffle', 0.9, 1, PRE_SHUFFLE_MS + SHUFFLE_MS + SHUFFLE_GAP_MS);
 }
 export const stepSoundOn = () => !!S.stepSound;
+// The final scoring show (endshow.js): the moment the chip with the points is stamped on the card. A card that scores = score-ding.mp3 (a bell), one that scores nothing = score-wood.mp3
+// (a short wooden pluck); both made by scripts/build_score_sounds.py. Only with "Animation sounds" on, at the sound volume, in every mode that has the show (replay, fork, live).
+export function scoreSound(scored) {
+  if (!S.stepSound) return;
+  sound(scored ? 'ding' : 'wood');
+}
 
 // One step BACK (the arrow key, the Previous button; never a jump): the sound of the step that is taken back, turned around. `k` = stepKind(the older state, the newer one), the kind of the step going forward:
 // the cards fly back (card-motion.js `runBack`) and each flight strikes its own hit when it starts (`noteBack`): leaving a hand / the display for the deck = the discard sound, coming into a hand or back onto the display = the draw sound.

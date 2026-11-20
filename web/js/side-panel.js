@@ -164,7 +164,6 @@ function headerStats(st, flash) {
   rnd.append(rh, el('i', 'dv'), th);
   centreInk(rn); centreInk(tn);
   const brk = flash('break', st.break_position, el('div', 'pill brk'), true);          // (no colour change while the marker advances: it hops from dot to dot, `hopBreak`; only the 9 flashes green)
-  brk.title = 'Break track: the break ends the round when the token reaches 9';
   const pips = el('div', 'pips');
   for (let k = 0; k < 9; k++) pips.append(el('i', k < st.break_position - 1 ? 'done' : k === st.break_position - 1 ? 'cur' : ''));
   const num = el('b', 'bn', st.break_position);
@@ -260,7 +259,6 @@ export function sidePanel(st) {
     const toks = p.tokens.filter((t) => BONUS_TOKENS.includes(t.type)).sort((x, y) => BONUS_TOKENS.indexOf(x.type) - BONUS_TOKENS.indexOf(y.type) || x.id - y.id);
     const bz = zoneNew(seat + ':bonustokens', toks.map((t) => t.type));
     const bons = el('span', 'bons');
-    bons.title = 'Bonus tokens';
     const items = toks.map((t) => bonusToken(t.type, bz.isNew(t.type) ? 'card-new' : ''));
     for (const g of bz.gone) items.splice(Math.min(g.index, items.length), 0, bonusToken(g.key, 'card-gone', true));      // a token that was just used fades away in its place
     bons.append(...items);
@@ -276,7 +274,6 @@ export function sidePanel(st) {
       const chosen = st.current_action && (st.current_action.owner != null ? st.current_action.owner : st.current_action.seat) === seat && st.current_action.slot === i + 1;          // (Hypnosis: the card of the other player's row)
       const c = el('span', 'ac' + (a.level === 2 ? ' lvl2' : '') + (chosen ? ' chosen' : ''));
       c.dataset.actionSeat = seat; c.dataset.actionType = a.type; c.dataset.actionView = 'sidebar';
-      c.title = 'Slot ' + (i + 1) + ': ' + ACTION_NAMES[a.type] + (a.level === 2 ? ' II' : '') + (a.variant ? ' (variant ' + a.variant + ')' : '');
       c.append(pic(ACTION_ICON[a.type], 40));
       const art = '/action_cards/' + a.type + '_' + (S.replay.marine_worlds ? a.variant : 0) + '_' + (a.level === 2 ? 2 : 1) + '.webp';     // the whole action card
       bindPreview(c, art, undefined, () => variantStatsBox(st, seat, a));
@@ -291,7 +288,7 @@ export function sidePanel(st) {
       }
       (a.tokens || []).forEach((t, k) => {                // the tokens that lie on the card: Venom (-> 2 money unless removed), Constriction (-2 strength), Multiplier
         const id = CARD_TOKEN_ICON[t]; if (!id) return;
-        const b = el('img', 'actoken'); b.src = iconUrl(id); b.alt = t; b.title = CARD_TOKEN_TEXT[t] || t; b.style.setProperty('--k', String(k));
+        const b = el('img', 'actoken'); b.src = iconUrl(id); b.alt = t; b.style.setProperty('--k', String(k));
         b.dataset.actionToken = t; b.dataset.tokenIndex = k;
         c.append(b);
       });
@@ -329,7 +326,7 @@ const BONUS_TOKEN_TEXT = { 'bonus-icon': 'Bonus icon: counts as one more icon of
                            'bonus-ignore-conditions': 'Ignore conditions: ignore one condition of an animal card', 'bonus-extra-shift': 'Extra shift: take an association worker back' };
 function bonusToken(type, cls, ghost) {
   const t = el('span', 'btoken ' + (cls || ''));
-  t.title = BONUS_TOKEN_TEXT[type] || type;
+  t.dataset.btype = type;          // (assoc-motion.js: the flights of a gained / used token)
   const id = S.iconNames[type];
   if (BONUS_TOKENS.includes(type)) { const k = hdPentagonSvg(type, 36); k.setAttribute('class', 'btoken-hd'); t.append(k); }          // (the pentagon of the track's bonus with its HD picture, like the Extra Shift on the board; no sprite)
   else if (id) { const img = el('img'); img.src = iconUrl(id); img.alt = type; img.height = 36; t.append(img); } else t.append(el('b', '', type));

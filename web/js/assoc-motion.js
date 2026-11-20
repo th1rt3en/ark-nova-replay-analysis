@@ -1,11 +1,12 @@
 // [module] Flights of the association side: the cylinders on the reputation / conservation tracks, the partner zoos and universities (supply of the association board <-> the player's slot,
-// refilled from the invisible deck in the break), the workers (info box icon <-> task slot, invisible deck -> icon), the cubes of supported projects and donations.
+// refilled from the invisible deck in the break), the workers (info box icon <-> task slot, invisible deck -> icon), the cubes of supported projects and donations, the bonus tokens of the
+// info box (track tile -> box when gained, box -> invisible deck when used).
 // Like action-motion.js: `captureAssoc(before, after)` measures the old picture before the render, `runAssoc(capture, api)` flies copies from there to the new places after it
 // (the real pieces are hidden until their copy has landed). Every glide has the pace of a card's glide (the same ease, 650-1500 ms by distance). What is counted (the number next
 // to the worker icon) changes when the piece leaves / arrives, not before.
 import { S } from './state.js';
 import { ICON_IDS, iconUrl, workerUrl } from './icons.js';
-import { trackMoves, taken, supplyChanges, workerMoves, newCubes } from './assoc-motion-plan.js';
+import { trackMoves, taken, supplyChanges, workerMoves, newCubes, bonusTokenMoves } from './assoc-motion-plan.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const $ = (sel) => document.querySelector(sel);
@@ -36,9 +37,16 @@ function imageGhost(href, r) {                                              // a
 }
 
 export function captureAssoc(before, after) {
-  const tracks = trackMoves(before, after), tk = taken(before, after), sup = supplyChanges(before, after), wk = workerMoves(before, after), cubes = newCubes(before, after);
-  if (!(tracks.length || tk.length || sup.refilled.length || wk.length || cubes.length)) return null;
-  const cap = { before, after, tracks, taken: tk, refilled: sup.refilled, workers: wk, cubes };
+  const tracks = trackMoves(before, after), tk = taken(before, after), sup = supplyChanges(before, after), wk = workerMoves(before, after), cubes = newCubes(before, after), btoks = bonusTokenMoves(before, after);
+  if (!(tracks.length || tk.length || sup.refilled.length || wk.length || cubes.length || btoks.length)) return null;
+  const cap = { before, after, tracks, taken: tk, refilled: sup.refilled, workers: wk, cubes, btoks };
+  // the bonus tokens: the tile a gained token comes from (still on the track before the render), the token a used one leaves from (still in the info box: the render drops it)
+  const usedN = {};
+  cap.btokShots = btoks.map((t) => {
+    if (t.kind === 'gain') return t.from ? rectOf($('[data-ctopt="' + t.from + '"][data-ctname="' + t.type + '"]')) : null;
+    const key = t.seat + ':' + t.type, all = boxTokens(t.seat, t.type), n = all[all.length - (usedN[key] = (usedN[key] || 0) + 1)];          // (equal tokens: the last ones go)
+    return n ? { rect: rectOf(n), copy: tokenCopy(n) } : null;
+  });
   cap.trackShots = tracks.map((t) => { const n = $('.trackcube[data-track="' + t.track + '"][data-seat="' + t.seat + '"]'); return { rect: rectOf(n), copy: n ? plainSvg(n) : null }; });
   cap.takenShots = tk.map((t) => { const n = $('image[data-supply="' + t.type + '"]'); return rectOf(n); });
   cap.tiles = {};
@@ -50,6 +58,17 @@ export function captureAssoc(before, after) {
   cap.bonusCubes = cubes.map((c) => (c.kind === 'project' && c.bonus >= 0 ? (() => { const n = $('image[data-bcube="' + c.bonus + '"][data-bseat="' + c.seat + '"]'); return { rect: rectOf(n), href: n && n.getAttribute('href'), bar: rectOf($('[data-abonus="' + c.bonus + '"][data-aseat="' + c.seat + '"]')) }; })() : null));
   return cap;
 }
+const boxTokens = (seat, type) => [...document.querySelectorAll('#side .pp[data-seat="' + seat + '"] .btoken[data-btype="' + type + '"]')];
+function tokenCopy(n) {                                                     // the pentagon of a bonus token (svg / img) that fills whatever it is put in
+  const c = (n.querySelector('svg, img') || n).cloneNode(true); c.removeAttribute('class'); c.setAttribute('width', '100%'); c.setAttribute('height', '100%'); c.style.cssText = 'width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))';
+  for (const d of c.querySelectorAll('[id]')) {                             // (the HD picture is clipped by a clipPath with an id: the copy gets ids of its own, or its picture would follow the original's, which is hidden)
+    const id = d.id, fresh = id + '-fly' + (++copies);
+    d.id = fresh;
+    for (const r of c.querySelectorAll('[clip-path="url(#' + id + ')"], [mask="url(#' + id + ')"], [filter="url(#' + id + ')"], [fill="url(#' + id + ')"]')) for (const a of ['clip-path', 'mask', 'filter', 'fill']) if (r.getAttribute(a) === 'url(#' + id + ')') r.setAttribute(a, 'url(#' + fresh + ')');
+  }
+  return c;
+}
+let copies = 0;
 function $$slots(seat, task) { return [...document.querySelectorAll('image[data-wtask="' + task + '"][data-wseat="' + seat + '"]')]; }
 
 // api = { animate, finish, hide, show, element, deckPoint, scale, glideEase, projectLanding }
@@ -69,7 +88,7 @@ export function runAssoc(cap, api) {
     const e = sized(api.element('cm-piece'), to);
     e.append(content);
     const dx = from.x - to.x, dy = from.y - to.y, sx = (from.w || to.w) / to.w, sy = (from.h || to.h) / to.h, T = j.duration || ms(from, to);
-    const frames = Array.from({ length: 41 }, (_, i) => { const t = i / 40, u = api.glideEase(t); return { offset: t, transform: `translate(${dx * (1 - u)}px,${dy * (1 - u)}px) scale(${sx + (1 - sx) * u},${sy + (1 - sy) * u})`, opacity: fadeIn ? Math.min(1, t / .14) : 1 }; });
+    const frames = Array.from({ length: 41 }, (_, i) => { const t = i / 40, u = api.glideEase(t); return { offset: t, transform: `translate(${dx * (1 - u)}px,${dy * (1 - u)}px) scale(${sx + (1 - sx) * u},${sy + (1 - sy) * u})`, opacity: fadeIn ? Math.min(1, t / .14) : j.fadeOut && t > .85 ? 1 - (t - .85) / .15 : 1 }; });          // (fadeOut: into the invisible deck, gone in the last part like a card)
     const a = api.animate(e, frames, T, delay, 'linear');
     settle(a, () => { hidden.forEach((n) => api.show(n)); e.remove(); });
     j.end = delay + T;
@@ -87,7 +106,7 @@ export function runAssoc(cap, api) {
   cap.tracks.forEach((t, i) => {
     const shot = cap.trackShots[i], node = $('.trackcube[data-track="' + t.track + '"][data-seat="' + t.seat + '"]'), to = rectOf(node);
     if (!shot.rect || !shot.copy || !to) return;
-    fly({ content: shot.copy, from: shot.rect, to, hidden: [node] });
+    fly({ content: shot.copy, from: shot.rect, to, hidden: [node], track: t.track + t.seat });
   });
 
   // 2. partner zoos / universities taken: from the supply of the association board to the slot (it can be smaller in the bar of an open drawer)
@@ -151,7 +170,28 @@ export function runAssoc(cap, api) {
     const here = !bc || !(bc.bar || bc.rect) ? (c.kind === 'project' && c.bonus >= 0 ? { panel: rectOf($('[data-bpos="' + c.bonus + '"][data-bpseat="' + c.seat + '"]')), bar: rectOf($('[data-abonus="' + c.bonus + '"][data-aseat="' + c.seat + '"]')) } : null) : null;
     const barSize = Math.max(size * 1.2, 20), from = bc && bc.bar ? { x: bc.bar.x, y: bc.bar.y, w: barSize, h: barSize } : bc && bc.rect ? bc.rect : here && here.panel ? here.panel : here && here.bar ? { x: here.bar.x, y: here.bar.y, w: barSize, h: barSize } : eye ? { x: eye.x, y: eye.y, w: size * .5, h: size * .5 } : { ...deck(), w: size * .5, h: size * .5 };
     const content = node.tagName.toLowerCase() === 'image' ? imageGhost(node.getAttribute('href'), to) : plainSvg(node);
-    fly({ content, from, to, delay: c.kind === 'project' ? () => api.projectLanding(c.key) : 0, hidden: [node], fadeIn: !(bc && bc.rect && !bc.bar), sync: c.kind === 'project' });          // (a project card played in this step: the cube waits until the card lies in its strip)
+    fly({ content, from, to, delay: c.kind === 'project' ? () => api.projectLanding(c.key) : 0, hidden: [node], fadeIn: !((bc && bc.rect && !bc.bar) || (!bc && here && here.panel)), sync: c.kind === 'project' });          // (a project card played in this step: the cube waits until the card lies in its strip)
+  });
+
+  // 6. bonus tokens of the info box. Gained: from its tile on the conservation track (5 / 8) or above the reputation track (16), after the player's cylinder has landed there; a token
+  // of no tile (a placement bonus...) comes out of the invisible deck. Used: from the box into the invisible deck, shrinking and fading like a card or the map 9 cube.
+  const gainN = {};
+  cap.btoks.forEach((t, i) => {
+    const shot = cap.btokShots[i];
+    if (t.kind === 'use') {
+      if (!shot || !shot.rect) return;
+      const d = deck(), w = shot.rect.w * .45, h = shot.rect.h * .45;
+      const k = gainN['use' + t.seat] = (gainN['use' + t.seat] || 0) + 1;
+      fly({ content: shot.copy, from: shot.rect, to: { x: d.x, y: d.y, w, h }, fadeOut: true, delay: (k - 1) * 130 });
+      return;
+    }
+    const key = t.seat + ':' + t.type, all = boxTokens(t.seat, t.type), k = gainN[key] = (gainN[key] || 0) + 1;
+    const node = all[all.length - cap.btoks.filter((x) => x.kind === 'gain' && x.seat === t.seat && x.type === t.type).length + k - 1], to = rectOf(node);
+    if (!to) return;
+    node.classList.remove('card-new');
+    const cyl = jobs.find((j) => j.track === (t.from === '99' ? 'rep' : 'cons') + t.seat);
+    const from = shot ? { x: shot.x, y: shot.y, w: shot.w, h: shot.h } : { ...deck(), w: to.w * .6, h: to.h * .6 };
+    fly({ content: tokenCopy(node), from, to, hidden: [node], fadeIn: !shot, sync: true, delay: () => (cyl && cyl.end ? cyl.end : 0) + (k - 1) * 130 });
   });
 
   return function go() {

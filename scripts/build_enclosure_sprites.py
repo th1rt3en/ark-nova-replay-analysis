@@ -157,6 +157,8 @@ def main() -> None:
         anchor = (cells[0][0], cells[0][1])
         save(key, *sprite(sheet, cells, anchor), cells)
 
+    if (OUT / "pavilion_hd.webp").exists():                       # the approved pavilion (scripts/compress_hd_icons.py) replaces the cut of the sheet; same logical size
+        meta["pavilion"]["image"] = "pavilion_hd.webp"
     (OUT / "sprites.json").write_text(json.dumps({"hex_radius": R, "sprites": meta}, indent=4))
     print(f"saved {len(meta)} sprites to {OUT}")
     if args.contact_sheet:

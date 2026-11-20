@@ -10,6 +10,8 @@ import { playFork, renderForkMoves, warnIrreversible } from './fork.js';
 import { mountChat } from './chat.js';
 import { chatTab } from './sidebar.js';
 import { expandLagoonDeal, personStep } from './lagoon-deal.js';
+import { expandMapReveal, mapRevealLabels } from './map-reveal.js';
+import { showEngineEnd } from './endshow.js';
 
 const P = S.play;
 
@@ -118,7 +120,7 @@ async function playApi(path, body) {
   return { ok: res.ok, status: res.status, body: data };
 }
 function playStep(p, index) {
-  return { index, move_id: null, label: p.label || '', state: { ...p.view, main_deck_known: 0 }, engine: { source: 'engine', status: 'ok', detail: '' }, options: (p.decision && p.decision.options) || null,
+  return { index, move_id: null, label: p.label || (index === 0 ? 'The game starts' : ''), state: { ...p.view, main_deck_known: 0 }, engine: { source: 'engine', status: 'ok', detail: '' }, options: (p.decision && p.decision.options) || null,
            actor: null, label_pov: null, fork: false, actions: (p.decision && p.decision.actions) || [], version: p.version };
 }
 export async function playLoad() {
@@ -148,7 +150,8 @@ export async function playLoad() {
   const logRes = await playApi('/log' + (P.token ? '?s=' + encodeURIComponent(P.token) : '')).catch(() => null);
   if (logRes && logRes.ok && Array.isArray(logRes.body.log)) saved = logRes.body.log;
   saved = (Array.isArray(saved) ? saved : []).filter((e) => e && typeof e.label === 'string' && e.version < state.body.version);
-  const past = saved.map((e, i) => ({ ...playStep(state.body, i), label: e.label, label_pov: e.label_pov || null, log_only: true, options: null, actions: [], version: e.version }));       // (text only: they show the current board)
+  const past = saved.flatMap((e) => (mapRevealLabels(e.label) || [e.label]).map((label) => ({ label, label_pov: mapRevealLabels(e.label) ? null : e.label_pov || null, version: e.version })))
+    .map((e, i) => ({ ...playStep(state.body, i), label: e.label, label_pov: e.label_pov, log_only: true, options: null, actions: [], version: e.version }));       // (text only: they show the current board)
   const steps = [...past, playStep(state.body, past.length)];
   return { ...setup.body, table_id: P.id, result: [], setup_steps: 0, steps };
 }
@@ -168,7 +171,7 @@ export function pushLive(p) {
   const hadMove = S.replay.steps.some((st) => (st.actions || []).length > 0);
   for (const st of S.replay.steps) st.actions = [];                          // (only the latest position can be played)
   const lastState = S.replay.steps[S.replay.steps.length - 1].state;
-  const batch = expandLagoonDeal(lastState, [playStep(p, S.replay.steps.length)]);          // (Map 14: the starting hands come with the person sponsors, steps of their own)
+  const mapSteps = expandMapReveal([playStep(p, S.replay.steps.length)]), batch = expandLagoonDeal(lastState, mapSteps);          // (Map 14: the starting hands come with the person sponsors, steps of their own)
   const firstNew = S.replay.steps.length, next = batch[batch.length - 1];
   for (const st of batch) { st.index = S.replay.steps.length; S.replay.steps.push(st); }
   stageBreaks(S.replay);
@@ -180,8 +183,10 @@ export function pushLive(p) {
       if (r.ok && r.body.maps.length) { Object.assign(S.replay, { maps: r.body.maps, map_names: r.body.map_names, map_images: r.body.map_images, map_views: r.body.map_views, cards: r.body.cards, base_projects: r.body.base_projects }); go(S.replay.steps.length - 1); }
     });
   }
-  if (wasLast) { if (batch.length > 1) go(firstNew, 0, true); else go(S.replay.steps.length - 1); } else renderForkMoves();
-  if (p.view && p.view.end) showGameEnd(p.view.end);
+  const end = p.view && p.view.end;                                          // (the move that ends the game: the final scoring show first, then the end screen; endshow.js)
+  const shown = !!end && wasLast && showEngineEnd(S.replay.steps.length - 1, (i) => go(i), () => showGameEnd(end));
+  if (shown) { /* the show goes to the last step itself */ } else if (wasLast) { if (batch.length > 1 && mapSteps.length === 1) go(firstNew, 0, true); else go(S.replay.steps.length - 1); } else renderForkMoves();
+  if (end) { if (!shown) showGameEnd(end); }
   else playEndCheck();
   if (!hadMove && next.actions.length) turnAlert('It is your turn');                  // the turn has just passed to this player (not after the player's own move)
 }
@@ -342,7 +347,7 @@ function beep() {
   } catch (e) { /* the browser does not allow sound yet */ }
 }
 function stopTitleFlash() {
-  if (titleTimer) { clearInterval(titleTimer); titleTimer = null; document.title = 'Play ' + P.id + ' - Ark Nova Park'; }
+  if (titleTimer) { clearInterval(titleTimer); titleTimer = null; document.title = 'Play ' + P.id + ' - Park Nova'; }
 }
 function turnAlert(text) {
   if (!alertsOn || P.seat === null) return;
@@ -350,7 +355,7 @@ function turnAlert(text) {
   if (document.hidden || !document.hasFocus()) {
     if (!titleTimer) {
       let on = false;
-      titleTimer = setInterval(() => { on = !on; document.title = on ? '\u{1F514} ' + text : 'Play ' + P.id + ' - Ark Nova Park'; }, 1000);
+      titleTimer = setInterval(() => { on = !on; document.title = on ? '\u{1F514} ' + text : 'Play ' + P.id + ' - Park Nova'; }, 1000);
     }
     try { if (window.Notification && Notification.permission === 'granted') new Notification('Ark Nova', { body: text, tag: 'ark-nova-turn-' + P.id }); } catch (e) { /* not allowed */ }
   }
@@ -487,7 +492,7 @@ export function playHeadline() {                                             // 
   line.textContent = text;
 }
 export function initPlay() {
-  document.title = 'Play ' + P.id + ' - Ark Nova Park';
+  document.title = 'Play ' + P.id + ' - Park Nova';
   if ($('chatroot') && !P.chat) {                                              // the chat of the table: the players write with their seat token, a spectator needs an account
     let chat = null;
     const onUnread = chatTab(() => chat);

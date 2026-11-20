@@ -7,7 +7,7 @@
 <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
-<title>Importing a log - Ark Nova Park</title>
+<title>Importing a log - Park Nova</title>
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/css/lobbies.css">
 <link rel="stylesheet" href="/css/park-fonts.css">
@@ -19,7 +19,7 @@
 <h1>Importing the game log</h1>
 <div id="msg" role="status" class="loading">Waiting for the log from the browser extension…</div>
 </main>
-<script src="/js/logstore.js"></script>
+<script src="/js/logstore.js?v=20261117a"></script>
 <script>
 // The browser extension (extension/) opens this page from a BGA review page and posts the captured log to it. When it opens the page without a click
 // (?ark=auto: the base projects were collected in the background) there is no opener: the extension's script on this page posts the message to the page itself.
@@ -46,6 +46,7 @@ if (!/^\d+$/.test(table || '') || !(window.opener || auto)) {
     const index = d.index && typeof d.index === 'object' ? d.index : null;
     if (index && String(index.id) !== table) { show('The table info is about another table (' + index.id + ').', 'error'); return; }
     started = true;
+    if (auto) window.postMessage({ type: 'ark-nova-log-ack', table }, location.origin);       // (the extension's script stops sending it)
     show('Opening the replay…', 'loading');
     try {
       // (no round trip to the server here: the replay page sends the log, which the server verifies first and answers with the reason when it cannot be used)
@@ -61,11 +62,13 @@ if (!/^\d+$/.test(table || '') || !(window.opener || auto)) {
     } catch (err) { show('Could not keep the log in this browser, try again.', 'error'); }
   });
   if (window.opener) window.opener.postMessage({ type: 'ark-nova-import-ready' }, '*');
+  if (auto) window.postMessage({ type: 'ark-nova-import-ready', table }, location.origin);       // (the extension's script on this page sends the log as soon as the page listens)
   if (auto) setTimeout(() => {
     if (started) return;
     show('The extension has not sent the log. Go back to the BGA game review page and click "Open in Ark Nova Replay" again. If nothing happens, allow the extension to access this site (browser add-on settings, Permissions).', 'error');
   }, 8000);
 }
 </script>
+<script type="module" src="/js/tooltip.js"></script>
 </body>
 </html>

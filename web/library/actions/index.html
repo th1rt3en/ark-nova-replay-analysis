@@ -10,9 +10,11 @@
 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/park-fonts.css">
 <link rel="stylesheet" href="/css/library_actions.css">
+<link rel="stylesheet" href="/css/library_volume.css?v=20261115t">
 </head>
 <body class="binderpage">
 <a class="plate" href="/library">&larr; Library</a>
+<span class="libvol libvol-fixed"><button class="plate soundplate" id="roomsound" type="button" aria-pressed="false" aria-label="Sound off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path class="wave" d="M15.5 9.5a3.6 3.6 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/><path class="mute" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button><span class="libvol-panel"><input class="libvol-range" type="range" min="0" max="100" step="1" value="100" orient="vertical" aria-label="Volume"></span></span>
 <main id="fit" aria-label="The action cards, a ring binder">
   <div id="stage">
     <div class="binder" aria-hidden="true"><div class="cover l"></div><div class="cover r"></div><div class="spine"></div></div>
@@ -23,6 +25,8 @@
   </div>
 </main>
 <dialog id="big" aria-label="Action card, both sides"><button type="button" id="bigclose" aria-label="Close">&times;</button><button type="button" class="step" id="bigprev" aria-label="Previous card">&lsaquo;</button><div class="pair" id="pair"></div><button type="button" class="step" id="bignext" aria-label="Next card">&rsaquo;</button></dialog>
-<script type="module" src="/js/library_actions.js"></script>
+<script type="module" src="/js/library_actions.js?v=20261115w"></script>
+<script type="module" src="/js/library_sound.js?v=20261120a"></script>
+<script type="module" src="/js/tooltip.js"></script>
 </body>
 </html>

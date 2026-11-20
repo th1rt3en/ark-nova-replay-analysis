@@ -38,20 +38,23 @@ function apply(keep) {
 
 /* ---------- a mounted card ---------- */
 const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 10000) / 10000; }; };
+// Decorative glassine pockets share the card's transform and clone with page turns.
+const PHOTO_CORNERS = '<svg class="photo-pocket" viewBox="0 0 25 25" aria-hidden="true"><path class="under" d="M1.4 24L24.2 1.5"/><path class="face" d="M.7 1.4L23.8 .6Q24.7 .5 24.4 1.4L1.4 24.2Q.5 24.8 .6 23.5Z"/><path class="fold" d="M.7 1.4L23.8 .6L21.6 2.7L2.9 3.3L2.5 22.9L1.4 24.2L.6 23.5Z"/><path class="fold" d="M1.4 23.1L23.3 1.1L22.5 3.2L3.2 22.7Z" opacity=".7"/><path class="rim" d="M.7 22.6L.9 1.5L22.9 .7"/><path class="seam" d="M1 24L10.4 14.8L16.3 8.6L24.1 1"/><path class="glint" d="M3.4 20.9L10.7 13.6M12 12.3L20.5 3.7M3 3.2L10.5 2.9M2.6 5.5L2.5 10.5"/><path class="scuff" d="M5.1 7.2L8.8 5.7M6.5 11.9L10.2 9.1M10.8 5.1L15 3.9M4.2 15.6L6.3 13.8M14.3 6.5L16.2 5.6M3.9 5.1L5.4 4.6"/></svg>'.repeat(4);
 function mount(c, w) {
   const r = hash(c.key + 'x'); r(); r();
   let rot = (r() - .5) * 7; const k = r(); if (k < .2) rot *= 2.1; else if (k > .82) rot *= .25;          // (most a little crooked, some clearly, a few nearly straight)
   const m = el('div', 'mount'); m.style.width = w + 'px'; m.style.setProperty('--rot', rot.toFixed(2) + 'deg'); m.style.setProperty('--dx', ((r() - .5) * 12).toFixed(1) + 'px'); m.style.setProperty('--dy', ((r() - .5) * 10).toFixed(1) + 'px');
   const file = () => c.key + (c.view === 'mw' ? '_MW' : '') + '.webp';
-  const b = el('button', 'card'); b.type = 'button'; b.title = c.name;
+  const b = el('button', 'card'); b.type = 'button'; b.setAttribute('aria-label', c.name);
   const img = el('img'); img.alt = c.name; img.width = 360; img.height = 503; img.src = '/cards/' + file(); img.decoding = 'async';
   b.append(img); b.onclick = () => { $('bigimg').src = '/cards_large/' + file(); $('bigimg').alt = c.name; $('big').showModal(); };
   m.append(b);
   if (c.mw) {          // the Marine Worlds printing of the card: a round switch at its edge
-    const s = el('button', 'mw', 'MW'); s.type = 'button'; s.title = 'Marine Worlds printing'; s.setAttribute('aria-pressed', String(c.view === 'mw'));
+    const s = el('button', 'mw', 'MW'); s.type = 'button'; s.setAttribute('aria-label', 'Marine Worlds printing'); s.setAttribute('aria-pressed', String(c.view === 'mw'));
     s.onclick = () => { c.view = c.view === 'mw' ? 'base' : 'mw'; s.setAttribute('aria-pressed', String(c.view === 'mw')); img.src = '/cards/' + file(); };
     m.append(s);
   }
+  m.insertAdjacentHTML('beforeend', PHOTO_CORNERS);
   return m;
 }
 
@@ -112,14 +115,14 @@ const resets = [];
 function buildDrawer() {
   let n = 0;
   for (const [g, list] of Object.entries(STAMPS)) for (const [icon, badge, name, ink] of list) {
-    const b = el('button', 'stamp'); b.type = 'button'; b.title = name; b.setAttribute('aria-label', name); b.setAttribute('aria-pressed', 'false'); b.style.setProperty('--pc', ink);
+    const b = el('button', 'stamp'); b.type = 'button'; b.setAttribute('aria-label', name); b.setAttribute('aria-pressed', 'false'); b.style.setProperty('--pc', ink);
     const base = el('span', 'base'), img = el('img'); img.src = '/badges/' + badge + '.webp'; img.alt = ''; base.append(img); b.append(el('span', 'grip'), base);
     const rot = ((n++ * 47) % 31) - 15;
     let print = null;
     const set = (on, quiet) => {
       if (on === sel[g].has(icon)) return;
       b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on));
-      if (on) { sel[g].add(icon); print = el('button', 'print'); print.type = 'button'; print.title = name + ': remove'; print.setAttribute('aria-label', name + ': remove'); print.style.setProperty('--pc', ink); print.style.setProperty('--rot', rot + 'deg'); const i = el('img'); i.src = img.src; i.alt = ''; print.append(i); print.onclick = () => set(false); $('prints').append(print); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); }
+      if (on) { sel[g].add(icon); print = el('button', 'print'); print.type = 'button'; print.setAttribute('aria-label', name + ': remove'); print.style.setProperty('--pc', ink); print.style.setProperty('--rot', rot + 'deg'); const i = el('img'); i.src = img.src; i.alt = ''; print.append(i); print.onclick = () => set(false); $('prints').append(print); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); }
       else { sel[g].delete(icon); print?.remove(); print = null; }
       if (!quiet) apply();
     };

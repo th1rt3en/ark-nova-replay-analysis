@@ -143,7 +143,7 @@ const NAV_ARROW = { '-1': '<path d="M17 3v14l-9-7zM8 3v14l-9-7z" transform="tran
 const NAV_KEY = { '-1': '<path d="M19 12H6m5-6-6 6 6 6"/>', '1': '<path d="M5 12h13m-5-6 6 6-6 6"/>' };
 function draftNav(d, labels = true) {          // (`labels`: the word and the key cap under the button, only in the action card draft)
   const b = el('button', 'draftnav ' + (d < 0 ? 'back' : 'next'));
-  b.type = 'button'; b.title = (d < 0 ? 'Back' : 'Next') + ' (arrow key ' + (d < 0 ? 'left' : 'right') + ')';
+  b.type = 'button';
   b.disabled = d < 0 ? atStart() && !canChoosePov() : atEnd();          // (the first step of a replay: Back goes on to the choice of the spectated player)
   b.innerHTML = '<span class="dnbtn"><svg class="dnglyph" viewBox="0 0 20 20" aria-hidden="true">' + NAV_ARROW[d] + '</svg></span>'
     + (labels ? '<span class="dnlab">' + (d < 0 ? 'Back' : 'Next') + '<kbd><svg viewBox="0 0 24 24" aria-hidden="true">' + NAV_KEY[d] + '</svg></kbd></span>' : '');
@@ -164,11 +164,9 @@ function draftBar(bar, d) {
     const sel = mine.length ? (keepSel.get('d' + seat) || []) : [];
     if (mine.length) keepSel.set('d' + seat, sel);
     const head = el('div', 'drafthead actionhead', 'Action card draft');       // (always this text, in the teal ribbon of parkposter.css; the player is only in the tooltip)
-    head.title = S.replay.players[seat].name;
     const row = el('div', 'draftcards');
     if (d.stage === 'pick2' && (d.picked[seat] || []).length) {          // the second pick: the card picked in the first round stays in a green zone to the left
       const zone = el('div', 'draftkept');
-      zone.title = 'Picked in the first round';
       const v = d.picked[seat][0];
       const card = el('div', 'draftcard picked');
       const img = el('img'); img.src = draftCardUrl(v); img.alt = v;
@@ -180,10 +178,8 @@ function draftBar(bar, d) {
     for (const v of offers) {
       const mark = seat + ':' + v;
       const card = el('div', 'draftcard' + (chosen.includes(v) ? ' picked' : chosen.length ? ' passed' : '') + (draftMarks.has(mark) ? ' marked' : ''));
-      card.title = 'Click to highlight this card (the highlight goes away at the next step)';
       card.addEventListener('click', () => { if (draftMarks.has(mark)) draftMarks.delete(mark); else draftMarks.add(mark); card.classList.toggle('marked'); });
       if (mine.length && mine.some((a) => (a.kind === 'draft_keep' ? a.args.keep.includes(v) : a.args.variant === v))) {
-        card.title = 'Click to choose this card; click another to change the choice';
         card.classList.add('choosable');
         card.classList.toggle('marked', sel.includes(v));
         choosers.push([card, v]);
@@ -191,7 +187,7 @@ function draftBar(bar, d) {
       const img = el('img'); img.src = draftCardUrl(v); img.alt = v; img.loading = 'lazy';
       card.append(img);
       if (chosen.includes(v)) card.append(el('span', 'draftcheck', '✓'));
-      if (d.auto && d.auto[seat] === v) card.title = 'Added at random: the three variants were of one action card';
+     
       bindPreview(card, () => draftCardUrl(v));
       row.append(card);
     }
@@ -333,7 +329,7 @@ export function actionBar(st, kind = frameKind(), bar = $('actionbar')) {
     b.append(pic(ACTION_ICON[a.type], 22), el('b', '', str));
     (a.tokens || []).forEach((t, k) => {                                 // the tokens that lie on the card (Venom, Constriction, Multiplier), as in the tracker
       const id = CARD_TOKEN_ICON[t]; if (!id) return;
-      const tk = el('img', 'actoken'); tk.src = iconUrl(id); tk.alt = t; tk.title = CARD_TOKEN_TEXT[t] || t; tk.style.setProperty('--k', String(k));
+      const tk = el('img', 'actoken'); tk.src = iconUrl(id); tk.alt = t; tk.style.setProperty('--k', String(k));
       tk.dataset.actionToken = t; tk.dataset.tokenIndex = k;          // (the Multiplier is drawn as BGA's blue disc, like in the player box: parkposter.css)
       b.append(tk);
     });
@@ -534,9 +530,9 @@ function takeBar(bar, o, seat) {
 // player; money and X token gains happen by themselves (no button).
 const EFFECT_TEXT = {
   build: 'Build', take: 'Take a card', reveal: 'Reveal cards', sell: 'Sell cards', mark: 'Mark', marketing: 'Marketing', donation: 'Donate', digging: 'Dig',
-  scavenge: 'Scavenge', glide: 'Glide', glide_gain: 'Glide', shark: 'Shark attack', symbiosis: 'Symbiosis', cut_down: 'Cut down', trade: 'Trade', extra_shift: 'Extra Shift',
+  scavenge: 'Scavenge', glide: 'Glide', glide_gain: 'Glide', shark: 'Shark Attack', symbiosis: 'Symbiosis', cut_down: 'Cut down', trade: 'Trade', extra_shift: 'Extra Shift',
   assertion: 'Assertion', dominance: 'Dominance', pilfer: 'Pilfer', venom: 'Venom', constrict: 'Constriction', hypnosis: 'Hypnosis', pay_appeal: 'Pay appeal', slot1: 'Card to slot 1', boost: 'Boost',
-  waza: 'Waza', reposition: 'Reposition', pouch: 'Pouch a card', search_discard: 'Search the discard pile', upgrade: 'Upgrade an action card', threshold2: 'Upgrade or worker',
+  waza: 'WAZA', reposition: 'Reposition', pouch: 'Pouch a card', search_discard: 'Search the discard pile', upgrade: 'Upgrade an action card', threshold2: 'Upgrade or worker',
   threshold_bonus: 'Conservation bonus', endgame_discard: 'Discard an endgame card', adapt: 'Adapt', break_discard: 'Discard to the hand limit', take_tile: 'Take a tile',
   move_in: 'Move in', archaeologist: 'Archaeologist', species_bonus: 'Species bonus', income_appeal: 'Income', project_bonus: 'Project bonus', tutor: 'Search for a card', search_sponsor: 'Find a Sponsor', reef: 'Reef', ability: 'Animal ability',
 };
@@ -607,14 +603,14 @@ function effectButton(e) {
   } else if ((e.kind === 'wave' || e.kind === 'shark') && e.source === 'map14') {          // the placement bonus of map 14 that is its own effect: the same button (icon + name) as when it is one of several bonuses
     const id = ICON_IDS['bonus:' + (e.kind === 'wave' ? 'wave' : 'shark-attack')];
     if (id) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(id); i.alt = ''; i.height = 28; b.append(i); }
-    b.append(el('b', '', e.kind === 'wave' ? 'Wave' : 'Shark attack'));
+    b.append(el('b', '', e.kind === 'wave' ? 'Wave' : 'Shark Attack'));
   } else if (e.kind === 'gain_worker' && ICON_IDS['bonus:Worker']) {            // the worker of reputation 8
     const wi = el('img', 'icon'); wi.decoding = 'sync'; wi.src = iconUrl(ICON_IDS['bonus:Worker']); wi.alt = 'Worker'; wi.height = 28;
     b.append(el('b', '', 'Gain a worker'), wi);
     b.title = 'Reputation track: gain a worker';
   } else if (e.kind === 'continent') {                                          // map 9: "Remove a cube from [continent badge]" (the badge is round)
     b.append(el('b', '', 'Remove a cube' + (e.continent ? ' from' : '')));
-    if (e.continent) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = '/badges/' + e.continent + '.webp'; i.alt = e.continent; i.title = e.continent; i.height = 30; i.style.borderRadius = '50%'; b.append(i); }
+    if (e.continent) { const i = el('img', 'icon'); i.decoding = 'sync'; i.src = '/badges/' + e.continent + '.webp'; i.alt = e.continent; i.height = 30; i.style.borderRadius = '50%'; b.append(i); }
     b.title = 'Map 9: remove a continent marker' + (e.continent ? ' (' + e.continent + ')' : '') + ' for a bonus - optional';
   } else if (e.kind === 'pay_appeal') {                                          // "Pay 2 money: 1 appeal" with the icons
     const pay = amountIcon('money', 2), gain = amountIcon('appeal', 1);

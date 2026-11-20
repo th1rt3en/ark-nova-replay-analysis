@@ -2,6 +2,7 @@
 // player is online, so others can invite them) and shows, at the bottom right, the invitations to a lobby (Accept / Decline) and the messages (an invitation was declined, you were
 // removed from a lobby, a lobby was closed). Nothing happens without an account or when the lobbies are switched off (404).
 import { onPush, pushReady } from './push.js';
+import './tooltip.js';                                                                  // (our tooltip in place of the browser's, on every page that has the notifications)
 const POLL_MS = 10000, SAFETY_MS = 120000;                                                 // (every request is a call of the Lobbies Durable Object: a few thousand an hour from an open tab was too many)
 const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
 

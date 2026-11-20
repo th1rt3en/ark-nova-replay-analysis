@@ -1139,7 +1139,6 @@ function roos() {
     || ell.some(([cx, cy, rx, ry]) => ((x - cx) / (rx + m)) ** 2 + ((y - cy) / (ry + m)) ** 2 < 1);
   const under = (x, y, m) => canopy.some(([cx, cy, r]) => (x - cx) ** 2 + (y - cy) ** 2 < (r + m) ** 2);
   const solid = (x, y, pad = 0) => near(x, y, 12 + pad) || near(x, y - 44, 12 + pad) || near(x, y - 92, 12 + pad) || under(x, y, 12 + pad) || under(x, y - 44, 3 + pad);   // feet, middle and head of a kangaroo
-  const inPond = (x, y) => wet(x, y) || [0, 1, 2, 3, 4, 5, 6, 7].some((i) => wet(x + Math.cos(i * .785) * 32, y + Math.sin(i * .785) * 32)); // the water, with a margin of 32
   // The emus' lane is an obstacle of its own (painted below): the strip that the adult emus fill along the low path, from their head down, with rounded ends. It follows the path's curve, so the kangaroos neither cross nor land in it.
   const GRID = 8, ROO_R = 114, LANE_END = 90, LANE_GAP = 140;
   const HEDGE_CLEARANCE = 140; // Includes the raised body, ears and sideways reach during flight.

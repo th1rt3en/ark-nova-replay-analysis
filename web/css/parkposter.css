@@ -69,7 +69,7 @@ body.viewer .labelamount.labelm b, body.viewer .labelamount.labeldk b, body.view
 body.viewer .labelamount b { translate: var(--nx, 0) var(--ny, 0); }                  /* (log-labels.js `centreInk`: the digits' own middle on the middle of the icon) */
 body.viewer .labeldk b, body.viewer .movepill .abtn .labeldk b { color: #000; -webkit-text-stroke: 0; }                  /* (appeal and conservation: black numbers, as on the map and the tracks) */
 body.viewer .movepill .labelamount { --ah: 1.5em; }
-body.viewer .acticon { position: relative; display: inline-flex; box-sizing: content-box; vertical-align: -.33em; margin: 0 .08em 0 .22em; border: .14em solid var(--act1); border-radius: .31em; background: #fff; line-height: 0; cursor: help; }      /* (the action card of the player box, `.ppactions .ac`, in the em of the text: 46 px there = 1.6em here) */
+body.viewer .acticon { position: relative; display: inline-flex; box-sizing: content-box; vertical-align: -.33em; margin: 0 .08em 0 .22em; border: .14em solid var(--act1); border-radius: .31em; background: #fff; line-height: 0; }      /* (the action card of the player box, `.ppactions .ac`, in the em of the text: 46 px there = 1.6em here) */
 body.viewer .acticon.lvl2 { border-color: var(--act2); }
 body.viewer .acticon img.icon { width: 1.32em; height: 1.32em; margin: 0; display: block; }
 body.viewer .acticon .acvar { position: absolute; left: -.38em; top: -.38em; width: .87em; height: .87em; border-radius: 50%; box-shadow: 0 1px 2px rgba(0, 0, 0, .55); pointer-events: none; }
@@ -308,7 +308,8 @@ body.viewer .sidebar .moves { flex: 1 1 0; min-height: 0; padding: 8px 10px; bac
 body.viewer .moves li { align-items: flex-start; line-height: 1.5; padding: 5px 0 5px 6px; border-bottom: 2px dashed rgba(23, 38, 43, .25); border-left-width: 5px; }
 body.viewer .moves li:hover { background: rgba(244, 182, 63, .3); }
 body.viewer .moves li.on { background: rgba(238, 108, 43, .3); font-weight: 700; }
-body.viewer .moves .n { color: var(--ink); opacity: .5; min-width: 34px; font-weight: 700; }
+body.viewer .moves .n { color: var(--ink); opacity: .5; min-width: 34px; font-weight: 700; align-self: baseline; }          /* (the move number sits on the first line of the step text: on its baseline, so a line made taller by an icon keeps the number level with its words) */
+body.viewer .moves li > .n + * { align-self: baseline; }          /* (the step text joins the baseline alignment: flex lines up only the items that are all set to baseline) */
 
 /* the check mark of the engine badge (the engine agrees with the log): a drawn check, thick and big, in the log and in the move bar */
 body.viewer .engine-badge.engine { display: block; flex: none; padding: 0; min-width: 0; line-height: 0; color: #1c6b2a; }
@@ -655,15 +656,16 @@ body.viewer .zoo.mappreview .zooRow { margin: 0; border-radius: 12px; box-shadow
 body.viewer .zoo h2 .mapsep { flex: none; width: 2px; height: 18px; margin: 0 3px; background: rgba(248, 237, 203, .4); }
 body.viewer .zoo h2 .mapbadge { position: relative; flex: none; padding: 3px 7px 2px; border: 2px solid rgba(248, 237, 203, .6); border-radius: 999px; font: 700 12px/1 'Barlow', system-ui, sans-serif; letter-spacing: .07em; text-transform: uppercase; color: var(--paper); cursor: help; outline: 0; }
 body.viewer .zoo h2 .mapbadge:hover, body.viewer .zoo h2 .mapbadge:focus-visible, body.viewer .zoo h2 .mapbadge.on { border-color: var(--gold); color: var(--gold); }
-body.viewer .zoo h2 .maptip { display: none; position: absolute; z-index: 60; left: -26px; top: 32px; width: 440px; box-sizing: border-box; padding: 12px 16px 13px; background: var(--paper); color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 5px 0 var(--ink);
-  font: 500 15px/1.35 'Barlow', system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: normal; text-align: left; cursor: var(--cur-arrow); }
-body.viewer .zoo h2 .maptip::before { content: ''; position: absolute; left: 44px; top: -9px; width: 14px; height: 14px; background: var(--paper); border-left: 3px solid var(--ink); border-top: 3px solid var(--ink); transform: rotate(45deg); }
+body.viewer .zoo h2 .maptip { display: none; position: absolute; z-index: 60; left: -26px; top: 34px; width: 470px; box-sizing: border-box; padding: 0; background: #fff; color: var(--ink); border: 3px solid var(--ink); border-radius: 0; box-shadow: 7px 7px 0 var(--ink);
+  font: 500 15px/1.35 'Barlow', system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: normal; text-align: left; cursor: var(--cur-arrow); }   /* (a small square poster with a hard shadow to the bottom right) */
 body.viewer .zoo h2 .mapbadge:hover .maptip, body.viewer .zoo h2 .mapbadge:focus-visible .maptip, body.viewer .zoo h2 .mapbadge.on .maptip { display: block; }
-body.viewer .zoo h2 .maptip .mt-title { font: 400 17px/1.2 'Park Head', system-ui, sans-serif; margin-bottom: 7px; }
-body.viewer .zoo h2 .maptip p { margin: 0 0 5px; }
+body.viewer .zoo h2 .maptip .mt-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px 10px; background: var(--pc, var(--ocean)); color: var(--pt, #fff); border-bottom: 3px solid var(--ink); font: 400 19px/1.15 'Park Head', system-ui, sans-serif; }   /* (the band in the player's colour) */
+body.viewer .zoo h2 .maptip .mt-name { position: relative; top: 1.5px; }       /* (optical centring: the capitals of both texts sit on the middle of the band; the font's ascent leaves the name a little high and the small caps a little low) */
+body.viewer .zoo h2 .maptip .mt-code { position: relative; top: -1px; flex: none; font: 700 11px/1 'Barlow', system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; opacity: .8; }
+body.viewer .zoo h2 .maptip .mt-body { padding: 10px 16px 13px; }
+body.viewer .zoo h2 .maptip p { margin: 0; }
+body.viewer .zoo h2 .maptip p + p { margin-top: .45em; }
 body.viewer .zoo h2 .maptip .mt-main { font-weight: 400; font-size: calc(1em + 2px); }
-body.viewer .zoo h2 .maptip .mt-note { font-size: 13.5px; color: rgba(23, 38, 43, .75); }
-body.viewer .zoo h2 .maptip :last-child { margin-bottom: 0; }
 
 /* ---- conservation track (vector, ctrack.js): the bonus tiles lie on the pentagon row at y 140 of the 2000 x 188 drawing ---- */
 body.viewer .ctrack { display: block; width: 100%; height: auto; border-radius: 0; box-shadow: none; }
@@ -671,7 +673,6 @@ body.viewer .ctrackwrap .ctbonus { top: calc(133 / var(--ct-h) * 100%); height: 
 body.viewer .ctrackwrap img.ctbonus { height: calc(86 / var(--ct-h) * 100%); transform: translate(-50%, -50%); filter: drop-shadow(0 4px 0 #17262B); }
 
 /* X tokens with several units: the number lies on the X, white with a black outline (like the player box) */
-body.viewer .bonus-number.xnum, body.viewer .slot-number.xnum { fill: #fff; stroke: #000; stroke-width: .12em !important; paint-order: stroke fill; stroke-linejoin: round; font-size: 32px; }
 /* two-digit money numbers: tighter, and shifted back by half the negative spacing (dx -.05em) so that they stay centred on the coin */
 
 /* Display folders, "tab on the edge": no paper folder and no town strip; each card (10.5rem, nearly the whole pitch of its stretch of the reputation track) has a soft ink outline and a
@@ -1003,7 +1004,7 @@ body.viewer .gs { --gsfade: 14px; }                                       /* the
 body.viewer .gsgraph { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--gsfade)); mask-image: linear-gradient(180deg, transparent 0, #000 var(--gsfade)); }
 body.viewer .gsbody, body.viewer .gsgraph { grid-column: 2; grid-row: 2; border-radius: 0 0 8px 8px; }
 body.viewer .gsbody { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--gsfade)); mask-image: linear-gradient(180deg, transparent 0, #000 var(--gsfade)); position: relative;   /* rows (and the body's background) fade out under the header */
-  padding-bottom: 20px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(248, 237, 203, .35) transparent;
+  padding-bottom: 20px; overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable both-edges; scrollbar-width: thin; scrollbar-color: rgba(248, 237, 203, .35) transparent;
   --gsbg: linear-gradient(90deg, color-mix(in srgb, var(--c0) 34%, transparent) 0, color-mix(in srgb, var(--c0) 14%, transparent) calc(50% - var(--sp) / 2), var(--ink) calc(50% - var(--sp) / 2), var(--ink) calc(50% + var(--sp) / 2), color-mix(in srgb, var(--c1) 14%, transparent) calc(50% + var(--sp) / 2), color-mix(in srgb, var(--c1) 34%, transparent) 100%), #0a2630; background: var(--gsbg); }
 body.viewer .gssh { display: grid; grid-template-columns: 1fr var(--sp) 1fr; align-items: center; padding: 26px 0 10px; }
 body.viewer .gssec:first-child .gssh { padding-top: 24px; }
@@ -1013,6 +1014,7 @@ body.viewer .gsrow { display: grid; grid-template-columns: 1fr var(--sp) 1fr; al
 body.viewer .gsrow:hover { background: linear-gradient(90deg, transparent, rgba(248, 237, 203, .05) 30%, rgba(248, 237, 203, .05) 70%, transparent); }
 body.viewer .gsv { display: flex; align-items: center; gap: 14px; padding: 0 30px; font: 400 30px/1 'Park Num', system-ui, sans-serif; color: #fff; }
 body.viewer .gsv.a { justify-content: flex-end; }
+body.viewer .gsv > span { position: relative; top: .07em; }                 /* (the digits of Park Num sit about 2 px above the middle of their line box at 30 px: measured on a screenshot, the legend text was within 1 px of the row's middle; only the number moves, not the pointer) */
 body.viewer .gsv.lo { opacity: .38; }
 body.viewer .gsch { width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; visibility: hidden; }
 body.viewer .gsv.a .gsch { border-left: 10px solid var(--sun); }
@@ -1052,10 +1054,8 @@ body.viewer .rsrace-svg .rsguide { stroke: rgba(248, 237, 203, .5); stroke-width
 body.viewer .rsrace-svg path.rscase { stroke-width: 7.5; opacity: .8; }
 body.viewer .rsrace-svg:not(.big) path.rscase { stroke-width: 5.5; }
 
-body.viewer .rsrace-svg path.rsblk { stroke-width: 5.6; }
-body.viewer .rsrace-svg.big path.rsblk { stroke-width: 8; }
-body.viewer .rsrace-svg path.rscore { stroke-width: 1.7; }
-body.viewer .rsrace-svg.big path.rscore { stroke-width: 2.4; }
+body.viewer .rsrace-svg path.rsblk { stroke-width: 3.9; }        /* (a black seat: a plain line, 5.5 on the big graph next to the 4.5 of the other colours, 3.9 next to their 3.2 on the small one) */
+body.viewer .rsrace-svg.big path.rsblk { stroke-width: 5.5; }
 body.viewer .rsrace-svg .rspillt { font-family: 'Barlow Semi Condensed', 'Barlow', sans-serif; font-weight: 800; }
 /* the key events graph (results.js keSvg): three lanes with a row per player, the events as icons */
 body.viewer .gsgraph .kelane { fill: rgba(248, 237, 203, .045); stroke: rgba(248, 237, 203, .16); stroke-width: 1.2; }
@@ -1098,6 +1098,14 @@ body.viewer .gsgraph .kechev.up::after { top: 11px; transform: rotate(-135deg); 
 body.viewer .gsgraph .kechev:hover::after { opacity: 1; }
 body.viewer .gsgraph .kebadge { clip-path: circle(50%); }
 body.viewer .gsgraph .kebadge.kelost { filter: grayscale(1); opacity: .45; }          /* an icon lost (e.g. a released animal): greyed */
+body.viewer .gsgraph .keprojring { fill: none; stroke: #a20272; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }          /* a free size-2 enclosure from a project bonus: purple ring (the purple of the income icon) */
+body.viewer .gsgraph .keplacering { fill: none; stroke: #d8b03a; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }          /* a free kiosk from a placement bonus: gold ring (a toned-down yellow of the placement bonus pentagon) */
+body.viewer .gsgraph .kethreering { fill: none; stroke: #62a84e; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }          /* a free size-3 enclosure from the 5 / 8 conservation point bonus or the end of the reputation track: green ring (the green of the project cards, lifted to read on the lane) */
+body.viewer .gsgraph .keconf { fill: #ffd6de; stroke: #ec3d58; stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none; }          /* Conference On Australia enlarged an EMPTY enclosure: a blush hexagon with a red border (the Australia icon's red), the new size in deep red */
+body.viewer .gsgraph .kesponsorring { fill: none; stroke: #3d6fd8; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }          /* a free building of a sponsor: cobalt ring (a blue near the marketing icon's, kept clear of the teal lane) */
+body.viewer .gsgraph .kebmpring { fill: none; stroke: #2fb58f; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }          /* a free kiosk / pavilion from Bird Management Plan: sea green ring (bluer than the Leaf green of the CP / reputation bonus) */
+body.viewer .gsgraph .kemapring { fill: none; stroke: #9b72c9; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }          /* a free kiosk / pavilion from Map 9's reward: amethyst ring (a dusty purple, kept clear of the project magenta and the sponsor cobalt) */
+body.viewer .gsgraph .keanimalring { fill: none; stroke: #ee7a58; stroke-width: 4px; stroke-linejoin: round; pointer-events: none; }          /* a free kiosk / pavilion from an animal's Posturing: coral orange ring (pinker than the placement gold) */
 body.viewer .gsgraph .kelostg { opacity: .35; filter: grayscale(.7); }          /* an enclosure cut down: paled out */
 body.viewer .gsgraph .money-border { fill: none; stroke: #fff; pointer-events: none; }          /* (the white rim of the money tile: its rule exists for the board only, without it the rim rect is painted black over the tile) */
 body.viewer .gsgraph .kebn { font-family: 'Park Num', system-ui, sans-serif; font-weight: 400; fill: #fff; stroke: #222; paint-order: stroke; stroke-linejoin: round; pointer-events: none; }
@@ -1321,10 +1329,11 @@ body.viewer #settingsModal .setbubble { font: 400 16px/1 'Bowlby One', sans-seri
 body.viewer #settingsModal .modalbox.noanim .speedrow .setlabel { color: rgba(23, 38, 43, .45); }
 body.viewer #settingsModal .modalbox.noanim .speedrow .setico { opacity: .55; }
 body.viewer #settingsModal .modalbox.noanim .speedrow .settrack::before { background: #E3DFCD; border-color: rgba(23, 38, 43, .3); }
+body.viewer #settingsModal .setrange, body.viewer #settingsModal .setrange::-webkit-slider-thumb, body.viewer #settingsModal .setrange::-moz-range-thumb { cursor: var(--cur-hand); }          /* (our hand over the sliders of the settings, not the browser's arrow; the disabled speed slider below keeps not-allowed) */
 body.viewer #settingsModal .modalbox.noanim .speedrow .setrange::-webkit-slider-thumb { background: #9AA7A8; border-color: #7E8D8F; }
 body.viewer #settingsModal .modalbox.noanim .speedrow .setrange::-moz-range-thumb { background: #9AA7A8; border-color: #7E8D8F; }
 body.viewer #settingsModal .modalbox.noanim .speedrow .setbubble { visibility: hidden; }      /* (an empty knob: no "1x" while the slider is off) */
-body.viewer #settingsModal .modalbox.noanim .speedrow .setrange, body.viewer #settingsModal .modalbox.noanim .speedrow .setrange:disabled { cursor: not-allowed; }
+body.viewer #settingsModal .modalbox.noanim .speedrow .setrange, body.viewer #settingsModal .modalbox.noanim .speedrow .setrange:disabled, body.viewer #settingsModal .modalbox.noanim .speedrow .setrange::-webkit-slider-thumb, body.viewer #settingsModal .modalbox.noanim .speedrow .setrange::-moz-range-thumb { cursor: not-allowed; }
 
 /* placement preview help: a ? after the label opens a sticky note whose tape touches the ? (colours: --nbg paper, --ntape tape, --nink text, --nacc title / bullets) */
 body.viewer #settingsModal .qm { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-left: 10px; border: 3px solid var(--ink); border-radius: 50%; background: #E9D9A6; color: var(--ink); font: 400 15px/1 'Bowlby One', sans-serif; vertical-align: middle; cursor: var(--cur-arrow); box-sizing: border-box; }
@@ -1601,7 +1610,7 @@ body.viewer .mh-view { flex: 1 1 auto; min-width: 0; overflow: hidden; padding: 
 body.viewer .mh-view.can-l { -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px); mask-image: linear-gradient(90deg, transparent, #000 16px); }
 body.viewer .mh-view.can-r { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 16px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 16px), transparent); }
 body.viewer .mh-view.can-l.can-r { -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent); mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent); }
-body.viewer .mh-strip { display: grid; gap: 6px; width: max-content; }
+body.viewer .mh-strip { display: grid; gap: 6px; width: max-content; position: relative; }          /* (relative: the jogs of the stepped break lines are placed in it) */
 /* the two tabs: flat greys, much quieter than the Type / Order keys; they take room only while the turns do not fit */
 body.viewer .mh-nb { flex: none; display: none; align-items: center; justify-content: center; width: 18px; height: 46px; padding: 0; border: 0; border-radius: 9px; background: rgba(23, 38, 43, .16); color: rgba(23, 38, 43, .7); transition: background .12s, color .12s; }
 body.viewer .mh-scr.over .mh-nb { display: flex; }
@@ -1616,13 +1625,13 @@ body.viewer .mh-score { display: flex; align-items: center; flex: 1 1 auto; min-
 body.viewer .mh-cubes { flex: none; display: grid; gap: 4px; margin-right: 2px; }
 body.viewer .mh-cubes .mh-seat { width: 18px; height: 18px; margin: 0; }
 body.viewer .mh-sc { position: relative; flex: none; display: flex; align-items: center; gap: 7px; padding: 0 12px; }
-body.viewer .mh-sc::before { content: ''; position: absolute; left: 0; top: -8px; bottom: -8px; width: 1px; background: linear-gradient(rgba(23, 38, 43, 0), rgba(23, 38, 43, .28) 25%, rgba(23, 38, 43, .28) 75%, rgba(23, 38, 43, 0)); }
+body.viewer .mh-sc::before { content: ''; position: absolute; left: 0; top: -8px; bottom: -8px; width: 2px; background: linear-gradient(rgba(23, 38, 43, 0), rgba(23, 38, 43, .28) 25%, rgba(23, 38, 43, .28) 75%, rgba(23, 38, 43, 0)); }
 body.viewer .mh-tile, body.viewer .mh-sc .mh-xt { flex: none; display: block; width: 26px; height: 26px; border-radius: 4px; }
 body.viewer .mh-sc .mh-xt { display: grid; place-items: center; border-radius: 5px; }
 body.viewer .mh-cubes + .mh-sc::before { display: none; }          /* (no line between the cubes and the first icon) */
 body.viewer .mh-nums { display: grid; gap: 4px; }
 body.viewer .mh-nr { display: flex; align-items: center; gap: 6px; height: 18px; }
-body.viewer .mh-n { width: 18px; text-align: right; font: 400 16px/1 'Bowlby One', system-ui, sans-serif; }
+body.viewer .mh-n { flex: none; width: 31px; margin: 0 -6px 0 -7px; text-align: center; font: 400 16px/1 'Bowlby One', system-ui, sans-serif; }
 body.viewer .mh-n.zero { opacity: .28; }
 body.viewer .mh-trk { display: flex; align-items: center; }
 body.viewer .mh-seg { display: block; flex: none; box-sizing: border-box; height: 8px; background: var(--c); }
@@ -1634,11 +1643,17 @@ body.viewer .mh-order { gap: 5px; }
 body.viewer .mh-cell { flex: none; display: flex; align-items: center; min-height: 15px; }
 body.viewer .mh-chain { flex: none; position: relative; z-index: 0; align-self: center; height: 2px; margin: 0 -6px; background: var(--ink, #17262b); }          /* (a chained action sits the normal 5 px from the action before it, like any other: the line fills that gap and runs 6 px under each tile, width = gap + 12 from move-hover.js, net layout width = the gap) */
 body.viewer .mh-cell .mh-ic { z-index: 1; }
-/* a round break in the Order view (move-hover.js `breakColumns`): a 1 px line like the one of the Type view (`.mh-sc::before`: ink at 28 %, faded out at both ends) between the last turn of a round and the first of the next,
+/* a round break in the Order view (move-hover.js `breakColumns`): a 2 px line (like the Type view's) (`.mh-sc::before`: ink at 28 %, faded out at both ends) between the last turn of a round and the first of the next,
    through both rows, with 4 px of extra air on each side (on top of the rows' 5 px gaps). The first row holds it (`.mh-brk1`, its ::after is as tall as both rows plus 8 px above and below, --rh = the tile size), the second an empty spacer. */
-body.viewer .mh-brk { flex: none; position: relative; width: 1px; margin: 0 4px; height: var(--rh, 20px); }
-body.viewer .mh-brk1::after { content: ''; position: absolute; left: 0; top: -8px; width: 1px; height: calc(var(--rh, 20px) * 2 + 6px + 16px); pointer-events: none;
+body.viewer .mh-brk { flex: none; position: relative; width: 2px; margin: 0 4px; height: var(--rh, 20px); }
+body.viewer .mh-brk1::after { content: ''; position: absolute; left: 0; top: -8px; width: 2px; height: calc(var(--rh, 20px) * 2 + 6px + 16px); pointer-events: none;
   background: linear-gradient(rgba(23, 38, 43, 0), rgba(23, 38, 43, .28) 25%, rgba(23, 38, 43, .28) 75%, rgba(23, 38, 43, 0)); }
+/* a stepped break line (a break in the middle of a turn, move-hover.js `breakColumns`): the upper row's half runs from above the rows to the middle of the gap between them, the lower row's
+   half from there down; the jog joins them along the middle of the gap. */
+body.viewer .mh-brkT::after, body.viewer .mh-brkB::after { content: ''; position: absolute; left: 0; width: 2px; height: calc(var(--rh, 20px) + 11px); pointer-events: none; }
+body.viewer .mh-brkT::after { top: -8px; background: linear-gradient(rgba(23, 38, 43, 0), rgba(23, 38, 43, .28) 50%); }
+body.viewer .mh-brkB::after { top: -3px; background: linear-gradient(rgba(23, 38, 43, .28) 50%, rgba(23, 38, 43, 0)); }
+body.viewer .mh-jog { position: absolute; height: 2px; margin-top: -1px; background: rgba(23, 38, 43, .28); pointer-events: none; }
 body.viewer .mh-dot.x { background: none; border: 2px solid var(--c); }
 /* the order view's actions (move-hover.js `actionTile`): a white tile with the action's black icon and a coloured border like the action tiles of the player info box (rules below). The icon is a mask (web/action_glyphs/<type>.webp, white on transparent) on ::before, so it takes any colour. */
 body.viewer .mh-ic { position: relative; flex: none; display: block; box-sizing: border-box; border-radius: 4px; background: color-mix(in srgb, var(--c) 30%, var(--paper)); }
@@ -1662,7 +1677,7 @@ body.viewer .mh-xt img { display: block; border-radius: 0; }
 body.viewer .mh-lg img { display: block; border-radius: 3px; }
 body.viewer .mh-lg b { font: 400 12px 'Bowlby One', system-ui, sans-serif; }
 body.viewer .mh-switch { position: relative; flex: none; display: grid; gap: 4px; align-self: center; transform: translateY(-1px); margin: 0 21px 0 12px; }
-body.viewer .mh-switch::after { content: ''; position: absolute; right: -21px; top: -8px; bottom: -8px; width: 5px; background: linear-gradient(rgba(23, 38, 43, 0), rgba(23, 38, 43, .28) 25%, rgba(23, 38, 43, .28) 75%, rgba(23, 38, 43, 0)) left top / 1px 100% no-repeat, linear-gradient(rgba(23, 38, 43, 0), rgba(23, 38, 43, .28) 25%, rgba(23, 38, 43, .28) 75%, rgba(23, 38, 43, 0)) right top / 1px 100% no-repeat; pointer-events: none; }          /* (a double line between the keys and the cubes, drawn like the single lines of the hover: faded at both ends) */
+body.viewer .mh-switch::after { content: ''; position: absolute; right: -21px; top: -8px; bottom: -8px; width: 7px; background: linear-gradient(rgba(23, 38, 43, 0), rgba(23, 38, 43, .28) 25%, rgba(23, 38, 43, .28) 75%, rgba(23, 38, 43, 0)) left top / 2px 100% no-repeat, linear-gradient(rgba(23, 38, 43, 0), rgba(23, 38, 43, .28) 25%, rgba(23, 38, 43, .28) 75%, rgba(23, 38, 43, 0)) right top / 2px 100% no-repeat; pointer-events: none; }          /* (a double line between the keys and the cubes, drawn like the single lines of the hover: faded at both ends) */
 body.viewer .mh-key { position: relative; box-sizing: border-box; display: flex; align-items: center; justify-content: center; height: 20px; padding: 0 9px; border-radius: 8px; background: #fff; border: 2px solid var(--ink); box-shadow: 0 2px 0 var(--ink); }
 body.viewer .mh-kt { font: 800 9.5px/1 system-ui, sans-serif; letter-spacing: .07em; margin-right: -.07em; text-transform: uppercase; color: var(--ink); }
 body.viewer .mh-key.down { background: #E4D7AA; border-color: rgba(23, 38, 43, .45); box-shadow: inset 0 3px 4px rgba(23, 38, 43, .35); transform: translateY(2px); }
@@ -1748,3 +1763,14 @@ body.playpage .movepill .actionbar:not([hidden]), body.forkpage .movepill .actio
 .forkexport .forkdone, .forkexport .forkerr { font-size: 0.9rem; }
 .forkexport .forkerr { color: #b3261e; font-weight: 700; }
 .forkexport a { word-break: break-all; }
+
+/* The M key's answer (mutepop.js): a dark rounded panel in the middle of the screen with the speaker, 20 level bars and "Muted" / "50 %" (mock "Mute Feedback Mock", option D) */
+.mutepop { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2147483000; width: 330px; padding: 30px 28px 26px; border-radius: 30px; box-sizing: border-box;
+  background: rgba(15, 38, 46, .9); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); border: 1.5px solid rgba(248, 237, 203, .18); box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+  display: flex; flex-direction: column; align-items: center; gap: 18px; pointer-events: none; opacity: 0; color: #f8edcb; }
+.mutepop .mpspk svg { display: block; width: 110px; height: 110px; overflow: visible; }
+.mutepop .mpbars { display: flex; gap: 5px; }
+.mutepop .mpbars i { width: 10px; height: 26px; border-radius: 3px; background: rgba(248, 237, 203, .16); }
+.mutepop .mpbars i.on { background: #f0b429; }
+.mutepop .mptxt { font: 800 26px Barlow, system-ui, sans-serif; color: #f8edcb; }
+

@@ -6,39 +6,39 @@ import { FORK, MINIGAME, PLAY, SANDBOX, S } from './state.js';
 import { tabbedLayout } from './zoo.js';
 import { createPageView } from './rcview.js';
 
-const SHOW_KEY_DETAILS = false;                                            // the grey detail line under a key's title is switched off for now (the texts stay in D, to be overhauled)
-const D = {                                                                // key id (KeyboardEvent.key, letters lower case) -> [label, title, detail]; keep in step with the keydown handler in main.js
-  ArrowLeft: ['←', 'Go back one step in replay', 'Also the side wheel of the mouse (or Shift + wheel) to the left. Skips the opponent\'s hidden steps in the action card draft. On the results of a finished game: back to the final board.'],
-  ArrowRight: ['→', 'Go forward one step in replay', 'Also the side wheel of the mouse (or Shift + wheel) to the right. Skips the opponent\'s hidden steps in the action card draft. On the last step of a finished game: opens the results.'],
-  ' ': ['Space', 'Start / stop autoplay', ''],
-  ArrowUp: ['↑', 'Switch to table (post-game only)', 'In the game stats: shows the table.'],
-  ArrowDown: ['↓', 'Switch to graph (post-game only)', 'In the game stats: shows the score graph.'],
-  Home: ['Home', 'Jump to first step', ''],
-  End: ['End', 'Jump to last step', 'The final board, also from the results.'],
-  r: ['R', 'Rotate building during map preview', 'While a sponsor building is being previewed (right click on its card in a hand): Shift + R turns it the other way, the mouse wheel over the map too.'],
-  Tab: ['Tab', 'Switch between tabs in hand', 'Cycles through the tabs of the shown cards: hand, endgame cards, the cards stored under the notepad (map 11) and the played cards (when the setting "Played cards" is the tray). Shift + Tab goes back.'],
-  q: ['Q', 'Switch between player boards', 'Only while the player boards are Tabbed (Settings): the other board; Shift + Q goes back. Hidden from this window in the other layouts.'],
-  h: ['H', 'Show / hide hand', 'The floating tray or the fan.'],
-  s: ['S', 'Open settings', ''],
-  F11: ['F11', 'Full screen', 'Switches the browser to full screen and back; the full screen button next to the settings wheel does the same.'],
-  '?': ['/', 'Open keyboard tooltips (= this window)', 'Shift + / on most keyboards.'],
-  Escape: ['Esc', 'Close', 'The settings, a dialog or this window.'],
+const D = {                                                                // key id (KeyboardEvent.key, letters lower case) -> [label, title]; keep in step with the keydown handler in main.js
+  ArrowLeft: ['←', 'Go back one step in replay'],
+  ArrowRight: ['→', 'Go forward one step in replay'],
+  ' ': ['Space', 'Start / stop autoplay'],
+  ArrowUp: ['↑', 'Switch to table (post-game only)'],
+  ArrowDown: ['↓', 'Switch to graph (post-game only)'],
+  Home: ['Home', 'Jump to first step'],
+  End: ['End', 'Jump to last step'],
+  r: ['R', 'Rotate building during map preview'],
+  Tab: ['Tab', 'Switch between tabs in hand'],
+  q: ['Q', 'Switch between player boards'],
+  h: ['H', 'Show / hide hand'],
+  m: ['M', 'Mute / unmute sound'],
+  s: ['S', 'Open settings'],
+  F11: ['F11', 'Full screen'],
+  F1: ['F1', 'Open keyboard tooltips (= this window)'],
+  Escape: ['Esc', 'Close'],
 };
 const CTRL_LAYER = !PLAY && !MINIGAME && (!FORK || SANDBOX);               // (the round jumps exist in the replay and the sandbox only)
-const C = {                                                                // the Ctrl layer: key id -> [label, title, detail]; Alt + 1-9 does the same as Ctrl + 1-9 (browsers keep Ctrl + 1-9 for their tabs), a right click on the timeline goes to the start of that round
-  ArrowLeft: ['Ctrl + ←', 'Jump to start of this round', 'The start of the current round (again: the round before).'],
-  ArrowRight: ['Ctrl + →', 'Jump to start of next round', 'The start of the next round.'],
+const C = {                                                                // the Ctrl layer: key id -> [label, title]; Alt + 1-9 does the same as Ctrl + 1-9 (browsers keep Ctrl + 1-9 for their tabs), a right click on the timeline goes to the start of that round
+  ArrowLeft: ['Ctrl + ←', 'Jump to start of this round'],
+  ArrowRight: ['Ctrl + →', 'Jump to start of next round'],
 };
-C.s = ['Ctrl + S', 'Play the Shoebill sound', 'Its call, also with the setting "Animal sounds" off (Settings, Sound, More: "Ctrl + S" switches it off).'];
-for (const d of '123456789') C[d] = ['Ctrl + ' + d, 'Jump to start of round ' + d, 'The start of round ' + d + ' (Alt + ' + d + ' does the same).'];
+C.s = ['Ctrl + S', 'Play the Shoebill sound'];
+for (const d of '123456789') C[d] = ['Ctrl + ' + d, 'Jump to start of round ' + d];
 const GAP = [' ', .5];
 const LOCK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2.5" y="7" width="11" height="7.5" rx="1.6" fill="currentColor"/></svg>';                                                     // (a blank space in a row: [label '', width])
 const MAIN = [
-  [['Esc', 1, 'Escape'], GAP, ...[1, 2, 3, 4].map((i) => ['F' + i, 1]), GAP, ...[5, 6, 7, 8].map((i) => ['F' + i, 1]), GAP, ...[9, 10, 11, 12].map((i) => i === 11 ? ['F11', 1, 'F11'] : ['F' + i, 1])],
+  [['Esc', 1, 'Escape'], GAP, ...[1, 2, 3, 4].map((i) => i === 1 ? ['F1', 1, 'F1'] : ['F' + i, 1]), GAP, ...[5, 6, 7, 8].map((i) => ['F' + i, 1]), GAP, ...[9, 10, 11, 12].map((i) => i === 11 ? ['F11', 1, 'F11'] : ['F' + i, 1])],
   [...'`1234567890-='.split('').map((c) => [c, 1]), ['⌫', 2]],
   [['Tab', 1.5, 'Tab'], ...'QWERTYUIOP[]'.split('').map((c) => [c, 1]), ['\\', 1.5]],
   [['Caps', 1.75], ...'ASDFGHJKL;\''.split('').map((c) => [c, 1]), ['Enter', 2.25]],
-  [['Shift', 2.25], ...'ZXCVBNM,.'.split('').map((c) => [c, 1]), ['/', 1, '?'], ['Shift', 2.75]],
+  [['Shift', 2.25], ...'ZXCVBNM,.'.split('').map((c) => [c, 1]), ['/', 1], ['Shift', 2.75]],
   [['Ctrl', 1.25, 'Control'], ['Win', 1.25], ['Alt', 1.25], ['Space', 6.25, ' '], ['Alt', 1.25], ['Win', 1.25], ['Fn', 1.25], ['Ctrl', 1.25, 'Control']],
 ];
 const NAV = [
@@ -47,7 +47,7 @@ const NAV = [
   [['', 1], ['↑', 1, 'ArrowUp'], ['', 1]],
   [['←', 1, 'ArrowLeft'], ['↓', 1, 'ArrowDown'], ['→', 1, 'ArrowRight']],
 ];
-const idOf = (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; return k === '/' ? '?' : k; };
+const idOf = (e) => e.key.length === 1 ? e.key.toLowerCase() : e.key;
 export const shortcutsOpen = () => { const m = $('shortcutsModal'); return !!m && !m.hidden; };
 
 export function setupShortcuts() {
@@ -59,17 +59,16 @@ export function setupShortcuts() {
   let typing = 0, locked = false, picked = 'ArrowRight';
   const layer = () => CTRL_LAYER && locked;                                  // the Ctrl layer: Ctrl clicked or pressed once (latched until the next click / press, nothing is held)
   const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const textOf = (id) => id === 'Control' ? ['Ctrl', locked ? 'Locked' : 'Lock', ''] : layer() && C[id] ? C[id] : D[id];
+  const textOf = (id) => id === 'Control' ? ['Ctrl', locked ? 'Locked' : 'Lock'] : layer() && C[id] ? C[id] : D[id];
   const pick = (id) => {
     picked = id;
     for (const l of Object.values(keys)) for (const k of l) k.classList.remove('sel');
     if (!keys[id] || !textOf(id)) return;
     if (id !== 'Control' || locked) keys[id].forEach((k) => k.classList.add('sel'));
-    const [label, title, detail] = textOf(id);
+    const [label, title] = textOf(id);
     const txt = el('span', 'kbtxt'); txt.setAttribute('aria-hidden', 'true');
     info.replaceChildren(el('em', '', '›'), el('span', '', label), ...(id.startsWith('Arrow') && !layer() ? [] : [el('span', 'kbsep', '|')]), txt,   // (a bar between the key and its text; not after the four arrows in the normal layer, which show as a glyph)
        el('span', 'kbcur'), el('span', 'kbsr', label + ': ' + title));
-    info.title = SHOW_KEY_DETAILS && detail ? detail : '';
     const my = ++typing;
     if (reduced()) { txt.textContent = title; return; }
     let n = 0;
@@ -154,8 +153,7 @@ export function setupShortcuts() {
       if (keys[id] && (layer() ? C[id] : D[id])) { e.preventDefault(); e.stopPropagation(); pick(id); keys[id].forEach((k) => k.classList.add('down')); }          // (locked: the keys act as their Ctrl versions)
       return;
     }
-    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
-    if (e.key === '?' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey && btn.offsetParent !== null && !settingsOpen()) { e.preventDefault(); e.stopPropagation(); open(); }
+    if (e.key === 'F1' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && btn.offsetParent !== null && !settingsOpen()) { e.preventDefault(); e.stopPropagation(); open(); }
   }, true);
   document.addEventListener('keyup', (e) => {
     const l = keys[idOf(e)]; if (l) l.forEach((k) => k.classList.remove('down'));

@@ -28,9 +28,6 @@ const ORD = ['1st', '2nd', '3rd'];
 function bonusSpace(sl, taken, size, n, seat, nth) {
   const root = svg('svg', { viewBox: '69 60 80 80', width: size, height: size, class: 'abglyph' });
   slotGlyph(root, sl, 100);
-  const t = svg('title');
-  t.textContent = 'Bonus space ' + n + ' (' + (taken ? 'taken' + (nth ? ' ' + (nth > 3 ? nth + 'th' : ORD[nth - 1]) : '') : 'still covered') + '): ' + bonusText(sl.bonus || {});
-  root.append(t);
   const e = slotEl('abs abg ' + (taken ? 'on' : 'off') + (sl.kind === 'instant_income' ? ' pur' : ' yel'), root);
   if (taken && nth) e.append(el('i', 'abord', String(nth)));                    // the ink stamp: the order the spaces were taken in (the same order as the dashed numbers on the bonus panel)
   e.dataset.abonus = String(sl.index); e.dataset.aseat = String(seat);          // (assoc-motion.js: the cube of a supported project flies from the bonus space that was taken)
@@ -47,9 +44,6 @@ function partnerSlot(type, n, h, seat, map) {
   const root = svg('svg', { 'data-assoc-slot': 'partner_' + n, 'data-assoc-seat': seat, viewBox: type ? '5 4 179 142' : '0 0 283 230', width: type ? h * 179 / 142 : h * 283 / 230, height: h, class: 'abpartner ' + (type ? 'on' : 'off') });
   if (type) root.append(svg('image', { href: iconUrl(ICON_IDS[type.replace('partner-', '')]), x: 0, y: 0, width: 190, height: 152 }));
   else root.append(svg('path', { d: HANDSHAKE.plaque, fill: '#000', 'fill-opacity': 0.2, 'fill-rule': 'evenodd' }), svg('path', { d: HANDSHAKE.dark, fill: '#000', 'fill-opacity': 0.2, 'fill-rule': 'evenodd' }));
-  const t = svg('title');
-  t.textContent = 'Partner zoo ' + n + ': ' + (type ? type.replace('partner-', '') : 'empty');
-  root.append(t);
   return tagged(slotEl('abs', root), type, map, 'partner_' + n);
 }
 // a university slot: its tile, or the silhouette of a tile when empty (the pictures are 121 or 137 px wide; the drawn part is 119 x 84)
@@ -58,9 +52,6 @@ function universitySlot(type, n, h, seat, map) {
   const root = svg('svg', { 'data-assoc-slot': 'university_' + n, 'data-assoc-seat': seat, viewBox: type ? (w0 === 121 ? '1 1 119 84' : '7 6 119 84') : '0.5 1 120 84', width: h * 119 / 84, height: h, class: 'abuni ' + (type ? 'on' : 'off') });
   if (type) root.append(svg('image', { href: iconUrl(ICON_IDS[type]), x: 0, y: 0, width: w0, height: h0 }));
   else root.append(svg('path', { d: UNIVERSITY, fill: '#000', 'fill-opacity': 0.2 }));
-  const t = svg('title');
-  t.textContent = 'University ' + n + ': ' + (type ? UNI_NAME[type] || type : 'empty');
-  root.append(t);
   return tagged(slotEl('abs', root), type, map, 'university_' + n);
 }
 

@@ -1,5 +1,5 @@
 // [module] Turns the <ICON> markup of move-list lines into icons and badges.
-import { el, seatText } from './util.js';
+import { el, niceNames, seatText } from './util.js';
 import { ACTION_ICON, ACTION_NAMES, ICON_IDS, VARIANT_NAMES, iconUrl } from './icons.js';
 import { S } from './state.js';
 
@@ -62,14 +62,17 @@ function strengthIcon(cls, title) {
   t.innerHTML = STRENGTH_SVG;
   const s = t.content.firstChild;
   s.setAttribute('class', cls); s.setAttribute('role', 'img'); s.setAttribute('aria-label', 'strength');
-  const ti = document.createElementNS('http://www.w3.org/2000/svg', 'title'); ti.textContent = title;
-  s.prepend(ti);
   return s;
 }
 function labelIcon(name, amount) {
   if (name === 'UNI') {                                                  // a university tile (`amount` is its type, e.g. fac-science-rep)
     if (!ICON_IDS[amount]) return null;
-    const img = labelImg('icon labelicon labeluni', iconUrl(ICON_IDS[amount])); img.alt = 'university'; img.title = 'university ' + amount;
+    const img = labelImg('icon labelicon labeluni', iconUrl(ICON_IDS[amount])); img.alt = 'university';
+    return img;
+  }
+  if (name === 'PZOO') {                                                 // the partner zoo tile of a continent (the yellow pentagon of the association board), like the university tile
+    const id = ICON_IDS[amount] || ICON_IDS['bonus:Partner-Zoo'];          // no tile known: the generic partner zoo icon
+    const img = labelImg('icon labelicon labeluni', iconUrl(id)); img.alt = 'partner zoo';
     return img;
   }
   if (name === 'ACARD') return actionCardIcon(amount);
@@ -86,7 +89,7 @@ function labelIcon(name, amount) {
   const cls = 'icon labelicon' + (BADGE[name] ? ' labelbadge' : '') + (name === 'MONEY' ? ' labelmoney' : name === 'XTOKEN' && !amount ? ' labelxplain' : ''), title = name.toLowerCase().replace(/-/g, ' ') + (amount ? ' ' + amount : '');
   let img;
   if (src === 'inline') img = strengthIcon(cls, title);
-  else { img = labelImg(cls, src); img.alt = name.toLowerCase(); img.title = title; }
+  else { img = labelImg(cls, src); img.alt = name.toLowerCase(); }
   if (amount && WITH_AMOUNT.has(name)) {
     const box = el('span', 'labelamount' + (name === 'XTOKEN' ? ' labelx' : name === 'MONEY' ? ' labelm' : name === 'APPEAL' ? ' labeldk' : name === 'CONSERVATION' ? ' labeldk' : name === 'STRENGTH' ? ' labelstr' : ''));
     const num = el('b', '', amount);
@@ -142,7 +145,6 @@ function actionCardIcon(spec) {
   const id = S.iconNames[ACTION_ICON[type]];
   if (!id) return null;
   const box = el('span', 'acticon' + (lvl === 2 ? ' lvl2' : ''));                    // the look of the action card in the player box (side-panel.js: `.ac`): a white tile with a blue (I) / purple (II) frame
-  box.title = (v ? VARIANT_NAMES[type + '_' + v] || ACTION_NAMES[type] : ACTION_NAMES[type]) + ' (' + (lvl === 2 ? 'II' : 'I') + ')';
   const img = labelImg('icon', iconUrl(id));
   img.alt = ACTION_NAMES[type] || type;
   box.append(img);
@@ -169,16 +171,24 @@ export function placesText(text) {
   });
 }
 // "X takes a new university" shows the tile that was taken instead: the university token that is new on the association board in this step (or in the next one, where the log moves it)
-function universityTaken(step) {
+function universityTaken(step, partner = false) {          // partner: the new partner zoo token (type partner-<Continent>) instead
   const steps = (S.replay && S.replay.steps) || [], i = steps.indexOf(step);
   if (i < 0) return null;
-  const tiles = (st) => (st ? st.players.flatMap((p) => (p.tokens || []).filter((t) => /^university_/.test(t.location || '')).map((t) => t.type)) : []);
+  const tiles = (st) => (st ? st.players.flatMap((p) => (p.tokens || []).filter((t) => partner ? /^partner_/.test(t.location || '') && /^partner-/.test(t.type || '') : /^university_/.test(t.location || '')).map((t) => t.type)) : []);
   const fresh = (a, b) => { const left = [...tiles(a)]; for (const t of tiles(b)) { const k = left.indexOf(t); if (k < 0) return t; left.splice(k, 1); } return null; };
   const cur = steps[i].state, prev = i > 0 ? steps[i - 1].state : null, next = steps[i + 1] ? steps[i + 1].state : null;
   return (prev && fresh(prev, cur)) || (next && fresh(cur, next)) || null;
 }
 function amountMarkup(text, step) {
-  if (step && /takes a new university/.test(text)) { const t = universityTaken(step); if (t) text = text.replace(/takes a new university/, 'takes <UNI:' + t + '>'); }
+  if (step && /takes a new partner zoo/i.test(text)) { const t = universityTaken(step, true); text = text.replace(/takes a new partner zoo/i, 'takes ' + (t ? '<PZOO:' + t.replace('partner-', '') + '>' : '<PZOO>')); }   // (the exact tile of the continent, like the university: no words)
+  if (step && /\btakes a new university\b/.test(text)) { const t = universityTaken(step); if (t) text = text.replace(/takes a new university\b/, 'takes <UNI:' + t + '>'); }
+  if (/\bgets \d+ x (Fac|Partner-Zoo)\b/.test(text)) {                // (a free university / partner zoo, from the conservation or reputation track: the backend's names "Fac" and "Partner-Zoo" become the tile that was gained)
+    text = text.replace(/\bgets (\d+) x (Fac|Partner-Zoo)\b/, (all, n, what) => {
+      if (what === 'Partner-Zoo') { const t = step && +n === 1 ? universityTaken(step, true) : null; return 'gets ' + (+n === 1 ? '' : n + ' ') + '' + (t ? '<PZOO:' + t.replace('partner-', '') + '>' : '<PZOO>'); }
+      const t = step && +n === 1 ? universityTaken(step) : null;
+      return t ? 'gets <UNI:' + t + '>' : 'gets ' + (+n === 1 ? 'a university' : n + ' universities');
+    });
+  }
   text = placesText(actionMarkup(text, step));
   text = text.replace(STRENGTH_RE, (all, pre, n) => `${pre}<STRENGTH:${n}>`).replace(POSITION_RE, (all, pre, n) => `${pre}<STRENGTH:${n}>`);
   if (S.iconNames.money) text = text.replace(PAYS_BUILDING_RE, (all, a, n, b) => `${a}<MONEY:${n}>${b}`);
@@ -227,7 +237,7 @@ export function stepLabelNode(text, step) {
   return box;
 }
 export function labelNode(text, step) {
-  text = amountMarkup(text, step).replace(/ for a total of \d+ <[A-Z][A-Z-]*(?::[\w-]+)?>/gi, '').replace(/ chooses (.+?) and \1 to Pilfer\b/, ' chooses $1 to Pilfer');          // ("discards A, B for a total of 1 <SEAANIMAL> (Glide effect)" -> "discards A, B (Glide effect)")
+  text = amountMarkup(niceNames(text).replace(/\bKiosk\b/g, 'kiosk'), step).replace(/ for a total of \d+ <[A-Z][A-Z-]*(?::[\w-]+)?>/gi, '').replace(/ chooses (.+?) and \1 to Pilfer\b/, ' chooses $1 to Pilfer');          // ("discards A, B for a total of 1 <SEAANIMAL> (Glide effect)" -> "discards A, B (Glide effect)")
   const span = el('span', '');
   let last = 0;
   for (const m of text.matchAll(/<([A-Z][A-Z-]*)(?::([\w-]+))?>/g)) {
