@@ -1,0 +1,130 @@
+/* The two rooms of the library hall behind its Bonus tiles and Maps bays (library/tiles/, library/maps/; js/library_tiles.js, js/library_maps.js):
+   one stage drawn at a fixed size and fitted to the window, the brass back plate and the round brass buttons of the hall (css/library.css) at the top. */
+:root { --cur-arrow: url(/cursors/arrow.svg) 3 2, default; --cur-hand: url(/cursors/hand.svg) 10 1, pointer; --ink: #2A1210; }
+html { cursor: var(--cur-arrow); background: #120A08; }
+a:any-link, button { cursor: var(--cur-hand); }
+body.roompage { margin: 0; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden;
+  background: radial-gradient(1200px 700px at 50% 0%, #5A2418 0%, #2E120C 50%, #120A08 100%) fixed #120A08; font: 15px/1.4 'Park Label', 'Barlow', system-ui, sans-serif; }
+body.roompage .stage { position: relative; width: min(100vw, calc(100vh * var(--ar))); width: min(100vw, calc(100dvh * var(--ar))); aspect-ratio: var(--ar); }
+.roombar { position: absolute; z-index: 5; left: 0; right: 0; top: 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 1.1% 1.4%; pointer-events: none; }
+.roombar > * { pointer-events: auto; }
+.drawerpage .roombar, .mappage .roombar { transition: opacity .6s ease; }
+.drawerpage:not(.ready) .roombar, .mappage:not(.ready) .roombar { opacity: 0; visibility: hidden; } .roombar .right { display: flex; gap: 10px; }
+.roombtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 14px; box-sizing: border-box; border: 2.5px solid var(--ink); border-radius: 19px;
+  background: linear-gradient(#F0CE7A, #B8862E); color: var(--ink); font: 700 15px/1 'Park Label', 'Barlow', system-ui, sans-serif; text-decoration: none; box-shadow: 0 3px 0 var(--ink); }
+.roombtn:hover { filter: brightness(1.08); } .roombtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.roombtn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.roombtn.icon { width: 38px; padding: 0; }
+.roombtn svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.roombtn .wave { display: none; } .roombtn.on .wave { display: inline; } .roombtn.on .mute { display: none; }
+
+/* ---------- the bonus tile drawer: one canvas ---------- */
+body.drawerpage { --ar: 1400 / 820; }
+#drawer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: var(--cur-hand); }
+
+/* IM Fell English (OFL, from @fontsource): the print of the wall maps */
+@font-face { font-family: 'IM Fell English'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/im-fell-english-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'IM Fell English'; font-style: italic; font-weight: 400; font-display: swap; src: url(/fonts/im-fell-english-latin-400-italic.woff2) format('woff2'); }
+@font-face { font-family: 'IM Fell English SC'; font-style: normal; font-weight: 400; font-display: swap; src: url(/fonts/im-fell-english-sc-latin-400-normal.woff2) format('woff2'); }
+
+/* ---------- the wall maps: a 1920 x 1080 stage scaled by the script ---------- */
+body.mappage { --ar: 16 / 9; }
+body.mappage, body.mappage * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }   /* (nothing on the map page can be selected or copied: the sheet, the labels, the buttons) */
+body.mappage img { -webkit-user-drag: none; user-drag: none; }
+#room { position: absolute; inset: 0; overflow: hidden; }
+#mstage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; }
+#mstage > canvas { position: absolute; inset: 0; pointer-events: none; }
+#rig { position: absolute; left: 50%; top: 0; transform-origin: 50% 0; }
+#rig .sheet { position: absolute; left: 0; top: 0; background: #f3ead4; overflow: hidden; }
+#rig .sheet > div { position: absolute; }
+#rig .paper, #rig .tex, #rig .shade { inset: 0; } #rig .tex, #rig .shade { pointer-events: none; } #rig .tex { mix-blend-mode: multiply; opacity: .55; }
+#rig .ttl { left: 0; right: 0; text-align: center; color: #2a1d14; }
+#rig .ttl .n { font: 400 46px/1.05 'IM Fell English', Georgia, serif; }
+#rig .ttl .n i { font-size: .62em; color: #5a3a22; }
+#rig .plate { outline: 1.5px solid rgba(42, 29, 20, .75); outline-offset: 5px; }
+#rig .plate img { position: absolute; display: block; filter: saturate(.82) sepia(.12) contrast(.95); }
+#rig .leg { left: 28px; right: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font: italic 400 27px/1.5 'IM Fell English', Georgia, serif; color: #3a2614; text-wrap: balance; }
+#rig .leg p { margin: 0; line-height: 1.5; } #rig .leg p + p { margin-top: 0; } #rig .leg p.nw { white-space: nowrap; }
+#rig .leg .mtw { vertical-align: middle; margin-block: -.5em; } #rig .leg .mtw.kp { margin-block: -.65em; } #rig .leg .mtw.tw { margin-block: -.6em; } #rig .leg .mtw.gt { margin-block: -.3em; position: relative; top: -.1em; } #rig .leg .mtw.rs { margin-block: -.3em; position: relative; top: -.08em; } #rig .leg .mtw.ins { margin-block: -.6em; position: relative; top: -.04em; } #rig .leg .mtw.t1 { margin-block: -.6em; }
+#rig .leg .mtw.pz { margin-block: -.45em; position: relative; top: -.04em; } #rig .leg .mtw.hw { margin-block: -.4em; position: relative; top: -.06em; } #rig .leg .mtw.ng { margin-block: -.4em; position: relative; top: -.04em; } #rig .leg .mtw.hb { margin-block: -.5em; margin-right: -.45em; position: relative; top: -.04em; } #rig .leg .mtw.sm { margin-block: -.5em; }
+#rig .stamp { display: flex; flex-direction: column; gap: 2px; padding: 5px; border: 2px solid rgba(138, 42, 18, .85); border-radius: 6px; outline: 1px solid rgba(138, 42, 18, .8); outline-offset: 3px; transform: rotate(-3deg); transform-origin: 100% 50%; }   /* (the side stamp of a two-sided map, right of the title: a double ruled seal, Original above Alternate) */
+#rig .stamp span { padding: 4px 12px 3px; font: 400 17px/1 'IM Fell English SC', Georgia, serif; letter-spacing: .1em; text-align: center; color: #8a2a12; border-radius: 1px; transition: background-color .2s; }
+#rig .stamp span.on { background: rgba(138, 42, 18, .85); color: #f6eedb; }
+#rig .stamp span:not(.on):hover { background: rgba(138, 42, 18, .14); }
+#rig .tape { top: 0; bottom: 0; width: 9px; box-shadow: inset 0 0 0 1px rgba(90, 70, 40, .25); }
+#rig .rod, #rig .knob, #rig .cord, #rig .drop { position: absolute; }
+#rig .rod { border-radius: 12px; } #rig .knob { border-radius: 50%; }
+/* the map drawer under the sheet (a slim card-catalogue drawer): closed, only its walnut front with a brass pull shows; open, the cards slide up from behind
+   the front over the ability text, with a deep shadow and the bottom of the room darkened (#mshade) */
+#mshade { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .45s ease;
+  background: linear-gradient(0deg, rgba(8,4,1,.62) 0, rgba(8,4,1,.48) 14%, rgba(8,4,1,.2) 26%, rgba(8,4,1,0) 40%); }
+.drawer-open #mshade { opacity: 1; }
+#mapdrawer { position: absolute; left: 50%; bottom: 0; width: 1340px; height: 236px; margin-left: -670px; overflow: hidden; pointer-events: none; }
+#mapdrawer > * { pointer-events: auto; }
+#rack { position: absolute; left: 50px; right: 50px; top: 60px; height: 150px; transform: translateY(150px); transition: transform .5s cubic-bezier(.3, .7, .3, 1); }
+.drawer-open #rack { transform: translateY(0); }
+#dfront { position: absolute; left: 50px; right: 50px; bottom: 0; height: 52px; padding: 0; border: 0; border-top: 2px solid #b8893a; border-radius: 4px 4px 0 0; cursor: pointer;
+  background: linear-gradient(180deg, #6a4122, #4e2f17 45%, #34200e); box-shadow: 0 -2px 0 rgba(0,0,0,.6), 0 -8px 20px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,220,160,.25), inset 0 0 0 1px rgba(20,10,4,.5); color: inherit; }
+#dfront::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: repeating-linear-gradient(92deg, rgba(0,0,0,.08) 0 3px, rgba(255,220,170,.035) 3px 9px, rgba(0,0,0,.05) 9px 14px); }
+#dfront .pull { position: absolute; left: 50%; top: 9px; width: 52px; height: 10px; margin-left: -26px; border-radius: 5px; background: linear-gradient(180deg, #f0d284, #9a7428); box-shadow: 0 1px 2px rgba(0,0,0,.7); transition: width .3s, margin-left .3s; }
+#dfront:hover .pull { width: 70px; margin-left: -35px; }
+#dfront:focus-visible { outline: 2px solid #e8c878; outline-offset: -4px; }
+#dfront .hint { position: absolute; left: 0; right: 0; bottom: 7px; text-align: center; font: 400 19px/1 'IM Fell English SC', Georgia, serif; letter-spacing: .26em; color: #f0d79a; text-shadow: 0 1px 0 rgba(0,0,0,.8), 0 0 6px rgba(0,0,0,.5); transition: opacity .3s; }
+.drawer-open #dfront .hint { opacity: 0; }
+#rack .dbody { position: absolute; left: 0; right: 0; top: 54px; bottom: 0; border-top: 1px solid rgba(232,190,120,.28); border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #4a2c16, #33200f 60%, #24160a); box-shadow: 0 -4px 6px rgba(0,0,0,.55), 0 -18px 40px rgba(0,0,0,.75); }
+#rack .drecess { position: absolute; left: 12px; right: 12px; top: 74px; height: 64px; background: linear-gradient(180deg, #120a04, #1e1208); box-shadow: inset 0 8px 14px rgba(0,0,0,.75); }
+#rack .dgrp { position: absolute; top: 46px; height: 28px; border-radius: 4px 4px 0 0; background: linear-gradient(180deg, #d9cba8, #c4b48c); box-shadow: 0 -6px 16px rgba(0,0,0,.55);
+  font: 400 15px/28px 'IM Fell English SC', Georgia, serif; letter-spacing: .2em; text-align: center; color: #4a3420; white-space: nowrap; }
+#rack .dcard { position: absolute; top: 80px; height: 52px; padding: 0; border: 0; border-radius: 4px 4px 0 0; cursor: pointer;
+  background: linear-gradient(180deg, #efe5cc, #ddd0ae); box-shadow: 0 -1px 0 rgba(255,255,255,.3), 0 5px 8px rgba(0,0,0,.5);
+  font: 400 23px/36px 'IM Fell English', Georgia, serif; color: #3a2818; transition: transform .18s ease, filter .18s; }
+#rack .dcard:hover { transform: translateY(-5px); filter: brightness(1.05); }
+#rack .dcard[aria-current="true"] { transform: translateY(-9px); color: #8a2a12; }
+#rack .dcard:focus-visible { outline: 2px solid #e8c878; }
+#rack .derr { position: absolute; left: 0; right: 0; top: 80px; margin: 0; text-align: center; color: #f2f2f2; font: italic 24px 'IM Fell English', Georgia, serif; }
+@media (prefers-reduced-motion: reduce) { #rack, #mshade, #rack .dcard { transition: none; } }
+
+
+/* Approved drawer controls: wax-filled engraving, traditional solid back arrow.
+   Centers match the fixed cabinet end blocks: x=48/1352, y=37 on 1400x820. */
+.drawerpage { --cut-top:#94724b; --cut-mid:#e3c28a; --cut-bottom:#efd5a3; }
+.drawerpage .roombar { padding:0; height:9.02439024%; align-items:center; }
+.drawerpage .roombar>a,.drawerpage .roombar>.right { position:absolute; top:0; width:6.85714286%; height:100%; display:flex; align-items:center; justify-content:center; }
+.drawerpage .roombar>a { left:0; }
+.drawerpage .roombar>.right { right:0; }
+.drawerpage .roombtn.carve { display:inline-flex; align-items:center; justify-content:center; width:100%; height:100%; border:0; padding:0; border-radius:0; background:none; box-shadow:none; color:inherit; transform:none; filter:none; }
+.drawerpage .roombar>a.roombtn.carve { width:6.85714286%; }
+.drawerpage .roombtn.carve svg { width:56.25%; height:72.973%; overflow:visible; fill:none; stroke:none; }
+.drawerpage #sound svg { transform:translateX(-1.5%); }
+.drawerpage .carve path { fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.drawerpage .carve .edge { stroke:#b7784a; stroke-width:5.5; transform:translate(0,.65px); opacity:.85; }
+.drawerpage .carve .shade { stroke:#190b07; stroke-width:5.5; transform:translate(0,-.45px); opacity:1; }
+.drawerpage .carve .face { stroke:url(#carve-fill); stroke-width:3.6; filter:url(#cutgrain); }
+.drawerpage .carve .solid .edge { fill:#b7784a; stroke-width:1.7; }
+.drawerpage .carve .solid .shade { fill:#190b07; stroke-width:1.7; }
+.drawerpage .carve .solid .face { fill:url(#carve-fill); stroke-width:0; }
+.drawerpage .roombtn.carve:hover { filter:brightness(1.17); }
+.drawerpage .roombtn.carve:active { transform:none; filter:brightness(.9); }
+.drawerpage .roombtn.carve:focus-visible { outline:2px solid #e8c78c; outline-offset:2px; }
+
+/* Hover-revealed bare groove with the wooden-slide option's rectangular handle; the carved speaker remains unchanged. */
+.drawer-volume { position:relative; width:100%; height:100%; }
+.drawer-volume-panel { position:absolute; z-index:8; top:99%; left:29%; width:42%; height:170%; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(-6px); transition:opacity .16s,transform .2s,visibility .16s;
+  background:none; border:0; border-radius:0; box-shadow:none; }
+.drawer-volume-panel::before { content:''; position:absolute; inset:-8px -6px 0; }
+.drawer-volume:has(input:active) .drawer-volume-panel { opacity:1; visibility:visible; pointer-events:auto; transform:none; }
+/* Hover reveals it only where there is a real hover (a mouse); a touch screen keeps the plain tap-to-mute speaker (no sticky :hover after a tap, and the device has its own volume). */
+@media (hover:hover) and (pointer:fine) { .drawer-volume:hover .drawer-volume-panel { opacity:1; visibility:visible; pointer-events:auto; transform:none; } }
+@media (hover:none), (pointer:coarse) { .drawer-volume-panel { display:none; } }
+#library-volume { position:absolute; inset:4% 14% 8%; width:72%; height:88%; margin:0; padding:0; appearance:none; -webkit-appearance:none; writing-mode:vertical-lr; direction:rtl; background:transparent; cursor:var(--cur-hand); touch-action:none; --volume:100%; }
+#library-volume::-webkit-slider-runnable-track { width:4px; height:100%; border-radius:3px; background:linear-gradient(to top,#e3c28a var(--volume),#31130c var(--volume)); box-shadow:-1px 0 2px #130805,1px 0 #bd8051; }
+#library-volume::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:22px; height:11px; margin-left:-9px; border:1px solid #3d2710; border-radius:3px; background:linear-gradient(#f0d49a,#ab7836 50%,#e1be75); box-shadow:0 2px 3px #0008; }
+#library-volume::-moz-range-track { width:4px; height:100%; border-radius:3px; background:#31130c; box-shadow:-1px 0 2px #130805,1px 0 #bd8051; }
+#library-volume::-moz-range-progress { width:4px; background:#e3c28a; }
+#library-volume::-moz-range-thumb { width:20px; height:9px; border:1px solid #3d2710; border-radius:3px; background:linear-gradient(#f0d49a,#ab7836 50%,#e1be75); box-shadow:0 2px 3px #0008; }
+#library-volume:focus-visible { outline:1px solid #edcf90; outline-offset:2px; }
+/* Keyboard users can reach the otherwise hover-only control without opening it on a mouse click. */
+.drawer-volume:has(:focus-visible) .drawer-volume-panel { opacity:1; visibility:visible; pointer-events:auto; transform:none; }
+@media(prefers-reduced-motion:reduce) { .drawer-volume-panel { transition:none; } }

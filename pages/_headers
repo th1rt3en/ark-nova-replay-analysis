@@ -51,6 +51,10 @@
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /maps_blank/*.jpg
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/wall_maps/*.webp
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/tile_art/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 /emu_cup_winners/thumbs/*
   Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
 # Fonts: the files never change under the same name

@@ -62,7 +62,10 @@ button { font: inherit; color: inherit; }
 .mount > button.card { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: var(--cur-hand); border-radius: 6%/4.4%; }
 .mount > button.card:focus-visible { outline: 3px solid var(--velvet); outline-offset: 3px; }
 .mount img { display: block; width: 100%; height: auto; border-radius: 6%/4.4%; }
-.mount::after { content: ''; position: absolute; inset: -5px; pointer-events: none; --c: 17px; background: linear-gradient(135deg, #2E1810 0 var(--c), rgba(0, 0, 0, 0) calc(var(--c) + .7px)), linear-gradient(225deg, #2E1810 0 var(--c), rgba(0, 0, 0, 0) calc(var(--c) + .7px)), linear-gradient(315deg, #2E1810 0 var(--c), rgba(0, 0, 0, 0) calc(var(--c) + .7px)), linear-gradient(45deg, #2E1810 0 var(--c), rgba(0, 0, 0, 0) calc(var(--c) + .7px)); }
+/* Old Glassine: translucent aged film with folded rims, seams and scuffs. */
+.mount > .photo-pocket{position:absolute;width:28px;height:28px;top:-5px;left:-5px;pointer-events:none;z-index:1;overflow:visible;transform-origin:center;--face:rgba(247,232,184,.34);--band:rgba(245,224,166,.48);--rim:rgba(133,106,60,.66);--seam:rgba(104,79,40,.56);--glint:rgba(255,249,226,.72);--scuff:rgba(139,114,67,.23);--under:rgba(86,62,27,.19);}
+.mount > .photo-pocket:nth-of-type(2){left:auto;right:-5px;transform:rotate(90deg)}.mount > .photo-pocket:nth-of-type(3){left:auto;top:auto;right:-5px;bottom:-5px;transform:rotate(180deg)}.mount > .photo-pocket:nth-of-type(4){top:auto;bottom:-5px;transform:rotate(270deg)}
+.mount > .photo-pocket .face{fill:var(--face);stroke:none}.mount > .photo-pocket .fold{fill:var(--band);stroke:none}.mount > .photo-pocket .rim{fill:none;stroke:var(--rim);stroke-width:.75;stroke-linejoin:round}.mount > .photo-pocket .seam{fill:none;stroke:var(--seam);stroke-width:.85;stroke-linecap:round}.mount > .photo-pocket .glint{fill:none;stroke:var(--glint);stroke-width:.8;stroke-linecap:round}.mount > .photo-pocket .scuff{fill:none;stroke:var(--scuff);stroke-width:.45;stroke-linecap:round}.mount > .photo-pocket .under{fill:none;stroke:var(--under);stroke-width:1.7;stroke-linecap:round}
 .mount .mw { position: absolute; z-index: 1; right: -9px; bottom: 10px; width: 30px; height: 30px; padding: 0; border: 2px solid var(--ink); border-radius: 50%; background: #2A8FC4; color: #fff; font: 700 10px/1 'Park Label', system-ui, sans-serif; cursor: var(--cur-hand); box-shadow: 0 2px 0 var(--ink); }
 .mount .mw[aria-pressed="false"] { background: #E9DDBF; color: var(--ink); } .mount .mw:focus-visible { outline: 3px solid var(--velvet); outline-offset: 2px; }
 
@@ -136,3 +139,8 @@ button { font: inherit; color: inherit; }
   #drawer { width: calc(100vw - 16px); --drawer-h: 400px; } .tray { grid-template-columns: 1fr; overflow: auto; } #marks button { width: 40px; height: 74px; } #marks button span { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) { .leaf, #drawer, .mount, .stamp, #marks button { transition: none; } .print, .stamp.hit { animation: none; } }
+
+/* the sound button (js/library_sound.js): a round plate at the top right, like the Library plate */
+.soundplate { left: auto; right: 12px; width: 30px; padding: 0; justify-content: center; cursor: var(--cur-hand); }
+.soundplate svg { width: 18px; height: 18px; fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.soundplate .wave { display: none; } .soundplate.on .wave { display: inline; } .soundplate.on .mute { display: none; }

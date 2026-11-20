@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Player - Ark Nova Park</title>
+<title>Player - Park Nova</title>
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/css/lobbies.css">
 <link rel="stylesheet" href="/css/park-fonts.css">
@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/css/poster-content.css">
 </head>
 <body class="poster narrow">
-<p class="small"><a href="/">&larr; Ark Nova Park</a> &middot; <a href="/ratings.html">Ratings</a></p>
+<p class="small"><a href="/">&larr; Park Nova</a> &middot; <a href="/ratings.html">Ratings</a></p>
 <div id="msg" class="muted">Loading…</div>
 <main id="player" class="pp" hidden>
   <h1 id="name"></h1>
@@ -44,7 +44,7 @@ async function main() {
   if (!res.ok) { $('msg').textContent = 'No such player.'; return; }
   const p = await res.json();
   $('msg').hidden = true; $('player').hidden = false;
-  document.title = p.username + ' - Ark Nova Park';
+  document.title = p.username + ' - Park Nova';
   $('name').textContent = p.username;
   $('sub').textContent = `Player ${p.id} · member since ${p.member_since}` + (p.seeded_from_bga ? ' · starting rating copied from Board Game Arena (not verified)' : '');
   const stat = (v, l) => { const d = mk('div', 'stat'); d.append(mk('b', typeof v === 'number' ? null : 'word', String(v)), mk('span', null, l)); return d; };

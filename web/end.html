@@ -7,7 +7,7 @@
 <link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
-<title>Game over - Ark Nova Park</title>
+<title>Game over - Park Nova</title>
 <link rel="stylesheet" href="/style.css">
 <link rel="stylesheet" href="/css/endstats.css">
 <link rel="stylesheet" href="/css/lobbies.css">
@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/css/poster-content.css">
 </head>
 <body class="poster narrow m-custom">
-<p class="small"><a href="/">&larr; Ark Nova Park</a></p>
+<p class="small"><a href="/">&larr; Park Nova</a></p>
 <div id="msg" class="loading" role="status">Loading the result…</div>
 <main id="end" class="pp" hidden>
   <div id="endstats" class="endstats" style="display:block"></div>
@@ -55,7 +55,7 @@
   msg.hidden = true;
   $('end').hidden = false;
   const res = data.result || {};
-  document.title = 'Game ' + game + ' over - Ark Nova Park';
+  document.title = 'Game ' + game + ' over - Park Nova';
   EndStats.render($('endstats'), { names: [0, 1].map((i) => data.names[i] || 'Seat ' + (i + 1)), scores: res.scores || [], winner: res.winner, conceded: res.conceded, reason: res.reason || (/overtime/.test(data.end_reason || '') ? 'overtime' : undefined),
                                    status: data.status, stats: data.stats && data.stats.players });
   const bits = ['Game ' + game];

@@ -24,13 +24,11 @@ export const PREVIEW_CARDS = new Set(['S210', 'S211', 'S213', 'S243', 'S244', 'S
 export function card(key, extraClass, seat) {                          // `seat`: whose discounts the price shows (a seat, or 'display'; price.js); none = the printed price
   if (key === '?') {                                                     // a card the viewer may not see (the other player's hand in a player's point of view)
     const b = el('div', 'card back' + (extraClass ? ' ' + extraClass : ''));
-    b.title = 'Hidden card';
     b.append(el('span', 'backmark', '?'));
     return b;
   }
   const c = info(key);
   const d = el('div', 'card' + (extraClass ? ' ' + extraClass : ''));
-  d.title = cardName(key) + ' (' + key + ')';
   if (c.image) {
     const img = el('img');
     img.src = snakeSafe(c.image); img.alt = cardName(key);                // (not lazy: a card drawn again with the page's next render would show an empty frame first)

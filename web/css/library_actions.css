@@ -80,3 +80,8 @@ button { font: inherit; color: inherit; }
 #big .step:hover, #bigclose:hover { background: #fff; }
 @media (max-width: 760px) { #big .pair { flex-direction: column; } #big figure img { height: min(42vh, 78vw * 1040 / 745); } #bigprev { left: -6px; } #bignext { right: -6px; } }
 @media (prefers-reduced-motion: reduce) { .pocket img, .tab { transition: none; } }
+
+/* the sound button (js/library_sound.js): a round plate at the top right, like the Library plate */
+.soundplate { left: auto; right: 12px; width: 30px; padding: 0; justify-content: center; cursor: var(--cur-hand); }
+.soundplate svg { width: 18px; height: 18px; fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.soundplate .wave { display: none; } .soundplate.on .wave { display: inline; } .soundplate.on .mute { display: none; }

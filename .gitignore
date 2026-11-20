@@ -68,3 +68,11 @@ _to_delete/
 baselines/
 Start Ark Nova.bat
 bdw_maps/
+
+# Local helper files of the frontend work (PR staging folders, backups before a sync, release archives and git bundles, a third-party checkout)
+_pr*/
+_backup*/
+_ext/
+rc[0-9]*.tar
+rc[0-9]*.md5
+*.bundle

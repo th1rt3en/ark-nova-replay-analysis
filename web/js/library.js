@@ -1,8 +1,9 @@
 // The Library hall (library/index.html): one candle-lit wall of mahogany bookcases, drawn as an SVG. Four bays, one per section of the library:
 // Cards (opens the card library), Action cards, Bonus tiles (over an open fire) and Maps (a world map, the continent atlases, a globe that spins on a click).
 // A narrow bookcase between them is a door, ajar, with a dark-red glow behind it. A cat sits in a basket by the fire: it blinks, and a click pets it.
+import { isPlaying, fadeOutThen, getSoundVolume } from './library_sound.js?v=20261120a';
 const svg = document.getElementById('hall');
-const INK = '#2A1210', BRASS = '#D9A441', BLUE = '#2A8FC4', MAG = '#A72070';
+const INK = '#2A1210', BRASS = '#D9A441';
 const F = (n) => Math.round(n * 10) / 10;
 function rng(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const PAL = ['#7A1F2E', '#8C2F39', '#A23B3B', '#5A1A28', '#7A1F2E', '#B5533C', '#C98B3A', '#D9A441', '#4F6B45', '#2F5248', '#34506B', '#4A3B5C', '#6B3A4A', '#D8BE93', '#8A6A4A', '#8C2F39'];
@@ -12,7 +13,8 @@ const ZCOL = ['#2F5248', '#5A1A28', '#243B55', '#4F6B45', '#6B2A36'];
 function book(x, yb, w, h, col, r, title) {
   let s = `<rect x="${F(x)}" y="${F(yb - h)}" width="${F(w)}" height="${F(h)}" rx="1.2" fill="${col}"/>`;
   if (title) {
-    s += `<rect x="${F(x + 3)}" y="${F(yb - h + 8)}" width="${F(w - 6)}" height="2" fill="${BRASS}"/><rect x="${F(x + 3)}" y="${F(yb - 12)}" width="${F(w - 6)}" height="2" fill="${BRASS}"/><text transform="translate(${F(x + w / 2 + 3.4)} ${F(yb - h / 2)}) rotate(-90)" text-anchor="middle" font-size="${F(Math.min(10.5, (h - 30) / (title.length * .74)))}" font-weight="600" letter-spacing=".8" fill="#EBCB7C" font-family="Fraunces,Georgia,serif">${title}</text>`;
+    const top = yb - h + 10, bot = yb - 12, band = bot - top - 12, fs = Math.min(10.2, band / (title.length * .82 + .5));
+    s += `<rect x="${F(x + 3)}" y="${F(yb - h + 8)}" width="${F(w - 6)}" height="2" fill="${BRASS}"/><rect x="${F(x + 3)}" y="${F(yb - 12)}" width="${F(w - 6)}" height="2" fill="${BRASS}"/><text transform="translate(${F(x + w / 2 + fs * .34)} ${F((top + bot) / 2 + .4)}) rotate(-90)" text-anchor="middle" font-size="${F(fs)}" font-weight="600" letter-spacing=".5" fill="#EBCB7C" font-family="Fraunces,Georgia,serif">${title}</text>`;
   } else {
     const k = r();
     if (k < .34) s += `<rect x="${F(x)}" y="${F(yb - h * .82)}" width="${F(w)}" height="1.8" fill="${BRASS}" opacity=".85"/><rect x="${F(x)}" y="${F(yb - h * .2)}" width="${F(w)}" height="1.8" fill="${BRASS}" opacity=".85"/>`;
@@ -21,14 +23,24 @@ function book(x, yb, w, h, col, r, title) {
   return s + `<rect x="${F(x)}" y="${F(yb - h)}" width="${F(w)}" height="${F(h)}" rx="1.2" fill="url(#sp)" stroke="${INK}" stroke-width=".9"/>`;
 }
 function row(x0, x1, yb, hmax, seed, gaps = [], titles = []) {
-  const r = rng(seed); let s = '', x = x0; const t = titles.slice(); const at = t.map((_, i) => x0 + (x1 - x0) * ((i + .35 + r() * .3) / t.length));
+  const r = rng(seed); let s = '', x = x0, prev = null; /* prev: the book standing right before x (its right edge and height), for a book to lean on */ const t = titles.slice(); const at = t.map((_, i) => x0 + (x1 - x0) * ((i + .35 + r() * .3) / t.length));
   while (x < x1 - 6) {
-    const g = gaps.find(([a, b]) => x + 4 > a && x < b); if (g) { x = g[1]; continue; }
+    const g = gaps.find(([a, b]) => x + 4 > a && x < b); if (g) { x = g[1]; prev = null; continue; }
     const next = gaps.find(([a]) => a > x), lim = next ? Math.min(x1, next[0]) : x1;
-    if (t.length && x >= at[0] && lim - x > 30) { const w = 27 + r() * 4; s += book(x, yb, w, hmax * (.9 + r() * .08), ZCOL[Math.floor(r() * ZCOL.length)], r, t.shift()); at.shift(); x += w; continue; }
-    const w = Math.min(lim - x, 8 + r() * 13); if (w < 5) { x = lim; continue; }
+    if (t.length && x >= at[0] && lim - x > 30) { const w = 27 + r() * 4, h = hmax * (.9 + r() * .08); s += book(x, yb, w, h, ZCOL[Math.floor(r() * ZCOL.length)], r, t.shift()); at.shift(); x += w; prev = { r: x, h }; continue; }
+    const w = Math.min(lim - x, 8 + r() * 13); if (w < 5) { x = lim; prev = null; continue; }
     const h = hmax * (.6 + r() * .36), col = PAL[Math.floor(r() * PAL.length)];
-    if (r() < .06 && lim - x > w + 14) { s += `<g transform="rotate(-9 ${F(x)} ${yb})">${book(x + 2, yb, w, h, col, r)}</g>`; x += w + 13; } else { s += book(x, yb, w, h, col, r); x += w; }
+    // A leaning book rests like a real one: it stands on its bottom-left corner on the shelf and leans left against the book before it, touching it
+    // (with its top-left corner when that book is taller, else with its left side on that book's top corner), so it never overlaps a book or leans on air.
+    // Only right after a standing book, never after a gap; the next book stands right of its lifted bottom-right corner.
+    let lean = 0, p = 0;
+    if (r() < .06 && prev && Math.abs(prev.r - x) < .01) {
+      const deg = 9 + (w * 7) % 6, a = deg * Math.PI / 180;
+      p = x + .6 + (prev.h >= h * Math.cos(a) ? h * Math.sin(a) : prev.h * Math.tan(a));
+      if (p + w * Math.cos(a) + 1 <= lim) lean = deg;
+    }
+    if (lean) { const a = lean * Math.PI / 180; s += `<g transform="rotate(${F(-lean)} ${F(p)} ${yb})">${book(p, yb, w, h, col, r)}</g>`; x = p + w * Math.cos(a) + .8; prev = null; }
+    else { s += book(x, yb, w, h, col, r); x += w; prev = { r: x, h }; }
   }
   return s;
 }
@@ -93,13 +105,6 @@ function worldMap(cx, cy, rx, ry) {
   let grat = ''; for (let lon = -150; lon <= 150; lon += 30) { let d = ''; for (let lat = -90; lat <= 90; lat += 6) d += (d ? 'L' : 'M') + pt(lon, lat); grat += d; } for (let lat = -60; lat <= 60; lat += 30) { let d = ''; for (let lon = -180; lon <= 180; lon += 8) d += (d ? 'L' : 'M') + pt(lon, lat); grat += d; }
   return `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#BCD2CB" stroke="#5A4526" stroke-width="1.4"/><path d="${grat}" fill="none" stroke="#5A4526" stroke-width=".5" opacity=".35"/><path d="${LANDD.map(P).join('')}" fill="#B9A66C" stroke="#5A4526" stroke-width=".7" stroke-linejoin="round"/><path d="${P(CASPD)}" fill="#BCD2CB" stroke="#5A4526" stroke-width=".5"/><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="none" stroke="#5A4526" stroke-width="1.4"/>`;
 }
-// a small silhouette of one region for a book spine: the polygons named, cut to a lon / lat window, fitted into a box
-let miniN = 0;
-function mini(keys, [l0, l1, b0, b1], x, y, w, h, fill) {
-  const k = Math.min(w / (l1 - l0), h / (b1 - b0)), ox = x + (w - (l1 - l0) * k) / 2, oy = y + (h - (b1 - b0) * k) / 2, id = 'mini' + (miniN++);
-  const P = (poly) => 'M' + poly.map(([a, b]) => F(ox + (a - l0) * k) + ' ' + F(oy + (b1 - b) * k)).join('L') + 'Z';
-  return `<clipPath id="${id}"><rect x="${F(ox)}" y="${F(oy)}" width="${F((l1 - l0) * k)}" height="${F((b1 - b0) * k)}"/></clipPath><path clip-path="url(#${id})" d="${keys.map((q) => P(LAND[q])).join('')}" fill="${fill}"/>`;
-}
 // the globe: an orthographic view, centred on lon0 (0 = Greenwich), tilted a little towards the north; points on the far side are pushed to the rim
 function globeGeo(lon0, R, lat0 = 18) {
   const sp = Math.sin(lat0 * RAD), cp = Math.cos(lat0 * RAD);
@@ -129,7 +134,7 @@ const PANDA = `<g><path d="M-16 23q8 -7 16 -2q8 -5 16 2" fill="none" stroke="${B
 
 /* ---------- geometry ---------- */
 const BAYS = [{ id: 'cards', name: 'CARDS', x0: 56, x1: 404 }, { id: 'action', name: 'ACTION CARDS', x0: 440, x1: 760 }, { id: 'tiles', name: 'BONUS TILES', x0: 920, x1: 1224 }, { id: 'maps', name: 'MAPS', x0: 1260, x1: 1544 }];
-const LIVE = { cards: '/library/cards', action: '/library/actions' };          // the bays that open a page (the others are "coming soon")
+const LIVE = { cards: '/library/cards', action: '/library/actions', tiles: '/library/tiles', maps: '/library/maps' };          // the bays that open a page (a bay missing here is "coming soon")
 const DOOR = { x0: 796, x1: 884 };
 const SH = [250, 358, 466, 574, 682, 790];
 const arch = (x0, x1, pad = 0) => `M${x0 - pad} 790V150Q${x0 - pad} ${100 - pad} ${(x0 + x1) / 2} ${84 - pad}Q${x1 + pad} ${100 - pad} ${x1 + pad} 150V790Z`;
@@ -139,29 +144,107 @@ function bayBack(x0, x1) { return `<rect x="${x0 - 30}" y="50" width="${x1 - x0 
 function cards() {
   const [a, b] = [56, 404];
   return bayBack(a, b)
-    + row(a - 10, b + 10, SH[0], 86, 11, [[86, 124]], ['MAMMALIA']) + row(a - 10, b + 10, SH[1], 92, 12, [[318, 392]], ['AVES', 'CARNIVORA'])
+    + row(a - 10, b + 10, SH[0], 86, 11, [[290, 354]], ['MAMMALIA']) + shelfInstruments() + row(a - 10, b + 10, SH[1], 92, 12, [[318, 392]], ['AVES', 'CARNIVORA'])
     + row(a - 10, b + 10, SH[2], 92, 13, [[300, 372]], ['REPTILIA']) + row(a - 10, b + 10, SH[3], 92, 14, [[74, 152]], ['PRIMATES'])
-    + row(a - 10, b + 10, SH[4], 92, 15, [[236, 304]], ['PISCES', 'URSIDAE']) + row(a - 10, b + 10, SH[5], 92, 16, [[292, 420]], ['AMPHIBIA', 'FELIDAE'])
-    + fern(355, SH[1], 1.05, 3) + cover(80, SH[3], 62, 84, '#2F5248', PAW) + cover(305, SH[2], 62, 86, '#3F6B4A', PANDA) + terrarium(270, SH[4])
-    + `<path d="M298 790q46 -22 92 0z" fill="#8C2F39" stroke="${INK}" stroke-width="1.5"/><path d="M306 786q38 -14 76 0" fill="none" stroke="${BRASS}" stroke-width="1.4" opacity=".8"/>`;
+    + row(a - 10, b + 10, SH[4], 92, 15, [[236, 304]], ['PISCES', 'URSIDAE']) + row(a - 10, b + 10, SH[5], 92, 16, [], ['AMPHIBIA', 'FELIDAE'])
+    + fern(355, SH[1], 1.05, 3) + cover(80, SH[3], 62, 84, '#2F5248', PAW) + cover(305, SH[2], 62, 86, '#3F6B4A', PANDA) + terrarium(270, SH[4]);
 }
 // the five action cards as box files; their labels carry soft versions of the action icons: an elephant (Animals), a person (Association), a shovel (Build), three cards (Cards), an @ (Sponsors)
-const ACT = [
-  (c) => `<ellipse cx="-4.5" cy="-1" rx="6.2" ry="7.6" fill="${c}" opacity=".62"/><circle cx="1.5" cy="-2.2" r="7" fill="${c}"/><path d="M7 -1.5q5.6 1.8 4.6 7.6q-.8 4 -4.2 2.4" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round"/><path d="M4.6 3.4q1.6 2.6 4 2.4" fill="none" stroke="#FFF7E6" stroke-width="1.5" stroke-linecap="round"/><circle cx="4" cy="-3.6" r="1.15" fill="#FFF7E6"/>`,
-  (c) => `<circle cy="-5.4" r="5.2" fill="${c}"/><path d="M-10.5 10.5q0 -10 10.5 -10q10.5 0 10.5 10z" fill="${c}"/><path d="M-2.6 2.4l2.6 2.2 2.6 -2.2" fill="none" stroke="#FFF7E6" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>`,
-  (c) => `<g transform="rotate(38)"><path d="M0 -12.5V2" stroke="${c}" stroke-width="2.8" stroke-linecap="round"/><path d="M-3.6 -12.5h7.2" stroke="${c}" stroke-width="2.8" stroke-linecap="round"/><path d="M-5.4 1h10.8v5.2q0 5.4 -5.4 6.6q-5.4 -1.2 -5.4 -6.6z" fill="${c}"/></g><path d="M-9.5 9q-.6 -4.6 3.6 -5.4q.4 4.4 -3.6 5.4z" fill="#5E9A63"/>`,
-  (c) => `<g fill="#FFF7E6" stroke="${c}" stroke-width="1.9" stroke-linejoin="round"><rect x="-5" y="-9" width="10" height="14" rx="2.2" transform="rotate(-20 0 9)"/><rect x="-5" y="-9" width="10" height="14" rx="2.2" transform="rotate(20 0 9)"/><rect x="-5" y="-9.6" width="10" height="14" rx="2.2"/></g><path d="M0 -5.4l1.2 2.4 2.6.3-2 1.7.6 2.5L0 .3l-2.4 1.2.6-2.5-2-1.7 2.6-.3z" fill="${c}"/>`,
-  (c) => `<text y="6.6" text-anchor="middle" font-size="20" font-weight="800" fill="${c}" font-family="'Arial Rounded MT Bold','Nunito',system-ui,sans-serif">@</text>`,
-];
+// Worn bookcloth binders: actual action artwork, aged labels and recessed rings.
+
+const binderIcons=["/icons/r3c7.webp", "/icons/r3c8.webp", "/icons/r3c9.webp", "/icons/r3c10.webp", "/icons/r3c12.webp"];
+function drawBinders(){let result='';for(let i=0;i<5;i++){
+const x=523+i*36,y=SH[5]-88,c=['#167b9d','#197aab','#176b99','#9c3064','#227b9b'][i];
+let wear='';const rand=rng(412+i);for(let j=0;j<95;j++){const xx=2+rand()*32,yy=2+rand()*83;wear+=`<path d="M${F(xx)} ${F(yy)}l${F(.3+rand()*1.4)} ${F(rand()*.4)}" stroke="${j%2?'#e4c99b':'#190c08'}" opacity="${(.04+rand()*.12).toFixed(2)}" stroke-width=".25"/>`;}
+const label='#e2cfa4';
+result+=`<g transform="translate(${x} ${y})"><rect x="1" y="2" width="36" height="87" rx="2" fill="#100806" opacity=".65"/><path d="M2 0Q18 -1 34 1L36 86Q18 89 0 87V3Z" fill="${c}" stroke="#28160f" stroke-width="1.2"/><path d="M3 3V84M33 3V84" stroke="#ceb78c" stroke-width=".5" opacity=".28"/><rect x="0" y="1" width="36" height="86" fill="url(#sp)"/>${wear}`;
+result+=`<path d="M4 14L31 13.5L32 43L4.5 44Z" fill="${label}" stroke="#38251a" stroke-width="1.3"/><path d="M5 15L30 15M6 42L30 42" stroke="#fff0cb" opacity=".4" stroke-width=".6"/>`;
+// Actual in-game action artwork: preserve the elephant and other silhouettes exactly.
+result+=`<image href="${binderIcons[i]}" x="7" y="16" width="22" height="25" style="mix-blend-mode:multiply;filter:sepia(.8)"/>`;
+result+=`<circle cx="18" cy="68" r="5.5" fill="#1c110d" stroke="#aa8551" stroke-width="1.4"/><path d="M14 65a5 5 0 0 1 8 0" fill="none" stroke="#e0c38a" stroke-width=".6"/><path d="M3 85q14 1 29 -1" stroke="#d4b484" stroke-width=".7" opacity=".35"/></g>`;
+}return result;}
+const BINDER_NEIGHBOURS=['#74713d','#b18a3f','#d8c59d','#426348','#87674a','#9a9a65'];
+// Pack the two binder-side groups edge to edge, without leaning-book gaps.
+function binderSideBooks(x0,x1,seed){const r=rng(seed),n=Math.ceil((x1-x0)/14),w=(x1-x0)/n;let books='';for(let i=0;i<n;i++)books+=book(x0+i*w,SH[5],w,66+r()*21,BINDER_NEIGHBOURS[(i+seed)%BINDER_NEIGHBOURS.length],r);return books;}
+
+// The gramophone on the shelf: an oak horn, a turned-column case, a record that winds up and runs down, and a tone arm that drops onto the record
+// (sound on) or swings up (mute). Only the drawing is here; its controls (the brass sound button, the volume lever, the tone arm's click area) are
+// native elements in index.html at the same 1600 x 900 scene coordinates, and the code at the bottom of this file moves the arm and the record.
+function compactRadio() {
+  return `<g id="shelf-radio" transform="translate(1392 0)" pointer-events="none"><defs>
+  <linearGradient id="grBrass" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f3d58a"></stop><stop offset=".45" stop-color="#c99a45"></stop><stop offset="1" stop-color="#7a5520"></stop></linearGradient>
+  <linearGradient id="grWal" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8a4626"></stop><stop offset="1" stop-color="#5a2a16"></stop></linearGradient>
+  <linearGradient id="grWalD" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#6e3519"></stop><stop offset="1" stop-color="#3f1c0e"></stop></linearGradient>
+  <linearGradient id="grTop" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5a2a16"></stop><stop offset="1" stop-color="#8a4626"></stop></linearGradient>
+  <linearGradient id="grOak" x1="0" x2="0" y1="-1" y2="1" gradientUnits="objectBoundingBox"><stop offset="0" stop-color="#c98a4e"></stop><stop offset=".5" stop-color="#9a5a2c"></stop><stop offset="1" stop-color="#5a2e14"></stop></linearGradient>
+  <radialGradient id="grMouth" cx=".35" cy=".5" r=".7"><stop offset="0" stop-color="#1e0e06"></stop><stop offset=".75" stop-color="#4a2410"></stop><stop offset="1" stop-color="#8a5028"></stop></radialGradient>
+</defs>
+  <path d="M104 636C105 629 107 625 112 622" fill="none" stroke="${INK}" stroke-width="4.4" stroke-linecap="round"></path>
+  <path d="M104 636C105 629 107 625 112 622" fill="none" stroke="url(#grBrass)" stroke-width="2.6" stroke-linecap="round"></path>
+  <g transform="translate(111 623) rotate(-42)">
+    <path d="M0 -2.1C11 -2.7 20 -5.6 31 -14L31 14C20 5.6 11 2.7 0 2.1Z" fill="url(#grOak)" stroke="${INK}" stroke-width="1" stroke-linejoin="round"></path>
+    <path d="M2 -2.0C10 -2.6 18 -5.8 31 -11.8" fill="none" stroke="#5a2e14" stroke-width=".5" opacity=".9"></path><path d="M2 -1.0C10 -1.3 18 -2.9 31 -5.9" fill="none" stroke="#5a2e14" stroke-width=".5" opacity=".9"></path><path d="M2 0.0C10 0.0 18 0.0 31 0.0" fill="none" stroke="#5a2e14" stroke-width=".5" opacity=".9"></path><path d="M2 1.0C10 1.3 18 2.9 31 5.9" fill="none" stroke="#5a2e14" stroke-width=".5" opacity=".9"></path><path d="M2 2.0C10 2.6 18 5.8 31 11.8" fill="none" stroke="#5a2e14" stroke-width=".5" opacity=".9"></path>
+    <ellipse cx="31" cy="0" rx="4.6" ry="14" fill="url(#grMouth)" stroke="${INK}" stroke-width="1"></ellipse>
+    <ellipse cx="31.3" cy="0" rx="3.9" ry="13.1" fill="none" stroke="#e0b765" stroke-width=".8"></ellipse>
+  </g>
+  <path d="M4 648H120L113 633H11Z" fill="url(#grTop)" stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"></path>
+  <rect x="2" y="647" width="120" height="5.5" rx="1.2" fill="#7a3f22" stroke="${INK}" stroke-width="1.1"></rect>
+  <rect x="8" y="652.5" width="108" height="21.5" fill="url(#grWal)" stroke="${INK}" stroke-width="1.3"></rect>
+  <rect x="17" y="655" width="98" height="16.5" rx="1.5" fill="none" stroke="#c1854b" stroke-width=".6"></rect>
+  <g fill="url(#grWalD)" stroke="${INK}" stroke-width=".9"><rect x="3" y="652.5" width="7" height="21.5" rx="3.5"></rect><rect x="114" y="652.5" width="7" height="21.5" rx="3.5"></rect></g>
+  <path d="M3 656h7M3 670.5h7M114 656h7M114 670.5h7" stroke="#d9ab52" stroke-width="1"></path>
+  <rect x="1" y="674" width="122" height="3.6" rx="1.2" fill="#4a2214" stroke="${INK}" stroke-width="1"></rect>
+  <path d="M4 677.6h8v2.4h-8zM112 677.6h8v2.4h-8z" fill="${INK}"></path>
+  <ellipse cx="54" cy="641.2" rx="40" ry="6.80" fill="#3d1f12" stroke="${INK}" stroke-width=".8"></ellipse>
+  <g transform="translate(54 640) scale(0.952 0.138)"><g id="gram-disc">
+    <circle r="39" fill="#171310" stroke="#0c0907" stroke-width="2"></circle>
+    <circle r="32" fill="none" stroke="#2c2621" stroke-width="1.6"></circle>
+    <circle r="25" fill="none" stroke="#2c2621" stroke-width="1.6"></circle>
+    <path d="M-36 -5A37 37 0 0 1 -14 -34" fill="none" stroke="#6a5d52" stroke-width="3.5" stroke-linecap="round"></path>
+    <circle r="12" fill="#8f2f20"></circle><rect x="-2" y="-11" width="4" height="6" fill="#dfc99b"></rect><circle r="2.2" fill="#dfc99b"></circle>
+  </g></g>
+  <rect x="100.5" y="633.5" width="7" height="7" rx="1.5" fill="url(#grBrass)" stroke="${INK}" stroke-width=".8"></rect>
+  <g id="gram-arm">
+    <path d="M104 636Q88.0 632 73 634.5" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"></path>
+    <path d="M104 636Q88.0 632 73 634.5" fill="none" stroke="url(#grBrass)" stroke-width="1.6" stroke-linecap="round"></path>
+    <ellipse cx="72" cy="635" rx="2.6" ry="4.4" fill="url(#grBrass)" stroke="${INK}" stroke-width=".8"></ellipse><path d="M72 639.4v2" stroke="${INK}" stroke-width=".9"></path>
+  </g>
+  <circle cx="104" cy="636" r="1.8" fill="#f3d58a" stroke="${INK}" stroke-width=".6"></circle>
+  <path d="M28.5 664.5v1.6M41.8 664.5v1.6M55.0 664.5v2.1M68.2 664.5v1.6M81.5 664.5v1.6" stroke="#c9a35a" stroke-width=".6" opacity=".8"></path>
+</g>`;
+}
+// The way back to the park: big-cat paw tracks at the bottom left that walk slowly out of the library on their own (one print after the other
+// toward the left edge, then they fade back; css/library.css). They are the link: hover or focus makes them glow and shows "← Back to Park Nova" in
+// gilt letters (no tooltip: the label is the hint), a click goes there (the click handler at the bottom of this file fades the sound out first).
+// The hover never touches the prints' walk (css/library.css): only their colour and the glow of the group around them change.
+function parkReturn() {
+  const PAW = '<ellipse cx="0" cy="2" rx="4.2" ry="3.4"/><circle cx="-4.4" cy="-3.2" r="1.6"/><circle cx="-1.5" cy="-5.4" r="1.6"/><circle cx="1.8" cy="-5.4" r="1.6"/><circle cx="4.6" cy="-3.2" r="1.6"/>';
+  const paws = Array.from({length:8},(_,k)=>`<g class="exit-paw" style="--k:${k}" transform="translate(${26+k*22} ${860+(k%2)*11}) rotate(-90) scale(1.15)">${PAW}</g>`).join('');
+  return `<defs><linearGradient id="gilt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#FFF3CC"/><stop offset=".5" stop-color="#F6D486"/><stop offset="1" stop-color="#DDAE55"/></linearGradient></defs>
+  <a id="hall-return" href="/" aria-label="Back to Park Nova" tabindex="0">
+    <rect x="0" y="808" width="210" height="80" fill="transparent"/><g class="exit-paws">${paws}</g>
+    <g class="exit-label" aria-hidden="true"><text x="106" y="836.5" text-anchor="middle" font-family="Fraunces,Georgia,serif" font-size="15" font-weight="700" letter-spacing="1" fill="url(#gilt)" stroke="#1a0806" stroke-width="3.2" stroke-linejoin="round" paint-order="stroke"><tspan font-size="1.3em">←</tspan> Back to Park Nova</text></g>
+  </a>`;
+}
+
+// The miniature telescope occupies the top shelf of the Cards bookcase.
+function shelfInstruments() {
+  return `<g id="shelf-instruments"><g transform="translate(322 250)"><path d="M-4 0L4 -30M12 0L4 -30M4 0V-30" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/><path d="M-4 0L4 -30M12 0L4 -30M4 0V-30" stroke="#8A4632" stroke-width="1.8" stroke-linecap="round"/><g transform="translate(4 -32) rotate(-24)"><rect x="-22" y="-4.5" width="26" height="9" rx="2" fill="${BRASS}" stroke="${INK}" stroke-width="1.3"/><rect x="2" y="-3.4" width="18" height="6.8" rx="1.5" fill="#F0CE7A" stroke="${INK}" stroke-width="1.3"/><rect x="-25" y="-5.6" width="5" height="11.2" rx="1.5" fill="#B8862E" stroke="${INK}" stroke-width="1.3"/><rect x="18" y="-2.6" width="5" height="5.2" rx="1" fill="#B8862E" stroke="${INK}" stroke-width="1.3"/></g></g></g>`;
+}
+
+// Approved storybook B: warm illustrated gold trophy, reduced to 80% scale.
+function emuCupTrophy() {
+  return `<g id="emu-cup-trophy" role="img" aria-label="Emu Cup: a crowned golden emu trophy on a dark pedestal"><image href="/assets/library-emu-cup-storybook.webp?v=20261116a" x="486.8" y="149.2" width="78.4" height="100.8" preserveAspectRatio="xMidYMax meet"/></g>`;
+}
+
 function action() {
   const [a, b] = [440, 760];
-  let fold = '';
-  for (let i = 0; i < 5; i++) { const x = 508 + i * 42, up = i === 3, c = up ? MAG : BLUE; fold += `<g><rect x="${x}" y="${SH[5] - 88}" width="36" height="88" rx="2.5" fill="${c}" stroke="${INK}" stroke-width="1.4"/><rect x="${x + 3.5}" y="${SH[5] - 81}" width="29" height="33" rx="3" fill="#FFF7E6" stroke="${INK}" stroke-width=".8"/><g transform="translate(${x + 18} ${SH[5] - 64.5})">${ACT[i](c)}</g><circle cx="${x + 18}" cy="${SH[5] - 22}" r="6.5" fill="none" stroke="#FFF7E6" stroke-width="2.2" opacity=".9"/><rect x="${x}" y="${SH[5] - 88}" width="36" height="88" rx="2.5" fill="url(#sp)"/></g>`; }
+  const fold = '<g id="binder-set">' + drawBinders() + '</g>';
   return bayBack(a, b)
-    + row(a - 10, b + 10, SH[0], 86, 21, [], ['LOXODONTA']) + row(a - 10, b + 10, SH[1], 92, 22, [[690, 770]], ['CAPRA', 'DROMAIUS'])
+    + row(a - 10, b + 10, SH[0], 86, 21, [[481, 572]], ['LOXODONTA']) + emuCupTrophy() + row(a - 10, b + 10, SH[1], 92, 22, [[690, 770]], ['CAPRA', 'DROMAIUS'])
     + row(a - 10, b + 10, SH[2], 92, 23, [[452, 520]], ['PANTHERA']) + row(a - 10, b + 10, SH[3], 92, 24, [[600, 640]], ['AILUROPODA', 'ELEPHAS'])
     + row(a - 10, b + 10, SH[4], 92, 25, [], ['STRIGIDAE'])
-    + row(a - 10, 500, SH[5], 88, 26) + fold + row(724, b + 10, SH[5], 88, 27)
+    + binderSideBooks(a - 10, 523, 26) + fold + binderSideBooks(703, b + 10, 27)
     + ivy(726, SH[0] + 14, 6, 5) + pot(726, SH[1], 24, 16, '#C9A26A') + ivy(716, SH[1] - 20, 5, 9, 'sway')
     + cover(458, SH[2], 56, 84, '#6B2A36', OWL('#6B2A36')) + succ(620, SH[3]);
 }
@@ -190,13 +273,32 @@ function tiles() {
        <g transform="translate(1072 424)"><circle r="21" fill="#7E7276" stroke="#3A2E30" stroke-width="2"/><g transform="scale(.9)"><g fill="#3A2E30"><circle cx="0" cy="5" r="7"/><circle cx="-9" cy="-4" r="3.4"/><circle cx="-3.4" cy="-9" r="3.4"/><circle cx="3.4" cy="-9" r="3.4"/><circle cx="9" cy="-4" r="3.4"/></g></g></g>`
     + `<rect x="920" y="362" width="304" height="16" rx="3" fill="url(#brd)" stroke="${INK}" stroke-width="1.8"/><rect x="928" y="378" width="288" height="8" fill="#4A2018" stroke="${INK}" stroke-width="1.2"/>`;
 }
-// the five continent atlases: the colours of the continent icons, softened; Australia the biggest. Each spine carries the continent's outline.
-const ATLAS = [['AMERICAS', '#D98A3A', 44, 122, ['namerica', 'samerica', 'greenland', 'cuba'], [-170, -30, -58, 84], INK], ['EUROPE', '#6FB2D2', 38, 112, ['eurasia', 'britain', 'ireland', 'iceland'], [-12, 42, 35, 72], INK],
-  ['AFRICA', '#D9B53A', 44, 120, ['africa', 'madagascar'], [-19, 53, -36, 38], INK], ['ASIA', '#7FB07A', 46, 116, ['eurasia', 'honshu', 'hokkaido', 'sumatra', 'borneo', 'srilanka', 'luzon', 'taiwan', 'sakhalin'], [42, 150, -2, 78], INK], ['AUSTRALIA', '#C2344D', 62, 133, ['australia', 'tasmania', 'newguinea', 'nznorth', 'nzsouth'], [112, 180, -47, -1], '#F6DFA0']];
+// Coordinated heritage-leather atlases; each spine shares the same title region.
+const ATLAS = [['AMERICAS', 'Americas', '#8e4a25'], ['EUROPE', 'Europe', '#28566e'], ['AFRICA', 'Africa', '#76601e'], ['ASIA', 'Asia', '#3e5b3e'], ['AUSTRALIA', 'Australia', '#71253a']];
+function atlasSet() {
+  let x = 1269;
+  let s = `<defs><filter id="atlas-foil" color-interpolation-filters="sRGB"><feFlood flood-color="#e8c47c"/><feComposite in2="SourceAlpha" operator="in"/></filter><linearGradient id="atlas-spine"><stop stop-color="#fff5d6" stop-opacity=".13"/><stop offset=".24" stop-color="#fff" stop-opacity="0"/><stop offset=".7" stop-color="#000" stop-opacity=".02"/><stop offset="1" stop-color="#130907" stop-opacity=".32"/></linearGradient></defs>`;
+  ATLAS.forEach(([name, asset, c], i) => {
+    const w = i === 4 ? 62 : 51, h = 126, y = SH[2] - h, cx = x + w / 2, r = rng(870 + i);
+    s += `<g class="atlas-volume" data-name="${name}"><path d="M${x+.8} ${y+2}Q${cx} ${y} ${x+w-.4} ${y+1.5}V465Q${cx} 467 ${x+.4} 465Z" fill="${c}" stroke="#321b13" stroke-width=".8"/>`;
+    s += `<path d="M${x+4} ${y+5}V461M${x+w-4} ${y+5}V461" stroke="#e4bf79" stroke-width=".55" opacity=".58"/><path d="M${x+5} ${y+8}H${x+w-5}M${x+5} 456H${x+w-5}M${x+5} 459H${x+w-5}" stroke="#e5bb70" stroke-width="1"/><path d="M${x+3} ${y+3}V${y+16}M${x+3} 449V462M${x+w-3} ${y+5}V${y+12}" stroke="#edcf9b" opacity=".44" stroke-width=".8"/>`;
+    s += `<image class="atlas-emblem" href="/continents/${asset}.png" x="${cx-16}" y="${y+14}" width="32" height="30" preserveAspectRatio="xMidYMid meet" filter="url(#atlas-foil)"/>`;
+    const ty = (y + 48 + 452) / 2;
+    s += `<text class="atlas-name" transform="translate(${cx} ${ty}) rotate(-90)" text-anchor="middle" dominant-baseline="central" font-size="${name.length>=8?9.1:11}" font-weight="700" letter-spacing=".4" fill="#e8c47c" font-family="Fraunces,Georgia,serif">${name}</text>`;
+    // A small increase over the mock's wear, kept deterministic and very faint.
+    for (let j = 0; j < 63; j++) {
+      const xx = x + 2 + r() * (w - 4), yy = y + 2 + r() * (h - 4);
+      s += `<path d="M${F(xx)} ${F(yy)}l${F(.5+r()*1.4)} ${F((r()-.5)*.6)}" stroke="${j%2?'#f9dfad':'#25150d'}" stroke-width=".25" opacity=".15"/>`;
+    }
+    s += `<path d="M${x+.8} ${y+2}H${x+w-.5}V465H${x+.5}Z" fill="url(#atlas-spine)" pointer-events="none"/></g>`;
+    x += w;
+  });
+  return `<g id="atlas-set">${s}</g>`;
+}
+
 function maps() {
   const [a, b] = [1260, 1544];
-  let atl = '', x = 1274;
-  ATLAS.forEach(([name, c, w, h, keys, win, ink]) => { const y = SH[2] - h, big = w > 50, fs = Math.min(big ? 15 : 13, ((h - 41) / name.length - .8) / .8); atl += `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${c}"/><rect x="${x}" y="${y + 7}" width="${w}" height="2.2" fill="${ink}" opacity=".55"/><rect x="${x}" y="${SH[2] - 9}" width="${w}" height="2.2" fill="${ink}" opacity=".55"/>${mini(keys, win, x + 5, y + 11, w - 10, 14, ink)}<text transform="translate(${F(x + w / 2 + fs * .34)} ${F(SH[2] - 13)}) rotate(-90)" font-size="${F(fs)}" font-weight="800" letter-spacing=".8" fill="${ink}" font-family="Fraunces,Georgia,serif">${name}</text><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="url(#sp)" stroke="${INK}" stroke-width="1"/></g>`; x += w + 3; });
+  const atl = atlasSet();
   // a rack of rolled maps under the atlases: two rows of cubbies, the ends of the rolls showing
   let rack = `<rect x="1266" y="486" width="272" height="78" fill="#3A1814" stroke="${INK}" stroke-width="1.8"/>`; const rr = rng(31);
   for (let j = 0; j < 2; j++) for (let i = 0; i < 8; i++) { const cx = 1270 + i * 33.2, cy = 490 + j * 36; rack += `<rect x="${F(cx)}" y="${cy}" width="30.4" height="33" rx="3" fill="#1E0B0B" stroke="${INK}" stroke-width="1"/>`; const n = 1 + Math.floor(rr() * 3); for (let k = 0; k < n; k++) { const px = cx + 8 + k * 7.4 + rr() * 2, py = cy + 23 - (k % 2) * 9 - rr() * 2, R = 5.6 + rr() * 1.6; rack += `<circle cx="${F(px)}" cy="${F(py)}" r="${F(R)}" fill="${rr() < .5 ? '#E3CC98' : '#D6BD86'}" stroke="#5A4526" stroke-width="1"/><circle cx="${F(px)}" cy="${F(py)}" r="${F(R * .5)}" fill="none" stroke="#8A6F44" stroke-width=".8"/><circle cx="${F(px)}" cy="${F(py)}" r="1" fill="#5A4526"/>` + (rr() < .3 ? `<path d="M${F(px - R)} ${F(py)}h${F(R * 2)}" stroke="#C2344D" stroke-width="2"/>` : ''); } }
@@ -210,13 +312,10 @@ function maps() {
         <text x="1402" y="316" text-anchor="middle" font-size="8.5" font-weight="600" letter-spacing="3" fill="#5A4526" font-family="Fraunces,Georgia,serif">ORBIS TERRARUM</text><rect x="1280" y="152" width="244" height="178" fill="url(#sp)" opacity=".45"/></g>`
     + atl + rack
     + `<rect x="1266" y="690" width="272" height="100" fill="#4A2018" stroke="${INK}" stroke-width="2"/>${ch}`
-    + `<g id="globe" transform="translate(1320 683)" style="cursor:var(--cur-hand)" role="button" tabindex="0" aria-label="Globe: click to spin"><title>Spin the globe</title><path d="M0 0V-12M-17 0H17" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/><path d="M0 0V-12M-17 0H17" stroke="${BRASS}" stroke-width="2.8" stroke-linecap="round"/>
+    + `<g id="globe" transform="translate(1320 683)" style="cursor:var(--cur-hand)" role="button" tabindex="0" aria-label="Globe: click to spin"><path d="M0 0V-12M-17 0H17" stroke="${INK}" stroke-width="5.5" stroke-linecap="round"/><path d="M0 0V-12M-17 0H17" stroke="${BRASS}" stroke-width="2.8" stroke-linecap="round"/>
         <g transform="translate(0 -50)"><clipPath id="gclip"><circle r="37"/></clipPath><circle r="37" fill="#8FB7C4" stroke="${INK}" stroke-width="2"/><g clip-path="url(#gclip)"><path id="ggrat" d="${G.grat}" fill="none" stroke="#2F5A66" stroke-width=".5" opacity=".45"/><path id="gland" d="${G.land}" fill="#9DAA63" stroke="#4A5A2A" stroke-width=".7" stroke-linejoin="round"/><path id="gprime" d="${G.prime}" fill="none" stroke="#C2344D" stroke-width="1.1" opacity=".85"/></g><circle r="37" fill="url(#ball)"/><circle r="37" fill="none" stroke="${INK}" stroke-width="2"/>
         <path d="M-41 -8A42 42 0 0 0 10 40.8" fill="none" stroke="${INK}" stroke-width="4.4" stroke-linecap="round"/><path d="M-41 -8A42 42 0 0 0 10 40.8" fill="none" stroke="${BRASS}" stroke-width="2.4" stroke-linecap="round"/><circle r="40" fill="transparent"/></g></g>`
-    + `<g transform="translate(1372 683)"><circle cy="-6" r="6.5" fill="${BRASS}" stroke="${INK}" stroke-width="1.2"/><circle cy="-6" r="4.2" fill="#FFF7E6" stroke="${INK}" stroke-width=".6"/><path d="M0 -9.4L1.3 -6L0 -2.6L-1.3 -6Z" fill="#8C2F39"/></g>`
-    + `<g><rect x="1404" y="592" width="46" height="56" rx="2" fill="#6A3424" stroke="${INK}" stroke-width="1.6"/><rect x="1409" y="597" width="36" height="46" fill="#E6D2A0" stroke="${INK}" stroke-width=".8"/><g transform="translate(1427 622) scale(.74)" fill="#5E8A4E" stroke="#5E8A4E"><path d="M0 16V-14" stroke-width="1.8" fill="none"/><path d="M0 -14q-8 -1 -8 -10q9 0 8 10zM0 -5q-10 1 -12 -8q10 -2 12 8zM0 -5q10 1 12 -8q-10 -2 -12 8zM0 5q-10 2 -13 -6q10 -3 13 6zM0 5q10 2 13 -6q-10 -3 -13 6z" stroke="none"/></g><path d="M1427 592V584" stroke="${INK}" stroke-width="1.2"/></g>
-      <g transform="translate(1470 683)"><path d="M-4 0L4 -30M12 0L4 -30M4 0V-30" stroke="${INK}" stroke-width="3.4" stroke-linecap="round"/><path d="M-4 0L4 -30M12 0L4 -30M4 0V-30" stroke="#8A4632" stroke-width="1.8" stroke-linecap="round"/><g transform="translate(4 -32) rotate(-24)"><rect x="-22" y="-4.5" width="26" height="9" rx="2" fill="${BRASS}" stroke="${INK}" stroke-width="1.3"/><rect x="2" y="-3.4" width="18" height="6.8" rx="1.5" fill="#F0CE7A" stroke="${INK}" stroke-width="1.3"/><rect x="-25" y="-5.6" width="5" height="11.2" rx="1.5" fill="#B8862E" stroke="${INK}" stroke-width="1.3"/><rect x="18" y="-2.6" width="5" height="5.2" rx="1" fill="#B8862E" stroke="${INK}" stroke-width="1.3"/></g></g>`
-    + fern(1516, 683, .85, 8) + ivy(1290, 96, 3, 21);
+    + compactRadio() + ivy(1290, 96, 3, 21);
 }
 
 /* ---------- frame (front plane) ---------- */
@@ -241,8 +340,14 @@ function shelves() {
   s += `<rect x="1260" y="682" width="284" height="10" fill="url(#brd)" stroke="${INK}" stroke-width="1.4"/>`;
   return s;
 }
+// The labels over the bookcases: a brass frame around a near-black plate with gilt letters (light on dark, readable from far), overhanging the
+// cornice a little. A bookcase under the pointer, or with the keyboard focus, lights up its label (.plq.hot; the listeners are with the bays below).
 function plaques() {
-  return BAYS.map((b) => { const cx = (b.x0 + b.x1) / 2, w = b.name.length * 11 + 34; return `<g class="plq${LIVE[b.id] ? '' : ' soon'}"><rect x="${cx - w / 2}" y="32" width="${w}" height="18" rx="4" fill="url(#brass)" stroke="${INK}" stroke-width="1.4"/><circle cx="${cx - w / 2 + 8}" cy="41" r="1.6" fill="${INK}"/><circle cx="${cx + w / 2 - 8}" cy="41" r="1.6" fill="${INK}"/><text x="${cx}" y="45.5" text-anchor="middle" font-size="11.5" font-weight="800" letter-spacing="2.2" fill="#3A1814" font-family="Fraunces,Georgia,serif">${b.name}</text></g>`; }).join('');
+  const defs = `<defs><linearGradient id="plqBrass" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#F6DA8C"/><stop offset=".5" stop-color="#D9AE58"/><stop offset="1" stop-color="#A9782A"/></linearGradient><linearGradient id="plqPlate" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3B1712"/><stop offset="1" stop-color="#1E0B09"/></linearGradient><linearGradient id="plqGilt" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#FFF3CC"/><stop offset=".5" stop-color="#F6D486"/><stop offset="1" stop-color="#DDAE55"/></linearGradient></defs>`;
+  return defs + BAYS.map((b) => {
+    const cx = (b.x0 + b.x1) / 2, w = b.name.length * (19 * .78 + 2.8) + 54, x = cx - w / 2;
+    return `<g class="plq${LIVE[b.id] ? '' : ' soon'}" data-bay="${b.id}"><rect x="${x}" y="21" width="${w}" height="37" rx="5" fill="#000" opacity=".4" transform="translate(0 2.5)"/><rect x="${x}" y="21" width="${w}" height="37" rx="5" fill="url(#plqBrass)" stroke="${INK}" stroke-width="1.8"/><rect x="${x + 3.5}" y="24.5" width="${w - 7}" height="30" rx="3" fill="url(#plqPlate)" stroke="#6b4518" stroke-width=".8"/><path d="M${x + 13} 39.5l3.4-3.4l3.4 3.4l-3.4 3.4zM${x + w - 13} 39.5l-3.4-3.4l-3.4 3.4l3.4 3.4z" fill="url(#plqGilt)"/><text x="${cx}" y="46.5" text-anchor="middle" font-size="19" font-weight="800" letter-spacing="2.8" fill="url(#plqGilt)" stroke="#120504" stroke-width="2" paint-order="stroke" font-family="Fraunces,Georgia,serif">${b.name}</text></g>`;
+  }).join('');
 }
 function door() {
   let leaf = `<rect x="0" y="0" width="92" height="716" fill="#33140F" stroke="${INK}" stroke-width="2"/>`;
@@ -260,11 +365,10 @@ function floor() {
 }
 function ladder() {
   let r = ''; for (let k = 0; k < 13; k++) { const t = (k + .7) / 14; r += `<path d="M${F(28 * t)} ${F(856 - 792 * t)}h62" stroke="${INK}" stroke-width="8" stroke-linecap="round"/><path d="M${F(28 * t)} ${F(856 - 792 * t)}h62" stroke="#C98B4A" stroke-width="4.5" stroke-linecap="round"/>`; }
-  return `<g id="ladder" transform="translate(150 0)"><ellipse cx="50" cy="860" rx="62" ry="7" fill="#000" opacity=".3"/><path d="M0 856L28 64M62 856L90 64" stroke="${INK}" stroke-width="11" stroke-linecap="round"/><path d="M0 856L28 64M62 856L90 64" stroke="url(#rail)" stroke-width="7" stroke-linecap="round"/>${r}<circle cx="28" cy="68" r="7" fill="${BRASS}" stroke="${INK}" stroke-width="1.6"/><circle cx="90" cy="68" r="7" fill="${BRASS}" stroke="${INK}" stroke-width="1.6"/></g>`;
+  return `<g id="ladder" style="transform:translate(795px,0)"><ellipse cx="50" cy="860" rx="62" ry="7" fill="#000" opacity=".3"/><path d="M0 856L28 64M62 856L90 64" stroke="${INK}" stroke-width="11" stroke-linecap="round"/><path d="M0 856L28 64M62 856L90 64" stroke="url(#rail)" stroke-width="7" stroke-linecap="round"/>${r}<circle cx="28" cy="68" r="7" fill="${BRASS}" stroke="${INK}" stroke-width="1.6"/><circle cx="90" cy="68" r="7" fill="${BRASS}" stroke="${INK}" stroke-width="1.6"/></g>`;
 }
 function props() {
   return `<rect x="952" y="816" width="240" height="16" rx="3" fill="#6E6266" stroke="#3A2E30" stroke-width="1.8"/>
-    <g><ellipse cx="42" cy="862" rx="46" ry="7" fill="#000" opacity=".3"/>${pot(42, 860, 54, 44, '#8C4A32')}<g transform="translate(42 812)"><g class="sway" style="animation-duration:9s">${[-58, -34, -12, 12, 34, 58].map((a, i) => `<g transform="rotate(${a})"><path d="M0 0V-${96 - Math.abs(a) * .5}" stroke="#3F7A4A" stroke-width="3"/><path d="M0 -${96 - Math.abs(a) * .5}q-26 14 -22 46q6 14 22 14q16 0 22 -14q4 -32 -22 -46z" fill="${i % 2 ? '#4F8A55' : '#5E9A63'}" stroke="${INK}" stroke-width="1.4" transform="translate(0 -40)"/></g>`).join('')}</g></g></g>
     <g><ellipse cx="1564" cy="862" rx="40" ry="6" fill="#000" opacity=".3"/><rect x="1530" y="842" width="66" height="16" rx="2" fill="#5A1A28" stroke="${INK}" stroke-width="1.4"/><rect x="1536" y="827" width="58" height="15" rx="2" fill="#2F5248" stroke="${INK}" stroke-width="1.4"/><rect x="1532" y="813" width="56" height="14" rx="2" fill="#C98B3A" stroke="${INK}" stroke-width="1.4"/><path d="M1540 850h20M1546 834h18" stroke="${BRASS}" stroke-width="2"/></g>`;
 }
 // the lights: nothing floats. A brass lantern hangs on a chain in the arch of each bay, and candles stand in brass sconces on four of the pillars.
@@ -331,7 +435,7 @@ svg.innerHTML = `<defs>${clips}
   <g class="lay" data-d=".35"><rect x="-60" y="-40" width="1720" height="120" fill="#2A1C22"/><path d="M-60 26H1660" stroke="#3A2A30" stroke-width="3"/></g>
   <g class="lay" data-d="1.5">${floor()}</g>
   <g class="lay" data-d="1">
-    ${BAYS.map((b) => `<g class="bay${LIVE[b.id] ? '' : ' soon'}" data-bay="${b.id}" tabindex="0" role="${LIVE[b.id] ? 'link' : 'img'}" aria-label="${b.name[0] + b.name.slice(1).toLowerCase()}${LIVE[b.id] ? '' : ' (coming soon)'}">${LIVE[b.id] ? '' : '<title>Coming soon</title>'}<path d="${arch(b.x0, b.x1)}" fill="transparent"/><g clip-path="url(#c${b.id})"><g class="lay" data-d="-.45">${content[b.id]()}</g></g><path class="lit" d="${arch(b.x0, b.x1)}" fill="url(#lit)"/></g>`).join('')}
+    ${BAYS.map((b) => `<g class="bay${LIVE[b.id] ? '' : ' soon'}" data-bay="${b.id}" tabindex="0" role="${LIVE[b.id] ? 'link' : 'img'}" aria-label="${b.name[0] + b.name.slice(1).toLowerCase()}${LIVE[b.id] ? '' : ' (coming soon)'}"><path d="${arch(b.x0, b.x1)}" fill="transparent"/><g clip-path="url(#c${b.id})"><g class="lay" data-d="-.45">${content[b.id]()}</g></g><path class="lit" d="${arch(b.x0, b.x1)}" fill="url(#lit)"/></g>`).join('')}
     ${door()}${shelves()}${frame()}${fixtures()}${plaques()}
   </g>
   <g class="lay" data-d="1.25">${ladder()}</g>
@@ -340,11 +444,11 @@ svg.innerHTML = `<defs>${clips}
   ${catSVG}
   <g pointer-events="none">${lights()}</g>
   <g pointer-events="none">${motes()}</g>
-  <rect width="1600" height="900" fill="url(#vig)" pointer-events="none"/>`;
+  <rect width="1600" height="900" fill="url(#vig)" pointer-events="none"/>${parkReturn()}`;
 
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;                    // (the view is fixed: nothing shifts with the pointer)
 const ladderEl = svg.querySelector('#ladder');
-svg.querySelectorAll('.bay').forEach((g) => { const b = BAYS.find((q) => q.id === g.dataset.bay); const go = () => ladderEl.setAttribute('style', `transform:translate(${b.x0 + 30 - 150}px,0)`); g.addEventListener('pointerenter', go); g.addEventListener('focus', go); });
+requestAnimationFrame(() => document.body.classList.add('ready'));             // (the radio buttons show only now, together with the hall)
 
 /* ---------- the globe: a click spins it twice round, fast, back to Greenwich ---------- */
 const globe = svg.querySelector('#globe'), gEl = { land: svg.querySelector('#gland'), grat: svg.querySelector('#ggrat'), prime: svg.querySelector('#gprime') }; let spin = null;
@@ -370,21 +474,86 @@ const catEl = svg.querySelector('#cat');
 const blink = () => { if (!catEl.classList.contains('pet')) { catEl.classList.add('blink'); setTimeout(() => catEl.classList.remove('blink'), 150); } setTimeout(blink, 2400 + Math.random() * 3600); };
 setTimeout(blink, 1800);
 const meow = new Audio('/sounds/cat_meow.mp3'); meow.preload = 'auto'; meow.volume = .28;          // (about 10 LU over the ambience: the file is -19 LUFS, the loop -34 LUFS at volume .5 = -40; plays only while the hall sound is on)
-const pet = () => { if (catEl.classList.contains('pet')) return; catEl.classList.remove('blink'); catEl.classList.add('pet'); if (!snd.paused) { try { meow.currentTime = 0; meow.play().catch(() => {}); } catch { /* no sound */ } } setTimeout(() => catEl.classList.remove('pet'), 1500); };
+const pet = () => { if (catEl.classList.contains('pet')) return; catEl.classList.remove('blink'); catEl.classList.add('pet'); if (isPlaying()) { try { meow.volume = Math.min(1, .28 * getSoundVolume()); meow.currentTime = 0; meow.play().catch(() => {}); } catch { /* no sound */ } } setTimeout(() => catEl.classList.remove('pet'), 1500); };
 catEl.addEventListener('click', pet); catEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pet(); } });
 /* ---------- the sections: Cards opens the card library, Action cards the binder of the action cards; the other two are still to come ---------- */
-svg.querySelectorAll('.bay').forEach((g) => { const to = LIVE[g.dataset.bay]; if (!to) return; const go = () => { location.href = to; }; g.addEventListener('click', go); g.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); }); });
-/* ---------- the ambient sound: off until the button is pressed (browsers do not let a page start sound by itself); the choice is remembered ---------- */
-const snd = document.getElementById('hallsound'), sbtn = document.getElementById('soundbtn'); snd.volume = .5;
-let wantSound = false; try { wantSound = localStorage.getItem('libraryHallSound') === '1'; } catch { /* no storage: off */ }
-const showSound = (on) => { sbtn.classList.toggle('on', on); sbtn.setAttribute('aria-pressed', String(on)); sbtn.setAttribute('aria-label', on ? 'Sound on' : 'Sound off'); };
-const setSound = (on) => { wantSound = on; try { localStorage.setItem('libraryHallSound', on ? '1' : '0'); } catch { /* not remembered */ } if (on) snd.play().then(() => showSound(true), () => showSound(false)); else { snd.pause(); showSound(false); } };
-sbtn.addEventListener('click', () => setSound(snd.paused));
-showSound(false);
-if (wantSound) { const first = () => { if (wantSound && snd.paused) snd.play().then(() => showSound(true), () => {}); }; snd.play().then(() => showSound(true), () => document.addEventListener('pointerdown', first, { once: true })); }   // (it was on last time: start now if the browser allows, else on the first click anywhere)
+let leaving = false;                                                                      // (the ladder rests at the door; a click sends it to the section first, then the page opens)
+const LADDER_REST = 795;
+svg.querySelectorAll('.bay').forEach((g) => {                // the bookcase under the pointer (or focused) lights up its label over the cornice
+  const plq = svg.querySelector(`.plq[data-bay="${g.dataset.bay}"]`), hot = (v) => () => plq && plq.classList.toggle('hot', v);
+  g.addEventListener('mouseenter', hot(true)); g.addEventListener('mouseleave', hot(false)); g.addEventListener('focus', hot(true)); g.addEventListener('blur', hot(false));
+});
+svg.querySelectorAll('.bay').forEach((g) => {
+  const to = LIVE[g.dataset.bay]; if (!to) return;
+  const b = BAYS.find((q) => q.id === g.dataset.bay), target = Math.round((b.x0 + b.x1) / 2 - 45);
+  const open = () => fadeOutThen(() => { location.href = to; });
+  const go = () => {
+    if (leaving) return; leaving = true;
+    if (still) { open(); return; }
+    let done = false; const finish = () => { if (done) return; done = true; ladderEl.removeEventListener('transitionend', onEnd); open(); };
+    const onEnd = (e) => { if (e.target === ladderEl && e.propertyName === 'transform') finish(); };
+    ladderEl.addEventListener('transitionend', onEnd); setTimeout(finish, 1800);
+    ladderEl.style.transform = `translate(${target}px,0)`;
+  };
+  g.addEventListener('click', go); g.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+});
+addEventListener('pageshow', (e) => { if (!e.persisted) return; leaving = false; ladderEl.style.transition = 'none'; ladderEl.style.transform = `translate(${LADDER_REST}px,0)`; void ladderEl.getBoundingClientRect(); ladderEl.style.transition = ''; });
+/* ---------- the ambient sound: js/library_sound.js (the button, the volume slider, the remembered choice, the loop carried across the pages) ---------- */
+/* ---------- the gramophone: the tone arm follows the sound button, the record turns while the loop plays, a bigger volume slider opens on the lever ---------- */
+{
+  const arm = document.getElementById('gram-arm'), disc = document.getElementById('gram-disc');
+  const lever = document.getElementById('library-volume'), sbtn = document.getElementById('soundbtn'), armHit = document.getElementById('gram-armhit');
+  const UP = 20, PIVOT = ' 104 636';                                       // the arm's angle when lifted; its pivot (in the gramophone's own coordinates)
+  let lift = sbtn.classList.contains('on') ? 0 : 1, speed = 0, turn = 0, prev = performance.now(), drawnLift = -1;
+  (function gram(now) {
+    const dt = Math.min(64, now - prev); prev = now;
+    lift += ((sbtn.classList.contains('on') ? 0 : 1) - lift) * Math.min(1, dt / 120);           // (the arm follows the button: the button shows what really plays)
+    if (Math.abs(lift - drawnLift) > .001) { arm.setAttribute('transform', 'rotate(' + (UP * lift).toFixed(2) + PIVOT + ')'); drawnLift = lift; }
+    speed += ((isPlaying() && getSoundVolume() > 0 ? 1 : 0) - speed) * Math.min(1, dt / 450);   // (winds up and runs down like a real record)
+    if (speed > .002) { turn = (turn + speed * dt * .2) % 360; disc.setAttribute('transform', 'rotate(' + turn.toFixed(2) + ')'); }
+    requestAnimationFrame(gram);
+  })(prev);
+  armHit.addEventListener('click', () => sbtn.click());                     // the second way to switch the sound: drop or lift the arm
+  armHit.addEventListener('mouseenter', () => armHit.setAttribute('aria-label', sbtn.classList.contains('on') ? 'Lift the arm (mute)' : 'Drop the arm (sound on)'));
+  // the bigger slider: opens below the lever on hover or focus, stays while the pointer is on the lever or on it; 0-100 marks to click
+  const pop = document.createElement('div'); pop.id = 'volpop'; pop.setAttribute('role', 'group'); pop.setAttribute('aria-label', 'Library volume');
+  pop.innerHTML = '<input type="range" min="0" max="100" step="1" aria-label="Library volume"><div class="ticks">' + [0, 25, 50, 75, 100].map((v) => '<button type="button" data-v="' + v + '">' + v + '</button>').join('') + '</div>';
+  document.body.append(pop);
+  const big = pop.querySelector('input');
+  const sync = () => { big.value = lever.value; big.style.setProperty('--p', lever.value + '%'); };
+  const setVol = (v) => { lever.value = Math.max(0, Math.min(100, Math.round(v))); lever.dispatchEvent(new Event('input', { bubbles: true })); sync(); };
+  let hideT = 0, open = false, dragging = false;
+  const place = () => {
+    const r = lever.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight, cx = r.left + r.width / 2;
+    const left = Math.max(8, Math.min(innerWidth - w - 8, cx - w / 2));
+    pop.style.left = left + 'px'; pop.style.top = Math.min(innerHeight - h - 8, r.bottom + 12) + 'px';
+    pop.style.setProperty('--ax', Math.max(14, Math.min(w - 14, cx - left)) + 'px');
+  };
+  const show = () => { clearTimeout(hideT); sync(); place(); pop.classList.add('on'); open = true; };
+  const hideSoon = () => { if (dragging) return; clearTimeout(hideT); hideT = setTimeout(() => { pop.classList.remove('on'); open = false; }, 280); };
+  lever.addEventListener('mouseenter', show); lever.addEventListener('mouseleave', hideSoon);
+  lever.addEventListener('focus', show); lever.addEventListener('blur', hideSoon);
+  lever.addEventListener('input', sync);
+  lever.addEventListener('pointerdown', () => { dragging = true; show(); });
+  addEventListener('pointerup', () => { if (!dragging) return; dragging = false; if (!lever.matches(':hover') && !pop.matches(':hover')) hideSoon(); });
+  const wheel = (e) => { e.preventDefault(); show(); setVol(+lever.value + (e.deltaY < 0 ? 2 : -2)); };
+  lever.addEventListener('wheel', wheel, { passive: false }); pop.addEventListener('wheel', wheel, { passive: false });
+  big.addEventListener('input', () => setVol(+big.value));
+  pop.querySelectorAll('.ticks button').forEach((b) => b.addEventListener('click', () => setVol(+b.dataset.v)));
+  pop.addEventListener('mouseenter', () => clearTimeout(hideT)); pop.addEventListener('mouseleave', hideSoon);
+  pop.addEventListener('focusin', () => clearTimeout(hideT)); pop.addEventListener('focusout', (e) => { if (!pop.contains(e.relatedTarget) && e.relatedTarget !== lever) hideSoon(); });
+  pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') { pop.classList.remove('on'); open = false; lever.focus(); } });
+  addEventListener('resize', () => { if (open) place(); });
+}
 function tick(now) {
   const dt = Math.min(.05, (now - (tick.last || now)) / 1000); tick.last = now;
   stepFire(now); stepGlobe(dt);
   if (!still) requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+
+// SVG links do not expose HTMLAnchorElement.origin to the shared fade handler.
+svg.querySelector('#hall-return').addEventListener('click',e=>{
+  if(e.defaultPrevented||e.button||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;
+  e.preventDefault();fadeOutThen(()=>{location.href='/';});
+});

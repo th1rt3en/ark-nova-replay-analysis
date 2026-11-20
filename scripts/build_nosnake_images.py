@@ -26,7 +26,7 @@ def animal_keep(wide):                                                  # the gr
 ICON_OCTAGON = ("oct", 635, 422, 72)                                    # the ability octagon (Venom, Hypnosis, Constriction, Pilfering) on the photo: centre and apothem in large-card pixels (see uniform.mjs: it sits 14 px above the name bar)
 HAS_OCTAGON = ["A470", "A474", "A475", "A482", "A483", "A485", "A492"]  # (A487 has none)
 KEEP = {
-    **{k: animal_keep(k in ("A487", "A492")) + ([ICON_OCTAGON] if k in HAS_OCTAGON else []) for k in ANIMALS},
+    **{k: animal_keep(k in ("A482", "A487", "A492")) + ([ICON_OCTAGON] if k in HAS_OCTAGON else []) for k in ANIMALS},
     "P109": [("rrect", -60, -60, 200, 202, 52)],
     "P125": [("rrect", -60, -60, 200, 346, 52)],
     "S203": [("rrect", -60, -60, 147, 147, 28), ("rrect", 316, -60, 574, 164, 30), ("rect", 598, 0, 708, 90), ("circle", 652, 92, 58)],

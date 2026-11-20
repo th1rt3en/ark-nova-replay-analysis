@@ -6,7 +6,7 @@
 import { $, el, svg } from './util.js';
 import { S } from './state.js';
 import { GROW, SHIELD_DY, adaptIcon } from './bonusart.js';
-import { ICON_IDS, SHOW_VALUE, applyIconNames, iconUrl, moneyTile } from './icons.js';
+import { HD_VERSION, ICON_IDS, SHOW_VALUE, applyIconNames, iconUrl, moneyTile } from './icons.js';
 import { SLOT_SIZE, STRIP, associationStrip, bonusPanel } from './association.js';
 
 const MAP = { x0: 96, y0: 88, dx: 115, dy: 66.5 };
@@ -61,7 +61,7 @@ function drawBonus(g, bn) {                                              // as z
     iconBox(g, bn.type === 'xtoken' && bn.value > 1 ? (ICON_IDS['bonus:xtoken_num'] || icon) : icon, bn.value > 1 ? 9 : 0, 3, 44);
     if (bn.value > 1 || bn.type === 'perception' || bn.type === 'Pouch') put(g, 'text', { x: -15, y: 14, class: 'bonus-number', style: 'font-size:34px;stroke-width:7px' }, bn.value);
   }
-  else if (bn.type === 'pavilion') put(g, 'image', { href: '/bonus/pavilion.webp?v=art20261112', x: -24 * 120 / 103.923, y: -20, width: 48 * 120 / 103.923, height: 48 });
+  else if (bn.type === 'pavilion') put(g, 'image', { href: '/bonus/pavilion.webp?v=' + HD_VERSION, x: -24 * 120 / 103.923, y: -20, width: 48 * 120 / 103.923, height: 48 });
   else if (icon && bn.type === 'conservation') iconBox(g, icon, 0, 3 + SHIELD_DY, 48 * GROW.conservation);          // (the bigger, lower shield of the viewer)
   else if (icon) iconBox(g, icon, 0, 3, bn.type === 'wave' ? 21 : 48);
   if (bn.type === 'appeal' && !icon) put(g, 'text', { x: 0, y: 6, class: 'bonus-label' }, '★');

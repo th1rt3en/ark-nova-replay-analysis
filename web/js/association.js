@@ -8,6 +8,7 @@ import { adaptIcon, binderSvg, fitImageAttrs, marketingAttrs, shieldNumberTransf
 import { hdPentagonSvg } from './ctrack.js';
 import { FIT_DY, FIT_H, ICON_IDS, SLOT_ICON, SLOT_NUMBER, iconUrl, moneyTile, moneyTwo, pieceUrl, workerUrl } from './icons.js';
 import { bindActs, forkActs } from './action-bar.js';
+import { outlinedNumber } from './numoutline.js';
 import { render } from './main.js';
 import { HANDSHAKE, UNIVERSITY, pentagon } from './handshake.js';
 
@@ -36,7 +37,6 @@ export function associationBoard(st) {
   const put = (tag, attrs, text, title) => {
     const e = svg(tag, attrs);
     if (text !== undefined) e.textContent = text;
-    if (title) { const t = svg('title'); t.textContent = title; e.append(t); }
     s.append(e);
   };
   // the fork: a tile of the board that a legal association task takes can be clicked
@@ -44,9 +44,6 @@ export function associationBoard(st) {
     const acts = forkActs((a) => a.kind === 'association_task' && !a.args.supply && match(a));
     if (!acts.length) return;
     const r = svg('rect', { x, y, width: w, height: h, rx: 14, class: 'assocpick' });
-    const t = svg('title');
-    t.textContent = tip;
-    r.append(t);
     s.append(bindActs(r, acts));
   };
   const at = {};                       // location -> [seat, ...] of the players' tokens there
@@ -74,7 +71,6 @@ export function associationBoard(st) {
   // a cube of the fan site's picture (web/cubes, as on the base projects), centred on (x, y)
   const cubeAt = (x, y, colour, tip, extra = {}) => {
     const g = svg('image', { href: pieceUrl('cubes', colour), x: x - 37, y: y - 39, width: 74, height: 74, ...extra });
-    if (tip) { const t = svg('title'); t.textContent = tip; g.append(t); }
     s.append(g);
   };
   const blocked = unusedColor();                     // 2 players: the left donation cells of 5 / 7 / 10 money are covered by cubes of a colour nobody plays
@@ -97,7 +93,6 @@ function conservationBonus(root, cx, cy, h, value, tip) {
   const t = svg('text', { x: cx, y: cy + h * 0.18, class: 'cons-number', style: 'font-size:' + (h * 0.62).toFixed(1) + 'px' });
   t.textContent = value;
   g.append(t);
-  if (tip) { const tt = svg('title'); tt.textContent = tip; g.append(tt); }
   root.append(g);
   return g;
 }
@@ -155,7 +150,7 @@ export function slotGlyph(root, sl, y) {
     root.append(g);
   } else if (bn.type === 'Worker' && sl.kind !== 'instant_income' && BONUS_HD.icons.Worker) {          // the worker as on the reputation track (HD, bonusart.js): smaller than the sprite, which almost filled the pentagon
     const k = 71 / 80, [bx, by, bw, bh] = BONUS_HD.icons.Worker.box;          // (the pentagon of the track is 80 high, this one 71)
-    add('image', { href: '/icons_hd/Worker.webp', x: 110 - 40 * k + bx * k, y: y - 0.5 - 40 * k + by * k, width: bw * k, height: bh * k, preserveAspectRatio: 'none' });
+    add('image', { href: iconUrl('r5c13'), x: 110 - 40 * k + bx * k, y: y - 0.5 - 40 * k + by * k, width: bw * k, height: bh * k, preserveAspectRatio: 'none' });
   } else if (icon && bn.type === 'Clever' && bn.value > 1) {          // 2 Clever abilities: the amount to the left of the icon (no overlap)
     const [w0, h0] = S.iconSizes[icon] || [size, size];
     add('image', { href: iconUrl(icon), x: 120 - (w0 * size / h0) / 2, y: y - size / 2 + 1, width: w0 * size / h0, height: size });
@@ -177,8 +172,11 @@ export function slotGlyph(root, sl, y) {
   if (SLOT_NUMBER.has(bn.type) && bn.value) {
     if (bn.type === 'money' && String(bn.value).length > 1) add('text', { ...moneyTwo(bn.value, 109, y + 1 + nd, 34, 6), class: 'slot-number two' }, bn.value);      // (two digits: smaller, tighter and centred on the tile, `moneyTwo`)
     else {
-      const tx = add('text', { x: 109, y: y + 13 + nd, class: 'slot-number' + (bn.type === 'conservation' ? ' dk conservation' : '') + (bn.type === 'xtoken' ? ' xnum' : '') }, bn.value);
-      if (bn.type === 'conservation') tx.setAttribute('transform', 'translate(0 ' + SHIELD_DY + ') translate(109 ' + (y + 13) + ') scale(' + PANEL_GROW + ') translate(-109 ' + -(y + 13) + ')');          // (the number follows the bigger, lower shield)
+      if (bn.type === 'xtoken') root.append(outlinedNumber(bn.value, 109, y + 13 + nd, 32));          // (the X token's number: paths with a sticker outline, numoutline.js, so the pockets of a 3 close instead of leaving a black loop)
+      else {
+        const tx = add('text', { x: 109, y: y + 13 + nd, class: 'slot-number' + (bn.type === 'conservation' ? ' dk conservation' : '') }, bn.value);
+        if (bn.type === 'conservation') tx.setAttribute('transform', 'translate(0 ' + SHIELD_DY + ') translate(109 ' + (y + 13) + ') scale(' + PANEL_GROW + ') translate(-109 ' + -(y + 13) + ')');          // (the number follows the bigger, lower shield)
+      }
     }
   }
   if (bn.type === 'cut-down' && icon) {                  // the Cut Down ability: a white 1 with a black border near the left edge of the icon
@@ -223,7 +221,7 @@ export function slotBonusTag(map, key, size = 26) {
     const x = svg('text', { x: 40, y: 55.5, 'text-anchor': 'middle', class: 'bonus-number dk conservation', style: 'font-size:36px', 'pointer-events': 'none' });          // (the number of the track's shield: same class, size 36 and place as `bonusTile`, shared.js)
     x.textContent = String(value); x.setAttribute('transform', shieldNumberTransform()); t.append(x);
   }
-  const tt = svg('title'); tt.textContent = (kind === 'partner' ? 'Partner zoo ' : 'University ') + n + ': ' + tip; t.append(tt);
+ 
   t.classList.add('abtag');
   return t;
 }
@@ -244,7 +242,7 @@ export function setBonusTag(kind, size = 20) {
     const x = svg('text', { x: 40, y: 55.5, 'text-anchor': 'middle', class: 'bonus-number dk conservation', style: 'font-size:36px', 'pointer-events': 'none' });
     x.textContent = '1'; x.setAttribute('transform', shieldNumberTransform()); t.append(x);
   }
-  const tt = svg('title'); tt.textContent = kind === 'upgrade' ? 'Upgrade an action card' : kind === 'extra-shift' ? 'Extra Shift' : '1 conservation'; t.append(tt);
+ 
   t.classList.add('abset');
   return t;
 }
@@ -293,11 +291,11 @@ export function bonusPanel(map, p, seat) {
     const cx = 40 + i * 48;     // slots 18..62, 66..110, 114..158 stay inside the box (x 14..162)
     lbAdd('image', { href: '/assets/worker_slot.webp', x: cx - 23, y: 37, width: 46, height: 46 });          // (the empty worker slot of the association board, scripts/build_worker_slot.py)
     if (map.id === '12' && k === 2) {                    // map 12 (AI): the third worker covers a binder (hides an action strength)
-      const g = svg('g', { class: 'consbonus' }), tt = svg('title'); tt.textContent = 'Worker 3: cover a binder'; g.append(binderSvg(cx, 73, 0.45), tt); lockbox.append(g);
+      const g = svg('g', { class: 'consbonus' }); g.append(binderSvg(cx, 73, 0.45)); lockbox.append(g);
     }
     if (map.id === '14') {                                // map 14 (Lagoon): every worker you hire finds a person sponsor card (the magnifier with the person card, BGA's picture); the 4th worker also gets its conservation point, to the left of it
       const [w0, h0] = S.iconSizes.r4c13 || [110, 110], h = k === 3 ? 30 : 42, w = w0 * h / h0, mx = k === 3 ? cx + 13 : cx + 2, my = k === 3 ? 82 : 80;
-      const g = svg('g', { class: 'consbonus personbonus' }), tt = svg('title'); tt.textContent = 'Worker ' + (k + 1) + ': find a person sponsor card'; g.append(svg('image', { href: iconUrl('r4c13'), x: mx - w / 2, y: my - h / 2, width: w, height: h }), tt);
+      const g = svg('g', { class: 'consbonus personbonus' }); g.append(svg('image', { href: iconUrl('r4c13'), x: mx - w / 2, y: my - h / 2, width: w, height: h }));
       lockbox.append(g);
     }
     const own = map.custom_association && map.custom_association.workers[k - 1];          // a map made in the map editor: what its maker put on the space of the 2nd / 3rd / 4th worker
@@ -305,7 +303,7 @@ export function bonusPanel(map, p, seat) {
       if (own) {
         const g = svg('g', { class: 'consbonus' });
         bonusFill(g, own, cx, 72, 38);
-        const tt = svg('title'); tt.textContent = 'Worker ' + (k + 1) + ': ' + bonusTip(own); g.append(tt);
+       
         lockbox.append(g);
       }
     }
@@ -315,7 +313,7 @@ export function bonusPanel(map, p, seat) {
       const id = ICON_IDS['bonus:upgrade-card'], [w0, h0] = S.iconSizes[id] || [38, 38], h = 40, w = w0 * h / h0;
       const g = svg('g', { class: 'consbonus' });
       g.append(svg('image', { href: iconUrl(id), x: cx - w / 2, y: 72 - h / 2, width: w, height: h }));
-      const tt = svg('title'); tt.textContent = 'Worker 2: an action card upgrade'; g.append(tt);
+     
       lockbox.append(g);
     }
     else if (map.id === 'T1') {                          // T1: the first and the second worker also give 1 reputation, shown under the worker
@@ -325,15 +323,12 @@ export function bonusPanel(map, p, seat) {
       const t = svg('text', { x: cx, y: 72 + h * 0.2, class: 'cons-number rep-number', style: 'font-size:' + (h * 0.62).toFixed(1) + 'px' });
       t.textContent = '1';
       g.append(t);
-      const tt = svg('title'); tt.textContent = 'Worker ' + k + ': 1 reputation'; g.append(tt);
+     
       lockbox.append(g);
     }
     if (!locked.has(k)) return;
     const w = 38, h = w * 277 / 282;                     // BGA's worker meeple of the player's colour
     const img = lbAdd('image', { href: workerUrl(seat), x: cx - w / 2, y: 61 - h / 2, width: w, height: h, class: 'lift' });
-    const tip = svg('title');
-    tip.textContent = 'Worker ' + k + ' (locked)';
-    img.append(tip);
   });
   lockbox.append(svg('rect', { x: 14, y: 14, width: 148, height: 92, rx: 14, fill: 'transparent' }));      // hover area: the whole box
 
@@ -341,6 +336,11 @@ export function bonusPanel(map, p, seat) {
     add('rect', { x: 14, y: top, width: 148, height, rx: 14, fill: '#fff', stroke: '#222', 'stroke-width': 3 });
     list.forEach((sl, i) => {
       const y = rowY(i);
+      if (map.id === 'T1' && sl.index === 0) {            // T1: the first (top) bonus space also unlocks "discard a card for +1 action strength once per turn": the blue strip of the printed board, as high as the space, its left end under the space (it is drawn first, the space covers it)
+        const sg = add('g', {});
+        sg.append(svg('image', { href: '/assets/t1_strength_strip.svg', x: 128.5, y: y - 32.5, width: 45.5, height: 65, preserveAspectRatio: 'none' }));
+        sg.lastChild.textContent = 'Once per turn: discard a card from your hand for +1 action strength';
+      }
       slotGlyph(s, sl, y);
       add('rect', { x: 20, y: y - 27, width: 52, height: 52, fill: 'none', 'pointer-events': 'none', 'data-bpos': sl.index, 'data-bpseat': seat });          // (where the cube sits, there or gone: the cube of a supported project flies from here, assoc-motion.js)
       const pick = FORK ? forkActs((a) => a.kind === 'choose_bonus' && a.player === seat && a.args.bonus === sl.index) : [];
@@ -350,9 +350,6 @@ export function bonusPanel(map, p, seat) {
       }
       if (!(used & (1 << sl.index))) {                     // the cube is still on the slot: its bonus has not been chosen yet
         const cx = 46, c = add('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: cx - 26, y: y - 27, width: 52, height: 52, 'data-bcube': sl.index, 'data-bseat': seat });
-        const tip = svg('title');
-        tip.textContent = S.replay.players[seat].name + ': bonus ' + (sl.index + 1) + ' not chosen yet';
-        c.append(tip);
       } else {                                             // the cube has left: a dashed footprint (40 px) with the number of the order it was taken in
         const nth = bonusOrder(seat, used).indexOf(sl.index) + 1;
         if (nth > 0) {
@@ -360,7 +357,7 @@ export function bonusPanel(map, p, seat) {
           g.append(svg('rect', { x: 26, y: y - 20, width: 40, height: 40, rx: 7, fill: 'none', stroke: '#8f8a80', 'stroke-width': 3.5, 'stroke-dasharray': '6 4' }));
           const t = svg('text', { x: 46, y: y + 9.4, 'text-anchor': 'middle', fill: '#8f8a80', 'font-size': 26, 'font-weight': 400, 'font-family': "'Park Num', system-ui, sans-serif" });
           t.textContent = String(nth); g.append(t);
-          const tt = svg('title'); tt.textContent = S.replay.players[seat].name + ': bonus ' + (sl.index + 1) + ' was taken ' + (nth > 3 ? nth + 'th' : ['1st', '2nd', '3rd'][nth - 1]); g.append(tt);
+         
         }
       }
     });
@@ -380,7 +377,6 @@ export const STRIP = { partner: {}, university: {} };                    // y of
 for (let n = 1; n <= 4; n++) STRIP.partner[n] = 24 + (4 - n) * STRIP_PITCH + STRIP_PITCH / 2;
 for (let n = 1; n <= 3; n++) STRIP.university[n] = STRIP_BOX2 + (3 - n) * STRIP_PITCH + STRIP_PITCH / 2;
 export const SLOT_SIZE = { partner: [253, 198], university: [248, 175] };         // the silhouettes of the slots; a university has the proportions of its token (119 x 84)
-const BGA_PARTNER_Y = { 1: 855, 2: 619, 3: 383, 4: 147 };                // where the handshakes are on BGA's picture
 const CONS_GROW = GROW.conservation;          // the shield on the strip's raster pentagons (the HD ones grow in bonusart.js `nudged`)
 const UPGRADE_SETS = { '12': [1, 2], T1: [1, 2], '11': [1] };
 export const stripUnits = (map) => (map.upgrade_sets || UPGRADE_SETS[map.id] ? 507 : 351);          // the width of the strip's view box: 78 units on each side for the lines and bigger pentagons of the upgrade sets
@@ -433,13 +429,13 @@ export function associationStrip(p, map, seat) {
     if (ST.hexSheen) g.append(svg('path', { d: pentagon(cx, cy, H * .72, 6 * k), fill: 'none', stroke: '#fff', 'stroke-opacity': ST.hexSheen, 'stroke-width': 2.4 * k, 'stroke-linejoin': 'round' }));
     s.append(g);
     fillIn(g, cx, cy + H * 0.0375, H * (cls === 'hirebonus' ? 0.6 : 0.62));
-    const tt = svg('title'); tt.textContent = tip; g.append(tt);
+   
     return g;
   };
   // the upgrade and the Extra Shift: the pentagon of the 2 conservation track (ctrack.js `hdPentagonSvg`), so a bonus looks the same on the track, on the board and here
   const hdHex = (cx, cy, name, H, tip, cls) => {
-    const g = svg('g', { class: cls }), t = hdPentagonSvg(name, H, cx, cy), tt = svg('title');
-    tt.textContent = tip; g.append(t, tt); s.append(g); return g;
+    const g = svg('g', { class: cls }), t = hdPentagonSvg(name, H, cx, cy);
+    g.append(t); s.append(g); return g;
   };
   const consInHex = (cx, cy, value, tip) => value && bonusHex(cx, cy, tip, 'consbonus', (g, x, y, h) => conservationBonus(g, x, y + 1, h * CONS_GROW, value, null));
   const bonuses = map.association_bonuses || {};            // conservation points of the 4th partner zoo and the 3rd university, shown on their (empty) slots
@@ -451,7 +447,7 @@ export function associationStrip(p, map, seat) {
     consInHex(175, STRIP.partner[4], bonuses.partner4, '4th partner zoo: ' + bonuses.partner4 + ' conservation');
     consInHex(175, STRIP.university[3], bonuses.university3, '3rd university: ' + bonuses.university3 + ' conservation');
     if (map.id === '12') {                                                  // map 12 (AI): the 2nd university covers a binder (hides an action strength)
-      const g = svg('g', { class: 'binderbonus' }), tt = svg('title'); tt.textContent = '2nd university: cover a binder'; g.append(binderSvg(175, STRIP.university[2] + 16, 1.45), tt); s.append(g);
+      const g = svg('g', { class: 'binderbonus' }); g.append(binderSvg(175, STRIP.university[2] + 16, 1.45)); s.append(g);
     }
   }
   const workerBonus = (cx, cy, tip, cls) => bonusHex(cx, cy, tip, cls, (g, x, y, h) => {
@@ -505,9 +501,6 @@ export function associationStrip(p, map, seat) {
     const g = svg('g', cls ? { class: cls } : {});
     g.append(svg('rect', { x: 175 - slotW / 2, y: y - slotH / 2, width: slotW, height: slotH, fill: 'none', 'pointer-events': 'none', 'data-assoc-slot': kind + '_' + slot, 'data-assoc-seat': seat }));          // (the visible part of the slot: where assoc-motion.js lands a partner zoo / university)
     const img = svg('image', { href: iconUrl(id), x: 175 - (bx + bw / 2) * kx, y: y - (by + bh / 2) * ky, width: w, height: h, preserveAspectRatio: 'none' });
-    const tip = svg('title');
-    tip.textContent = type;
-    img.append(tip);
     g.append(img);
     if (cls) g.append(svg('rect', { x: 175 - slotW / 2 - 4, y: y - slotH / 2 - 4, width: slotW + 8, height: slotH + 8, rx: 14, class: 'frame' }));
     return g;

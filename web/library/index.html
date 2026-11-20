@@ -9,17 +9,22 @@
 <link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/park-fonts.css">
-<link rel="stylesheet" href="/css/library.css">
+<link rel="stylesheet" href="/css/library.css?v=20261120f">
 </head>
 <body class="hallpage m-lib">
 <main class="stage">
-  <div class="hallbar">
-    <a class="hallback" href="/">&larr; Park Nova</a>
-    <button id="soundbtn" type="button" aria-pressed="false" aria-label="Sound off"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path class="wave" d="M15.5 9.5a3.6 3.6 0 0 1 0 5M18 7a7 7 0 0 1 0 10"/><path class="mute" d="M16 9.5l5 5M21 9.5l-5 5"/></svg></button>
-  </div>
-  <svg id="hall" viewBox="0 0 1600 900" role="img" aria-label="The library: a candle-lit wall of bookcases with four sections, Cards, Action cards, Bonus tiles and Maps, an open fire, and a cat in a basket"></svg>
-  <audio id="hallsound" src="/sounds/library_ambience.mp3" loop preload="none"></audio>
+  <svg id="hall" viewBox="0 0 1600 900" role="group" aria-label="The library: a candle-lit wall of bookcases with four sections, Cards, Action cards, Bonus tiles and Maps, an open fire, and a cat in a basket"></svg>
+  <svg id="hall-controls" viewBox="0 0 1600 900" role="group" aria-label="Library radio">
+    <foreignObject x="1410" y="612" width="96" height="60">
+      <div xmlns="http://www.w3.org/1999/xhtml" class="hall-radio-ui">
+        <button id="gram-armhit" type="button" aria-label="Tone arm: sound on or off"></button>
+        <input id="library-volume" class="hall-radio-volume" type="range" min="0" max="100" step="1" value="50" aria-label="Library volume"/>
+        <button id="soundbtn" type="button" aria-pressed="false" aria-label="Sound off"><svg viewBox="0 0 16 16" aria-hidden="true"><defs><linearGradient id="grBtn" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f3d58a"/><stop offset=".45" stop-color="#c99a45"/><stop offset="1" stop-color="#7a5520"/></linearGradient></defs><circle cx="8" cy="8" r="7.2" fill="url(#grBtn)" stroke="#2A1210" stroke-width="1"/><circle class="hi" cx="8" cy="8" r="6.6" fill="#fff0c6"/><circle cx="8" cy="8" r="5.9" fill="none" stroke="#7a5520" stroke-width=".5"/><path d="M3.6 6.3h1.8l2.6-2.2v7.8l-2.6-2.2h-1.8z" fill="#2A1210"/><path class="wave" d="M9.6 6.2q1.4 1.8 0 3.6M11.2 4.8q2.6 3.2 0 6.4"/><path class="mute" d="M9.6 6.5l3 3M12.6 6.5l-3 3"/></svg></button>
+      </div>
+    </foreignObject>
+  </svg>
 </main>
-<script type="module" src="/js/library.js"></script>
+<script type="module" src="/js/library.js?v=20261120f"></script>
+<script type="module" src="/js/tooltip.js"></script>
 </body>
 </html>

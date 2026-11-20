@@ -55,7 +55,7 @@ export function refreshLogSearch(go) {
   up.disabled = down.disabled = hits.length < 2;
   $('logBox').classList.toggle('searching', !!hits.length);
   input.closest('.logsearch').classList.toggle('open', !!needle);                 // (typing opens the count line under the field; the field itself never changes size)
-  fun.title = FILTERS.active ? FILTERS.active + ' filter' + (FILTERS.active > 1 ? 's' : '') + ' on' : 'Filters';
+  if (FILTERS.active) fun.removeAttribute('title'); else fun.title = 'Filters';          // (no tooltip while filters are on)
   funCount.textContent = FILTERS.active || ''; funCount.hidden = !FILTERS.active;
   fun.classList.toggle('on', !!FILTERS.active);
   if (go && cur) showLine(cur, true);                                     // (the list scrolls, or the control pane when the log lies below the info boxes, sidebar.js)
@@ -80,9 +80,9 @@ export function setupLogSearch() {
   clear = el('button', 'ls-btn ls-clear'); clear.type = 'button'; clear.title = 'Clear the search'; clear.setAttribute('aria-label', 'Clear the search'); clear.hidden = true;
   clear.append(icon('ls-chev', '0 0 16 16', 'M4 4l8 8M12 4l-8 8'));
   count = el('span', 'ls-cnt');
-  up = el('button', 'ls-btn'); up.type = 'button'; up.title = 'Previous hit (Shift+Enter)'; up.setAttribute('aria-label', 'Previous hit');
+  up = el('button', 'ls-btn'); up.type = 'button'; up.setAttribute('aria-label', 'Previous hit');
   up.append(icon('ls-chev', '0 0 16 16', 'M3 10l5-5 5 5'));
-  down = el('button', 'ls-btn'); down.type = 'button'; down.title = 'Next hit (Enter)'; down.setAttribute('aria-label', 'Next hit');
+  down = el('button', 'ls-btn'); down.type = 'button'; down.setAttribute('aria-label', 'Next hit');
   down.append(icon('ls-chev', '0 0 16 16', 'M3 6l5 5 5-5'));
   const line = el('div', 'ls-line'); line.append(count, up, down);                 // (the count line: "3 of 8 matches" and the arrows, under the field)
   const more = el('div', 'ls-more'), moreIn = el('div', 'ls-more-in'); moreIn.append(line); more.append(moreIn);

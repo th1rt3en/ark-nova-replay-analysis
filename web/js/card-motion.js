@@ -30,11 +30,12 @@ export function setAnimationSpeed(value) {
   const before = S.animationSpeed || 1;
   S.animationSpeed = next;
   for (const a of animations) a.updatePlaybackRate(a.playbackRate * next / before);
+  if (barHold && next !== before) scheduleBar();                    // (the held move bar follows the card: its timeout is moved to the new speed)
 }
 let previous = null, capture = null, capture2 = null, pending = null, layer = null;
 let actionCapture = null, assocCapture = null, backCapture = null;
 const landings = new Map();          // project key (P###) -> when its card has settled in the strip (ms, absolute): the cube of the supporter glides after that
-let tabPrev = null, playedCapture = null, buildingCapture = null, displayCapture = null, tabVisit = null, tabReturnTimer = 0;
+let tabPrev = null, playedCapture = null, buildingCapture = null, displayCapture = null, markerCapture = null, tabVisit = null, tabReturnTimer = 0;
 const animations = new Set(), hidden = new Map();
 const reduced = { get matches() { return motionOff(); }, addEventListener: (type, fn) => motionQuery && motionQuery.addEventListener(type, fn) };
 const frameWidth = () => document.querySelector('#dock .trayframe')?.offsetWidth || 0;       // (layout px: the tray's width before / after a step)
@@ -63,9 +64,16 @@ function releaseBar() {
 function holdBar(at) {
   const cur = document.getElementById('current'), old = previous?.bar;
   if (FORK || PLAY || SANDBOX || MINIGAME || !cur || cur.hidden || !old || !old.length || barHold) return;
-  barHold = { step: S.step, keep: [...cur.childNodes], timer: 0 };
+  barHold = { step: S.step, keep: [...cur.childNodes], timer: 0, left: at, since: performance.now(), speed: 1 };      // left: the time still to wait at 1x
   cur.replaceChildren(...old.map((n) => n.cloneNode(true)));
-  barHold.timer = setTimeout(releaseBar, at / Math.max(.1, Number(S.animationSpeed) || 1));
+  scheduleBar();
+}
+// (re)starts the timeout of the held bar at the current speed; what was already waited counts at the speed it was waited at
+function scheduleBar() {
+  const h = barHold, now = performance.now(), speed = Math.max(.1, Number(S.animationSpeed) || 1);
+  clearTimeout(h.timer);
+  h.left = Math.max(0, h.left - (now - h.since) * h.speed); h.since = now; h.speed = speed;
+  h.timer = setTimeout(releaseBar, h.left / speed);
 }
 // Debugging a flight that stutters or snaps: open the page with ?cmdebug=1 (or localStorage cmdebug = 1) and send the console: it lists what cancelled running animations (stop(): a new render, a
 // resize, a scroll, a dock click) and every main-thread task over 40 ms that overlapped a running animation.
@@ -263,6 +271,7 @@ export function beforeRender(st) {
   tabPrev = forward && !reduced.matches && !MINIGAME ? previous.state : null;
   displayCapture = forward && !reduced.matches && !MINIGAME ? { state: previous.state, display: displayShots(previous.state) } : null;
   buildingCapture = forward && !reduced.matches && !MINIGAME ? previous.state : null;
+  markerCapture = forward && !reduced.matches && !MINIGAME ? previous.state : null;          // (map 9: a continent marker removed, `runMarkers`; it never brings the other board up)
   const plays = forward && !reduced.matches && !MINIGAME ? playedCards(previous.state, st) : [];
   const gone = forward && !reduced.matches && !MINIGAME ? playedRemoved(previous.state, st) : [];
   playedCapture = plays.length || gone.length ? {
@@ -338,6 +347,8 @@ export function afterRender(st) {
   if (dOld && !blocked && !reduced.matches) sequenced(handsEnd, () => runDisplay(dOld, st));
   const bOld = buildingCapture; buildingCapture = null;
   if (bOld && !blocked && !reduced.matches) runBuildings(bOld, st);
+  const mOld = markerCapture; markerCapture = null;
+  if (mOld && !blocked && !reduced.matches) runMarkers(mOld, st, Math.min(flightEnd, 1600));
   const shown = (dOld || old2 || old)?.state;
   if (shown && !reduced.matches && (st.display || []).join() !== (shown.display || []).join()) tabCovers();          // (a card left, arrived or slid in the display: whoever moves it, it moves behind the number tabs)
   const p = pending;
@@ -495,6 +506,28 @@ function buildingFlight(g, appear, index) {
     return { offset: t, transform: tr(dx * v, dy * v, 0, appear ? 1 - .43 * v : 1 - .55 * v), opacity: appear ? 1 : t > .85 ? 1 - (t - .85) / .15 : 1 };
   });
   finish(animate(o, frames, ms, index * 130, 'linear'), () => { o.remove(); if (appear) show(g); release(); });
+}
+// Map 9 (Geographical Zoo): a continent marker that is removed (`flags.m9_removed`, a bit per continent) loses its cube: the cube glides from its slot into the invisible deck, after the
+// step's other flights (the animal that removed it lands first). Only when that board is on screen: a board that is not shown (the Tabbed layout, the other tab) is not brought up for it.
+// No sound. The slot (`.m9slot`, board.js) is drawn without the cube already, so the copy is all there is.
+const M9_ORDER = ['Europe', 'Americas', 'Africa', 'Australia', 'Asia'];
+function runMarkers(old, st, wait) {
+  let n = 0;
+  (st.players || []).forEach((p, seat) => {
+    const was = ((old.players || [])[seat]?.flags || {}).m9_removed || 0, now = (p?.flags || {}).m9_removed || 0;
+    M9_ORDER.forEach((c, i) => {
+      if (!(now >> i & 1) || was >> i & 1) return;
+      const g = document.querySelector('.board g[data-m9seat="' + seat + '"][data-m9cont="' + c + '"]'), slot = g && g.querySelector('.m9slot');
+      const r = slot && slot.getBoundingClientRect();
+      if (!r || !r.width) return;
+      const w = r.width * 45.9 / 57.6, cx = r.left + r.width / 2, cy = r.top + r.height / 2, d = deckPoint(), dx = d.x - cx, dy = d.y - cy;          // (the cube: 34 x 1.35 units on a slot of 46 x 1.35 - 4.5 without its outline, board.js)
+      const e = element('cm-cube', { position: 'absolute', left: cx - w / 2 + 'px', top: cy - w / 2 + 'px', width: w + 'px', height: w + 'px', zIndex: '3', willChange: 'transform, opacity' });
+      const im = document.createElement('img'); im.src = g.dataset.m9cube; im.alt = ''; Object.assign(im.style, { width: '100%', height: '100%', display: 'block' }); e.append(im);
+      const ms = Math.min(1100, Math.max(650, 650 * Math.hypot(dx, dy) / scale() / 850));          // (the card flights' 650-1100 ms)
+      const frames = Array.from({ length: 31 }, (_, k) => { const t = k / 30, u = glideEase(t); return { offset: t, transform: tr(dx * u, dy * u, 0, 1 - .4 * u), opacity: t > .85 ? 1 - (t - .85) / .15 : 1 }; });
+      finish(animate(e, frames, ms, wait + n++ * 130, 'linear'), () => e.remove());
+    });
+  });
 }
 // The display: a card that leaves it through a wave or a natural discard glides into the invisible deck, a card put in (replenish) glides out of it into its slot.
 // The number tabs of the display folders lie on top of the cards. The flights run in the overlay, above the whole page, so a card would cross the tab and then slip behind it when the real card appears.

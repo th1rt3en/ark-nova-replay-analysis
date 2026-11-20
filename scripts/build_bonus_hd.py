@@ -15,6 +15,7 @@ https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0):  python scripts/b
 The upscaled raw pictures are kept in build/bonus_hd_raw (delete it to upscale again).
 """
 import argparse
+import sys
 import json
 from pathlib import Path
 
@@ -227,6 +228,11 @@ def save(rgba, name):
 
 
 def main():
+    # Retired (November 2026): web/icons_hd holds the approved HD restorations at their full resolution, and BGA's sprites they came from are gone from
+    # web/icons. Running this again would put the old Real-ESRGAN upscales back over them. bonus_hd_data.js (where each picture sits in the pentagon) is kept by hand.
+    if "--yes-overwrite-the-approved-art" not in sys.argv:
+        raise SystemExit("build_bonus_hd.py is retired: web/icons_hd holds the approved HD art (see the header of web/js/icons.js).")
+    sys.argv.remove("--yes-overwrite-the-approved-art")
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", type=Path, required=True)
     a = ap.parse_args()

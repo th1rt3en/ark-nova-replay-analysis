@@ -27,7 +27,7 @@ export const PLACEMENT_BONUS_NAME = {
   'sponsor-person-card': () => 'Play a person sponsor',
   store: () => 'Store',
   wave: () => 'Wave',
-  'shark-attack': () => 'Shark attack',
+  'shark-attack': () => 'Shark Attack',
   adapt: () => 'Adapt',
   conceal: () => 'Conceal',
 };

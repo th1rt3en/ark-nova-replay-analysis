@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bonus tiles - Park Nova</title>
+<link rel="icon" href="/brand/favicon.ico" sizes="any">
+<link rel="icon" href="/brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/brand/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
+<link rel="stylesheet" href="/css/park-fonts.css">
+<link rel="stylesheet" href="/css/library_room.css?v=20261116d">
+</head>
+<body class="roompage drawerpage m-lib">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="carve-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--cut-top)"/><stop offset=".24" style="stop-color:var(--cut-mid)"/><stop offset="1" style="stop-color:var(--cut-bottom)"/></linearGradient><filter id="cutgrain" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency=".15 .75" numOctaves="2" seed="31" result="grain"/><feColorMatrix in="grain" type="saturate" values="0" result="gray"/><feComponentTransfer in="gray" result="gray"><feFuncR type="linear" slope=".12" intercept=".88"/><feFuncG type="linear" slope=".12" intercept=".88"/><feFuncB type="linear" slope=".12" intercept=".88"/></feComponentTransfer><feComposite in="gray" in2="SourceGraphic" operator="in" result="masked"/><feBlend in="SourceGraphic" in2="masked" mode="multiply"/></filter></defs></svg>
+<main class="stage">
+  <div class="roombar">
+    <a class="roombtn carve" href="/library" aria-label="Back to Library"><svg viewBox="0 0 48 48" class="arrow-shape solid" aria-hidden="true"><g><path class="edge" d="M39 21H22V13L8 24L22 35V27H39Z"/><path class="shade" d="M39 21H22V13L8 24L22 35V27H39Z"/><path class="face" d="M39 21H22V13L8 24L22 35V27H39Z"/></g></svg></a>
+    <div class="right">
+      <div class="drawer-volume"><button class="roombtn carve icon" id="sound" type="button" aria-pressed="false" aria-label="Sound off"><svg viewBox="0 0 48 48" aria-hidden="true"><g class="symbol"><path class="edge" d="M8 19H15L24 11V37L15 29H8Z"/><path class="shade" d="M8 19H15L24 11V37L15 29H8Z"/><path class="face" d="M8 19H15L24 11V37L15 29H8Z"/></g><g class="wave"><path class="edge" d="M31 17C35 21 35 27 31 31 M37 11C44 18 44 30 37 37"/><path class="shade" d="M31 17C35 21 35 27 31 31 M37 11C44 18 44 30 37 37"/><path class="face" d="M31 17C35 21 35 27 31 31 M37 11C44 18 44 30 37 37"/></g><g class="mute"><path class="edge" d="M32 20L40 28 M40 20L32 28"/><path class="shade" d="M32 20L40 28 M40 20L32 28"/><path class="face" d="M32 20L40 28 M40 20L32 28"/></g></svg></button><div class="drawer-volume-panel"><input id="library-volume" type="range" min="0" max="100" step="1" value="100" orient="vertical" aria-label="Volume"></div></div>
+    </div>
+  </div>
+  <canvas id="drawer" role="img" aria-label="An open drawer of mahogany lined with green baize, with the sixteen bonus tiles of the conservation and reputation tracks lying loose in it. Grab the brass knob and move it to shake the drawer. Drag a tile to push it; hold it for half a second to pick it up."></canvas>
+</main>
+
+<script type="module" src="/js/library_tiles.js?v=20261120a"></script>
+<script type="module" src="/js/tooltip.js"></script>
+</body>
+</html>

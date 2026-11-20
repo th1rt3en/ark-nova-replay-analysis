@@ -286,7 +286,7 @@
         ]
     },
     "r3c2": {
-        "image": "r3c2.webp",
+        "image": "../icons_hd/xtoken-dotted.svg",
         "size": [
             122,
             122
@@ -297,7 +297,7 @@
         ]
     },
     "r3c3": {
-        "image": "r3c3.webp",
+        "image": "../icons_hd/mark.webp",
         "size": [
             99,
             115
@@ -407,7 +407,7 @@
         ]
     },
     "r3c13": {
-        "image": "r3c13.webp",
+        "image": "../icons_hd/appeal.webp",
         "size": [
             91,
             118
@@ -429,7 +429,7 @@
         ]
     },
     "r3c15": {
-        "image": "r3c15.webp",
+        "image": "../icons_hd/conservation.webp",
         "size": [
             111,
             118
@@ -451,7 +451,7 @@
         ]
     },
     "r4c2": {
-        "image": "r4c2.webp",
+        "image": "../icons_hd/digging.webp",
         "size": [
             118,
             118
@@ -528,7 +528,7 @@
         ]
     },
     "r4c9": {
-        "image": "r4c9.webp",
+        "image": "../icons_hd/reputation.webp",
         "size": [
             117,
             95
@@ -539,7 +539,7 @@
         ]
     },
     "r4c10": {
-        "image": "r4c10.webp",
+        "image": "../icons_hd/scavenging.webp",
         "size": [
             118,
             118
@@ -572,7 +572,7 @@
         ]
     },
     "r4c13": {
-        "image": "r4c13.webp",
+        "image": "../icons_hd/search-sponsor.webp",
         "size": [
             118,
             118
@@ -594,7 +594,7 @@
         ]
     },
     "r5c1": {
-        "image": "r5c1.webp",
+        "image": "../icons_hd/shark-attack.webp",
         "size": [
             118,
             118
@@ -605,7 +605,7 @@
         ]
     },
     "r5c2": {
-        "image": "r5c2.webp",
+        "image": "../icons_hd/store.webp",
         "size": [
             118,
             118
@@ -649,7 +649,7 @@
         ]
     },
     "r5c6": {
-        "image": "r5c6.webp",
+        "image": "../icons_hd/xtoken-dotted-plain.svg",
         "size": [
             118,
             118
@@ -726,7 +726,7 @@
         ]
     },
     "r5c13": {
-        "image": "r5c13.webp",
+        "image": "../icons_hd/Worker.webp",
         "size": [
             117,
             113
@@ -737,7 +737,7 @@
         ]
     },
     "r5c14": {
-        "image": "r5c14.webp",
+        "image": "../icons_hd/pentagon.webp",
         "size": [
             117,
             115
@@ -748,7 +748,7 @@
         ]
     },
     "r5c15": {
-        "image": "r5c15.webp",
+        "image": "../icons_hd/tile-bonus-extra-shift.webp",
         "size": [
             117,
             115
@@ -759,7 +759,7 @@
         ]
     },
     "r5c16": {
-        "image": "r5c16.webp",
+        "image": "../icons_hd/tile-bonus-icon.webp",
         "size": [
             117,
             115
@@ -770,7 +770,7 @@
         ]
     },
     "r6c1": {
-        "image": "r6c1.webp",
+        "image": "../icons_hd/tile-bonus-ignore-conditions.webp",
         "size": [
             117,
             115
@@ -781,7 +781,7 @@
         ]
     },
     "r6c2": {
-        "image": "r6c2.webp",
+        "image": "../icons_hd/tile-bonus-increased-hand.webp",
         "size": [
             117,
             115
@@ -792,7 +792,7 @@
         ]
     },
     "r6c3": {
-        "image": "r6c3.webp",
+        "image": "../icons_hd/tile-bonus-kiosk-pavilion.webp",
         "size": [
             117,
             115
@@ -803,7 +803,7 @@
         ]
     },
     "r6c4": {
-        "image": "r6c4.webp",
+        "image": "../icons_hd/tile-bonus-scoring-cards.webp",
         "size": [
             117,
             115
@@ -814,7 +814,7 @@
         ]
     },
     "r6c5": {
-        "image": "r6c5.webp",
+        "image": "../icons_hd/tile-bonus-sponsor-gray.webp",
         "size": [
             117,
             115
@@ -825,7 +825,7 @@
         ]
     },
     "r6c6": {
-        "image": "r6c6.webp",
+        "image": "../icons_hd/clever.webp",
         "size": [
             86,
             117
@@ -847,7 +847,7 @@
         ]
     },
     "r6c8": {
-        "image": "r6c8.webp",
+        "image": "../icons_hd/multiplier.webp",
         "size": [
             117,
             117
@@ -902,7 +902,7 @@
         ]
     },
     "r6c13": {
-        "image": "r6c13.webp",
+        "image": "../icons_hd/take-in-range-or-deck.webp",
         "size": [
             79,
             117
@@ -957,7 +957,7 @@
         ]
     },
     "r7c1": {
-        "image": "r7c1.webp",
+        "image": "../icons_hd/bonus-sponsor.webp",
         "size": [
             108,
             116
@@ -979,7 +979,7 @@
         ]
     },
     "r7c3": {
-        "image": "r7c3.webp",
+        "image": "../icons_hd/kiosk.webp",
         "size": [
             120,
             103.923
@@ -1056,7 +1056,7 @@
         ]
     },
     "r7c10": {
-        "image": "r7c10.webp",
+        "image": "../icons_hd/perception.webp",
         "size": [
             115,
             115
@@ -1067,7 +1067,7 @@
         ]
     },
     "r7c11": {
-        "image": "r7c11.webp",
+        "image": "../icons_hd/pouch.webp",
         "size": [
             115,
             115
@@ -1221,7 +1221,7 @@
         ]
     },
     "r8c10": {
-        "image": "r8c10.webp",
+        "image": "../icons_hd/size-3.webp",
         "size": [
             106,
             105
@@ -1408,7 +1408,7 @@
         ]
     },
     "r9c13": {
-        "image": "r9c13.webp",
+        "image": "../icons_hd/rescue.webp",
         "size": [
             99,
             98
@@ -1430,7 +1430,7 @@
         ]
     },
     "r10c2": {
-        "image": "r10c2.webp",
+        "image": "../icons_hd/Fac.webp",
         "size": [
             116,
             94
@@ -1463,7 +1463,7 @@
         ]
     },
     "r10c5": {
-        "image": "r10c5.webp",
+        "image": "../icons_hd/upgrade-card.webp",
         "size": [
             84,
             92
@@ -1562,7 +1562,7 @@
         ]
     },
     "r10c14": {
-        "image": "r10c14.webp",
+        "image": "../icons_hd/Partner-Zoo.webp",
         "size": [
             107,
             84
@@ -1672,7 +1672,7 @@
         ]
     },
     "r11c8": {
-        "image": "r11c8.webp",
+        "image": "../icons_hd/money.webp",
         "size": [
             74,
             74
@@ -1738,7 +1738,7 @@
         ]
     },
     "r11c14": {
-        "image": "r11c14.webp",
+        "image": "../icons_hd/wave.webp",
         "size": [
             137,
             46
@@ -1749,7 +1749,7 @@
         ]
     },
     "r5c6_ns": {
-        "image": "r5c6_ns.webp",
+        "image": "../icons_hd/xtoken-solid-plain.svg",
         "size": [
             118,
             118
@@ -1760,7 +1760,7 @@
         ]
     },
     "r3c2_ns": {
-        "image": "r3c2_ns.webp",
+        "image": "../icons_hd/xtoken-solid.svg",
         "size": [
             122,
             122

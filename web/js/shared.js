@@ -4,6 +4,7 @@ import { FORK, PLAY, S, SANDBOX } from './state.js';
 import { curState } from './pov.js';
 import { PREVIEW_CARDS, card, cardMarks, ghost, zoneNew } from './cards.js';
 import { ICON_IDS, iconUrl, moneyTile, moneyTwo } from './icons.js';
+import { outlinedNumber } from './numoutline.js';
 import { associationBoard } from './association.js';
 import { blockedCube, markCube, markOwner, projectPanel } from './projects.js';
 import { actionBar, afterMark, cardPickAct, forkActs, forkSingleSelect, pickCardOf, sharkActs } from './action-bar.js';
@@ -63,7 +64,7 @@ export function bonusTile(name, value, po) {
     t.append(Object.assign(svg('text', { x: 24, y: 53, class: 'bonus-number', style: 'font-size:32px' }), { textContent: value }));   // the amount to the left of a smaller card, both inside the pentagon
   } else if (name === 'xtoken' && value > 1) {
     picture(ICON_IDS['bonus:xtoken_num'] || id, 40, 43, 48);
-    t.append(Object.assign(svg('text', { x: 40, y: 55, class: 'bonus-number xnum' }), { textContent: value }));   // the amount lies on the X (white, black outline), like the X tokens of the player box
+    t.append(outlinedNumber(value, 40, 55, 32));   // the amount lies on the X (white, black outline), like the X tokens of the player box: drawn as paths with a sticker outline (numoutline.js), so the narrow pockets of a 3 close instead of leaving a black loop
   } else {
     picture(id, 40, 43, 48);
   }
@@ -88,7 +89,7 @@ function conservationTrack(st) {
       const [name] = Object.keys(opt);
       const t = bonusTile(name, opt[name]);
       if (!t) return;
-      t.title = 'Bonus at ' + th + ' conservation: ' + name.replace(/^bonus-/, '').replace(/-/g, ' ') + (opt[name] > 1 ? ' (' + opt[name] + ')' : '');
+      t.dataset.ctopt = th; t.dataset.ctname = name;          // (assoc-motion.js: a bonus token taken from here glides from this tile to the info box)
       t.style.left = (CT_BONUS_X[th][i] / 2000 * 100) + '%';
       wrap.append(t);
     });
@@ -152,7 +153,6 @@ export function renderShared(st) {
   // the reputation track under the folders: its 6 equal stretches (hat | 2-3 | 4-6 | 7-9 | 10-12 | 13-15) lie under folders 1-6, i.e. the cards a player can reach
   // at 1 | 2-3 | 4-6 | 7-9 | 10-12 | 13-15 reputation (engine cards_action.reputation_range)
   const track = reputationTrackSvg();
-  track.setAttribute('title', 'Reputation track: the cards under each stretch can be taken at that reputation');
   const repWrap = el('div', 'reptrackwrap');
   repWrap.append(track);
   // a cube per player on the stretch of the track they can draw from (the cell with their reputation lies under the last folder in reach)
@@ -176,7 +176,6 @@ export function renderShared(st) {
     if (!t) continue;
     t.classList.add('repreward');
     t.style.left = (repX[+rep] / REP_W * 100) + '%';
-    t.setAttribute('title', 'Reputation ' + rep + ': ' + text);
     repWrap.append(t);
   }
   // Marine Worlds: the bonus drawn for 16 reputation (a point gained at 15 may be traded for it) sits above the appeal space at the end of the track, until it is taken
@@ -191,13 +190,12 @@ export function renderShared(st) {
     const t = bonusTile(name, bonus16[name], repPent());
     if (t) {
       t.classList.add('rep16');
+      t.dataset.ctopt = '99'; t.dataset.ctname = name;
       t.style.left = (REP16_X / REP_W * 100) + '%';
-      t.setAttribute('title', 'Reputation 16: ' + name.replace(/^bonus-/, '').replace(/-/g, ' ') + (bonus16[name] > 1 ? ' (' + bonus16[name] + ')' : '') + ' - a reputation point gained at 15 may be traded for it');
       repWrap.append(t);
     }
   }
   const req = el('div', 'repupgrade');                                 // the icon in a red circle with a white border, a dark red box with a white "II" below it
-  req.title = 'Action card upgrade requirements';
   const disc = el('span', 'repupdisc'), icon = el('img');
   icon.src = iconUrl('r3c10'); icon.alt = 'Action card upgrade requirements';
   disc.append(icon, el('span', 'repupbox', 'II'));

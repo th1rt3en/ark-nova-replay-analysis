@@ -4,6 +4,7 @@
 
 export const AMBIENCE = [['park-nova', 'Park Nova'], ['jungle', 'Jungle'], ['ocean', 'Ocean'], ['rainy-night', 'Rainy Night'], ['farm', 'Farm']];
 const GAIN = { 'rainy-night': 0.65 };                                       // per soundscape, on top of the volume: the rain is louder than the others (about -3.7 dB)
+const MASTER = 0.5;                                                         // all soundscapes half as loud as first set (17 November 2026: they were too loud under the sounds)
 const FADE_MS = 1500;                                                       // fade in at the start (and after a change of the soundscape)
 
 let audio = null, current = null, level = 0, armed = false, fade = 0;
@@ -31,7 +32,7 @@ document.addEventListener('visibilitychange', () => { if (audio && audio.paused 
 // name: one of AMBIENCE (or 'off' / null = silence); volume: 0-1, the level of the element
 export function setAmbience(name, volume) {
   const want = AMBIENCE.some(([v]) => v === name) ? name : null;
-  level = Math.max(0, Math.min(1, volume * (GAIN[want] ?? 1)));
+  level = Math.max(0, Math.min(1, volume * (GAIN[want] ?? 1) * MASTER));
   if (want === current) { if (audio && !audio.paused) { clearInterval(fade); audio.volume = level; } return; }
   current = want;
   if (audio) { clearInterval(fade); audio.pause(); audio.removeAttribute('src'); audio.load(); audio = null; }

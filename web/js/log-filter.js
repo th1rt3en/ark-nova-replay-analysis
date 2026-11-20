@@ -99,7 +99,7 @@ function row(on, label, count, lead, toggle, only) {
   const bx = el('span', 'lf-bx'); if (on) bx.append(TICK());
   main.append(bx, lead, el('span', 'lf-name', label));
   main.onclick = toggle;
-  const side = el('button', 'lf-only'); side.type = 'button'; side.title = 'Only ' + label; side.setAttribute('aria-label', 'Only ' + label);        // (the count; while the row is hovered it is the "only" button)
+  const side = el('button', 'lf-only'); side.type = 'button'; side.setAttribute('aria-label', 'Only ' + label);        // (the count; while the row is hovered it is the "only" button)
   side.append(el('b', '', String(count)), el('u', '', 'only'));
   side.onclick = only;
   r.append(main, side);

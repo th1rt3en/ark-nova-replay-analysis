@@ -139,7 +139,6 @@ export function sbPickProjects(n, current) {
         wrapc.classList.toggle('marked', chosen.includes(k));
         refresh();
       };
-      wrapc.title = cardName(k);
       grid.append(wrapc);
     }
     refresh();
@@ -314,7 +313,7 @@ export function sbSetupBar(bar) {
 }
 
 export function initSandbox() {
-  document.title = 'Sandbox - Ark Nova Park';
+  document.title = 'Sandbox - Park Nova';
   if (S.replay.setup) {
     Object.assign(S.replay.setup, { stage: 'seat', controller: 0, maps: [null, null] });
     S.replay.players.forEach((q, i) => { q.name = 'Seat ' + (i + 1); });

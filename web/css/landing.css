@@ -40,6 +40,8 @@ body.parkmap{max-width:none;padding:0;line-height:1.4;margin:0;background:var(--
 .lab.on .line{stroke:#FFF7E6}
 .lab.on text{fill:#FFF7E6;stroke:#17262B;stroke-width:3.5;stroke-linejoin:round;paint-order:stroke}
 .lab:focus{outline:none}
+/* no focus ring on anything in the park (Chrome draws a black and white square around a building or a pin after a click): the signs (.lab) show keyboard focus with their white board outline below, the rest is reached through them */
+#map :focus,#map :focus-visible{outline:none}
 .lab:focus-visible .board{stroke:#fff;stroke-width:4}
 .halo{opacity:0;transition:opacity .25s}
 .halo.on{opacity:1}

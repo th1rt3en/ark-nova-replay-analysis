@@ -10,7 +10,12 @@ export const el = (tag, cls, text) => {
 };
 
 // ---- card helpers ---------------------------------------------------------------------------------------------
-export const title = (s) => String(s).toLowerCase().replace(/(^|[\s-])(\w)/g, (m, a, b) => a + b.toUpperCase());
+// How the frontend writes card names, wherever they come from (BGA's log, the engine, the card data): the five breeding programs as titles ("Bird Breeding Program", BGA writes
+// "Bird breeding program"), "(Domestic) Goat", "WAZA" in capitals, "Horsfield's" (not Python's .title() "Horsfield'S"), "on" / "in" / "the" in lower case in the Expert and Conference sponsors ("Expert on the Americas", "Conference in ...") and BGA's typo "Assignement" corrected. Only the text shown
+// is changed: the steps' labels keep BGA's words (the parsers read those), so call this where text is put on the page (log-labels.js `labelNode`, `title` below).
+export const niceNames = (s) => String(s).replace(/\b(Bird|Predator|Reptile|Herbivore|Primate) breeding program\b/gi, (m, t) => t[0].toUpperCase() + t.slice(1).toLowerCase() + ' Breeding Program')
+  .replace(/\(domestic\) goat\b/gi, '(Domestic) Goat').replace(/\bWaza\b/g, 'WAZA').replace(/\bBird-Of-Paradise\b/g, 'Bird-of-paradise').replace(/\b(Expert|Conference) (On|In)( The)?\b/g, (m, a, w, t) => a + ' ' + w.toLowerCase() + (t ? ' the' : '')).replace(/\bAssignement\b/g, 'Assignment').replace(/([a-z])'S\b/g, "$1's");
+export const title = (s) => niceNames(String(s).toLowerCase().replace(/(^|[\s(-])(\w)/g, (m, a, b) => a + b.toUpperCase()));     // (a capital also after "(": "(Domestic) Goat")
 export const section = (heading, node, cls) => {
   const s = el('div', cls || 'sect');
   s.append(el('h3', '', heading), node);
@@ -41,13 +46,18 @@ const lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 
 const luminance = (hex) => { const m = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16))); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
 // the name a prompt shows for a seat: "You" for the viewer's own seat in a live game, the player's name for the opponent and for spectators
 export const seatName = (seat) => (S.play && S.play.seat === seat && S.play.seat !== null ? 'You' : (S.replay.players[seat] || {}).name || 'A player');
+export const onColour = (c) => {                                         // ink or white text, whichever reads better on the colour `c` (#rrggbb)
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c || ''); if (!m) return '#fff';
+  const l = [1, 2, 3].map((i) => { const v = parseInt(m[i], 16) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2] > 0.4 ? '#17262B' : '#fff';
+};
 const PAPER = '#F8EDCB';
-export const seatText = (seat) => {
+export const seatText = (seat, target = 4.5) => {                  // `target`: the contrast with the paper: 4.5 for names (small text), 3 for the big bold numbers of the Type view (move-hover.js)
   const c = seatColor(seat);
   if (!/^#[0-9a-f]{6}$/i.test(c || '')) return c;
   for (let t = 0; t <= 0.9; t += 0.05) {
     const m = mix(c, '#000000', t);
-    if ((luminance(PAPER) + 0.05) / (luminance(m) + 0.05) >= 4.5) return m;
+    if ((luminance(PAPER) + 0.05) / (luminance(m) + 0.05) >= target) return m;
   }
   return '#000000';
 };

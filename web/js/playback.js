@@ -14,6 +14,7 @@ import { groupsOf, NEUTRAL_COLOR } from './log-filter.js';
 import { closeResults, openResults, resultsAvailable } from './results.js';
 import { cardAnimationsBusy } from './card-motion.js';
 import { stepSounds } from './animal-sounds.js';
+import { blockAt, finalShowRunning, playFinalShow, wantFinalShow } from './endshow.js';
 
 const PLAY_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2l13 8-13 8z"/></svg>', PAUSE_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 3h4v14H4zM12 3h4v14h-4z"/></svg>';
 export function setPlaying(on) {
@@ -66,7 +67,6 @@ export function buildTimeline() {
     const b = k + 1 < starts.length ? starts[k + 1] : n;
     const seg = el('div', 'tlseg');
     seg.style.flexGrow = b - a;
-    seg.title = 'Round ' + (k + 1) + ': steps ' + a + '–' + (b - 1);
     tl.append(seg);
   });
   tl.append(el('div', 'tlhead'));
@@ -123,8 +123,14 @@ function frameAfter(n, ph, d) {
 export function stepBy(d) {
   if (S.results) { if (d < 0) closeResults(); return; }                  // (the results of a finished replay sit after the last step: ‹ goes back to the final board)
   if (d > 0 && atEnd() && resultsAvailable()) { openResults(); return; }  // (› on the last step opens them, results.js)
+  if (finalShowRunning()) return;                                        // (the final scoring show keeps the keys and autoplay while it plays, endshow.js)
   let f = frameAfter(S.step, S.phase, d);
   while (f && skipFrame(f[0], f[1])) { const g = frameAfter(f[0], f[1], d); if (!g) break; f = g; }
+  const fb = d > 0 && f && !SANDBOX && !MINIGAME && wantFinalShow() ? blockAt(f[0]) : null;           // (replays, forks and live games; not the sandbox)
+  if (fb && S.step < fb.start && f[0] >= fb.start) {                       // one step forward into the final scoring: the show plays it, then the last step and the results
+    const at = [S.step, S.phase];
+    if (playFinalShow(() => { if (S.timer) setPlaying(false); go(fb.end, 99); if (resultsAvailable()) openResults(); }, () => go(at[0], at[1]), fb)) return;
+  }
   if (f) { S.backStep = d < 0 && f[0] < S.step; go(f[0], f[1], d > 0); S.backStep = false; }
   else if (d < 0 && atStart() && canChoosePov()) askSpectated(true);       // (back from the very first step: the choice of the spectated player again, replay only)
 }
@@ -252,7 +258,11 @@ export function buildMoveList() {
     li._step = s;
     li.style.setProperty('--i', String(i));                                         // (setting Log order = newest first: parkposter.css sorts the lines by it)
     if (mergedAway(s)) li.style.display = 'none';                                   // (inside a merged run: the last step of the run is the line)
-    li.onclick = () => { go(i); };
+    li.onclick = () => {                                                            // (a click that ends a text selection inside this line is the end of a drag to copy, not a jump: the jump redraws the list and the search marks, which would drop the selection)
+      const sel = getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().trim() && (li.contains(sel.anchorNode) || li.contains(sel.focusNode))) return;
+      go(i);
+    };
     list.append(li);
   });
 }

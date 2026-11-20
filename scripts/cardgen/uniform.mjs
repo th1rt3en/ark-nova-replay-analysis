@@ -85,5 +85,7 @@ for (const [kind, [cols, rows, cw, ch]] of Object.entries(sheets)) {
 }
 // Marine Worlds projects P133-P139: their photo is one image (site/art/Pxxx.jpg, 2 x the old 374 x 264 cell), not a sprite cell
 out += `.ark-card.zoo-card.project-card[data-id^="P133_"] .ark-card-wrapper .ark-card-top, .ark-card.zoo-card.project-card[data-id^="P134_"] .ark-card-wrapper .ark-card-top, .ark-card.zoo-card.project-card[data-id^="P135_"] .ark-card-wrapper .ark-card-top, .ark-card.zoo-card.project-card[data-id^="P136_"] .ark-card-wrapper .ark-card-top, .ark-card.zoo-card.project-card[data-id^="P137_"] .ark-card-wrapper .ark-card-top, .ark-card.zoo-card.project-card[data-id^="P138_"] .ark-card-wrapper .ark-card-top, .ark-card.zoo-card.project-card[data-id^="P139_"] .ark-card-wrapper .ark-card-top { background-size: cover !important; background-position: 50% 0 !important; }\n`;
+// Long names (S264 Free-Range New World Monkeys, A463, A539) were shrunk by the fan site's length rule (scale-75 / scale-90 on the title): they fill the stripe like every other two-line name, so the shrink is switched off (checked for 2 lines in both layouts, see changelog)
+out += `.ark-card.zoo-card .ark-card-title.scale-75, .ark-card.zoo-card .ark-card-title.scale-90 { transform: none !important; }\n`;
 fs.writeFileSync('site/uniform.css', out);
 console.log('site/uniform.css written');

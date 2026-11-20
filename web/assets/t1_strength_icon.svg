@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 0 158 300" width="158" height="300">
+<defs>
+<linearGradient id="t1strip" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#b8e4f7"/>
+<stop offset="1" stop-color="#8acbec"/>
+</linearGradient>
+</defs>
+<rect x="-4" y="4" width="150" height="292" rx="24" fill="url(#t1strip)" stroke="#2f7fb5" stroke-width="7"/>
+<g transform="translate(58 112) rotate(-14) translate(0 -38)">
+<rect x="-24" y="-35" width="48" height="70" rx="7" fill="#f7d84b" stroke="#5c4a10" stroke-width="3.2"/>
+<rect x="-16" y="-27" width="32" height="22" rx="2.5" fill="#9fd2ee" stroke="#5c4a10" stroke-width="1.6"/>
+</g>
+<g transform="translate(73 112) rotate(0) translate(0 -38)">
+<rect x="-24" y="-35" width="48" height="70" rx="7" fill="#f7d84b" stroke="#5c4a10" stroke-width="3.2"/>
+<rect x="-16" y="-27" width="32" height="22" rx="2.5" fill="#9fd2ee" stroke="#5c4a10" stroke-width="1.6"/>
+</g>
+<g transform="translate(88 112) rotate(14) translate(0 -38)">
+<rect x="-24" y="-35" width="48" height="70" rx="7" fill="#f7d84b" stroke="#5c4a10" stroke-width="3.2"/>
+<rect x="-16" y="-27" width="32" height="22" rx="2.5" fill="#9fd2ee" stroke="#5c4a10" stroke-width="1.6"/>
+</g>
+<path d="M65 126h16v24h16l-24 26-24-26h16z" fill="#14232a"/>
+<g transform="translate(73 234)">
+<rect x="-54.0" y="-44.0" width="108" height="88" rx="6" fill="#14232a"/>
+<rect x="-54.0" y="-33.0" width="11" height="12" fill="#fff"/>
+<rect x="-54.0" y="-13.0" width="11" height="12" fill="#fff"/>
+<rect x="-54.0" y="7.0" width="11" height="12" fill="#fff"/>
+<rect x="-54.0" y="27.0" width="11" height="12" fill="#fff"/>
+<path transform="translate(-35.35 26.00)" d="M17.257641921397383 -1.589519650655022V-15.743813682678313H4.692867540029113V-23.388646288209607H17.257641921397383V-37.69432314410481H24.826783114992725V-23.388646288209607H37.467248908296945V-15.743813682678313H24.826783114992725V-1.589519650655022Z M48.55021834061136 0.0V-7.796215429403203H58.238719068413396V-39.43522561863173H48.4745269286754V-45.64192139737992Q50.74526928675401 -45.86899563318778 53.47016011644833 -46.777292576419214Q56.19505094614265 -47.685589519650655 58.95778748180496 -49.04803493449782Q61.720524017467255 -50.41048034934498 63.9155749636099 -52.00000000000001H67.77583697234353V-7.796215429403203H77.01018922852984V0.0Z" fill="#fff" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>
+</g>
+</svg>

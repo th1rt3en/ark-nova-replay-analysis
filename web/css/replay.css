@@ -633,7 +633,7 @@ html, body.viewer { overflow-x: hidden; }
 
 /* bonus tokens row of the player tracker */
 .bonusrow { display: flex; justify-content: center; flex-wrap: wrap; gap: .35rem; padding-top: .4rem; margin-top: .4rem; border-top: 1px solid rgba(111, 87, 73, .45); }
-.btoken { display: inline-flex; border-radius: 8px; line-height: 0; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)); cursor: help; }
+.btoken { display: inline-flex; border-radius: 8px; line-height: 0; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .45)); }
 .btoken img { display: block; }
 .btoken.card-new { animation: card-new var(--flash-duration, .8s) ease-out; }
 .btoken.card-gone { animation: card-gone var(--flash-duration, .8s) ease-out forwards; pointer-events: none; }

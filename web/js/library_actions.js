@@ -75,6 +75,7 @@ big.addEventListener('click', (e) => { if (e.target === big) big.close(); });
 /* ---------- keys: left / right (or up / down) turn to the next action; in the large view they go through the cards ---------- */
 addEventListener('keydown', (e) => {
   if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target instanceof Element && e.target.closest('input, textarea, select')) return;           // (a focused slider or text field keeps its own arrow keys: the library's volume slider)
   const d = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[e.key]; if (!d) return;
   e.preventDefault();
   if (big.open) open(bigV + d);

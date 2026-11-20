@@ -87,3 +87,21 @@ export function newCubes(before, after) {
   });
   return out;
 }
+
+// The bonus tokens of a player's info box (one-time effects: side-panel.js `BONUS_TOKENS`) that came or went: [{ seat, type, kind: 'gain' | 'use', from }]. A gained token's `from` is where
+// its tile lay: '5' / '8' (the random bonuses of the conservation track) or '99' (Marine Worlds: the bonus of 16 reputation), when such a tile with that bonus was taken in the step; else null.
+// Several tokens of one tile (Ignore conditions: 3) all come from it.
+export const BONUS_TOKEN_TYPES = ['bonus-icon', 'bonus-sponsor-gray', 'bonus-ignore-conditions', 'bonus-extra-shift'];
+export function bonusTokenMoves(before, after) {
+  const out = [], opts = (st, th) => ((st.conservation_options || {})[th] || []);
+  const tileTaken = {};                                                    // bonus name -> the threshold whose tile left the board in this step
+  for (const th of ['5', '8', '99']) for (const o of added(opts(after, th), opts(before, th), (x) => JSON.stringify(x))) tileTaken[Object.keys(o)[0]] = th;
+  after.players.forEach((b, seat) => {
+    const a = before.players[seat];
+    if (!a) return;
+    const mine = (p) => (p.tokens || []).filter((t) => BONUS_TOKEN_TYPES.includes(t.type)), byType = (t) => t.type;
+    for (const t of added(mine(a), mine(b), byType)) out.push({ seat, type: t.type, kind: 'gain', from: tileTaken[t.type] || null });
+    for (const t of added(mine(b), mine(a), byType)) out.push({ seat, type: t.type, kind: 'use', from: null });
+  });
+  return out;
+}
