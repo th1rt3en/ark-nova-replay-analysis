@@ -85,8 +85,9 @@ function addZeros(items, spon, hands) {
 }
 
 // ---- the block of a fork's / live game's end (the engine's one step, index `i`): built from the positions around it, or null ----
+// (only the very last step: that is where a fork's or live game's end always is; a replay can mark a step of the last turn 'over' before its final scoring, 943170782 step 554)
 export function engineBlock(i) {
-  const R = S.replay, st = R && R.steps; if (!st || !st[i] || !st[i].state || st[i].state.phase !== 'over' || i < 1) return null;
+  const R = S.replay, st = R && R.steps; if (!st || !st[i] || !st[i].state || st[i].state.phase !== 'over' || i < 1 || i !== st.length - 1) return null;
   const end = st[i].state, last = st[i - 1].state; if (!last || last.phase === 'over') return null;
   let j = i - 1; while (j > 0 && st[j].state && st[j].state.phase === 'scoring') j--;                 // (the endgame discard at the end is a 'scoring' position: the zoo lines come from before it)
   const pre = st[j].state; if (!pre || pre.phase === 'over' || st[j].log_only) return null;
