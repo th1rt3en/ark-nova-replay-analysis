@@ -150,13 +150,15 @@ class GcsLogStore:
         from google.api_core.exceptions import NotFound
         from google.cloud import storage  # the `gcp` extra
 
+        from ark_nova.storage import gcs
+
         self._client = self._client or storage.Client()
         if gcs_path.startswith("gs://"):
             bucket, _, name = gcs_path[5:].partition("/")
         else:
             bucket, name = self._default_bucket, gcs_path
         try:
-            with self._client.bucket(bucket).blob(name).open("rb") as stream:  # streamed: stops reading at the matching line
+            with gcs.bucket(self._client, bucket).blob(name).open("rb") as stream:  # streamed: stops reading at the matching line
                 line = find_table_line(gzip.GzipFile(fileobj=stream) if name.endswith(".gz") else stream, table_id)
         except NotFound as e:
             raise LogNotFound(gcs_path) from e
