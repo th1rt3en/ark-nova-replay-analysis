@@ -72,8 +72,10 @@ class FakeArchive:
 class GcsArchive:
     def __init__(self, bucket: str, client=None):
         from google.cloud import storage
+
+        from ark_nova.storage import gcs
         self.client = client or storage.Client()
-        self.bucket = self.client.bucket(bucket)
+        self.bucket = gcs.bucket(self.client, bucket)
         self.name = bucket
 
     def write(self, path: str, data: bytes) -> str:

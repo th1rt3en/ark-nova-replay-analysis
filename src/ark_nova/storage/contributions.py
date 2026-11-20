@@ -52,8 +52,10 @@ class Contributions:
     def _blob(self, table_id: int):
         from google.cloud import storage
 
+        from ark_nova.storage import gcs
+
         self._gcs = self._gcs or storage.Client()
-        return self._gcs.bucket(self.bucket).blob(f"{PREFIX}/{table_id}.txt")
+        return gcs.bucket(self._gcs, self.bucket).blob(f"{PREFIX}/{table_id}.txt")
 
     def has(self, table_id: int) -> bool:
         """Whether a log is kept for `table_id`. Blocking: call it off the event loop."""

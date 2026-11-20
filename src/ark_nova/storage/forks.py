@@ -68,14 +68,16 @@ class FileForkStore:
 class GcsForkStore:
     def __init__(self, bucket: str, client=None):
         from google.cloud import storage
+
+        from ark_nova.storage import gcs
         self.client = client or storage.Client()
-        self.bucket = self.client.bucket(bucket)
+        self.bucket = gcs.bucket(self.client, bucket)
         self.name = bucket
 
     def _taken(self, table_id: str) -> int:
         prefix = f"forks/{table_id}/"
         best = 0
-        for blob in self.client.list_blobs(self.name, prefix=prefix):
+        for blob in gcs.list_blobs(self.client, self.name, prefix=prefix):
             m = re.fullmatch(r"(\d+)\.json\.gz", blob.name[len(prefix):])
             if m:
                 best = max(best, int(m.group(1)))
