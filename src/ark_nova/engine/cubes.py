@@ -106,6 +106,73 @@ def sync(p, totals, freed: dict) -> None:
             freed[j] = n
 
 
+GROUP = {"Aquarium": AQUARIUMS, "Reptile House": ("reptile-house",), "Large Bird Aviary": ("large-bird-aviary",), "Petting Zoo": ("petting-zoo",)}
+
+
+def spec_size(key: str, btype: str) -> int:
+    """The cubes the animal takes in a special enclosure of this type (0 if it cannot live there)."""
+    for s in _card(key).get("specialEnclosures") or []:
+        if btype in GROUP.get(s["type"], ()):
+            return int(s["size"])
+    return 0
+
+
+def take(p, b, n: int) -> int:
+    """Remove n cubes from building `b` (cubes belong to no animal: the per-card records there shrink, the largest first). Returns how many were removed."""
+    done = 0
+    while done < n:
+        k = max((k for k, c in b.cubes.items() if c > 0), key=lambda k: b.cubes[k], default=None)
+        if k is None:
+            break
+        b.cubes[k] -= 1
+        if not b.cubes[k] and k not in b.animals:
+            del b.cubes[k]
+        done += 1
+    return done
+
+
+def _shift(src, q) -> bool:
+    """Move one cube (a real per-card record, the largest) from building `src` to building `q`."""
+    k = max((k for k, c in src.cubes.items() if c > 0), key=lambda k: src.cubes[k], default=None)
+    if k is None:
+        return False
+    src.cubes[k] -= 1
+    if not src.cubes[k] and k not in src.animals:
+        del src.cubes[k]
+    q.cubes[k] = q.cubes.get(k, 0) + 1
+    return True
+
+
+def _off(p, key: str, src, need: int) -> None:
+    """Exactly `need` cubes leave `src`; every other building keeps its count. Cubes belong to no animal: the card's own records are dropped, and a building
+    that held some of them is refilled from `src`."""
+    before = {i: used(p, q) for i, q in enumerate(p.buildings)}
+    isrc = p.buildings.index(src)
+    freed = drop(p, key)
+    target = before[isrc] - need
+    for j in freed:
+        if j == isrc:
+            continue
+        q = p.buildings[j]
+        while used(p, q) < before[j] and used(p, src) > target and _shift(src, q):
+            pass
+    if used(p, src) > target:
+        take(p, src, used(p, src) - target)
+
+
+def release_from(p, key: str, b) -> None:
+    """Live rules (no log counts, 2026-11-22): releasing an animal takes its cubes off the special enclosure the player chose (`b`, which must hold them: special
+    enclosures come first, an aquarium animal's aquarium is the player's choice among those that meet its rock need). Seed 210000579: an African Penguin
+    released from a Large Aquarium holding 5 cubes recorded for other cards took nothing off before this."""
+    _off(p, key, b, spec_size(key, b.type) or size_of(key))
+
+
+def move_from(p, key: str, src, dest) -> None:
+    """Live rules (no log counts): moving an animal into a new special enclosure takes its cubes off `src` (a special enclosure) and puts them on `dest`."""
+    _off(p, key, src, spec_size(key, src.type) or size_of(key))
+    place(p, dest, key)
+
+
 def move(p, key: str, dest, totals=None) -> None:
     """The animal `key` moves from its special enclosure(s) into `dest` (Bonus: move into a new reptile house / aviary)."""
     freed = drop(p, key)

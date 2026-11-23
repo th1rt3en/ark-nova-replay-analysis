@@ -123,19 +123,20 @@ def _reef_aquariums(state, seat: int) -> list:
             and any(animals_action.reef_abilities(k) for k in b.animals)]
 
 
-def release_enclosures(state, seat: int, key: str, exclude=None) -> list:
-    """The occupied enclosures that the release of this animal can empty (an animal is not tied to an enclosure; the flipped one is chosen by
-    priority): a special enclosure that meets the water / rock needs, the smallest standard one that does, a special one that does not, the
-    smallest standard one that does not. Empty list: no enclosure is emptied (they are all too small)."""
+def release_enclosures(state, seat: int, key: str, exclude=None, standard_only: bool = False) -> list:
+    """The occupied enclosures that the release of this animal can empty (an animal is not tied to an enclosure): the special enclosures that hold its cubes
+    and meet its water / rock needs come first, the player picks one (2026-11-22, owner: an aquarium animal's cubes come off any of the zoo's aquariums
+    that satisfies its rock requirement); else the smallest standard one that meets the needs, else the smallest standard one. Empty list: none is emptied.
+    standard_only: only standard enclosures (the source of a move into a new special enclosure, bonuses.move_options)."""
     from ark_nova.engine import animals_action
     from ark_nova.engine.board import board_of
     p = state.players[seat]
     bd = board_of(p)
     cands = [(b, ok) for b, ok in animals_action.hosts(state, seat, key, occupied=True) if b is not exclude]
+    special = [] if standard_only else [b for b, ok in cands if ok and not b.type.startswith("size-")]
+    if special:
+        return special
     for want in (True, False):
-        special = [b for b, ok in cands if ok == want and not b.type.startswith("size-")]
-        if special:
-            return special
         standard = [b for b, ok in cands if ok == want and b.type.startswith("size-")]
         if standard:
             least = min(animals_action.effective_size(p, b, bd) for b in standard)
@@ -149,8 +150,14 @@ def release_animal(state, seat: int, key: str, building=None, totals=None) -> No
     from ark_nova.engine import cubes
     p = state.players[seat]
     p.animals.remove(key)
-    cubes.release(p, key, totals)
     b = next((b for b in p.buildings if building is not None and [b.x, b.y] == list(building)), None)
+    if totals is None and b is not None and not b.type.startswith("size-"):
+        # live rules (no log counts; 2026-11-22, owner): no animal is tied to an enclosure; the released animal's cubes come off the special enclosure the player
+        # chose (seed 210000579: before, nothing came off the Large Aquarium). The per-card lists below are bookkeeping only (the replay compares them); the
+        # rules (room, release, move-in) read the cubes.
+        cubes.release_from(p, key, b)
+    else:
+        cubes.release(p, key, totals)
     if b is not None:
         if b.type.startswith("size-"):
             b.animal = None
