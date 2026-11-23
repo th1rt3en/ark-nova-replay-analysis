@@ -311,18 +311,23 @@ _MOVE_SPEC = {"reptile-house": "Reptile House", "large-bird-aviary": "Large Bird
 def move_options(state, p, e) -> list:
     """[(animal, [x, y] of the enclosure it leaves)]: the animals that may move into the newly built special enclosure, from a standard
     enclosure (emptied by the release priority) or from another special enclosure (its spaces are free again)."""
-    from ark_nova.engine import animals_action as aa, project_effects as pe
+    from ark_nova.engine import animals_action as aa, cubes, project_effects as pe
     nb = next((b for b in p.buildings if [b.x, b.y] == e["building"]), None)
     if nb is None:
         return []
-    free = aa.CAPACITY[nb.type] - sum(aa._special_size(a_) for a_ in nb.animals)
+    free = aa.CAPACITY[nb.type] - cubes.used(p, nb)
     out = []
     for key in p.animals:
         specs = [s for s in aa.card(key).get("specialEnclosures") or [] if s["type"] == _MOVE_SPEC[nb.type]]
         if key in nb.animals or not specs or free < specs[0]["size"]:
             continue
-        special = [b for b in p.buildings if key in b.animals]
-        for b in special or pe.release_enclosures(state, p.seat, key, exclude=nb):
+        # (2026-11-22, owner: no animal is tied to an enclosure) the cubes come off a special enclosure of a type the animal can live in that holds at least
+        # its cubes, or a standard enclosure (release priority, standard ones only) when it can live in one; the enclosures listing it stay valid (replays)
+        src = [b for b in p.buildings if b is not nb and not b.type.startswith("size-") and 0 < cubes.spec_size(key, b.type) <= cubes.used(p, b)]
+        src += [b for b in p.buildings if key in b.animals and b is not nb and b not in src]
+        if aa.card(key).get("canBeInStandardEnclosure") is not False:
+            src += [b for b in pe.release_enclosures(state, p.seat, key, exclude=nb, standard_only=True) if b not in src]
+        for b in src:
             out.append((key, [b.x, b.y]))
     return out
 
@@ -503,13 +508,20 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             raise fx.IllegalEffect("that animal cannot move into the new enclosure")
         nb = next(b for b in p.buildings if [b.x, b.y] == e["building"])
         old = next(b for b in p.buildings if [b.x, b.y] == src)
+        from ark_nova.engine import cubes
+        for o in p.buildings:                                   # (bookkeeping lists: the card is listed in the new enclosure only)
+            if key in o.animals:
+                o.animals.remove(key)
         if old.type.startswith("size-"):
             old.animal = None                                   # the standard enclosure is empty again
-        else:
-            old.animals.remove(key)
-        nb.animals.append(key)
-        from ark_nova.engine import cubes
-        cubes.move(p, key, nb, a.get("cubes"))                  # (its cubes go along)
+            nb.animals.append(key)
+            cubes.move(p, key, nb, a.get("cubes"))
+        elif a.get("cubes"):                                    # (replay: the log's counts)
+            nb.animals.append(key)
+            cubes.move(p, key, nb, a.get("cubes"))
+        else:                                                   # live rules: its cubes come off the chosen special enclosure onto the new one
+            nb.animals.append(key)
+            cubes.move_from(p, key, old, nb)
         return                                                  # more animals may follow; the player skips the effect when done
     elif k == "store":
         if a["store"] not in p.hand:

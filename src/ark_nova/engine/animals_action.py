@@ -322,16 +322,19 @@ def hosts(state: GameState, seat: int, key: str, occupied: bool = False) -> list
         for b in p.buildings:
             if b.type.startswith("size-") and (b.animal is not None) == occupied and effective_size(p, b, bd) >= c["size"]:
                 out.append((b, near_ok(b)))
+    from ark_nova.engine import cubes
     for spec in c.get("specialEnclosures") or []:
         pool = spec["type"] == "Aquarium" and not occupied                 # the aquariums of a zoo share their spaces: an animal may take them in several
         free = 0
         if pool:
             aq = [b for b in p.buildings if b.type in SPECIAL_TYPES["Aquarium"]]
-            free = sum(CAPACITY[b.type] for b in aq) - sum(_special_size(a) for a in {a for b in aq for a in b.animals})
+            free = sum(CAPACITY[b.type] for b in aq) - sum(cubes.used(p, b) for b in aq)
         for t in SPECIAL_TYPES.get(spec["type"], ()):
             for b in p.buildings:
-                if b.type == t and ((bool(b.animals) if occupied else (free >= spec["size"] if pool else
-                                                                       CAPACITY[t] - sum(_special_size(a) for a in b.animals) >= spec["size"]))):
+                # (2026-11-22, owner: no animal is tied to an enclosure; a special enclosure holds cubes: it can be emptied by a release when it holds the
+                # animal's cubes, it has room when its free spaces (the aquariums' together) cover them)
+                if b.type == t and ((0 < cubes.used(p, b) >= spec["size"] if occupied else (free >= spec["size"] if pool else
+                                                                                         CAPACITY[t] - cubes.used(p, b) >= spec["size"]))):
                     out.append((b, near_ok(b)))
     return out
 

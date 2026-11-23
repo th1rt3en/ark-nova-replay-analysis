@@ -1,0 +1,1303 @@
+{
+    "version": 1,
+    "config": {
+        "marine_worlds": true,
+        "player_ids": [
+            "83927465",
+            "91304283"
+        ],
+        "maps": [
+            "5a",
+            "7a"
+        ],
+        "base_projects": [
+            "P107",
+            "P133",
+            "P108"
+        ],
+        "player_names": [],
+        "action_cards": [
+            [
+                {
+                    "type": "animals",
+                    "variant": 0
+                },
+                {
+                    "type": "sponsors",
+                    "variant": 0
+                },
+                {
+                    "type": "cards",
+                    "variant": 4
+                },
+                {
+                    "type": "build",
+                    "variant": 0
+                },
+                {
+                    "type": "association",
+                    "variant": 2
+                }
+            ],
+            [
+                {
+                    "type": "animals",
+                    "variant": 0
+                },
+                {
+                    "type": "sponsors",
+                    "variant": 1
+                },
+                {
+                    "type": "association",
+                    "variant": 0
+                },
+                {
+                    "type": "build",
+                    "variant": 1
+                },
+                {
+                    "type": "cards",
+                    "variant": 0
+                }
+            ]
+        ],
+        "conservation_bonuses": {
+            "5": [
+                {
+                    "xtoken": 3
+                },
+                {
+                    "bonus-ignore-conditions": 3
+                }
+            ],
+            "8": [
+                {
+                    "take-in-range-or-deck": 3
+                },
+                {
+                    "bonus-icon": 1
+                }
+            ],
+            "99": [
+                {
+                    "reputation": 2
+                }
+            ]
+        },
+        "map_known": [
+            true,
+            true
+        ],
+        "table_id": 838513186,
+        "game_mode": "random-mirrored",
+        "maps_to_exclude": [],
+        "draft_action_cards": false,
+        "confirm_turns": false,
+        "strict_actions": false,
+        "peaceful": false,
+        "map_options": {},
+        "bdw_maps": false,
+        "custom_map": null
+    },
+    "seed": {
+        "tail_seed": 1,
+        "main_order": [
+            "A535",
+            "A495",
+            "A474",
+            "S250",
+            "A450",
+            "A510",
+            "S219",
+            "A433",
+            "S248",
+            "A524",
+            "S262",
+            "S251",
+            "A465",
+            "S234",
+            "A555",
+            "S266",
+            "S208",
+            "S213",
+            "A496",
+            "A491",
+            "A402",
+            "A494",
+            "S209",
+            "S214",
+            "A551",
+            "A554",
+            "A445",
+            "A506",
+            "A548",
+            "S229",
+            "A467",
+            "A507",
+            "P122",
+            "A532",
+            "P117",
+            "A472",
+            "S239",
+            "A516",
+            "P125",
+            "A525",
+            "A419",
+            "A468",
+            "A454",
+            "A411",
+            "S274",
+            "P137",
+            "A521",
+            "A407",
+            "A540",
+            "A538",
+            "A541",
+            "A527",
+            "A446",
+            "S231",
+            "A520",
+            "A490",
+            "S270",
+            "S281",
+            "S263",
+            "A543",
+            "S259",
+            "A466",
+            "A513",
+            "P124",
+            "P128",
+            "A409",
+            "A457",
+            "A498",
+            "A431",
+            "S255",
+            "A442",
+            "A426",
+            "A401",
+            "S280",
+            "A475",
+            "A477",
+            "A542",
+            "A502",
+            "A424",
+            "S202",
+            "S253",
+            "A471",
+            "A404",
+            "S204",
+            "S260",
+            "A533",
+            "A480",
+            "A455",
+            "A464",
+            "A552",
+            "A522",
+            "A546",
+            "P114",
+            "A439",
+            "S272",
+            "S235",
+            "S258",
+            "S265",
+            "A493",
+            "S278",
+            "S226",
+            "A553",
+            "A448",
+            "S207",
+            "S264",
+            "A461",
+            "A501",
+            "A509",
+            "A436",
+            "A444",
+            "A440",
+            "S228",
+            "S261",
+            "A515",
+            "P113",
+            "S268",
+            "A438",
+            "A418",
+            "A545",
+            "S215",
+            "S201",
+            "A559",
+            "P119",
+            "A518"
+        ],
+        "endgame_order": [
+            "F001",
+            "F002",
+            "F006",
+            "F011",
+            "F013",
+            "F007",
+            "F010",
+            "F016"
+        ]
+    },
+    "rng": "12896902596567870328",
+    "phase": "turn",
+    "turn": 46,
+    "active_player": 0,
+    "break_position": 2,
+    "round": 5,
+    "main_deck": [
+        "A470",
+        "P115",
+        "A448",
+        "A451",
+        "A436",
+        "S210",
+        "A415",
+        "S281",
+        "A492",
+        "A432",
+        "S253",
+        "A487",
+        "P129",
+        "S202",
+        "A505",
+        "S258",
+        "A547",
+        "A406",
+        "P123",
+        "A552",
+        "A419",
+        "P114",
+        "A422",
+        "A549",
+        "S228",
+        "S233",
+        "A486",
+        "A480",
+        "A534",
+        "A525",
+        "A536",
+        "P119",
+        "S237",
+        "A405",
+        "A429",
+        "S243",
+        "A407",
+        "S267",
+        "S227",
+        "A546",
+        "A418",
+        "P137",
+        "S222",
+        "A430",
+        "S217",
+        "A557",
+        "S207",
+        "P127",
+        "A541",
+        "A479",
+        "A489",
+        "S216",
+        "A514",
+        "A523",
+        "P128",
+        "A493",
+        "P124",
+        "A444",
+        "A417",
+        "P120",
+        "S268",
+        "A443",
+        "A446",
+        "A452",
+        "S231",
+        "A473",
+        "A509",
+        "A426",
+        "S277",
+        "A498",
+        "A559",
+        "S247",
+        "S230",
+        "A412",
+        "A442",
+        "S252",
+        "S236",
+        "A454",
+        "S226",
+        "A420",
+        "A504",
+        "A463",
+        "S257",
+        "A464",
+        "P130",
+        "S259",
+        "A517",
+        "A409",
+        "S212",
+        "P131",
+        "A428",
+        "S263",
+        "A540",
+        "A441",
+        "A439",
+        "A459",
+        "A550",
+        "S232",
+        "A421",
+        "A490",
+        "S245",
+        "S242",
+        "S260",
+        "A404",
+        "S205",
+        "A522",
+        "A466",
+        "A501",
+        "A513",
+        "A408",
+        "A542",
+        "S203",
+        "S220",
+        "A476",
+        "A461",
+        "S246",
+        "S224",
+        "A526",
+        "A449",
+        "A503",
+        "P117",
+        "A511",
+        "P132",
+        "S223",
+        "A472",
+        "P136",
+        "S278",
+        "A544",
+        "A456",
+        "A457",
+        "A485",
+        "P138",
+        "A488",
+        "A411",
+        "P135",
+        "P139",
+        "S218",
+        "P113",
+        "A560",
+        "S235",
+        "S254",
+        "A515",
+        "A516",
+        "A518",
+        "A538",
+        "A455",
+        "A437",
+        "A469",
+        "A414",
+        "A497",
+        "S261",
+        "A500",
+        "A431",
+        "A520",
+        "A521",
+        "A545",
+        "A556",
+        "A512",
+        "P134",
+        "A401",
+        "A416",
+        "A410",
+        "A477",
+        "A528",
+        "A508",
+        "A484",
+        "S206",
+        "A425",
+        "P121",
+        "S215",
+        "A460",
+        "A519",
+        "A435",
+        "S211",
+        "A434",
+        "P126",
+        "A462",
+        "S239",
+        "S256",
+        "A553",
+        "A482",
+        "S241"
+    ],
+    "main_discard": [
+        "A495",
+        "A474",
+        "A450",
+        "A433",
+        "A524",
+        "S251",
+        "S234",
+        "A555",
+        "A506",
+        "A510",
+        "A535",
+        "A445",
+        "S213",
+        "A496",
+        "A491",
+        "A507",
+        "A478",
+        "P122",
+        "A402",
+        "A494",
+        "A471",
+        "A481",
+        "A483",
+        "A424",
+        "A427",
+        "A453",
+        "S214",
+        "A447",
+        "S276",
+        "S229",
+        "A423",
+        "S204",
+        "S244",
+        "S270",
+        "S269",
+        "S275",
+        "S238",
+        "S280",
+        "A527",
+        "S264",
+        "S221"
+    ],
+    "endgame_deck": [
+        "F017",
+        "F015",
+        "F010",
+        "F014",
+        "F005",
+        "F009",
+        "F003",
+        "F012",
+        "F016",
+        "F008",
+        "F004"
+    ],
+    "endgame_discard": [
+        "F001",
+        "F002",
+        "F013",
+        "F006"
+    ],
+    "display": [
+        "A403",
+        "S274",
+        "A502",
+        "S249",
+        "S265",
+        "S271"
+    ],
+    "base_projects": [
+        "P107",
+        "P133",
+        "P108"
+    ],
+    "base_projects_unused": [
+        "P101",
+        "P102",
+        "P103",
+        "P104",
+        "P105",
+        "P106",
+        "P109",
+        "P110",
+        "P111",
+        "P112"
+    ],
+    "projects_in_play": [
+        "P116"
+    ],
+    "board_tokens": [
+        {
+            "id": 1,
+            "type": "partner-Africa",
+            "location": "association_3"
+        },
+        {
+            "id": 17,
+            "type": "partner-Australia",
+            "location": "association_3"
+        },
+        {
+            "id": 29,
+            "type": "fac-science-science",
+            "location": "association_4"
+        },
+        {
+            "id": 9021,
+            "type": "partner-Asia",
+            "location": "association_3"
+        },
+        {
+            "id": 9022,
+            "type": "partner-Americas",
+            "location": "association_3"
+        }
+    ],
+    "conservation_options": {
+        "5": [
+            {
+                "bonus-ignore-conditions": 3
+            }
+        ],
+        "8": [
+            {
+                "bonus-icon": 1
+            }
+        ],
+        "99": [
+            {
+                "reputation": 2
+            }
+        ]
+    },
+    "endgame_discard_done": true,
+    "players": [
+        {
+            "seat": 0,
+            "map_id": "5a",
+            "money": 37,
+            "appeal": 35,
+            "conservation": 3,
+            "reputation": 10,
+            "x_tokens": 2,
+            "action_cards": [
+                {
+                    "type": "build",
+                    "variant": 0,
+                    "level": 1,
+                    "tokens": []
+                },
+                {
+                    "type": "cards",
+                    "variant": 4,
+                    "level": 2,
+                    "tokens": []
+                },
+                {
+                    "type": "sponsors",
+                    "variant": 0,
+                    "level": 2,
+                    "tokens": []
+                },
+                {
+                    "type": "animals",
+                    "variant": 0,
+                    "level": 2,
+                    "tokens": []
+                },
+                {
+                    "type": "association",
+                    "variant": 2,
+                    "level": 1,
+                    "tokens": []
+                }
+            ],
+            "hand": [
+                "S255",
+                "S273",
+                "A558",
+                "P118",
+                "S225",
+                "A475",
+                "A413",
+                "A499"
+            ],
+            "endgame_hand": [
+                "F007"
+            ],
+            "animals": [
+                "A554",
+                "A551",
+                "A467",
+                "A537",
+                "A440",
+                "A529"
+            ],
+            "sponsors": [
+                "S208",
+                "S250",
+                "S219",
+                "S279",
+                "S201",
+                "S272"
+            ],
+            "released": [],
+            "stored": [],
+            "pouched": [],
+            "rescued": [],
+            "under": {},
+            "buildings": [
+                {
+                    "id": 1,
+                    "type": "size-4",
+                    "x": 4,
+                    "y": 9,
+                    "rotation": 1,
+                    "animal": "A554",
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 2,
+                    "type": "large-aquarium",
+                    "x": 2,
+                    "y": 5,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [
+                        "A551",
+                        "A537",
+                        "A529"
+                    ],
+                    "cubes": {
+                        "A551": 3,
+                        "A537": 1,
+                        "A529": 1
+                    }
+                },
+                {
+                    "id": 3,
+                    "type": "sea-turtle",
+                    "x": 5,
+                    "y": 4,
+                    "rotation": 1,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 4,
+                    "type": "size-2",
+                    "x": 7,
+                    "y": 2,
+                    "rotation": 0,
+                    "animal": "A467",
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 5,
+                    "type": "underwater-tunnel",
+                    "x": 1,
+                    "y": 4,
+                    "rotation": 1,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 6,
+                    "type": "size-2",
+                    "x": 6,
+                    "y": 7,
+                    "rotation": 5,
+                    "animal": "A440",
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 7,
+                    "type": "size-3",
+                    "x": 7,
+                    "y": 10,
+                    "rotation": 1,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 8,
+                    "type": "size-2",
+                    "x": 4,
+                    "y": 1,
+                    "rotation": 5,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                }
+            ],
+            "tokens": [
+                {
+                    "id": 9000,
+                    "type": "worker",
+                    "location": "association_5"
+                },
+                {
+                    "id": 9001,
+                    "type": "worker",
+                    "location": "supply_2"
+                },
+                {
+                    "id": 9002,
+                    "type": "worker",
+                    "location": "supply_3"
+                },
+                {
+                    "id": 9003,
+                    "type": "worker",
+                    "location": "reserve"
+                },
+                {
+                    "id": 33,
+                    "type": "fac-science-marine",
+                    "location": "university_1"
+                },
+                {
+                    "id": 9014,
+                    "type": "fac-science-rep",
+                    "location": "university_2"
+                },
+                {
+                    "id": 9016,
+                    "type": "token",
+                    "location": "P133_SeaAnimals_2"
+                },
+                {
+                    "id": 13,
+                    "type": "partner-Americas",
+                    "location": "partner_1"
+                },
+                {
+                    "id": 9017,
+                    "type": "fac-rep-hand",
+                    "location": "university_3"
+                },
+                {
+                    "id": 9020,
+                    "type": "token",
+                    "location": "A403_Leopard"
+                },
+                {
+                    "id": 9023,
+                    "type": "token",
+                    "location": "P116_ReleaseSerengeti_1"
+                }
+            ],
+            "uni_cards": {
+                "marine": "A551"
+            },
+            "flags": {
+                "bonus_used": 18
+            },
+            "initial_offer": [],
+            "icons": {
+                "Africa": 2,
+                "Europe": 1,
+                "Asia": 0,
+                "Americas": 3,
+                "Australia": 1,
+                "Bird": 1,
+                "Predator": 0,
+                "Herbivore": 1,
+                "Primate": 1,
+                "Reptile": 2,
+                "SeaAnimal": 6,
+                "Pet": 0,
+                "Bear": 0,
+                "Science": 5,
+                "Rock": 2,
+                "Water": 4
+            },
+            "bonus_layout": null
+        },
+        {
+            "seat": 1,
+            "map_id": "7a",
+            "money": 59,
+            "appeal": 38,
+            "conservation": 13,
+            "reputation": 9,
+            "x_tokens": 1,
+            "action_cards": [
+                {
+                    "type": "association",
+                    "variant": 0,
+                    "level": 2,
+                    "tokens": []
+                },
+                {
+                    "type": "sponsors",
+                    "variant": 1,
+                    "level": 2,
+                    "tokens": []
+                },
+                {
+                    "type": "cards",
+                    "variant": 0,
+                    "level": 2,
+                    "tokens": []
+                },
+                {
+                    "type": "build",
+                    "variant": 1,
+                    "level": 1,
+                    "tokens": []
+                },
+                {
+                    "type": "animals",
+                    "variant": 0,
+                    "level": 2,
+                    "tokens": []
+                }
+            ],
+            "hand": [
+                "A458",
+                "S240",
+                "A438",
+                "P125",
+                "A543"
+            ],
+            "endgame_hand": [
+                "F011"
+            ],
+            "animals": [
+                "A465",
+                "A532",
+                "A539",
+                "A548",
+                "A531",
+                "A468",
+                "A533",
+                "A530"
+            ],
+            "sponsors": [
+                "S248",
+                "S209",
+                "S266"
+            ],
+            "released": [],
+            "stored": [],
+            "pouched": [],
+            "rescued": [],
+            "under": {
+                "A548": [
+                    "S262"
+                ]
+            },
+            "buildings": [
+                {
+                    "id": 1,
+                    "type": "size-2",
+                    "x": 7,
+                    "y": 8,
+                    "rotation": 5,
+                    "animal": "A465",
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 2,
+                    "type": "monkey",
+                    "x": 6,
+                    "y": 9,
+                    "rotation": 1,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 3,
+                    "type": "kiosk",
+                    "x": 6,
+                    "y": 5,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 4,
+                    "type": "pavilion",
+                    "x": 7,
+                    "y": 4,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 5,
+                    "type": "kiosk",
+                    "x": 5,
+                    "y": 12,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 6,
+                    "type": "small-aquarium",
+                    "x": 6,
+                    "y": 11,
+                    "rotation": 5,
+                    "animal": null,
+                    "animals": [
+                        "A532",
+                        "A530"
+                    ],
+                    "cubes": {
+                        "A532": 0,
+                        "A530": 1
+                    }
+                },
+                {
+                    "id": 7,
+                    "type": "pavilion",
+                    "x": 5,
+                    "y": 6,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 8,
+                    "type": "large-aquarium",
+                    "x": 5,
+                    "y": 2,
+                    "rotation": 1,
+                    "animal": null,
+                    "animals": [
+                        "A539",
+                        "A548",
+                        "A531",
+                        "A533"
+                    ],
+                    "cubes": {
+                        "A539": 1,
+                        "A548": 1,
+                        "A531": 1,
+                        "A533": 1
+                    }
+                },
+                {
+                    "id": 9,
+                    "type": "pavilion",
+                    "x": 7,
+                    "y": 6,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 10,
+                    "type": "pavilion",
+                    "x": 4,
+                    "y": 7,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 11,
+                    "type": "size-1",
+                    "x": 6,
+                    "y": 1,
+                    "rotation": 0,
+                    "animal": "A468",
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 12,
+                    "type": "size-2",
+                    "x": 2,
+                    "y": 7,
+                    "rotation": 5,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 13,
+                    "type": "pavilion",
+                    "x": 2,
+                    "y": 5,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 14,
+                    "type": "pavilion",
+                    "x": 8,
+                    "y": 7,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 15,
+                    "type": "size-2",
+                    "x": 0,
+                    "y": 5,
+                    "rotation": 5,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                },
+                {
+                    "id": 16,
+                    "type": "kiosk",
+                    "x": 0,
+                    "y": 7,
+                    "rotation": 0,
+                    "animal": null,
+                    "animals": [],
+                    "cubes": {}
+                }
+            ],
+            "tokens": [
+                {
+                    "id": 9010,
+                    "type": "worker",
+                    "location": "association_5"
+                },
+                {
+                    "id": 9011,
+                    "type": "worker",
+                    "location": "supply_2"
+                },
+                {
+                    "id": 9012,
+                    "type": "worker",
+                    "location": "supply_3"
+                },
+                {
+                    "id": 9013,
+                    "type": "worker",
+                    "location": "association_3"
+                },
+                {
+                    "id": 25,
+                    "type": "fac-science-rep",
+                    "location": "university_1"
+                },
+                {
+                    "id": 9015,
+                    "type": "fac-science-primate",
+                    "location": "university_2"
+                },
+                {
+                    "id": 21,
+                    "type": "fac-rep-hand",
+                    "location": "university_3"
+                },
+                {
+                    "id": 9,
+                    "type": "partner-Asia",
+                    "location": "partner_1"
+                },
+                {
+                    "id": 9018,
+                    "type": "token",
+                    "location": "P133_SeaAnimals_0"
+                },
+                {
+                    "id": 9019,
+                    "type": "token",
+                    "location": "association_0_0"
+                },
+                {
+                    "id": 9021,
+                    "type": "token",
+                    "location": "P108_Primates_1"
+                },
+                {
+                    "id": 5,
+                    "type": "partner-Europe",
+                    "location": "partner_2"
+                },
+                {
+                    "id": 9022,
+                    "type": "token",
+                    "location": "association_0_2"
+                }
+            ],
+            "uni_cards": {
+                "primate": "A468"
+            },
+            "flags": {
+                "bonus_used": 3
+            },
+            "initial_offer": [],
+            "icons": {
+                "Africa": 0,
+                "Europe": 2,
+                "Asia": 2,
+                "Americas": 3,
+                "Australia": 2,
+                "Bird": 0,
+                "Predator": 0,
+                "Herbivore": 0,
+                "Primate": 4,
+                "Reptile": 0,
+                "SeaAnimal": 7,
+                "Pet": 0,
+                "Bear": 0,
+                "Science": 3,
+                "Rock": 1,
+                "Water": 2
+            },
+            "bonus_layout": null
+        }
+    ],
+    "pending": [],
+    "prompt": {
+        "kind": "effects",
+        "player": 0,
+        "args": {
+            "pending": [
+                {
+                    "kind": "gain",
+                    "source": "P116",
+                    "res": "conservation",
+                    "n": 4,
+                    "optional": false
+                },
+                {
+                    "kind": "project_bonus",
+                    "source": "P116",
+                    "bonus": {
+                        "Worker": 1
+                    },
+                    "optional": false
+                },
+                {
+                    "kind": "release",
+                    "source": "P116",
+                    "tag": "africa",
+                    "slot": 1,
+                    "optional": false
+                },
+                {
+                    "kind": "gain",
+                    "source": "P116",
+                    "res": "reputation",
+                    "n": 1,
+                    "optional": false
+                }
+            ],
+            "resume": {
+                "kind": "association_tasks",
+                "args": {
+                    "level": 1,
+                    "strength": 5,
+                    "left": 0,
+                    "done": [
+                        "conservation"
+                    ],
+                    "donated": false,
+                    "variant": 2
+                }
+            }
+        }
+    },
+    "current_action": {
+        "seat": 0,
+        "type": "association",
+        "variant": 2,
+        "level": 1,
+        "slot": 5,
+        "strength": 5,
+        "after": [],
+        "extra": null,
+        "appeal_start": [
+            35,
+            38
+        ]
+    },
+    "stats": [
+        {
+            "turns": 23,
+            "actions": {
+                "build": 2,
+                "animals": 4,
+                "association": 6,
+                "sponsors": 6,
+                "cards": 5
+            },
+            "passes": 1,
+            "money_gained": 131,
+            "money_spent": 119,
+            "x_gained": 4,
+            "x_used": 2,
+            "assoc": {
+                "reputation": 0,
+                "partner": 1,
+                "university": 3,
+                "conservation": 2
+            },
+            "animals_played": 6,
+            "animals_released": 0,
+            "sponsors_played": 6,
+            "breaks": 2,
+            "points": {
+                "animals": 35,
+                "sponsors": 2,
+                "projects": 4,
+                "others": 0
+            },
+            "booked": 0,
+            "start": -14
+        },
+        {
+            "turns": 23,
+            "actions": {
+                "build": 4,
+                "animals": 5,
+                "association": 6,
+                "sponsors": 4,
+                "cards": 4
+            },
+            "passes": 0,
+            "money_gained": 158,
+            "money_spent": 124,
+            "x_gained": 12,
+            "x_used": 11,
+            "assoc": {
+                "reputation": 0,
+                "partner": 2,
+                "university": 3,
+                "conservation": 2
+            },
+            "animals_played": 8,
+            "animals_released": 0,
+            "sponsors_played": 3,
+            "breaks": 2,
+            "points": {
+                "animals": 35,
+                "sponsors": 0,
+                "projects": 27,
+                "others": 4
+            },
+            "booked": 0,
+            "start": -13
+        }
+    ],
+    "checkpoint": null,
+    "end_triggered_by": null,
+    "final_turns": [],
+    "result": null,
+    "map_select": null,
+    "draft": null,
+    "study": null
+}
