@@ -259,7 +259,7 @@ export function commitSteps(steps) {
   stageBreaks(S.replay);
   buildMoveList();
   S.forkBusy = false;
-  if (!SANDBOX && all.length === steps.length && showEngineEnd(S.replay.steps.length - 1, (i) => go(i, 99))) return;          // (a move that ends the game: the final scoring show, endshow.js)
+  if (all.length === steps.length && showEngineEnd(S.replay.steps.length - 1, (i) => go(i, 99))) return;          // (a move that ends the game: the final scoring show, endshow.js; the sandbox too since 2026-11-25, owner: a game against the bot ends with it)
   go(all.length > steps.length ? first : S.replay.steps.length - 1, 0, true);          // (a split deal is entered at its first step: playback.js `personChain` plays the sponsors on)
 }
 

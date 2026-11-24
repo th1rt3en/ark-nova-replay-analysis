@@ -215,7 +215,8 @@ function adaptFork(o, acts, play) {
   if (!S.revealSel || S.revealSel.index !== e.index || S.revealSel.step !== S.step) S.revealSel = { index: e.index, step: S.step, sel: [] };
   const sel = S.revealSel.sel;
   const pop = el('div', 'draftpop revealpop adaptpop'), group = el('div', 'draftgroup');
-  group.append(head(seat, 'must discard ' + plural(n, 'endgame card') + ' (Adapt)', 'adapt'));
+  const keep = !!e.keep_hand;                                              // Resistance: only the drawn cards can go, the held ones stay
+  group.append(head(seat, keep ? 'must discard ' + n + ' of the ' + fresh.length + ' drawn endgame cards (Resistance)' : 'must discard ' + plural(n, 'endgame card') + ' (Adapt)', 'adapt'));
   const confirm = el('button', 'forkmove forkconfirm');
   confirm.type = 'button'; confirm.style.setProperty('--pc', seatColor(seat));
   const match = () => mine.find((a) => [...a.args.discard].sort().join() === [...sel].sort().join());
@@ -227,6 +228,7 @@ function adaptFork(o, acts, play) {
   };
   row = adaptRow(group, cards, fresh, null, (k) => {
     const c = adaptCard(k, fresh.includes(k), false, e.pts);
+    if (keep && !fresh.includes(k)) { c.title += ' - kept (Resistance discards one of the drawn cards)'; return c; }
     c.classList.add('choosable'); c.title += ' - click to discard';
     c.onclick = () => { const i = sel.indexOf(k); if (i >= 0) sel.splice(i, 1); else { if (sel.length >= n) sel.shift(); sel.push(k); } refresh(); };
     return c;
@@ -321,10 +323,52 @@ function horseFork(o, acts, play) {
   return true;
 }
 
+// fork / live game: the endgame card to discard (10 conservation, or the end of the game when nobody reached it): the player's endgame cards large, a click marks one
+// for the bin (the same trash mask as Adapt), Discard plays it (owner, 2026-11-25: one picker instead of a button per card)
+function endgameDiscardFork(o, acts, play) {
+  const e = (o.effects || []).find((x) => x.kind === 'endgame_discard');
+  if (!e) return false;
+  const mine = acts.filter((a) => a.kind === 'choose_effect' && a.args.index === e.index && typeof a.args.card === 'string');
+  if (!mine.length) return false;
+  const seat = mine[0].player;
+  const held = (S.replay.steps[S.step].state.players[seat].endgame_hand || []).slice();
+  const cards = held.length ? held : [...new Set(mine.map((a) => a.args.card))];
+  if (!S.revealSel || S.revealSel.index !== e.index || S.revealSel.step !== S.step) S.revealSel = { index: e.index, step: S.step, sel: [] };
+  const sel = S.revealSel.sel;
+  const pop = el('div', 'draftpop revealpop adaptpop'), group = el('div', 'draftgroup');
+  group.append(head(seat, 'must discard 1 endgame card', 'adapt'));
+  const confirm = el('button', 'forkmove forkconfirm');
+  confirm.type = 'button'; confirm.style.setProperty('--pc', seatColor(seat));
+  const match = () => mine.find((a) => a.args.card === sel[0]);
+  let row;
+  const refresh = () => {
+    confirm.textContent = 'Discard (' + sel.length + '/1)';
+    confirm.disabled = S.forkBusy || !match();
+    for (const c of row.children) { const k = c.dataset.key, on = sel.includes(k); c.classList.toggle('out', on); const m = c.querySelector('.xmark'); if (on && !m) c.append(el('span', 'xmark', '✕')); else if (!on && m) m.remove(); }
+  };
+  row = adaptRow(group, cards, [], null, (k) => {
+    const c = adaptCard(k, false, false, e.pts);
+    if (!mine.some((a) => a.args.card === k)) return c;
+    c.classList.add('choosable'); c.title += ' - click to discard';
+    c.onclick = () => { sel.splice(0, sel.length, k); refresh(); };
+    return c;
+  });
+  confirm.onclick = () => { const a = match(); if (a && !S.forkBusy) play(a); };
+  const buttons = el('div', 'revealbtns');
+  buttons.append(confirm);
+  group.append(buttons);
+  pop.append(group);
+  refresh();
+  open(pop, cards.length);
+  hideButton('Cards');
+  return true;
+}
+
 // The fork and the live game: the pending reveal / scavenge effect of the player (options.effects): `cards` are the cards of the effect, `n` how many are kept
 export function forkReveal(o, acts, play, cancel) {
   if (horseFork(o, acts, play)) return true;
   if (adaptFork(o, acts, play)) return true;
+  if (endgameDiscardFork(o, acts, play)) return true;
   let e = (o.effects || []).find((x) => (x.kind === 'reveal' || x.kind === 'scavenge') && Array.isArray(x.cards) && x.cards.length);
   if (!e) {                                                       // Assertion: the pending effect holds no cards, its choices (`choose_effect` with `card`) are the unused base projects
     const as = (o.effects || []).find((x) => x.kind === 'assertion' && S.assertOpen === x.index);          // (opened by the Assertion button)

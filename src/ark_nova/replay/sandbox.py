@@ -26,6 +26,12 @@ from ark_nova.replay.view import card_catalog, map_view  # noqa: F401 (map_view 
 
 # the 16 bonuses that the 5 and 8 conservation spaces (and the 16 reputation space) draw two (one) of at random, as seen in the logs; the 5 money option is always there
 BONUS_POOL = bonuses.CONSERVATION_POOL                      # (the engine draws from the same list at the start of a game)
+
+
+def bonus_pool(marine_worlds: bool) -> list:
+    """The pool of a game: Marketing is the token in Marine Worlds and the instant one in the base game (bonuses.draw_conservation_bonuses)."""
+    drop = "bonus-sponsor" if marine_worlds else "bonus-sponsor-gray"
+    return [b for b in BONUS_POOL if drop not in b]
 COLORS = ["#b91b1b", "#1863a5"]
 UNIVERSITIES = ("fac-rep-hand", "fac-science-rep", "fac-science-science")
 MAX_BOT_MOVES = 60
@@ -201,8 +207,8 @@ def edit(state: GameState, meta: dict, op: str, args: dict) -> tuple[GameState, 
         bonus = args.get("bonus")
         others = [b for t, bs in meta["initial"].items() for j, b in enumerate(bs) if not (t == th and j == slot) and not meta["unset"]["b" + t][j]]      # (a bonus is drawn once for the whole board)
         if bonus is None:
-            bonus = random.SystemRandom().choice([b for b in BONUS_POOL if b not in others])
-        if bonus not in BONUS_POOL or bonus in others:
+            bonus = random.SystemRandom().choice([b for b in bonus_pool(state.config.marine_worlds) if b not in others])
+        if bonus not in bonus_pool(state.config.marine_worlds) or bonus in others:
             raise SandboxError("that bonus is already on the board")
         meta["initial"][th][slot] = bonus
         state.conservation_options[th] = copy.deepcopy(meta["initial"][th])

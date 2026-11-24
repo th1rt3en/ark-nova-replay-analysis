@@ -180,7 +180,7 @@ def effects_for(state, seat: int, key: str, name: str, value) -> list:
             state.base_projects_unused.remove("P108")
             p.hand.append("P108")
     elif name == "Resistance":
-        return [{"kind": "adapt", "source": key, "player": seat, "optional": False, "draw": 2, "n": 1}]
+        return [{"kind": "adapt", "source": key, "player": seat, "optional": False, "draw": 2, "n": 1, "keep_hand": True}]      # (card text: draw 2, keep 1 and discard the other: the endgame cards already held are safe)
     elif name == "Adapt":
         return [{"kind": "adapt", "source": key, "player": seat, "optional": False, "draw": int(value), "n": int(value)}]
     elif name == "Scuba Dive X":

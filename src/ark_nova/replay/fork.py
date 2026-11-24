@@ -132,6 +132,8 @@ def describe_action(a: Action, state: GameState | None = None) -> str:
             word = {"x_tokens": "X token", "xtoken": "X token"}.get(e["res"], str(e["res"]))
             src = e.get("source")
             name = f"Gain {e.get('n', 1)} {word}" + (f" ({_name(src)})" if isinstance(src, str) and src[:1] in "ASPF" and src[1:4].isdigit() else "")
+        if e.get("kind") == "rep_bonus" and k == "skip_effect":                            # Marine Worlds: declining the 16 reputation bonus pays 1 appeal and leaves the bonus there
+            return "Take 1 appeal instead (the 16 reputation bonus stays for later)"
         if e.get("kind") == "species_bonus":                                              # BDW1: the second icon of a species
             name = f"Second {e.get('icon')} icon"
         rest = args.pop("args", None) or {}
@@ -281,7 +283,8 @@ def narrate(before: GameState, action: Action, after: GameState, who: str) -> st
     elif k == "restart_turn":
         text = "restarted the turn"
     elif k == "skip_effect":
-        text = "passed on " + describe_action(action, before).removeprefix("Skip: ")
+        d = describe_action(action, before)
+        text = "took 1 appeal instead of the 16 reputation bonus" if d.startswith("Take 1 appeal instead") else "passed on " + d.removeprefix("Skip: ")
     elif k == "association_task":
         text = "performed the association task: " + str(args.get("task", "?"))
     elif k == "finish_build":

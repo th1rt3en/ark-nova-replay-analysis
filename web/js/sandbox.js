@@ -107,7 +107,8 @@ function sbPickCard(title, groups) {            // groups: [[label, [card keys]]
 function sbPickBonus(taken) {
   return sbModal('Choose the bonus', (done) => {
     const grid = el('div', 'sbbonuses');
-    for (const b of BONUS_POOL) {
+    const drop = S.replay.marine_worlds ? 'bonus-sponsor' : 'bonus-sponsor-gray';     // (Marketing: the token in Marine Worlds, the instant one in the base game)
+    for (const b of BONUS_POOL.filter((x) => !(drop in x))) {
       const [name] = Object.keys(b);
       const t = bonusTile(name, b[name]);
       const btn = el('button', 'sbtile');

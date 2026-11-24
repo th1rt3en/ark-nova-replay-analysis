@@ -34,8 +34,10 @@ CONSERVATION_POOL = [{"Partner-Zoo": 1}, {"Fac": 1}, {"Multiplier": 1}, {"xtoken
 
 
 def draw_conservation_bonuses(rng, marine_worlds: bool) -> dict:
-    """The bonuses of a new game (each bonus once on the board): two for the 5 space, two for the 8 space and, in Marine Worlds, one for the 16 reputation space."""
-    pool = [dict(b) for b in CONSERVATION_POOL]
+    """The bonuses of a new game (each bonus once on the board): two for the 5 space, two for the 8 space and, in Marine Worlds, one for the 16 reputation space.
+    Marketing comes in one form per game (owner, 2026-11-25; BGA logs agree): the Marketing token to use at any time in Marine Worlds, the instant Marketing in the base game."""
+    drop = "bonus-sponsor" if marine_worlds else "bonus-sponsor-gray"
+    pool = [dict(b) for b in CONSERVATION_POOL if drop not in b]
     rng.shuffle(pool)
     out = {"5": pool[:2], "8": pool[2:4]}
     if marine_worlds:
@@ -360,8 +362,9 @@ def legal(state, e: dict, i: int, seat: int) -> list:
             out.append(Action(seat, "skip_effect", {"index": i}))               # nothing left to upgrade / a bonus the log sometimes omits
     elif k == "threshold_bonus":                       # the random bonus tokens still there, or 5 money (always available)
         out += [Action(seat, "choose_effect", {"index": i, "option": j}) for j in range(len(state.conservation_options[str(e["t"])]) + 1)]
-    elif k == "adapt":                                  # the top cards of the endgame deck are drawn, then `n` of the hand are discarded
-        pool = sorted(p.endgame_hand + state.endgame_deck[:e.get("draw", e["n"])])
+    elif k == "adapt":                                  # the top cards of the endgame deck are drawn, then `n` of the hand are discarded (Resistance, `keep_hand`: `n` of the drawn ones)
+        drawn = state.endgame_deck[:e.get("draw", e["n"])]
+        pool = sorted(drawn if e.get("keep_hand") else p.endgame_hand + drawn)
         out += [Action(seat, "choose_effect", {"index": i, "discard": list(c)}) for c in sorted(set(combinations(pool, e["n"])))]
     elif k == "continent":                              # map 9: remove a continent marker for one of the 5 bonuses
         from ark_nova.engine import map_rules
@@ -580,10 +583,12 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
     elif k == "adapt":
         if len(state.endgame_deck) < e.get("draw", e["n"]):
             raise NotImplementedError("the endgame deck would run out")
-        p.endgame_hand += [state.endgame_deck.pop(0) for _ in range(e.get("draw", e["n"]))]
+        drawn = state.endgame_deck[:e.get("draw", e["n"])]
         gone = list(a["discard"])
-        if len(gone) != e["n"] or any(gone.count(c) > p.endgame_hand.count(c) for c in gone):
-            raise fx.IllegalEffect("discard the right number of endgame cards from the hand")
+        allowed = drawn if e.get("keep_hand") else p.endgame_hand + drawn
+        if len(gone) != e["n"] or any(gone.count(c) > allowed.count(c) for c in gone):
+            raise fx.IllegalEffect("discard the right number of endgame cards" + (" from the drawn ones" if e.get("keep_hand") else " from the hand"))
+        p.endgame_hand += [state.endgame_deck.pop(0) for _ in range(len(drawn))]
         for c in gone:
             p.endgame_hand.remove(c)
             state.endgame_discard.append(c)

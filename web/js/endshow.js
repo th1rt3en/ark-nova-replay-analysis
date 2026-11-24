@@ -1,4 +1,4 @@
-// [module] The final scoring show ("One card, full stage" with a tug-of-war rope, changelog: "Final scoring show"), in replays, forks and live games (not the sandbox).
+// [module] The final scoring show ("One card, full stage" with a tug-of-war rope, changelog: "Final scoring show"), in replays, forks, live games and the sandbox (a game against the bot).
 // Replays: the final scoring is the last block of replay steps (the last BGA move): one step per card that scores ("X gains 1 conservation (Science Library)", "... gains 3 appeal (...)")
 // and the two summary lines ("X has 95<APPEAL> and scores 54 ..."). Forks and live games: the engine scores everything in the one step that ends the game; the show is built from the
 // position before it, which lists what each sponsor scores (`endgame_sponsor_lines`, `endgame_appeal_lines`), and from the final position, which has what each kept endgame card scored

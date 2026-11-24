@@ -520,8 +520,23 @@ function takeBar(bar, o, seat) {
     const b = el('span', 'abtn deckbtn');
     b.title = 'Draw from the deck';
     if (t.reef && ICON_IDS.reef) { const ri = el('img', 'icon'); ri.decoding = 'sync'; ri.src = iconUrl(ICON_IDS.reef); ri.alt = 'Reef'; ri.height = 28; b.append(ri, el('b', '', ':')); b.title = 'Reef Dweller effect: draw from the deck'; }          // (a Reef Dweller effect: the coral icon)
+    const deckActs = forkActs((a) => a.kind === 'take_cards' && a.args.mode === 'deck');
+    const counts = deckActs.map((a) => a.args.count || 1);
+    if (!t.all_at_once && t.deck > 1 && deckActs.length > 1) {       // (owner, 2026-11-25: two buttons, "draw 1" and "draw all", each does what it says; no menu of 1 / 2 / 3)
+      const one = deckActs[counts.indexOf(Math.min(...counts))], all = deckActs[counts.indexOf(Math.max(...counts))];
+      b.append(el('b', '', 'Draw 1 card from deck'));
+      bindActs(b, [one]);
+      bar.append(b);
+      const b2 = el('span', 'abtn deckbtn');
+      b2.title = 'Draw from the deck';
+      b2.append(el('b', '', 'Draw all ' + (all.args.count || t.deck) + ' cards from deck'));
+      bindActs(b2, [all]);
+      if (FORK) for (const a of deckActs) S.forkClaimed.add(a);      // (the in-between counts get no button of their own)
+      bar.append(b2);
+      return;
+    }
     b.append(el('b', '', t.all_at_once && t.deck > 1 ? 'Draw ' + t.deck + ' cards from deck' : t.deck > 1 ? 'Draw 1 to ' + t.deck + ' cards from deck' : 'Draw one card from deck'));
-    bindActs(b, forkActs((a) => a.kind === 'take_cards' && a.args.mode === 'deck'));
+    bindActs(b, deckActs);
     bar.append(b);
   }
 }
@@ -554,6 +569,27 @@ function effectButton(e) {
       if (board) board.scrollIntoView({ block: 'center', behavior: 'smooth' });
     };
     return cb;
+  }
+  if (FORK && e.kind === 'take_tile') {                                           // a free university / partner zoo (conservation bonus, map 6 / 6a placement bonus...): one icon button per tile, like the association task
+    const acts = forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && (a.args.university || a.args.partner));
+    if (acts.length) {
+      const wrap = el('span', 'tilebtns');
+      const groups = new Map();
+      for (const a of acts) {
+        const key = a.args.university || a.args.partner;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(a);
+      }
+      for (const [key, list] of groups) {
+        const b = el('span', 'abtn deckbtn tilebtn');
+        const i = el('img', 'icon'); i.decoding = 'sync'; i.src = iconUrl(ICON_IDS[key] || ICON_IDS['bonus:Fac']); i.alt = key; i.height = 44;
+        b.append(i);
+        b.title = (list[0].args.partner ? 'Partner zoo: ' : 'University: ') + String(key).replace(/^fac-/, '').replace(/-/g, ' ') + (e.optional ? ' (optional)' : '');
+        bindActs(b, list);                                                        // (a university of any science: the menu of its categories)
+        wrap.append(b);
+      }
+      return wrap;
+    }
   }
   if (e.kind === 'take' || e.kind === 'build') return null;                      // shown as the deck button / the pieces
   if (FORK && e.kind === 'search_discard' && forkActs((a) => a.kind === 'choose_effect' && a.args.index === e.index && a.args.card).length) return null;       // (Horse Whisperer: the animal is taken in the lightbox, reveal.js `horseFork`)
