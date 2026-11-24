@@ -126,7 +126,7 @@ export function stepBy(d) {
   if (finalShowRunning()) return;                                        // (the final scoring show keeps the keys and autoplay while it plays, endshow.js)
   let f = frameAfter(S.step, S.phase, d);
   while (f && skipFrame(f[0], f[1])) { const g = frameAfter(f[0], f[1], d); if (!g) break; f = g; }
-  const fb = d > 0 && f && !SANDBOX && !MINIGAME && wantFinalShow() ? blockAt(f[0]) : null;           // (replays, forks and live games; not the sandbox)
+  const fb = d > 0 && f && !MINIGAME && wantFinalShow() ? blockAt(f[0]) : null;           // (replays, forks, live games and the sandbox: owner, 2026-11-25)
   if (fb && S.step < fb.start && f[0] >= fb.start) {                       // one step forward into the final scoring: the show plays it, then the last step and the results
     const at = [S.step, S.phase];
     if (playFinalShow(() => { if (S.timer) setPlaying(false); go(fb.end, 99); if (resultsAvailable()) openResults(); }, () => go(at[0], at[1]), fb)) return;

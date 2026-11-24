@@ -4115,3 +4115,4 @@ The page as it is now; earlier versions (a "Shake the drawer" button, Matter.js,
 - The 16 reputation bonus (Marine Worlds): declining it is the button "Take 1 appeal instead (the 16 reputation bonus stays for later)" (`replay/fork.py` text of the `skip_effect`; the engine already paid the appeal); the log says "took 1 appeal instead of the 16 reputation bonus".
 - The sandbox's bonus picker (`sandbox.js` `sbPickBonus`) offers Marketing in one form per game: the token in Marine Worlds, the instant one in the base game (the engine draws the same way: `bonuses.draw_conservation_bonuses`).
 - The final scoring show (`endshow.js`) now also plays at the end of a sandbox game (the `!SANDBOX` guard in `fork.js` `commitSteps` is gone).
+- Stepping forward into the final scoring plays the show in the sandbox too (`playback.js`: the `!SANDBOX` guard is gone), so a sandbox game, or a replay of one, shows the endgame points card by card.
