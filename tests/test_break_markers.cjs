@@ -5,7 +5,11 @@ const assert = require('assert/strict');
 const root = path.resolve(__dirname, '..');
 const source = fs.readFileSync(path.join(root, 'web/js/results.js'), 'utf8');
 const graphCode = source.slice(source.indexOf('const metric ='), source.indexOf('let raceSeq'));
-const statsCode = source.slice(source.indexOf('const UNIQUE ='), source.indexOf('function hexes('));
+// (countStats reads the one-line KE_ constants defined further down results.js: they come along with the slice)
+const statsSlice = source.slice(source.indexOf('const UNIQUE ='), source.indexOf('function hexes('));
+const keUsed = [...new Set(statsSlice.match(/\bKE_[A-Z0-9_]+/g) || [])].filter((k) => !statsSlice.includes('const ' + k + ' ='));
+const keConsts = keUsed.map((k) => { const i = source.indexOf('const ' + k + ' ='); return i < 0 ? '' : source.slice(i, source.indexOf('\n', i)); });     // (one-line definitions)
+const statsCode = statsSlice + '\n' + keConsts.join('\n');
 const graph = (replay) => new Function('S', graphCode + ';return race;')({replay});
 const stats = new Function('S', statsCode + ';return countStats;')({replay:{steps:[]}});
 const player = (money) => ({money,score:0,appeal:0,conservation:0,reputation:1,x_tokens:0});
