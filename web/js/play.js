@@ -171,11 +171,10 @@ async function fillGap(p) {
   try {
     const r = await playApi('/log' + (P.token ? '?s=' + encodeURIComponent(P.token) : ''));
     const lines = r.ok && Array.isArray(r.body.log) ? r.body.log.filter((e) => e && typeof e.label === 'string' && e.version > from && e.version < p.version) : [];
-    const last = S.replay.steps[S.replay.steps.length - 1];
     for (const e of lines) {
       for (const label of (mapRevealLabels(e.label) || [e.label])) {
-        const st = { ...last, label, label_pov: mapRevealLabels(e.label) ? null : e.label_pov || null, log_only: true, options: null, actions: [], version: e.version };
-        st.index = S.replay.steps.length;
+        // (built like the text steps of `playLoad`: a step object and a state object of its own; copies of the last step shared its state and the move list folded them away)
+        const st = { ...playStep(p, S.replay.steps.length), label, label_pov: mapRevealLabels(e.label) ? null : e.label_pov || null, log_only: true, options: null, actions: [], version: e.version };
         S.replay.steps.push(st);
       }
     }
