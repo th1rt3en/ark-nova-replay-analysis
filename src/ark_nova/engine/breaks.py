@@ -57,9 +57,16 @@ def run(state, initiator: int, step: str) -> None:
         _workers_home(state)
         _replenish_board(state)
         _refresh_display(state)
-        for seat in (initiator, 1 - initiator):
-            _income(state, seat)
-        if g._open_effects(state, initiator, [], {"kind": "break", "initiator": initiator, "step": "end"}):
+        _income(state, initiator)                                 # income one player after the other, the initiator first
+        if g._open_effects(state, initiator, [], {"kind": "break", "initiator": initiator, "step": "income2"}):
+            return
+        step = "income2"
+    if step == "income2":
+        if g._open_effects(state, initiator, [], {"kind": "break", "initiator": initiator, "step": "income2"}):
+            return                                                # (what the first income brought on, e.g. a placement bonus of a threshold, comes before the refill: 715122906 turn 52)
+        g._refill_display(state)                                  # BGA refills the display between the two incomes (the gaps of cards snapped as income: 858536393, 4 breaks)
+        _income(state, 1 - initiator)
+        if g._open_effects(state, 1 - initiator, [], {"kind": "break", "initiator": initiator, "step": "end"}):
             return
         step = "end"
     if step == "end":

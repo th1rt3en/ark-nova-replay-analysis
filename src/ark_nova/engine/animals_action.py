@@ -151,7 +151,8 @@ def ability_effects(state, key: str, pairs=None) -> list:
         elif name == "Clever":                  # any action card may go to slot 1 at the end of the action
             state.current_action.setdefault("after", []).append({"kind": "slot1", "source": key, "optional": True})
         elif name.startswith("Snapping"):
-            out += [{"kind": "take", "source": key, "snap": True, "optional": True} for _ in range(int(name.split()[1]))]
+            n = int(name.split()[1])
+            out += [{"kind": "take", "source": key, "snap": True, "optional": True, **({"pair": True} if n == 2 else {})} for _ in range(n)]      # (`pair`: Snapping 2, the display may be refilled between its two snaps)
         elif animal_abilities.supported(name):
             out += animal_abilities.effects_for(state, state.current_action["seat"], key, name, value)
     return out

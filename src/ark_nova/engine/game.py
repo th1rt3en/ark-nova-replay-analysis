@@ -147,7 +147,7 @@ def new_game(options: dict, player_ids: list, tail_seed: int = 0) -> GameState:
     """A new game from the options of the lobby: `{"game_mode": "original" | "random-mirrored" | "free-select" (default random-mirrored),
     "marine_worlds_flag": true | false (default true), "maps_to_exclude": [3, "3a", 11, "T1"] (default []), "bdw_maps": true | false (default false: the BDW maps join the pool), "map_options": {"pack1": bool, "pack2": bool, "alt": "off" | "include" | "replace"} (default: the maps 1-8)}`. The 3 base projects are drawn at random; a Marine
     Worlds game drafts the action cards after the maps."""
-    unknown = set(options) - {"game_mode", "marine_worlds_flag", "maps_to_exclude", "confirm_turns", "custom_map", "bdw_maps", "map_options"}
+    unknown = set(options) - {"game_mode", "marine_worlds_flag", "maps_to_exclude", "confirm_turns", "strict_actions", "custom_map", "bdw_maps", "map_options"}
     if unknown:
         raise ValueError(f"unknown options {sorted(unknown)}")
     mw = bool(options.get("marine_worlds_flag", True))
@@ -158,7 +158,7 @@ def new_game(options: dict, player_ids: list, tail_seed: int = 0) -> GameState:
     if mode not in map_select.MODES:
         raise ValueError(f"game_mode must be one of {list(map_select.MODES)}")
     config = GameConfig(marine_worlds=mw, player_ids=list(player_ids), maps=[], base_projects=sorted(base[:3]), game_mode=mode, conservation_bonuses=bonuses.draw_conservation_bonuses(Rng(tail_seed + 31337), mw),
-                        maps_to_exclude=[str(m) for m in options.get("maps_to_exclude") or []], draft_action_cards=mw, confirm_turns=bool(options.get("confirm_turns", False)),
+                        maps_to_exclude=[str(m) for m in options.get("maps_to_exclude") or []], draft_action_cards=mw, confirm_turns=bool(options.get("confirm_turns", False)), strict_actions=bool(options.get("strict_actions", False)),
                         custom_map=options.get("custom_map"), bdw_maps=bool(options.get("bdw_maps", False)), map_options=map_select.normalize(options.get("map_options")))
     return start_game(config, SeedSpec(tail_seed=tail_seed))
 
@@ -248,8 +248,11 @@ def legal_actions(state: GameState) -> list[Action]:
                 acts = acts + [Action(p.seat, "pay_venom", {})]          # the "pay Venom" button: at any time of the own turn
         pr = state.prompt
         fin = _CARD_FINISH.get(pr.kind)
-        if fin is not None and not any(a.player == pr.player and a.kind not in _FREE_ACTIONS and a.kind not in ("undo_last", "restart_turn") for a in acts):
+        if fin is not None and not any(a.player == pr.player and a.kind not in _FREE_ACTIONS and a.kind not in ("undo_last", "restart_turn") for a in acts) \
+                and not (pr.kind == "association_tasks" and strict_actions(state) and not pr.args.get("done")
+                         and any(a.player == pr.player and a.kind == "use_token" and a.args.get("token") == "bonus-extra-shift" for a in acts)):
             acts = acts + [Action(pr.player, fin, {})]            # nothing but free actions is left (they were used up without making a move): the action can be ended, as at the table
+            # (strict: an Association action chosen with no free worker must use the Extra Shift token to take one back; live play can still take the choice back)
     return acts
 
 
@@ -1017,6 +1020,11 @@ _FINISHING = {"finish_animals", "finish_build", "finish_sponsors", "finish_assoc
 _CARD_FINISH = {"animals_play": "finish_animals", "build_place": "finish_build", "association_tasks": "finish_association", "sponsors_play": "finish_sponsors"}
 
 
+def strict_actions(state: GameState) -> bool:
+    """An action card must do something (GameConfig.strict_actions; always in live play)."""
+    return bool(state.config.confirm_turns or state.config.strict_actions)
+
+
 def _with_moves(state: GameState, chosen: list) -> list:
     """The choices of an action card that leave a legal move. More strength never takes a move away, so one check per card decides all its spends when it
     is positive; a card without moves at the highest spend has none at all."""
@@ -1047,6 +1055,14 @@ def _has_moves(state: GameState, action: Action) -> bool:
     except (IllegalAction, NotImplementedError):
         return True
     pr = new.prompt
+    strict_animals = strict_actions(state)
+    if strict_animals and action.args["type"] == "animals" and pr is not None and pr.kind == "effects":
+        # effects of the action's start come first (the reputation of a level II strength 5 action reached a bonus): the card can be chosen only when an animal can be
+        # played already (with the reputation range of that +1), not in the hope that the bonus brings one (self-play chose Animals only to collect the bonus, 2026-11-20)
+        from ark_nova.engine import animals_action
+        p = new.players[pr.player]
+        level = next((c.level for c in p.action_cards if c.type == "animals"), 1)
+        return bool(animals_action.playable(new, p.seat, level)) or any(k.startswith("A") for k in p.stored)
     if pr is None or pr.kind not in ("animals_play", "build_place", "sponsors_play", "association_tasks"):
         return True                                           # effects of the card's start (a bonus, a threshold) or something this check does not know
     if pr.kind == "build_place":                              # a quick look at the cheapest buildings first: a free place for one of them is a move
@@ -1054,7 +1070,7 @@ def _has_moves(state: GameState, action: Action) -> bool:
         if any(x.kind == "place_building" for x in _build_actions(new, p, ("size-1", "pavilion", "kiosk"))):
             return True
     acts = [a for a in legal_actions(new) if a.player == pr.player]
-    if pr.kind == "animals_play" and state.config.confirm_turns:   # live play: an animal has to be played (Ignore Animals alone is no move: nothing could be played); the logs of BGA have such turns
+    if pr.kind == "animals_play" and strict_animals:   # live play: an animal has to be played (Ignore Animals alone is no move: nothing could be played); the logs of BGA have such turns
         return any(a.kind == "play_animal" for a in acts)
     if any(a.kind not in _FINISHING and a.kind not in _FREE_ACTIONS for a in acts):
         return True

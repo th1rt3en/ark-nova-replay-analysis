@@ -557,3 +557,76 @@ def test_symbiosis_does_not_copy_a_reef_dweller_effect():
     assert _symbiosis_offers("A529", "A534") == {("A534", "Venom")}                    # Magnificent Sea Anemone: Mark is its reef effect only
     assert _symbiosis_offers("A531", "A533", "A534") == {("A534", "Venom")}            # Palette Surgeonfish (Trade), Blackside Hawkfish (Posturing 1)
     assert _symbiosis_offers("A529", "A531") == set()                                  # nothing left to copy: the effect is skipped
+
+
+def test_display_is_refilled_on_demand_only_between_the_snaps_of_snapping_2():
+    """Owner 2026-11-19: gaps in the display stay until the end of the turn; the only refill on demand is between the two snaps of a Snapping 2 animal (not for a plain take,
+    not for a single snap). The old plain-take refill came from a misread log (888792457 turn 33: the reputation came before the takes) and let a bot loop on it."""
+    from ark_nova.engine.state import Prompt
+    s = _animals_state(level=2, slot=5)
+    s.players[0].reputation = 5
+    refill = lambda st: [a for a in legal_actions(st) if a.kind == "choose_effect" and a.args.get("refill")]
+    s.display = ["A401", None, "A402", None, None, None]
+    s.prompt = Prompt(kind="effects", player=0, args={"pending": [{"kind": "take", "player": 0}]})
+    assert refill(s) == []
+    with pytest.raises(IllegalAction):
+        apply(s, Action(0, "choose_effect", {"index": 0, "refill": True}))
+    s.prompt = Prompt(kind="effects", player=0, args={"pending": [{"kind": "take", "player": 0, "snap": True, "optional": True}]})
+    assert refill(s) == []                                                             # (a single snap: map bonus, Waza Small Animal Program)
+    pair = {"kind": "take", "player": 0, "source": "A401", "snap": True, "optional": True, "pair": True}
+    s.prompt = Prompt(kind="effects", player=0, args={"pending": [dict(pair), dict(pair)]})
+    assert refill(s) == []                                                             # (before the first snap of Snapping 2)
+    s.prompt = Prompt(kind="effects", player=0, args={"pending": [dict(pair)]})
+    assert len(refill(s)) == 1                                                         # (between the two snaps)
+
+
+def test_animals_cannot_be_chosen_without_an_animal_to_play_when_required():
+    """An Animals action must play an animal (owner, 2026-11-20): with `strict_actions` (self-play, live play) the card is not offered when no animal can be played;
+    replays leave it off (old BGA logs have Animals actions without an animal)."""
+    from ark_nova.engine.game import apply, legal_actions, new_game
+    from ark_nova.engine.state import Phase
+
+    def first_turn(require):
+        st = new_game({"game_mode": "random-mirrored", "marine_worlds_flag": True, "strict_actions": require}, ["1", "2"], 4242)
+        while st.phase is not Phase.TURN:
+            st = apply(st, legal_actions(st)[0])
+        p = st.players[st.active_player]
+        p.hand = [k for k in p.hand if not k.startswith("A")]
+        card = next(c for c in p.action_cards if c.type == "animals")
+        card.level, card.variant = 2, 1                  # Ignore Animals: its "play only 1 animal" choice was the move that let the card be chosen with nothing to play
+        p.x_tokens = 5
+        st.display = [k if k and not k.startswith("A") else None for k in st.display]
+        return st
+
+    def animals_offered(st):
+        return any(a.kind == "choose_action_card" and a.args.get("type") == "animals" for a in legal_actions(st))
+
+    assert not animals_offered(first_turn(True))
+    assert animals_offered(first_turn(False))
+
+
+def test_association_without_a_free_worker_needs_the_extra_shift_token_when_actions_are_strict():
+    """No free worker: Association is not offered; with an Extra Shift token it is, and the token has to be used to take a worker back before a task (owner, 2026-11-20)."""
+    from ark_nova.engine.actions import Action
+    from ark_nova.engine.game import apply, legal_actions, new_game
+    from ark_nova.engine.state import Phase, Token
+
+    st = new_game({"game_mode": "random-mirrored", "marine_worlds_flag": True, "strict_actions": True}, ["1", "2"], 4242)
+    while st.phase is not Phase.TURN:
+        st = apply(st, legal_actions(st)[0])
+    p = st.players[st.active_player]
+    for i, t in enumerate(t for t in p.tokens if t.type == "worker" and t.location == "reserve"):
+        t.location = f"association_{i + 1}"
+
+    def assoc_offered(s):
+        return any(a.kind == "choose_action_card" and a.args.get("type") == "association" for a in legal_actions(s))
+
+    assert not assoc_offered(st)
+    p.tokens.append(Token(id=99999, type="bonus-extra-shift", location="notepad"))
+    assert assoc_offered(st)
+    st = apply(st, Action(p.seat, "choose_action_card", {"type": "association", "spend": 0}))
+    assert [(a.kind, a.args) for a in legal_actions(st) if a.player == p.seat] == [("use_token", {"token": "bonus-extra-shift"})]
+    st = apply(st, legal_actions(st)[0])
+    assert {a.kind for a in legal_actions(st) if a.player == p.seat} == {"choose_effect"}          # the worker comes back: no skipping
+    st = apply(st, [a for a in legal_actions(st) if a.player == p.seat][0])
+    assert any(a.kind == "association_task" for a in legal_actions(st))

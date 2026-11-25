@@ -55,6 +55,8 @@ class GameConfig:
     maps_to_exclude: list[str] = field(default_factory=list)   # map ids left out of the pool of a new game ('3', '3a', '11', 'T1' ...)
     draft_action_cards: bool = False      # a new game: the players draft their action card variants first (engine/draft.py); False = `action_cards` (or the standard cards) are given
     confirm_turns: bool = False           # live play: a turn ends with an explicit confirm, undo / restart turn are offered meanwhile (engine/turns.py)
+    strict_actions: bool = False          # an action card must do something: an Animals action plays an animal, an Association action does a task (an Extra Shift token has to be used
+                                          # when no worker is free); always on in live play, self-play turns it on, replays leave it off (old BGA logs have such turns)
     peaceful: bool = False                # the game variant where the hostile effects (Venom, Constriction, Pilfering, Hypnosis) are replaced
     map_options: dict = field(default_factory=dict)   # a new game: which maps are in the pool, see engine/map_select.py `normalize` ({pack1, pack2, alt}); empty = the maps 1-8
     bdw_maps: bool = False                # a new game: the Board Design Workshop maps BDW1..BDW4 (data/bdw_maps.json) are in the pool of the map selection

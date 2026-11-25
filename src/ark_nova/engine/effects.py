@@ -264,7 +264,7 @@ def legal(state, p0) -> list:
             if e.get("snap"):                              # Snapping: any card of the display (Waza Small Animal Program: a small animal)
                 out += [Action(p.seat, "take_cards", {"mode": "snap", "card": c}) for c in dict.fromkeys(state.display)
                         if c and (not e.get("small") or _small_animal(c))]
-                if None in state.display:                  # Snapping 2: the player may refill the display before the second snap
+                if None in state.display and _second_snap(state, e):        # Snapping 2: the player may refill the display before the second snap (and at no other time)
                     out.append(Action(p.seat, "choose_effect", {"index": i, "refill": True}))
                 if e.get("optional"):                      # (found by self-play: with no small animal in the display and no gap to refill the player had no move at all)
                     out.append(Action(p.seat, "skip_effect", {"index": i}))
@@ -274,8 +274,6 @@ def legal(state, p0) -> list:
             for c in state.display[:cards_action.reputation_range(p.reputation)]:
                 if c:
                     out.append(Action(p.seat, "take_cards", {"mode": "range", "card": c}))
-            if None in state.display[:cards_action.reputation_range(p.reputation) + 1]:        # the display may be refilled first: the gap closes and a card moves into the range
-                out.append(Action(p.seat, "choose_effect", {"index": i, "refill": True}))
         elif k == "reveal" and e.get("cond") == "no_animals" and any(c.startswith("A") for c in p.hand):
             out.append(Action(p.seat, "skip_effect", {"index": i}))            # Hunter Animals: only when the hand holds no animal when the effect is resolved
             continue
@@ -367,8 +365,8 @@ def _done(state, i: int) -> None:
                                                            and e["area"] not in map_rules.quarters_done(state.players[e.get("player", state.prompt.player)]))]
     if not a["pending"]:
         _g()._resume_after_effects(state)
-    elif state.current_action is not None and state.current_action.get("type") == "break"             and not any(e.get("player", state.prompt.player) == seat for e in a["pending"]):
-        _g()._refill_display(state)                 # break income: BGA refills the display when a player's income is done (before the other player's cards)
+    # (break income: the refill between the two players' incomes is breaks.run step "income2"; the incomes no longer share one prompt. The refill that was here, when one
+    # player's effects ran out, also fired on the other player's scoring-card discard in the middle of the first income: 715122906 turn 52)
 
 
 def resolve_build(state, action: Action) -> None:
@@ -445,6 +443,13 @@ def resolve_take(state, action: Action) -> None:
     _done(state, i)
 
 
+def _second_snap(state, e: dict) -> bool:
+    """`e` is the second snap of a Snapping 2 animal (its first one is resolved or skipped)."""
+    if not e.get("pair"):
+        return False
+    return sum(1 for x in state.prompt.args["pending"] if x.get("kind") == "take" and x.get("pair") and x.get("source") == e.get("source")) == 1
+
+
 def resolve_choice(state, action: Action) -> None:
     g = _g()
     p = state.players[action.player]
@@ -455,12 +460,10 @@ def resolve_choice(state, action: Action) -> None:
     k = e["kind"]
     if e.get("player", state.prompt.player) != action.player:
         raise IllegalEffect("this effect belongs to the other player")
-    if action.args.get("refill") and k == "take" and None in state.display:
-        if e.get("snap"):
-            _g()._refill_display(state)
-        else:                                           # the cards only close the gap: the new ones come at the end of the turn (888792457 turn 33: the next card of the deck is drawn by the player)
-            cards = [c for c in state.display if c]
-            state.display = cards + [None] * (len(state.display) - len(cards))
+    if action.args.get("refill"):                       # only between the snaps of Snapping 2 (owner 2026-11-19: the display is never refilled on demand otherwise; gaps stay until the end of the turn)
+        if not (k == "take" and e.get("snap") and None in state.display and _second_snap(state, e)):
+            raise IllegalEffect("the display can only be refilled between two snaps")
+        _g()._refill_display(state)
         return
     if k in bonuses.KINDS:
         bonuses.resolve(state, action, e, i)

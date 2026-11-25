@@ -158,6 +158,10 @@ def release_animal(state, seat: int, key: str, building=None, totals=None) -> No
         cubes.release_from(p, key, b)
     else:
         cubes.release(p, key, totals)
+    if b is None:                                                          # no enclosure named (an aquarium animal whose cubes lie in several aquariums, 823088780
+        for o in p.buildings:                                              # turn 67): its cubes are off (cubes.release), and it leaves the per-enclosure lists too
+            if not o.type.startswith("size-") and key in getattr(o, "animals", ()):
+                o.animals.remove(key)
     if b is not None:
         if b.type.startswith("size-"):
             b.animal = None

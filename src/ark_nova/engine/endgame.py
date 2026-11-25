@@ -11,6 +11,7 @@ Statue (score last). The final score is appeal + the conservation track points (
 See docs/engine_design.md, End of the game.
 """
 from collections import Counter
+from typing import Optional
 
 from ark_nova import data
 from ark_nova.engine import build_action, gamestats, tracks
@@ -336,8 +337,18 @@ def finish(state) -> None:
     state.phase = Phase.OVER
     state.prompt = None
     state.current_action = None
+    state.result = Result(scores=sc, winner=winner(state, sc))
+
+
+def winner(state, sc: list) -> Optional[int]:
+    """The seat with the most points; on equal points the one that supported more conservation projects (supports of discarded projects count); else a tie (None)."""
     top = max(sc)
-    state.result = Result(scores=sc, winner=sc.index(top) if sc.count(top) == 1 else None)
+    best = [s for s in range(len(sc)) if sc[s] == top]
+    if len(best) > 1:
+        n = {s: len(supports(state, s)) for s in best}
+        most = max(n.values())
+        best = [s for s in best if n[s] == most]
+    return best[0] if len(best) == 1 else None
 
 
 # ---- the live count: what the final scoring would add if the game ended now (the viewers' "Endgame live count") ----------------------------

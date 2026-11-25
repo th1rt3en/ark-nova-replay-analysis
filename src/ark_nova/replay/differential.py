@@ -1933,6 +1933,12 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                         im = next((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "income_map" and e.get("player", act.player) == act.player), None)
                         if im is not None and not any(x.kind == "choose_effect" and x.args.get("apply") == "income_map" and x.player == act.player for x in acts[ai:]):
                             state = ap(state, Action(act.player, "choose_effect", {"index": im, "apply": "income_map"}))      # (BGA logged no map income: it was counted before the building of this income)
+                    if act.kind == "choose_effect" and act.args.get("apply") == "income_sponsor" and act.args.get("source") == "S274" and state.prompt is not None and state.prompt.kind == "effects":
+                        ar_ = next((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "income_sponsor" and e.get("source") == "S281" and e.get("player", act.player) == act.player), None)
+                        if ar_ is not None and not any(x.kind == "choose_effect" and x.args.get("source") == "S281" and x.player == act.player for x in acts[ai:]):
+                            state = ap(state, Action(act.player, "choose_effect", {"index": ar_, "apply": "income_sponsor", "source": "S281"}))      # (BGA logged no Arcade income: it was paid before the Mascot Statue's appeal, 806129182 turn 19)
+                            if "index" in act.args:
+                                act = _normalise(state, Action(act.player, act.kind, {x: y for x, y in act.args.items() if x != "index"}), endsnap)
                     while state.prompt is not None and state.prompt.kind == "effects" and state.current_action is not None and state.current_action.get("type") == "break":
                         done_with = next((j for j, e in enumerate(state.prompt.args["pending"]) if e["kind"] == "pouch" and e.get("source") == "map" and e.get("player") not in (None, act.player)
                                           and not any(x.player == e["player"] and _fits(e, x) for x in acts[ai:])), None)

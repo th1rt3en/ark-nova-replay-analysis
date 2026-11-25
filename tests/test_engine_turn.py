@@ -81,7 +81,10 @@ def test_illegal_and_unimplemented():
 
 
 from tests._logsel import FULL, sweep  # noqa: E402
-LOGS = sweep([p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p])   # (573904205 is an old log format the parser does not read)
+from ark_nova.replay.config import _sample_maps as _maps_index  # noqa: E402
+# (the subset is chosen among the logs whose maps the index gives, data_manual/sample_maps.json: a log without them is replayed on guessed maps and cannot
+# be compared. Chosen from every log before 2026-11-25, the subset drifted onto unmapped games as log_examples/ grew: 3,264 turns instead of ~6,400)
+LOGS = sweep([p for p in sorted(glob.glob(str(Path(__file__).resolve().parents[1] / "log_examples" / "*.json"))) if "573904205" not in p and Path(p).stem in _maps_index()])   # (573904205 is an old log format the parser does not read)
 
 
 SMOKE_LIMIT = 0                                            # (measured on the fixed subset of tests/_logsel.py: 100 games, 6378 turns, no problem: any new one fails)

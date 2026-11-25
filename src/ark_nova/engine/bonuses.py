@@ -122,6 +122,9 @@ def use_token(state, action) -> None:
         raise _g().IllegalAction("that token cannot be used now")
     p.tokens.remove(tok)
     eff = {"kind": kind, "source": tok.type, "optional": True, "player": p.seat}
+    pr = state.prompt
+    if kind == "extra_shift" and pr is not None and pr.kind == "association_tasks" and not pr.args.get("done") and _g().strict_actions(state):
+        eff["optional"] = False                                # strict: the token was the only way to go on with the Association action, the worker has to come back
     if state.current_action is not None and state.current_action.get("type") == "break" and state.prompt is not None and state.prompt.kind == "effects":
         state.prompt.args["pending"].append(eff)               # in the break either player may use a token
     elif state.current_action is not None and state.current_action.get("seat") == p.seat and state.prompt is not None and state.prompt.kind == "effects":
@@ -338,6 +341,12 @@ def upgradable(p) -> list:
     return [c.type for c in p.action_cards if c.level < 2]
 
 
+def adapt_counts(state, p, e: dict) -> tuple:
+    """Adapt: (cards drawn, cards discarded). An empty endgame deck gives what is left (no reshuffle), and the discard never takes more than the hand then holds."""
+    draw = min(e.get("draw", e["n"]), len(state.endgame_deck))
+    return draw, min(e["n"], len(p.endgame_hand) + draw)
+
+
 KINDS = ("gain_worker", "upgrade", "threshold2", "threshold_bonus", "endgame_discard", "adapt", "break_discard", "take_tile", "archaeologist", "income_appeal", "income_kiosk", "rep_bonus", "store", "move_in", "continent", "multiplier", "wave", "income_map", "income_sponsor", "search_category", "pbonus", "search_sponsor", "species_bonus")
 
 
@@ -363,9 +372,12 @@ def legal(state, e: dict, i: int, seat: int) -> list:
     elif k == "threshold_bonus":                       # the random bonus tokens still there, or 5 money (always available)
         out += [Action(seat, "choose_effect", {"index": i, "option": j}) for j in range(len(state.conservation_options[str(e["t"])]) + 1)]
     elif k == "adapt":                                  # the top cards of the endgame deck are drawn, then `n` of the hand are discarded (Resistance, `keep_hand`: `n` of the drawn ones)
-        drawn = state.endgame_deck[:e.get("draw", e["n"])]
+        draw, n = adapt_counts(state, p, e)
+        drawn = state.endgame_deck[:draw]
+        if e.get("keep_hand"):
+            n = min(n, len(drawn))
         pool = sorted(drawn if e.get("keep_hand") else p.endgame_hand + drawn)
-        out += [Action(seat, "choose_effect", {"index": i, "discard": list(c)}) for c in sorted(set(combinations(pool, e["n"])))]
+        out += [Action(seat, "choose_effect", {"index": i, "discard": list(c)}) for c in sorted(set(combinations(pool, n)))]
     elif k == "continent":                              # map 9: remove a continent marker for one of the 5 bonuses
         from ark_nova.engine import map_rules
         left = map_rules.continents_left(p)
@@ -581,14 +593,15 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
             raise fx.IllegalEffect("that tile is not on the board")
         association.take_tile(state, p, opt)
     elif k == "adapt":
-        if len(state.endgame_deck) < e.get("draw", e["n"]):
-            raise NotImplementedError("the endgame deck would run out")
-        drawn = state.endgame_deck[:e.get("draw", e["n"])]
+        draw, n = adapt_counts(state, p, e)
+        drawn = state.endgame_deck[:draw]
+        if e.get("keep_hand"):
+            n = min(n, len(drawn))
         gone = list(a["discard"])
         allowed = drawn if e.get("keep_hand") else p.endgame_hand + drawn
-        if len(gone) != e["n"] or any(gone.count(c) > allowed.count(c) for c in gone):
+        if len(gone) != n or any(gone.count(c) > allowed.count(c) for c in gone):
             raise fx.IllegalEffect("discard the right number of endgame cards" + (" from the drawn ones" if e.get("keep_hand") else " from the hand"))
-        p.endgame_hand += [state.endgame_deck.pop(0) for _ in range(len(drawn))]
+        p.endgame_hand += [state.endgame_deck.pop(0) for _ in range(draw)]
         for c in gone:
             p.endgame_hand.remove(c)
             state.endgame_discard.append(c)
