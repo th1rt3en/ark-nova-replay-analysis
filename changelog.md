@@ -4116,3 +4116,6 @@ The page as it is now; earlier versions (a "Shake the drawer" button, Matter.js,
 - The sandbox's bonus picker (`sandbox.js` `sbPickBonus`) offers Marketing in one form per game: the token in Marine Worlds, the instant one in the base game (the engine draws the same way: `bonuses.draw_conservation_bonuses`).
 - The final scoring show (`endshow.js`) now also plays at the end of a sandbox game (the `!SANDBOX` guard in `fork.js` `commitSteps` is gone).
 - Stepping forward into the final scoring plays the show in the sandbox too (`playback.js`: the `!SANDBOX` guard is gone), so a sandbox game, or a replay of one, shows the endgame points card by card.
+
+## Live game: no gaps in the log (2026-11-25, owner's games against the bot)
+- `play.js` `pushLive` / `fillGap`: a view more than one version ahead (the page polls every 2 s without a socket, or a socket came back after a gap) first reads the server's log and adds the moves in between as text steps (like the moves before the page was opened). Before, only the newest step came in: the other player's appeal gains, snaps and draws of the moves in between were missing from the log.

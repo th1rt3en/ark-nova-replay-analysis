@@ -1016,7 +1016,8 @@ def _finish_build(state: GameState, action: Action) -> None:
 
 
 _FREE_ACTIONS = {"harbor_sell", "unstore", "use_token", "pay_venom"}      # free actions beside any prompt (the Commercial Harbor sale, a stored card back into the hand, a token of the notepad): each can lead to a move, none is a move of the card itself
-_FINISHING = {"finish_animals", "finish_build", "finish_sponsors", "finish_association", "skip_effect"}
+_FINISHING = {"finish_animals", "finish_build", "finish_sponsors", "finish_association", "skip_effect",
+              "undo_last", "restart_turn", "confirm_turn"}               # (live play: taking the turn back is no move of the card; before 2026-11-25 it made every card choosable)
 _CARD_FINISH = {"animals_play": "finish_animals", "build_place": "finish_build", "association_tasks": "finish_association", "sponsors_play": "finish_sponsors"}
 
 

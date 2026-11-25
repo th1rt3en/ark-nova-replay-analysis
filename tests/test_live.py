@@ -217,4 +217,8 @@ def test_association_is_greyed_out_when_no_worker_is_left():
     assert "unusable" not in (step_options(s) or {})                      # (workers left: Association has something to do)
     p = s.players[s.prompt.player]
     p.tokens = [t for t in p.tokens if t.type != "worker"]
-    assert (step_options(s) or {}).get("unusable") == ["association"]
+    # (2026-11-25, owner: a card that can do nothing is not offered at all in live play: undo / restart no longer count as its moves; it can still be put back for an X token)
+    acts = game.legal_actions(s)
+    assert not any(a.kind == "choose_action_card" and a.args["type"] == "association" for a in acts)
+    assert any(a.kind == "skip_action" and a.args.get("type") == "association" for a in acts)
+    assert "association" not in ((step_options(s) or {}).get("cards") or {})

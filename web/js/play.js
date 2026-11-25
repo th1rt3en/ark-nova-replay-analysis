@@ -161,8 +161,34 @@ function learnReveal(view) {
   const first = S.replay.steps[0] && S.replay.steps[0].state;
   if (first && view.conservation_options && Object.keys(view.conservation_options).length && !Object.keys(first.conservation_options || {}).length) first.conservation_options = view.conservation_options;
 }
+// A view more than one version ahead (the page polls every 2 seconds without a socket, or a socket came back after a gap): the moves in between are only in the server's
+// log. They come in first as text steps (like the moves before the page was opened, `playLoad`), so the log shows every move of the other player (owner, 2026-11-25:
+// the bot's appeal gains, snaps and draws were missing). Views that arrive while the log is read wait; only the newest is kept.
+async function fillGap(p) {
+  if (P.filling) { if (!P.pendingPush || p.version > P.pendingPush.version) P.pendingPush = p; return; }
+  P.filling = true;
+  const from = P.version;
+  try {
+    const r = await playApi('/log' + (P.token ? '?s=' + encodeURIComponent(P.token) : ''));
+    const lines = r.ok && Array.isArray(r.body.log) ? r.body.log.filter((e) => e && typeof e.label === 'string' && e.version > from && e.version < p.version) : [];
+    const last = S.replay.steps[S.replay.steps.length - 1];
+    for (const e of lines) {
+      for (const label of (mapRevealLabels(e.label) || [e.label])) {
+        const st = { ...last, label, label_pov: mapRevealLabels(e.label) ? null : e.label_pov || null, log_only: true, options: null, actions: [], version: e.version };
+        st.index = S.replay.steps.length;
+        S.replay.steps.push(st);
+      }
+    }
+  } catch (e) { /* no log: the newest view still comes in */ }
+  P.filling = false;
+  const next = P.pendingPush && P.pendingPush.version > p.version ? P.pendingPush : p;
+  P.pendingPush = null;
+  pushLive({ ...next, gapFilled: true });
+}
 export function pushLive(p) {
   if (p.version <= P.version) return;
+  if (P.filling) { fillGap(p); return; }                                    // (a log is being read: this view waits for it)
+  if (p.version > P.version + 1 && !p.gapFilled) { fillGap(p); return; }
   if (p.view) learnReveal(p.view);
   P.version = p.version;
   if (p.status) P.status = p.status;
