@@ -1047,10 +1047,23 @@ def _with_moves(state: GameState, chosen: list) -> list:
     return out
 
 
+_CHECKING = [0]          # (depth of _has_moves calls in progress: a free action can lead back to the action card choice, whose own check would start again forever)
+
+
 def _has_moves(state: GameState, action: Action) -> bool:
     """Whether the action card, chosen like this, would leave the player a legal move (a Cards action always does, a Sponsors action can always break)."""
     if action.args.get("hypnosis") or action.args["type"] == "cards":
         return True
+    if _CHECKING[0]:                                          # (a check inside a check: the card counts as playable, no deeper look)
+        return True
+    _CHECKING[0] += 1
+    try:
+        return _has_moves_inner(state, action)
+    finally:
+        _CHECKING[0] -= 1
+
+
+def _has_moves_inner(state: GameState, action: Action) -> bool:
     try:
         new = apply(state, action)
     except (IllegalAction, NotImplementedError):
