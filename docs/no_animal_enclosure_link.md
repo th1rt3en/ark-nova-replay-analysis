@@ -44,3 +44,8 @@ Then the same in ark-nova-ai's engine copy and the Rust port (`fastpath/arkcore`
   break the bot's searches at the next server restart, so it was rolled back. Next: port the Rust side (state.rs Building, cubes.rs, animals_action.rs,
   project_effects.rs, bonuses.rs, breaks.rs, endgame.rs, sponsor_extras.rs, animal_abilities.rs, effects.rs, encode.rs if it reads them), re-record the
   oracle traces with the new Python copy, check the Rust port against them, then switch both at once.
+- ark-nova-ai, switched 2026-11-27 evening: the engine copy (the site's commit 111cdd5 applied; `clone.py`'s fast copy no longer lists `animals` / per-card `cubes`),
+  the Rust port (`fastpath/arkcore`: `Building { occupied, cubes }`, count-only `cubes.rs`, hosts / release / move-in / reef / flock as here; build
+  `fastpath/py_dev4`, also copied to `fastpath/py`) and the encoder (agreed with the owner: `bld[..., 5]` and `hexg[..., 4]` = 1 for an occupied standard enclosure,
+  the cube count of a special one; before: the animal's card id / the number of listed animals). Oracle: 257,302 / 257,302 steps identical on new traces
+  (`E:/ark-nova-ai-data/rust_oracle_v2`: 300 random, 51 BGA, 20 network games); Rust and Python encoders identical on 18,266 states. The bot servers run it.
