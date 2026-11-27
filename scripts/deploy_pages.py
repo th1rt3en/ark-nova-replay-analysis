@@ -72,6 +72,28 @@ def coming_soon(site: Path) -> None:
     soon_fork(site)
 
 
+# Owner, 2026-11-27: "Hide the main page in production until further notice. The only thing that users should be able to see is the replay page redirected by the plugin."
+# While ONLY_REPLAY is on, the production copy keeps only the pages of the extension's way in (import.html, which hands the log over and goes on to replay.html) and the replay;
+# every other page, the start page included, is a plain "not available" page without links (pages/hidden.html). Set it to False to go back to the coming-soon copy above.
+ONLY_REPLAY = True
+PUBLIC_PAGES = {"replay.html", "import.html"}
+
+
+def only_replay(site: Path) -> None:
+    """The production copy while ONLY_REPLAY is on: every page but PUBLIC_PAGES is replaced by pages/hidden.html; the replay's logo is a plain picture and its Fork is paled out."""
+    hidden = (ROOT / "pages" / "hidden.html").read_text(encoding="utf-8")
+    for page in site.rglob("*.html"):
+        name = page.relative_to(site).as_posix()
+        if name in PUBLIC_PAGES:
+            text = page.read_text(encoding="utf-8")
+            plain = re.sub(r'<a class="brand" href="/"[^>]*>(.*?)</a>', r'<span class="brand">\1</span>', text, flags=re.S)
+            if plain != text:
+                page.write_text(plain, encoding="utf-8")
+        else:
+            page.write_text(hidden, encoding="utf-8")
+    soon_fork(site)
+
+
 # Fork is coming soon on the live site: the button is paled out and a tooltip (the "Night" look: near-black, light outline, orange label) opens on hover. The page keeps the working
 # button in the repository and in develop; only the production copy is changed here. main.js switches `disabled` of #fork on every render, so the button is wrapped and cannot be clicked
 # (pointer-events: none, no tab stop) instead of relying on that attribute.
@@ -114,7 +136,7 @@ def main() -> None:
         for name in ("_headers", "_routes.json"):
             shutil.copy(ROOT / "pages" / name, site / name)
         if args.branch == PRODUCTION_BRANCH:
-            coming_soon(site)
+            only_replay(site) if ONLY_REPLAY else coming_soon(site)
         subprocess.run([wrangler, "pages", "deploy", str(site), "--project-name", args.project, "--branch", args.branch, "--commit-dirty=true"],
                        env=env, cwd=ROOT / "pages", check=True)
 

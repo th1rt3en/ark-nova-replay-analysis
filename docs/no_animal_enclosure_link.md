@@ -36,3 +36,11 @@ Replay: `builder.py` (buyAnimal / releaseAnimal / moveAnimal: counts and occupie
 `differential.py` (compares occupied / cube counts), `options.py`, `live/bgalog.py` (one appeal line).
 Viewer: `board.js` (occupied marker, cubes drawn from a count), `card-motion-plan.js` (held = occupied / cubes > 0).
 Then the same in ark-nova-ai's engine copy and the Rust port (`fastpath/arkcore`), checked by the oracle and the log tests.
+
+## Status (2026-11-27)
+- Site (`no-animal-enclosure-link`, 111cdd5): done; full suite passes.
+- ark-nova-ai's engine copy and the Rust port must change TOGETHER: the planner sends the Python state to `arkcore.State.from_json`, which still
+  expects `animal` / `animals` / per-card `cubes`. A port of the copy alone (tried 2026-11-27: 10 files copy as they are, the other 5 patch) would
+  break the bot's searches at the next server restart, so it was rolled back. Next: port the Rust side (state.rs Building, cubes.rs, animals_action.rs,
+  project_effects.rs, bonuses.rs, breaks.rs, endgame.rs, sponsor_extras.rs, animal_abilities.rs, effects.rs, encode.rs if it reads them), re-record the
+  oracle traces with the new Python copy, check the Rust port against them, then switch both at once.
