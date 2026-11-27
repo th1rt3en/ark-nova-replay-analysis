@@ -583,7 +583,7 @@ def _effect_line(old: GameState, act: Action, new: GameState, L: Lines, who: str
     elif kind == "enlarge" and a.get("building") is not None:
         b = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(a["building"])), None)
         n = int(b.type.replace("size-", "")) if b is not None and b.type.startswith("size-") else 0
-        tail = " and gained 2 appeal" if b is not None and b.animal else ""
+        tail = " and gained 2 appeal" if b is not None and b.occupied else ""
         L.add(f"{who} enlarged an enclosure ({n} -> {n + 1}){tail}", None, f"You enlarged an enclosure ({n} -> {n + 1}){tail}")
     elif kind == "move_in" and a.get("move"):
         dest = next((b for b in old.players[seat].buildings if [b.x, b.y] == list(e.get("building") or [])), None)

@@ -256,7 +256,7 @@ def test_construction_yard_a_flipped_enclosure_next_to_the_crane_may_be_repositi
     far = next(a for a in options if a.args["y"] <= 2 and a.args["x"] >= 4)                  # a free place that touches no building
     s = game.apply(s, far)
     moved = next(b for b in s.players[0].buildings if b.id == 1)
-    assert (moved.x, moved.y, moved.rotation) == (far.args["x"], far.args["y"], far.args["rotation"]) and moved.animal == "A404"     # it keeps its animal
+    assert (moved.x, moved.y, moved.rotation) == (far.args["x"], far.args["y"], far.args["rotation"]) and moved.occupied     # it stays occupied (no card is tied to it)
     assert len(s.players[0].buildings) == 2 and not _crane_effects(s)
 
 
@@ -270,7 +270,7 @@ def test_construction_yard_reposition_ignores_the_animals_rock_and_water_require
     key = next(a["key"] for a in data.animals() if requirement(a["key"], "rock", False) or requirement(a["key"], "water", False))       # an animal that needed rock / water next to its enclosure
     p.sponsors = [k for k in p.sponsors if k != "S219"]                                  # (the helper's Overbuild would skip the old check)
     b = p.buildings[0]
-    b.animal = key
+    b.occupied = True                                                                       # (occupied: the crane moves the enclosure; no card is tied to it, so no animal's need is checked)
     targets = map_rules.crane_targets(s, p, b, 1)
     occupied = {c for o in p.buildings if o is not b for c in build_action.footprint(o.type, o.x, o.y, o.rotation)}
 

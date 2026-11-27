@@ -118,9 +118,9 @@ def legal(state, e: dict, i: int, seat: int) -> list:
 
 
 def _reef_aquariums(state, seat: int) -> list:
+    """The Sea Animals of the zoo with a Reef Dweller effect (owner's ruling, 2026-11-25: every one triggers, wherever it was played; rescued ones never)."""
     from ark_nova.engine import animals_action
-    return [b for b in state.players[seat].buildings if b.type in ("small-aquarium", "large-aquarium", "underwater-tunnel")
-            and any(animals_action.reef_abilities(k) for k in b.animals)]
+    return [k for k in animals_action.aquarium_animals(state, seat) if animals_action.reef_abilities(k)]
 
 
 def release_enclosures(state, seat: int, key: str, exclude=None, standard_only: bool = False) -> list:
@@ -145,42 +145,18 @@ def release_enclosures(state, seat: int, key: str, exclude=None, standard_only: 
 
 
 def release_animal(state, seat: int, key: str, building=None, totals=None) -> None:
-    """The animal leaves the zoo for good: the chosen enclosure is empty, its appeal is lost, the card goes to the discard pile. `totals`: the cubes the log
-    gives for the buildings it names (engine/cubes.py)."""
+    """The animal leaves the zoo for good: the enclosure the player chose gives up its space (a standard one is empty again, a special one loses the
+    animal's cubes: an aquarium animal's from the other aquariums too when the chosen one holds fewer), its appeal is lost, the card goes to the discard
+    pile. `totals`: the cubes the log gives for the buildings it names (engine/cubes.py). No animal is tied to an enclosure (owner, 2026-11-25)."""
     from ark_nova.engine import cubes
     p = state.players[seat]
     p.animals.remove(key)
     b = next((b for b in p.buildings if building is not None and [b.x, b.y] == list(building)), None)
-    if totals is None and b is not None and not b.type.startswith("size-"):
-        # live rules (no log counts; 2026-11-22, owner): no animal is tied to an enclosure; the released animal's cubes come off the special enclosure the player
-        # chose (seed 210000579: before, nothing came off the Large Aquarium). The per-card lists below are bookkeeping only (the replay compares them); the
-        # rules (room, release, move-in) read the cubes.
-        cubes.release_from(p, key, b)
+    if b is not None and b.type.startswith("size-"):
+        b.occupied = False
+        cubes.set_totals(p, totals)
     else:
-        cubes.release(p, key, totals)
-    if b is None:                                                          # no enclosure named (an aquarium animal whose cubes lie in several aquariums, 823088780
-        for o in p.buildings:                                              # turn 67): its cubes are off (cubes.release), and it leaves the per-enclosure lists too
-            if not o.type.startswith("size-") and key in getattr(o, "animals", ()):
-                o.animals.remove(key)
-    if b is not None:
-        if b.type.startswith("size-"):
-            b.animal = None
-        elif key in b.animals:
-            b.animals.remove(key)
-        elif b.type in ("small-aquarium", "large-aquarium", "underwater-tunnel"):
-            holder = next((o for o in p.buildings if key in getattr(o, "animals", ())), None)      # an animal is not tied to an enclosure: BGA names the enclosure that is emptied (it fits the released animal), the engine's list of animals per aquarium is only bookkeeping, so the released animal leaves the zoo and no other animal does (672851171 turn 36)
-            if holder is not None:
-                holder.animals.remove(key)
-                if b.animals:                                              # (bookkeeping only: the named aquarium is emptied, the animal the engine listed there stays in the zoo)
-                    holder.animals.append(b.animals.pop(0))
-            elif b.animals:
-                from ark_nova.engine import animals_action
-                freed = 0
-                need = animals_action._special_size(key)                    # (the engine lists the animal in no aquarium: the named one is emptied of as many spaces as the released animal takes, 820998468 turns 70 and 83)
-                while b.animals and freed < need:
-                    freed += animals_action._special_size(b.animals.pop(0))
-        elif b.animals:
-            b.animals.pop(0)
+        cubes.release(p, key, totals, b)
     p.released.append(key)
     gamestats.count(state, p.seat, "animals_released")
     state.main_discard.append(key)
@@ -199,10 +175,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         if where and list(a.get("building") or []) not in [[b.x, b.y] for b in where]:
             raise _fx().IllegalEffect("empty one of the enclosures with the highest priority")
         release_animal(state, p.seat, a["release"], a.get("building"), a.get("cubes"))
-        for other in a.get("also") or []:                       # BGA may name more enclosures as emptied (an animal is not tied to an enclosure): each one loses an animal
+        for other in a.get("also") or []:                       # BGA may name more enclosures as emptied: a standard one is empty again (the log's cube counts cover the special ones)
             ob = next((b for b in p.buildings if [b.x, b.y] == list(other)), None)
-            if ob is not None and not ob.type.startswith("size-") and ob.animals and ob.type not in ("small-aquarium", "large-aquarium", "underwater-tunnel"):
-                ob.animals.pop(0)                                  # (an aquarium animal can span several aquariums: they are emptied of its spaces, no other animal leaves: 731797456 turn 60)
+            if ob is not None and ob.type.startswith("size-"):
+                ob.occupied = False
     elif k == "reef":
         from ark_nova.engine import animals_action
         extra = []

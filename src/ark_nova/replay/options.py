@@ -151,7 +151,7 @@ def _place_entry(state: GameState, e: dict, who: int) -> dict:
             return {"cells": [{"cell": list(c), "bonus": [{"type": b.get("type"), "value": b.get("value")} for b in bd.bonuses[c]]} for c in bonuses.archaeologist_cells(state, p)]}
         if k == "cut_down":
             from ark_nova.engine import build_action
-            return {"cuts": [{"building": [b.x, b.y], "type": b.type, "money": build_action.cost(b.type)} for b in p.buildings if b.type.startswith("size-") and not b.animal]}
+            return {"cuts": [{"building": [b.x, b.y], "type": b.type, "money": build_action.cost(b.type)} for b in p.buildings if b.type.startswith("size-") and not b.occupied]}
         if k == "move_in" and e.get("building"):
             return {"dest": list(e["building"])}
         if k == "extra_shift":                                           # the zones of the association board that hold a worker the player may take back

@@ -110,7 +110,7 @@ def project(state: GameState) -> dict:
         "players": [{"hand": sorted(p.hand), "money": p.money, "appeal": p.appeal, "reputation": p.reputation,
                      "conservation": p.conservation, "x_tokens": p.x_tokens,
                      "action_cards": [(c.type, c.variant, c.level, tuple(sorted(c.tokens))) for c in p.action_cards],
-                     "buildings": sorted((b.type, b.x, b.y, b.rotation, bool(b.animal), len(b.animals)) for b in p.buildings), "animals": sorted(p.animals), "icons": p.icons, "marks": [m for m in marks_of(state) if m[0] == p.seat], "under": {k: sorted(v) for k, v in p.under.items()},
+                     "buildings": sorted((b.type, b.x, b.y, b.rotation, bool(b.occupied), int(b.cubes)) for b in p.buildings), "animals": sorted(p.animals), "icons": p.icons, "marks": [m for m in marks_of(state) if m[0] == p.seat], "under": {k: sorted(v) for k, v in p.under.items()},
                      "tokens": sorted((t.type, t.location) for t in p.tokens if _tracked_token(t))} for p in state.players],
         "display": list(state.display), "main_deck": list(state.main_deck), "main_discard": sorted(state.main_discard),
         "projects_in_play": list(state.projects_in_play),

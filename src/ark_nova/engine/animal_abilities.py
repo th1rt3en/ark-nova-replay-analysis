@@ -377,7 +377,7 @@ def reveal_helps_marketing(state, seat: int, e) -> bool:
 
 
 def _empty_standard(b) -> bool:
-    return b.type.startswith("size-") and b.animal is None and not b.animals
+    return b.type.startswith("size-") and not b.occupied
 
 
 def _symbiosis_abilities(key: str) -> list:

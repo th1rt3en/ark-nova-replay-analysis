@@ -278,7 +278,7 @@ def sponsor_points(state, seat: int, key: str) -> dict:
         cons = max((cp for n, cp in tiers if icons[name] >= n), default=0)
     elif key == "S211":                                        # Expert on Europe: 1 conservation for 5 occupied 1-space enclosures (one next to the gate of map 2 / 2a counts as a 3-space enclosure)
         from ark_nova.engine.animals_action import effective_size
-        cons = sum(1 for b in p.buildings if b.type == "size-1" and b.animal and effective_size(p, b, bd) == 1) >= 5
+        cons = sum(1 for b in p.buildings if b.type == "size-1" and b.occupied and effective_size(p, b, bd) == 1) >= 5
     elif key == "S214":
         appeal = p.x_tokens
     elif key in ("S217", "S280"):

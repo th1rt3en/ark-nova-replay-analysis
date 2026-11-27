@@ -667,7 +667,7 @@ def state_view(state: GameState) -> dict:
         p["income_lines"] = income_lines(state, ps)
         for j, b in enumerate(p["buildings"]):
             b["cells"] = building_cells(b)
-            b["cubes"] = cube_rules.view(ps, ps.buildings[j]) if j < len(ps.buildings) else []          # [[card key, cubes], ...] of a special enclosure: the browser draws one cube per space (engine/cubes.py)
+            b["cubes"] = cube_rules.view(ps, ps.buildings[j]) if j < len(ps.buildings) else 0          # the cubes of a special enclosure (a count; engine/cubes.py): the browser draws one cube per space
     return s
 
 

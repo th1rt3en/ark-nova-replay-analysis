@@ -402,7 +402,9 @@ def resolve_build(state, action: Action) -> None:
         fee = map_rules.terrain_fee(p, t, build_action.footprint(t, x, y, k))              # BDW3: the new location is paid for like any other
         if fee:
             g._pay(state, p, fee)
-        p.buildings.append(Building(id=pb["id"], type=t, x=x, y=y, rotation=k, animal=pb["animal"], animals=list(pb["animals"]), cubes=dict(pb.get("cubes") or {})))
+        from ark_nova.engine.state import upgrade_building
+        old = upgrade_building({"type": t, **{x_: pb[x_] for x_ in ("animal", "animals", "cubes", "occupied") if x_ in pb}})      # (an effect saved before 2026-11-25 carries the old fields)
+        p.buildings.append(Building(id=pb["id"], type=t, x=x, y=y, rotation=k, occupied=bool(old.get("occupied")), cubes=int(old.get("cubes") or 0)))
         p.flags.setdefault("built_now", []).append(pb["id"])
         g.hydrologist_geologist(state, p.seat, build_action.footprint(t, x, y, k))          # (the building that is put back pays the Hydrologist / Geologist again)
         for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: an area that is covered again pays its bonus again

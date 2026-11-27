@@ -233,7 +233,7 @@ def h_increase_size(ctx: _Ctx, e: Event) -> None:
     for i, b in enumerate(p.buildings):
         if b.id == old["id"] or (b.x, b.y) == (old["x"], old["y"]):
             p.buildings[i] = Building(id=int(new["id"]), type=new["type"], x=new["x"], y=new["y"], rotation=new.get("rotation", 0),
-                                      animal=b.animal, animals=list(b.animals), cubes=dict(b.cubes))
+                                      occupied=b.occupied, cubes=b.cubes)
             return
     p.buildings.append(Building(id=int(new["id"]), type=new["type"], x=new["x"], y=new["y"], rotation=new.get("rotation", 0)))
 
@@ -676,16 +676,12 @@ def h_buy_animal(ctx: _Ctx, e: Event) -> None:
     _take_from_source(s, p, k, bool(a.get("fromDisplay")))
     p.animals.append(k)
     p.money = int(a["total"])
-    for n, b in enumerate(a.get("buildings") or []):
-        if n and not b["type"].startswith("size-"):
-            break                                        # an aquarium animal spread over several aquariums lives in the first one (its cubes lie in all of them)
+    totals = cube_totals(a.get("buildings"))                 # (the special enclosures BGA names, with their cubes after the move: set as they are)
+    for b in a.get("buildings") or []:
         for mine in p.buildings:
-            if mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"]):
-                if mine.type.startswith("size-"):
-                    mine.animal = k
-                else:                                    # special enclosures hold several animals
-                    mine.animals.append(k)
-                    cubes.place(p, mine, k, cube_totals(a.get("buildings")))
+            if (mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"])) and mine.type.startswith("size-"):
+                mine.occupied = True                     # (no card is tied to it: owner, 2026-11-25)
+    cubes.set_totals(p, totals)
 
 
 def h_play_sponsor(ctx: _Ctx, e: Event) -> None:
@@ -734,38 +730,23 @@ def h_release_animal(ctx: _Ctx, e: Event) -> None:
         p.animals.remove(k)
     p.released.append(k)
     s.main_discard.append(k)
-    cubes.release(p, k, cube_totals(a.get("buildings")))
-    emptied = False
-    for bi_, b in enumerate(a.get("buildings") or []):                       # the enclosure that was emptied (an animal is not tied to an enclosure)
+    totals = cube_totals(a.get("buildings"))
+    cubes.set_totals(p, totals)                               # (the special enclosures BGA names, with their cubes after the release: no animal is tied to an enclosure)
+    emptied = bool(totals)
+    for b in a.get("buildings") or []:                        # a standard enclosure BGA names is empty again
         if b.get("type") == "empty" or "id" not in b:        # "frees no enclosure": BGA lists a placeholder {"type": "empty"} (715758234)
             continue
-        first = bi_ == 0
         for mine in p.buildings:
-            if mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"]):          # (the starting enclosure has an id of its own in the engine)
-                if mine.type.startswith("size-"):
-                    emptied = emptied or mine.animal is not None
-                    mine.animal = None
-                elif k in mine.animals:
-                    mine.animals.remove(k)
-                    emptied = True
-                elif mine.animals and (first or mine.type not in ("small-aquarium", "large-aquarium", "underwater-tunnel")):
-                    moved = mine.animals.pop(0)
-                    holder = next((o for o in p.buildings if first and mine.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") and k in o.animals), None)
-                    if holder is None and mine.type in ("small-aquarium", "large-aquarium", "underwater-tunnel"):
-                        from ark_nova.engine.animals_action import _special_size      # the aquarium is emptied of as many spaces as the released animal takes (820998468 turns 70, 83)
-                        freed = _special_size(moved)
-                        while mine.animals and freed < _special_size(k):
-                            freed += _special_size(mine.animals.pop(0))
-                    if holder is not None:        # an animal is not tied to an enclosure: the named aquarium is emptied, the released animal leaves the zoo and the animal listed in the named one stays (bookkeeping only; 672851171 turn 36, 820998468 turn 70)
-                        holder.animals.remove(k)
-                        holder.animals.append(moved)
-                    emptied = True
-    if not emptied:                                           # BGA names an empty enclosure as the one that is freed: the animal leaves the one it lived in (820534913 turn 56)
-        for mine in p.buildings:
-            if k in mine.animals:
-                mine.animals.remove(k)
-            if mine.animal == k:
-                mine.animal = None
+            if (mine.id == b["id"] or (mine.x, mine.y) == (b["x"], b["y"])) and mine.type.startswith("size-"):
+                emptied = emptied or mine.occupied
+                mine.occupied = False
+    if not emptied and any(b.get("type", "").startswith("size-") for b in a.get("buildings") or []):
+        # BGA named a standard enclosure that was already empty here (820534913 turn 56): the release priority frees the smallest occupied one the animal fits
+        from ark_nova.engine.animals_action import card as _card
+        size = int(_card(k).get("size") or 1)
+        fits = sorted((mine for mine in p.buildings if mine.type.startswith("size-") and mine.occupied and int(mine.type[5:]) >= size), key=lambda m: int(m.type[5:]))
+        if fits:
+            fits[0].occupied = False
     p.appeal -= (a.get("bonuses") or {}).get("appeal", 0)
 
 
@@ -773,7 +754,7 @@ def h_cut_down(ctx: _Ctx, e: Event) -> None:
     a = e.args
     p = ctx.player(a["player_id"])
     if not any(b.id == int(a["buildingId"]) for b in p.buildings) and a.get("size"):          # a starting enclosure: BGA's id is not the engine's, the one empty enclosure of that size goes (804334725 turn 70)
-        same = [b for b in p.buildings if b.type == f"size-{int(a['size'])}" and b.animal is None]
+        same = [b for b in p.buildings if b.type == f"size-{int(a['size'])}" and not b.occupied]
         if len(same) == 1:
             p.buildings = [b for b in p.buildings if b is not same[0]]
     p.buildings = [b for b in p.buildings if b.id != int(a["buildingId"])]
@@ -789,20 +770,12 @@ def h_move_animal(ctx: _Ctx, e: Event) -> None:
     moved_cubes = cube_totals((a.get("buildings") or []) + [a["building"]])
     freed = {x["id"] for x in a.get("buildings") or []}
     freed_at = {(x["x"], x["y"]) for x in a.get("buildings") or []}
-    for b in p.buildings:
-        if b.id in freed or (b.x, b.y) in freed_at:
-            b.animal = None
-            if k in b.animals:
-                b.animals.remove(k)                      # the spaces of a special enclosure are free again
-        if b.id == a["building"]["id"] or (b.x, b.y) == (a["building"]["x"], a["building"]["y"]):
-            if b.type.startswith("size-"):
-                b.animal = k
-            else:                                       # moved into a new special enclosure (reptile house / aviary)
-                b.animals.append(k)
-    for b in p.buildings:                               # the animal lives in one enclosure: BGA names the one whose cubes changed, not always the one it lived in (646866721 turn 49: the Green Sea Turtle lived in the small aquarium, the log names the large one)
-        if b is not dest and k in b.animals:            # (a standard enclosure that BGA names is the one that is freed, whichever the animal lived in: only the special enclosures are the animal's own)
-            b.animals.remove(k)
-    cubes.move(p, k, dest, moved_cubes)
+    for b in p.buildings:                               # a standard enclosure BGA names as left is empty again; the new one is filled (no animal is tied to either)
+        if (b.id in freed or (b.x, b.y) in freed_at) and b.type.startswith("size-"):
+            b.occupied = False
+    if dest is not None and dest.type.startswith("size-"):
+        dest.occupied = True
+    cubes.set_totals(p, moved_cubes)                    # (the cubes of the buildings BGA names, the new one included, after the move)
 
 
 def h_reconstruction_remove(ctx: _Ctx, e: Event) -> None:
@@ -822,7 +795,7 @@ def h_reconstruction_place_back(ctx: _Ctx, e: Event) -> None:
     old = (getattr(ctx, "removed", None) or {}).pop(b["id"], None)
     ctx.player(e.args["player_id"]).buildings.append(
         Building(id=b["id"], type=b["type"], x=b["x"], y=b["y"], rotation=b.get("rotation", 0),
-                 animal=old.animal if old else None, animals=list(old.animals) if old else []))
+                 occupied=bool(old.occupied) if old else False, cubes=int(old.cubes) if old else 0))
 
 
 HANDLERS: dict[str, Callable[[_Ctx, Event], None]] = {

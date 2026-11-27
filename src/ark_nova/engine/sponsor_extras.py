@@ -211,7 +211,7 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
                 bonuses.defer(state, {"kind": "archaeologist", "source": "S221", "optional": False, "player": action.player})
         for name in sorted(map_rules.quarters_done(p) - areas_before):          # map 13: the enlarged enclosure completes an area, which pays its bonus (941429583 turn 60)
             map_rules.quarter_bonus(state, p.seat, name)
-        if b.animal:
+        if b.occupied:
             g._gain(state, action.player, appeal=2)
     elif k == "reposition":
         gone = {tuple(c) for c in a["remove"]}
@@ -222,5 +222,5 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         for b in held:
             state.prompt.args["pending"].append({
                 "kind": "build", "source": e["source"], "type": b.type, "rules": _unique_rules(b.type, state.config.marine_worlds), "optional": False, "double": False, "player": action.player,
-                "placeback": {"id": b.id, "animal": b.animal, "animals": list(b.animals), "cubes": dict(b.cubes), "from": [b.x, b.y]}})
+                "placeback": {"id": b.id, "occupied": b.occupied, "cubes": b.cubes, "from": [b.x, b.y]}})
     fx._done(state, i)

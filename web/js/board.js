@@ -38,9 +38,13 @@ const ENC_GAP = 3, ENC_BORDER = 8, ENC_BORDER_COLOUR = '#A68731';
 const SPRITE_SCALE = (MAP.dx / 1.5) / 136;      // the building sprites are drawn with hexes of circumradius 136 px
 const cellCentre = (x, y) => [MAP.x0 + x * MAP.dx, MAP.y0 + y * MAP.dy];
 
+// No animal is tied to an enclosure (owner, 2026-11-25): a standard enclosure is occupied or empty, a special one holds a number of cubes.
+// (`animal` / `animals` / per-card `cubes`: a view saved before 2026-11-25)
+export const cubeCount = (b) => (typeof b.cubes === 'number' ? b.cubes : Array.isArray(b.cubes) && b.cubes.length ? b.cubes.reduce((n, c) => n + (Array.isArray(c) ? c[1] : 1), 0) : (b.animals || []).length);
+export const isOccupied = (b) => (/^size-\d$/.test(b.type) ? !!(b.occupied || b.animal) : cubeCount(b) > 0);
 // sprite of a building: standard enclosures have an empty (yellow) and an occupied (green) side
 export function spriteOf(b) {
-  const occupied = b.animal || (b.animals && b.animals.length);
+  const occupied = isOccupied(b);
   const id = /^size-\d$/.test(b.type) ? b.type + (occupied ? '_occupied' : '_empty') : (b.type === 'victory' && S.replay.marine_worlds ? 'victory_mw' : b.type);
   return S.sprites[id];
 }
@@ -226,7 +230,6 @@ export function zooBoard(map, player, seat) {
     const g = svg('g', cls ? { class: cls } : {});
     g.setAttribute('data-bseat', seat); g.setAttribute('data-bid', b.type + '|' + b.x + '|' + b.y); g.setAttribute('data-cells', b.cells.map((c) => c[0] + ',' + c[1]).join(';'));          // (card-motion.js flies the building to / from the invisible deck)
     const sp = spriteOf(b);
-    const animals = b.animal ? [b.animal] : b.animals;
     if (!sp) {                                  // a building whose sprite is missing: outline its hexes
       for (const [x, y] of b.cells) g.append(svg('polygon', { points: hexPoints(x, y), class: 'nosprite' }));
     } else {
@@ -256,25 +259,18 @@ export function zooBoard(map, player, seat) {
         g.append(mask, cp, inner);
       } else g.append(img);
     }
-    if (SPECIAL_ENCLOSURE.test(b.type) && ((Array.isArray(b.cubes) && b.cubes.length) || (animals && animals.length))) {         // a special enclosure is filled with the player's cubes (the cubes of the projects and the donations): one per animal, on its hexes in turn
+    const nCubes = SPECIAL_ENCLOSURE.test(b.type) ? cubeCount(b) : 0;
+    if (nCubes > 0) {                           // a special enclosure holds the player's cubes on its spaces (a count from the view, engine/cubes.py): one per space, on its hexes in turn
       const cells = b.cells.slice().sort((p, q) => p[0] - q[0] || p[1] - q[1]), size = 66;
-      // the cubes on its spaces, `b.cubes` from the view ([[card key, cubes], ...], engine/cubes.py): an animal covers as many spaces as its special enclosure
-      // size says (Aquarium 2 = 2 cubes, Aquarium 0 = none) and an aquarium animal may have its cubes in several aquariums; without `cubes` (an older view) one per animal
-      const list = Array.isArray(b.cubes) ? b.cubes : animals.map((k) => [k, 1]);
-      let at = 0;
-      list.forEach(([k, n]) => {
-        for (let c = 0; c < n; c++, at++) {
-          const [hx, hy] = cellCentre(...cells[at % cells.length]), lap = Math.floor(at / cells.length) * 14;
-          const cube = svg('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: hx - size / 2 + lap, y: hy - size / 2 - lap, width: size, height: size });
-         
-          g.append(cube);
-        }
-      });
+      for (let at = 0; at < nCubes; at++) {
+        const [hx, hy] = cellCentre(...cells[at % cells.length]), lap = Math.floor(at / cells.length) * 14;
+        g.append(svg('image', { href: pieceUrl('cubes', seatRawColor(seat)), x: hx - size / 2 + lap, y: hy - size / 2 - lap, width: size, height: size }));
+      }
     }
     if (cls) g.append(svg('path', { d: outlinePath(b.cells), class: 'frame' }));
     return g;
   };
-  const keyOf = (b) => [b.type, b.x, b.y, b.rotation, b.animal || (b.animals && b.animals.length) ? 'full' : 'empty'].join('|');
+  const keyOf = (b) => [b.type, b.x, b.y, b.rotation, isOccupied(b) ? 'full' : 'empty', SPECIAL_ENCLOSURE.test(b.type) ? cubeCount(b) : ''].join('|');
   const zone = seat + ':buildings';
   const z = zoneNew(zone, player.buildings.map(keyOf));
   S.curZoneData[zone] = Object.fromEntries(player.buildings.map((b) => [keyOf(b), b]));

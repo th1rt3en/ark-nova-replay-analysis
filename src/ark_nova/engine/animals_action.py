@@ -108,14 +108,10 @@ def own_abilities(key: str, b) -> list:
 
 
 def aquarium_animals(state, seat: int) -> list:
-    """The animals that live in the aquariums of the zoo: the ones listed there, and the aquarium-only animals that a release took off the lists (the lists are bookkeeping: an
-    animal is not tied to an aquarium, a release empties as many spaces as the released animal takes; 820998468 turn 83: the Blackside Hawkfish still triggers)."""
+    """The animals whose Reef Dweller effects trigger when an animal is placed in an aquarium: every Sea Animal card of the zoo (owner's ruling, 2026-11-25:
+    no animal is tied to an enclosure, so where it was played does not matter). Animals rescued with the Rescue Station are not in `p.animals` and never trigger."""
     p = state.players[seat]
-    listed = [o for bb in p.buildings if bb.type in ("small-aquarium", "large-aquarium", "underwater-tunnel") for o in bb.animals]
-    placed = {o for bb in p.buildings for o in getattr(bb, "animals", ())} | {bb.animal for bb in p.buildings if getattr(bb, "animal", None)}
-    spare = [k for k in p.animals if k not in placed and card(k).get("canBeInStandardEnclosure") is False
-             and any(s["type"] == "Aquarium" for s in card(k).get("specialEnclosures") or [])]
-    return listed + spare
+    return [k for k in p.animals if "seaAnimal" in (card(k).get("tags") or [])]
 
 
 def reef_effects(state, key: str, b) -> list:
@@ -293,10 +289,8 @@ def flock_free(state: GameState, seat: int, key: str) -> bool:
     from ark_nova.engine import build_action
     p = state.players[seat]
     for name, value in abilities(key):
-        if name == "Flock Animal" and (any("herbivore" in card(o).get("tags", []) and (card(o).get("size") or 0) >= int(value) for o in p.animals)
-                                       or any(b.animal and "herbivore" in card(b.animal).get("tags", []) and build_action.SIZES.get(b.type, 0) >= int(value) for b in p.buildings)
-                                       or (icon_counts(state, seat)["Herbivore"] and any(b.animal and build_action.SIZES.get(b.type, 0) >= int(value) for b in p.buildings))):
-            return True        # (the *enclosure* of a herbivore has the size: a small herbivore in a big enclosure counts; a herbivore icon of a university or token counts too: found in the logs)
+        if name == "Flock Animal" and any("herbivore" in card(o).get("tags", []) and (card(o).get("size") or 0) >= int(value) for o in list(p.animals) + list(p.rescued)):
+            return True        # (owner's ruling, 2026-11-25: a Herbivore whose CARD size is X or more, rescued ones included; no enclosure is looked at)
     return False
 
 
@@ -321,21 +315,25 @@ def hosts(state: GameState, seat: int, key: str, occupied: bool = False) -> list
 
     if c.get("canBeInStandardEnclosure") is not False:
         for b in p.buildings:
-            if b.type.startswith("size-") and (b.animal is not None) == occupied and effective_size(p, b, bd) >= c["size"]:
+            if b.type.startswith("size-") and b.occupied == occupied and effective_size(p, b, bd) >= c["size"]:
                 out.append((b, near_ok(b)))
     from ark_nova.engine import cubes
     for spec in c.get("specialEnclosures") or []:
-        pool = spec["type"] == "Aquarium" and not occupied                 # the aquariums of a zoo share their spaces: an animal may take them in several
-        free = 0
-        if pool:
-            aq = [b for b in p.buildings if b.type in SPECIAL_TYPES["Aquarium"]]
-            free = sum(CAPACITY[b.type] for b in aq) - sum(cubes.used(p, b) for b in aq)
+        pool = spec["type"] == "Aquarium"                                   # the aquariums of a zoo share their spaces: an animal's cubes may lie in several
+        aq = [b for b in p.buildings if b.type in SPECIAL_TYPES["Aquarium"]] if pool else []
+        free = sum(CAPACITY[b.type] for b in aq) - sum(cubes.used(p, b) for b in aq)
+        held = sum(cubes.used(p, b) for b in aq)
         for t in SPECIAL_TYPES.get(spec["type"], ()):
             for b in p.buildings:
-                # (2026-11-22, owner: no animal is tied to an enclosure; a special enclosure holds cubes: it can be emptied by a release when it holds the
-                # animal's cubes, it has room when its free spaces (the aquariums' together) cover them)
-                if b.type == t and ((0 < cubes.used(p, b) >= spec["size"] if occupied else (free >= spec["size"] if pool else
-                                                                                         CAPACITY[t] - cubes.used(p, b) >= spec["size"]))):
+                # (owner, 2026-11-22 / 25: no animal is tied to an enclosure; a special enclosure holds cubes. A release can empty it when it holds the animal's
+                # cubes (the aquariums' together: any aquarium with cubes when they hold enough), it has room when its free spaces (the aquariums' together) cover them)
+                if b.type != t:
+                    continue
+                if occupied:
+                    ok = (cubes.used(p, b) > 0 and held >= spec["size"]) if pool else cubes.used(p, b) >= max(1, spec["size"])
+                else:
+                    ok = free >= spec["size"] if pool else CAPACITY[t] - cubes.used(p, b) >= spec["size"]
+                if ok:
                     out.append((b, near_ok(b)))
     return out
 
@@ -472,11 +470,10 @@ def play(state: GameState, action: Action) -> None:
     b = None if action.args.get("flock") else next(b for b in p.buildings if (b.x, b.y) == (action.args["x"], action.args["y"]))
     if b is None:
         pass                                                  # Flock Animal: it lives with the herd, no enclosure is flipped
-    elif b.type.startswith("size-") and b.animal is None:
-        b.animal = k
-    else:                                                     # special enclosures
-        b.animals.append(k)
-        cubes.place(p, b, k, action.args.get("cubes"))        # (its cubes: in the log's buildings, else this one first, then the other aquariums)
+    elif b.type.startswith("size-"):
+        b.occupied = True
+    else:                                                     # special enclosures: its cubes (the log's counts, else this one first, then the other aquariums)
+        cubes.place(p, b, k, action.args.get("cubes"))
     p.animals.append(k)
     gamestats.count(state, p.seat, "animals_played")
     a["played"].append(k)

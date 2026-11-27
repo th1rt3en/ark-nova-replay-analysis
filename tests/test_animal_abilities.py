@@ -108,13 +108,13 @@ def test_scavenging_shuffles_the_discard_and_keeps_one():
 def test_flock_animal_needs_no_enclosure_with_a_big_enough_herbivore():
     s = _zoo("A438")                                                                  # Reindeer: Flock Animal 3
     p = s.players[0]
-    p.buildings[0].animal = "A431"                                                     # a herbivore of size 3 or more in the zoo (Asian Elephant, size 5)
+    p.buildings[0].occupied = True                                                     # a herbivore of CARD size 3 or more in the zoo (Asian Elephant, size 5): owner's ruling, no enclosure looked at
     p.animals = ["A431"]
     s = _start(s)
     flock = Action(0, "play_animal", {"card": "A438", "from_display": False, "flock": True})
     assert flock in legal_actions(s)                                                   # no enclosure is flipped
     s = apply(s, flock)
-    assert "A438" in s.players[0].animals and s.players[0].buildings[0].animals == [] and s.players[0].buildings[0].animal == "A431"
+    assert "A438" in s.players[0].animals and s.players[0].buildings[0].occupied and s.players[0].buildings[0].cubes == 0      # no enclosure is used for it
 
 
 def test_camouflage_ignores_one_condition_of_the_next_animal():

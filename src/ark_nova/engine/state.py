@@ -93,9 +93,31 @@ class Building:
     x: int
     y: int
     rotation: int = 0    # 0..5, footprint anchor + rotation as in the BGA log
-    animal: Optional[str] = None      # card key of the animal living here (standard enclosures)
-    animals: list[str] = field(default_factory=list)   # animals living here (special enclosures: petting zoo, reptile house, aviary, aquariums)
-    cubes: dict[str, int] = field(default_factory=dict)  # special enclosures: the cubes on its spaces, per animal (an aquarium animal may have cubes in several aquariums; engine/cubes.py)
+    # Ark Nova has no link between an animal and an enclosure (owner, 2026-11-25; docs/no_animal_enclosure_link.md): a building holds no card key.
+    occupied: bool = False   # standard enclosures (size-1 .. size-5): an animal occupies it
+    cubes: int = 0           # special enclosures (petting zoo, reptile house, aviary, aquariums, tunnel): the cubes on its spaces (engine/cubes.py)
+
+
+def upgrade_building(d: dict) -> dict:
+    """A building of a state saved before 2026-11-25 (records, live tables, forks): `animal` -> `occupied`, per-card `cubes` -> their sum (plus the size of each
+    listed animal without an entry, as the old `cubes.used` counted), `animals` dropped."""
+    if "animal" not in d and "animals" not in d and not isinstance(d.get("cubes"), dict):
+        return d
+    out = {k: v for k, v in d.items() if k not in ("animal", "animals", "cubes")}
+    out["occupied"] = bool(d.get("occupied") or d.get("animal"))
+    old = d.get("cubes")
+    if isinstance(old, dict):
+        n = sum(int(v) for v in old.values())
+        listed = [k for k in d.get("animals") or [] if k not in old]
+        if listed:
+            from ark_nova.engine import cubes as _cubes
+            n += sum(_cubes.size_of(k) for k in listed)
+        out["cubes"] = n
+    else:
+        out["cubes"] = int(old or 0)
+    if not str(d.get("type", "")).startswith("size-"):
+        out["occupied"] = False
+    return out
 
 
 @dataclass
@@ -194,6 +216,8 @@ class GameState:
     def from_dict(cls, data: dict) -> "GameState":
         if isinstance(data.get("rng"), str):
             data = {**data, "rng": int(data["rng"])}
+        if any("animal" in b or "animals" in b or isinstance(b.get("cubes"), dict) for p in data.get("players") or [] for b in p.get("buildings") or []):
+            data = {**data, "players": [{**p, "buildings": [upgrade_building(b) for b in p.get("buildings") or []]} for p in data.get("players") or []]}
         state = from_jsonable(cls, data)
         if state.config.custom_map:                                # (the engine reads every map through `ark_nova.data`: a map that is not in the data has to be made known again)
             from ark_nova import data as game_data

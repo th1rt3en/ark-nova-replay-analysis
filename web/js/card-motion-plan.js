@@ -38,7 +38,7 @@ export function buildingChanges(before, after) {
 // Standard enclosures (size-N) that stayed where they are but turned to the other side: an animal moved in (empty -> occupied) or was released (occupied -> empty). A new or
 // cut down building (a size increase) is not a turn, it is a change of buildingChanges.
 export function buildingFlips(before, after) {
-  const std = /^size-\d$/, held = (b) => !!(b.animal || (b.animals && b.animals.length));
+  const std = /^size-\d$/, held = (b) => !!(b.occupied || b.animal);          // (no animal is tied to an enclosure: occupied or empty; `animal`: a view saved before 2026-11-25)
   const flips = [];
   (after.players || []).forEach((b, seat) => {
     const a = before.players && before.players[seat];

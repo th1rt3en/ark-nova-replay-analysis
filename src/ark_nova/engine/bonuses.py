@@ -324,12 +324,11 @@ def move_options(state, p, e) -> list:
     out = []
     for key in p.animals:
         specs = [s for s in aa.card(key).get("specialEnclosures") or [] if s["type"] == _MOVE_SPEC[nb.type]]
-        if key in nb.animals or not specs or free < specs[0]["size"]:
+        if key in (e.get("moved") or []) or not specs or free < specs[0]["size"]:
             continue
-        # (2026-11-22, owner: no animal is tied to an enclosure) the cubes come off a special enclosure of a type the animal can live in that holds at least
-        # its cubes, or a standard enclosure (release priority, standard ones only) when it can live in one; the enclosures listing it stay valid (replays)
+        # (owner, 2026-11-22 / 25: no animal is tied to an enclosure) the cubes come off a special enclosure of a type the animal can live in that holds at
+        # least its cubes, or a standard enclosure (release priority, standard ones only) becomes empty when the animal can live in one
         src = [b for b in p.buildings if b is not nb and not b.type.startswith("size-") and 0 < cubes.spec_size(key, b.type) <= cubes.used(p, b)]
-        src += [b for b in p.buildings if key in b.animals and b is not nb and b not in src]
         if aa.card(key).get("canBeInStandardEnclosure") is not False:
             src += [b for b in pe.release_enclosures(state, p.seat, key, exclude=nb, standard_only=True) if b not in src]
         for b in src:
@@ -524,19 +523,10 @@ def resolve(state, action: Action, e: dict, i: int) -> None:
         nb = next(b for b in p.buildings if [b.x, b.y] == e["building"])
         old = next(b for b in p.buildings if [b.x, b.y] == src)
         from ark_nova.engine import cubes
-        for o in p.buildings:                                   # (bookkeeping lists: the card is listed in the new enclosure only)
-            if key in o.animals:
-                o.animals.remove(key)
         if old.type.startswith("size-"):
-            old.animal = None                                   # the standard enclosure is empty again
-            nb.animals.append(key)
-            cubes.move(p, key, nb, a.get("cubes"))
-        elif a.get("cubes"):                                    # (replay: the log's counts)
-            nb.animals.append(key)
-            cubes.move(p, key, nb, a.get("cubes"))
-        else:                                                   # live rules: its cubes come off the chosen special enclosure onto the new one
-            nb.animals.append(key)
-            cubes.move_from(p, key, old, nb)
+            old.occupied = False                                # the standard enclosure is empty again
+        cubes.move(p, key, old, nb, a.get("cubes"))             # (the log's counts in a replay; else the cubes come off the chosen special enclosure onto the new one)
+        e.setdefault("moved", []).append(key)                   # (an animal moves in once: the effect remembers it, no enclosure does)
         return                                                  # more animals may follow; the player skips the effect when done
     elif k == "store":
         if a["store"] not in p.hand:

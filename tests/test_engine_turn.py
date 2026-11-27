@@ -423,7 +423,7 @@ def test_release_project_slot_by_animal_size_and_release_effect():
     s.base_projects = ["P102", "P103", "P104"]
     s.projects_in_play = ["P119"]                                                             # Release a bird
     p.animals = ["A518"]                                                                      # Lesser Bird-of-paradise (bird, size 2): a small animal, the third slot
-    p.buildings = [Building(id=1, type="size-2", x=1, y=0, animal="A518")]
+    p.buildings = [Building(id=1, type="size-2", x=1, y=0, occupied=True)]
     s = apply(s, Action(0, "choose_action_card", {"type": "association", "spend": 0}))
     s = apply(s, Action(0, "association_task", {"task": "conservation", "project": "P119", "source": "play"}))
     assert [a.args["slot"] for a in legal_actions(s) if a.kind == "choose_slot"] == [2]
@@ -434,7 +434,7 @@ def test_release_project_slot_by_animal_size_and_release_effect():
     i = next(i for i, e in enumerate(s.prompt.args["pending"]) if e["kind"] == "release")
     appeal = p.appeal
     s = apply(s, Action(0, "choose_effect", {"index": i, "release": "A518", "building": [1, 0]}))      # the enclosure to empty is chosen (here the only one)
-    assert s.players[0].animals == [] and s.players[0].released == ["A518"] and s.players[0].buildings[0].animal is None
+    assert s.players[0].animals == [] and s.players[0].released == ["A518"] and not s.players[0].buildings[0].occupied
     assert s.players[0].appeal == appeal - project_effects.data.cards_by_key()["A518"]["appeal"]
 
 
@@ -485,7 +485,7 @@ def test_animals_action_places_the_animal_and_pays_with_partner_discount():
     money, appeal = s.players[0].money, s.players[0].appeal
     s = _settle(apply(s, acts[0]))
     p = s.players[0]
-    assert p.money == money - 7 and p.appeal == appeal + 4 and p.buildings[0].animal == "A439" and p.animals == ["A439"]
+    assert p.money == money - 7 and p.appeal == appeal + 4 and p.buildings[0].occupied and p.animals == ["A439"]
     assert s.active_player == 1 and "A439" not in p.hand
 
 
@@ -733,7 +733,7 @@ def test_release_project_in_live_play_releases_before_the_bonus_is_chosen():
     s.base_projects = ["P102", "P103", "P104"]
     s.projects_in_play = ["P119"]                                                             # Release a bird
     p.animals = ["A518"]
-    p.buildings = [Building(id=1, type="size-2", x=1, y=0, animal="A518")]
+    p.buildings = [Building(id=1, type="size-2", x=1, y=0, occupied=True)]
     appeal = p.appeal
     s = apply(s, Action(0, "choose_action_card", {"type": "association", "spend": 0}))
     s = apply(s, Action(0, "association_task", {"task": "conservation", "project": "P119", "source": "play"}))

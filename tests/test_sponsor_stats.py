@@ -198,9 +198,9 @@ def test_europe_scoring_excludes_gate_enhanced_size_one_enclosure():
     gates = [(x['x'], x['y']) for x in data.map_by_id('2')['geometry']['special_hexes'] if x['kind'] == 'gate']
     next_gate = next(c for c in bd.cells if any(g in neighbours(c) for g in gates))
     normal = [c for c in bd.cells if not any(g in neighbours(c) for g in gates)][:5]
-    p.buildings = [Building(i, 'size-1', *c, animal='A401') for i, c in enumerate(normal[:4] + [next_gate])]
+    p.buildings = [Building(i, 'size-1', *c, occupied=True) for i, c in enumerate(normal[:4] + [next_gate])]
     assert endgame.sponsor_points(s, 0, 'S211')['conservation'] == 0
-    p.buildings.append(Building(9, 'size-1', *normal[4], animal='A401'))
+    p.buildings.append(Building(9, 'size-1', *normal[4], occupied=True))
     assert endgame.sponsor_points(s, 0, 'S211')['conservation'] == 1
 
 

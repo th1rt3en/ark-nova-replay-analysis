@@ -158,7 +158,7 @@ def kiosk_income(p) -> int:
             b = p.buildings[i]
             if b.type == "kiosk":
                 continue
-            total += (1 if b.animal else 0) if b.type.startswith("size-") else 1
+            total += (1 if b.occupied else 0) if b.type.startswith("size-") else 1
     return total
 
 
@@ -207,7 +207,7 @@ def sponsor_income(state, p, only=None) -> dict:
                 e = p.buildings[ei]
                 cells = _counted_cells(p, skip=ei)
                 near = {cells[n] for c in footprint(e.type, e.x, e.y, e.rotation) for n in neighbours(c) if n in cells}
-                out["money"] += 2 * sum(1 for i in near if not (p.buildings[i].type.startswith("size-") and not p.buildings[i].animal))
+                out["money"] += 2 * sum(1 for i in near if not (p.buildings[i].type.startswith("size-") and not p.buildings[i].occupied))
     return out
 
 
