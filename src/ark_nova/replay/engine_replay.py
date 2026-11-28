@@ -22,6 +22,7 @@ class MoveEngine:
     end: GameState | None = None       # engine state after the move (status ok only)
     trace: list | None = None          # (event order, engine state after the action, added by the test) of the turn, for the sub-steps of the move
     obs: list = field(default_factory=list)       # (event order, sponsor key, statistic, amount) counted by the engine actions of this move (`observe_sponsors`)
+    fork: GameState | None = None      # where a fork of this step starts when it is not `end` (the map T1 discard's own move: the start of the turn, see t1_discard_state)
 
     def state_before(self, order: int) -> GameState | None:
         """The engine state just before the log event `order`: after the last engine action that comes from an earlier event."""
@@ -76,6 +77,36 @@ def build_engine_replay(parsed: ParsedLog, replay: Replay, seat_of: dict[str, in
             out[m.index] = MoveEngine("ok", end=res.trace[-1][2], trace=trace, obs=obs)
             continue
         done = [s for mv, _, s, _, _ in res.trace if mv is not None and mv <= m.index]
-        out[m.index] = MoveEngine("ok", end=done[-1], trace=trace, obs=obs) if done else MoveEngine("log", "before the first engine action of the turn")
+        if done:
+            out[m.index] = MoveEngine("ok", end=done[-1], trace=trace, obs=obs)
+            continue
+        t1 = t1_discard_state(m, res, seat_of)
+        out[m.index] = MoveEngine("ok", end=t1, trace=trace, fork=res.start) if t1 is not None else MoveEngine("log", "before the first engine action of the turn")
     return EngineReplay(out, diff)
 
+
+def t1_discard_state(move, res: TurnResult, seat_of: dict[str, int]) -> GameState | None:
+    """Map T1: BGA logs the discard for +1 strength as a move of its own before the action card is chosen; the engine makes it part of
+    `choose_action_card` (its `t1` argument), so no engine action of the turn falls on that move. For a move that holds only that discard,
+    in a turn the engine played and matched: the engine's state at the start of the turn with the card moved from the hand to the discard
+    pile (what the log shows at that step). Forks of the step start from the start of the turn (`MoveEngine.fork`): the discard and its +1
+    are made with the card choice there. None when the move is anything else (954844390 move 318)."""
+    import copy
+    real = [e for e in move.events if not e.type.startswith("gameStateChange")]
+    if res.start is None or not real or not all(e.type == "pDiscardCards" and "Map T1 effect" in (e.log or "") for e in real):
+        return None
+    seat = seat_of.get(str((real[0].args or {}).get("player_id")))
+    first = next((st for _, _, st, _, _ in res.trace), None)
+    if seat is None or first is None:
+        return None
+    gone = list(res.start.players[seat].hand)
+    for c in first.players[seat].hand:
+        if c in gone:
+            gone.remove(c)
+    if len(gone) != 1:                                  # (the first engine action took one card from the hand: the discarded one)
+        return None
+    st = copy.deepcopy(res.start)
+    st.players[seat].hand.remove(gone[0])
+    st.main_discard.append(gone[0])
+    st.players[seat].flags["t1_used"] = 1
+    return st

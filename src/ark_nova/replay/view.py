@@ -1352,7 +1352,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
                 if before is not None:
                     views[i], source[i] = state_view(before), "engine"
             views[-1], source[-1] = state_view(me.end), "engine"
-            objs[-1] = me.end
+            objs[-1] = me.end if me.fork is None else me.fork                 # (the map T1 discard's own move: a fork starts at the start of the turn)
             for i, (_, start) in enumerate(g[1:]):
                 if len(g) == len(views) and source[i] == "engine":
                     objs[i] = me.state_before(start)
@@ -1372,7 +1372,7 @@ def build_replay_view(raw_log: dict, record: TableRecord, with_states: bool = Fa
         if me.end is not None:                                              # what the engine lets the player do next, at each engine step
             for i, src in enumerate(source):
                 if src == "engine":
-                    options[i] = _without_unstore(step_options(me.end if i == len(views) - 1 else me.state_before(g[i + 1][1])))
+                    options[i] = _without_unstore(step_options((me.end if me.fork is None else me.fork) if i == len(views) - 1 else me.state_before(g[i + 1][1])))
         for i, o in enumerate(options):
             v = views[i]
             if o is not None and o.get("effects") and i in engine_vals:

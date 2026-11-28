@@ -83,6 +83,7 @@ class TurnResult:
     detail: str = ""
     trace: list = field(default_factory=list)
     last_turn: int = 0                                     # the turn marker this result ends at (Multiplier turns are merged)
+    start: object = None                                   # engine state at the start of the turn, kept only for a turn with a map T1 discard (engine_replay shows the discard's own move from it)
 
 
 @dataclass
@@ -1150,6 +1151,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
         return new
 
     carry: tuple = (None, None)                  # (turn index, engine state at its start)
+    t1_starts: dict = {}                         # turn index -> engine state at its start (turns with a map T1 discard only)
     turns = turn_events(parsed)
     markers = parsed.turn_markers
     snaps = replay.turn_snapshots
@@ -1280,6 +1282,7 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
                 continue
             if any(a_.kind == "choose_action_card" and a_.args.get("t1") for a_ in acts) and state.players[seat].map_id == "T1":
                 state.players[seat].flags["bonus_used"] = state.players[seat].flags.get("bonus_used", 0) | 1          # (the T1 discard needs the card space of the notepad)
+                t1_starts[k] = copy.deepcopy(state)
             if any(a.kind == "choose_action_card" and a.args["type"] == "build" for a in acts) and not state.config.map_known[seat]:
                 rep.skipped["build turn of a player whose map could not be inferred"] += 1
                 continue
@@ -2259,5 +2262,6 @@ def _run_differential(parsed: ParsedLog, replay: Replay, seat_of: dict[str, int]
             res = _result(rep, counts, trace, span.get(k, k))
             if res is not None:
                 rep.results[k] = res
+                res.start = t1_starts.get(k)
                 carry = (next((j_ for j_ in range(res.last_turn + 1, len(turns)) if any(not e_.type.startswith("gameStateChange") and e_.type != "playerConcedeGame" for e_ in turns[j_])), res.last_turn + 1), trace[-1][2]) if (chain or again) and res.status == "ok" and trace else (None, None)      # (BGA leaves empty markers between an action and its extra action: the engine's state goes on to the next turn with events, 802552873 turn 63)      # (an extra action goes on from the engine's own state: a Clever of the first action waits for its end)
     return rep
